@@ -524,7 +524,7 @@
     <value>Mysql工具</value>
   </data>
   <data name="MsgList" xml:space="preserve">
-    <value> "消息日志窗口</value>
+    <value>消息日志窗口</value>
   </data>
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Socket管理窗口</value>

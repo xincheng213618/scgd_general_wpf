@@ -481,4 +481,13 @@
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Окно управления сокетами</value>
   </data>
+  <data name="SortDefault" xml:space="preserve">
+    <value>Сортировка по умолчанию</value>
+  </data>
+  <data name="SortByName" xml:space="preserve">
+    <value>Сортировать по имени</value>
+  </data>
+  <data name="SortByCategory" xml:space="preserve">
+    <value>Сортировать по категории</value>
+  </data>
 </root>

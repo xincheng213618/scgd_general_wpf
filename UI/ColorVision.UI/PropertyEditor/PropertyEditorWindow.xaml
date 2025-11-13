@@ -59,7 +59,7 @@
             </Viewbox>
             
             <ComboBox x:Name="SortComboBox" Grid.Column="1" Width="150" 
-                     Style="{DynamicResource ComboBoxBaseStyle}"
+                     Style="{DynamicResource ComboBox.Small}"
                      SelectionChanged="SortComboBox_SelectionChanged"/>
         </Grid>
         

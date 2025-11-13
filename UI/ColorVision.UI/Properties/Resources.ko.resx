@@ -481,4 +481,13 @@
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>소켓 관리 창</value>
   </data>
+  <data name="SortDefault" xml:space="preserve">
+    <value>정렬기본값</value>
+  </data>
+  <data name="SortByName" xml:space="preserve">
+    <value>이름순 정렬</value>
+  </data>
+  <data name="SortByCategory" xml:space="preserve">
+    <value>카테고리별 정렬</value>
+  </data>
 </root>
