@@ -3,103 +3,111 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectStarKey"
         mc:Ignorable="d"
-        Title="视角测量 - Conoscope" Height="600" Width="900">
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        Title="视角测量 - Conoscope" Height="720" Width="1280" Initialized="Window_Initialized">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="400"/>
+        </Grid.ColumnDefinitions>
 
-        <!-- Model Selection Section -->
-        <GroupBox Grid.Row="0" Header="硬件型号选择" Margin="0,0,0,10">
-            <StackPanel Margin="10">
-                <DockPanel Margin="0,0,0,10">
-                    <TextBlock Text="型号:" VerticalAlignment="Center" Width="80"/>
-                    <ComboBox x:Name="cbModelType" 
-                              SelectionChanged="cbModelType_SelectionChanged"
-                              SelectedIndex="0">
-                        <ComboBoxItem Content="VA60" Tag="VA60"/>
-                        <ComboBoxItem Content="VA80" Tag="VA80"/>
-                    </ComboBox>
-                </DockPanel>
-                
-                <TextBlock x:Name="tbModelDescription" 
-                           TextWrapping="Wrap" 
-                           Foreground="Gray"
-                           Text="VA60: 一台观察相机（视频模式）+ 一台测量相机（需要校正）"/>
-            </StackPanel>
-        </GroupBox>
+        <!-- Left Side: Image Display -->
+        <Grid Grid.Column="0">
+            <im:ImageView x:Name="ImageView" />
+        </Grid>
 
-        <!-- Camera Control Section -->
-        <GroupBox Grid.Row="1" Header="相机控制" Margin="0,0,0,10">
-            <StackPanel Margin="10">
-                <UniformGrid Columns="2" Margin="0,0,0,5">
-                    <!-- Observation Camera Button (VA60 only) -->
-                    <Button x:Name="btnOpenObservationCamera" 
-                            Content="打开观察相机"
-                            Click="btnOpenObservationCamera_Click"
-                            Margin="0,0,5,0"
-                            Visibility="Visible"
-                            Height="30"/>
-                    
-                    <!-- Measurement Camera Button -->
-                    <Button x:Name="btnOpenMeasurementCamera" 
-                            Content="打开测量相机"
-                            Click="btnOpenMeasurementCamera_Click"
-                            Margin="5,0,0,0"
-                            Height="30"/>
-                </UniformGrid>
-                
-                <Button x:Name="btnCalibration" 
-                        Content="测量相机校正"
-                        Click="btnCalibration_Click"
-                        Margin="0,5,0,0"
-                        Height="30"/>
-            </StackPanel>
-        </GroupBox>
+        <!-- Right Side: Controls and Log -->
+        <Grid Grid.Column="1" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <!-- Status and Information Section -->
-        <GroupBox Grid.Row="2" Header="状态信息">
-            <Grid Margin="10">
+            <!-- Top: Controls -->
+            <Grid Grid.Row="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                
-                <StackPanel Grid.Row="0" Margin="0,0,0,10">
-                    <DockPanel Margin="0,0,0,5">
-                        <TextBlock Text="当前型号:" Width="100" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="tbCurrentModel" Text="VA60" FontWeight="Bold"/>
-                    </DockPanel>
-                    <DockPanel Margin="0,0,0,5">
-                        <TextBlock Text="观察相机状态:" Width="100" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="tbObservationCameraStatus" Text="未打开" Foreground="Gray"/>
-                    </DockPanel>
-                    <DockPanel Margin="0,0,0,5">
-                        <TextBlock Text="测量相机状态:" Width="100" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="tbMeasurementCameraStatus" Text="未打开" Foreground="Gray"/>
-                    </DockPanel>
-                    <DockPanel>
-                        <TextBlock Text="校正状态:" Width="100" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="tbCalibrationStatus" Text="未校正" Foreground="Orange"/>
-                    </DockPanel>
-                </StackPanel>
-                
-                <Border Grid.Row="1" 
-                        Background="{DynamicResource CardBackgroundBrush}" 
-                        CornerRadius="8"
-                        Padding="10">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <TextBlock x:Name="tbLog" 
-                                   Text="系统日志将显示在此处..."
-                                   TextWrapping="Wrap"
-                                   FontFamily="Consolas"/>
-                    </ScrollViewer>
-                </Border>
+
+                <!-- Model Selection Section -->
+                <GroupBox Grid.Row="0" Header="硬件型号选择" Margin="0,0,0,10">
+                    <StackPanel Margin="10">
+                        <DockPanel Margin="0,0,0,10">
+                            <TextBlock Text="型号:" VerticalAlignment="Center" Width="80"/>
+                            <ComboBox x:Name="cbModelType" 
+                                      SelectionChanged="cbModelType_SelectionChanged"
+                                      SelectedIndex="0">
+                                <ComboBoxItem Content="VA60" Tag="VA60"/>
+                                <ComboBoxItem Content="VA80" Tag="VA80"/>
+                            </ComboBox>
+                        </DockPanel>
+                        
+                        <TextBlock x:Name="tbModelDescription" 
+                                   TextWrapping="Wrap" 
+                                   Foreground="Gray"
+                                   Text="VA60: 一台观察相机（视频模式）+ 一台测量相机（需要校正）"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Camera Control Section -->
+                <GroupBox Grid.Row="1" Header="相机控制" Margin="0,0,0,10">
+                    <StackPanel Margin="10">
+                        <UniformGrid Columns="2" Margin="0,0,0,5">
+                            <!-- Observation Camera Button (VA60 only) -->
+                            <Button x:Name="btnOpenObservationCamera" 
+                                    Content="打开观察相机"
+                                    Click="btnOpenObservationCamera_Click"
+                                    Margin="0,0,5,0"
+                                    Visibility="Visible"
+                                    Height="30"/>
+                            
+                            <!-- Measurement Camera Button -->
+                            <Button x:Name="btnOpenMeasurementCamera" 
+                                    Content="打开测量相机"
+                                    Click="btnOpenMeasurementCamera_Click"
+                                    Margin="5,0,0,0"
+                                    Height="30"/>
+                        </UniformGrid>
+                        
+                        <Button x:Name="btnCalibration" 
+                                Content="测量相机校正"
+                                Click="btnCalibration_Click"
+                                Margin="0,5,0,0"
+                                Height="30"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Status Section -->
+                <GroupBox Grid.Row="2" Header="状态信息" Margin="0,0,0,10">
+                    <StackPanel Margin="10">
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="当前型号:" Width="100" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="tbCurrentModel" Text="VA60" FontWeight="Bold"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="观察相机状态:" Width="100" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="tbObservationCameraStatus" Text="未打开" Foreground="Gray"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="测量相机状态:" Width="100" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="tbMeasurementCameraStatus" Text="未打开" Foreground="Gray"/>
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="校正状态:" Width="100" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="tbCalibrationStatus" Text="未校正" Foreground="Orange"/>
+                        </DockPanel>
+                    </StackPanel>
+                </GroupBox>
             </Grid>
-        </GroupBox>
+
+            <!-- Bottom: Log Display -->
+            <Grid Grid.Row="1" x:Name="LogGrid">
+                <!-- LogOutput will be added here programmatically -->
+            </Grid>
+        </Grid>
     </Grid>
 </Window>
