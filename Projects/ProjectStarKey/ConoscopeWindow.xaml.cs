@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.UI.Menus;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,19 @@ using System.Windows.Shapes;
 
 namespace ProjectStarKey
 {
+    public class MenuConoscopeWindow : MenuItemBase
+    {
+        public override string OwnerGuid => MenuItemConstants.Tool;
+        public override int Order => 50;
+        public override string Header => "Conoscope";
+
+        public override void Execute()
+        {
+            ConoscopeWindow conoscopeWindow = new ConoscopeWindow();
+            conoscopeWindow.Show();
+        }
+    }
+
     /// <summary>
     /// ConoscopeWindow.xaml 的交互逻辑
     /// </summary>
@@ -46,6 +60,7 @@ namespace ProjectStarKey
 
         private void UpdateUIForModel(string model)
         {
+            if (tbCurrentModel == null) return;
             tbCurrentModel.Text = model;
 
             if (model == "VA60")
@@ -142,14 +157,14 @@ namespace ProjectStarKey
             string timestamp = DateTime.Now.ToString("HH:mm:ss");
             string logEntry = $"[{timestamp}] {message}\n";
             
-            if (tbLog.Text == "系统日志将显示在此处...")
-            {
-                tbLog.Text = logEntry;
-            }
-            else
-            {
-                tbLog.Text += logEntry;
-            }
+            //if (tbLog.Text == "系统日志将显示在此处...")
+            //{
+            //    tbLog.Text = logEntry;
+            //}
+            //else
+            //{
+            //    tbLog.Text += logEntry;
+            //}
         }
     }
 }

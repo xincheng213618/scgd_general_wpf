@@ -17,18 +17,6 @@ namespace ProjectStarKey.Languages
         public override string InputGestureText => "Ctrl + Shift + T";
     }
 
-    public class MenuConoscope : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.View;
-        public override int Order => 999;
-        public override string Header => "视角测量";
-
-        public override void Execute()
-        {
-            ConoscopeWindow conoscopeWindow = new ConoscopeWindow();
-            conoscopeWindow.Show();
-        }
-    }
 
     public class MenuThemeProvider : IMenuItemProvider
     {
