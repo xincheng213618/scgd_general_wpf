@@ -33,7 +33,7 @@ namespace ProjectStarKey
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
-            MVSViewWindow basicDemoWindow = new MVSViewWindow();
+            ConoscopeWindow conce = new ConoscopeWindow();
             basicDemoWindow.Show();
 
 
