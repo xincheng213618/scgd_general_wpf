@@ -33,8 +33,8 @@ namespace ProjectStarKey
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
-            ConoscopeWindow conce = new ConoscopeWindow();
-            basicDemoWindow.Show();
+            ConoscopeWindow conoscopeWindow = new ConoscopeWindow();
+            conoscopeWindow.Show();
 
 
         }
