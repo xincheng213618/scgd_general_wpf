@@ -1,11 +1,14 @@
 ﻿using ColorVision.Database;
+using ColorVision.Engine;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor;
+using ColorVision.Themes.Controls;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
 using log4net;
@@ -58,8 +61,7 @@ namespace ProjectStarKey
         private MVSViewWindow? observationCameraWindow;
         private LogOutput? logOutput;
 
-        private DeviceCamera? selectedObservationCamera;
-        private DeviceCamera? selectedMeasurementCamera;
+        private DeviceCamera? Device;
 
         public ConoscopeWindow()
         {
@@ -89,11 +91,6 @@ namespace ProjectStarKey
         {
             var cameras = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
             
-            cbObservationCamera.ItemsSource = cameras;
-            cbObservationCamera.DisplayMemberPath = "Name";
-            if (cameras.Count > 0)
-                cbObservationCamera.SelectedIndex = 0;
-
             cbMeasurementCamera.ItemsSource = cameras;
             cbMeasurementCamera.DisplayMemberPath = "Name";
             if (cameras.Count > 0)
@@ -102,46 +99,21 @@ namespace ProjectStarKey
             log.Info($"已加载 {cameras.Count} 个相机服务");
         }
 
-        private void cbObservationCamera_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            selectedObservationCamera = cbObservationCamera.SelectedItem as DeviceCamera;
-            if (selectedObservationCamera != null)
-            {
-                log.Info($"已选择观察相机: {selectedObservationCamera.Name}");
-            }
-        }
 
         private void cbMeasurementCamera_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            selectedMeasurementCamera = cbMeasurementCamera.SelectedItem as DeviceCamera;
-            if (selectedMeasurementCamera != null)
+            Device = cbMeasurementCamera.SelectedItem as DeviceCamera;
+            if (Device != null)
             {
-                log.Info($"已选择测量相机: {selectedMeasurementCamera.Name}");
-                
+                log.Info($"已选择测量相机: {Device.Name}");
+
                 // Load calibration templates for selected camera
-                LoadCalibrationTemplates();
+
+                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
+                ComboxCalibrationTemplate.SelectedIndex = 0;
             }
         }
 
-        private void LoadCalibrationTemplates()
-        {
-            if (selectedMeasurementCamera?.PhyCamera == null)
-            {
-                cbCalibration.ItemsSource = null;
-                cbCalibration.SelectedIndex = -1;
-                return;
-            }
-
-            var templates = CalibrationDao.Instance.GetAllByPid(selectedMeasurementCamera.PhyCamera.Id);
-            var calibrationList = new List<CalibrationParam> { new CalibrationParam { Id = -1, Name = "无校正" } };
-            calibrationList.AddRange(templates);
-            
-            cbCalibration.ItemsSource = calibrationList;
-            cbCalibration.DisplayMemberPath = "Name";
-            cbCalibration.SelectedIndex = 0;
-            
-            log.Info($"已加载 {templates.Count} 个校正模板");
-        }
 
         private void cbModelType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -188,79 +160,49 @@ namespace ProjectStarKey
 
         private void btnOpenObservationCamera_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                if (selectedObservationCamera == null)
-                {
-                    MessageBox.Show("请先选择观察相机", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                if (observationCameraWindow == null || !observationCameraWindow.IsVisible)
-                {
-                    observationCameraWindow = new MVSViewWindow();
-                    observationCameraWindow.Title = $"观察相机 - {selectedObservationCamera.Name}";
-                    observationCameraWindow.Closed += (s, args) =>
-                    {
-                        tbObservationCameraStatus.Text = "已关闭";
-                        tbObservationCameraStatus.Foreground = new SolidColorBrush(Colors.Gray);
-                        log.Info("观察相机窗口已关闭");
-                    };
-                    observationCameraWindow.Show();
-                    
-                    tbObservationCameraStatus.Text = "已打开";
-                    tbObservationCameraStatus.Foreground = new SolidColorBrush(Colors.Green);
-                    log.Info($"观察相机窗口已打开: {selectedObservationCamera.Name}");
-                }
-                else
-                {
-                    observationCameraWindow.Activate();
-                    log.Info("观察相机窗口已激活");
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error($"打开观察相机失败: {ex.Message}", ex);
-                MessageBox.Show($"打开观察相机失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            observationCameraWindow = new MVSViewWindow();
+            observationCameraWindow.Show();
         }
 
         private void btnOpenMeasurementCamera_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (selectedMeasurementCamera == null)
+                if (Device == null)
                 {
                     MessageBox.Show("请先选择测量相机", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
-                if (cbCalibration.SelectedItem == null)
+
+                if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
-                    MessageBox.Show("请先选择校正模板", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
+                    //if (param.Id != -1)
+                    //{
+                    //    if (Device.PhyCamera != null && Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
+                    //    {
+                    //        MessageBox1.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
+                    //        return null;
+                    //    }
+                    //}
+                }
+                else
+                {
+                    param = new CalibrationParam() { Id = -1, Name = "Empty" };
                 }
 
-                var calibrationParam = cbCalibration.SelectedItem as CalibrationParam;
-                if (calibrationParam == null)
-                {
-                    MessageBox.Show("校正参数无效", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                log.Info($"准备获取图像 - 相机: {selectedMeasurementCamera.Name}, 校正: {calibrationParam.Name}");
+                log.Info($"准备获取图像 - 相机: {Device.Name}, 校正: {param.Name}");
                 
-                double[] expTime = new double[] { selectedMeasurementCamera.Config.ExpTime };
+                double[] expTime = new double[] { Device.Config.ExpTime };
                 AutoExpTimeParam autoExpTimeParam = new AutoExpTimeParam { Id = -1 };
                 ParamBase hdrParam = new ParamBase { Id = -1 };
 
-                MsgRecord msgRecord = selectedMeasurementCamera.DService.GetData(expTime, calibrationParam, autoExpTimeParam, hdrParam);
+                MsgRecord msgRecord = Device.DService.GetData(expTime, param, autoExpTimeParam, hdrParam);
 
                 if (msgRecord != null)
                 {
                     tbMeasurementCameraStatus.Text = "正在获取...";
                     tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Orange);
-
                     msgRecord.MsgSucessed += (arg) =>
                     {
                         Application.Current.Dispatcher.Invoke(() =>
@@ -314,17 +256,6 @@ namespace ProjectStarKey
                             }
                         });
                     };
-
-                    msgRecord.MsgFailed += (arg) =>
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            tbMeasurementCameraStatus.Text = "失败";
-                            tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Red);
-                            MessageBox.Show($"获取图像失败: {arg.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                            log.Error($"获取图像失败: {arg.Message}");
-                        });
-                    };
                 }
                 else
                 {
@@ -357,6 +288,21 @@ namespace ProjectStarKey
             logOutput?.Dispose();
             ImageView?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void MenuItem_Template(object sender, RoutedEventArgs e)
+        {
+            if (Device.PhyCamera == null)
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                return;
+            }
+
+            var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
+            var windowTemplate = new TemplateEditorWindow(ITemplate, ComboxCalibrationTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
+            windowTemplate.ShowDialog();
+
+            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
         }
     }
 }
