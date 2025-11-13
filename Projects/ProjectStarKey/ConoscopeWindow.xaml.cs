@@ -1,15 +1,17 @@
 ﻿using ColorVision.Database;
+using ColorVision.Engine;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor;
+using ColorVision.Themes.Controls;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
 using log4net;
-using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
@@ -368,7 +370,7 @@ namespace ProjectStarKey
         {
             try
             {
-                if (ImageView.ImageSource == null)
+                if (ImageView.ImageShow.Source == null)
                 {
                     MessageBox.Show("请先获取图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
@@ -384,15 +386,15 @@ namespace ProjectStarKey
                 log.Info($"开始应用滤波: {filterType}");
 
                 // Convert WPF BitmapSource to OpenCV Mat
-                BitmapSource bitmapSource = ImageView.ImageSource as BitmapSource;
+                BitmapSource bitmapSource = ImageView.ImageShow.Source as BitmapSource;
                 if (bitmapSource == null)
                 {
                     MessageBox.Show("图像格式不支持", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                Mat srcMat = BitmapSourceConverter.ToMat(bitmapSource);
-                Mat dstMat = new Mat();
+                OpenCvSharp.Mat srcMat = BitmapSourceConverter.ToMat(bitmapSource);
+                OpenCvSharp.Mat dstMat = new OpenCvSharp.Mat();
 
                 int kernelSize = (int)sliderKernelSize.Value;
                 double sigma = sliderSigma.Value;
@@ -408,31 +410,31 @@ namespace ProjectStarKey
                 {
                     case ImageFilterType.LowPass:
                         // 低通滤波（均值滤波）
-                        Cv2.Blur(srcMat, dstMat, new OpenCvSharp.Size(kernelSize, kernelSize));
+                        OpenCvSharp.Cv2.Blur(srcMat, dstMat, new OpenCvSharp.Size(kernelSize, kernelSize));
                         log.Info($"应用低通滤波，核大小: {kernelSize}");
                         break;
 
                     case ImageFilterType.MovingAverage:
                         // 移动平均滤波（方框滤波）
-                        Cv2.BoxFilter(srcMat, dstMat, srcMat.Type(), new OpenCvSharp.Size(kernelSize, kernelSize));
+                        OpenCvSharp.Cv2.BoxFilter(srcMat, dstMat, srcMat.Type(), new OpenCvSharp.Size(kernelSize, kernelSize));
                         log.Info($"应用移动平均滤波，核大小: {kernelSize}");
                         break;
 
                     case ImageFilterType.Gaussian:
                         // 高斯滤波
-                        Cv2.GaussianBlur(srcMat, dstMat, new OpenCvSharp.Size(kernelSize, kernelSize), sigma);
+                        OpenCvSharp.Cv2.GaussianBlur(srcMat, dstMat, new OpenCvSharp.Size(kernelSize, kernelSize), sigma);
                         log.Info($"应用高斯滤波，核大小: {kernelSize}, σ: {sigma}");
                         break;
 
                     case ImageFilterType.Median:
                         // 中值滤波
-                        Cv2.MedianBlur(srcMat, dstMat, kernelSize);
+                        OpenCvSharp.Cv2.MedianBlur(srcMat, dstMat, kernelSize);
                         log.Info($"应用中值滤波，核大小: {kernelSize}");
                         break;
 
                     case ImageFilterType.Bilateral:
                         // 双边滤波
-                        Cv2.BilateralFilter(srcMat, dstMat, d, sigmaColor, sigmaSpace);
+                        OpenCvSharp.Cv2.BilateralFilter(srcMat, dstMat, d, sigmaColor, sigmaSpace);
                         log.Info($"应用双边滤波，d: {d}, σColor: {sigmaColor}, σSpace: {sigmaSpace}");
                         break;
                 }
