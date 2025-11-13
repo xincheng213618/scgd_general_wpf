@@ -21,7 +21,14 @@ using System.Windows.Media.Animation;
 
 namespace ColorVision.UI
 {
-
+    public enum PropertySortMode
+    {
+        Default,
+        NameAscending,
+        NameDescending,
+        CategoryAscending,
+        CategoryDescending
+    }
 
     /// <summary>
     /// EditConfig.xaml 的交互逻辑
@@ -37,6 +44,7 @@ namespace ColorVision.UI
         
         private string searchText = string.Empty;
         private Dictionary<Border, TreeViewItem> borderToTreeViewItem = new Dictionary<Border, TreeViewItem>();
+        private PropertySortMode currentSortMode = PropertySortMode.Default;
 
 
         public PropertyEditorWindow(object config ,bool isEdit = true)
@@ -51,6 +59,13 @@ namespace ColorVision.UI
         {
             this.DataContext = Config;
 
+            // Initialize sort options
+            SortComboBox.Items.Add(new ComboBoxItem { Content = "默认排序", Tag = PropertySortMode.Default });
+            SortComboBox.Items.Add(new ComboBoxItem { Content = "按名称排序 (升序)", Tag = PropertySortMode.NameAscending });
+            SortComboBox.Items.Add(new ComboBoxItem { Content = "按名称排序 (降序)", Tag = PropertySortMode.NameDescending });
+            SortComboBox.Items.Add(new ComboBoxItem { Content = "按分类排序 (升序)", Tag = PropertySortMode.CategoryAscending });
+            SortComboBox.Items.Add(new ComboBoxItem { Content = "按分类排序 (降序)", Tag = PropertySortMode.CategoryDescending });
+            SortComboBox.SelectedIndex = 0;
 
             if (IsEdit)
             {
@@ -371,6 +386,200 @@ namespace ColorVision.UI
                 return true;
 
             return false;
+        }
+
+        private void SortComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (SortComboBox.SelectedItem is ComboBoxItem item && item.Tag is PropertySortMode sortMode)
+            {
+                currentSortMode = sortMode;
+                ApplySorting();
+            }
+        }
+
+        private void ApplySorting()
+        {
+            if (categoryGroups.Count == 0)
+                return;
+
+            switch (currentSortMode)
+            {
+                case PropertySortMode.NameAscending:
+                    SortPropertiesByName(ascending: true);
+                    break;
+                case PropertySortMode.NameDescending:
+                    SortPropertiesByName(ascending: false);
+                    break;
+                case PropertySortMode.CategoryAscending:
+                    SortCategoriesByName(ascending: true);
+                    break;
+                case PropertySortMode.CategoryDescending:
+                    SortCategoriesByName(ascending: false);
+                    break;
+                case PropertySortMode.Default:
+                default:
+                    // Restore default order - regenerate display
+                    PropertyPanel.Children.Clear();
+                    treeView.Items.Clear();
+                    borderToTreeViewItem.Clear();
+                    DisplayProperties(IsEdit ? Config : EditConfig);
+                    ApplySearchFilter();
+                    return;
+            }
+
+            // After sorting, reapply search filter if active
+            ApplySearchFilter();
+        }
+
+        private void SortPropertiesByName(bool ascending)
+        {
+            // Sort properties within each category
+            foreach (var category in categoryGroups.Keys.ToList())
+            {
+                var sortedProperties = ascending
+                    ? categoryGroups[category].OrderBy(p => p.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? p.Name).ToList()
+                    : categoryGroups[category].OrderByDescending(p => p.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? p.Name).ToList();
+                
+                categoryGroups[category] = sortedProperties;
+            }
+
+            // Rebuild the display
+            RebuildDisplay();
+        }
+
+        private void SortCategoriesByName(bool ascending)
+        {
+            // Create a sorted dictionary of categories
+            var sortedCategories = ascending
+                ? categoryGroups.OrderBy(kvp => kvp.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
+                : categoryGroups.OrderByDescending(kvp => kvp.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+            categoryGroups = sortedCategories;
+
+            // Rebuild the display
+            RebuildDisplay();
+        }
+
+        private void RebuildDisplay()
+        {
+            PropertyPanel.Children.Clear();
+            treeView.Items.Clear();
+            borderToTreeViewItem.Clear();
+
+            var source = IsEdit ? Config : EditConfig;
+
+            foreach (var categoryGroup in categoryGroups)
+            {
+                var border = new Border
+                {
+                    Background = (Brush)FindResource("GlobalBorderBrush"),
+                    BorderThickness = new Thickness(1),
+                    BorderBrush = (Brush)FindResource("BorderBrush"),
+                    CornerRadius = new CornerRadius(5),
+                    Margin = new Thickness(0, 0, 0, 5),
+                    Tag = categoryGroup.Key
+                };
+                var stackPanel = new StackPanel { Margin = new Thickness(10, 5, 10, 0) };
+                border.Child = stackPanel;
+
+                var categoryHeader = new TextBlock
+                {
+                    Text = categoryGroup.Key,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = PropertyEditorHelper.GlobalTextBrush,
+                    Margin = new Thickness(0, 0, 0, 5)
+                };
+                stackPanel.Children.Add(categoryHeader);
+
+                foreach (var property in categoryGroup.Value)
+                {
+                    var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
+
+                    if (browsableAttr?.Browsable ?? true)
+                    {
+                        DockPanel dockPanel = null;
+
+                        var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
+                        if (editorAttr?.EditorType != null)
+                        {
+                            try
+                            {
+                                var editor = PropertyEditorHelper.GetOrCreateEditor(editorAttr.EditorType);
+                                dockPanel = editor.GenProperties(property, source);
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        }
+
+                        if (dockPanel == null)
+                        {
+                            Type? editorType = null;
+                            editorType = PropertyEditorHelper.GetEditorTypeForPropertyType(property.PropertyType);
+                            if (editorType != null)
+                            {
+                                try
+                                {
+                                    var editor = PropertyEditorHelper.GetOrCreateEditor(editorType);
+                                    dockPanel = editor.GenProperties(property, source);
+                                }
+                                catch (Exception)
+                                {
+                                    continue;
+                                }
+                            }
+                            else if (property.PropertyType == typeof(object))
+                            {
+                                stackPanel.Margin = new Thickness(5);
+                                StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(property.GetValue(source));
+                                if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
+                                {
+                                    stackPanel.Children.Add(stackPanel1);
+                                }
+                                continue;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+
+                        dockPanel.Margin = new Thickness(0, 0, 0, 5);
+                        dockPanel.Tag = property;
+
+                        var VisibleBlindAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
+                        if (VisibleBlindAttr != null)
+                        {
+                            var binding = new Binding(VisibleBlindAttr.PropertyName)
+                            {
+                                Source = source,
+                                Mode = BindingMode.TwoWay
+                            };
+
+                            binding.Converter = (IValueConverter)Application.Current.FindResource(VisibleBlindAttr.IsInverted ? "bool2VisibilityConverter" : "bool2VisibilityConverter1");
+                            dockPanel.SetBinding(DockPanel.VisibilityProperty, binding);
+                        }
+                        stackPanel.Children.Add(dockPanel);
+                    }
+                }
+
+                if (stackPanel.Children.Count > 1)
+                {
+                    TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
+                    treeView.Items.Add(treeViewItem);
+                    borderToTreeViewItem[border] = treeViewItem;
+                    PropertyPanel.Children.Add(border);
+                }
+            }
+
+            if (treeView.Items.Count == 1)
+            {
+                treeView.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                treeView.Visibility = Visibility.Visible;
+            }
         }
     }
 }

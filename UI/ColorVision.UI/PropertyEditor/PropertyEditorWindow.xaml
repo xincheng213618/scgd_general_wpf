@@ -25,14 +25,19 @@
         </Grid.RowDefinitions>
         <Border Background="{DynamicResource  SecondaryRegionBrush}" Grid.RowSpan="3" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" />
         
-        <!-- Search Bar -->
+        <!-- Search Bar and Sort Options -->
         <Grid Grid.Row="0" Margin="5,5,5,0">
-            <hc:TextBox x:Name="SearchBox" Style="{DynamicResource TextBoxPlus.Small}" 
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <hc:TextBox x:Name="SearchBox" Grid.Column="0" Style="{DynamicResource TextBoxPlus.Small}" 
                        Padding="20,1,2,1" BorderThickness="1" 
                        hc:InfoElement.Placeholder="搜索属性..." 
                        BorderBrush="#CCCEDB" VerticalContentAlignment="Center" 
-                       TextChanged="SearchBox_TextChanged" />
-            <Viewbox Width="12" Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
+                       TextChanged="SearchBox_TextChanged" Margin="0,0,5,0" />
+            <Viewbox Width="12" Height="12" HorizontalAlignment="Left" Margin="4,0,0,0" Grid.Column="0">
                 <Rectangle Width="16" Height="16">
                     <Rectangle.Resources>
                         <SolidColorBrush x:Key="canvas" Opacity="0" />
@@ -52,6 +57,10 @@
                     </Rectangle.Fill>
                 </Rectangle>
             </Viewbox>
+            
+            <ComboBox x:Name="SortComboBox" Grid.Column="1" Width="150" 
+                     Style="{DynamicResource ComboBoxBaseStyle}"
+                     SelectionChanged="SortComboBox_SelectionChanged"/>
         </Grid>
         
         <Grid Grid.Row="1">
