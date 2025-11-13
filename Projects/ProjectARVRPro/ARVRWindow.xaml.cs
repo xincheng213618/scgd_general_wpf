@@ -618,13 +618,13 @@ namespace ProjectARVRPro
 
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
-            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            if (ViewResultManager.Config.IsSaveCsv)
+            {
+                string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults_{timeStr}.csv");
+                ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
+            }
 
-
-
-            string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults_{timeStr}.csv");
-
-            ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
             var response = new SocketResponse
             {
                 Version = "1.0",
