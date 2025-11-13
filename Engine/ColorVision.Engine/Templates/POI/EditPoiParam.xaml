@@ -66,7 +66,7 @@
                         <ComboBox x:Name="ComboBoxImg"   Style="{StaticResource ComboBox.Small}"/>
                     </DockPanel>
                     <DockPanel Margin="0,2">
-                        <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Command="{Binding PoiConfig.OpenPoiCIEFileCommand}" Margin="5,0,0,0"/>
+                        <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Command="{Binding PoiConfig.SelectBackgroundFilePathCommand}" Margin="5,0,0,0"/>
                         <TextBox Text="{Binding PoiConfig.BackgroundFilePath}" IsReadOnly="True"/>
                     </DockPanel>
                     <StackPanel Margin="0" Orientation="Horizontal">
