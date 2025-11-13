@@ -349,6 +349,15 @@
   <data name="Descending" xml:space="preserve">
     <value>降序</value>
   </data>
+  <data name="SortDefault" xml:space="preserve">
+    <value>默认排序</value>
+  </data>
+  <data name="SortByName" xml:space="preserve">
+    <value>按名称排序</value>
+  </data>
+  <data name="SortByCategory" xml:space="preserve">
+    <value>按分类排序</value>
+  </data>
   <data name="ConfirmUpdate" xml:space="preserve">
     <value>是否更新</value>
   </data>
@@ -515,7 +524,7 @@
     <value>Mysql工具</value>
   </data>
   <data name="MsgList" xml:space="preserve">
-    <value> "消息日志窗口</value>
+    <value>消息日志窗口</value>
   </data>
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Socket管理窗口</value>

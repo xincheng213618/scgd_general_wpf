@@ -29,13 +29,21 @@ namespace ProjectARVRPro
                 }
                 else if (!property.PropertyType.IsValueType && property.PropertyType != typeof(string))
                 {
-                    // Recursively process child objects
-                    var childObj = property.GetValue(obj);
-                    if (childObj != null)
+                    try
+                    {                    // Recursively process child objects
+                        var childObj = property.GetValue(obj);
+                        if (childObj != null)
+                        {
+                            CollectRows(childObj, testScreenName, rows);
+                        }
+
+                    }
+                    catch (Exception ex)
                     {
-                        CollectRows(childObj, testScreenName, rows);
+
                     }
                 }
+
             }
         }
 

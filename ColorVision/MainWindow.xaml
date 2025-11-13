@@ -101,7 +101,7 @@
                         <TabItem x:Name="ViewTab" Header="{x:Static properties:Resources.Acquire}" Background="{DynamicResource GlobalBackground}"  Width="150" >
                             <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                                 <StackPanel x:Name="StackPanelSPD" Margin="-2,5,0,0">
-                                </StackPanel>
+                                </StackPanel> 
                             </ScrollViewer>
                         </TabItem>
                     </TabControl>

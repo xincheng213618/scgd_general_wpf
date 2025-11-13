@@ -916,7 +916,7 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;消息日志窗口 的本地化字符串。
+        ///   查找类似 消息日志窗口 的本地化字符串。
         /// </summary>
         public static string MsgList {
             get {
@@ -1177,11 +1177,38 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 按分类排序 的本地化字符串。
+        /// </summary>
+        public static string SortByCategory {
+            get {
+                return ResourceManager.GetString("SortByCategory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 按 {0} 排序 的本地化字符串。
         /// </summary>
         public static string SortByColumn {
             get {
                 return ResourceManager.GetString("SortByColumn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 按名称排序 的本地化字符串。
+        /// </summary>
+        public static string SortByName {
+            get {
+                return ResourceManager.GetString("SortByName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 默认排序 的本地化字符串。
+        /// </summary>
+        public static string SortDefault {
+            get {
+                return ResourceManager.GetString("SortDefault", resourceCulture);
             }
         }
         

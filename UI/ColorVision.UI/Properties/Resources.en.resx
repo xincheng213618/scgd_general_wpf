@@ -481,4 +481,13 @@
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Socket Management Window</value>
   </data>
+  <data name="SortDefault" xml:space="preserve">
+    <value>SortDefault</value>
+  </data>
+  <data name="SortByName" xml:space="preserve">
+    <value>SortByName</value>
+  </data>
+  <data name="SortByCategory" xml:space="preserve">
+    <value>SortByCategory</value>
+  </data>
 </root>
