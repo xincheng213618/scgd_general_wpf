@@ -476,9 +476,18 @@
     <value>Mysql工具</value>
   </data>
   <data name="MsgList" xml:space="preserve">
-    <value>"訊息日誌視窗</value>
+    <value>訊息日誌視窗</value>
   </data>
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Socket管理視窗</value>
+  </data>
+  <data name="SortDefault" xml:space="preserve">
+    <value>SortDefault</value>
+  </data>
+  <data name="SortByName" xml:space="preserve">
+    <value>按名稱排序</value>
+  </data>
+  <data name="SortByCategory" xml:space="preserve">
+    <value>按類別排序</value>
   </data>
 </root>

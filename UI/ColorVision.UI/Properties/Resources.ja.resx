@@ -481,4 +481,13 @@
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>ソケット管理ウィンドウ</value>
   </data>
+  <data name="SortDefault" xml:space="preserve">
+    <value>ソートデフォルト</value>
+  </data>
+  <data name="SortByName" xml:space="preserve">
+    <value>名前で並べ替え</value>
+  </data>
+  <data name="SortByCategory" xml:space="preserve">
+    <value>カテゴリで並べ替え</value>
+  </data>
 </root>
