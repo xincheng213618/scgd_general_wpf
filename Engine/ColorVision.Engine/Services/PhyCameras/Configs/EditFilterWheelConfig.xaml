@@ -27,6 +27,12 @@
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
             <Button Content="{x:Static properties:Resources.Add}" Click="Button_Add_Click" Margin="0,0,5,0" Width="80"/>
             <Button Content="{x:Static properties:Resources.Delete}" Click="Button_Delete_Click" Margin="0,0,5,0" Width="80"/>
+            <TextBlock Text="Positions Per Wheel:" Margin="20,0,5,0" VerticalAlignment="Center"/>
+            <TextBox x:Name="TextBoxPositionsPerWheel" 
+                     Text="{Binding FilterWheelConfig.PositionsPerWheel, RelativeSource={RelativeSource AncestorType=Window}, UpdateSourceTrigger=PropertyChanged}" 
+                     Width="60" 
+                     VerticalAlignment="Center"
+                     TextChanged="TextBoxPositionsPerWheel_TextChanged"/>
         </StackPanel>
 
         <!-- DataGrid -->
@@ -41,7 +47,23 @@
                   BorderThickness="1">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Hole Index" Binding="{Binding HoleIndex}" Width="*" IsReadOnly="False"/>
-                <DataGridTextColumn Header="Hole Name" Binding="{Binding HoleName}" Width="2*" IsReadOnly="False"/>
+                <DataGridTextColumn Header="Position" Binding="{Binding PositionDisplay, Mode=OneWay}" Width="*" IsReadOnly="True"/>
+                <DataGridTemplateColumn Header="Filter Name" Width="2*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding HoleName}" VerticalAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <ComboBox x:Name="FilterComboBox"
+                                      IsEditable="True"
+                                      Text="{Binding HoleName, UpdateSourceTrigger=PropertyChanged}"
+                                      ItemsSource="{Binding FilterOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                      VerticalContentAlignment="Center"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
 
