@@ -2478,4 +2478,10 @@
   <data name="Processing" xml:space="preserve">
     <value>Обработка...</value>
   </data>
+  <data name="Is4Wire" xml:space="preserve">
+    <value>Включить 4 строки</value>
+  </data>
+  <data name="IsFront" xml:space="preserve">
+    <value>Включить переднюю панель</value>
+  </data>
 </root>
