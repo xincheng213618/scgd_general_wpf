@@ -1,12 +1,22 @@
-﻿namespace ColorVision.Engine.Services.Devices.SMU.Configs
+﻿using System.ComponentModel;
+
+namespace ColorVision.Engine.Services.Devices.SMU.Configs
 {
     public class ConfigSMU : DeviceServiceConfig
     {
-        private bool _IsNet;
-        public bool IsNet { get => _IsNet; set { _IsNet = value; OnPropertyChanged(); } }
+        [DisplayName("Is4Wire")]
+        public bool Is4Wire { get => _is4Wire; set { _is4Wire = value; OnPropertyChanged(); } }
+        private bool _is4Wire;
 
-        private bool _IsAutoStart;
+        [DisplayName("IsFront")]
+        public bool IsFront { get => _IsFront; set { _IsFront = value; OnPropertyChanged(); } }
+        private bool _IsFront;
+
+        public bool IsNet { get => _IsNet; set { _IsNet = value; OnPropertyChanged(); } }
+        private bool _IsNet;
+
         public bool IsAutoStart { get => _IsAutoStart; set { _IsAutoStart = value; OnPropertyChanged(); } }
+        private bool _IsAutoStart;
 
 
         public bool IsSourceV { get => _IsSourceV; set { _IsSourceV = value; OnPropertyChanged(); } }
@@ -31,6 +41,9 @@
 
         public double LmtVal { get => _lmtVal; set { _lmtVal = value; OnPropertyChanged(); } }
         private double _lmtVal;
+
+
+
 
         public double? V { get => _V; set { _V = value; OnPropertyChanged(); } }
         private double? _V;

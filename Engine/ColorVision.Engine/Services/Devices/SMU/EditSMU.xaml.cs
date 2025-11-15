@@ -2,6 +2,7 @@
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
+using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -46,6 +47,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
             CameraPhyID.DisplayMemberPath = "Code";
+
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig));
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
