@@ -28,6 +28,21 @@ namespace ColorVision.Core
         private const string LibPath = "opencv_helper.dll";
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalSFR(
+        HImage img,
+        double del,
+        int roi_x, int roi_y, int roi_width, int roi_height,
+        [Out] double[] freq,
+        [Out] double[] sfr,
+        int maxLen,
+        out int outLen,
+        out double mtf10_norm,
+        out double mtf50_norm,
+        out double mtf10_cypix,
+        out double mtf50_cypix);
+
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern void FreeResult(IntPtr str);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]

@@ -24,6 +24,7 @@ COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 COLORVISIONCORE_API int M_CalSFR(
 	HImage img,
 	double del,
+	int roi_x, int roi_y, int roi_width, int roi_height,
 	double* freq,
 	double* sfr,
 	int    maxLen,
@@ -41,7 +42,12 @@ COLORVISIONCORE_API int M_CalSFR(
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty()) return -2;
 
-	auto res = sfr::CalSFR(mat, del);
+	cv::Rect roi(roi_x, roi_y, roi_width, roi_height);
+	bool use_roi = (roi.width > 0 && roi.height > 0 && (roi & cv::Rect(0, 0, mat.cols, mat.rows)) == roi);
+    mat = use_roi ? mat(roi) : mat;
+
+	auto res = sfr::CalSFR(mat, del, /*npol=*/5, /*nbin=*/4);
+
 	int N = static_cast<int>(res.freq.size());
 	if (N == 0) {
 		*outLen = 0;
@@ -49,8 +55,7 @@ COLORVISIONCORE_API int M_CalSFR(
 	}
 
 	if (N > maxLen) {
-		// 调用方给的缓冲区太小
-		*outLen = N;
+		*outLen = N;      // 通知调用方需要的长度
 		return -4;
 	}
 

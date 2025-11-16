@@ -30,7 +30,23 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 Header = "AlgorithmsCall",
             });
 
-            // 反相 - 直接应用，无需参数
+            RelayCommand SFRCommand = new(o =>
+            {
+                if (context.ImageView != null)
+                {
+                    var tool = new SFREditorTool(context.ImageView);
+                    tool.Execute();
+                }
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata()
+            {
+                OwnerGuid = "AlgorithmsCall",
+                GuidId = "SFR",
+                Order = 1,
+                Header = "SFR/MTF 分析",
+                Command = SFRCommand
+            });
+
             RelayCommand ArtculationCommand = new(o =>
             {
                 if (context.ImageView != null)

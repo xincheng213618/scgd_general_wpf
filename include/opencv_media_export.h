@@ -86,10 +86,11 @@ extern "C" COLORVISIONCORE_API int FreeResult(char* result) {
 extern "C" COLORVISIONCORE_API int M_CalSFR(
     HImage img,
     double del,
-    double* freq,   // 输出：频率数组（长度 >= maxLen）
-    double* sfr,    // 输出：SFR数组
-    int    maxLen,  // 输入：freq/sfr 数组的容量
-    int* outLen,  // 输出：实际使用长度
+    int roi_x, int roi_y, int roi_width, int roi_height,
+    double* freq,   // 输出：频率数组
+    double* sfr,    // 输出：SFR 数组
+    int    maxLen,  // 输入：数组容量
+    int* outLen,  // 输出：实际长度
     double* mtf10_norm,
     double* mtf50_norm,
     double* mtf10_cypix,
