@@ -411,5 +411,10 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
         }
+
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
