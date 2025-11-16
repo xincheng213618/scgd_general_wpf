@@ -64,6 +64,10 @@ namespace ColorVision.Engine.Templates.POI
         [JsonIgnore]
         public RelayCommand EditCalibrationTemplateCommand { get; set; }
 
+
+        [JsonIgnore]
+        public RelayCommand SelectBackgroundFilePathCommand { get; set; }
+
         public PoiConfig()
         {
             SetPoiFileCommand = new RelayCommand(a => SetPoiCIEFile());
@@ -71,7 +75,13 @@ namespace ColorVision.Engine.Templates.POI
             FindLuminousAreaEditCommand = new RelayCommand(a => new PropertyEditorWindow(FindLuminousArea) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             FindLuminousAreaCornerEditCommand = new RelayCommand(a => new PropertyEditorWindow(FindLuminousAreaCorner) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             EditCalibrationTemplateCommand = new RelayCommand(a => OpenCalibrationTemplate());
+
+            SelectBackgroundFilePathCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(BackgroundFilePath));
         }
+
+        public string BackgroundFilePath { get => _BackgroundFilePath; set { _BackgroundFilePath = value; OnPropertyChanged(); } }
+        private string _BackgroundFilePath;
+
         [JsonIgnore]
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams => DeviceCamera?.PhyCamera?.CalibrationParams;
         [JsonIgnore]
@@ -114,8 +124,7 @@ namespace ColorVision.Engine.Templates.POI
 
         public FindLuminousAreaCorner FindLuminousAreaCorner { get; set; } = new FindLuminousAreaCorner();
 
-        public string BackgroundFilePath { get => _BackgroundFilePath; set { _BackgroundFilePath = value; OnPropertyChanged(); } }
-        private string _BackgroundFilePath;
+
 
         public string? PoiFixFilePath { get => _PoiFixFilePath; set { _PoiFixFilePath =value; OnPropertyChanged(); } }
         private string? _PoiFixFilePath;

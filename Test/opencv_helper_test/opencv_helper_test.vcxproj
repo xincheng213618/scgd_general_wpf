@@ -143,9 +143,11 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CVFileUtil.cpp" />
     <ClCompile Include="opencv_helper_test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CVCIEFile.hpp" />
     <ClInclude Include="function.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -40,7 +40,7 @@
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="{x:Static properties:Resources.DefaultChannelCount}" Width="120"/>
-                                <hc:ComboBox  x:Name="ComboxCameraChannel"   SelectedValue="{Binding Channel}"   SelectedValuePath="Key"  DisplayMemberPath="Value"/>
+                                <hc:ComboBox  x:Name="ComboxCameraChannel" SelectedValue="{Binding Channel}"   SelectedValuePath="Key"  DisplayMemberPath="Value"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="{x:Static properties:Resources.DefaultImageBits}" Width="120"/>

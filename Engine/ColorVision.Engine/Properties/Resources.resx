@@ -2478,4 +2478,10 @@
   <data name="Processing" xml:space="preserve">
     <value>处理中...</value>
   </data>
+  <data name="Is4Wire" xml:space="preserve">
+    <value>启用4线</value>
+  </data>
+  <data name="IsFront" xml:space="preserve">
+    <value>启用前面板</value>
+  </data>
 </root>

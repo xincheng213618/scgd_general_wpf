@@ -80,7 +80,6 @@
                         <Button x:Name="button3" ToolTip="清空关注点" Click="Button3_Click" HorizontalAlignment="Right">
                             <Image Source="{StaticResource DrawingImageClear}" Height="20"/>
                         </Button>
-                        <Button Content="重渲染" Margin="5,0,0,0" ToolTip="一次"  Click="Button_UpdateVisualLayout_Click"  DockPanel.Dock="Right" Visibility="{Binding PoiConfig.IsLayoutUpdated ,Converter={StaticResource bool2VisibilityConverter1}}" />
                         <Button Content="另存为" ToolTip="另存为需要先保存数据，不保存的数据暂时无法创建新的副本" Click="CreateCopy_Click"/>
                     </StackPanel>
                 </StackPanel>

@@ -20,7 +20,8 @@ namespace System.ComponentModel
                        t == typeof(ulong) ||
                        t == typeof(sbyte) ||
                        t == typeof(double) ||
-                       t == typeof(string);
+                       t == typeof(string)||
+                       t == typeof(System.Windows.Rect)  ;
             });
         }
         public DockPanel GenProperties(PropertyInfo property, object obj)

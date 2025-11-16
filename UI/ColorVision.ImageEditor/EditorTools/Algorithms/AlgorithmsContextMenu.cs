@@ -1,4 +1,5 @@
 using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
@@ -22,6 +23,47 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                 Order = 103, 
                 Header = ColorVision.ImageEditor.Properties.Resources.ImageAlgorithm, 
             });
+            MenuItemMetadatas.Add(new MenuItemMetadata()
+            {
+                GuidId = "AlgorithmsCall",
+                Order = 104,
+                Header = "AlgorithmsCall",
+            });
+
+            RelayCommand SFRCommand = new(o =>
+            {
+                if (context.ImageView != null)
+                {
+                    var tool = new SFREditorTool(context.ImageView);
+                    tool.Execute();
+                }
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata()
+            {
+                OwnerGuid = "AlgorithmsCall",
+                GuidId = "SFR",
+                Order = 1,
+                Header = "SFR/MTF 分析",
+                Command = SFRCommand
+            });
+
+            RelayCommand ArtculationCommand = new(o =>
+            {
+                if (context.ImageView != null)
+                {
+                    var tool = new ArtculationEditorTool(context.ImageView);
+                    tool.Execute();
+                }
+            });
+            MenuItemMetadatas.Add(new MenuItemMetadata()
+            {
+                OwnerGuid = "AlgorithmsCall",
+                GuidId = "Artculation",
+                Order = 1,
+                Header = "Calculate Sharpness (ROI)",
+                Command = ArtculationCommand
+            });
+
 
             // 反相 - 直接应用，无需参数
             RelayCommand invertCommand = new(o =>

@@ -203,28 +203,6 @@ namespace ColorVision.Engine.Templates.POI
 
 
 
-        private void Button_UpdateVisualLayout_Click(object sender, RoutedEventArgs e)
-        {
-            UpdateVisualLayout();
-        }
-        private void UpdateVisualLayout()
-        {
-            foreach (var item in DefaultPoint)
-            {
-                if (item is DVDatumCircle visualDatumCircle)
-                {
-                    visualDatumCircle.Attribute.Radius = 5 / Zoombox1.ContentMatrix.M11;
-                }
-            }
-
-            if (drawingVisualDatum != null && drawingVisualDatum is IDrawingVisualDatum Datum)
-            {
-                Datum.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
-                Datum.Render();
-            }
-        }
-
-
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
@@ -1743,6 +1721,72 @@ namespace ColorVision.Engine.Templates.POI
         private void SetDefault_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void ButtonTransform_Click(object sender, RoutedEventArgs e)
+        {
+            PoiTransformParams transformParams = new PoiTransformParams();
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(transformParams, true)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            propertyEditorWindow.Submited += (s, ev) =>
+            {
+                ApplyPoiTransform(transformParams);
+            };
+
+            propertyEditorWindow.ShowDialog();
+        }
+
+        private void ApplyPoiTransform(PoiTransformParams transformParams)
+        {
+            if (DrawingVisualLists.Count == 0)
+            {
+                MessageBox.Show("没有可变换的POI点", "ColorVision");
+                return;
+            }
+
+            // 应用变换到所有可见的POI点
+            foreach (var visual in DrawingVisualLists)
+            {
+                if (visual is DVCircleText circleText)
+                {
+                    // 变换圆心位置
+                    double newX = (circleText.Attribute.Center.X - transformParams.OffsetX) * transformParams.ScaleX;
+                    double newY = (circleText.Attribute.Center.Y - transformParams.OffsetY) * transformParams.ScaleY;
+                    circleText.Attribute.Center = new Point(newX, newY);
+
+                    // 如果需要缩放尺寸
+                    if (transformParams.ScaleSize)
+                    {
+                        circleText.Attribute.Radius = circleText.Attribute.Radius * Math.Max(transformParams.ScaleX, transformParams.ScaleY);
+                    }
+
+                    circleText.Render();
+                }
+                else if (visual is DVRectangleText rectangleText)
+                {
+                    // 变换矩形位置
+                    double newX = (rectangleText.Attribute.Rect.X - transformParams.OffsetX) * transformParams.ScaleX;
+                    double newY = (rectangleText.Attribute.Rect.Y - transformParams.OffsetY) * transformParams.ScaleY;
+                    double newWidth = rectangleText.Attribute.Rect.Width;
+                    double newHeight = rectangleText.Attribute.Rect.Height;
+
+                    // 如果需要缩放尺寸
+                    if (transformParams.ScaleSize)
+                    {
+                        newWidth = newWidth * transformParams.ScaleX;
+                        newHeight = newHeight * transformParams.ScaleY;
+                    }
+
+                    rectangleText.Attribute.Rect = new System.Windows.Rect(newX, newY, newWidth, newHeight);
+                    rectangleText.Render();
+                }
+            }
+
+            MessageBox.Show($"已成功变换 {DrawingVisualLists.Count} 个POI点", "ColorVision");
         }
     }
 

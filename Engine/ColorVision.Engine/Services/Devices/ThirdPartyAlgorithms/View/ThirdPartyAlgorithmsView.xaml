@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:se="clr-namespace:ColorVision.Engine.Services"
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views"
              xmlns:media="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -96,6 +97,12 @@
                     <ListView.ItemContainerStyle>
                         <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                             <Setter Property="ContextMenu"  Value="{Binding ContextMenu}"/>
+                            <Setter Property="Opacity" Value="1"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFileExists}" Value="False">
+                                    <Setter Property="Opacity" Value="0.7"/>
+                                </DataTrigger>
+                            </Style.Triggers>
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.View >
@@ -106,8 +113,75 @@
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
                                     <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                    <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn  Header="{x:Static properties:Resources.SerialNumber1}" Width="50">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type  se:ViewResultAlg}">
+                                        <TextBlock Text="{Binding Id}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="ResultDesc" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
+                                        <TextBlock Text="{ Binding  ResultDesc}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="{x:Static properties:Resources.BatchNumber}" Width="160">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
+                                        <TextBlock Text="{ Binding  Batch}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="{x:Static properties:Resources.File}" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
+                                        <TextBlock Text="{ Binding   FilePath}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="{x:Static properties:Resources.Template}" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
+                                        <TextBlock Text="{ Binding   POITemplateName}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="img_result" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
+                                        <TextBlock Text="{ Binding  ResultImagFile}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+
+                            <GridViewColumn  Header="{x:Static properties:Resources.CreateTime}" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
+                                        <TextBlock Text="{ Binding  CreateTime}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="{x:Static properties:Resources.Duration}" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
+                                        <TextBlock Text="{ Binding  TotalTime}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="ResultType" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type se:ViewResultAlg}">
+                                        <TextBlock Text="{ Binding  ResultType}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+
+
                         </GridView>
                     </ListView.View>
                 </ListView>

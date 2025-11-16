@@ -2478,4 +2478,10 @@
   <data name="Processing" xml:space="preserve">
     <value>Traitement...</value>
   </data>
+  <data name="Is4Wire" xml:space="preserve">
+    <value>Activer 4 lignes</value>
+  </data>
+  <data name="IsFront" xml:space="preserve">
+    <value>Activer le panneau avant</value>
+  </data>
 </root>

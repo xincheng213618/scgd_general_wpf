@@ -2478,4 +2478,10 @@
   <data name="Processing" xml:space="preserve">
     <value>Processing...</value>
   </data>
+  <data name="Is4Wire" xml:space="preserve">
+    <value>Is4Wire</value>
+  </data>
+  <data name="IsFront" xml:space="preserve">
+    <value>IsFront</value>
+  </data>
 </root>

@@ -78,6 +78,8 @@
     <Import Project="..\..\packages\spdlog.props" />
     <Import Project="..\..\packages\zlib.props" />
     <Import Project="..\..\include\include.props" />
+    <Import Project="..\..\packages\Eigen.props" />
+    <Import Project="..\..\packages\sfr.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -87,6 +89,8 @@
     <Import Project="..\..\packages\spdlog.props" />
     <Import Project="..\..\packages\zlib.props" />
     <Import Project="..\..\include\include.props" />
+    <Import Project="..\..\packages\Eigen.props" />
+    <Import Project="..\..\packages\sfr.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -160,9 +164,10 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;OPENCV_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <BrowseInformation>true</BrowseInformation>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -188,6 +193,9 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\packages\sfr\src\cylinder.cpp" />
+    <ClCompile Include="..\..\packages\sfr\src\general.cpp" />
+    <ClCompile Include="..\..\packages\sfr\src\slanted.cpp" />
     <ClCompile Include="algorithm.cpp" />
     <ClCompile Include="common.cpp" />
     <ClCompile Include="custom_file.cpp" />

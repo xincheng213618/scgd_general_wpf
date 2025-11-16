@@ -2478,4 +2478,10 @@
   <data name="Processing" xml:space="preserve">
     <value>処理...</value>
   </data>
+  <data name="Is4Wire" xml:space="preserve">
+    <value>4行を有効にする</value>
+  </data>
+  <data name="IsFront" xml:space="preserve">
+    <value>フロントパネルを有効にする</value>
+  </data>
 </root>

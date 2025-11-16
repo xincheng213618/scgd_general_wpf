@@ -9,6 +9,10 @@
 #include <codecvt>
 #include <combaseapi.h>
 
+#include <sfr/general.h>
+#include <sfr/slanted.h>
+#include <sfr/cylinder.h>
+
 using json = nlohmann::json;
 
 
@@ -16,6 +20,59 @@ COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 {
 
 }
+
+COLORVISIONCORE_API int M_CalSFR(
+	HImage img,
+	double del,
+	int roi_x, int roi_y, int roi_width, int roi_height,
+	double* freq,
+	double* sfr,
+	int    maxLen,
+	int* outLen,
+	double* mtf10_norm,
+	double* mtf50_norm,
+	double* mtf10_cypix,
+	double* mtf50_cypix)
+{
+	if (!freq || !sfr || !outLen ||
+		!mtf10_norm || !mtf50_norm || !mtf10_cypix || !mtf50_cypix) {
+		return -1;
+	}
+
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty()) return -2;
+
+	cv::Rect roi(roi_x, roi_y, roi_width, roi_height);
+	bool use_roi = (roi.width > 0 && roi.height > 0 && (roi & cv::Rect(0, 0, mat.cols, mat.rows)) == roi);
+    mat = use_roi ? mat(roi) : mat;
+
+	auto res = sfr::CalSFR(mat, del, /*npol=*/5, /*nbin=*/4);
+
+	int N = static_cast<int>(res.freq.size());
+	if (N == 0) {
+		*outLen = 0;
+		return -3;
+	}
+
+	if (N > maxLen) {
+		*outLen = N;      // 通知调用方需要的长度
+		return -4;
+	}
+
+	for (int i = 0; i < N; ++i) {
+		freq[i] = res.freq[i];
+		sfr[i] = res.sfr[i];
+	}
+
+	*outLen = N;
+	*mtf10_norm = res.mtf10_norm;
+	*mtf50_norm = res.mtf50_norm;
+	*mtf10_cypix = res.mtf10_cypix;
+	*mtf50_cypix = res.mtf50_cypix;
+
+	return 0;
+}
+
 
 
 COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, int roi_x, int roi_y, int roi_width, int roi_height)
