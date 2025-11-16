@@ -1,7 +1,7 @@
+using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
-using HandyControl.Controls;
 using log4net;
 using SkiaSharp;
 using System;
@@ -50,6 +50,31 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                         out mtf50Norm,
                         out mtf10CyPix,
                         out mtf50CyPix);
+
+                    if (ret == 0 && outLen > 0)
+                    {
+                        // Copy the data to appropriately sized arrays
+                        double[] freqData = new double[outLen];
+                        double[] sfrData = new double[outLen];
+                        Array.Copy(freq, freqData, outLen);
+                        Array.Copy(sfr, sfrData, outLen);
+
+                        // Show the plot window on UI thread
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            var plotWindow = new SfrSimplePlotWindow();
+                            plotWindow.SetData(freqData, sfrData, mtf10Norm, mtf50Norm, mtf10CyPix, mtf50CyPix, "SFR");
+                            plotWindow.Owner = Application.Current.GetActiveWindow();
+                            plotWindow.Show();
+                        });
+                    }
+                    else
+                    {
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            MessageBox.Show($"SFR 计算失败，返回码: {ret}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                        });
+                    }
 
                 });
             });
@@ -120,25 +145,45 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                 int outLen;
                 double mtf10Norm, mtf50Norm, mtf10CyPix, mtf50CyPix;
 
-
-                Application.Current.Dispatcher.BeginInvoke(() =>
+                if (context.ImageView.HImageCache == null) return;
+                
+                Task.Run(() =>
                 {
-                    if (context.ImageView.HImageCache == null) return;
-                    Task.Run(() =>
+                    int ret = OpenCVMediaHelper.M_CalSFR((HImage)context.ImageView.HImageCache, 1.0,
+                        roiX, roiY, roiW, roiH,
+                        freq,
+                        sfr,
+                        maxLen,
+                        out outLen,
+                        out mtf10Norm,
+                        out mtf50Norm,
+                        out mtf10CyPix,
+                        out mtf50CyPix);
+
+                    if (ret == 0 && outLen > 0)
                     {
-                        int ret = OpenCVMediaHelper.M_CalSFR((HImage)context.ImageView.HImageCache, 1.0,
-                            roiX, roiY, roiW, roiH,
-                            freq,
-                            sfr,
-                            maxLen,
-                            out outLen,
-                            out mtf10Norm,
-                            out mtf50Norm,
-                            out mtf10CyPix,
-                            out mtf50CyPix);
+                        // Copy the data to appropriately sized arrays
+                        double[] freqData = new double[outLen];
+                        double[] sfrData = new double[outLen];
+                        Array.Copy(freq, freqData, outLen);
+                        Array.Copy(sfr, sfrData, outLen);
 
-
-                    });
+                        // Show the plot window on UI thread
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            var plotWindow = new SfrSimplePlotWindow();
+                            plotWindow.SetData(freqData, sfrData, mtf10Norm, mtf50Norm, mtf10CyPix, mtf50CyPix, "SFR");
+                            plotWindow.Owner = Application.Current.GetActiveWindow();
+                            plotWindow.Show();
+                        });
+                    }
+                    else
+                    {
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            MessageBox.Show($"SFR 计算失败，返回码: {ret}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                        });
+                    }
                 });
             };
             menuItems.Add(cropSave);
