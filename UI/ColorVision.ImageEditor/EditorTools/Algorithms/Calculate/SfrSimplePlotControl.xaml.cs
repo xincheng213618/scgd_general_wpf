@@ -46,8 +46,15 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             scatter.LineWidth = 2;
             scatter.MarkerSize = 0;
 
-            plt.Axes.AutoScale();
+            // Set default axis limits: MTF (0-1) and Freq (0-1)
+            plt.Axes.SetLimits(0, 1, 0, 1);
+            
             WpfPlot.Refresh();
+        }
+
+        public (double[] frequencies, double[] sfrValues) GetData()
+        {
+            return (_frequencies, _sfrValues);
         }
 
         public bool TryEvaluateMtfAtFrequency(double freq, out double mtf)

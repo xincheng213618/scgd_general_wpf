@@ -44,6 +44,10 @@
             </StackPanel>
 
             <TextBlock x:Name="TxtResult" Margin="0,8,0,0" TextWrapping="Wrap"/>
+
+            <Separator Margin="0,16,0,8"/>
+
+            <Button Content="导出到 CSV" Width="280" Height="32" Click="BtnExportCsv_Click" FontWeight="Bold"/>
         </StackPanel>
 
         <local:SfrSimplePlotControl x:Name="Plot" Margin="8"/>
