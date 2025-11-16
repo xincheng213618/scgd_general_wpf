@@ -132,9 +132,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\Downloads\main.cpp" />
-    <ClCompile Include="..\..\MTF\sfr\src\cylinder.cpp" />
-    <ClCompile Include="..\..\MTF\sfr\src\general.cpp" />
-    <ClCompile Include="..\..\MTF\sfr\src\slanted.cpp" />
+    <ClCompile Include="..\packages\sfr\src\cylinder.cpp" />
+    <ClCompile Include="..\packages\sfr\src\general.cpp" />
+    <ClCompile Include="..\packages\sfr\src\slanted.cpp" />
     <ClCompile Include="SFR_Calculation.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

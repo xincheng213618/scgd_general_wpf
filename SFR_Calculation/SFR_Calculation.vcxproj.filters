@@ -21,17 +21,17 @@
     <ClCompile Include="SFR_Calculation.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\MTF\sfr\src\general.cpp">
-      <Filter>sfr</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\MTF\sfr\src\slanted.cpp">
-      <Filter>sfr</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\MTF\sfr\src\cylinder.cpp">
-      <Filter>sfr</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\Downloads\main.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\sfr\src\cylinder.cpp">
+      <Filter>sfr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\sfr\src\general.cpp">
+      <Filter>sfr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packages\sfr\src\slanted.cpp">
+      <Filter>sfr</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -22,6 +22,9 @@
     <Filter Include="自定义文件">
       <UniqueIdentifier>{0b7ad77d-7271-4be7-92cf-c0f18b2b3f6d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="算法\SFR">
+      <UniqueIdentifier>{243f40ec-483e-4b6a-9fc9-c5d8e005f3a5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -76,6 +79,15 @@
     </ClCompile>
     <ClCompile Include="custom_file.cpp">
       <Filter>自定义文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\packages\sfr\src\cylinder.cpp">
+      <Filter>算法\SFR</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\packages\sfr\src\general.cpp">
+      <Filter>算法\SFR</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\packages\sfr\src\slanted.cpp">
+      <Filter>算法\SFR</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

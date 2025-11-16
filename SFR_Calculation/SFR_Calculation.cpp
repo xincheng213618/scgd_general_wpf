@@ -23,13 +23,12 @@ void test_slanted() {
         std::cerr << "Failed to load image: " << path << std::endl;
         return;
     }	
-    
+   
     cv::Mat imgs[3];    //对单通道数组进行赋值
 
     cv::split(img, imgs);
-    img = imgs[0];
 
-    cv::rotate(img, img, cv::ROTATE_90_CLOCKWISE);
+    img = sfr::auto_rotate_vertical(img);
 
     // 1. 多项式边缘拟合（例如 5 次，和 sfrmat5 默认一致）
     std::vector<double> loc;
@@ -70,18 +69,22 @@ void test_slanted() {
     auto lsf = sfr::lsf(esf);
     auto mtf = sfr::mtf(lsf);
     double mtf10 = sfr::mtf10(mtf);
+    double mtf50 = sfr::mtf50(mtf);
 
+    int nn = static_cast<int>(esf.size());   // ESF 长度，对应 MATLAB 的 nn
+    double del = 1.0;                        // 像素间距，如果 MATLAB 用的是 1 像素就写 1
+    double del2 = del / nbin;               // 与 MATLAB 中的 del2 对齐
 
     std::ofstream ofs("sfr_result.csv");
     if (!ofs) {
         std::cerr << "Failed to open sfr_result.csv for writing\n";
     }
     else {
-        ofs << "Freq(norm),SFR\n";   // 表头
+        ofs << "Freq(cy/pixel),SFR\n";   // 横轴现在是物理频率
         const int N = static_cast<int>(mtf.size());
         for (int i = 0; i < N; ++i) {
-            // 这里频率用归一化的 0~1（相当于从 DC 到 Nyquist）
-            double f = static_cast<double>(i) / N;
+            // 对应 MATLAB: freq(i+1) = (i)/(del2*nn)
+            double f = static_cast<double>(i) / (del2 * nn);
             ofs << f << "," << mtf[i] << "\n";
         }
         ofs.close();
@@ -89,10 +92,10 @@ void test_slanted() {
     }
 
 
-    std::cout << "Index\tFreq(norm)\tMTF\n";
+    std::cout << "Index\tFreq(cy/pixel)\tMTF\n";
     const int N = static_cast<int>(mtf.size());
     for (int i = 0; i < N; ++i) {
-        double f = static_cast<double>(i) / N;
+        double f = static_cast<double>(i) / (del2 * nn);
         std::cout << i << '\t' << f << '\t' << mtf[i] << '\n';
     }
     std::cout << "=============================\n";

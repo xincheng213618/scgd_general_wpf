@@ -67,7 +67,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                 return menuItems;
             }
 
-
             var cropSave = new MenuItem { Header = "清晰度评估" };
             cropSave.Click += (s, e) =>
             {
@@ -76,7 +75,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                 PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sharpnessConfig)
                 {
                     Title = "清晰度评估参数设置",
-                    Owner = Application.Current.GetActiveWindow()
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
                 propertyEditorWindow.ShowDialog();
 
@@ -97,6 +97,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                     });
                 });
             };
+            menuItems.Add(cropSave);
             return menuItems;
         }
     }
@@ -118,21 +119,34 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
 
         public void Execute()
         {
+            if (_imageView.HImageCache == null) return;
+            int x = 0;
+            int y = 0;
+            int w = (int)Math.Round(_imageView.Width);
+            int h = (int)Math.Round(_imageView.Height);
+
             ArtculationConfig sharpnessConfig  = new ArtculationConfig();
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sharpnessConfig)
             {
                 Title = "清晰度评估参数设置",
-                Owner = Application.Current.GetActiveWindow()
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
             propertyEditorWindow.ShowDialog();
 
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (_imageView.HImageCache == null) return;
                 Task.Run(() =>
                 {
-                    double articulation = OpenCVMediaHelper.M_CalArtculation((HImage)_imageView.HImageCache, sharpnessConfig.FocusAlgorithm,(int)0, (int)0, (int)_imageView.Width, (int)_imageView.Height);
-                    MessageBox.Show($"图像清晰度评估结果: {articulation}", "清晰度评估", MessageBoxButton.OK, MessageBoxImage.Information);
+                    double articulation = OpenCVMediaHelper.M_CalArtculation((HImage)_imageView.HImageCache, sharpnessConfig.FocusAlgorithm,x,y,w,h);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show(
+                            $"图像清晰度评估结果: {articulation}",
+                            "清晰度评估",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    });
                 });
             });
         }
