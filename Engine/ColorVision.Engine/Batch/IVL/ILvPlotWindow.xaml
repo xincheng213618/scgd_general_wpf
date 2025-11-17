@@ -61,7 +61,7 @@
                 </Grid.RowDefinitions>
                 
                 <TextBlock Grid.Row="0" Text="Data Table" FontSize="14" FontWeight="Bold" Margin="0,4,0,4"/>
-                <DataGrid Grid.Row="1" x:Name="DataGridValues" AutoGenerateColumns="False" IsReadOnly="True" 
+                <DataGrid Grid.Row="1" x:Name="DataGridValues" AutoGenerateColumns="False" IsReadOnly="True"  Style="{StaticResource DataGrid.Small}"
                           CanUserAddRows="False" CanUserDeleteRows="False" AlternatingRowBackground="LightGray">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Series" Binding="{Binding SeriesName}" Width="100"/>
