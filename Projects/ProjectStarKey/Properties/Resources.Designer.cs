@@ -88,11 +88,29 @@ namespace ProjectStarKey.Properties {
         }
         
         /// <summary>
+        ///   查找类似 校正状态 的本地化字符串。
+        /// </summary>
+        public static string CalibrationStatus {
+            get {
+                return ResourceManager.GetString("CalibrationStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 获取图像 的本地化字符串。
         /// </summary>
         public static string CaptureImage {
             get {
                 return ResourceManager.GetString("CaptureImage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前型号 的本地化字符串。
+        /// </summary>
+        public static string CurrentModel {
+            get {
+                return ResourceManager.GetString("CurrentModel", resourceCulture);
             }
         }
         
@@ -142,6 +160,15 @@ namespace ProjectStarKey.Properties {
         }
         
         /// <summary>
+        ///   查找类似 测量相机状态 的本地化字符串。
+        /// </summary>
+        public static string MeasurementCameraStatus {
+            get {
+                return ResourceManager.GetString("MeasurementCameraStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 中值滤波 的本地化字符串。
         /// </summary>
         public static string MedianFilter {
@@ -187,11 +214,47 @@ namespace ProjectStarKey.Properties {
         }
         
         /// <summary>
+        ///   查找类似 未校正 的本地化字符串。
+        /// </summary>
+        public static string NotCalibrated {
+            get {
+                return ResourceManager.GetString("NotCalibrated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未打开 的本地化字符串。
+        /// </summary>
+        public static string NotOpened {
+            get {
+                return ResourceManager.GetString("NotOpened", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 观察相机状态 的本地化字符串。
+        /// </summary>
+        public static string ObservationCameraStatus {
+            get {
+                return ResourceManager.GetString("ObservationCameraStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 打开观察相机 的本地化字符串。
         /// </summary>
         public static string OpenObservationCamera {
             get {
                 return ResourceManager.GetString("OpenObservationCamera", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 状态信息 的本地化字符串。
+        /// </summary>
+        public static string StatusInformation {
+            get {
+                return ResourceManager.GetString("StatusInformation", resourceCulture);
             }
         }
     }

@@ -162,4 +162,25 @@
   <data name="FilterType" xml:space="preserve">
     <value>濾波類型</value>
   </data>
+  <data name="StatusInformation" xml:space="preserve">
+    <value>狀態資訊</value>
+  </data>
+  <data name="CurrentModel" xml:space="preserve">
+    <value>目前型號</value>
+  </data>
+  <data name="ObservationCameraStatus" xml:space="preserve">
+    <value>觀察相機狀態</value>
+  </data>
+  <data name="MeasurementCameraStatus" xml:space="preserve">
+    <value>測量相機狀態</value>
+  </data>
+  <data name="CalibrationStatus" xml:space="preserve">
+    <value>校正狀態</value>
+  </data>
+  <data name="NotOpened" xml:space="preserve">
+    <value>未開啟</value>
+  </data>
+  <data name="NotCalibrated" xml:space="preserve">
+    <value>未校正</value>
+  </data>
 </root>
