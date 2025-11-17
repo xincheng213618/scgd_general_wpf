@@ -142,4 +142,25 @@
   <data name="FilterType" xml:space="preserve">
     <value>滤波类型</value>
   </data>
+  <data name="StatusInformation" xml:space="preserve">
+    <value>状态信息</value>
+  </data>
+  <data name="CurrentModel" xml:space="preserve">
+    <value>当前型号</value>
+  </data>
+  <data name="ObservationCameraStatus" xml:space="preserve">
+    <value>观察相机状态</value>
+  </data>
+  <data name="MeasurementCameraStatus" xml:space="preserve">
+    <value>测量相机状态</value>
+  </data>
+  <data name="CalibrationStatus" xml:space="preserve">
+    <value>校正状态</value>
+  </data>
+  <data name="NotOpened" xml:space="preserve">
+    <value>未打开</value>
+  </data>
+  <data name="NotCalibrated" xml:space="preserve">
+    <value>未校正</value>
+  </data>
 </root>

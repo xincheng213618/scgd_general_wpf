@@ -162,4 +162,25 @@
   <data name="FilterType" xml:space="preserve">
     <value>フィルタータイプ</value>
   </data>
+  <data name="StatusInformation" xml:space="preserve">
+    <value>ステータス情報</value>
+  </data>
+  <data name="CurrentModel" xml:space="preserve">
+    <value>現在のモデル</value>
+  </data>
+  <data name="ObservationCameraStatus" xml:space="preserve">
+    <value>カメラの状態を観察する</value>
+  </data>
+  <data name="MeasurementCameraStatus" xml:space="preserve">
+    <value>カメラの状態を測定する</value>
+  </data>
+  <data name="CalibrationStatus" xml:space="preserve">
+    <value>修正状況</value>
+  </data>
+  <data name="NotOpened" xml:space="preserve">
+    <value>未開封</value>
+  </data>
+  <data name="NotCalibrated" xml:space="preserve">
+    <value>修正されていない</value>
+  </data>
 </root>

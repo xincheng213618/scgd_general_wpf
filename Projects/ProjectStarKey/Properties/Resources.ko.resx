@@ -162,4 +162,25 @@
   <data name="FilterType" xml:space="preserve">
     <value>필터 유형</value>
   </data>
+  <data name="StatusInformation" xml:space="preserve">
+    <value>상태 정보</value>
+  </data>
+  <data name="CurrentModel" xml:space="preserve">
+    <value>현재 모델</value>
+  </data>
+  <data name="ObservationCameraStatus" xml:space="preserve">
+    <value>카메라 상태 관찰</value>
+  </data>
+  <data name="MeasurementCameraStatus" xml:space="preserve">
+    <value>카메라 상태 측정</value>
+  </data>
+  <data name="CalibrationStatus" xml:space="preserve">
+    <value>수정 상태</value>
+  </data>
+  <data name="NotOpened" xml:space="preserve">
+    <value>열리지 않음</value>
+  </data>
+  <data name="NotCalibrated" xml:space="preserve">
+    <value>교정되지 않은</value>
+  </data>
 </root>

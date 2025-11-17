@@ -162,4 +162,25 @@
   <data name="FilterType" xml:space="preserve">
     <value>Type de filtre</value>
   </data>
+  <data name="StatusInformation" xml:space="preserve">
+    <value>Informations sur l'état</value>
+  </data>
+  <data name="CurrentModel" xml:space="preserve">
+    <value>Modèle actuel</value>
+  </data>
+  <data name="ObservationCameraStatus" xml:space="preserve">
+    <value>Observer l'état de la caméra</value>
+  </data>
+  <data name="MeasurementCameraStatus" xml:space="preserve">
+    <value>Mesurer l'état de la caméra</value>
+  </data>
+  <data name="CalibrationStatus" xml:space="preserve">
+    <value>État de correction</value>
+  </data>
+  <data name="NotOpened" xml:space="preserve">
+    <value>Non ouvert</value>
+  </data>
+  <data name="NotCalibrated" xml:space="preserve">
+    <value>non corrigé</value>
+  </data>
 </root>

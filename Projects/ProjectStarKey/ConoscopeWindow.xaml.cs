@@ -171,20 +171,28 @@ namespace ProjectStarKey
             switch (model)
             {
                 case ConoscopeModelType.VA60:
-                    // VA60: 显示观察相机控件
+                    // VA60: 显示观察相机控件和状态栏项
                     ObservationCameraPanel.Visibility = Visibility.Visible;
-                    if (tbObservationCameraStatus != null)
+                    if (ObservationCameraStatusItem != null)
                     {
-                        tbObservationCameraStatus.Visibility = Visibility.Visible;
+                        ObservationCameraStatusItem.Visibility = Visibility.Visible;
+                    }
+                    if (ObservationCameraSeparator != null)
+                    {
+                        ObservationCameraSeparator.Visibility = Visibility.Visible;
                     }
                     break;
                     
                 case ConoscopeModelType.VA80:
-                    // VA80: 隐藏观察相机控件
+                    // VA80: 隐藏观察相机控件和状态栏项
                     ObservationCameraPanel.Visibility = Visibility.Collapsed;
-                    if (tbObservationCameraStatus != null)
+                    if (ObservationCameraStatusItem != null)
                     {
-                        tbObservationCameraStatus.Visibility = Visibility.Collapsed;
+                        ObservationCameraStatusItem.Visibility = Visibility.Collapsed;
+                    }
+                    if (ObservationCameraSeparator != null)
+                    {
+                        ObservationCameraSeparator.Visibility = Visibility.Collapsed;
                     }
                     break;
             }
