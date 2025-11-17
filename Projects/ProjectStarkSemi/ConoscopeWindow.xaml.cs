@@ -21,7 +21,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ProjectStarKey
+namespace ProjectStarkSemi
 {
     /// <summary>
     /// 硬件型号枚举

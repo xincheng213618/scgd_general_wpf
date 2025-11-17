@@ -4,7 +4,7 @@ using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace ProjectStarKey.Languages
+namespace ProjectStarkSemi.Languages
 {
     //这里隐藏掉，因为我认为频繁切换语言是不需要的
     //后面这个合并到插件中

@@ -8,13 +8,13 @@ using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
 using ColorVision.UI.Plugins;
-using ProjectStarKey;
+using ProjectStarkSemi;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ProjectStarKey
+namespace ProjectStarkSemi
 {
     /// <summary>
     /// Interaction logic for App.xaml

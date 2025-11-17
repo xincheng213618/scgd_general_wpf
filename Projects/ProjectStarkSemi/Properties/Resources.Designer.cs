@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ProjectStarKey.Properties {
+namespace ProjectStarkSemi.Properties {
     using System;
     
     

@@ -18,7 +18,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ProjectStarKey
+namespace ProjectStarkSemi
 {
     public class MenuMVSVideo : MenuItemBase
     {
