@@ -26,27 +26,6 @@
                             <TextBlock Text="Gamma"  MinWidth="60"  />
                             <TextBox  Text="{Binding Gamma}" Style="{StaticResource TextBox.Small}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
                         </DockPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="RECT"  MinWidth="60" />
-                            <UniformGrid Columns="2" Rows="2">
-                                <DockPanel Margin="0,0,5,5">
-                                    <TextBlock Text="X"  MinWidth="50"  />
-                                    <TextBox  Text="{Binding X}" Style="{StaticResource TextBox.Small}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,0,0,5">
-                                    <TextBlock Text="Y"  MinWidth="50"  />
-                                    <TextBox  Text="{Binding Y}" Style="{StaticResource TextBox.Small}"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,0,5,5">
-                                    <TextBlock Text="Width"  MinWidth="50"  />
-                                    <TextBox  Text="{Binding Width}" Style="{StaticResource TextBox.Small}"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,0,0,5">
-                                    <TextBlock Text="Height"  MinWidth="50"  />
-                                    <TextBox  Text="{Binding Height}" Style="{StaticResource TextBox.Small}"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                </DockPanel>
-                            </UniformGrid>
-                        </DockPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>
