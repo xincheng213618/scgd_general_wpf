@@ -23,6 +23,8 @@ ARVR Pro 专业版测试系统 - 针对AR/VR显示设备的全面光学性能测
 - **Recipe管理** - 完整的测试配方管理系统
 - **数据分析** - 客观测试结果分析和修正功能
 - **流程管理** - 基于大流程模板的测试执行
+  - **ProcessMeta管理** - 支持多流程配置和选择性执行
+  - **IsEnabled属性** - 可选择性启用/禁用特定测试步骤
 - **结果管理** - 测试结果的存储、查询和展示
 
 ## 与主程序的依赖关系
@@ -66,6 +68,9 @@ dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj
 - `ARVRRecipeConfig.cs` - Recipe配置管理
 - `ViewResultManager.cs` - 结果视图管理
 - `ProcessManagerWindow.xaml/.cs` - 流程管理窗口
+  - 支持多流程配置管理
+  - IsEnabled属性控制步骤执行
+  - 可选择性跳过禁用的测试步骤
 - `EditRecipeWindow.xaml/.cs` - Recipe编辑窗口
 - `EditFixWindow.xaml/.cs` - 修正参数编辑窗口
 - `Services/` - 服务模块目录
@@ -91,6 +96,14 @@ dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj
 ### 大流程支持
 - 基于LargeFlow模板的复杂测试流程
 - 支持模板编辑和流程可视化配置
+- ProcessMeta选择性执行：通过IsEnabled属性控制步骤是否执行，系统自动跳过禁用步骤
+
+### ProcessMeta管理
+- **流程配置**：支持创建、更新、删除和排序多个测试流程
+- **选择性执行**：每个ProcessMeta都有IsEnabled属性（默认启用）
+- **智能跳过**：执行时自动跳过已禁用的步骤
+- **完成检测**：仅基于启用的步骤判断测试是否完成
+- **示例**：如果配置了8个步骤(0-7)，仅启用第0和第7步，执行流程将是：0→7（跳过1-6）
 
 ## 相关文档链接
 
