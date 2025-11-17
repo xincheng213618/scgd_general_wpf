@@ -120,46 +120,67 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>_Language</value>
   </data>
-  <data name="Calibration" xml:space="preserve">
-    <value>Calibration</value>
-  </data>
-  <data name="CaptureImage" xml:space="preserve">
-    <value>CaptureImage</value>
-  </data>
-  <data name="ImageFilter" xml:space="preserve">
-    <value>ImageFilter</value>
-  </data>
   <data name="Model" xml:space="preserve">
     <value>Model</value>
   </data>
   <data name="OpenObservationCamera" xml:space="preserve">
-    <value>Model</value>
+    <value>Open Observation Camera</value>
   </data>
-  <data name="NoFilter" xml:space="preserve">
-    <value>NoFilter</value>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>Capture Image</value>
   </data>
-  <data name="MovingAverage" xml:space="preserve">
-    <value>MovingAverage</value>
+  <data name="Calibration" xml:space="preserve">
+    <value>Calibration</value>
   </data>
-  <data name="LowPassFilter" xml:space="preserve">
-    <value>MovingAverage</value>
-  </data>
-  <data name="KernelSize" xml:space="preserve">
-    <value>KernelSize</value>
-  </data>
-  <data name="GaussianFilter" xml:space="preserve">
-    <value>GaussianFilter</value>
-  </data>
-  <data name="BilateralFilter" xml:space="preserve">
-    <value>BilateralFilter</value>
-  </data>
-  <data name="ApplyFilter" xml:space="preserve">
-    <value>ApplyFilter</value>
-  </data>
-  <data name="MedianFilter" xml:space="preserve">
-    <value>MedianFilter</value>
+  <data name="ImageFilter" xml:space="preserve">
+    <value>Image Filter</value>
   </data>
   <data name="FilterType" xml:space="preserve">
-    <value>FilterType</value>
+    <value>Filter Type</value>
+  </data>
+  <data name="NoFilter" xml:space="preserve">
+    <value>No Filter</value>
+  </data>
+  <data name="LowPassFilter" xml:space="preserve">
+    <value>Low Pass Filter</value>
+  </data>
+  <data name="MovingAverage" xml:space="preserve">
+    <value>Moving Average</value>
+  </data>
+  <data name="GaussianFilter" xml:space="preserve">
+    <value>Gaussian Filter</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>Median Filter</value>
+  </data>
+  <data name="BilateralFilter" xml:space="preserve">
+    <value>Bilateral Filter</value>
+  </data>
+  <data name="KernelSize" xml:space="preserve">
+    <value>Kernel Size</value>
+  </data>
+  <data name="ApplyFilter" xml:space="preserve">
+    <value>Apply Filter</value>
+  </data>
+  <data name="StatusInformation" xml:space="preserve">
+    <value>Status Information</value>
+  </data>
+  <data name="CurrentModel" xml:space="preserve">
+    <value>Current Model</value>
+  </data>
+  <data name="ObservationCameraStatus" xml:space="preserve">
+    <value>Observation Camera Status</value>
+  </data>
+  <data name="MeasurementCameraStatus" xml:space="preserve">
+    <value>Measurement Camera Status</value>
+  </data>
+  <data name="CalibrationStatus" xml:space="preserve">
+    <value>Calibration Status</value>
+  </data>
+  <data name="NotOpened" xml:space="preserve">
+    <value>Not Opened</value>
+  </data>
+  <data name="NotCalibrated" xml:space="preserve">
+    <value>Not Calibrated</value>
   </data>
 </root>
