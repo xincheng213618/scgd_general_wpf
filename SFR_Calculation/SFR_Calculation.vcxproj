@@ -131,7 +131,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\Downloads\main.cpp" />
     <ClCompile Include="..\packages\sfr\src\cylinder.cpp" />
     <ClCompile Include="..\packages\sfr\src\general.cpp" />
     <ClCompile Include="..\packages\sfr\src\slanted.cpp" />
