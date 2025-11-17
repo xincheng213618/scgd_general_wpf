@@ -17,8 +17,13 @@
             
             <Separator Margin="0,8,0,12"/>
             
+            <TextBlock Text="Plot Mode" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+            <CheckBox x:Name="ChkSortData" Content="Sort Data (Monotonic)" Margin="0,0,0,8" Checked="SortMode_Changed" Unchecked="SortMode_Changed" ToolTip="Uncheck to preserve original measurement sequence for round-trip (hysteresis) visualization"/>
+            
+            <Separator Margin="0,8,0,12"/>
+            
             <TextBlock Text="POI Series" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
-            <ListBox x:Name="PoiSeriesList" Height="260" SelectionMode="Multiple" SelectionChanged="PoiSeriesList_SelectionChanged"/>
+            <ListBox x:Name="PoiSeriesList" Height="200" SelectionMode="Multiple" SelectionChanged="PoiSeriesList_SelectionChanged"/>
             <CheckBox x:Name="ChkShowAll" Content="Show All Series" Margin="0,12,0,8" Checked="ChkShowAll_Checked" Unchecked="ChkShowAll_Unchecked"/>
             
             <Separator Margin="0,12,0,12"/>

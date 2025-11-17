@@ -31,6 +31,7 @@ namespace ColorVision.Engine.Batch.IVL
         private Dictionary<string, Scatter> _scatterPlots;
         private List<string> _seriesNames;
         private bool _isILvMode = true; // true for I-Lv, false for V-Lv
+        private bool _sortData = false; // true to sort data points, false to preserve original sequence (for round-trip)
         private Crosshair _crosshair;
 
         ScottPlot.Plottables.Marker MyHighlightMarker;
@@ -177,11 +178,8 @@ namespace ColorVision.Engine.Batch.IVL
                 _seriesNames.Remove(key);
             }
 
-            // Sort data points within each series by current for proper line plotting
-            foreach (var series in _groupedData.Values)
-            {
-                series.Sort((a, b) => a.Current.CompareTo(b.Current));
-            }
+            // Note: Data sorting is now controlled by _sortData flag and applied on-demand
+            // This allows preserving original measurement sequence for round-trip (hysteresis) visualization
 
             // Populate list box with series names
             foreach (var name in _seriesNames)
@@ -272,11 +270,32 @@ namespace ColorVision.Engine.Batch.IVL
 
                 var dataPoints = _groupedData[seriesName];
                 
+                // Apply sorting if enabled (for monotonic curves)
+                // Otherwise preserve original sequence (for round-trip/hysteresis visualization)
+                List<ILvDataPoint> sortedData;
+                if (_sortData)
+                {
+                    sortedData = new List<ILvDataPoint>(dataPoints);
+                    if (_isILvMode)
+                    {
+                        sortedData.Sort((a, b) => a.Current.CompareTo(b.Current));
+                    }
+                    else
+                    {
+                        sortedData.Sort((a, b) => a.Voltage.CompareTo(b.Voltage));
+                    }
+                }
+                else
+                {
+                    // Preserve original measurement sequence
+                    sortedData = dataPoints;
+                }
+                
                 // Select X-axis data based on display mode (Current for I-Lv, Voltage for V-Lv)
                 double[] x = _isILvMode 
-                    ? dataPoints.Select(p => p.Current).ToArray()
-                    : dataPoints.Select(p => p.Voltage).ToArray();
-                double[] y = dataPoints.Select(p => p.Luminance).ToArray();
+                    ? sortedData.Select(p => p.Current).ToArray()
+                    : sortedData.Select(p => p.Voltage).ToArray();
+                double[] y = sortedData.Select(p => p.Luminance).ToArray();
 
                 // Create scatter plot with line and markers
                 var scatter = new Scatter(new ScatterSourceDoubleArray(x, y))
@@ -392,21 +411,21 @@ namespace ColorVision.Engine.Batch.IVL
             // Update the mode flag
             _isILvMode = RbILv.IsChecked == true;
             
-            // Re-sort data based on the new X-axis
-            foreach (var series in _groupedData.Values)
-            {
-                if (_isILvMode)
-                {
-                    series.Sort((a, b) => a.Current.CompareTo(b.Current));
-                }
-                else
-                {
-                    series.Sort((a, b) => a.Voltage.CompareTo(b.Voltage));
-                }
-            }
-            
             // Re-initialize the plot with new mode
             InitializePlot();
+        }
+
+        private void SortMode_Changed(object sender, RoutedEventArgs e)
+        {
+            if (ChkSortData == null) return;
+            if (_groupedData == null) return;
+            
+            // Update the sort flag
+            _sortData = ChkSortData.IsChecked == true;
+            
+            // Re-plot with new sort mode
+            PlotAllSeries();
+            wpfPlot.Refresh();
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
