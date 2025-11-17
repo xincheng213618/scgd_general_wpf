@@ -305,7 +305,7 @@ namespace ColorVision.Engine.Batch.IVL
                     MarkerSize = 6,
                     MarkerShape = MarkerShape.FilledCircle,
                     LegendText = seriesName,
-                    Smooth =true
+                    Smooth = false  // Disable smoothing to avoid strange curvature with non-monotonic data
                 };
 
                 _scatterPlots[seriesName] = scatter;
