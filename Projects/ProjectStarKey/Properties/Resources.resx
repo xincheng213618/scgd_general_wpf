@@ -100,4 +100,46 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>语言(_Language)</value>
   </data>
+  <data name="Model" xml:space="preserve">
+    <value>型号</value>
+  </data>
+  <data name="OpenObservationCamera" xml:space="preserve">
+    <value>打开观察相机</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>获取图像</value>
+  </data>
+  <data name="Calibration" xml:space="preserve">
+    <value>校正</value>
+  </data>
+  <data name="ImageFilter" xml:space="preserve">
+    <value>图像滤波</value>
+  </data>
+  <data name="NoFilter" xml:space="preserve">
+    <value>无滤波</value>
+  </data>
+  <data name="LowPassFilter" xml:space="preserve">
+    <value>低通滤波</value>
+  </data>
+  <data name="MovingAverage" xml:space="preserve">
+    <value>移动平均</value>
+  </data>
+  <data name="GaussianFilter" xml:space="preserve">
+    <value>高斯滤波</value>
+  </data>
+  <data name="BilateralFilter" xml:space="preserve">
+    <value>双边滤波</value>
+  </data>
+  <data name="KernelSize" xml:space="preserve">
+    <value>核大小</value>
+  </data>
+  <data name="ApplyFilter" xml:space="preserve">
+    <value>应用滤波</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>中值滤波</value>
+  </data>
+  <data name="FilterType" xml:space="preserve">
+    <value>滤波类型</value>
+  </data>
 </root>

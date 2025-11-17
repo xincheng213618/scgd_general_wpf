@@ -1,10 +1,17 @@
-﻿using ProjectStarKey;
+﻿using ColorVision.Database;
+using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
+using ColorVision.UI.Plugins;
+using ProjectStarKey;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ProjectStarKey
@@ -29,10 +36,21 @@ namespace ProjectStarKey
         {
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigHandler.GetInstance().GetRequiredService<Authorization>();
-
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
+
+            PluginLoader.LoadPlugins("Plugins");
+
+            MySqlControl.GetInstance().Connect();
+            MQTTControl.GetInstance().MQTTConnectChanged += async (s, e) =>
+            {
+                await MqttRCService.GetInstance().Connect();
+            };
+            Task.Run(() => MQTTControl.GetInstance().Connect());
+            ServiceManager.GetInstance().GenDeviceDisplayControl();
+            TemplateControl.GetInstance();
+
             ConoscopeWindow conoscopeWindow = new ConoscopeWindow();
             conoscopeWindow.Show();
 

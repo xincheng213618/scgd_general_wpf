@@ -61,11 +61,137 @@ namespace ProjectStarKey.Properties {
         }
         
         /// <summary>
+        ///   查找类似 应用滤波 的本地化字符串。
+        /// </summary>
+        public static string ApplyFilter {
+            get {
+                return ResourceManager.GetString("ApplyFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 双边滤波 的本地化字符串。
+        /// </summary>
+        public static string BilateralFilter {
+            get {
+                return ResourceManager.GetString("BilateralFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 校正 的本地化字符串。
+        /// </summary>
+        public static string Calibration {
+            get {
+                return ResourceManager.GetString("Calibration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 获取图像 的本地化字符串。
+        /// </summary>
+        public static string CaptureImage {
+            get {
+                return ResourceManager.GetString("CaptureImage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 滤波类型 的本地化字符串。
+        /// </summary>
+        public static string FilterType {
+            get {
+                return ResourceManager.GetString("FilterType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 高斯滤波 的本地化字符串。
+        /// </summary>
+        public static string GaussianFilter {
+            get {
+                return ResourceManager.GetString("GaussianFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图像滤波 的本地化字符串。
+        /// </summary>
+        public static string ImageFilter {
+            get {
+                return ResourceManager.GetString("ImageFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 核大小 的本地化字符串。
+        /// </summary>
+        public static string KernelSize {
+            get {
+                return ResourceManager.GetString("KernelSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 低通滤波 的本地化字符串。
+        /// </summary>
+        public static string LowPassFilter {
+            get {
+                return ResourceManager.GetString("LowPassFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 中值滤波 的本地化字符串。
+        /// </summary>
+        public static string MedianFilter {
+            get {
+                return ResourceManager.GetString("MedianFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 语言(_Language) 的本地化字符串。
         /// </summary>
         public static string MenuLanguage {
             get {
                 return ResourceManager.GetString("MenuLanguage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 型号 的本地化字符串。
+        /// </summary>
+        public static string Model {
+            get {
+                return ResourceManager.GetString("Model", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 移动平均 的本地化字符串。
+        /// </summary>
+        public static string MovingAverage {
+            get {
+                return ResourceManager.GetString("MovingAverage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 无滤波 的本地化字符串。
+        /// </summary>
+        public static string NoFilter {
+            get {
+                return ResourceManager.GetString("NoFilter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开观察相机 的本地化字符串。
+        /// </summary>
+        public static string OpenObservationCamera {
+            get {
+                return ResourceManager.GetString("OpenObservationCamera", resourceCulture);
             }
         }
     }

@@ -120,4 +120,46 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>言語(_L)</value>
   </data>
+  <data name="Model" xml:space="preserve">
+    <value>モデル</value>
+  </data>
+  <data name="OpenObservationCamera" xml:space="preserve">
+    <value>観察カメラを開く</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>画像を取得</value>
+  </data>
+  <data name="Calibration" xml:space="preserve">
+    <value>修正</value>
+  </data>
+  <data name="ImageFilter" xml:space="preserve">
+    <value>画像フィルタリング</value>
+  </data>
+  <data name="NoFilter" xml:space="preserve">
+    <value>フィルタリングなし</value>
+  </data>
+  <data name="LowPassFilter" xml:space="preserve">
+    <value>ローパスフィルタ</value>
+  </data>
+  <data name="MovingAverage" xml:space="preserve">
+    <value>移動平均</value>
+  </data>
+  <data name="GaussianFilter" xml:space="preserve">
+    <value>ガウスフィルタ</value>
+  </data>
+  <data name="BilateralFilter" xml:space="preserve">
+    <value>双方向フィルタリング</value>
+  </data>
+  <data name="KernelSize" xml:space="preserve">
+    <value>核の大きさ</value>
+  </data>
+  <data name="ApplyFilter" xml:space="preserve">
+    <value>アプリケーションフィルタリング</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>中央値フィルタリング</value>
+  </data>
+  <data name="FilterType" xml:space="preserve">
+    <value>フィルタータイプ</value>
+  </data>
 </root>

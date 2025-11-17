@@ -5,8 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectStarKey"
+        xmlns:properties="clr-namespace:ProjectStarKey.Properties"
         mc:Ignorable="d"
-        Title="视角测量 - Conoscope" Height="720" Width="1280" Initialized="Window_Initialized">
+        Title="Conoscope" Height="720" Width="1280" Initialized="Window_Initialized">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -36,10 +37,10 @@
                 </Grid.RowDefinitions>
 
                 <!-- Model Selection Section -->
-                <GroupBox Grid.Row="0" Header="硬件型号选择" Margin="0,0,0,10">
+                <GroupBox Grid.Row="0"  Margin="0,0,0,10">
                     <StackPanel Margin="10">
                         <DockPanel Margin="0,0,0,10">
-                            <TextBlock Text="型号:" VerticalAlignment="Center" Width="80"/>
+                            <TextBlock Text="{x:Static properties:Resources.Model}" VerticalAlignment="Center" Width="80"/>
                             <ComboBox x:Name="cbModelType" 
                                       SelectionChanged="cbModelType_SelectionChanged"
                                       SelectedIndex="0">
@@ -47,33 +48,27 @@
                                 <ComboBoxItem Content="VA80" Tag="VA80"/>
                             </ComboBox>
                         </DockPanel>
-                        
-                        <TextBlock x:Name="tbModelDescription" 
-                                   TextWrapping="Wrap" 
-                                   Foreground="Gray"
-                                   Text="VA60: 一台观察相机（视频模式）+ 一台测量相机（需要校正）"/>
+                       
                     </StackPanel>
                 </GroupBox>
 
                 <!-- Observation Camera Section (VA60 only) -->
-                <GroupBox x:Name="ObservationCameraPanel" Grid.Row="1" Header="观察相机 (视频模式)" Margin="0,0,0,10">
+                <GroupBox x:Name="ObservationCameraPanel" Grid.Row="1"  Margin="0,0,0,10">
                     <StackPanel Margin="10">
                         <Button x:Name="btnOpenObservationCamera" 
-                                Content="打开观察相机"
+                                Content="{x:Static properties:Resources.OpenObservationCamera}"
                                 Click="btnOpenObservationCamera_Click"
                                 Height="30"/>
                     </StackPanel>
                 </GroupBox>
 
                 <!-- Measurement Camera Section -->
-                <GroupBox Grid.Row="2" Header="测量相机控制" Margin="0,0,0,10">
+                <GroupBox Grid.Row="2" Margin="0,0,0,10">
                     <StackPanel Margin="10">
                         <DockPanel Margin="0,0,0,10">
-                            <TextBlock Text="选择相机:" VerticalAlignment="Center" Width="80"/>
-                            <ComboBox x:Name="cbMeasurementCamera" 
-                                      SelectionChanged="cbMeasurementCamera_SelectionChanged"/>
+                            <ComboBox x:Name="cbMeasurementCamera"  SelectionChanged="cbMeasurementCamera_SelectionChanged"/>
                         </DockPanel>
-                        <DockPanel>
+                        <DockPanel Margin="0,0,0,10">
                             <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
                                 <TextBlock.RenderTransform>
@@ -96,38 +91,38 @@
                         </DockPanel>
 
                         <Button x:Name="btnOpenMeasurementCamera" 
-                                Content="获取图像"
+                                Content="{x:Static properties:Resources.CaptureImage}"
                                 Click="btnOpenMeasurementCamera_Click"
                                 Margin="0,0,0,5"
                                 Height="30"/>
                         
                         <Button x:Name="btnCalibration" 
-                                Content="测量相机校正"
+                                Content="{x:Static properties:Resources.Calibration}"
                                 Click="btnCalibration_Click"
                                 Height="30"/>
                     </StackPanel>
                 </GroupBox>
 
                 <!-- Image Filter Section -->
-                <GroupBox Grid.Row="3" Header="图像滤波" Margin="0,0,0,10">
+                <GroupBox Grid.Row="3" Header="{x:Static properties:Resources.ImageFilter}" Margin="0,0,0,10">
                     <StackPanel Margin="10">
                         <DockPanel Margin="0,0,0,10">
-                            <TextBlock Text="滤波类型:" VerticalAlignment="Center" Width="80"/>
+                            <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Width="80"/>
                             <ComboBox x:Name="cbFilterType" 
                                       SelectionChanged="cbFilterType_SelectionChanged"
                                       SelectedIndex="0">
-                                <ComboBoxItem Content="无滤波"/>
-                                <ComboBoxItem Content="低通滤波"/>
-                                <ComboBoxItem Content="移动平均"/>
-                                <ComboBoxItem Content="高斯滤波"/>
-                                <ComboBoxItem Content="中值滤波"/>
-                                <ComboBoxItem Content="双边滤波"/>
+                                <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}"/>
+                                <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}"/>
+                                <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}"/>
+                                <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}"/>
+                                <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}"/>
+                                <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}"/>
                             </ComboBox>
                         </DockPanel>
                         
                         <!-- Kernel Size Parameter -->
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="核大小:" VerticalAlignment="Center" Width="80"/>
+                            <TextBlock Text="{x:Static properties:Resources.KernelSize}" VerticalAlignment="Center" Width="80"/>
                             <TextBlock Text="{Binding ElementName=sliderKernelSize, Path=Value}" 
                                        Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
                             <Slider x:Name="sliderKernelSize" 
@@ -138,7 +133,7 @@
                         
                         <!-- Sigma Parameter (for Gaussian) -->
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="σ (Sigma):" VerticalAlignment="Center" Width="80"/>
+                            <TextBlock Text="σ (Sigma)" VerticalAlignment="Center" Width="80"/>
                             <TextBlock Text="{Binding ElementName=sliderSigma, Path=Value, StringFormat=F1}" 
                                        Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
                             <Slider x:Name="sliderSigma" 
@@ -149,7 +144,7 @@
                         
                         <!-- D Parameter (for Bilateral) -->
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="d:" VerticalAlignment="Center" Width="80"/>
+                            <TextBlock Text="d" VerticalAlignment="Center" Width="80"/>
                             <TextBlock Text="{Binding ElementName=sliderD, Path=Value}" 
                                        Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
                             <Slider x:Name="sliderD" 
@@ -160,7 +155,7 @@
                         
                         <!-- Sigma Color Parameter (for Bilateral) -->
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="σColor:" VerticalAlignment="Center" Width="80"/>
+                            <TextBlock Text="σColor" VerticalAlignment="Center" Width="80"/>
                             <TextBlock Text="{Binding ElementName=sliderSigmaColor, Path=Value, StringFormat=F0}" 
                                        Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
                             <Slider x:Name="sliderSigmaColor" 
@@ -171,7 +166,7 @@
                         
                         <!-- Sigma Space Parameter (for Bilateral) -->
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="σSpace:" VerticalAlignment="Center" Width="80"/>
+                            <TextBlock Text="σSpace" VerticalAlignment="Center" Width="80"/>
                             <TextBlock Text="{Binding ElementName=sliderSigmaSpace, Path=Value, StringFormat=F0}" 
                                        Width="30" TextAlignment="Right" VerticalAlignment="Center"/>
                             <Slider x:Name="sliderSigmaSpace" 
@@ -181,7 +176,7 @@
                         </DockPanel>
                         
                         <Button x:Name="btnApplyFilter" 
-                                Content="应用滤波"
+                                Content="{x:Static properties:Resources.ApplyFilter}"
                                 Click="btnApplyFilter_Click"
                                 Height="30"/>
                     </StackPanel>
@@ -191,15 +186,15 @@
                 <GroupBox Grid.Row="4" Header="状态信息" Margin="0,0,0,10">
                     <StackPanel Margin="10">
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="当前型号:" Width="100" VerticalAlignment="Center"/>
+                            <TextBlock Text="当前型号" Width="100" VerticalAlignment="Center"/>
                             <TextBlock x:Name="tbCurrentModel" Text="VA60" FontWeight="Bold"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="观察相机状态:" Width="100" VerticalAlignment="Center"/>
+                            <TextBlock Text="观察相机状态" Width="100" VerticalAlignment="Center"/>
                             <TextBlock x:Name="tbObservationCameraStatus" Text="未打开" Foreground="Gray"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="测量相机状态:" Width="100" VerticalAlignment="Center"/>
+                            <TextBlock Text="测量相机状态" Width="100" VerticalAlignment="Center"/>
                             <TextBlock x:Name="tbMeasurementCameraStatus" Text="未打开" Foreground="Gray"/>
                         </DockPanel>
                         <DockPanel>

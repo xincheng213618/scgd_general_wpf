@@ -120,4 +120,46 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>언어(_L)</value>
   </data>
+  <data name="Model" xml:space="preserve">
+    <value>모델</value>
+  </data>
+  <data name="OpenObservationCamera" xml:space="preserve">
+    <value>관찰 카메라를 엽니다</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>이미지 가져오기</value>
+  </data>
+  <data name="Calibration" xml:space="preserve">
+    <value>보정</value>
+  </data>
+  <data name="ImageFilter" xml:space="preserve">
+    <value>이미지 필터링</value>
+  </data>
+  <data name="NoFilter" xml:space="preserve">
+    <value>필터링 없음</value>
+  </data>
+  <data name="LowPassFilter" xml:space="preserve">
+    <value>저역 통과 필터</value>
+  </data>
+  <data name="MovingAverage" xml:space="preserve">
+    <value>이동 평균</value>
+  </data>
+  <data name="GaussianFilter" xml:space="preserve">
+    <value>가우시안 필터</value>
+  </data>
+  <data name="BilateralFilter" xml:space="preserve">
+    <value>양측 필터링</value>
+  </data>
+  <data name="KernelSize" xml:space="preserve">
+    <value>핵 크기</value>
+  </data>
+  <data name="ApplyFilter" xml:space="preserve">
+    <value>애플리케이션 필터링</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>중앙값 필터링</value>
+  </data>
+  <data name="FilterType" xml:space="preserve">
+    <value>필터 유형</value>
+  </data>
 </root>

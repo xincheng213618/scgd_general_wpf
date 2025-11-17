@@ -133,8 +133,6 @@ namespace ProjectStarKey
             cbMeasurementCamera.DisplayMemberPath = "Name";
             if (cameras.Count > 0)
                 cbMeasurementCamera.SelectedIndex = 0;
-
-            log.Info($"已加载 {cameras.Count} 个相机服务");
         }
 
 
@@ -144,9 +142,7 @@ namespace ProjectStarKey
             if (Device != null)
             {
                 log.Info($"已选择测量相机: {Device.Name}");
-
                 // Load calibration templates for selected camera
-
                 ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
                 ComboxCalibrationTemplate.SelectedIndex = 0;
             }
@@ -177,7 +173,6 @@ namespace ProjectStarKey
                 case ConoscopeModelType.VA60:
                     // VA60: 显示观察相机控件
                     ObservationCameraPanel.Visibility = Visibility.Visible;
-                    tbModelDescription.Text = "VA60: 一台观察相机（视频模式）+ 一台测量相机（需要校正）";
                     if (tbObservationCameraStatus != null)
                     {
                         tbObservationCameraStatus.Visibility = Visibility.Visible;
@@ -187,7 +182,6 @@ namespace ProjectStarKey
                 case ConoscopeModelType.VA80:
                     // VA80: 隐藏观察相机控件
                     ObservationCameraPanel.Visibility = Visibility.Collapsed;
-                    tbModelDescription.Text = "VA80: 一台测量相机（需要校正）";
                     if (tbObservationCameraStatus != null)
                     {
                         tbObservationCameraStatus.Visibility = Visibility.Collapsed;
@@ -215,14 +209,7 @@ namespace ProjectStarKey
 
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
-                    //if (param.Id != -1)
-                    //{
-                    //    if (Device.PhyCamera != null && Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
-                    //    {
-                    //        MessageBox1.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
-                    //        return null;
-                    //    }
-                    //}
+
                 }
                 else
                 {
