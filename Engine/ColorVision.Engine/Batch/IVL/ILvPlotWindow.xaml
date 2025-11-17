@@ -29,6 +29,7 @@
             <Separator Margin="0,12,0,12"/>
             
             <Button x:Name="BtnSave" Content="Save Plot" Click="BtnSave_Click" Margin="0,0,0,8"/>
+            <Button x:Name="BtnSaveData" Content="Save Data to CSV" Click="BtnSaveData_Click" Margin="0,0,0,8"/>
             <Button x:Name="BtnRefresh" Content="Refresh" Click="BtnRefresh_Click" Margin="0,0,0,8"/>
             
             <Separator Margin="0,12,0,12"/>
@@ -41,6 +42,8 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="200"/>
             </Grid.RowDefinitions>
             
             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
@@ -48,6 +51,27 @@
             </StackPanel>
             
             <ScottPlot:WpfPlot x:Name="wpfPlot" Grid.Row="1"/>
+            
+            <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Center" Background="LightGray"/>
+            
+            <Grid Grid.Row="3">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" Text="Data Table" FontSize="14" FontWeight="Bold" Margin="0,4,0,4"/>
+                <DataGrid Grid.Row="1" x:Name="DataGridValues" AutoGenerateColumns="False" IsReadOnly="True" 
+                          CanUserAddRows="False" CanUserDeleteRows="False" AlternatingRowBackground="LightGray">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Series" Binding="{Binding SeriesName}" Width="100"/>
+                        <DataGridTextColumn Header="Index" Binding="{Binding Index}" Width="60"/>
+                        <DataGridTextColumn Header="Current (mA)" Binding="{Binding Current, StringFormat=F4}" Width="120"/>
+                        <DataGridTextColumn Header="Voltage (V)" Binding="{Binding Voltage, StringFormat=F4}" Width="120"/>
+                        <DataGridTextColumn Header="Luminance (cd/m²)" Binding="{Binding Luminance, StringFormat=F2}" Width="150"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
         </Grid>
     </DockPanel>
 </Window>

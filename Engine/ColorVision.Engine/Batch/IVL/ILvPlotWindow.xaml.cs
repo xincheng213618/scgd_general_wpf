@@ -12,7 +12,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -236,6 +238,7 @@ namespace ColorVision.Engine.Batch.IVL
             wpfPlot.Refresh();
             
             UpdateLegendInfo();
+            UpdateDataTable();
         }
 
         private void PlotAllSeries()
@@ -348,6 +351,34 @@ namespace ColorVision.Engine.Batch.IVL
 
             wpfPlot.Refresh();
             UpdateLegendInfo();
+            UpdateDataTable();
+        }
+
+        private void UpdateDataTable()
+        {
+            var dataList = new ObservableCollection<DataTableRow>();
+            
+            foreach (var item in PoiSeriesList.SelectedItems)
+            {
+                string seriesName = item.ToString();
+                if (_groupedData.ContainsKey(seriesName))
+                {
+                    var dataPoints = _groupedData[seriesName];
+                    for (int i = 0; i < dataPoints.Count; i++)
+                    {
+                        dataList.Add(new DataTableRow
+                        {
+                            SeriesName = seriesName,
+                            Index = i + 1,
+                            Current = dataPoints[i].Current,
+                            Voltage = dataPoints[i].Voltage,
+                            Luminance = dataPoints[i].Luminance
+                        });
+                    }
+                }
+            }
+            
+            DataGridValues.ItemsSource = dataList;
         }
 
         private void UpdateLegendInfo()
@@ -440,6 +471,55 @@ namespace ColorVision.Engine.Batch.IVL
 
             if (saveFileDialog.ShowDialog() == true)
             {
+                string filePath = saveFileDialog.FileName;
+                wpfPlot.Plot.Save(filePath, 1200, 800);
+                MessageBox.Show($"Plot saved to:\n{filePath}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void BtnSaveData_Click(object sender, RoutedEventArgs e)
+        {
+            string modeText = _isILvMode ? "ILv" : "VLv";
+            SaveFileDialog saveFileDialog = new SaveFileDialog
+            {
+                Filter = "CSV Files|*.csv",
+                Title = $"Save {modeText} Data to CSV",
+                FileName = $"{modeText}_Data_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    var csv = new StringBuilder();
+                    
+                    // Add header
+                    csv.AppendLine("Series,Index,Current (mA),Voltage (V),Luminance (cd/m²)");
+                    
+                    // Add data from selected series
+                    foreach (var item in PoiSeriesList.SelectedItems)
+                    {
+                        string seriesName = item.ToString();
+                        if (_groupedData.ContainsKey(seriesName))
+                        {
+                            var dataPoints = _groupedData[seriesName];
+                            for (int i = 0; i < dataPoints.Count; i++)
+                            {
+                                csv.AppendLine($"{seriesName},{i + 1},{dataPoints[i].Current:F4},{dataPoints[i].Voltage:F4},{dataPoints[i].Luminance:F2}");
+                            }
+                        }
+                    }
+                    
+                    File.WriteAllText(saveFileDialog.FileName, csv.ToString(), Encoding.UTF8);
+                    MessageBox.Show($"Data saved to:\n{saveFileDialog.FileName}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Failed to save CSV file", ex);
+                    MessageBox.Show($"Failed to save CSV file:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
                 string filePath = saveFileDialog.FileName;
                 wpfPlot.Plot.Save(filePath, 1200, 800);
                 MessageBox.Show($"Plot saved to:\n{filePath}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -568,6 +648,15 @@ namespace ColorVision.Engine.Batch.IVL
             public double Current { get; set; }
             public double Luminance { get; set; }
             public double Voltage { get; set; }
+        }
+
+        private class DataTableRow
+        {
+            public string SeriesName { get; set; }
+            public int Index { get; set; }
+            public double Current { get; set; }
+            public double Voltage { get; set; }
+            public double Luminance { get; set; }
         }
     }
 }
