@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Batch.IVL
     public partial class ILvPlotWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(ILvPlotWindow));
-        
+
         private Dictionary<string, List<ILvDataPoint>> _groupedData;
         private Dictionary<string, Scatter> _scatterPlots;
         private List<string> _seriesNames;
@@ -64,14 +64,14 @@ namespace ColorVision.Engine.Batch.IVL
         {
 
             using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero);
-            dpiRadio = graphics.DpiY /96.0;
+            dpiRadio = graphics.DpiY / 96.0;
 
 
 
             // Group data by POI name
             int smuCount = smuResults.Count;
             int poiCount = poixyuvDatas.Count;
-            
+
             // Check if we have at least some data to plot (POI or spectrum)
             bool hasPoiData = smuCount > 0 && poiCount > 0;
             bool hasSpectrumData = spectrumResults != null && spectrumResults.Count > 0 && smuCount > 0;
@@ -94,52 +94,52 @@ namespace ColorVision.Engine.Batch.IVL
                 // Match the data pairing logic from IVLProcess.cs
                 for (int i = 0; i < poiCount; i++)
                 {
-                // Calculate SMU index: z = i / cout (from IVLProcess.cs)
-                int smuIndex = i / poisPerMeasurement;
-                if (smuIndex >= smuCount)
-                    continue; // Skip if no corresponding SMU data
+                    // Calculate SMU index: z = i / cout (from IVLProcess.cs)
+                    int smuIndex = i / poisPerMeasurement;
+                    if (smuIndex >= smuCount)
+                        continue; // Skip if no corresponding SMU data
 
-                var smu = smuResults[smuIndex];
-                var poi = poixyuvDatas[i];
-                
-                // Use POI name to group data points
-                // Check if POIPointResultModel is null to detect data integrity issues
-                string poiName;
-                if (poi.POIPointResultModel == null)
-                {
-                    log.Warn($"POIPointResultModel is null for data point at index {i}. Using default name.");
-                    poiName = $"POI_{i}";
-                }
-                else
-                {
-                    poiName = poi.POIPointResultModel.PoiName ?? $"POI_{i}";
-                }
-                
-                if (!_groupedData.ContainsKey(poiName))
-                {
-                    _groupedData[poiName] = new List<ILvDataPoint>();
-                    _seriesNames.Add(poiName);
-                }
+                    var smu = smuResults[smuIndex];
+                    var poi = poixyuvDatas[i];
 
-                // Add data point: Current (I) vs Luminance (Lv)
-                // Only add valid data points with non-null current and positive luminance
-                if (smu.IResult.HasValue && poi.Y > 0)
-                {
-                    _groupedData[poiName].Add(new ILvDataPoint
+                    // Use POI name to group data points
+                    // Check if POIPointResultModel is null to detect data integrity issues
+                    string poiName;
+                    if (poi.POIPointResultModel == null)
                     {
-                        Current = smu.IResult.Value,
-                        Luminance = poi.Y,
-                        Voltage = smu.VResult ?? 0
-                    });
+                        log.Warn($"POIPointResultModel is null for data point at index {i}. Using default name.");
+                        poiName = $"POI_{i}";
+                    }
+                    else
+                    {
+                        poiName = poi.POIPointResultModel.PoiName ?? $"POI_{i}";
+                    }
+
+                    if (!_groupedData.ContainsKey(poiName))
+                    {
+                        _groupedData[poiName] = new List<ILvDataPoint>();
+                        _seriesNames.Add(poiName);
+                    }
+
+                    // Add data point: Current (I) vs Luminance (Lv)
+                    // Only add valid data points with non-null current and positive luminance
+                    if (smu.IResult.HasValue && poi.Y > 0)
+                    {
+                        _groupedData[poiName].Add(new ILvDataPoint
+                        {
+                            Current = smu.IResult.Value,
+                            Luminance = poi.Y,
+                            Voltage = smu.VResult ?? 0
+                        });
+                    }
                 }
-            }
             }
 
             // Add spectrum data if available
             if (hasSpectrumData)
             {
                 string spectrumSeriesName = ColorVision.Engine.Properties.Resources.Spectrometer;
-                
+
                 if (!_groupedData.ContainsKey(spectrumSeriesName))
                 {
                     _groupedData[spectrumSeriesName] = new List<ILvDataPoint>();
@@ -150,7 +150,7 @@ namespace ColorVision.Engine.Batch.IVL
                 for (int i = 0; i < spectrumResults.Count; i++)
                 {
                     var spectrum = spectrumResults[i];
-                    
+
                     // Try to get the Lv value from the string property
                     if (!string.IsNullOrEmpty(spectrum.Lv) && double.TryParse(spectrum.Lv, out double lvValue))
                     {
@@ -199,7 +199,7 @@ namespace ColorVision.Engine.Batch.IVL
         private void InitializePlot()
         {
             wpfPlot.Plot.Clear();
-            
+
             // Check if there's any data to plot
             if (_groupedData.Count == 0)
             {
@@ -214,7 +214,7 @@ namespace ColorVision.Engine.Batch.IVL
             // Set labels with proper formatting based on display mode
             string modeLabel = _isILvMode ? "I-Lv" : "V-Lv";
             string xLabel = _isILvMode ? "Current (mA)" : "Voltage (V)";
-            
+
             wpfPlot.Plot.Title($"{modeLabel} Characteristics Curve");
             wpfPlot.Plot.XLabel(xLabel);
             wpfPlot.Plot.YLabel("Luminance (cd/m²)");
@@ -223,7 +223,7 @@ namespace ColorVision.Engine.Batch.IVL
 
             // Update title text block
             TxtTitle.Text = $"{modeLabel} Curve Analysis";
-            
+
             // Set font for labels to support international characters
             // Use a consistent string for font detection
             string fontSample = $"{modeLabel} Characteristics Curve {xLabel} Luminance Voltage";
@@ -236,7 +236,7 @@ namespace ColorVision.Engine.Batch.IVL
             wpfPlot.Plot.Grid.MajorLineWidth = 1;
             PlotAllSeries();
             wpfPlot.Refresh();
-            
+
             UpdateLegendInfo();
             UpdateDataTable();
         }
@@ -272,7 +272,7 @@ namespace ColorVision.Engine.Batch.IVL
                     continue;
 
                 var dataPoints = _groupedData[seriesName];
-                
+
                 // Apply sorting if enabled (for monotonic curves)
                 // Otherwise preserve original sequence (for round-trip/hysteresis visualization)
                 List<ILvDataPoint> sortedData;
@@ -293,9 +293,9 @@ namespace ColorVision.Engine.Batch.IVL
                     // Preserve original measurement sequence
                     sortedData = dataPoints;
                 }
-                
+
                 // Select X-axis data based on display mode (Current for I-Lv, Voltage for V-Lv)
-                double[] x = _isILvMode 
+                double[] x = _isILvMode
                     ? sortedData.Select(p => p.Current).ToArray()
                     : sortedData.Select(p => p.Voltage).ToArray();
                 double[] y = sortedData.Select(p => p.Luminance).ToArray();
@@ -312,7 +312,7 @@ namespace ColorVision.Engine.Batch.IVL
                 };
 
                 _scatterPlots[seriesName] = scatter;
-                
+
                 // Only add if selected
                 if (PoiSeriesList.SelectedItems.Contains(seriesName))
                 {
@@ -357,7 +357,7 @@ namespace ColorVision.Engine.Batch.IVL
         private void UpdateDataTable()
         {
             var dataList = new ObservableCollection<DataTableRow>();
-            
+
             foreach (var item in PoiSeriesList.SelectedItems)
             {
                 string seriesName = item.ToString();
@@ -377,7 +377,7 @@ namespace ColorVision.Engine.Batch.IVL
                     }
                 }
             }
-            
+
             DataGridValues.ItemsSource = dataList;
         }
 
@@ -406,7 +406,7 @@ namespace ColorVision.Engine.Batch.IVL
                     {
                         info.AppendLine($"{seriesName}:");
                         info.AppendLine($"  Points: {data.Count}");
-                        
+
                         if (_isILvMode)
                         {
                             info.AppendLine($"  {xAxisLabel}: {data.Min(p => p.Current):F2} - {data.Max(p => p.Current):F2} {xAxisUnit}");
@@ -415,7 +415,7 @@ namespace ColorVision.Engine.Batch.IVL
                         {
                             info.AppendLine($"  {xAxisLabel}: {data.Min(p => p.Voltage):F2} - {data.Max(p => p.Voltage):F2} {xAxisUnit}");
                         }
-                        
+
                         info.AppendLine($"  Lv: {data.Min(p => p.Luminance):F2} - {data.Max(p => p.Luminance):F2} cd/m²");
                         info.AppendLine();
                     }
@@ -441,7 +441,7 @@ namespace ColorVision.Engine.Batch.IVL
             if (_groupedData == null) return;
             // Update the mode flag
             _isILvMode = RbILv.IsChecked == true;
-            
+
             // Re-initialize the plot with new mode
             InitializePlot();
         }
@@ -450,10 +450,10 @@ namespace ColorVision.Engine.Batch.IVL
         {
             if (ChkSortData == null) return;
             if (_groupedData == null) return;
-            
+
             // Update the sort flag
             _sortData = ChkSortData.IsChecked == true;
-            
+
             // Re-plot with new sort mode
             PlotAllSeries();
             wpfPlot.Refresh();
@@ -492,10 +492,10 @@ namespace ColorVision.Engine.Batch.IVL
                 try
                 {
                     var csv = new StringBuilder();
-                    
+
                     // Add header
                     csv.AppendLine("Series,Index,Current (mA),Voltage (V),Luminance (cd/m²)");
-                    
+
                     // Add data from selected series
                     foreach (var item in PoiSeriesList.SelectedItems)
                     {
@@ -509,7 +509,7 @@ namespace ColorVision.Engine.Batch.IVL
                             }
                         }
                     }
-                    
+
                     File.WriteAllText(saveFileDialog.FileName, csv.ToString(), Encoding.UTF8);
                     MessageBox.Show($"Data saved to:\n{saveFileDialog.FileName}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -520,11 +520,9 @@ namespace ColorVision.Engine.Batch.IVL
                 }
             }
         }
-                string filePath = saveFileDialog.FileName;
-                wpfPlot.Plot.Save(filePath, 1200, 800);
-                MessageBox.Show($"Plot saved to:\n{filePath}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }
+
+
+
 
         private void BtnRefresh_Click(object sender, RoutedEventArgs e)
         {
@@ -609,7 +607,7 @@ namespace ColorVision.Engine.Batch.IVL
             {
                 double x = _isILvMode ? nearestPoint.Current : nearestPoint.Voltage;
                 double y = nearestPoint.Luminance;
-                var coords1 = new Coordinates(x,y);
+                var coords1 = new Coordinates(x, y);
 
                 _crosshair.Position = coords1;
                 _crosshair.IsVisible = true;
@@ -643,7 +641,7 @@ namespace ColorVision.Engine.Batch.IVL
         }
 
 
-        private class ILvDataPoint
+        public class ILvDataPoint
         {
             public double Current { get; set; }
             public double Luminance { get; set; }
