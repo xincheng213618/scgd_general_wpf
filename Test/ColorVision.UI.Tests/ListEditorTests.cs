@@ -10,6 +10,14 @@ namespace ColorVision.UI.Tests;
 /// </summary>
 public class ListEditorTests
 {
+    // Test enum
+    public enum TestEnum
+    {
+        Value1,
+        Value2,
+        Value3
+    }
+
     // Test class with list properties
     private class TestListConfig
     {
@@ -27,6 +35,11 @@ public class ListEditorTests
         [DisplayName("Double List")]
         [Description("A list of doubles")]
         public List<double> DoubleList { get; set; } = new List<double> { 1.1, 2.2, 3.3 };
+
+        [Category("Lists")]
+        [DisplayName("Enum List")]
+        [Description("A list of enums")]
+        public List<TestEnum> EnumList { get; set; } = new List<TestEnum> { TestEnum.Value1, TestEnum.Value2 };
     }
 
     [Fact]
@@ -67,6 +80,26 @@ public class ListEditorTests
         var window = new ListItemEditorWindow(typeof(string), "Test");
         Assert.NotNull(window);
         Assert.Equal("Test", window.EditedValue);
+    }
+
+    [Fact]
+    public void ListItemEditorWindow_Constructor_WithEnumType_DoesNotThrow()
+    {
+        // Arrange & Act & Assert
+        var window = new ListItemEditorWindow(typeof(TestEnum), TestEnum.Value2);
+        Assert.NotNull(window);
+        Assert.Equal(TestEnum.Value2, window.EditedValue);
+    }
+
+    [Fact]
+    public void ListEditorWindow_WithEnumList_DoesNotThrow()
+    {
+        // Arrange
+        var list = new List<TestEnum> { TestEnum.Value1, TestEnum.Value3 };
+
+        // Act & Assert
+        var window = new ListEditorWindow(list, typeof(TestEnum));
+        Assert.NotNull(window);
     }
 
     [Fact]
