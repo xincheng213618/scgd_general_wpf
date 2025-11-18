@@ -70,7 +70,7 @@ namespace ColorVision.UI
             LoadConfigs(ConfigFilePath);
             if (Options.EnableBackup)
             {
-                Task.Delay(3000).ContinueWith(t =>
+                Task.Delay(10000).ContinueWith(t =>
                 {
                     BackupConfigs();
                 });
