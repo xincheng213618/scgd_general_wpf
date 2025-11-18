@@ -15,9 +15,7 @@ namespace ColorVision.UI.Plugins
         public DepsJson DepsJson { get; set; }
         public bool Enabled { get; set; } = true;
         public string? Name { get; set; }
-
         public string Description { get; set; }
-
         public Version? AssemblyVersion { get; set; }
         public DateTime? AssemblyBuildDate { get; set; }
         public string? AssemblyName { get; set; }
