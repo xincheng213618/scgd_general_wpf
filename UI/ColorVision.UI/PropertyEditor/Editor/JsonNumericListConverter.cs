@@ -1,8 +1,10 @@
-﻿using ColorVision.UI;
+using ColorVision.UI;
+using ColorVision.UI.PropertyEditor.Editor.List;
 using Newtonsoft.Json;
 using System.Collections;
 using System.Globalization;
 using System.Reflection;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -54,6 +56,32 @@ namespace System.ComponentModel
             textBox.ToolTip = "输入 JSON 数组，例如: [1, 2, 3]";
             textBox.PreviewKeyDown += PropertyEditorHelper.TextBox_PreviewKeyDown;
 
+            // 添加编辑按钮
+            var editButton = new Button
+            {
+                Content = "编辑",
+                Margin = new Thickness(5, 0, 0, 0),
+                Width = 60
+            };
+            editButton.Click += (s, e) =>
+            {
+                var list = property.GetValue(obj) as IList;
+                if (list != null)
+                {
+                    var elementType = property.PropertyType.GetGenericArguments()[0];
+                    var editorWindow = new ListEditorWindow(list, elementType);
+                    editorWindow.Owner = Window.GetWindow(dockPanel);
+                    
+                    if (editorWindow.ShowDialog() == true)
+                    {
+                        // 更新 TextBox 显示
+                        textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
+                    }
+                }
+            };
+
+            DockPanel.SetDock(editButton, Dock.Right);
+            dockPanel.Children.Add(editButton);
             dockPanel.Children.Add(textBox);
             return dockPanel;
         }
