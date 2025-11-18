@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,6 +12,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
     {
         private readonly Type _elementType;
         private readonly ValueWrapper _valueWrapper;
+        private List<Type> _availableEditorTypes = new();
 
         public object? EditedValue => _valueWrapper.Value;
 
@@ -40,16 +43,110 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             _elementType = elementType;
             _valueWrapper = new ValueWrapper { Value = initialValue };
 
+            InitializeEditorSelection();
             CreateEditor();
+        }
+
+        private void InitializeEditorSelection()
+        {
+            // Get all available editors for this type
+            _availableEditorTypes = GetAvailableEditorTypes(_elementType);
+
+            // If there are multiple editors, show the selection ComboBox
+            if (_availableEditorTypes.Count > 1)
+            {
+                EditorTypePanel.Visibility = Visibility.Visible;
+                
+                // Populate ComboBox with editor names
+                foreach (var editorType in _availableEditorTypes)
+                {
+                    var displayName = GetEditorDisplayName(editorType);
+                    EditorTypeComboBox.Items.Add(new ComboBoxItem 
+                    { 
+                        Content = displayName,
+                        Tag = editorType
+                    });
+                }
+                
+                // Select the first one by default
+                EditorTypeComboBox.SelectedIndex = 0;
+            }
+        }
+
+        private List<Type> GetAvailableEditorTypes(Type elementType)
+        {
+            var editorTypes = new List<Type>();
+
+            // For strings, manually add specific editors
+            if (elementType == typeof(string))
+            {
+                editorTypes.Add(typeof(TextSelectFilePropertiesEditor));
+                editorTypes.Add(typeof(TextSelectFolderPropertiesEditor));
+                editorTypes.Add(typeof(TextboxPropertiesEditor));
+            }
+            else
+            {
+                // Get all registered editors for this type
+                editorTypes = PropertyEditorHelper.GetAllEditorTypesForPropertyType(elementType);
+            }
+
+            return editorTypes;
+        }
+
+        private string GetEditorDisplayName(Type editorType)
+        {
+            // Map editor types to user-friendly names
+            var nameMap = new Dictionary<Type, string>
+            {
+                { typeof(TextSelectFilePropertiesEditor), "文件选择器" },
+                { typeof(TextSelectFolderPropertiesEditor), "文件夹选择器" },
+                { typeof(TextboxPropertiesEditor), "文本框" },
+                { typeof(EnumPropertiesEditor), "下拉选择" },
+                { typeof(BoolPropertiesEditor), "复选框" }
+            };
+
+            if (nameMap.TryGetValue(editorType, out var displayName))
+                return displayName;
+
+            // Fallback: use the class name without "PropertiesEditor"
+            var name = editorType.Name;
+            if (name.EndsWith("PropertiesEditor"))
+                name = name.Substring(0, name.Length - "PropertiesEditor".Length);
+            return name;
+        }
+
+        private void EditorTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (EditorTypeComboBox.SelectedItem is ComboBoxItem item && item.Tag is Type)
+            {
+                // Recreate the editor with the selected type
+                CreateEditor();
+            }
         }
 
         private void CreateEditor()
         {
+            // Clear existing editor
+            EditorPanel.Children.Clear();
+
             // Get the base property from ValueWrapper
             var baseProperty = typeof(ValueWrapper).GetProperty(nameof(ValueWrapper.Value))!;
             
-            // Try to get the appropriate editor type for the element type
-            var editorType = DetermineEditorType(_elementType);
+            // Determine which editor to use
+            Type? editorType = null;
+            
+            if (_availableEditorTypes.Count > 1 && EditorTypeComboBox.SelectedItem is ComboBoxItem item && item.Tag is Type selectedType)
+            {
+                editorType = selectedType;
+            }
+            else if (_availableEditorTypes.Count == 1)
+            {
+                editorType = _availableEditorTypes[0];
+            }
+            else
+            {
+                editorType = DetermineEditorType(_elementType);
+            }
             
             if (editorType != null)
             {
