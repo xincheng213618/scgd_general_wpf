@@ -490,4 +490,10 @@
   <data name="SortByCategory" xml:space="preserve">
     <value>카테고리별 정렬</value>
   </data>
+  <data name="OK" xml:space="preserve">
+    <value>확인</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>취소</value>
+  </data>
 </root>
