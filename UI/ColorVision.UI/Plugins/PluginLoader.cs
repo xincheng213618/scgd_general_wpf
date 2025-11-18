@@ -97,6 +97,9 @@ namespace ColorVision.UI.Plugins
                             pluginInfo.Manifest = manifest; // 更新manifest
                         }
 
+                        if (!pluginInfo.Enabled)
+                            continue;
+
                         pluginInfo.DepsJson = depsObj;
                         bool depsOk = false;
 
@@ -154,12 +157,7 @@ namespace ColorVision.UI.Plugins
                                 continue;
                             }
                         }
-
-                        // README, ChangeLog, and Icon are now loaded on-demand to reduce startup time
-                       
-                        if (!pluginInfo.Enabled)
-                            continue;
-
+                      
                         if (File.Exists(dllPath))
                         {
                             log.Info(string.Format(Properties.Resources.LoadingPlugin, manifest.Name));
