@@ -1,31 +1,92 @@
-using ColorVision.Common.Utilities;
 using System;
-using System.Globalization;
-using System.IO;
+using System.ComponentModel;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 
 namespace ColorVision.UI.PropertyEditor.Editor.List
 {
     public partial class ListItemEditorWindow : Window
     {
         private readonly Type _elementType;
-        private object? _editedValue;
-        private Control? _editorControl;
+        private readonly ValueWrapper _valueWrapper;
 
-        public object? EditedValue => _editedValue;
+        public object? EditedValue => _valueWrapper.Value;
+
+        // Wrapper class to hold the value as a property so we can use PropertyEditor system
+        private class ValueWrapper : INotifyPropertyChanged
+        {
+            private object? _value;
+
+            public object? Value
+            {
+                get => _value;
+                set
+                {
+                    if (!Equals(_value, value))
+                    {
+                        _value = value;
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value)));
+                    }
+                }
+            }
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+        }
 
         public ListItemEditorWindow(Type elementType, object? initialValue)
         {
             InitializeComponent();
             _elementType = elementType;
-            _editedValue = initialValue;
+            _valueWrapper = new ValueWrapper { Value = initialValue };
 
             CreateEditor();
         }
 
         private void CreateEditor()
+        {
+            // Get the base property from ValueWrapper
+            var baseProperty = typeof(ValueWrapper).GetProperty(nameof(ValueWrapper.Value))!;
+            
+            // Try to get the appropriate editor type for the element type
+            var editorType = DetermineEditorType(_elementType);
+            
+            if (editorType != null)
+            {
+                try
+                {
+                    var editor = PropertyEditorHelper.GetOrCreateEditor(editorType);
+                    
+                    // Create a custom PropertyInfo that returns the correct type
+                    var customProperty = new CustomPropertyInfo(baseProperty, _elementType);
+                    var dockPanel = editor.GenProperties(customProperty, _valueWrapper);
+                    
+                    EditorPanel.Children.Add(dockPanel);
+                    return;
+                }
+                catch
+                {
+                    // Fall back to default behavior
+                }
+            }
+
+            // Fallback: create a simple textbox editor
+            CreateFallbackEditor();
+        }
+
+        private Type? DetermineEditorType(Type elementType)
+        {
+            // For strings, use TextSelectFilePropertiesEditor to get file/folder pickers
+            if (elementType == typeof(string))
+            {
+                return typeof(TextSelectFilePropertiesEditor);
+            }
+            
+            // Otherwise use the registered editor for the type
+            return PropertyEditorHelper.GetEditorTypeForPropertyType(elementType);
+        }
+
+        private void CreateFallbackEditor()
         {
             var label = new TextBlock
             {
@@ -35,173 +96,32 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             };
             EditorPanel.Children.Add(label);
 
-            if (_elementType == typeof(string))
-            {
-                CreateStringEditor();
-            }
-            else if (_elementType.IsEnum)
-            {
-                CreateEnumEditor();
-            }
-            else if (IsNumericType(_elementType))
-            {
-                CreateNumericEditor();
-            }
-            else
-            {
-                CreateTextBoxEditor();
-            }
-        }
-
-        private void CreateStringEditor()
-        {
-            var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
-
             var textBox = new TextBox
             {
-                Text = _editedValue?.ToString() ?? string.Empty,
+                Text = _valueWrapper.Value?.ToString() ?? string.Empty,
                 Style = PropertyEditorHelper.TextBoxSmallStyle,
-                VerticalContentAlignment = VerticalAlignment.Center
+                Margin = new Thickness(0, 0, 0, 10)
             };
-            _editorControl = textBox;
-
-            // File selection button
-            var selectFileBtn = new Button
-            {
-                Content = "选择文件",
-                Margin = new Thickness(5, 0, 0, 0),
-                Width = 80
-            };
-            selectFileBtn.Click += (s, e) =>
-            {
-                var ofd = new Microsoft.Win32.OpenFileDialog();
-                var path = textBox.Text;
-#if NET8_0
-                if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
-                {
-                    ofd.DefaultDirectory = Directory.GetDirectoryRoot(path);
-                }
-#endif
-                if (ofd.ShowDialog() == true)
-                {
-                    textBox.Text = ofd.FileName;
-                }
-            };
-
-            // Folder selection button
-            var selectFolderBtn = new Button
-            {
-                Content = "选择文件夹",
-                Margin = new Thickness(5, 0, 0, 0),
-                Width = 80
-            };
-            selectFolderBtn.Click += (s, e) =>
-            {
-                using var folderDialog = new System.Windows.Forms.FolderBrowserDialog
-                {
-                    SelectedPath = textBox.Text ?? string.Empty
-                };
-                if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK &&
-                    !string.IsNullOrWhiteSpace(folderDialog.SelectedPath))
-                {
-                    textBox.Text = folderDialog.SelectedPath;
-                }
-            };
-
-            // Open folder button
-            var openFolderBtn = new Button
-            {
-                Content = "🗁",
-                Margin = new Thickness(5, 0, 0, 0),
-                Width = 30,
-                ToolTip = "打开文件夹"
-            };
-            openFolderBtn.Click += (s, e) =>
-            {
-                var path = textBox.Text;
-                if (!string.IsNullOrWhiteSpace(path))
-                    PlatformHelper.OpenFolder(path);
-            };
-
-            DockPanel.SetDock(selectFileBtn, Dock.Right);
-            DockPanel.SetDock(selectFolderBtn, Dock.Right);
-            DockPanel.SetDock(openFolderBtn, Dock.Right);
             
-            dockPanel.Children.Add(openFolderBtn);
-            dockPanel.Children.Add(selectFolderBtn);
-            dockPanel.Children.Add(selectFileBtn);
-            dockPanel.Children.Add(textBox);
-
-            EditorPanel.Children.Add(dockPanel);
-        }
-
-        private void CreateEnumEditor()
-        {
-            var comboBox = new ComboBox
+            textBox.TextChanged += (s, e) =>
             {
-                Style = PropertyEditorHelper.ComboBoxSmallStyle,
-                ItemsSource = Enum.GetValues(_elementType),
-                SelectedItem = _editedValue
+                try
+                {
+                    _valueWrapper.Value = ConvertValue(textBox.Text, _elementType);
+                }
+                catch
+                {
+                    // Ignore conversion errors during typing
+                }
             };
-            _editorControl = comboBox;
-
-            EditorPanel.Children.Add(comboBox);
-        }
-
-        private void CreateNumericEditor()
-        {
-            var textBox = new TextBox
-            {
-                Text = _editedValue?.ToString() ?? "0",
-                Style = PropertyEditorHelper.TextBoxSmallStyle
-            };
-            _editorControl = textBox;
-
-            if (_elementType == typeof(float) || _elementType == typeof(double))
-            {
-                textBox.ToolTip = "输入数值，例如: 1.23";
-            }
-            else
-            {
-                textBox.ToolTip = "输入整数";
-            }
-
-            EditorPanel.Children.Add(textBox);
-        }
-
-        private void CreateTextBoxEditor()
-        {
-            var textBox = new TextBox
-            {
-                Text = _editedValue?.ToString() ?? string.Empty,
-                Style = PropertyEditorHelper.TextBoxSmallStyle
-            };
-            _editorControl = textBox;
 
             EditorPanel.Children.Add(textBox);
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                if (_editorControl is TextBox textBox)
-                {
-                    _editedValue = ConvertValue(textBox.Text, _elementType);
-                }
-                else if (_editorControl is ComboBox comboBox)
-                {
-                    _editedValue = comboBox.SelectedItem;
-                }
-
-                DialogResult = true;
-                Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"输入值无效: {ex.Message}", "错误", 
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            DialogResult = true;
+            Close();
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -225,40 +145,64 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             targetType = Nullable.GetUnderlyingType(targetType) ?? targetType;
 
             if (targetType == typeof(int))
-                return int.Parse(input, CultureInfo.InvariantCulture);
+                return int.Parse(input, System.Globalization.CultureInfo.InvariantCulture);
             if (targetType == typeof(long))
-                return long.Parse(input, CultureInfo.InvariantCulture);
+                return long.Parse(input, System.Globalization.CultureInfo.InvariantCulture);
             if (targetType == typeof(short))
-                return short.Parse(input, CultureInfo.InvariantCulture);
+                return short.Parse(input, System.Globalization.CultureInfo.InvariantCulture);
             if (targetType == typeof(byte))
-                return byte.Parse(input, CultureInfo.InvariantCulture);
+                return byte.Parse(input, System.Globalization.CultureInfo.InvariantCulture);
             if (targetType == typeof(uint))
-                return uint.Parse(input, CultureInfo.InvariantCulture);
+                return uint.Parse(input, System.Globalization.CultureInfo.InvariantCulture);
             if (targetType == typeof(ulong))
-                return ulong.Parse(input, CultureInfo.InvariantCulture);
+                return ulong.Parse(input, System.Globalization.CultureInfo.InvariantCulture);
             if (targetType == typeof(ushort))
-                return ushort.Parse(input, CultureInfo.InvariantCulture);
+                return ushort.Parse(input, System.Globalization.CultureInfo.InvariantCulture);
             if (targetType == typeof(sbyte))
-                return sbyte.Parse(input, CultureInfo.InvariantCulture);
+                return sbyte.Parse(input, System.Globalization.CultureInfo.InvariantCulture);
             if (targetType == typeof(float))
-                return float.Parse(input, CultureInfo.InvariantCulture);
+                return float.Parse(input, System.Globalization.CultureInfo.InvariantCulture);
             if (targetType == typeof(double))
-                return double.Parse(input, CultureInfo.InvariantCulture);
+                return double.Parse(input, System.Globalization.CultureInfo.InvariantCulture);
             if (targetType == typeof(decimal))
-                return decimal.Parse(input, CultureInfo.InvariantCulture);
+                return decimal.Parse(input, System.Globalization.CultureInfo.InvariantCulture);
 
-            return Convert.ChangeType(input, targetType, CultureInfo.InvariantCulture);
+            return Convert.ChangeType(input, targetType, System.Globalization.CultureInfo.InvariantCulture);
         }
 
-        private static bool IsNumericType(Type type)
+        // Custom PropertyInfo that overrides the PropertyType to return our element type
+        private class CustomPropertyInfo : PropertyInfo
         {
-            type = Nullable.GetUnderlyingType(type) ?? type;
-            return type == typeof(byte) || type == typeof(sbyte) ||
-                   type == typeof(short) || type == typeof(ushort) ||
-                   type == typeof(int) || type == typeof(uint) ||
-                   type == typeof(long) || type == typeof(ulong) ||
-                   type == typeof(float) || type == typeof(double) ||
-                   type == typeof(decimal);
+            private readonly PropertyInfo _baseProperty;
+            private readonly Type _customType;
+
+            public CustomPropertyInfo(PropertyInfo baseProperty, Type customType)
+            {
+                _baseProperty = baseProperty;
+                _customType = customType;
+            }
+
+            public override Type PropertyType => _customType;
+            public override string Name => _baseProperty.Name;
+            public override Type? DeclaringType => _baseProperty.DeclaringType;
+            public override Type? ReflectedType => _baseProperty.ReflectedType;
+            public override PropertyAttributes Attributes => _baseProperty.Attributes;
+            public override bool CanRead => _baseProperty.CanRead;
+            public override bool CanWrite => _baseProperty.CanWrite;
+
+            public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, System.Globalization.CultureInfo? culture)
+                => _baseProperty.GetValue(obj, invokeAttr, binder, index, culture);
+
+            public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, System.Globalization.CultureInfo? culture)
+                => _baseProperty.SetValue(obj, value, invokeAttr, binder, index, culture);
+
+            public override MethodInfo[] GetAccessors(bool nonPublic) => _baseProperty.GetAccessors(nonPublic);
+            public override MethodInfo? GetGetMethod(bool nonPublic) => _baseProperty.GetGetMethod(nonPublic);
+            public override MethodInfo? GetSetMethod(bool nonPublic) => _baseProperty.GetSetMethod(nonPublic);
+            public override ParameterInfo[] GetIndexParameters() => _baseProperty.GetIndexParameters();
+            public override object[] GetCustomAttributes(bool inherit) => _baseProperty.GetCustomAttributes(inherit);
+            public override object[] GetCustomAttributes(Type attributeType, bool inherit) => _baseProperty.GetCustomAttributes(attributeType, inherit);
+            public override bool IsDefined(Type attributeType, bool inherit) => _baseProperty.IsDefined(attributeType, inherit);
         }
     }
 }
