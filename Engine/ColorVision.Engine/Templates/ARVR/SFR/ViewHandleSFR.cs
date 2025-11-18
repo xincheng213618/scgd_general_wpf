@@ -135,16 +135,6 @@ namespace ColorVision.Engine.Templates.SFR
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            if (TemplateSFR.Params.Where(x => x.Key == result.POITemplateName).FirstOrDefault() is TemplateModel<SFRParam> templateModel)
-            {
-                var rect = templateModel.Value.RECT;
-                DVRectangleText Rectangle = new();
-                Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
-                Rectangle.Attribute.Brush = Brushes.Transparent;
-                Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
-                Rectangle.Render();
-                view.ImageView.AddVisual(Rectangle);
-            }
 
             foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultSFRModel>())
             {
