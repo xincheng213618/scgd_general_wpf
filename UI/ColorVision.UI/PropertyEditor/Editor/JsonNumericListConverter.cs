@@ -21,16 +21,7 @@ namespace System.ComponentModel
                 t = Nullable.GetUnderlyingType(t) ?? t;
                 if (!t.IsGenericType || t.GetGenericTypeDefinition() != typeof(System.Collections.Generic.List<>))
                     return false;
-
-                var elem = t.GetGenericArguments()[0];
-                elem = Nullable.GetUnderlyingType(elem) ?? elem;
-                return elem == typeof(byte) || elem == typeof(sbyte) ||
-                       elem == typeof(short) || elem == typeof(ushort) ||
-                       elem == typeof(int) || elem == typeof(uint) ||
-                       elem == typeof(long) || elem == typeof(ulong) ||
-                       elem == typeof(float) || elem == typeof(double) ||
-                       elem == typeof(decimal) || elem == typeof(string) ||
-                       elem.IsEnum;
+                return true;
             });
         }
 
