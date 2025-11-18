@@ -15,7 +15,7 @@ namespace System.ComponentModel
     {
         static ListNumericJsonEditor()
         {
-            // 通过谓词一次性注册：匹配 List<T> 且 T 为数值类型
+            // 通过谓词一次性注册：匹配 List<T> 且 T 为数值类型、字符串或枚举
             PropertyEditorHelper.RegisterEditor<ListNumericJsonEditor>(t =>
             {
                 t = Nullable.GetUnderlyingType(t) ?? t;
@@ -29,7 +29,8 @@ namespace System.ComponentModel
                        elem == typeof(int) || elem == typeof(uint) ||
                        elem == typeof(long) || elem == typeof(ulong) ||
                        elem == typeof(float) || elem == typeof(double) ||
-                       elem == typeof(decimal) || elem == typeof(string);
+                       elem == typeof(decimal) || elem == typeof(string) ||
+                       elem.IsEnum;
             });
         }
 
@@ -154,7 +155,8 @@ namespace System.ComponentModel
                    t == typeof(int) || t == typeof(uint) ||
                    t == typeof(long) || t == typeof(ulong) ||
                    t == typeof(float) || t == typeof(double) ||
-                   t == typeof(decimal) || t == typeof(string);
+                   t == typeof(decimal) || t == typeof(string) ||
+                   t.IsEnum;
         }
     }
 }
