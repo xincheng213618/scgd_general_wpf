@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 
             MsgSend msg = new MsgSend()
             {
-                EventName = "Clsoe",
+                EventName = "Close",
             };
 
             return PublishAsyncClient(msg);
