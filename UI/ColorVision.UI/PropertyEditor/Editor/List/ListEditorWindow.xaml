@@ -5,7 +5,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="编辑列表" Height="500" Width="650" 
+        Title="编辑列表" Height="600" Width="800" 
         Background="{DynamicResource GlobalBackground}"
         WindowStartupLocation="CenterOwner">
     <Window.Resources>
@@ -22,17 +22,17 @@
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10" VerticalAlignment="Top">
             <Button x:Name="AddButton" Content="添加" Width="80" Click="AddButton_Click" 
-                    Margin="0,0,5,0" Style="{DynamicResource ButtonCommand}"/>
+                    Margin="0,0,5,0" />
             <Button x:Name="EditButton" Content="编辑" Width="80" Click="EditButton_Click" 
-                    Margin="0,0,5,0" IsEnabled="False" Style="{DynamicResource ButtonCommand}"/>
+                    Margin="0,0,5,0" IsEnabled="False"/>
             <Button x:Name="DeleteButton" Content="删除" Width="80" Click="DeleteButton_Click" 
-                    Margin="0,0,5,0" IsEnabled="False" Style="{DynamicResource ButtonCommand}"/>
+                    Margin="0,0,5,0" IsEnabled="False" />
             <Button x:Name="MoveUpButton" Content="上移" Width="80" Click="MoveUpButton_Click" 
-                    Margin="0,0,5,0" IsEnabled="False" Style="{DynamicResource ButtonCommand}"/>
+                    Margin="0,0,5,0" IsEnabled="False"/>
             <Button x:Name="MoveDownButton" Content="下移" Width="80" Click="MoveDownButton_Click" 
-                    IsEnabled="False" Style="{DynamicResource ButtonCommand}"/>
+                    IsEnabled="False"/>
         </StackPanel>
 
         <!-- List Display -->
