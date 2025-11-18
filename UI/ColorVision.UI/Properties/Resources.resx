@@ -529,4 +529,10 @@
   <data name="SocketManagementWindow" xml:space="preserve">
     <value>Socket管理窗口</value>
   </data>
+  <data name="OK" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
 </root>

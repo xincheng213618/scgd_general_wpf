@@ -1777,7 +1777,7 @@
     <value>Scan</value>
   </data>
   <data name="Blue" xml:space="preserve">
-    <value>Blue light</value>
+    <value>BlueLight</value>
   </data>
   <data name="fx" xml:space="preserve">
     <value>Cx</value>
@@ -1895,9 +1895,6 @@
   </data>
   <data name="CADFile" xml:space="preserve">
     <value>CAD files</value>
-  </data>
-  <data name="BrightnessLvCdM2" xml:space="preserve">
-    <value>Brightness Lv (cd/m2)</value>
   </data>
   <data name="AddCmd" xml:space="preserve">
     <value>Add instructions</value>
@@ -2107,7 +2104,7 @@
     <value>Binocular Fusion Template Management</value>
   </data>
   <data name="Lv" xml:space="preserve">
-    <value>Luminannce (cd/m2)</value>
+    <value>Luminance (cd/m2)</value>
   </data>
   <data name="MsgLogWin" xml:space="preserve">
     <value>Message Log Window</value>

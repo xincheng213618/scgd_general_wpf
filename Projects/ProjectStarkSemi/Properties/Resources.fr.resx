@@ -118,6 +118,69 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="MenuLanguage" xml:space="preserve">
-    <value>Язык(Л)</value>
+    <value>Langue(L)</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>modèle</value>
+  </data>
+  <data name="OpenObservationCamera" xml:space="preserve">
+    <value>Ouvrez la caméra d'observation</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>Obtenir l'image</value>
+  </data>
+  <data name="Calibration" xml:space="preserve">
+    <value>Correction</value>
+  </data>
+  <data name="ImageFilter" xml:space="preserve">
+    <value>Filtrage d'images</value>
+  </data>
+  <data name="NoFilter" xml:space="preserve">
+    <value>Aucun filtrage</value>
+  </data>
+  <data name="LowPassFilter" xml:space="preserve">
+    <value>filtre passe-bas</value>
+  </data>
+  <data name="MovingAverage" xml:space="preserve">
+    <value>moyenne mobile</value>
+  </data>
+  <data name="GaussianFilter" xml:space="preserve">
+    <value>filtre gaussien</value>
+  </data>
+  <data name="BilateralFilter" xml:space="preserve">
+    <value>filtrage bilatéral</value>
+  </data>
+  <data name="KernelSize" xml:space="preserve">
+    <value>taille nucléaire</value>
+  </data>
+  <data name="ApplyFilter" xml:space="preserve">
+    <value>Filtrage des applications</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>Filtrage médian</value>
+  </data>
+  <data name="FilterType" xml:space="preserve">
+    <value>Type de filtre</value>
+  </data>
+  <data name="StatusInformation" xml:space="preserve">
+    <value>Informations sur l'état</value>
+  </data>
+  <data name="CurrentModel" xml:space="preserve">
+    <value>Modèle actuel</value>
+  </data>
+  <data name="ObservationCameraStatus" xml:space="preserve">
+    <value>Observer l'état de la caméra</value>
+  </data>
+  <data name="MeasurementCameraStatus" xml:space="preserve">
+    <value>Mesurer l'état de la caméra</value>
+  </data>
+  <data name="CalibrationStatus" xml:space="preserve">
+    <value>État de correction</value>
+  </data>
+  <data name="NotOpened" xml:space="preserve">
+    <value>Non ouvert</value>
+  </data>
+  <data name="NotCalibrated" xml:space="preserve">
+    <value>non corrigé</value>
   </data>
 </root>

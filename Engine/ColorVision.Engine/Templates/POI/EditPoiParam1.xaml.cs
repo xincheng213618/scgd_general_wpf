@@ -200,6 +200,11 @@ namespace ColorVision.Engine.Templates.POI
                 ListView1.SelectedItem = e;
                 ListView1.ScrollIntoView(e);
             };
+            if (ImageView.ImageViewModel.IEditorToolFactory.GetIEditorTool<CircleManager>() is CircleManager circleManager)
+                circleManager.Config.IsContinuous = true;
+            if (ImageView.ImageViewModel.IEditorToolFactory.GetIEditorTool<RectangleManager>() is RectangleManager rectangleManager)
+                rectangleManager.Config.IsContinuous = true;
+
             ListView1.ContextMenu = new ContextMenu();
             MoveUpCommand = new RelayCommand(a => MoveUp(), a => ListView1?.SelectedIndex > 0); // 假设ListView1是ViewModel中的属性或可以通过绑定访问
             MoveDownCommand = new RelayCommand(a => MoveDown(), a => ListView1?.SelectedIndex < DrawingVisualLists.Count - 1);

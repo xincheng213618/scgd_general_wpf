@@ -76,6 +76,24 @@ namespace ColorVision.UI
             return null;
         }
 
+        public static List<Type> GetAllEditorTypesForPropertyType(Type propertyType)
+        {
+            var editorTypes = new List<Type>();
+
+            // Direct type match
+            if (EditorTypeRegistry.TryGetValue(propertyType, out var editorType))
+                editorTypes.Add(editorType);
+
+            // Predicate matches (all matching predicates)
+            foreach (var (predicate, predicateEditorType) in TypePredicateRegistry)
+            {
+                if (predicate(propertyType))
+                    editorTypes.Add(predicateEditorType);
+            }
+
+            return editorTypes;
+        }
+
         public static T GetOrCreateEditor<T>() where T : IPropertyEditor, new()
         {
             var type = typeof(T);

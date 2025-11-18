@@ -2,43 +2,50 @@
 #include <sfr/general.h>
 
 
+// 严格对应 MATLAB rotatev2 的单通道版本（mm = 1 的情况）
 cv::Mat sfr::auto_rotate_vertical(const cv::Mat& src) {
+    // 对应：a = input array(npix, nlin, ncol)，这里只处理灰度
     CV_Assert(src.channels() == 1);
-    cv::Mat a;
-    src.convertTo(a, CV_64F);
 
-    int nlin = a.rows;
-    int npix = a.cols;
-    if (nlin < 3 || npix < 3) {
-        return src.clone(); // 太小不处理
+    cv::Mat a;
+    src.convertTo(a, CV_64F); // 对应 a = double(a);
+
+    int nlin = a.rows; // MATLAB: nlin = dim(1)
+    int npix = a.cols; // MATLAB: npix = dim(2)
+
+    // 和 rotatev2 里 nn=3 的假设保持一致；尺寸不足时直接不旋转
+    int nn = 3;
+    if (nlin < nn || npix < nn) {
+        return src.clone();  // 太小不旋转
     }
 
-    // 对应 MATLAB 中 nn = 3; testv/testh
-    int nn = std::min(3, std::min(nlin, npix) / 2);
+    // MATLAB:
+    // testv = abs(mean(a(end-nn,:,mm))-mean(a(nn,:,mm)));
+    // 注意 MATLAB 索引从 1 开始：
+    //  - a(nn,:,:)        → C++: row nn-1
+    //  - a(end-nn,:,:)    → C++: row nlin-nn-1
+    double v_top = cv::mean(a.row(nn - 1))[0];
+    double v_bottom = cv::mean(a.row(nlin - nn - 1))[0];
+    double testv = std::abs(v_bottom - v_top);
 
-    // 垂直方向（上下）灰度变化
-    cv::Mat top = a.rowRange(0, nn);
-    cv::Mat bottom = a.rowRange(nlin - nn, nlin);
-    double v1 = cv::mean(top)[0];
-    double v2 = cv::mean(bottom)[0];
-    double testv = std::abs(v2 - v1);
+    // MATLAB:
+    // testh = abs(mean(a(:,end-nn,mm))-mean(a(:,nn,mm)));
+    //  - a(:,nn,mm)       → col nn-1
+    //  - a(:,end-nn,mm)   → col npix-nn-1
+    double h_left = cv::mean(a.col(nn - 1))[0];
+    double h_right = cv::mean(a.col(npix - nn - 1))[0];
+    double testh = std::abs(h_right - h_left);
 
-    // 水平方向（左右）灰度变化
-    cv::Mat left = a.colRange(0, nn);
-    cv::Mat right = a.colRange(npix - nn, npix);
-    double h1 = cv::mean(left)[0];
-    double h2 = cv::mean(right)[0];
-    double testh = std::abs(h2 - h1);
-
-    cv::Mat out;
     // MATLAB: if testv > testh, rflag=1; a = rotate90(a);
+    // rotate90 是逆时针 90°
+    cv::Mat out;
     if (testv > testh) {
-        // 边缘更像水平线 → 旋转 90° 让它竖直
-        cv::rotate(src, out, cv::ROTATE_90_CLOCKWISE);
+        cv::rotate(src, out, cv::ROTATE_90_COUNTERCLOCKWISE);
     }
     else {
         out = src.clone();
     }
+
     return out;
 }
 
@@ -76,16 +83,25 @@ std::vector<double> sfr::poly_edge_fit(const cv::Mat& mat, int npol, std::vector
     const int nlin = mat.rows;
     const int npix = mat.cols;
 
-    // 转 double
     cv::Mat1d a;
-
-     //cv::threshold(mat, mat,100,255,0);
-
     mat.convertTo(a, CV_64F);
 
-    // 1D 导数（沿列方向），对应 deriv1(a(:,:,color), fil1/fil2)
+    // 估计左右亮度
+    double tleft = cv::sum(a.colRange(0, 5))[0];
+    double tright = cv::sum(a.colRange(npix - 5, npix))[0];
+
+    // 基础核：[-0.5, 0, 0.5]
+    cv::Mat1d k(1, 3);
+    k(0, 0) = -0.5; k(0, 1) = 0.0; k(0, 2) = 0.5;
+
+    // 如果左边更亮，就把核反号，保证导数对应的是“暗→亮”正峰
+    if (tleft > tright) {
+        k = -k;
+    }
+
     cv::Mat1d deriv;
-    cv::filter2D(a, deriv, CV_64F, sfr::kernel);
+    cv::filter2D(a, deriv, CV_64F, k);
+
 
     // 第一轮：对称 Hamming 窗，粗略 loc
     std::vector<double> win1 = sfr::hamming(npix);
@@ -237,22 +253,25 @@ std::vector<double> sfr::lsf(const std::vector<double>& esf) {
     cv::Mat1d diffMat;
     cv::filter2D(esfMat, diffMat, CV_64F, sfr::kernel);
 
-    // 找到最大响应位置（视为 LSF 中心）
-    double maxVal;
-    cv::Point maxLoc;
-    cv::minMaxLoc(diffMat, nullptr, &maxVal, nullptr, &maxLoc);
-
-    // 转回 std::vector
+    // diffMat -> diff
     std::vector<double> diff(n);
     for (int i = 0; i < n; ++i) diff[i] = diffMat(0, i);
 
-    // 使用新的 center_shift 把峰值移到中间
-    diff = sfr::center_shift(diff, maxLoc.x + 1);
-    // +1：center_shift 中使用的是 MATLAB 风格的“索引”，maxLoc.x 是 0-based，
-    // 对齐 MATLAB i=1..n，需要 +1
+    // 用“绝对值最大”作为峰
+    double maxVal = 0.0;
+    int maxIdx = 0;
+    for (int i = 0; i < n; ++i) {
+        if (std::abs(diff[i]) > std::abs(maxVal)) {
+            maxVal = diff[i];
+            maxIdx = i;
+        }
+    }
 
-    // 乘 Hamming 窗并归一化
-    std::vector<double> win = sfr::hamming(n);
+    // 中心移到中点
+    diff = sfr::center_shift(diff, maxIdx + 1);
+
+    // 乘窗并用 maxVal 归一化
+    auto win = sfr::hamming(n);
     std::vector<double> lsf(n);
     for (int i = 0; i < n; ++i) {
         lsf[i] = win[i] * diff[i] / maxVal;

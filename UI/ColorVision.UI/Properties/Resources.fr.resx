@@ -490,4 +490,10 @@
   <data name="SortByCategory" xml:space="preserve">
     <value>Trier par catégorie</value>
   </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
 </root>

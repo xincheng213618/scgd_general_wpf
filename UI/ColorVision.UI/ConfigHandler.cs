@@ -200,11 +200,11 @@ namespace ColorVision.UI
             if (File.Exists(fileName))
             {
                 string json = File.ReadAllText(fileName);
-
                 try
                 {
                     jObject = JObject.Parse(json);
-                }catch(Exception ex)
+                }
+                catch (Exception ex)
                 {
                     log.Error(ex);
                     MessageBox.Show(Properties.Resources.ConfigFileResetDueToError);

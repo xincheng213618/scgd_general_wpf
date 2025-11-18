@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -11,6 +12,10 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class CircleManagerConfig : ViewModelBase
     {
+        [DisplayName("连续模式")]
+        public bool IsContinuous { get => _IsContinuous; set { _IsContinuous = value; OnPropertyChanged(); } }
+        private bool _IsContinuous;
+
         public bool IsLocked { get => _IsLocked; set { _IsLocked = value; OnPropertyChanged(); } }
         private bool _IsLocked;
 
@@ -150,12 +155,14 @@ namespace ColorVision.ImageEditor.Draw
                 if (DrawCircleCache.Attribute.Radius == Config.DefalutRadius)
                     DrawCircleCache.Render();
 
-                ImageViewModel.SelectEditorVisual.SetRender(DrawCircleCache); 
+                ImageViewModel.SelectEditorVisual.SetRender(DrawCircleCache);
 
                 if (!Config.IsLocked)
-                {
                     Config.DefalutRadius = DrawCircleCache.Radius;
-                }
+
+                if (!Config.IsContinuous)
+                    IsChecked = false;
+
                 DrawCircleCache = null;
             }
             e.Handled = true;

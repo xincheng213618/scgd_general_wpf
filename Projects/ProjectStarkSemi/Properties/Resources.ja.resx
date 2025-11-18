@@ -118,6 +118,69 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="MenuLanguage" xml:space="preserve">
-    <value>_Language</value>
+    <value>言語(_L)</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>モデル</value>
+  </data>
+  <data name="OpenObservationCamera" xml:space="preserve">
+    <value>観察カメラを開く</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>画像を取得</value>
+  </data>
+  <data name="Calibration" xml:space="preserve">
+    <value>修正</value>
+  </data>
+  <data name="ImageFilter" xml:space="preserve">
+    <value>画像フィルタリング</value>
+  </data>
+  <data name="NoFilter" xml:space="preserve">
+    <value>フィルタリングなし</value>
+  </data>
+  <data name="LowPassFilter" xml:space="preserve">
+    <value>ローパスフィルタ</value>
+  </data>
+  <data name="MovingAverage" xml:space="preserve">
+    <value>移動平均</value>
+  </data>
+  <data name="GaussianFilter" xml:space="preserve">
+    <value>ガウスフィルタ</value>
+  </data>
+  <data name="BilateralFilter" xml:space="preserve">
+    <value>双方向フィルタリング</value>
+  </data>
+  <data name="KernelSize" xml:space="preserve">
+    <value>核の大きさ</value>
+  </data>
+  <data name="ApplyFilter" xml:space="preserve">
+    <value>アプリケーションフィルタリング</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>中央値フィルタリング</value>
+  </data>
+  <data name="FilterType" xml:space="preserve">
+    <value>フィルタータイプ</value>
+  </data>
+  <data name="StatusInformation" xml:space="preserve">
+    <value>ステータス情報</value>
+  </data>
+  <data name="CurrentModel" xml:space="preserve">
+    <value>現在のモデル</value>
+  </data>
+  <data name="ObservationCameraStatus" xml:space="preserve">
+    <value>カメラの状態を観察する</value>
+  </data>
+  <data name="MeasurementCameraStatus" xml:space="preserve">
+    <value>カメラの状態を測定する</value>
+  </data>
+  <data name="CalibrationStatus" xml:space="preserve">
+    <value>修正状況</value>
+  </data>
+  <data name="NotOpened" xml:space="preserve">
+    <value>未開封</value>
+  </data>
+  <data name="NotCalibrated" xml:space="preserve">
+    <value>修正されていない</value>
   </data>
 </root>
