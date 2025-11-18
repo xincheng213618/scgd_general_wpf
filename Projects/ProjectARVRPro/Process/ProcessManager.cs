@@ -230,7 +230,7 @@ namespace ProjectARVRPro.Process
                             log.Warn($"无法实例化进程类型 {item.ProcessTypeFullName}: {ex.Message}");
                         }
                     }
-                    ProcessMeta meta = new ProcessMeta() { Name = item.Name, FlowTemplate = item.FlowTemplate, Process = proc };
+                    ProcessMeta meta = new ProcessMeta() { Name = item.Name, FlowTemplate = item.FlowTemplate, Process = proc, IsEnabled = item.IsEnabled };
                     meta.PropertyChanged += Meta_PropertyChanged;
                     ProcessMetas.Add(meta);
                 }
@@ -251,7 +251,8 @@ namespace ProjectARVRPro.Process
                 {
                     Name = m.Name,
                     FlowTemplate = m.FlowTemplate,
-                    ProcessTypeFullName = m.Process?.GetType().FullName
+                    ProcessTypeFullName = m.Process?.GetType().FullName,
+                    IsEnabled = m.IsEnabled
                 }).ToList();
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
                 File.WriteAllText(PersistFilePath, json);

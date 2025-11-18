@@ -490,4 +490,10 @@
   <data name="SortByCategory" xml:space="preserve">
     <value>按類別排序</value>
   </data>
+  <data name="OK" xml:space="preserve">
+    <value>確定</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
 </root>

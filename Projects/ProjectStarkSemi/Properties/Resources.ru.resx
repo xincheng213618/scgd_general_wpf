@@ -118,6 +118,69 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="MenuLanguage" xml:space="preserve">
-    <value>언어(_L)</value>
+    <value>Язык(Л)</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>модель</value>
+  </data>
+  <data name="OpenObservationCamera" xml:space="preserve">
+    <value>Откройте камеру наблюдения</value>
+  </data>
+  <data name="CaptureImage" xml:space="preserve">
+    <value>Получить изображение</value>
+  </data>
+  <data name="Calibration" xml:space="preserve">
+    <value>Исправление</value>
+  </data>
+  <data name="ImageFilter" xml:space="preserve">
+    <value>Фильтрация изображений</value>
+  </data>
+  <data name="NoFilter" xml:space="preserve">
+    <value>Без фильтрации</value>
+  </data>
+  <data name="LowPassFilter" xml:space="preserve">
+    <value>фильтр нижних частот</value>
+  </data>
+  <data name="MovingAverage" xml:space="preserve">
+    <value>Скользящая средняя</value>
+  </data>
+  <data name="GaussianFilter" xml:space="preserve">
+    <value>Фильтр Гаусса</value>
+  </data>
+  <data name="BilateralFilter" xml:space="preserve">
+    <value>двусторонняя фильтрация</value>
+  </data>
+  <data name="KernelSize" xml:space="preserve">
+    <value>размер ядра</value>
+  </data>
+  <data name="ApplyFilter" xml:space="preserve">
+    <value>Фильтрация приложений</value>
+  </data>
+  <data name="MedianFilter" xml:space="preserve">
+    <value>Медианная фильтрация</value>
+  </data>
+  <data name="FilterType" xml:space="preserve">
+    <value>Тип фильтра</value>
+  </data>
+  <data name="StatusInformation" xml:space="preserve">
+    <value>Информация о статусе</value>
+  </data>
+  <data name="CurrentModel" xml:space="preserve">
+    <value>Текущая модель</value>
+  </data>
+  <data name="ObservationCameraStatus" xml:space="preserve">
+    <value>Наблюдайте за состоянием камеры</value>
+  </data>
+  <data name="MeasurementCameraStatus" xml:space="preserve">
+    <value>Измерить состояние камеры</value>
+  </data>
+  <data name="CalibrationStatus" xml:space="preserve">
+    <value>Статус исправления</value>
+  </data>
+  <data name="NotOpened" xml:space="preserve">
+    <value>Не открыт</value>
+  </data>
+  <data name="NotCalibrated" xml:space="preserve">
+    <value>неисправленный</value>
   </data>
 </root>

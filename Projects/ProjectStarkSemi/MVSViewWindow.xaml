@@ -1,4 +1,4 @@
-﻿<Window x:Class="ProjectStarKey.MVSViewWindow"
+﻿<Window x:Class="ProjectStarkSemi.MVSViewWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:wfCtrl="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"

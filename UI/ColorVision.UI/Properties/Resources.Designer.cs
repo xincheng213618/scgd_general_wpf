@@ -169,6 +169,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        public static string Cancel {
+            get {
+                return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 正在检测是否支持CUDA 的本地化字符串。
         /// </summary>
         public static string CheckingCUDASupport {
@@ -939,6 +948,15 @@ namespace ColorVision.UI.Properties {
         public static string NoLocalLog4Output {
             get {
                 return ResourceManager.GetString("NoLocalLog4Output", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定 的本地化字符串。
+        /// </summary>
+        public static string OK {
+            get {
+                return ResourceManager.GetString("OK", resourceCulture);
             }
         }
         

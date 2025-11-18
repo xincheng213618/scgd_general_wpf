@@ -23,8 +23,21 @@ namespace ProjectARVRPro.Services
             if (ProjectWindowInstance.WindowInstance != null)
             {
                 ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
+                
+                // Find first enabled ProcessMeta index
+                int firstEnabledIndex = -1;
+                var processMetas = Process.ProcessManager.GetInstance().ProcessMetas;
+                for (int i = 0; i < processMetas.Count; i++)
+                {
+                    if (processMetas[i].IsEnabled)
+                    {
+                        firstEnabledIndex = i;
+                        break;
+                    }
+                }
+                
                 //现在先切换PG
-                return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = 0 } };
+                return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = firstEnabledIndex } };
             }
             else
             {

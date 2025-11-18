@@ -134,13 +134,24 @@ namespace ProjectARVRPro
                 log.Info("PG切换错误，正在执行流程");
                 return;
             }
-            var TestType = CurrentTestType + 1;
-            if (TestType >=0 && TestType< ProcessMetas.Count)
+
+            // Find next enabled ProcessMeta
+            int nextTestType = -1;
+            for (int i = CurrentTestType + 1; i < ProcessMetas.Count; i++)
             {
-                ProcessMeta processMeta = ProcessMetas[TestType];
-                ProjectConfig.StepIndex = TestType;
+                if (ProcessMetas[i].IsEnabled)
+                {
+                    nextTestType = i;
+                    break;
+                }
+            }
+
+            if (nextTestType >= 0 && nextTestType < ProcessMetas.Count)
+            {
+                ProcessMeta processMeta = ProcessMetas[nextTestType];
+                ProjectConfig.StepIndex = nextTestType;
                 FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(processMeta.FlowTemplate)).Value;
-                CurrentTestType = TestType;
+                CurrentTestType = nextTestType;
                 RunTemplate();
             }
 
@@ -574,7 +585,18 @@ namespace ProjectARVRPro
             ViewResultManager.Save(result);
         }
 
-        private bool IsTestTypeCompleted() => CurrentTestType +1 >= ProcessMetas.Count;
+        private bool IsTestTypeCompleted()
+        {
+            // Find if there are any enabled ProcessMetas after CurrentTestType
+            for (int i = CurrentTestType + 1; i < ProcessMetas.Count; i++)
+            {
+                if (ProcessMetas[i].IsEnabled)
+                {
+                    return false; // There is at least one more enabled ProcessMeta
+                }
+            }
+            return true; // No more enabled ProcessMetas
+        }
 
 
         private void SwitchPG()
@@ -586,6 +608,16 @@ namespace ProjectARVRPro
             }
             log.Info("Socket已经链接 ");
 
+            // Find next enabled ProcessMeta index
+            int nextTestType = -1;
+            for (int i = CurrentTestType + 1; i < ProcessMetas.Count; i++)
+            {
+                if (ProcessMetas[i].IsEnabled)
+                {
+                    nextTestType = i;
+                    break;
+                }
+            }
 
             var response = new SocketResponse
             {
@@ -597,7 +629,7 @@ namespace ProjectARVRPro
                 SerialNumber = SNtextBox.Text,
                 Data = new SwitchPG
                 {
-                    ARVRTestType = CurrentTestType +1
+                    ARVRTestType = nextTestType
                 },
             };
 

@@ -6,7 +6,7 @@ namespace ProjectARVRPro.PluginConfig
 
     public class ProjectARVRLitePlugin : IFeatureLauncherBase
     {
-        public override string? Header => "ARVRDetectPro";
+        public override string? Header => "ARVRPro";
 
         public override void Execute()
         {

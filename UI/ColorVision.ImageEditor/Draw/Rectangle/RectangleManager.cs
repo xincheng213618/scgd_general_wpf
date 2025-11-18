@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
@@ -11,6 +12,10 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class RectangleManagerConfig : ViewModelBase
     {
+        [DisplayName("连续模式")]
+        public bool IsContinuous { get => _IsContinuous; set { _IsContinuous = value; OnPropertyChanged(); } }
+        private bool _IsContinuous;
+
         public bool IsLocked { get => _IsLocked; set { _IsLocked = value; OnPropertyChanged(); } }
         private bool _IsLocked;
 
@@ -166,6 +171,8 @@ namespace ColorVision.ImageEditor.Draw
                     Config.DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
                     Config.DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
                 }
+                if (!Config.IsContinuous)
+                    IsChecked = false;
 
                 DrawingRectangleCache = null;
             }

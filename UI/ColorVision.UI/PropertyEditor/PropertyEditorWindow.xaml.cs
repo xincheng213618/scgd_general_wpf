@@ -77,11 +77,16 @@ namespace ColorVision.UI
                 DisplayProperties(EditConfig);
             }
         }
-        private void Close_Click(object sender, RoutedEventArgs e)
+        private void OK_Click(object sender, RoutedEventArgs e)
         {
             if (!IsEdit)
                 EditConfig.CopyTo(Config);
             Submited?.Invoke(sender, new EventArgs());
+            this.Close();
+        }
+
+        private void Cancel_Click(object sender, RoutedEventArgs e)
+        {
             this.Close();
         }
 

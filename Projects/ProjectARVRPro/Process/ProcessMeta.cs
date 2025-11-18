@@ -13,6 +13,9 @@ namespace ProjectARVRPro.Process
         public IProcess Process { get => _Process; set { _Process = value; OnPropertyChanged(); OnPropertyChanged(nameof(ProcessTypeName)); } }
         private IProcess _Process;
 
+        public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged(); } }
+        private bool _IsEnabled = true;
+
         public string ProcessTypeName => Process?.GetType().Name ?? string.Empty;
         public string ProcessTypeFullName => Process?.GetType().FullName ?? string.Empty;
     }

@@ -13,16 +13,14 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor
-{
-
-
-
-
+{   
     /// <summary>
     /// 编辑器工具工厂 - 负责发现、创建和初始化编辑器工具
     /// </summary>
     public class IEditorToolFactory
     {
+        public T? GetIEditorTool<T>() where T : IEditorTool => IEditorTools.OfType<T>().FirstOrDefault();
+
         public ObservableCollection<IEditorTool> IEditorTools { get; set; } = new ObservableCollection<IEditorTool>();
         public ObservableCollection<IIEditorToolContextMenu> IIEditorToolContextMenus { get; set; } = new ObservableCollection<IIEditorToolContextMenu>();
         public ObservableCollection<IImageComponent> IImageComponents { get; set; } = new ObservableCollection<IImageComponent>();
