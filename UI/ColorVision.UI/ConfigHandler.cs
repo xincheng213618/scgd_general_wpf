@@ -16,10 +16,6 @@ namespace ColorVision.UI
         [DisplayName("是否启用定时备份")]
         public bool EnableBackup { get => _EnableBackup; set { _EnableBackup = value; OnPropertyChanged(); } }
         private bool _EnableBackup = true;
-
-        [DisplayName("最大备份数量"),Description("超过则自动清理旧备份")]
-        public int MaxBackupFiles { get => _MaxBackupFiles; set { _MaxBackupFiles = value; OnPropertyChanged(); } }
-        private int _MaxBackupFiles = 10;
     }
     /// <summary>
     /// 加载插件
@@ -68,18 +64,18 @@ namespace ColorVision.UI
                 ConfigFilePath = DirectoryPath + ConfigDIFileName;
                 BackupFolderPath = DirectoryPath + backupDirName + "\\";
             }
+
             if (!Directory.Exists(BackupFolderPath))
                 Directory.CreateDirectory(BackupFolderPath);
-
             LoadConfigs(ConfigFilePath);
-
-            Task.Delay(3000).ContinueWith(t =>
+            if (Options.EnableBackup)
             {
-                if (Options.EnableBackup)
+                Task.Delay(3000).ContinueWith(t =>
                 {
                     BackupConfigs();
-                }
-            });
+                });
+            }
+
             Authorization.Instance = GetRequiredService<Authorization>();
 
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
@@ -339,13 +335,12 @@ namespace ColorVision.UI
         {
             try
             {
-                if (Options.MaxBackupFiles <= 0) return;
                 var files = Directory.GetFiles(BackupFolderPath, "ConfigBackup_*.json")
                     .OrderByDescending(f => f)
                     .ToList();
-                if (files.Count > Options.MaxBackupFiles)
+                if (files.Count > 10)
                 {
-                    foreach (var file in files.Skip(Options.MaxBackupFiles))
+                    foreach (var file in files.Skip(10))
                     {
                         File.Delete(file);
                     }
