@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 using System.IO;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Media.Imaging;
 
 
 namespace ColorVision.UI.Plugins
@@ -156,17 +155,7 @@ namespace ColorVision.UI.Plugins
                             }
                         }
 
-                        string readmePath = Path.Combine(directory, "readme.md");
-                        if (File.Exists(readmePath))
-                            pluginInfo.README = File.ReadAllText(readmePath); ;
-
-                        string changelogPath = Path.Combine(directory, "changelog.md");
-                        if (File.Exists(changelogPath))
-                            pluginInfo.ChangeLog = File.ReadAllText(changelogPath); ;
-
-                        string PackageIconPath = Path.Combine(directory, "PackageIcon.png");
-                        if (File.Exists(PackageIconPath))
-                            pluginInfo.Icon = new BitmapImage(new Uri(PackageIconPath));
+                        // README, ChangeLog, and Icon are now loaded on-demand to reduce startup time
                        
                         if (!pluginInfo.Enabled)
                             continue;
