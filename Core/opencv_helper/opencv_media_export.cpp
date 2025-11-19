@@ -73,6 +73,179 @@ COLORVISIONCORE_API int M_CalSFR(
 	return 0;
 }
 
+// Helper function to convert BGR to L using custom weights: Y = 0.213*R + 0.715*G + 0.072*B
+static cv::Mat ConvertBGRToLuminance(const cv::Mat& bgr) {
+	CV_Assert(bgr.channels() == 3);
+	cv::Mat luminance(bgr.size(), CV_8UC1);
+	
+	for (int y = 0; y < bgr.rows; ++y) {
+		const cv::Vec3b* bgr_row = bgr.ptr<cv::Vec3b>(y);
+		uchar* lum_row = luminance.ptr<uchar>(y);
+		
+		for (int x = 0; x < bgr.cols; ++x) {
+			// OpenCV stores as BGR, so: B=bgr_row[x][0], G=bgr_row[x][1], R=bgr_row[x][2]
+			double b = bgr_row[x][0];
+			double g = bgr_row[x][1];
+			double r = bgr_row[x][2];
+			
+			// L = 0.213*R + 0.715*G + 0.072*B
+			double lum = 0.213 * r + 0.715 * g + 0.072 * b;
+			lum_row[x] = static_cast<uchar>(std::min(255.0, std::max(0.0, lum)));
+		}
+	}
+	
+	return luminance;
+}
+
+COLORVISIONCORE_API int M_CalSFRMultiChannel(
+	HImage img,
+	double del,
+	int roi_x, int roi_y, int roi_width, int roi_height,
+	double* freq,
+	double* sfr_r,
+	double* sfr_g,
+	double* sfr_b,
+	double* sfr_l,
+	int    maxLen,
+	int* outLen,
+	int* channelCount,
+	double* mtf10_norm_r, double* mtf50_norm_r, double* mtf10_cypix_r, double* mtf50_cypix_r,
+	double* mtf10_norm_g, double* mtf50_norm_g, double* mtf10_cypix_g, double* mtf50_cypix_g,
+	double* mtf10_norm_b, double* mtf50_norm_b, double* mtf10_cypix_b, double* mtf50_cypix_b,
+	double* mtf10_norm_l, double* mtf50_norm_l, double* mtf10_cypix_l, double* mtf50_cypix_l)
+{
+	// Validate pointers
+	if (!freq || !sfr_l || !outLen || !channelCount ||
+		!mtf10_norm_l || !mtf50_norm_l || !mtf10_cypix_l || !mtf50_cypix_l) {
+		return -1;
+	}
+
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty()) return -2;
+
+	// Apply ROI if specified
+	cv::Rect roi(roi_x, roi_y, roi_width, roi_height);
+	bool use_roi = (roi.width > 0 && roi.height > 0 && (roi & cv::Rect(0, 0, mat.cols, mat.rows)) == roi);
+	mat = use_roi ? mat(roi) : mat;
+
+	// Determine if this is a 3-channel (RGB) or single-channel image
+	bool isRGB = (mat.channels() == 3 || mat.channels() == 4);
+	
+	if (isRGB) {
+		// For RGB images: calculate SFR for R, G, B, and L channels
+		*channelCount = 4;
+		
+		// Validate RGB output pointers
+		if (!sfr_r || !sfr_g || !sfr_b ||
+			!mtf10_norm_r || !mtf50_norm_r || !mtf10_cypix_r || !mtf50_cypix_r ||
+			!mtf10_norm_g || !mtf50_norm_g || !mtf10_cypix_g || !mtf50_cypix_g ||
+			!mtf10_norm_b || !mtf50_norm_b || !mtf10_cypix_b || !mtf50_cypix_b) {
+			return -1;
+		}
+		
+		// Convert to BGR if BGRA
+		cv::Mat bgr;
+		if (mat.channels() == 4) {
+			cv::cvtColor(mat, bgr, cv::COLOR_BGRA2BGR);
+		} else {
+			bgr = mat;
+		}
+		
+		// Split into channels
+		std::vector<cv::Mat> channels;
+		cv::split(bgr, channels);
+		
+		// Calculate SFR for each channel: B, G, R (OpenCV order)
+		auto res_b = sfr::CalSFR(channels[0], del, 5, 4);
+		auto res_g = sfr::CalSFR(channels[1], del, 5, 4);
+		auto res_r = sfr::CalSFR(channels[2], del, 5, 4);
+		
+		// Calculate L channel
+		cv::Mat luminance = ConvertBGRToLuminance(bgr);
+		auto res_l = sfr::CalSFR(luminance, del, 5, 4);
+		
+		// Verify all results have data
+		int N = static_cast<int>(res_r.freq.size());
+		if (N == 0 || res_g.freq.size() != N || res_b.freq.size() != N || res_l.freq.size() != N) {
+			*outLen = 0;
+			return -3;
+		}
+		
+		if (N > maxLen) {
+			*outLen = N;
+			return -4;
+		}
+		
+		// Copy results
+		for (int i = 0; i < N; ++i) {
+			freq[i] = res_r.freq[i];  // Use R's freq (all should be same)
+			sfr_r[i] = res_r.sfr[i];
+			sfr_g[i] = res_g.sfr[i];
+			sfr_b[i] = res_b.sfr[i];
+			sfr_l[i] = res_l.sfr[i];
+		}
+		
+		*outLen = N;
+		
+		// R channel MTF values
+		*mtf10_norm_r = res_r.mtf10_norm;
+		*mtf50_norm_r = res_r.mtf50_norm;
+		*mtf10_cypix_r = res_r.mtf10_cypix;
+		*mtf50_cypix_r = res_r.mtf50_cypix;
+		
+		// G channel MTF values
+		*mtf10_norm_g = res_g.mtf10_norm;
+		*mtf50_norm_g = res_g.mtf50_norm;
+		*mtf10_cypix_g = res_g.mtf10_cypix;
+		*mtf50_cypix_g = res_g.mtf50_cypix;
+		
+		// B channel MTF values
+		*mtf10_norm_b = res_b.mtf10_norm;
+		*mtf50_norm_b = res_b.mtf50_norm;
+		*mtf10_cypix_b = res_b.mtf10_cypix;
+		*mtf50_cypix_b = res_b.mtf50_cypix;
+		
+		// L channel MTF values
+		*mtf10_norm_l = res_l.mtf10_norm;
+		*mtf50_norm_l = res_l.mtf50_norm;
+		*mtf10_cypix_l = res_l.mtf10_cypix;
+		*mtf50_cypix_l = res_l.mtf50_cypix;
+	}
+	else {
+		// For single-channel images: only calculate L channel
+		*channelCount = 1;
+		
+		auto res_l = sfr::CalSFR(mat, del, 5, 4);
+		
+		int N = static_cast<int>(res_l.freq.size());
+		if (N == 0) {
+			*outLen = 0;
+			return -3;
+		}
+		
+		if (N > maxLen) {
+			*outLen = N;
+			return -4;
+		}
+		
+		// Copy results
+		for (int i = 0; i < N; ++i) {
+			freq[i] = res_l.freq[i];
+			sfr_l[i] = res_l.sfr[i];
+		}
+		
+		*outLen = N;
+		
+		// L channel MTF values
+		*mtf10_norm_l = res_l.mtf10_norm;
+		*mtf50_norm_l = res_l.mtf50_norm;
+		*mtf10_cypix_l = res_l.mtf10_cypix;
+		*mtf50_cypix_l = res_l.mtf50_cypix;
+	}
+
+	return 0;
+}
+
 
 
 COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, int roi_x, int roi_y, int roi_width, int roi_height)

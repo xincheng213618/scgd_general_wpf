@@ -96,5 +96,25 @@ extern "C" COLORVISIONCORE_API int M_CalSFR(
     double* mtf10_cypix,
     double* mtf50_cypix);
 
+// Multi-channel SFR calculation for RGB + L channels
+// For 3-channel images: outputs R, G, B, L (4 channels)
+// For single-channel images: outputs only L (1 channel)
+// L is calculated as: Y = 0.213*R + 0.715*G + 0.072*B
+extern "C" COLORVISIONCORE_API int M_CalSFRMultiChannel(
+    HImage img,
+    double del,
+    int roi_x, int roi_y, int roi_width, int roi_height,
+    double* freq,           // 输出：频率数组（所有通道共享）
+    double* sfr_r,          // 输出：R通道 SFR（3通道时有效）
+    double* sfr_g,          // 输出：G通道 SFR（3通道时有效）
+    double* sfr_b,          // 输出：B通道 SFR（3通道时有效）
+    double* sfr_l,          // 输出：L通道 SFR（总是输出）
+    int    maxLen,          // 输入：数组容量
+    int* outLen,            // 输出：实际长度
+    int* channelCount,      // 输出：有效通道数（1或4）
+    double* mtf10_norm_r, double* mtf50_norm_r, double* mtf10_cypix_r, double* mtf50_cypix_r,
+    double* mtf10_norm_g, double* mtf50_norm_g, double* mtf10_cypix_g, double* mtf50_cypix_g,
+    double* mtf10_norm_b, double* mtf50_norm_b, double* mtf10_cypix_b, double* mtf50_cypix_b,
+    double* mtf10_norm_l, double* mtf50_norm_l, double* mtf10_cypix_l, double* mtf50_cypix_l);
 
 
