@@ -45,7 +45,7 @@
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="索引" Width="60" DisplayMemberBinding="{Binding Index}"/>
-                        <GridViewColumn Header="值" Width="550" DisplayMemberBinding="{Binding Value}"/>
+                        <GridViewColumn Header="值" Width="550" DisplayMemberBinding="{Binding DisplayValue}"/>
                     </GridView>
                 </ListView.View>
             </ListView>

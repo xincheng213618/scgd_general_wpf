@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -129,6 +130,13 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             // Clear existing editor
             EditorPanel.Children.Clear();
 
+            // Special handling for nested lists (e.g., List<List<int>>)
+            if (IsGenericList(_elementType))
+            {
+                CreateNestedListEditor();
+                return;
+            }
+
             // Get the base property from ValueWrapper
             var baseProperty = typeof(ValueWrapper).GetProperty(nameof(ValueWrapper.Value))!;
             
@@ -169,6 +177,70 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
 
             // Fallback: create a simple textbox editor
             CreateFallbackEditor();
+        }
+
+        private void CreateNestedListEditor()
+        {
+            // Create UI for editing nested lists
+            var label = new TextBlock
+            {
+                Text = "嵌套列表:",
+                Margin = new Thickness(0, 0, 0, 5),
+                FontWeight = FontWeights.Bold
+            };
+            EditorPanel.Children.Add(label);
+
+            // Get the inner element type (e.g., for List<List<int>>, this would be List<int>)
+            var innerElementType = _elementType.GetGenericArguments()[0];
+
+            // Ensure we have a valid list instance
+            if (_valueWrapper.Value == null)
+            {
+                var listType = typeof(List<>).MakeGenericType(innerElementType);
+                _valueWrapper.Value = Activator.CreateInstance(listType);
+            }
+
+            var list = _valueWrapper.Value as IList;
+
+            // Display current list info
+            var infoText = new TextBlock
+            {
+                Text = list != null ? $"当前包含 {list.Count} 个项" : "空列表",
+                Margin = new Thickness(0, 0, 0, 10),
+                Foreground = PropertyEditorHelper.GlobalTextBrush
+            };
+            EditorPanel.Children.Add(infoText);
+
+            // Edit button to open nested list editor
+            var editButton = new Button
+            {
+                Content = "编辑列表...",
+                Width = 120,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(0, 0, 0, 0)
+            };
+            
+            editButton.Click += (s, e) =>
+            {
+                if (list != null)
+                {
+                    var nestedEditor = new ListEditorWindow(list, innerElementType);
+                    nestedEditor.Owner = this;
+                    
+                    if (nestedEditor.ShowDialog() == true)
+                    {
+                        // Update the info text
+                        infoText.Text = $"当前包含 {list.Count} 个项";
+                    }
+                }
+            };
+
+            EditorPanel.Children.Add(editButton);
+        }
+
+        private static bool IsGenericList(Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>);
         }
 
         private Type? DetermineEditorType(Type elementType)

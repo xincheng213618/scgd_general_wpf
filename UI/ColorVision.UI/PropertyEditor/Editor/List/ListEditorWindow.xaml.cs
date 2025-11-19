@@ -20,6 +20,23 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
         {
             public int Index { get; set; }
             public object? Value { get; set; }
+            
+            public string DisplayValue
+            {
+                get
+                {
+                    if (Value == null)
+                        return "(null)";
+                    
+                    // Special handling for nested lists
+                    if (Value is System.Collections.IList list)
+                    {
+                        return $"[列表: {list.Count} 项]";
+                    }
+                    
+                    return Value.ToString() ?? string.Empty;
+                }
+            }
         }
 
         public ListEditorWindow(IList items, Type elementType)
