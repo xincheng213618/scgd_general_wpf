@@ -3,23 +3,28 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ColorVision.ImageEditor.EditorTools.Algorithms.Calculate"
         Title="SFR Plot" Height="700" Width="1000">
-    <DockPanel>
-        <StackPanel DockPanel.Dock="Right" Width="300" Margin="8">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="1" DockPanel.Dock="Right" Width="400" Margin="8">
             <TextBlock Text="SFR Information" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
             
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                 <TextBlock Text="MTF50 (norm):" Width="120" VerticalAlignment="Center"/>
-                <TextBlock x:Name="TxtMtf50Norm" Width="160" VerticalAlignment="Center" FontWeight="Bold"/>
+                <TextBlock x:Name="TxtMtf50Norm"  VerticalAlignment="Center" FontWeight="Bold"/>
             </StackPanel>
             
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                 <TextBlock Text="MTF50 (cy/pix):" Width="120" VerticalAlignment="Center"/>
-                <TextBlock x:Name="TxtMtf50CyPix" Width="160" VerticalAlignment="Center" FontWeight="Bold"/>
+                <TextBlock x:Name="TxtMtf50CyPix"  VerticalAlignment="Center" FontWeight="Bold"/>
             </StackPanel>
             
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                 <TextBlock Text="MTF10 (norm):" Width="120" VerticalAlignment="Center"/>
-                <TextBlock x:Name="TxtMtf10Norm" Width="160" VerticalAlignment="Center"/>
+                <TextBlock x:Name="TxtMtf10Norm"  VerticalAlignment="Center"/>
             </StackPanel>
             
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
@@ -60,5 +65,5 @@
         </StackPanel>
 
         <local:SfrSimplePlotControl x:Name="Plot" Margin="8"/>
-    </DockPanel>
+    </Grid>
 </Window>

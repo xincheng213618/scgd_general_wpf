@@ -73,30 +73,6 @@ COLORVISIONCORE_API int M_CalSFR(
 	return 0;
 }
 
-// Helper function to convert BGR to L using custom weights: Y = 0.213*R + 0.715*G + 0.072*B
-static cv::Mat ConvertBGRToLuminance(const cv::Mat& bgr) {
-	CV_Assert(bgr.channels() == 3);
-	cv::Mat luminance(bgr.size(), CV_8UC1);
-	
-	for (int y = 0; y < bgr.rows; ++y) {
-		const cv::Vec3b* bgr_row = bgr.ptr<cv::Vec3b>(y);
-		uchar* lum_row = luminance.ptr<uchar>(y);
-		
-		for (int x = 0; x < bgr.cols; ++x) {
-			// OpenCV stores as BGR, so: B=bgr_row[x][0], G=bgr_row[x][1], R=bgr_row[x][2]
-			double b = bgr_row[x][0];
-			double g = bgr_row[x][1];
-			double r = bgr_row[x][2];
-			
-			// L = 0.213*R + 0.715*G + 0.072*B
-			double lum = 0.213 * r + 0.715 * g + 0.072 * b;
-			lum_row[x] = static_cast<uchar>(std::min(255.0, std::max(0.0, lum)));
-		}
-	}
-	
-	return luminance;
-}
-
 COLORVISIONCORE_API int M_CalSFRMultiChannel(
 	HImage img,
 	double del,
@@ -144,24 +120,35 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(
 		}
 		
 		// Convert to BGR if BGRA
-		cv::Mat bgr;
-		if (mat.channels() == 4) {
-			cv::cvtColor(mat, bgr, cv::COLOR_BGRA2BGR);
-		} else {
-			bgr = mat;
-		}
-		
+
 		// Split into channels
+
 		std::vector<cv::Mat> channels;
-		cv::split(bgr, channels);
-		
+		cv::split(mat, channels);
+
+		// Helper function to convert BGR to L using custom weights: Y = 0.213*R + 0.715*G + 0.072*B
+		cv::Mat luminance(mat.size(), CV_64FC1);
+		for (int y = 0; y < mat.rows; ++y) {
+			const cv::Vec3b* bgr_row = mat.ptr<cv::Vec3b>(y);
+
+			uchar* r_row = channels[2].ptr<uchar>(y);
+			uchar* g_row = channels[1].ptr<uchar>(y);
+			uchar* b_row = channels[0].ptr<uchar>(y);
+
+			double* lum_row = luminance.ptr<double>(y);
+
+			for (int x = 0; x < mat.cols; ++x) {
+				double r = r_row[x];
+				double g = g_row[x];
+				double b = b_row[x];
+				// L = 0.213*R + 0.715*G + 0.072*B
+				lum_row[x] = 0.213 * r + 0.715 * g + 0.072 * b;
+			}
+		}
 		// Calculate SFR for each channel: B, G, R (OpenCV order)
-		auto res_b = sfr::CalSFR(channels[0], del, 5, 4);
-		auto res_g = sfr::CalSFR(channels[1], del, 5, 4);
 		auto res_r = sfr::CalSFR(channels[2], del, 5, 4);
-		
-		// Calculate L channel
-		cv::Mat luminance = ConvertBGRToLuminance(bgr);
+		auto res_g = sfr::CalSFR(channels[1], del, 5, 4);
+		auto res_b = sfr::CalSFR(channels[0], del, 5, 4);
 		auto res_l = sfr::CalSFR(luminance, del, 5, 4);
 		
 		// Verify all results have data

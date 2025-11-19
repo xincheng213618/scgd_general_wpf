@@ -1,15 +1,23 @@
 #include <sfr/slanted.h>
 #include <sfr/general.h>
-
+#include <Eigen/Dense>
+#include<numeric>
 
 // 严格对应 MATLAB rotatev2 的单通道版本（mm = 1 的情况）
 cv::Mat sfr::auto_rotate_vertical(const cv::Mat& src) {
     // 对应：a = input array(npix, nlin, ncol)，这里只处理灰度
-    CV_Assert(src.channels() == 1);
 
     cv::Mat a;
-    src.convertTo(a, CV_64F); // 对应 a = double(a);
+    if (src.channels() == 1) {
+        src.convertTo(a, CV_64F); // 对应 a = double(a);
+    }
+    else {
 
+        std::vector<cv::Mat> channels;
+        cv::split(src, channels);
+
+        channels[1].convertTo(a, CV_64F); // 对应 a = double(a);
+    }
     int nlin = a.rows; // MATLAB: nlin = dim(1)
     int npix = a.cols; // MATLAB: npix = dim(2)
 
@@ -52,26 +60,174 @@ cv::Mat sfr::auto_rotate_vertical(const cv::Mat& src) {
 // 计算一行加窗导数的质心（列方向），对应 MATLAB 的 centroid(c.*win) - 0.5
 double row_centroid(const cv::Mat1d& row, const std::vector<double>& win) {
     const int n = row.cols;
-    double num = 0.0, den = 0.0;
+    if (win.size() != n) {
+        // 最好加上一个安全检查
+        throw std::runtime_error("Row and window sizes do not match.");
+    }
+
+    double num = 0.0; // 分子
+    double den = 0.0; // 分母
+
     for (int j = 0; j < n; ++j) {
-        double v = row(0, j) * win[j];
-        num += v * j;
+        double v = row.at<double>(0, j) * win[j];
+
+        // 关键修正：使用 (j + 1) 来模拟 MATLAB 的 1-based 索引
+        num += v * (j + 1);
+
         den += v;
     }
-    if (den == 0.0) return 0.0;
+
+    if (den == 0.0) {
+        // 和 MATLAB 的 loc/sum(x) 在 sum(x)=0 时行为一致 (返回 NaN 或 Inf)。
+        // 这里返回 0.0 是一个合理的处理，但要注意可能与 MATLAB 的 NaN 行为不同。
+        // 如果需要完全一致，可以返回 std::numeric_limits<double>::quiet_NaN();
+        return 0.0;
+    }
+
+    // 最后的 -0.5 移位与 MATLAB 一致
     return num / den - 0.5;
+}
+double mean(const std::vector<double>& v) {
+    if (v.empty()) return 0.0;
+    double sum = std::accumulate(v.begin(), v.end(), 0.0);
+    return sum / v.size();
+}
+
+double stddev(const std::vector<double>& v, double m) {
+    if (v.size() < 2) return 0.0;
+    double accum = 0.0;
+    std::for_each(v.begin(), v.end(), [&](const double d) {
+        accum += (d - m) * (d - m);
+        });
+    return std::sqrt(accum / (v.size() - 1));
+}
+
+// 前置依赖：一个计算二项式系数 nchoosek(n, k) 的函数
+// 您可以自己实现，或使用库。这是一个简单的实现。
+long long nchoosek(int n, int k) {
+    if (k < 0 || k > n) {
+        return 0;
+    }
+    if (k == 0 || k == n) {
+        return 1;
+    }
+    if (k > n / 2) {
+        k = n - k;
+    }
+    long long res = 1;
+    for (int i = 1; i <= k; ++i) {
+        res = res * (n - i + 1) / i;
+    }
+    return res;
+}
+
+// ===== 2. 实现 polyfit_convert 的 C++ 版本 =====
+// 这个函数直接翻译自 MATLAB 的数学逻辑
+std::vector<double> polyfit_convert_cpp(const std::vector<double>& p_scaled_asc, double m, double s) {
+    if (s == 0.0) {
+        // 防止除以零
+        throw std::runtime_error("Standard deviation cannot be zero.");
+    }
+
+    // 1. 获取多项式次数
+    const int degree = static_cast<int>(p_scaled_asc.size()) - 1;
+    if (degree < 0) {
+        return {};
+    }
+
+    // 2. 初始化最终的（未缩放）系数向量
+    std::vector<double> p_unscaled(degree + 1, 0.0);
+
+    // 3. 核心转换逻辑
+    // 遍历 p_scaled_asc 的每一个系数 p_i，它对应于缩放后的项 (x')^i
+    // 其中 x' = (x - m) / s
+    for (int i = 0; i <= degree; ++i) {
+        double p_i = p_scaled_asc[i]; // 这是 c_i in c_i * ((x-m)/s)^i
+
+        // 使用二项式定理展开 (x - m)^i = Σ [nchoosek(i, j) * x^j * (-m)^(i-j)]
+        // 所以，p_i * ((x-m)/s)^i = (p_i / s^i) * Σ [nchoosek(i, j) * x^j * (-m)^(i-j)]
+
+        double s_pow_i = std::pow(s, i);
+
+        for (int j = 0; j <= i; ++j) {
+            // 计算这个展开项对最终多项式中 x^j 项的贡献
+            double contribution = p_i / s_pow_i * nchoosek(i, j) * std::pow(-m, i - j);
+
+            // 将贡献累加到最终系数的相应位置
+            p_unscaled[j] += contribution;
+        }
+    }
+
+    return p_unscaled;
 }
 
 // 拟合 loc(line) 与行号的关系：loc = f(line)，多项式次数 degree
 std::vector<double> edge_polyfit(const std::vector<double>& loc, int degree) {
     const int nlin = static_cast<int>(loc.size());
-    std::vector<double> x(nlin), y(nlin);
+    std::vector<double> x(nlin);
+    std::vector<double> x_scaled(nlin);
+
+    for (int i = 0; i < nlin; ++i) x[i] = static_cast<double>(i);
+
+    // 计算 mu
+    double mu1_mean = mean(x);
+    double mu2_stddev = stddev(x, mu1_mean);
+
+    // 创建 x_scaled
     for (int i = 0; i < nlin; ++i) {
-        x[i] = static_cast<double>(i);   // 对应 MATLAB index = 0:nlin-1
-        y[i] = loc[i];
+        x_scaled[i] = (x[i] - mu1_mean) / mu2_stddev;
     }
-    return sfr::polyfit(x, y, degree);
+
+    // 对缩放后的数据进行拟合
+    std::vector<double> p_scaled = sfr::polyfit(x_scaled, loc, degree);
+
+    // 将系数转换回来
+    // 注意：MATLAB的polyfit返回高次项在前，如果sfr::polyfit是低次项在前，转换时要注意
+    // 假设 sfr::polyfit 返回 [c0, c1, ..., cn]
+    // 假设 polyfit_convert_cpp 也返回 [c0, c1, ..., cn]
+    std::vector<double> p_final = polyfit_convert_cpp(p_scaled, mu1_mean, mu2_stddev);
+
+    return p_final;
 }
+
+// 等价于 MATLAB: b = deriv1(a, nlin, npix, fil)
+// a  : CV_64F, 单通道, size = (nlin, npix)
+// fil: CV_64F, 1xN 行向量 (例如 [0.5 -0.5] 或 [-0.5 0.5])
+cv::Mat1d deriv1_like(const cv::Mat1d& a, const cv::Mat1d& fil)
+{
+    const int nlin = a.rows;
+    const int npix = a.cols;
+
+    // 1. 翻转滤波器
+    // MATLAB 的 `conv` 执行卷积。OpenCV 的 `filter2D` 执行相关。
+    // 为了用 `filter2D` 实现卷积，我们需要先手动翻转滤波器。
+    cv::Mat1d flipped_fil;
+    cv::flip(fil, flipped_fil, -1); // -1 表示在两个轴上翻转
+
+    // 2. 定义锚点
+    // 这是关键！将锚点设置为 (0,0) 意味着滤波器的左上角 (即第一个元素)
+    // 将在计算时对准输入像素。这精确模拟了 MATLAB conv 的行为。
+    cv::Point anchor(0, 0);
+
+    // 3. 执行滤波
+    // - 使用翻转后的滤波器。
+    // - 使用自定义锚点。
+    // - 使用 BORDER_CONSTANT 和标量 0 来模拟 MATLAB conv 在边界外的补零行为。
+    cv::Mat1d b;
+    cv::filter2D(a, b, -1, flipped_fil, anchor, 0, cv::BORDER_CONSTANT);
+
+    // 4. 应用 MATLAB 代码中最后的边缘修正
+    // 这一步和原始 MATLAB 代码完全相同。
+    if (npix >= 2) {
+        for (int i = 0; i < nlin; ++i) {
+            b.at<double>(i, 0) = b.at<double>(i, 1);
+            b.at<double>(i, npix - 1) = b.at<double>(i, npix - 2);
+        }
+    }
+
+    return b;
+}
+
 
 // 对单通道 ROI 做多项式边缘拟合
 // mat  : 单通道图像（灰度），可以是 uchar / ushort / double
@@ -91,20 +247,22 @@ std::vector<double> sfr::poly_edge_fit(const cv::Mat& mat, int npol, std::vector
     double tright = cv::sum(a.colRange(npix - 5, npix))[0];
 
     // 基础核：[-0.5, 0, 0.5]
-    cv::Mat1d k(1, 3);
-    k(0, 0) = -0.5; k(0, 1) = 0.0; k(0, 2) = 0.5;
-
+    cv::Mat1d fil1(1, 2);
+    fil1(0, 0) = 0.5;
+    fil1(0, 1) = -0.5;
     // 如果左边更亮，就把核反号，保证导数对应的是“暗→亮”正峰
     if (tleft > tright) {
-        k = -k;
+        fil1 = -fil1;
     }
 
-    cv::Mat1d deriv;
-    cv::filter2D(a, deriv, CV_64F, k);
+    cv::Mat1d deriv = deriv1_like(a, fil1);
 
+    double alpha = 1.0; // 或你希望的值
 
     // 第一轮：对称 Hamming 窗，粗略 loc
-    std::vector<double> win1 = sfr::hamming(npix);
+    auto win1 = sfr::tukey2(npix, alpha, (npix + 1) / 2.0);
+    for (double& v : win1) v = 0.95 * v + 0.05;   // 与 MATLAB inbox5 中对 Tukey 的处理一致
+
     std::vector<double> loc(nlin, 0.0);
 
     for (int i = 0; i < nlin; ++i) {
@@ -119,7 +277,7 @@ std::vector<double> sfr::poly_edge_fit(const cv::Mat& mat, int npol, std::vector
     for (int i = 0; i < nlin; ++i) {
         // place = polyval(coeff, i)
         double place = sfr::polyval(std::vector<double>{static_cast<double>(i)}, coeff)[0];
-        auto win2 = sfr::tukey(npix, place);
+        auto win2 = sfr::tukey2(npix, alpha,place);
         // MATLAB 中对 Tukey 窗有抬底：win2 = 0.95*win2 + 0.05;
         for (double& v : win2) v = 0.95 * v + 0.05;
 
@@ -283,14 +441,12 @@ std::vector<double> sfr::lsf(const std::vector<double>& esf) {
 std::vector<double> sfr::mtf(const std::vector<double>& lsf) {
     const int nn = static_cast<int>(lsf.size());
 
-    // FFT
     cv::Mat1d lsfMat(1, nn);
     for (int i = 0; i < nn; ++i) lsfMat(0, i) = lsf[i];
 
     cv::Mat fftMat;
     cv::dft(lsfMat, fftMat, cv::DFT_COMPLEX_OUTPUT);
 
-    // 取复数数组
     std::vector<std::complex<double>> fft(nn);
     for (int i = 0; i < nn; ++i) {
         cv::Vec2d c = fftMat.at<cv::Vec2d>(0, i);
@@ -311,20 +467,21 @@ std::vector<double> sfr::mtf(const std::vector<double>& lsf) {
         double raw = std::abs(fft[i]) / DC;
         mtf[i] = raw* corr[i];
     }
-
-
-    // 剩余的保持 0 或延用最后一个值，看你需求；这里保留 0 即可。
-
     return mtf;
 }
 
-double sfr::mtf10(const std::vector<double> &mtf) {
-    auto point = std::adjacent_find(mtf.begin(), mtf.end(), [](auto&& l, auto&& r) { return l > 0.1 && r < 0.1; });
-    const int n = mtf.size(), i = std::distance(mtf.begin(), point);
-    // 插值计算
-    double k = n * (*(point+1) - *point);
-    return (0.1 - *point) / k + 1.0 * i / n;
+double sfr::mtf10(const std::vector<double>& mtf) {
+    auto it = std::adjacent_find(mtf.begin(), mtf.end(),
+        [](double l, double r) { return l > 0.1 && r < 0.1; });
+    if (it == mtf.end() || (it + 1) == mtf.end()) return 0.0;
+    int i = static_cast<int>(std::distance(mtf.begin(), it));
+    double y1 = *it;
+    double y2 = *(it + 1);
+    double x1 = static_cast<double>(i) / mtf.size();
+    double x2 = static_cast<double>(i + 1) / mtf.size();
+    return x1 + (0.1 - y1) * (x2 - x1) / (y2 - y1);
 }
+
 double sfr::mtf50(const std::vector<double>& mtf) {
     auto it = std::adjacent_find(mtf.begin(), mtf.end(),
         [](double l, double r) { return l > 0.5 && r < 0.5; });
@@ -334,9 +491,7 @@ double sfr::mtf50(const std::vector<double>& mtf) {
     double y2 = *(it + 1);
     double x1 = static_cast<double>(i) / mtf.size();
     double x2 = static_cast<double>(i + 1) / mtf.size();
-    // 线性插值
-    double f50 = x1 + (0.5 - y1) * (x2 - x1) / (y2 - y1);
-    return f50;
+    return x1 + (0.5 - y1) * (x2 - x1) / (y2 - y1);
 }
 
 using namespace sfr;
@@ -351,21 +506,32 @@ SFRResult sfr::CalSFR(const cv::Mat& imgIn,
     if (imgIn.empty()) return result;
 
     // 1. 保证单通道 & 自动旋转
+    // 1. 保证单通道 & 自动旋转
     cv::Mat gray;
-    if (imgIn.channels() == 3) {
-        cv::cvtColor(imgIn, gray, cv::COLOR_BGR2GRAY);
-    }
-    else if (imgIn.channels() == 4) {
-        cv::cvtColor(imgIn, gray, cv::COLOR_BGRA2GRAY);
-    }
-    else {
-        gray = imgIn.clone();
-    }
-    gray = auto_rotate_vertical(gray);
+    gray = sfr::auto_rotate_vertical(imgIn.clone());
 
     // 2. 多项式边缘拟合
     std::vector<double> loc;
     auto fitme = poly_edge_fit(gray, npol, &loc);
+    auto fitme1 = edge_polyfit(loc, 1); // [a0, a1]
+    double vslope = fitme1[1];           // 就是亮度边缘的一阶斜率
+
+    int nlin = gray.rows;
+    double s = std::abs(vslope);
+    int nlin1 = nlin;
+    if (s > 1e-12) {
+        nlin1 = static_cast<int>(std::round(std::floor(nlin * s) / s));
+    }
+    if (nlin1 > 0 && nlin1 < nlin) {
+        gray = gray.rowRange(0, nlin1);
+    }
+
+    double delfac = std::cos(std::atan(vslope));
+    double del_image = del;               // 保存原始 del（像 MATLAB 的 delimage）
+
+    del *= delfac;                        // 沿法线方向的采样间距
+    double del2 = del / nbin;             // 法线方向超采样间距
+
 
     // 3. ESF / LSF / MTF
     if (nbin <= 0) nbin = sfr::factor;
@@ -378,25 +544,23 @@ SFRResult sfr::CalSFR(const cv::Mat& imgIn,
     auto mtf_vec = mtf(lsf_vec);
     if (mtf_vec.empty()) return result;
 
-    // 4. 归一化 MTF10 / MTF50
-    double mtf10_norm = mtf10(mtf_vec);
-    double mtf50_norm = mtf50(mtf_vec);
-
     // 5. 物理频率轴 freq(i) = i / (del2 * nn)
-    int    nn = static_cast<int>(esf_vec.size());
-    double del2 = del / nbin;
-    int    Nmtf = static_cast<int>(mtf_vec.size());
+    int  nn = static_cast<int>(esf_vec.size());
+    int  Nmtf = static_cast<int>(mtf_vec.size()); // 现在应该等于 nn2
 
     result.freq.resize(Nmtf);
     result.sfr.resize(Nmtf);
     for (int i = 0; i < Nmtf; ++i) {
-        double f = static_cast<double>(i) / (del2 * nn); // cy/pixel
+        double f = static_cast<double>(i) / (del2 * nn); // 与 sfrmat5 一致
         result.freq[i] = f;
         result.sfr[i] = mtf_vec[i];
     }
 
-    // 6. 把归一化频率转成物理频率
-    double fNyquist = 0.5 / del;   // cy/pixel
+
+    double mtf10_norm = mtf10(mtf_vec);  // 0~1, 相对 Nyquist
+    double mtf50_norm = mtf50(mtf_vec);
+
+    double fNyquist = 0.5 / del;         // cy/pixel
     result.mtf10_norm = mtf10_norm;
     result.mtf50_norm = mtf50_norm;
     result.mtf10_cypix = mtf10_norm * fNyquist;
