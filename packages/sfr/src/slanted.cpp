@@ -318,13 +318,21 @@ std::vector<double> sfr::mtf(const std::vector<double>& lsf) {
     return mtf;
 }
 
-double sfr::mtf10(const std::vector<double> &mtf) {
-    auto point = std::adjacent_find(mtf.begin(), mtf.end(), [](auto&& l, auto&& r) { return l > 0.1 && r < 0.1; });
-    const int n = mtf.size(), i = std::distance(mtf.begin(), point);
-    // 插值计算
-    double k = n * (*(point+1) - *point);
-    return (0.1 - *point) / k + 1.0 * i / n;
+double sfr::mtf10(const std::vector<double>& mtf) {
+    auto it = std::adjacent_find(mtf.begin(), mtf.end(),
+        [](double l, double r) { return l > 0.1 && r < 0.1; });
+    if (it == mtf.end() || (it + 1) == mtf.end()) return 0.0;
+
+    int i = static_cast<int>(std::distance(mtf.begin(), it));
+    double y1 = *it;
+    double y2 = *(it + 1);
+    double x1 = static_cast<double>(i) / mtf.size();
+    double x2 = static_cast<double>(i + 1) / mtf.size();
+
+    double f10 = x1 + (0.1 - y1) * (x2 - x1) / (y2 - y1);
+    return f10;
 }
+
 double sfr::mtf50(const std::vector<double>& mtf) {
     auto it = std::adjacent_find(mtf.begin(), mtf.end(),
         [](double l, double r) { return l > 0.5 && r < 0.5; });
@@ -353,10 +361,18 @@ SFRResult sfr::CalSFR(const cv::Mat& imgIn,
     // 1. 保证单通道 & 自动旋转
     cv::Mat gray;
     if (imgIn.channels() == 3) {
-        cv::cvtColor(imgIn, gray, cv::COLOR_BGR2GRAY);
+        std::vector<cv::Mat> ch;
+        cv::split(imgIn, ch); // B, G, R
+        // MATLAB inbox4 默认: [0.213 0.715 0.072] 对 R,G,B
+        // 注意 OpenCV split 出来是 B,G,R 顺序
+        gray = 0.072 * ch[0] + 0.715 * ch[1] + 0.213 * ch[2];
+        gray.convertTo(gray, CV_8U); // 根据你后面流程需要的类型调整
     }
     else if (imgIn.channels() == 4) {
-        cv::cvtColor(imgIn, gray, cv::COLOR_BGRA2GRAY);
+        std::vector<cv::Mat> ch;
+        cv::split(imgIn, ch); // B, G, R, A
+        gray = 0.072 * ch[0] + 0.715 * ch[1] + 0.213 * ch[2];
+        gray.convertTo(gray, CV_8U);
     }
     else {
         gray = imgIn.clone();
