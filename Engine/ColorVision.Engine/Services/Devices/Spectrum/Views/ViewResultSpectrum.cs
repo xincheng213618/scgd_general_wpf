@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using cvColorVision;
+using iText.Commons.Bouncycastle.Asn1.X509;
 using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.DataSources;
@@ -95,12 +96,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
 
         }
+        public float? IntTime { get; set; }
+
+        public ViewResultSpectrum()
+        {
+
+        }
 
         public ViewResultSpectrum(SpectumResultModel item)
         {
             Id = item.Id;
             BatchID = item.BatchId;
             CreateTime = item.CreateDate;
+            IntTime = item.IntTime;
             fx = item.fx ?? 0;
             fy = item.fy ?? 0;
             fu = item.fu ?? 0;
