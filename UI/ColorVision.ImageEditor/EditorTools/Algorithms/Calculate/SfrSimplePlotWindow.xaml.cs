@@ -69,6 +69,24 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             TxtMtf50CyPix.Text = $"R:{mtf50cR:F4} G:{mtf50cG:F4} B:{mtf50cB:F4} L:{mtf50cL:F4}";
             TxtMtf10Norm.Text = $"R:{mtf10R:F4} G:{mtf10G:F4} B:{mtf10B:F4} L:{mtf10L:F4}";
             TxtMtf10CyPix.Text = $"R:{mtf10cR:F4} G:{mtf10cG:F4} B:{mtf10cB:F4} L:{mtf10cL:F4}";
+            
+            // Show channel visibility controls
+            TxtChannelVisibility.Visibility = Visibility.Visible;
+            ChkShowR.Visibility = Visibility.Visible;
+            ChkShowG.Visibility = Visibility.Visible;
+            ChkShowB.Visibility = Visibility.Visible;
+            ChkShowL.Visibility = Visibility.Visible;
+        }
+
+        private void ChkChannel_Changed(object sender, RoutedEventArgs e)
+        {
+            if (!_isMultiChannel) return;
+            
+            Plot.SetChannelVisibility(
+                ChkShowR.IsChecked == true,
+                ChkShowG.IsChecked == true,
+                ChkShowB.IsChecked == true,
+                ChkShowL.IsChecked == true);
         }
 
         private void BtnMtfAtFreq_Click(object sender, RoutedEventArgs e)

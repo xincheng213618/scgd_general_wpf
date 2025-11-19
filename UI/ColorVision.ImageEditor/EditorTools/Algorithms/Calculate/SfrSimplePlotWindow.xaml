@@ -47,6 +47,15 @@
 
             <Separator Margin="0,16,0,8"/>
 
+            <TextBlock x:Name="TxtChannelVisibility" Text="通道显示" FontSize="14" FontWeight="Bold" Margin="0,0,0,8" Visibility="Collapsed"/>
+            
+            <CheckBox x:Name="ChkShowR" Content="显示 R 通道" IsChecked="True" Margin="0,4,0,0" Visibility="Collapsed" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#FF0000" FontWeight="Bold"/>
+            <CheckBox x:Name="ChkShowG" Content="显示 G 通道" IsChecked="True" Margin="0,4,0,0" Visibility="Collapsed" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#00AA00" FontWeight="Bold"/>
+            <CheckBox x:Name="ChkShowB" Content="显示 B 通道" IsChecked="True" Margin="0,4,0,0" Visibility="Collapsed" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#0000FF" FontWeight="Bold"/>
+            <CheckBox x:Name="ChkShowL" Content="显示 L 通道" IsChecked="True" Margin="0,4,0,0" Visibility="Collapsed" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#000000" FontWeight="Bold"/>
+
+            <Separator Margin="0,16,0,8"/>
+
             <Button Content="导出到 CSV" Width="280" Height="32" Click="BtnExportCsv_Click" FontWeight="Bold"/>
         </StackPanel>
 

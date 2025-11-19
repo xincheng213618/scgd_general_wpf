@@ -12,6 +12,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
         private double[] _frequencies;
         private double[] _sfrValues;
         private Dictionary<string, double[]> _multiChannelData;
+        
+        // Store references to scatter plots for visibility control
+        private Scatter _scatterR;
+        private Scatter _scatterG;
+        private Scatter _scatterB;
+        private Scatter _scatterL;
 
         public SfrSimplePlotControl()
         {
@@ -70,6 +76,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
 
             var plt = WpfPlot.Plot;
             plt.Clear();
+            
+            // Clear references
+            _scatterR = null;
+            _scatterG = null;
+            _scatterB = null;
+            _scatterL = null;
 
             if (frequencies == null || frequencies.Length == 0)
             {
@@ -83,45 +95,55 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             // Add R channel - Red
             if (sfrR != null && sfrR.Length >= n)
             {
-                var scatterR = plt.Add.Scatter(freqData, sfrR.Take(n).ToArray());
-                scatterR.LegendText = "R";
-                scatterR.LineWidth = 2;
-                scatterR.MarkerSize = 0;
-                scatterR.Color = ScottPlot.Color.FromHex("#FF0000");
+                _scatterR = plt.Add.Scatter(freqData, sfrR.Take(n).ToArray());
+                _scatterR.LegendText = "R";
+                _scatterR.LineWidth = 2;
+                _scatterR.MarkerSize = 0;
+                _scatterR.Color = ScottPlot.Color.FromHex("#FF0000");
             }
 
             // Add G channel - Green
             if (sfrG != null && sfrG.Length >= n)
             {
-                var scatterG = plt.Add.Scatter(freqData, sfrG.Take(n).ToArray());
-                scatterG.LegendText = "G";
-                scatterG.LineWidth = 2;
-                scatterG.MarkerSize = 0;
-                scatterG.Color = ScottPlot.Color.FromHex("#00FF00");
+                _scatterG = plt.Add.Scatter(freqData, sfrG.Take(n).ToArray());
+                _scatterG.LegendText = "G";
+                _scatterG.LineWidth = 2;
+                _scatterG.MarkerSize = 0;
+                _scatterG.Color = ScottPlot.Color.FromHex("#00FF00");
             }
 
             // Add B channel - Blue
             if (sfrB != null && sfrB.Length >= n)
             {
-                var scatterB = plt.Add.Scatter(freqData, sfrB.Take(n).ToArray());
-                scatterB.LegendText = "B";
-                scatterB.LineWidth = 2;
-                scatterB.MarkerSize = 0;
-                scatterB.Color = ScottPlot.Color.FromHex("#0000FF");
+                _scatterB = plt.Add.Scatter(freqData, sfrB.Take(n).ToArray());
+                _scatterB.LegendText = "B";
+                _scatterB.LineWidth = 2;
+                _scatterB.MarkerSize = 0;
+                _scatterB.Color = ScottPlot.Color.FromHex("#0000FF");
             }
 
             // Add L channel - Gray/Black
             if (sfrL != null && sfrL.Length >= n)
             {
-                var scatterL = plt.Add.Scatter(freqData, sfrL.Take(n).ToArray());
-                scatterL.LegendText = "L (Luminance)";
-                scatterL.LineWidth = 2.5f;
-                scatterL.MarkerSize = 0;
-                scatterL.Color = ScottPlot.Color.FromHex("#000000");
+                _scatterL = plt.Add.Scatter(freqData, sfrL.Take(n).ToArray());
+                _scatterL.LegendText = "L (Luminance)";
+                _scatterL.LineWidth = 2.5f;
+                _scatterL.MarkerSize = 0;
+                _scatterL.Color = ScottPlot.Color.FromHex("#000000");
             }
 
             // Set default axis limits: MTF (0-1) and Freq (0-1)
             plt.Axes.SetLimits(0, 1, 0, 1);
+            
+            WpfPlot.Refresh();
+        }
+
+        public void SetChannelVisibility(bool showR, bool showG, bool showB, bool showL)
+        {
+            if (_scatterR != null) _scatterR.IsVisible = showR;
+            if (_scatterG != null) _scatterG.IsVisible = showG;
+            if (_scatterB != null) _scatterB.IsVisible = showB;
+            if (_scatterL != null) _scatterL.IsVisible = showL;
             
             WpfPlot.Refresh();
         }
