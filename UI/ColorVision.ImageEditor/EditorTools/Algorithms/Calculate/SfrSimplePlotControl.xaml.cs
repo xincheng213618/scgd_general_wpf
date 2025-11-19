@@ -115,7 +115,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             {
                 var scatterL = plt.Add.Scatter(freqData, sfrL.Take(n).ToArray());
                 scatterL.LegendText = "L (Luminance)";
-                scatterL.LineWidth = 2.5;
+                scatterL.LineWidth = 2.5f;
                 scatterL.MarkerSize = 0;
                 scatterL.Color = ScottPlot.Color.FromHex("#000000");
             }
