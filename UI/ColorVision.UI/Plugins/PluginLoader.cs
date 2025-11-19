@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 using System.IO;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Media.Imaging;
 
 
 namespace ColorVision.UI.Plugins
@@ -98,6 +97,9 @@ namespace ColorVision.UI.Plugins
                             pluginInfo.Manifest = manifest; // 更新manifest
                         }
 
+                        if (!pluginInfo.Enabled)
+                            continue;
+
                         pluginInfo.DepsJson = depsObj;
                         bool depsOk = false;
 
@@ -155,22 +157,7 @@ namespace ColorVision.UI.Plugins
                                 continue;
                             }
                         }
-
-                        string readmePath = Path.Combine(directory, "readme.md");
-                        if (File.Exists(readmePath))
-                            pluginInfo.README = File.ReadAllText(readmePath); ;
-
-                        string changelogPath = Path.Combine(directory, "changelog.md");
-                        if (File.Exists(changelogPath))
-                            pluginInfo.ChangeLog = File.ReadAllText(changelogPath); ;
-
-                        string PackageIconPath = Path.Combine(directory, "PackageIcon.png");
-                        if (File.Exists(PackageIconPath))
-                            pluginInfo.Icon = new BitmapImage(new Uri(PackageIconPath));
-                       
-                        if (!pluginInfo.Enabled)
-                            continue;
-
+                      
                         if (File.Exists(dllPath))
                         {
                             log.Info(string.Format(Properties.Resources.LoadingPlugin, manifest.Name));

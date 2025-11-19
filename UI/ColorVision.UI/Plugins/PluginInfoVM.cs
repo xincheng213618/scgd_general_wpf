@@ -53,7 +53,8 @@ namespace ColorVision.UI.Plugins
             AssemblyVersion = pluginInfo.AssemblyVersion;
             AssemblyBuildDate = pluginInfo.AssemblyBuildDate;
 
-            Icon = pluginInfo.Icon ??= new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(ThemeManager.Current.CurrentUITheme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
+            // Icon is now lazy-loaded from PluginInfo, with fallback to default
+            Icon = pluginInfo.Icon ?? new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(ThemeManager.Current.CurrentUITheme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
 
             DeleteCommand = new RelayCommand(a => Delete());
             UpdateCommand = new RelayCommand(a => Update());
