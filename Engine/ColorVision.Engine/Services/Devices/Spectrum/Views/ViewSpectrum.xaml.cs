@@ -131,8 +131,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, LeftGridViewColumnVisibilitys);
         }
 
-
-
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex < 0)
@@ -544,30 +542,55 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
             listView1.SelectedIndex = ViewResults.Count - 1;
         }
-
-        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
+        private void Inquire_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
             ScatterPlots.Clear();
             AbsoluteScatterPlots.Clear();
 
-            var list = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>().OrderByDescending(x => x.Id).ToList();
-            foreach (var item in list)
+            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>();
+            query = query.OrderBy(x => x.Id, Config.OrderByType);
+            var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
+            foreach (var item in dbList)
             {
                 ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(item);
-                viewResultSpectrum.V = float.NaN;
-                viewResultSpectrum.I = float.NaN;
                 ViewResults.Add(viewResultSpectrum);
                 ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
                 AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
             }
-            ;
             if (ViewResults.Count > 0)
-            {
-                listView1.Visibility = Visibility.Visible;
-                listView2.Visibility = Visibility.Visible;
                 listView1.SelectedIndex = 0;
-            }
+        }
+        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
+        {
+            GenericQuery<SpectumResultModel, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultModel, ViewResultSpectrum>(MySqlControl.GetInstance().DB, ViewResults, 
+                t =>
+                {
+                    ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(t);
+
+                    ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
+                    AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
+                    return viewResultSpectrum;
+                }
+                );
+            genericQuery.PreQuery += (s, e) =>
+            {
+                ScatterPlots.Clear();
+                AbsoluteScatterPlots.Clear();
+            };
+            genericQuery.QueryCompleted += (s, e) =>
+            {
+                if (ViewResults.Count > 0)
+                {
+                    listView1.Visibility = Visibility.Visible;
+                    listView2.Visibility = Visibility.Visible;
+                    listView1.SelectedIndex = 0;
+                }
+            };
+            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
+            genericQueryWindow.ShowDialog();
+
+
         }
 
 

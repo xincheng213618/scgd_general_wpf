@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
@@ -50,58 +51,42 @@ namespace ColorVision.Database
         public OrderByType OrderByType { get => _OrderByType; set { _OrderByType = value; OnPropertyChanged(); } }
         private OrderByType _OrderByType = OrderByType.Desc;
     }
+    public class QueryCompletedEventArgs : EventArgs
+    {
+        public int ResultCount { get; init; }
+        public TimeSpan Elapsed { get; init; }
+        public string Sql { get; init; }
+    }
 
     public class GenericQueryBase:ViewModelBase
     {
         public static readonly ILog log = LogManager.GetLogger(typeof(GenericQueryBase));
-
-        public SqlSugarClient Db { get; set; }
-
-        public ObservableCollection<KeyValuePair<string, PropertyInfo>> PropertyInfos { get; set; }
-
-        public string Sql { get => _Sql; set { _Sql = value;OnPropertyChanged(); } }
+        public SqlSugarClient Db { get; }
+        public ObservableCollection<KeyValuePair<string, PropertyInfo>> PropertyInfos { get; protected set; } = new();
+        public string Sql { get => _Sql; set { _Sql = value; OnPropertyChanged(); } }
         private string _Sql;
 
-        public RelayCommand DeleteAllCommand { get; set; }
-        public RelayCommand TruncateTableCommand { get; set; }
+        public RelayCommand DeleteAllCommand { get; }
+        public RelayCommand TruncateTableCommand { get; }
+        public event EventHandler PreQuery;
+        public event EventHandler<QueryCompletedEventArgs> QueryCompleted;
 
 
         public GenericQueryBase(SqlSugarClient db)
         {
             Db = db;
-
-            DeleteAllCommand = new RelayCommand(a => DeleteAll());
-            TruncateTableCommand = new RelayCommand(a => TruncateTable());
+            DeleteAllCommand = new RelayCommand(_ => DeleteAll());
+            TruncateTableCommand = new RelayCommand(_ => TruncateTable());
         }
+        protected virtual void OnPreQuery() => PreQuery?.Invoke(this, EventArgs.Empty);
+        protected virtual void OnQueryCompleted(QueryCompletedEventArgs e) => QueryCompleted?.Invoke(this, e);
 
-        public virtual FrameworkElement GetControl()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual FrameworkElement GetControl() => throw new NotImplementedException();
+        public virtual void AddPropertyInfo(PropertyInfo propertyInfo) => throw new NotImplementedException();
+        public virtual void QueryDB() => OnPreQuery();
 
-        public virtual void AddPropertyInfo(PropertyInfo propertyInfo)
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual void QueryDB()
-        {
-
-        }
-
-        /// <summary>
-        /// 清空表数据（Delete All Rows, 保留表结构，自增不重置）
-        /// </summary>
-        public virtual void DeleteAll()
-        {
-        }
-
-        /// <summary>
-        /// 截断表（Truncate Table，删除所有数据且重置自增主键）
-        /// </summary>
-        public virtual void TruncateTable()
-        {
-        }
+        public virtual void DeleteAll() { }
+        public virtual void TruncateTable() { }
     }
 
 
@@ -182,6 +167,9 @@ namespace ColorVision.Database
         }
         public override void QueryDB()
         {
+            base.QueryDB();
+            Stopwatch _stopwatch = Stopwatch.StartNew();
+
             ViewResluts.Clear();
             var query = Db.Queryable<T>();
 
@@ -234,6 +222,10 @@ namespace ColorVision.Database
             {
                 ViewResluts.Add(dbItem);
             }
+
+
+            _stopwatch.Stop();
+            OnQueryCompleted(new QueryCompletedEventArgs() { Sql = Sql, ResultCount = dbList.Count, Elapsed = _stopwatch.Elapsed });
         }
 
         /// <summary>
@@ -338,6 +330,10 @@ namespace ColorVision.Database
         }
         public override void QueryDB()
         {
+            base.QueryDB();
+            Stopwatch _stopwatch = Stopwatch.StartNew();
+            
+
             ViewResluts.Clear();
             var query = Db.Queryable<T>();
 
@@ -389,6 +385,9 @@ namespace ColorVision.Database
             {
                 ViewResluts.Add(Converter(dbItem));
             }
+
+            _stopwatch.Stop();
+            OnQueryCompleted(new QueryCompletedEventArgs() { Sql =Sql,ResultCount = dbList.Count,Elapsed = _stopwatch.Elapsed });
         }
 
 
