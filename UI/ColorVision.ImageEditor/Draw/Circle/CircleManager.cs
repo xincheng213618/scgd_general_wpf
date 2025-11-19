@@ -95,8 +95,6 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
             DrawCircleCache = null;
-
-            ImageViewModel.SelectEditorVisual.ClearRender();
         }
 
         Point MouseDownP { get; set; }
@@ -152,10 +150,10 @@ namespace ColorVision.ImageEditor.Draw
             {
                 MouseUpP = e.GetPosition(DrawCanvas);
 
+                ImageViewModel.SelectEditorVisual.SetRender(DrawCircleCache);
                 if (DrawCircleCache.Attribute.Radius == Config.DefalutRadius)
                     DrawCircleCache.Render();
 
-                ImageViewModel.SelectEditorVisual.SetRender(DrawCircleCache);
 
                 if (!Config.IsLocked)
                     Config.DefalutRadius = DrawCircleCache.Radius;
