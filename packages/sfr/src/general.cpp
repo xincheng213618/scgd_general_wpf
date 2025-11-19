@@ -40,6 +40,90 @@ std::vector<double> sfr::fir2fix(int n, int m)
     return correct;
 }
 
+// 内部对称 Tukey 窗，对应 MATLAB 里的 tukey(n, alpha)
+static std::vector<double> tukey_symmetric(int n, double alpha)
+{
+    std::vector<double> w;
+
+    if (n <= 0) return w;
+
+    if (n == 1) {
+        w.assign(1, 1.0);
+        return w;
+    }
+
+    if (alpha == 0.0) {
+        w.assign(n, 1.0);
+        return w;
+    }
+
+    // 限制 alpha 到 [0,1]
+    if (alpha < 0.0) alpha = 0.0;
+    if (alpha > 1.0) alpha = 1.0;
+
+    w.assign(n, 0.0);
+    const double M = (n - 1) / 2.0;
+
+    for (int k = 0; k <= static_cast<int>(M); ++k) {
+        double value;
+        if (k <= alpha * M) {
+            // 0.5*(1 + cos(pi*(k/alpha/M - 1)))
+            value = 0.5 * (1.0 + std::cos(CV_PI * (k / (alpha * M) - 1.0)));
+        }
+        else {
+            value = 1.0;
+        }
+        w[k] = value;
+        w[n - 1 - k] = value; // 对称
+    }
+
+    return w;
+}
+
+std::vector<double> sfr::tukey2(int n, double alpha, double mid)
+{
+    std::vector<double> w;
+    if (n <= 0) return w;
+
+    if (n < 3) {
+        w.assign(n, 1.0);
+        return w;
+    }
+
+    // 对应 MATLAB 默认值逻辑：
+    // if nargin<3, mid = n/2; end
+    // if nargin<2, alpha = 1; end
+    if (mid <= 0.0) {
+        mid = n / 2.0;
+    }
+    if (alpha <= 0.0) {
+        alpha = 1.0;
+    }
+
+    const double m1 = n / 2.0;
+    const double m2 = mid;
+    const double m3 = n - mid;
+    const double mm = std::max(m2, m3);
+
+    int n2 = static_cast<int>(std::round(2.0 * mm));
+    if (n2 < n) n2 = n; // 防止太小
+
+    auto big = tukey_symmetric(n2, alpha);
+    w.assign(n, 0.0);
+
+    if (mid >= m1) {
+        // w = w(1:n);
+        std::copy(big.begin(), big.begin() + n, w.begin());
+    }
+    else {
+        // w = w(1+end-n:end);
+        int start = n2 - n;
+        std::copy(big.begin() + start, big.begin() + start + n, w.begin());
+    }
+
+    return w;
+}
+
 /**
  * 非对称 Hamming-type 窗，对齐 MATLAB ahamming.m
  * n0  : 窗长 n

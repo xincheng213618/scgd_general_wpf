@@ -8,6 +8,7 @@ namespace sfr {
     const cv::Matx<double, 1, 3> kernel(-0.5, 0, 0.5);
     // 非对称 Hamming-type window，中心在 mid，行为对应 MATLAB ahamming
     std::vector<double> tukey(const int n0, const double mid);
+    std::vector<double> tukey2(int n, double alpha, double mid);
 
     // 对称 Hamming 窗
     inline std::vector<double> hamming(const int n) { return tukey(n, (n + 1) / 2.0); }

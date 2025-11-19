@@ -28,42 +28,74 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
         {
             if (_imageView.HImageCache is not HImage hImage) return;
 
-
-
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 Task.Run(() =>
                 {
-                    int maxLen = 1024; // 根据需要调整
+                    int maxLen = 1024;
                     double[] freq = new double[maxLen];
-                    double[] sfr = new double[maxLen];
+                    double[] sfr_r = new double[maxLen];
+                    double[] sfr_g = new double[maxLen];
+                    double[] sfr_b = new double[maxLen];
+                    double[] sfr_l = new double[maxLen];
                     int outLen;
-                    double mtf10Norm, mtf50Norm, mtf10CyPix, mtf50CyPix;
+                    int channelCount;
+                    
+                    double mtf10_r, mtf50_r, mtf10c_r, mtf50c_r;
+                    double mtf10_g, mtf50_g, mtf10c_g, mtf50c_g;
+                    double mtf10_b, mtf50_b, mtf10c_b, mtf50c_b;
+                    double mtf10_l, mtf50_l, mtf10c_l, mtf50c_l;
 
-                    int ret = OpenCVMediaHelper.M_CalSFR((HImage)_imageView.HImageCache, 1.0,
+                    int ret = OpenCVMediaHelper.M_CalSFRMultiChannel(
+                        (HImage)_imageView.HImageCache, 1.0,
                         0, 0, hImage.cols, hImage.rows,
-                        freq,
-                        sfr,
+                        freq, sfr_r, sfr_g, sfr_b, sfr_l,
                         maxLen,
                         out outLen,
-                        out mtf10Norm,
-                        out mtf50Norm,
-                        out mtf10CyPix,
-                        out mtf50CyPix);
+                        out channelCount,
+                        out mtf10_r, out mtf50_r, out mtf10c_r, out mtf50c_r,
+                        out mtf10_g, out mtf50_g, out mtf10c_g, out mtf50c_g,
+                        out mtf10_b, out mtf50_b, out mtf10c_b, out mtf50c_b,
+                        out mtf10_l, out mtf50_l, out mtf10c_l, out mtf50c_l);
 
                     if (ret == 0 && outLen > 0)
                     {
                         // Copy the data to appropriately sized arrays
                         double[] freqData = new double[outLen];
-                        double[] sfrData = new double[outLen];
                         Array.Copy(freq, freqData, outLen);
-                        Array.Copy(sfr, sfrData, outLen);
 
                         // Show the plot window on UI thread
                         Application.Current.Dispatcher.BeginInvoke(() =>
                         {
                             var plotWindow = new SfrSimplePlotWindow();
-                            plotWindow.SetData(freqData, sfrData, mtf10Norm, mtf50Norm, mtf10CyPix, mtf50CyPix, "SFR");
+                            
+                            if (channelCount == 4)
+                            {
+                                // RGB + L channels
+                                double[] sfrDataR = new double[outLen];
+                                double[] sfrDataG = new double[outLen];
+                                double[] sfrDataB = new double[outLen];
+                                double[] sfrDataL = new double[outLen];
+                                Array.Copy(sfr_r, sfrDataR, outLen);
+                                Array.Copy(sfr_g, sfrDataG, outLen);
+                                Array.Copy(sfr_b, sfrDataB, outLen);
+                                Array.Copy(sfr_l, sfrDataL, outLen);
+                                
+                                plotWindow.SetMultiChannelData(freqData,
+                                    sfrDataR, sfrDataG, sfrDataB, sfrDataL,
+                                    mtf10_r, mtf50_r, mtf10c_r, mtf50c_r,
+                                    mtf10_g, mtf50_g, mtf10c_g, mtf50c_g,
+                                    mtf10_b, mtf50_b, mtf10c_b, mtf50c_b,
+                                    mtf10_l, mtf50_l, mtf10c_l, mtf50c_l);
+                            }
+                            else
+                            {
+                                // Single L channel
+                                double[] sfrDataL = new double[outLen];
+                                Array.Copy(sfr_l, sfrDataL, outLen);
+                                plotWindow.SetData(freqData, sfrDataL, mtf10_l, mtf50_l, mtf10c_l, mtf50c_l, "L");
+                            }
+                            
                             plotWindow.Owner = Application.Current.GetActiveWindow();
                             plotWindow.Show();
                         });
@@ -75,7 +107,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                             MessageBox.Show($"SFR 计算失败，返回码: {ret}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                         });
                     }
-
                 });
             });
         }
@@ -139,40 +170,74 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             var cropSave = new MenuItem { Header = "SFR/MTF 分析" };
             cropSave.Click += (s, e) =>
             {
-                int maxLen = 1024; // 根据需要调整
+                int maxLen = 1024;
                 double[] freq = new double[maxLen];
-                double[] sfr = new double[maxLen];
+                double[] sfr_r = new double[maxLen];
+                double[] sfr_g = new double[maxLen];
+                double[] sfr_b = new double[maxLen];
+                double[] sfr_l = new double[maxLen];
                 int outLen;
-                double mtf10Norm, mtf50Norm, mtf10CyPix, mtf50CyPix;
+                int channelCount;
+                
+                double mtf10_r, mtf50_r, mtf10c_r, mtf50c_r;
+                double mtf10_g, mtf50_g, mtf10c_g, mtf50c_g;
+                double mtf10_b, mtf50_b, mtf10c_b, mtf50c_b;
+                double mtf10_l, mtf50_l, mtf10c_l, mtf50c_l;
 
                 if (context.ImageView.HImageCache == null) return;
                 
                 Task.Run(() =>
                 {
-                    int ret = OpenCVMediaHelper.M_CalSFR((HImage)context.ImageView.HImageCache, 1.0,
+                    int ret = OpenCVMediaHelper.M_CalSFRMultiChannel(
+                        (HImage)context.ImageView.HImageCache, 1.0,
                         roiX, roiY, roiW, roiH,
-                        freq,
-                        sfr,
+                        freq, sfr_r, sfr_g, sfr_b, sfr_l,
                         maxLen,
                         out outLen,
-                        out mtf10Norm,
-                        out mtf50Norm,
-                        out mtf10CyPix,
-                        out mtf50CyPix);
+                        out channelCount,
+                        out mtf10_r, out mtf50_r, out mtf10c_r, out mtf50c_r,
+                        out mtf10_g, out mtf50_g, out mtf10c_g, out mtf50c_g,
+                        out mtf10_b, out mtf50_b, out mtf10c_b, out mtf50c_b,
+                        out mtf10_l, out mtf50_l, out mtf10c_l, out mtf50c_l);
 
                     if (ret == 0 && outLen > 0)
                     {
                         // Copy the data to appropriately sized arrays
                         double[] freqData = new double[outLen];
-                        double[] sfrData = new double[outLen];
                         Array.Copy(freq, freqData, outLen);
-                        Array.Copy(sfr, sfrData, outLen);
 
                         // Show the plot window on UI thread
                         Application.Current.Dispatcher.BeginInvoke(() =>
                         {
                             var plotWindow = new SfrSimplePlotWindow();
-                            plotWindow.SetData(freqData, sfrData, mtf10Norm, mtf50Norm, mtf10CyPix, mtf50CyPix, "SFR");
+                            
+                            if (channelCount == 4)
+                            {
+                                // RGB + L channels
+                                double[] sfrDataR = new double[outLen];
+                                double[] sfrDataG = new double[outLen];
+                                double[] sfrDataB = new double[outLen];
+                                double[] sfrDataL = new double[outLen];
+                                Array.Copy(sfr_r, sfrDataR, outLen);
+                                Array.Copy(sfr_g, sfrDataG, outLen);
+                                Array.Copy(sfr_b, sfrDataB, outLen);
+                                Array.Copy(sfr_l, sfrDataL, outLen);
+                                
+                                plotWindow.SetMultiChannelData(freqData,
+                                    sfrDataR, sfrDataG, sfrDataB, sfrDataL,
+                                    mtf10_r, mtf50_r, mtf10c_r, mtf50c_r,
+                                    mtf10_g, mtf50_g, mtf10c_g, mtf50c_g,
+                                    mtf10_b, mtf50_b, mtf10c_b, mtf50c_b,
+                                    mtf10_l, mtf50_l, mtf10c_l, mtf50c_l);
+                            }
+                            else
+                            {
+                                // Single L channel
+                                double[] sfrDataL = new double[outLen];
+                                Array.Copy(sfr_l, sfrDataL, outLen);
+                                plotWindow.SetData(freqData, sfrDataL, mtf10_l, mtf50_l, mtf10c_l, mtf50c_l, "L");
+                            }
+                            
                             plotWindow.Owner = Application.Current.GetActiveWindow();
                             plotWindow.Show();
                         });

@@ -41,6 +41,24 @@ namespace ColorVision.Core
         out double mtf10_cypix,
         out double mtf50_cypix);
 
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_CalSFRMultiChannel(
+        HImage img,
+        double del,
+        int roi_x, int roi_y, int roi_width, int roi_height,
+        [Out] double[] freq,
+        [Out] double[] sfr_r,
+        [Out] double[] sfr_g,
+        [Out] double[] sfr_b,
+        [Out] double[] sfr_l,
+        int maxLen,
+        out int outLen,
+        out int channelCount,
+        out double mtf10_norm_r, out double mtf50_norm_r, out double mtf10_cypix_r, out double mtf50_cypix_r,
+        out double mtf10_norm_g, out double mtf50_norm_g, out double mtf10_cypix_g, out double mtf50_cypix_g,
+        out double mtf10_norm_b, out double mtf50_norm_b, out double mtf10_cypix_b, out double mtf50_cypix_b,
+        out double mtf10_norm_l, out double mtf50_norm_l, out double mtf10_cypix_l, out double mtf50_cypix_l);
+
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern void FreeResult(IntPtr str);
