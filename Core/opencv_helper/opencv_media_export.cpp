@@ -146,10 +146,10 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(
 			}
 		}
 		// Calculate SFR for each channel: B, G, R (OpenCV order)
-		auto res_r = sfr::CalSFR(channels[2], del, 5, 4);
-		auto res_g = sfr::CalSFR(channels[1], del, 5, 4);
-		auto res_b = sfr::CalSFR(channels[0], del, 5, 4);
 		auto res_l = sfr::CalSFR(luminance, del, 5, 4);
+		auto res_r = sfr::CalSFR(channels[2], del, 5, 4, res_l.vslope);
+		auto res_g = sfr::CalSFR(channels[1], del, 5, 4, res_l.vslope);
+		auto res_b = sfr::CalSFR(channels[0], del, 5, 4, res_l.vslope);
 		
 		// Verify all results have data
 		int N = static_cast<int>(res_r.freq.size());

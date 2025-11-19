@@ -16,6 +16,7 @@ namespace sfr {
     double mtf50(const std::vector<double>& mtf);
 
     struct SFRResult {
+        double vslope;
         std::vector<double> freq;   // 物理频率 (cy/pixel)
         std::vector<double> sfr;    // SFR 值
         double mtf10_norm;          // 归一化频率下的 MTF10 (0~1)
@@ -27,7 +28,8 @@ namespace sfr {
     SFRResult CalSFR(const cv::Mat& img,
         double del = 1.0,
         int    npol = 5,
-        int    nbin = 4);
+        int    nbin = 4,
+        double vslope =-1 );
 
 
 }

@@ -494,13 +494,50 @@ double sfr::mtf50(const std::vector<double>& mtf) {
     return x1 + (0.5 - y1) * (x2 - x1) / (y2 - y1);
 }
 
+
+double find_freq_at_threshold(
+    const std::vector<double>& freq_axis,
+    const std::vector<double>& sfr_data,
+    double threshold)
+{
+    if (freq_axis.size() != sfr_data.size() || sfr_data.empty()) {
+        return 0.0; // Input validation
+    }
+
+    // 1. Find the first pair of points that bracket the threshold
+    // We need to find an iterator to the *first* element of the pair.
+    auto it = std::adjacent_find(sfr_data.begin(), sfr_data.end(),
+        [=](double y1, double y2) { return y1 >= threshold && y2 < threshold; });
+
+    // If no such pair is found, or if it's the last element, we can't interpolate
+    if (it == sfr_data.end()) {
+        return 0.0;
+    }
+
+    // 2. Get the index and the bracketing values for y (SFR)
+    int i = std::distance(sfr_data.begin(), it);
+    double y1 = sfr_data[i];
+    double y2 = sfr_data[i + 1];
+
+    // 3. Get the corresponding bracketing values for x (frequency)
+    // THIS IS THE CRITICAL CHANGE
+    double x1 = freq_axis[i];
+    double x2 = freq_axis[i + 1];
+
+    // 4. Perform linear interpolation
+    if (std::abs(y2 - y1) < 1e-9) { // Avoid division by zero
+        return x1;
+    }
+    return x1 + (threshold - y1) * (x2 - x1) / (y2 - y1);
+}
+
 using namespace sfr;
 
 
 SFRResult sfr::CalSFR(const cv::Mat& imgIn,
     double del,
     int    npol,
-    int    nbin)
+    int    nbin ,double vslope)
 {
     SFRResult result;
     if (imgIn.empty()) return result;
@@ -514,8 +551,10 @@ SFRResult sfr::CalSFR(const cv::Mat& imgIn,
     std::vector<double> loc;
     auto fitme = poly_edge_fit(gray, npol, &loc);
     auto fitme1 = edge_polyfit(loc, 1); // [a0, a1]
-    double vslope = fitme1[1];           // 就是亮度边缘的一阶斜率
-
+    if (vslope == -1) {
+        vslope = fitme1[1];           // 就是亮度边缘的一阶斜率
+    }
+    result.vslope = vslope;
     int nlin = gray.rows;
     double s = std::abs(vslope);
     int nlin1 = nlin;
@@ -556,15 +595,18 @@ SFRResult sfr::CalSFR(const cv::Mat& imgIn,
         result.sfr[i] = mtf_vec[i];
     }
 
+    double mtf10_cypix = find_freq_at_threshold(result.freq, result.sfr, 0.1);
+    double mtf50_cypix = find_freq_at_threshold(result.freq, result.sfr, 0.5);
 
-    double mtf10_norm = mtf10(mtf_vec);  // 0~1, 相对 Nyquist
-    double mtf50_norm = mtf50(mtf_vec);
+    double fNyquist = 0.5 / del;
 
-    double fNyquist = 0.5 / del;         // cy/pixel
-    result.mtf10_norm = mtf10_norm;
-    result.mtf50_norm = mtf50_norm;
-    result.mtf10_cypix = mtf10_norm * fNyquist;
-    result.mtf50_cypix = mtf50_norm * fNyquist;
+    // The function already gives the absolute value in cy/pixel.
+    result.mtf10_cypix = mtf10_cypix;
+    result.mtf50_cypix = mtf50_cypix;
+
+    // The "normalized" value is the absolute value divided by the Nyquist frequency.
+    result.mtf10_norm = (fNyquist > 0) ? mtf10_cypix / fNyquist : 0.0;
+    result.mtf50_norm = (fNyquist > 0) ? mtf50_cypix / fNyquist : 0.0;
 
     return result;
 }
