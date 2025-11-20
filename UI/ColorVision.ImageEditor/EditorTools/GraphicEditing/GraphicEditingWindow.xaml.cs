@@ -371,7 +371,7 @@ namespace ColorVision.ImageEditor
                 string FindLuminousAreajson = Config.FindLuminousAreaCorner.ToJsonN();
                 Task.Run(() =>
                 {
-                    int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)EditorContext.ImageView.HImageCache, FindLuminousAreajson, out IntPtr resultPtr);
+                    int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)EditorContext.ImageView.HImageCache, new RoiRect(), FindLuminousAreajson, out IntPtr resultPtr);
                     if (length > 0)
                     {
                         string result = Marshal.PtrToStringAnsi(resultPtr);

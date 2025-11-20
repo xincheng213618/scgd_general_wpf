@@ -180,7 +180,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                                     Thread task = new Thread(() =>
                                     {
                                         // 在后台线程执行计算
-                                        double articulation = OpenCVMediaHelper.M_CalArtculation(hImage, FocusAlgorithm.Laplacian, (int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height);
+                                        double articulation = OpenCVMediaHelper.M_CalArtculation(hImage, FocusAlgorithm.Laplacian, new RoiRect(rect));
                                         Application.Current?.Dispatcher.Invoke(() =>
                                         {
                                             DVRectangleText.Attribute.Text = $"Articulation: {articulation:F5}";

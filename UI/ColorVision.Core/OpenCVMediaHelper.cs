@@ -28,20 +28,6 @@ namespace ColorVision.Core
         private const string LibPath = "opencv_helper.dll";
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int M_CalSFR(
-        HImage img,
-        double del,
-        int roi_x, int roi_y, int roi_width, int roi_height,
-        [Out] double[] freq,
-        [Out] double[] sfr,
-        int maxLen,
-        out int outLen,
-        out double mtf10_norm,
-        out double mtf50_norm,
-        out double mtf10_cypix,
-        out double mtf50_cypix);
-
-        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_CalSFRMultiChannel(
         HImage img,
         double del,
@@ -64,7 +50,7 @@ namespace ColorVision.Core
         public static extern void FreeResult(IntPtr str);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int M_FindLuminousArea(HImage img, string config, out IntPtr str);
+        public static extern int M_FindLuminousArea(HImage img, RoiRect roi, string config, out IntPtr str);
         /// <summary>
         /// 伪彩色
         /// </summary>
@@ -124,7 +110,7 @@ namespace ColorVision.Core
 
 
         [DllImport(LibPath, EntryPoint = "M_CalArtculation", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern double M_CalArtculation(HImage image, FocusAlgorithm  evaFunc,int roi_x, int roi_y, int roi_width, int roi_height);
+        public unsafe static extern double M_CalArtculation(HImage image, FocusAlgorithm  evaFunc, RoiRect roi);
 
 
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]

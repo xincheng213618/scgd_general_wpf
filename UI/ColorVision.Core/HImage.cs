@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Windows;
 
 namespace ColorVision.Core
 {
@@ -13,6 +14,10 @@ namespace ColorVision.Core
         public RoiRect(int x,int y,int width,int height)
         {
             X = x; Y = y; Width = width; Height = height;
+        }
+        public RoiRect(Rect rect)
+        {
+            X = (int)rect.X; Y = (int)rect.Y; Width = (int)rect.Width; Height = (int)rect.Height;
         }
         public int X;
         public int Y;

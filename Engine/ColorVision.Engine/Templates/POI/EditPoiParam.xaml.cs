@@ -1386,7 +1386,7 @@ namespace ColorVision.Engine.Templates.POI
                     string FindLuminousAreajson = PoiConfig.FindLuminousArea.ToJsonN();
                     Task.Run(() =>
                     {
-                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache, FindLuminousAreajson,out IntPtr resultPtr);
+                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache,new RoiRect(), FindLuminousAreajson,out IntPtr resultPtr);
                         if (length > 0)
                         {
                             string result = Marshal.PtrToStringAnsi(resultPtr);
@@ -1533,7 +1533,7 @@ namespace ColorVision.Engine.Templates.POI
                     string FindLuminousAreaCornerjson = PoiConfig.FindLuminousAreaCorner.ToJsonN();
                     Task.Run(() =>
                     {
-                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache, FindLuminousAreaCornerjson, out IntPtr resultPtr);
+                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)ImageView.HImageCache, new RoiRect(), FindLuminousAreaCornerjson, out IntPtr resultPtr);
                         if (length > 0)
                         {
                             string result = Marshal.PtrToStringAnsi(resultPtr);

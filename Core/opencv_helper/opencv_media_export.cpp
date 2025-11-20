@@ -24,7 +24,7 @@ COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 COLORVISIONCORE_API int M_CalSFR(
 	HImage img,
 	double del,
-	int roi_x, int roi_y, int roi_width, int roi_height,
+	RoiRect roi,
 	double* freq,
 	double* sfr,
 	int    maxLen,
@@ -42,9 +42,10 @@ COLORVISIONCORE_API int M_CalSFR(
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty()) return -2;
 
-	cv::Rect roi(roi_x, roi_y, roi_width, roi_height);
-	bool use_roi = (roi.width > 0 && roi.height > 0 && (roi & cv::Rect(0, 0, mat.cols, mat.rows)) == roi);
-    mat = use_roi ? mat(roi) : mat;
+	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+	mat = use_roi ? mat(mroi) : mat;
+
 
 	auto res = sfr::CalSFR(mat, del, /*npol=*/5, /*nbin=*/4);
 
@@ -235,20 +236,17 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(
 
 
 
-COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, int roi_x, int roi_y, int roi_width, int roi_height)
+COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, RoiRect roi)
 {
-
-	// 1. �� HImage ���ݰ�װ�� cv::Mat�������ݿ���
-	cv::Mat full_mat(img.rows, img.cols, img.type(), img.pData);
-	if (full_mat.empty() || full_mat.data == nullptr) {
-		return -1.0; // ��Чͼ��
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty() || mat.data == nullptr) {
+		return -1.0; 
 	}
 
-	// 2. ����ROI����ȷ����������
-	cv::Rect roi(roi_x, roi_y, roi_width, roi_height);
-	bool use_roi = (roi.width > 0 && roi.height > 0 && (roi & cv::Rect(0, 0, full_mat.cols, full_mat.rows)) == roi);
-
-	cv::Mat mat = use_roi ? full_mat(roi) : full_mat;
+	// Apply ROI if specified
+	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+	mat = use_roi ? mat(mroi) : mat;
 
 	// 3. ת��Ϊ�Ҷ�ͼ���м���
 	cv::Mat gray_mat;
@@ -619,12 +617,17 @@ COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, double thresh,
 	return 0;
 }
 
-COLORVISIONCORE_API int M_FindLuminousArea(HImage img, const char* config, char** result)
+COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi, const char* config, char** result)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty() || !config || !result) {
 		return -1;
 	}
+
+	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+	mat = use_roi ? mat(mroi) : mat;
+
 
 	json j = json::parse(config);
 	int threshold = j.at("Threshold").get<int>();
