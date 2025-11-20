@@ -1,4 +1,4 @@
-<Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SfrSimplePlotWindow"
+<Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR.SfrSimplePlotWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ColorVision.ImageEditor.EditorTools.Algorithms.Calculate"
@@ -9,27 +9,27 @@
             <ColumnDefinition Width="Auto"/>
 
         </Grid.ColumnDefinitions>
-        <StackPanel Grid.Column="1" DockPanel.Dock="Right" Width="400" Margin="8">
+        <StackPanel Grid.Column="1" DockPanel.Dock="Right" Width="350" Margin="8">
             <TextBlock Text="SFR Information" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
             
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                <TextBlock Text="MTF50 (norm):" Width="120" VerticalAlignment="Center"/>
-                <TextBlock x:Name="TxtMtf50Norm"  VerticalAlignment="Center" FontWeight="Bold"/>
+                <TextBlock Text="MTF50 (norm):" Width="100" VerticalAlignment="Center"/>
+                <TextBox x:Name="TxtMtf50Norm"  IsReadOnly="True" BorderThickness="0" VerticalAlignment="Center" FontWeight="Bold"/>
             </StackPanel>
             
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                <TextBlock Text="MTF50 (cy/pix):" Width="120" VerticalAlignment="Center"/>
-                <TextBlock x:Name="TxtMtf50CyPix"  VerticalAlignment="Center" FontWeight="Bold"/>
+                <TextBlock Text="MTF50 (cy/pix):" Width="100" VerticalAlignment="Center"/>
+                <TextBox x:Name="TxtMtf50CyPix"  IsReadOnly="True" BorderThickness="0" VerticalAlignment="Center" FontWeight="Bold"/>
             </StackPanel>
             
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                <TextBlock Text="MTF10 (norm):" Width="120" VerticalAlignment="Center"/>
-                <TextBlock x:Name="TxtMtf10Norm"  VerticalAlignment="Center"/>
+                <TextBlock Text="MTF10 (norm):" Width="100" VerticalAlignment="Center"/>
+                <TextBox x:Name="TxtMtf10Norm"  IsReadOnly="True" BorderThickness="0" VerticalAlignment="Center"/>
             </StackPanel>
             
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                <TextBlock Text="MTF10 (cy/pix):" Width="120" VerticalAlignment="Center"/>
-                <TextBlock x:Name="TxtMtf10CyPix" Width="160" VerticalAlignment="Center"/>
+                <TextBlock Text="MTF10 (cy/pix):" Width="100" VerticalAlignment="Center"/>
+                <TextBox x:Name="TxtMtf10CyPix" IsReadOnly="True" BorderThickness="0" VerticalAlignment="Center"/>
             </StackPanel>
 
             <Separator Margin="0,16,0,8"/>

@@ -116,7 +116,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
     /// DVRectangle 右键菜单：执行裁剪操作
     /// 模仿 DVLineDVContextMenu 的结构。
     /// </summary>
-    public class DVRectangleDVContextMenuSFR : IDVContextMenu
+    public class SFRIDVContextMenu : IDVContextMenu
     {
         public Type ContextType => typeof(IRectangle);
 

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
 
-namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
+namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
 {
     public partial class SfrSimplePlotControl : UserControl
     {

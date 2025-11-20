@@ -5,7 +5,7 @@ using System.IO;
 using System.Text;
 using System.Windows;
 
-namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
+namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
 {
     public partial class SfrSimplePlotWindow : Window
     {
