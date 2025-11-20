@@ -76,7 +76,7 @@ COLORVISIONCORE_API int M_CalSFR(
 COLORVISIONCORE_API int M_CalSFRMultiChannel(
 	HImage img,
 	double del,
-	int roi_x, int roi_y, int roi_width, int roi_height,
+	RoiRect roi,
 	double* freq,
 	double* sfr_r,
 	double* sfr_g,
@@ -100,9 +100,9 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(
 	if (mat.empty()) return -2;
 
 	// Apply ROI if specified
-	cv::Rect roi(roi_x, roi_y, roi_width, roi_height);
-	bool use_roi = (roi.width > 0 && roi.height > 0 && (roi & cv::Rect(0, 0, mat.cols, mat.rows)) == roi);
-	mat = use_roi ? mat(roi) : mat;
+	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+	mat = use_roi ? mat(mroi) : mat;
 
 	// Determine if this is a 3-channel (RGB) or single-channel image
 	bool isRGB = (mat.channels() == 3 || mat.channels() == 4);

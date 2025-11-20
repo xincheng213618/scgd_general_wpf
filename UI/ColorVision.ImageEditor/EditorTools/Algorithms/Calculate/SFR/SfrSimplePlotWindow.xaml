@@ -1,7 +1,7 @@
 <Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR.SfrSimplePlotWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="clr-namespace:ColorVision.ImageEditor.EditorTools.Algorithms.Calculate"
+        xmlns:local="clr-namespace:ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR"
         Title="SFR Plot" Height="700" Width="1000">
     <Grid>
         <Grid.ColumnDefinitions>

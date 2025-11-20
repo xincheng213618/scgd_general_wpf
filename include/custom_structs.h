@@ -1,6 +1,18 @@
 #pragma once
 #include <opencv2/core.hpp>
 #include <combaseapi.h>
+
+#pragma pack(push, 1)
+
+// 定义结构体
+typedef struct _RoiRect {
+	int32_t x;      // 明确使用 32 位整数，对应 C# 的 int
+	int32_t y;
+	int32_t width;
+	int32_t height;
+} RoiRect;
+#pragma pack(pop) // 恢复默认对齐，不影响后续代码
+
 typedef struct HImage
 {
     int rows;

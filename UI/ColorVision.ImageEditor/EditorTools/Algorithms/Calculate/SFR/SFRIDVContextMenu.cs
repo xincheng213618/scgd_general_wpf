@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
+namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
 {
 
     public class SFREditorTool
@@ -48,7 +48,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
 
                     int ret = OpenCVMediaHelper.M_CalSFRMultiChannel(
                         (HImage)_imageView.HImageCache, 1.0,
-                        0, 0, hImage.cols, hImage.rows,
+                        new RoiRect(0, 0, hImage.cols, hImage.rows),
                         freq, sfr_r, sfr_g, sfr_b, sfr_l,
                         maxLen,
                         out outLen,
@@ -190,7 +190,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                 {
                     int ret = OpenCVMediaHelper.M_CalSFRMultiChannel(
                         (HImage)context.ImageView.HImageCache, 1.0,
-                        roiX, roiY, roiW, roiH,
+                        new RoiRect(roiX, roiY, roiW, roiH),
                         freq, sfr_r, sfr_g, sfr_b, sfr_l,
                         maxLen,
                         out outLen,

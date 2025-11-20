@@ -103,7 +103,7 @@ extern "C" COLORVISIONCORE_API int M_CalSFR(
 extern "C" COLORVISIONCORE_API int M_CalSFRMultiChannel(
     HImage img,
     double del,
-    int roi_x, int roi_y, int roi_width, int roi_height,
+    RoiRect roi,
     double* freq,           // 输出：频率数组（所有通道共享）
     double* sfr_r,          // 输出：R通道 SFR（3通道时有效）
     double* sfr_g,          // 输出：G通道 SFR（3通道时有效）

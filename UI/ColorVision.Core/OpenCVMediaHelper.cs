@@ -45,7 +45,7 @@ namespace ColorVision.Core
         public static extern int M_CalSFRMultiChannel(
         HImage img,
         double del,
-        int roi_x, int roi_y, int roi_width, int roi_height,
+        RoiRect roi,
         [Out] double[] freq,
         [Out] double[] sfr_r,
         [Out] double[] sfr_g,
