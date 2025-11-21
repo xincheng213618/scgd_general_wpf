@@ -126,12 +126,11 @@ namespace ColorVision.ImageEditor
             // Show legend if multi-channel
             if (_profileData.IsMultiChannel)
             {
-                WpfPlot.Plot.ShowLegend();
+                WpfPlot.Plot.ShowLegend(Alignment.UpperRight);
             }
 
             // Auto-scale axes
             WpfPlot.Plot.Axes.AutoScale();
-
             // Refresh the plot
             WpfPlot.Refresh();
         }

@@ -135,7 +135,7 @@ namespace ColorVision.ImageEditor
                 }
 
                 // Show legend for multi-channel
-                WpfPlot.Plot.ShowLegend();
+                WpfPlot.Plot.ShowLegend(Alignment.UpperRight);
             }
             else
             {

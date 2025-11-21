@@ -6,18 +6,18 @@
         xmlns:local="clr-namespace:ColorVision.ImageEditor"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="直方图 (Histogram)" Height="450" Width="800" 
+        Title="直方图 (Histogram)" Height="450" Width="420" 
         WindowStartupLocation="CenterScreen" 
         Background="{DynamicResource GlobalBackground}" 
         Initialized="Window_Initialized">
     <Grid Margin="10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="30"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         
         <!-- Toolbar -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
             <Button Content="Log Scale" Click="LogScaleButton_Click" Padding="5,2" Margin="0,0,10,0"/>
             <CheckBox x:Name="ShowRedCheckBox" Content="Red" IsChecked="True" 
                       Checked="ChannelCheckBox_CheckChanged" Unchecked="ChannelCheckBox_CheckChanged" 
