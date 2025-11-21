@@ -565,7 +565,8 @@ namespace ProjectStarkSemi
             {
                 ImageView.OpenImage(openFileDialog.FileName);
 
-                // Use Render priority to ensure image is loaded before analysis
+                // Use Render priority to execute after current rendering cycle completes
+                // This gives ImageView time to update its Source property
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     CreateAndAnalyzePolarLines();
@@ -733,8 +734,8 @@ namespace ProjectStarkSemi
                     int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
 
                     // Map position from pixel index to -80 to 80 range
-                    // The mapping ensures: start (i=0) -> -80, end (i=numSamples-1) -> 80
-                    // For odd numSamples, middle sample (i=numSamples/2) maps approximately to 0
+                    // Linear mapping: position = -80 + (i / (numSamples - 1)) * 160
+                    // This ensures: i=0 -> -80°, i=(numSamples-1) -> 80°
                     double position = -80 + (i / (double)(numSamples - 1)) * 160;
 
                     // Extract RGB values based on image type
