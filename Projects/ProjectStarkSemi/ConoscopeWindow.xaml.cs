@@ -25,6 +25,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
 using OpenCvSharp;
+using Microsoft.Win32;
 
 namespace ProjectStarkSemi
 {
@@ -709,11 +710,7 @@ namespace ProjectStarkSemi
                 // Create new line at specified angle
                 CreatePolarLine(angle, currentImageCenter, currentImageRadius, currentBitmapSource);
 
-                // Update ComboBox
-                cbPolarAngleLines.ItemsSource = null;
-                cbPolarAngleLines.ItemsSource = polarAngleLines;
-
-                // Select the newly added line
+                // Select the newly added line (ObservableCollection auto-updates the UI)
                 var newLine = polarAngleLines.FirstOrDefault(line => Math.Abs(line.Angle - angle) < 0.01);
                 if (newLine != null)
                 {
@@ -756,11 +753,7 @@ namespace ProjectStarkSemi
                 // Remove from collection
                 polarAngleLines.Remove(selectedPolarLine);
 
-                // Update ComboBox
-                cbPolarAngleLines.ItemsSource = null;
-                cbPolarAngleLines.ItemsSource = polarAngleLines;
-
-                // Select first line if available
+                // Select first line if available (ObservableCollection auto-updates the UI)
                 if (polarAngleLines.Count > 0)
                 {
                     selectedPolarLine = polarAngleLines[0];
@@ -795,14 +788,16 @@ namespace ProjectStarkSemi
                     return;
                 }
 
-                // Open save file dialog
-                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
-                saveFileDialog.Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*";
-                saveFileDialog.DefaultExt = "csv";
-                saveFileDialog.FileName = $"极角RGB数据_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-                saveFileDialog.RestoreDirectory = true;
+                // Open save file dialog (WPF version)
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                    DefaultExt = "csv",
+                    FileName = $"极角RGB数据_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                    RestoreDirectory = true
+                };
 
-                if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                if (saveFileDialog.ShowDialog() == true)
                 {
                     ExportToCSV(saveFileDialog.FileName);
                     MessageBox.Show($"数据已成功导出到:\n{saveFileDialog.FileName}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
