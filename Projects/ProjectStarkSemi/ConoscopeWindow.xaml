@@ -11,16 +11,21 @@
         Title="Conoscope" Height="720" Width="1280" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="5,5,5,0">
         <Grid.RowDefinitions>
-            <RowDefinition Height="180"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <Ribbon>
+                <Ribbon.ApplicationMenu>
+                    <RibbonApplicationMenu>
+                        <MenuItem Header="导入图片"  Click="Button_Click"/>
+                        <MenuItem Header="1"/>
+                        <MenuItem Header="1"/>
+                    </RibbonApplicationMenu>
+                </Ribbon.ApplicationMenu>
+
                 <RibbonTab Header="编辑"  Padding="10">
-                    <RibbonGroup x:Name="rbnGr1" Header="General">
-                        <Button Content="导入图片" VerticalAlignment="Top"  Click="Button_Click"/>
-                    </RibbonGroup>
                     <RibbonGroup x:Name="rbnGr2" Header="General">
                         <StackPanel>
                             <DockPanel >
@@ -176,19 +181,77 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="300"/>
                 </Grid.ColumnDefinitions>
-                <im:ImageView x:Name="ImageView" Grid.Row="0" />
+                <im:ImageView x:Name="ImageView" Grid.Column="0"/>
                 <Grid Grid.Column="1">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <ScottPlot:WpfPlot x:Name="wpfPlot"/>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal">
-                        <Button Content="线性显示"/>
-                        <Button Content="极坐标"/>
+                    <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlot"/>
+                    <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5">
+                        <!-- Angle management -->
+                        <GroupBox Header="角度管理" Margin="0,0,0,5">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <TextBlock Text="添加角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <TextBox x:Name="txtAngle" 
+                                             MinWidth="60" 
+                                             VerticalAlignment="Center"
+                                             Margin="0,0,5,0"/>
+                                    <TextBlock Text="°" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <Button Content="添加" 
+                                            Click="btnAddAngle_Click"
+                                            Padding="10,2"
+                                            Margin="0,0,5,0"/>
+                                    <Button Content="删除选中" 
+                                            Click="btnRemoveAngle_Click"
+                                            Padding="10,2"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="当前角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <ComboBox x:Name="cbPolarAngleLines" 
+                                              MinWidth="100" 
+                                              SelectionChanged="cbPolarAngleLines_SelectionChanged"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <!-- RGB channel visibility -->
+                        <GroupBox Header="通道显示" Margin="0,0,0,5">
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox x:Name="chkShowRed" 
+                                          Content="R" 
+                                          Foreground="Red" 
+                                          IsChecked="True"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                                <CheckBox x:Name="chkShowGreen" 
+                                          Content="G" 
+                                          Foreground="Green" 
+                                          IsChecked="True"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                                <CheckBox x:Name="chkShowBlue" 
+                                          Content="B" 
+                                          Foreground="Blue" 
+                                          IsChecked="True"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <!-- Export -->
+                        <GroupBox Header="导出数据">
+                            <Button Content="导出CSV" 
+                                    Click="btnExportCSV_Click"
+                                    Padding="10,5"/>
+                        </GroupBox>
                     </StackPanel>
                 </Grid>
-                <Grid Grid.Column="1" x:Name="LogGrid">
+                <Grid Grid.Column="2" x:Name="LogGrid">
                     <!-- LogOutput will be added here programmatically -->
                 </Grid>
             </Grid>
