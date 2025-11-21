@@ -1,17 +1,13 @@
-﻿using LiveChartsCore;
-using LiveChartsCore.Measure;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
-using LiveChartsCore.SkiaSharpView.WPF;
+using ColorVision.ImageEditor.Draw.Line;
 using Microsoft.Win32;
-using SkiaSharp;
+using ScottPlot;
+using ScottPlot.Plottables;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -22,59 +18,126 @@ namespace ColorVision.ImageEditor
     /// </summary>
     public partial class ProfileChartWindow : Window
     {
-        private List<double> _profileData;
-        private LineSeries<double> _series;
+        private ProfileData _profileData;
+        private Scatter? _redScatter;
+        private Scatter? _greenScatter;
+        private Scatter? _blueScatter;
+        private Scatter? _grayScatter;
 
-        public ProfileChartWindow(List<double> profileData,string title)
+        public ProfileChartWindow(ProfileData profileData, string title)
         {
             _profileData = profileData;
             InitializeComponent();
             this.Title = title;
-            
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            var redValues = new List<double>(_profileData);
+            // Configure channel visibility checkboxes
+            if (_profileData.IsMultiChannel)
+            {
+                ShowRedCheckBox.Visibility = Visibility.Visible;
+                ShowGreenCheckBox.Visibility = Visibility.Visible;
+                ShowBlueCheckBox.Visibility = Visibility.Visible;
+            }
 
-            double MaxY = redValues.Max();
-            ProfileChart.XAxes = new Axis[]
-{
-                new Axis
+            // Initialize the plot
+            InitializePlot();
+            UpdatePlot();
+        }
+
+        private void InitializePlot()
+        {
+            // Clear any existing data
+            WpfPlot.Plot.Clear();
+
+            // Configure plot appearance
+            WpfPlot.Plot.Title("Profile Chart");
+            WpfPlot.Plot.XLabel("Sample Point");
+            WpfPlot.Plot.YLabel("Value");
+
+            // Set Chinese font support
+            string fontSample = "Profile";
+            string detectedFont = ScottPlot.Fonts.Detect(fontSample);
+            WpfPlot.Plot.Axes.Title.Label.FontName = detectedFont;
+            WpfPlot.Plot.Axes.Left.Label.FontName = detectedFont;
+            WpfPlot.Plot.Axes.Bottom.Label.FontName = detectedFont;
+
+            // Configure grid
+            WpfPlot.Plot.Grid.MajorLineColor = ScottPlot.Color.FromColor(System.Drawing.Color.LightGray);
+        }
+
+        private void UpdatePlot()
+        {
+            if (WpfPlot == null) return;
+            // Clear existing plottables
+            WpfPlot.Plot.Clear();
+
+            if (_profileData.SampleCount == 0)
+                return;
+
+            // Prepare X-axis data (sample indices)
+            double[] xData = Enumerable.Range(0, _profileData.SampleCount).Select(i => (double)i).ToArray();
+
+            // Add channel plots based on visibility and data availability
+            if (_profileData.IsMultiChannel)
+            {
+                // Red channel
+                if (ShowRedCheckBox.IsChecked == true && _profileData.RedChannel.Count > 0)
                 {
-                    MaxLimit = redValues.Count,
-                    MinLimit =0,
-                    Labels = Enumerable.Range(0, redValues.Count).Select(x => x.ToString()).ToArray() // 确保显示0到255的每个标签
+                    _redScatter = WpfPlot.Plot.Add.Scatter(xData, _profileData.RedChannel.ToArray());
+                    _redScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Red);
+                    _redScatter.LineWidth = 1.5f;
+                    _redScatter.LegendText = "Red";
+                    _redScatter.MarkerSize = 0;
                 }
-};
-            ProfileChart.YAxes = new Axis[]
-            {
-                new Axis(){
-                    IsVisible =true ,
-                    MaxLimit = MaxY ,
-                    MinLimit =0,
-                    Labeler = value => value.ToString("F0")
+
+                // Green channel
+                if (ShowGreenCheckBox.IsChecked == true && _profileData.GreenChannel.Count > 0)
+                {
+                    _greenScatter = WpfPlot.Plot.Add.Scatter(xData, _profileData.GreenChannel.ToArray());
+                    _greenScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Green);
+                    _greenScatter.LineWidth = 1.5f;
+                    _greenScatter.LegendText = "Green";
+                    _greenScatter.MarkerSize = 0;
                 }
-            };
 
-            ProfileChart.ZoomMode = ZoomAndPanMode.Both | ZoomAndPanMode.Y | ZoomAndPanMode.X;
+                // Blue channel
+                if (ShowBlueCheckBox.IsChecked == true && _profileData.BlueChannel.Count > 0)
+                {
+                    _blueScatter = WpfPlot.Plot.Add.Scatter(xData, _profileData.BlueChannel.ToArray());
+                    _blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Blue);
+                    _blueScatter.LineWidth = 1.5f;
+                    _blueScatter.LegendText = "Blue";
+                    _blueScatter.MarkerSize = 0;
+                }
+            }
 
-
-
-            var Serieschannel1 = new LineSeries<double>
+            // Gray channel (always available)
+            if (ShowGrayCheckBox.IsChecked == true && _profileData.GrayChannel.Count > 0)
             {
-                Values = redValues,
-                Name = "Profile",
-                Fill = new SolidColorPaint(new SKColor(255, 0, 0, 60)),
-                Stroke = new SolidColorPaint(new SKColor(255, 0, 0)),
-                LineSmoothness = 10,
-                GeometrySize = 0,
-            };
+                _grayScatter = WpfPlot.Plot.Add.Scatter(xData, _profileData.GrayChannel.ToArray());
+                _grayScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gray);
+                _grayScatter.LineWidth = 1.5f;
+                _grayScatter.LegendText = _profileData.IsMultiChannel ? "Gray" : "Profile";
+                _grayScatter.MarkerSize = 0;
+            }
 
-            _series = Serieschannel1;
+            // Show legend if multi-channel
+            if (_profileData.IsMultiChannel)
+            {
+                WpfPlot.Plot.ShowLegend(Alignment.UpperRight);
+            }
 
-            var SeriesCollection = new ISeries[] { Serieschannel1};
-            ProfileChart.Series = SeriesCollection;
+            // Auto-scale axes
+            WpfPlot.Plot.Axes.AutoScale();
+            // Refresh the plot
+            WpfPlot.Refresh();
+        }
+
+        private void ChannelCheckBox_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            UpdatePlot();
         }
 
         private void SaveChartButton_Click(object sender, RoutedEventArgs e)
@@ -90,44 +153,8 @@ namespace ColorVision.ImageEditor
 
                 if (dlg.ShowDialog() == true)
                 {
-                    // Render the chart to a bitmap
-                    var bounds = VisualTreeHelper.GetDescendantBounds(ProfileChart);
-                    if (bounds.Width <= 0 || bounds.Height <= 0)
-                    {
-                        MessageBox.Show("Chart is not visible or has no size.");
-                        return;
-                    }
-
-                    // Create a RenderTargetBitmap
-                    var dpi = 96d;  // Standard DPI; increase for higher resolution
-                    var renderTarget = new RenderTargetBitmap(
-                        (int)bounds.Width,
-                        (int)bounds.Height,
-                        dpi,
-                        dpi,
-                        PixelFormats.Pbgra32);
-
-                    // Render the chart
-                    var drawingVisual = new DrawingVisual();
-                    using (var context = drawingVisual.RenderOpen())
-                    {
-                        var visualBrush = new VisualBrush(ProfileChart);
-                        context.DrawRectangle(visualBrush, null, new Rect(new Point(), bounds.Size));
-                    }
-                    renderTarget.Render(drawingVisual);
-
-                    // Save to desktop as PNG
-                    var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                    var fileName = $"CartesianChart_{DateTime.Now:yyyyMMdd_HHmmss}.png";
-                    var fullPath = Path.Combine(desktopPath, fileName);
-
-                    using (var fileStream = new FileStream(fullPath, FileMode.Create))
-                    {
-                        var encoder = new PngBitmapEncoder();
-                        encoder.Frames.Add(BitmapFrame.Create(renderTarget));
-                        encoder.Save(fileStream);
-                    }
-
+                    // Save using ScottPlot's built-in save functionality
+                    WpfPlot.Plot.Save(dlg.FileName, (int)WpfPlot.ActualWidth, (int)WpfPlot.ActualHeight);
                     MessageBox.Show("Chart saved successfully!", "Save Chart", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
@@ -151,14 +178,27 @@ namespace ColorVision.ImageEditor
                 if (dlg.ShowDialog() == true)
                 {
                     StringBuilder csv = new StringBuilder();
-                    
+
                     // Add header
-                    csv.AppendLine("Index,Value");
-                    
-                    // Add data
-                    for (int i = 0; i < _profileData.Count; i++)
+                    if (_profileData.IsMultiChannel)
                     {
-                        csv.AppendLine($"{i},{_profileData[i]}");
+                        csv.AppendLine("Index,Red,Green,Blue,Gray");
+
+                        // Add data
+                        for (int i = 0; i < _profileData.SampleCount; i++)
+                        {
+                            csv.AppendLine($"{i},{_profileData.RedChannel[i]},{_profileData.GreenChannel[i]},{_profileData.BlueChannel[i]},{_profileData.GrayChannel[i]}");
+                        }
+                    }
+                    else
+                    {
+                        csv.AppendLine("Index,Value");
+
+                        // Add data
+                        for (int i = 0; i < _profileData.SampleCount; i++)
+                        {
+                            csv.AppendLine($"{i},{_profileData.GrayChannel[i]}");
+                        }
                     }
 
                     File.WriteAllText(dlg.FileName, csv.ToString());
@@ -170,72 +210,5 @@ namespace ColorVision.ImageEditor
                 MessageBox.Show($"Failed to save data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-        private void CopyToClipboardButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Render the chart to a bitmap
-                RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap(
-                    (int)ProfileChart.ActualWidth,
-                    (int)ProfileChart.ActualHeight,
-                    144,
-                    144,
-                    PixelFormats.Pbgra32);
-                renderTargetBitmap.Render(ProfileChart);
-
-
-                // Render the chart to a bitmap
-                var bounds = VisualTreeHelper.GetDescendantBounds(ProfileChart);
-                if (bounds.Width <= 0 || bounds.Height <= 0)
-                {
-                    MessageBox.Show("Chart is not visible or has no size.");
-                    return;
-                }
-
-                // Create a RenderTargetBitmap
-                var dpi = 96d;  // Standard DPI; increase for higher resolution
-                var renderTarget = new RenderTargetBitmap(
-                    (int)bounds.Width,
-                    (int)bounds.Height,
-                    dpi,
-                    dpi,
-                    PixelFormats.Pbgra32);
-
-                // Render the chart
-                var drawingVisual = new DrawingVisual();
-                using (var context = drawingVisual.RenderOpen())
-                {
-                    var visualBrush = new VisualBrush(ProfileChart);
-                    context.DrawRectangle(visualBrush, null, new Rect(new Point(), bounds.Size));
-                }
-                renderTarget.Render(drawingVisual);
-
-                // Copy to clipboard
-                Clipboard.SetImage(renderTarget);
-                MessageBox.Show("Chart copied to clipboard!", "Copy to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to copy chart: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void ShowPointsCheckBox_CheckChanged(object sender, RoutedEventArgs e)
-        {
-            if (_series != null)
-            {
-                _series.GeometrySize = ShowPointsCheckBox.IsChecked == true ? 4 : 0;
-            }
-        }
-
-        private void SmoothLineCheckBox_CheckChanged(object sender, RoutedEventArgs e)
-        {
-            if (_series != null)
-            {
-                _series.LineSmoothness = SmoothLineCheckBox.IsChecked == true ? 10 : 0;
-            }
-        }
-
     }
 }
