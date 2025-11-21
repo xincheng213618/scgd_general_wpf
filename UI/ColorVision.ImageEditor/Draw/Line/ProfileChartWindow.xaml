@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.ImageEditor" 
-        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        xmlns:local="clr-namespace:ColorVision.ImageEditor"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         Title="Profile Line Chart" Height="450" Width="800"
         WindowStartupLocation="CenterScreen" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
@@ -24,12 +24,14 @@
 
         <!-- Toolbar for display options -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
-            <CheckBox x:Name="ShowPointsCheckBox" Content="Show Points" IsChecked="False" Checked="ShowPointsCheckBox_CheckChanged" Unchecked="ShowPointsCheckBox_CheckChanged" Margin="0,0,10,0" VerticalAlignment="Center"/>
-            <CheckBox x:Name="SmoothLineCheckBox" Content="Smooth Line" IsChecked="True" Checked="SmoothLineCheckBox_CheckChanged" Unchecked="SmoothLineCheckBox_CheckChanged" Margin="0,0,10,0" VerticalAlignment="Center"/>
+            <CheckBox x:Name="ShowRedCheckBox" Content="Red" IsChecked="True" Checked="ChannelCheckBox_CheckChanged" Unchecked="ChannelCheckBox_CheckChanged" Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Collapsed" Foreground="Red"/>
+            <CheckBox x:Name="ShowGreenCheckBox" Content="Green" IsChecked="True" Checked="ChannelCheckBox_CheckChanged" Unchecked="ChannelCheckBox_CheckChanged" Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Collapsed" Foreground="Green"/>
+            <CheckBox x:Name="ShowBlueCheckBox" Content="Blue" IsChecked="True" Checked="ChannelCheckBox_CheckChanged" Unchecked="ChannelCheckBox_CheckChanged" Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Collapsed" Foreground="Blue"/>
+            <CheckBox x:Name="ShowGrayCheckBox" Content="Gray" IsChecked="True" Checked="ChannelCheckBox_CheckChanged" Unchecked="ChannelCheckBox_CheckChanged" Margin="0,0,10,0" VerticalAlignment="Center"/>
         </StackPanel>
 
         <!-- Chart -->
-        <lvc:CartesianChart Grid.Row="2" Name="ProfileChart" Foreground="{StaticResource GlobalTextBrush}" ZoomingSpeed="0.5"/>
+        <ScottPlot:WpfPlot Grid.Row="2" x:Name="WpfPlot"/>
 
     </Grid>
 </Window>
