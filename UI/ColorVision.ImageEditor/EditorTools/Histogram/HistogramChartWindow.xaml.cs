@@ -16,17 +16,15 @@ namespace ColorVision.ImageEditor
     }
 
     /// <summary>
-    /// HistogramChartWindow.xaml 的交互逻辑
+    /// Interaction logic for HistogramChartWindow.xaml
     /// </summary>
     public partial class HistogramChartWindow : Window
     {
         private HistogramData _histogramData;
         private bool _isLogScale = false;
         
-        private BarPlot? _redBars;
-        private BarPlot? _greenBars;
-        private BarPlot? _blueBars;
-        private BarPlot? _grayBars;
+        // Removed BarPlot fields as we are now using local Scatter variables in UpdatePlot
+        // and clearing the plot on each update.
 
         public HistogramChartWindow(int[] redHistogram, int[] greenHistogram, int[] blueHistogram)
         {
@@ -100,27 +98,40 @@ namespace ColorVision.ImageEditor
                 if (ShowRedCheckBox.IsChecked == true)
                 {
                     double[] redValues = PrepareHistogramValues(_histogramData.RedChannel);
-                    _redBars = WpfPlot.Plot.Add.Bars(positions, redValues);
-                    _redBars.Color = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(100, 255, 0, 0));
-                    _redBars.LegendText = "Red";
+                    // Use Scatter with FillY for continuous area look
+                    var redPlot = WpfPlot.Plot.Add.Scatter(positions, redValues);
+                    redPlot.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Red); // Line Color
+                    redPlot.FillY = true;
+                    redPlot.FillYColor = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(64, 255, 0, 0)); // Semi-transparent fill
+                    redPlot.MarkerSize = 0; // Hide points
+                    redPlot.LineWidth = 1;
+                    redPlot.LegendText = "Red";
                 }
 
                 // Green channel
                 if (ShowGreenCheckBox.IsChecked == true)
                 {
                     double[] greenValues = PrepareHistogramValues(_histogramData.GreenChannel);
-                    _greenBars = WpfPlot.Plot.Add.Bars(positions, greenValues);
-                    _greenBars.Color = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(100, 0, 255, 0));
-                    _greenBars.LegendText = "Green";
+                    var greenPlot = WpfPlot.Plot.Add.Scatter(positions, greenValues);
+                    greenPlot.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Lime);
+                    greenPlot.FillY = true;
+                    greenPlot.FillYColor = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(64, 0, 255, 0));
+                    greenPlot.MarkerSize = 0;
+                    greenPlot.LineWidth = 1;
+                    greenPlot.LegendText = "Green";
                 }
 
                 // Blue channel
                 if (ShowBlueCheckBox.IsChecked == true)
                 {
                     double[] blueValues = PrepareHistogramValues(_histogramData.BlueChannel);
-                    _blueBars = WpfPlot.Plot.Add.Bars(positions, blueValues);
-                    _blueBars.Color = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(100, 0, 0, 255));
-                    _blueBars.LegendText = "Blue";
+                    var bluePlot = WpfPlot.Plot.Add.Scatter(positions, blueValues);
+                    bluePlot.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Blue);
+                    bluePlot.FillY = true;
+                    bluePlot.FillYColor = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(64, 0, 0, 255));
+                    bluePlot.MarkerSize = 0;
+                    bluePlot.LineWidth = 1;
+                    bluePlot.LegendText = "Blue";
                 }
 
                 // Show legend for multi-channel
@@ -132,9 +143,13 @@ namespace ColorVision.ImageEditor
                 if (ShowGrayCheckBox.IsChecked == true)
                 {
                     double[] grayValues = PrepareHistogramValues(_histogramData.GrayChannel);
-                    _grayBars = WpfPlot.Plot.Add.Bars(positions, grayValues);
-                    _grayBars.Color = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(150, 128, 128, 128));
-                    _grayBars.LegendText = "Gray";
+                    var grayPlot = WpfPlot.Plot.Add.Scatter(positions, grayValues);
+                    grayPlot.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gray);
+                    grayPlot.FillY = true;
+                    grayPlot.FillYColor = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(128, 128, 128, 128));
+                    grayPlot.MarkerSize = 0;
+                    grayPlot.LineWidth = 1;
+                    grayPlot.LegendText = "Gray";
                 }
             }
 
@@ -153,7 +168,7 @@ namespace ColorVision.ImageEditor
             if (_isLogScale)
             {
                 // Apply log scale: log(value + 1)
-                return histogram.Select(v => Math.Log(v + 1)).ToArray();
+                return histogram.Select(v => Math.Log((double)(v + 1),10)).ToArray();
             }
             else
             {
