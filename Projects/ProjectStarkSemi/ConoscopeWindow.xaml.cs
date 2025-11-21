@@ -117,7 +117,25 @@ namespace ProjectStarkSemi
 
             // Initialize UI
             UpdateUIForModel(currentModel);
-            log.Info("视角测量窗口已初始化");
+
+            wpfPlot.Plot.Title($"视角分布曲线");
+            wpfPlot.Plot.XLabel("Degress");
+            wpfPlot.Plot.YLabel("Luminance (cd/m²)");
+            wpfPlot.Plot.Legend.FontName = ScottPlot.Fonts.Detect("中文");
+
+            // Set font for labels to support international characters
+            // Use a consistent string for font detection
+            string fontSample = $"中文 Luminance Voltage";
+            wpfPlot.Plot.Axes.Title.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
+            wpfPlot.Plot.Axes.Left.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
+            wpfPlot.Plot.Axes.Bottom.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
+
+            // Enable grid for better readability
+            wpfPlot.Plot.Grid.MajorLineColor = ScottPlot.Color.FromColor(System.Drawing.Color.LightGray);
+            wpfPlot.Plot.Grid.MajorLineWidth = 1;
+            wpfPlot.Plot.Axes.SetLimits(-80, 80, 0, 600);
+
+            wpfPlot.Refresh();
 
             this.Closed += (s, e) =>
             {
@@ -261,7 +279,7 @@ namespace ProjectStarkSemi
                                         {
                                             ImageView.OpenImage(result.FileUrl);
                                             tbMeasurementCameraStatus.Text = "已获取";
-                                            tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Green);
+                                            tbMeasurementCameraStatus.Foreground = new SolidColorBrush(System.Windows.Media.Colors.Green);
                                             log.Info($"成功加载图像: {result.FileUrl}");
                                         }
                                         else

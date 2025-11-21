@@ -6,42 +6,21 @@
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectStarkSemi"
         xmlns:properties="clr-namespace:ProjectStarkSemi.Properties"
+       xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="Conoscope" Height="720" Width="1280" Initialized="Window_Initialized">
-    <Grid>
+        Title="Conoscope" Height="720" Width="1280" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+    <Grid Margin="5,5,5,0">
         <Grid.RowDefinitions>
+            <RowDefinition Height="180"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
-        <!-- Main Content Area -->
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="400"/>
+                <ColumnDefinition Width="300"/>
             </Grid.ColumnDefinitions>
-
-            <!-- Left Side: Image Display -->
-            <Grid Grid.Column="0">
-                <im:ImageView x:Name="ImageView" />
-            </Grid>
-
-            <!-- Right Side: Controls and Log -->
-            <Grid Grid.Column="1" Margin="10">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-
-            <!-- Top: Controls -->
-            <Grid Grid.Row="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
+            <StackPanel Orientation="Horizontal">
                 <!-- Model Selection Section -->
                 <GroupBox Grid.Row="0"  Margin="0,0,0,10">
                     <StackPanel Margin="10">
@@ -54,7 +33,7 @@
                                 <ComboBoxItem Content="VA80" Tag="VA80"/>
                             </ComboBox>
                         </DockPanel>
-                       
+
                     </StackPanel>
                 </GroupBox>
 
@@ -68,32 +47,33 @@
                     </StackPanel>
                 </GroupBox>
 
+
                 <!-- Measurement Camera Section -->
-                <GroupBox Grid.Row="2" Margin="0,0,0,10">
+                <GroupBox Grid.Row="2" Margin="0,0,0,10" Width="200">
                     <StackPanel Margin="10">
                         <DockPanel Margin="0,0,0,10">
                             <ComboBox x:Name="cbMeasurementCamera"  SelectionChanged="cbMeasurementCamera_SelectionChanged"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,10">
                             <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                                <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform4" CenterX="8" CenterY="8"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="MenuItem_Template">
-                                <Button.Triggers>
-                                    <EventTrigger RoutedEvent="Button.Click">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="rotateTransform4" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </Button.Triggers>
-                            </Button>
-                        </Grid>
-                        <ComboBox x:Name="ComboxCalibrationTemplate"  SelectedIndex="{Binding CalibrationTemplateIndex}"  SelectedValuePath="Value" DisplayMemberPath="Key"/>
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform4" CenterX="8" CenterY="8"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="MenuItem_Template">
+                                    <Button.Triggers>
+                                        <EventTrigger RoutedEvent="Button.Click">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform4" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Button.Triggers>
+                                </Button>
+                            </Grid>
+                            <ComboBox x:Name="ComboxCalibrationTemplate"  SelectedIndex="{Binding CalibrationTemplateIndex}"  SelectedValuePath="Value" DisplayMemberPath="Key"/>
                         </DockPanel>
 
                         <Button x:Name="btnOpenMeasurementCamera" 
@@ -101,7 +81,7 @@
                                 Click="btnOpenMeasurementCamera_Click"
                                 Margin="0,0,0,5"
                                 Height="30"/>
-                        
+
                         <Button x:Name="btnCalibration" 
                                 Content="{x:Static properties:Resources.Calibration}"
                                 Click="btnCalibration_Click"
@@ -125,7 +105,7 @@
                                 <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}"/>
                             </ComboBox>
                         </DockPanel>
-                        
+
                         <!-- Kernel Size Parameter -->
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="{x:Static properties:Resources.KernelSize}" VerticalAlignment="Center" Width="80"/>
@@ -136,7 +116,7 @@
                                     TickFrequency="2" IsSnapToTickEnabled="True"
                                     Margin="5,0,0,0"/>
                         </DockPanel>
-                        
+
                         <!-- Sigma Parameter (for Gaussian) -->
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="σ (Sigma)" VerticalAlignment="Center" Width="80"/>
@@ -147,7 +127,7 @@
                                     TickFrequency="0.1" IsSnapToTickEnabled="True"
                                     Margin="5,0,0,0" IsEnabled="False"/>
                         </DockPanel>
-                        
+
                         <!-- D Parameter (for Bilateral) -->
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="d" VerticalAlignment="Center" Width="80"/>
@@ -158,7 +138,7 @@
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     Margin="5,0,0,0" IsEnabled="False"/>
                         </DockPanel>
-                        
+
                         <!-- Sigma Color Parameter (for Bilateral) -->
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="σColor" VerticalAlignment="Center" Width="80"/>
@@ -169,7 +149,7 @@
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     Margin="5,0,0,0" IsEnabled="False"/>
                         </DockPanel>
-                        
+
                         <!-- Sigma Space Parameter (for Bilateral) -->
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="σSpace" VerticalAlignment="Center" Width="80"/>
@@ -180,24 +160,50 @@
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     Margin="5,0,0,0" IsEnabled="False"/>
                         </DockPanel>
-                        
-                        <Button x:Name="btnApplyFilter" 
+
+                    </StackPanel>
+                </GroupBox>
+
+                <Button x:Name="btnApplyFilter" 
                                 Content="{x:Static properties:Resources.ApplyFilter}"
                                 Click="btnApplyFilter_Click"
                                 Height="30"/>
-                    </StackPanel>
-                </GroupBox>
-            </Grid>
-
-            <!-- Bottom: Log Display -->
-            <Grid Grid.Row="1" x:Name="LogGrid">
+            </StackPanel>
+            <Grid Grid.Column="1" x:Name="LogGrid">
                 <!-- LogOutput will be added here programmatically -->
             </Grid>
         </Grid>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left Side: Image Display -->
+            <Grid Grid.Column="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <im:ImageView x:Name="ImageView" Grid.Row="0" />
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ScottPlot:WpfPlot x:Name="wpfPlot"/>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal">
+                        <Button Content="线性显示"/>
+                        <Button Content="极坐标"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
         </Grid>
 
         <!-- Status Bar at Bottom -->
-        <StatusBar Grid.Row="1" Height="25">
+        <StatusBar Grid.Row="2" Height="25">
             <StatusBar.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Grid>
