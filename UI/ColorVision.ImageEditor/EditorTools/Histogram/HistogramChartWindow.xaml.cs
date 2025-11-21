@@ -23,10 +23,10 @@ namespace ColorVision.ImageEditor
         private HistogramData _histogramData;
         private bool _isLogScale = false;
         
-        private Bar? _redBars;
-        private Bar? _greenBars;
-        private Bar? _blueBars;
-        private Bar? _grayBars;
+        private BarPlot? _redBars;
+        private BarPlot? _greenBars;
+        private BarPlot? _blueBars;
+        private BarPlot? _grayBars;
 
         public HistogramChartWindow(int[] redHistogram, int[] greenHistogram, int[] blueHistogram)
         {
@@ -86,6 +86,7 @@ namespace ColorVision.ImageEditor
 
         private void UpdatePlot()
         {
+            if (WpfPlot == null) return;
             // Clear existing plottables
             WpfPlot.Plot.Clear();
 
