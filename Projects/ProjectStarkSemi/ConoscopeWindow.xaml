@@ -11,16 +11,21 @@
         Title="Conoscope" Height="720" Width="1280" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="5,5,5,0">
         <Grid.RowDefinitions>
-            <RowDefinition Height="180"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <Ribbon>
+                <Ribbon.ApplicationMenu>
+                    <RibbonApplicationMenu>
+                        <MenuItem Header="导入图片"  Click="Button_Click"/>
+                        <MenuItem Header="1"/>
+                        <MenuItem Header="1"/>
+                    </RibbonApplicationMenu>
+                </Ribbon.ApplicationMenu>
+
                 <RibbonTab Header="编辑"  Padding="10">
-                    <RibbonGroup x:Name="rbnGr1" Header="General">
-                        <Button Content="导入图片" VerticalAlignment="Top"  Click="Button_Click"/>
-                    </RibbonGroup>
                     <RibbonGroup x:Name="rbnGr2" Header="General">
                         <StackPanel>
                             <DockPanel >
@@ -176,14 +181,14 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="300"/>
                 </Grid.ColumnDefinitions>
-                <im:ImageView x:Name="ImageView" Grid.Column="0" />
+                <im:ImageView x:Name="ImageView" Grid.Column="0"/>
                 <Grid Grid.Column="1">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <ScottPlot:WpfPlot x:Name="wpfPlot"/>
-                    <StackPanel Grid.Row="1" Orientation="Vertical" Margin="5">
+                    <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlot"/>
+                    <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5">
                         <!-- Line selection -->
                         <GroupBox Header="选择极角线" Margin="0,0,0,5">
                             <StackPanel Orientation="Horizontal">

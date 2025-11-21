@@ -22,7 +22,6 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Collections.ObjectModel;
-using OpenCvSharp;
 
 namespace ProjectStarkSemi
 {
@@ -564,13 +563,11 @@ namespace ProjectStarkSemi
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 ImageView.OpenImage(openFileDialog.FileName);
-
-                // Use Render priority to execute after current rendering cycle completes
-                // This gives ImageView time to update its Source property
-                Application.Current.Dispatcher.Invoke(() =>
+                ImageView.ImageShow.ImageInitialized += (s, e) =>
                 {
                     CreateAndAnalyzePolarLines();
-                }, System.Windows.Threading.DispatcherPriority.Render);
+
+                };
             }
         }
 
@@ -611,7 +608,7 @@ namespace ProjectStarkSemi
                 ClearPolarLines();
 
                 // Default angles: 0, 20, 40, 90
-                double[] defaultAngles = { 0, 20, 40, 90 };
+                double[] defaultAngles = { 0, 20, 40, 90,110,130 };
 
                 // Create lines for each angle
                 foreach (double angle in defaultAngles)
@@ -654,6 +651,7 @@ namespace ProjectStarkSemi
         /// </summary>
         private void RgbChannelVisibility_Changed(object sender, RoutedEventArgs e)
         {
+            if (chkShowRed == null || chkShowGreen ==null || chkShowBlue ==null) return;
             showRedChannel = chkShowRed.IsChecked ?? true;
             showGreenChannel = chkShowGreen.IsChecked ?? true;
             showBlueChannel = chkShowBlue.IsChecked ?? true;
@@ -663,7 +661,7 @@ namespace ProjectStarkSemi
         /// <summary>
         /// 创建指定角度的极角线
         /// </summary>
-        private void CreatePolarLine(double angle, Point center, int radius, BitmapSource bitmapSource)
+        private void CreatePolarLine(double angle, System.Windows.Point center, int radius, BitmapSource bitmapSource)
         {
             // Convert angle to radians
             double radians = angle * Math.PI / 180.0;
@@ -709,7 +707,7 @@ namespace ProjectStarkSemi
             try
             {
                 // Convert BitmapSource to OpenCV Mat
-                Mat mat = BitmapSourceConverter.ToMat(bitmapSource);
+                OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(bitmapSource);
 
                 // Calculate line length
                 double lineLength = Math.Sqrt(Math.Pow(end.X - start.X, 2) + Math.Pow(end.Y - start.Y, 2));
@@ -744,12 +742,12 @@ namespace ProjectStarkSemi
                     if (mat.Channels() == 1)
                     {
                         // Grayscale image
-                        if (mat.Depth() == MatType.CV_8U)
+                        if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
                         {
                             byte value = mat.At<byte>(iy, ix);
                             r = g = b = value;
                         }
-                        else if (mat.Depth() == MatType.CV_16U)
+                        else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
                         {
                             ushort value = mat.At<ushort>(iy, ix);
                             r = g = b = value;
@@ -758,16 +756,16 @@ namespace ProjectStarkSemi
                     else if (mat.Channels() >= 3)
                     {
                         // Color image (BGR or BGRA)
-                        if (mat.Depth() == MatType.CV_8U)
+                        if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
                         {
-                            Vec3b pixel = mat.At<Vec3b>(iy, ix);
+                            OpenCvSharp.Vec3b pixel = mat.At<OpenCvSharp.Vec3b>(iy, ix);
                             b = pixel.Item0;
                             g = pixel.Item1;
                             r = pixel.Item2;
                         }
-                        else if (mat.Depth() == MatType.CV_16U)
+                        else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
                         {
-                            Vec3w pixel = mat.At<Vec3w>(iy, ix);
+                            OpenCvSharp.Vec3w pixel = mat.At<OpenCvSharp.Vec3w>(iy, ix);
                             b = pixel.Item0;
                             g = pixel.Item1;
                             r = pixel.Item2;

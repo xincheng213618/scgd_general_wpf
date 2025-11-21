@@ -94,7 +94,7 @@ namespace ColorVision.ImageEditor.Tif
         public async void OpenImage(EditorContext context, string? filePath)
         {
             if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return;
-            
+
             // Get file metadata
             FileInfo fileInfo = new FileInfo(filePath);
             context.Config.AddProperties("FileSource", filePath);
@@ -102,38 +102,55 @@ namespace ColorVision.ImageEditor.Tif
             context.Config.AddProperties("FileSize", fileInfo.Length);
             context.Config.AddProperties("FileCreationTime", fileInfo.CreationTime);
             context.Config.AddProperties("FileModifiedTime", fileInfo.LastWriteTime);
-            
-            BitmapImage? bitmapImage = null;
+
+            WriteableBitmap? writeableBitmap = null;
             BitmapMetadata? metadata = null;
-            
+
             await Task.Run(() =>
             {
                 using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 var decoder = new TiffBitmapDecoder(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-                
-                // Extract EXIF metadata if available
+
                 if (decoder.Frames.Count > 0)
                 {
-                    var frame = decoder.Frames[0];
-                    metadata = frame.Metadata as BitmapMetadata;
-                    
-                    var tmp = new BitmapImage();
-                    tmp.BeginInit();
-                    tmp.CacheOption = BitmapCacheOption.OnLoad;
-                    tmp.StreamSource = stream;
-                    tmp.StreamSource.Position = 0;
-                    tmp.EndInit();
-                    tmp.Freeze();
-                    bitmapImage = tmp;
+                    BitmapSource source = decoder.Frames[0];
+                    metadata = source.Metadata as BitmapMetadata;
+
+                    // 检查 DPI 是否为 96，允许微小误差
+                    if (Math.Abs(source.DpiX - 96.0) > 0.01 || Math.Abs(source.DpiY - 96.0) > 0.01)
+                    {
+                        // 计算 stride (每行字节数)
+                        int stride = (source.PixelWidth * source.Format.BitsPerPixel + 7) / 8;
+
+                        // 创建缓冲区并复制像素数据
+                        byte[] pixels = new byte[source.PixelHeight * stride];
+                        source.CopyPixels(pixels, stride, 0);
+
+                        // 使用相同的像素数据创建新的 BitmapSource，但指定 96 DPI
+                        source = BitmapSource.Create(
+                            source.PixelWidth,
+                            source.PixelHeight,
+                            96, // DpiX
+                            96, // DpiY
+                            source.Format,
+                            source.Palette,
+                            pixels,
+                            stride);
+                    }
+
+                    source.Freeze();
+                    // 这里将处理过（或原始）的 source 转换为 WriteableBitmap
+                    writeableBitmap = new WriteableBitmap(source);
+                    writeableBitmap.Freeze();
                 }
             });
-            
-            if (bitmapImage == null) return;
-            
+
+            if (writeableBitmap == null) return;
+
             // Add image dimensions
-            context.Config.AddProperties("ImageWidth", bitmapImage.PixelWidth);
-            context.Config.AddProperties("ImageHeight", bitmapImage.PixelHeight);
-            
+            context.Config.AddProperties("ImageWidth", writeableBitmap.PixelWidth);
+            context.Config.AddProperties("ImageHeight", writeableBitmap.PixelHeight);
+
             // Add EXIF metadata if available
             if (metadata != null)
             {
@@ -157,13 +174,12 @@ namespace ColorVision.ImageEditor.Tif
                     // Silently ignore metadata extraction errors
                 }
             }
-            
-            context.ImageView.SetImageSource(bitmapImage.ToWriteableBitmap());
+
+            context.ImageView.SetImageSource(writeableBitmap);
             context.ImageView.ComboBoxLayers.SelectedIndex = 0;
             context.ImageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
             context.ImageView.AddSelectionChangedHandler(context.ImageView.ComboBoxLayersSelectionChanged);
             context.ImageView.UpdateZoomAndScale();
         }
     }
-
 }
