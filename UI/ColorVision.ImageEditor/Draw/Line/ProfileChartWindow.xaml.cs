@@ -58,9 +58,10 @@ namespace ColorVision.ImageEditor
 
             // Set Chinese font support
             string fontSample = "Profile";
-            WpfPlot.Plot.Axes.Title.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
-            WpfPlot.Plot.Axes.Left.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
-            WpfPlot.Plot.Axes.Bottom.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
+            string detectedFont = ScottPlot.Fonts.Detect(fontSample);
+            WpfPlot.Plot.Axes.Title.Label.FontName = detectedFont;
+            WpfPlot.Plot.Axes.Left.Label.FontName = detectedFont;
+            WpfPlot.Plot.Axes.Bottom.Label.FontName = detectedFont;
 
             // Configure grid
             WpfPlot.Plot.Grid.MajorLineColor = ScottPlot.Color.FromColor(System.Drawing.Color.LightGray);
@@ -214,34 +215,29 @@ namespace ColorVision.ImageEditor
         {
             try
             {
-                // Render the chart to a bitmap
-                var bounds = VisualTreeHelper.GetDescendantBounds(WpfPlot);
-                if (bounds.Width <= 0 || bounds.Height <= 0)
+                // Use ScottPlot's built-in save to create a bitmap
+                var width = (int)WpfPlot.ActualWidth;
+                var height = (int)WpfPlot.ActualHeight;
+                
+                if (width <= 0 || height <= 0)
                 {
                     MessageBox.Show("Chart is not visible or has no size.");
                     return;
                 }
 
-                // Create a RenderTargetBitmap
-                var dpi = 96d;
-                var renderTarget = new RenderTargetBitmap(
-                    (int)bounds.Width,
-                    (int)bounds.Height,
-                    dpi,
-                    dpi,
-                    PixelFormats.Pbgra32);
-
-                // Render the chart
-                var drawingVisual = new DrawingVisual();
-                using (var context = drawingVisual.RenderOpen())
+                // Save to a memory stream then create bitmap
+                using (var ms = new System.IO.MemoryStream())
                 {
-                    var visualBrush = new VisualBrush(WpfPlot);
-                    context.DrawRectangle(visualBrush, null, new Rect(new Point(), bounds.Size));
+                    WpfPlot.Plot.Save(ms, width, height, ScottPlot.ImageFormat.Png);
+                    ms.Position = 0;
+                    
+                    var decoder = new PngBitmapDecoder(ms, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+                    BitmapSource bitmapSource = decoder.Frames[0];
+                    
+                    // Copy to clipboard
+                    Clipboard.SetImage(bitmapSource);
                 }
-                renderTarget.Render(drawingVisual);
-
-                // Copy to clipboard
-                Clipboard.SetImage(renderTarget);
+                
                 MessageBox.Show("Chart copied to clipboard!", "Copy to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
