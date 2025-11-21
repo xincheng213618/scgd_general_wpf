@@ -189,18 +189,35 @@
                     </Grid.RowDefinitions>
                     <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlot"/>
                     <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5">
-                        <!-- Line selection -->
-                        <GroupBox Header="选择极角线" Margin="0,0,0,5">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                <ComboBox x:Name="cbPolarAngleLines" 
-                                          MinWidth="100" 
-                                          SelectionChanged="cbPolarAngleLines_SelectionChanged"/>
+                        <!-- Angle management -->
+                        <GroupBox Header="角度管理" Margin="0,0,0,5">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <TextBlock Text="添加角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <TextBox x:Name="txtAngle" 
+                                             MinWidth="60" 
+                                             VerticalAlignment="Center"
+                                             Margin="0,0,5,0"/>
+                                    <TextBlock Text="°" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <Button Content="添加" 
+                                            Click="btnAddAngle_Click"
+                                            Padding="10,2"
+                                            Margin="0,0,5,0"/>
+                                    <Button Content="删除选中" 
+                                            Click="btnRemoveAngle_Click"
+                                            Padding="10,2"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="当前角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <ComboBox x:Name="cbPolarAngleLines" 
+                                              MinWidth="100" 
+                                              SelectionChanged="cbPolarAngleLines_SelectionChanged"/>
+                                </StackPanel>
                             </StackPanel>
                         </GroupBox>
                         
                         <!-- RGB channel visibility -->
-                        <GroupBox Header="通道显示">
+                        <GroupBox Header="通道显示" Margin="0,0,0,5">
                             <StackPanel Orientation="Horizontal">
                                 <CheckBox x:Name="chkShowRed" 
                                           Content="R" 
@@ -224,6 +241,13 @@
                                           Checked="RgbChannelVisibility_Changed"
                                           Unchecked="RgbChannelVisibility_Changed"/>
                             </StackPanel>
+                        </GroupBox>
+                        
+                        <!-- Export -->
+                        <GroupBox Header="导出数据">
+                            <Button Content="导出CSV" 
+                                    Click="btnExportCSV_Click"
+                                    Padding="10,5"/>
                         </GroupBox>
                     </StackPanel>
                 </Grid>

@@ -22,6 +22,9 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Text;
+using OpenCvSharp;
 
 namespace ProjectStarkSemi
 {
@@ -165,6 +168,11 @@ namespace ProjectStarkSemi
         private bool showRedChannel = true;
         private bool showGreenChannel = true;
         private bool showBlueChannel = true;
+
+        // Current image state for dynamic angle addition
+        private BitmapSource? currentBitmapSource;
+        private Point currentImageCenter;
+        private int currentImageRadius;
 
         public ConoscopeWindow()
         {
@@ -602,13 +610,18 @@ namespace ProjectStarkSemi
                 // Calculate center point
                 Point center = new Point(imageWidth / 2.0, imageHeight / 2.0);
 
+                // Store current image state for dynamic angle addition
+                currentBitmapSource = bitmapSource;
+                currentImageCenter = center;
+                currentImageRadius = radius;
+
                 log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 中心: ({center.X}, {center.Y}), 半径: {radius}");
 
                 // Clear existing lines
                 ClearPolarLines();
 
                 // Default angles: 0, 20, 40, 90
-                double[] defaultAngles = { 0, 20, 40, 90,110,130 };
+                double[] defaultAngles = { 0, 20, 40, 90 };
 
                 // Create lines for each angle
                 foreach (double angle in defaultAngles)
@@ -656,6 +669,189 @@ namespace ProjectStarkSemi
             showGreenChannel = chkShowGreen.IsChecked ?? true;
             showBlueChannel = chkShowBlue.IsChecked ?? true;
             UpdatePlot();
+        }
+
+        /// <summary>
+        /// 添加角度按钮点击事件
+        /// </summary>
+        private void btnAddAngle_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Check if image is loaded
+                if (currentBitmapSource == null)
+                {
+                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    log.Warn("未加载图像，无法添加角度线");
+                    return;
+                }
+
+                // Parse angle from text box
+                if (!double.TryParse(txtAngle.Text, out double angle))
+                {
+                    MessageBox.Show("请输入有效的角度数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    log.Warn($"无效的角度输入: {txtAngle.Text}");
+                    return;
+                }
+
+                // Normalize angle to 0-360 range
+                angle = angle % 360;
+                if (angle < 0) angle += 360;
+
+                // Check if angle already exists
+                if (polarAngleLines.Any(line => Math.Abs(line.Angle - angle) < 0.01))
+                {
+                    MessageBox.Show($"角度 {angle:F1}° 已存在", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    log.Info($"角度 {angle:F1}° 已存在，跳过添加");
+                    return;
+                }
+
+                // Create new line at specified angle
+                CreatePolarLine(angle, currentImageCenter, currentImageRadius, currentBitmapSource);
+
+                // Update ComboBox
+                cbPolarAngleLines.ItemsSource = null;
+                cbPolarAngleLines.ItemsSource = polarAngleLines;
+
+                // Select the newly added line
+                var newLine = polarAngleLines.FirstOrDefault(line => Math.Abs(line.Angle - angle) < 0.01);
+                if (newLine != null)
+                {
+                    cbPolarAngleLines.SelectedItem = newLine;
+                }
+
+                // Clear text box
+                txtAngle.Text = "";
+
+                log.Info($"成功添加角度线: {angle:F1}°");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"添加角度失败: {ex.Message}", ex);
+                MessageBox.Show($"添加角度失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 删除选中角度按钮点击事件
+        /// </summary>
+        private void btnRemoveAngle_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (selectedPolarLine == null)
+                {
+                    MessageBox.Show("请先选择要删除的角度", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Remove from visual
+                if (selectedPolarLine.Line != null)
+                {
+                    ImageView.DrawingVisualLists.Remove(selectedPolarLine.Line);
+                }
+
+                double removedAngle = selectedPolarLine.Angle;
+
+                // Remove from collection
+                polarAngleLines.Remove(selectedPolarLine);
+
+                // Update ComboBox
+                cbPolarAngleLines.ItemsSource = null;
+                cbPolarAngleLines.ItemsSource = polarAngleLines;
+
+                // Select first line if available
+                if (polarAngleLines.Count > 0)
+                {
+                    selectedPolarLine = polarAngleLines[0];
+                    cbPolarAngleLines.SelectedIndex = 0;
+                    UpdatePlot();
+                }
+                else
+                {
+                    selectedPolarLine = null;
+                    UpdatePlot();
+                }
+
+                log.Info($"成功删除角度线: {removedAngle:F1}°");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"删除角度失败: {ex.Message}", ex);
+                MessageBox.Show($"删除角度失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 导出CSV按钮点击事件
+        /// </summary>
+        private void btnExportCSV_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (polarAngleLines.Count == 0)
+                {
+                    MessageBox.Show("没有可导出的数据", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Open save file dialog
+                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+                saveFileDialog.Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*";
+                saveFileDialog.DefaultExt = "csv";
+                saveFileDialog.FileName = $"极角RGB数据_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                saveFileDialog.RestoreDirectory = true;
+
+                if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    ExportToCSV(saveFileDialog.FileName);
+                    MessageBox.Show($"数据已成功导出到:\n{saveFileDialog.FileName}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    log.Info($"成功导出CSV: {saveFileDialog.FileName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"导出CSV失败: {ex.Message}", ex);
+                MessageBox.Show($"导出CSV失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 导出数据到CSV文件
+        /// </summary>
+        private void ExportToCSV(string filePath)
+        {
+            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+            {
+                // Sort polar lines by angle for organized output
+                var sortedLines = polarAngleLines.OrderBy(line => line.Angle).ToList();
+
+                // Write header
+                writer.WriteLine("# 极角RGB分布数据");
+                writer.WriteLine($"# 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                writer.WriteLine($"# 角度数量: {sortedLines.Count}");
+                writer.WriteLine();
+
+                // Export each angle's data
+                foreach (var polarLine in sortedLines)
+                {
+                    writer.WriteLine($"# 角度: {polarLine.Angle}°");
+                    writer.WriteLine("Position(°),R,G,B,Luminance");
+
+                    foreach (var sample in polarLine.RgbData)
+                    {
+                        // Calculate luminance (brightness) using standard formula
+                        // Y = 0.299R + 0.587G + 0.114B
+                        double luminance = 0.299 * sample.R + 0.587 * sample.G + 0.114 * sample.B;
+
+                        writer.WriteLine($"{sample.Position:F2},{sample.R:F2},{sample.G:F2},{sample.B:F2},{luminance:F2}");
+                    }
+
+                    writer.WriteLine(); // Empty line between angles
+                }
+
+                log.Info($"导出了 {sortedLines.Count} 个角度的数据");
+            }
         }
 
         /// <summary>
