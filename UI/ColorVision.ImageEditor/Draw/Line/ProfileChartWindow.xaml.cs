@@ -69,6 +69,7 @@ namespace ColorVision.ImageEditor
 
         private void UpdatePlot()
         {
+            if (WpfPlot == null) return;
             // Clear existing plottables
             WpfPlot.Plot.Clear();
 
@@ -208,41 +209,6 @@ namespace ColorVision.ImageEditor
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to save data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void CopyToClipboardButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Use ScottPlot's built-in save to create a bitmap
-                var width = (int)WpfPlot.ActualWidth;
-                var height = (int)WpfPlot.ActualHeight;
-                
-                if (width <= 0 || height <= 0)
-                {
-                    MessageBox.Show("Chart is not visible or has no size.");
-                    return;
-                }
-
-                // Save to a memory stream then create bitmap
-                using (var ms = new System.IO.MemoryStream())
-                {
-                    WpfPlot.Plot.Save(ms, width, height, ScottPlot.ImageFormat.Png);
-                    ms.Position = 0;
-                    
-                    var decoder = new PngBitmapDecoder(ms, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-                    BitmapSource bitmapSource = decoder.Frames[0];
-                    
-                    // Copy to clipboard
-                    Clipboard.SetImage(bitmapSource);
-                }
-                
-                MessageBox.Show("Chart copied to clipboard!", "Copy to Clipboard", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to copy chart: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

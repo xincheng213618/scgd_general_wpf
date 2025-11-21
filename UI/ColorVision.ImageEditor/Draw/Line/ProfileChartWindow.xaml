@@ -19,7 +19,6 @@
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,5">
             <Button Content="Save Chart as Image..." Click="SaveChartButton_Click" Margin="0,0,10,0" Padding="5,2"/>
             <Button Content="Save Data as CSV..." Click="SaveDataButton_Click" Padding="5,2" Margin="0,0,10,0"/>
-            <Button Content="Copy to Clipboard" Click="CopyToClipboardButton_Click" Padding="5,2"/>
         </StackPanel>
 
         <!-- Toolbar for display options -->
