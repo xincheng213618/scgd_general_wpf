@@ -21,6 +21,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Collections.ObjectModel;
+using OpenCvSharp;
 
 namespace ProjectStarkSemi
 {
@@ -76,6 +78,60 @@ namespace ProjectStarkSemi
         Bilateral
     }
 
+    /// <summary>
+    /// 极角线数据类，存储角度、线对象和RGB数据
+    /// </summary>
+    public class PolarAngleLine
+    {
+        /// <summary>
+        /// 极角（度）
+        /// </summary>
+        public double Angle { get; set; }
+
+        /// <summary>
+        /// 绘制的线对象
+        /// </summary>
+        public DVLine? Line { get; set; }
+
+        /// <summary>
+        /// 沿线采样的RGB数据
+        /// </summary>
+        public List<RgbSample> RgbData { get; set; } = new List<RgbSample>();
+
+        /// <summary>
+        /// 是否显示此线的数据
+        /// </summary>
+        public bool IsVisible { get; set; } = true;
+
+        public override string ToString() => $"{Angle}°";
+    }
+
+    /// <summary>
+    /// RGB采样点数据
+    /// </summary>
+    public class RgbSample
+    {
+        /// <summary>
+        /// 位置（从-80到80映射）
+        /// </summary>
+        public double Position { get; set; }
+
+        /// <summary>
+        /// 红色通道值
+        /// </summary>
+        public double R { get; set; }
+
+        /// <summary>
+        /// 绿色通道值
+        /// </summary>
+        public double G { get; set; }
+
+        /// <summary>
+        /// 蓝色通道值
+        /// </summary>
+        public double B { get; set; }
+    }
+
     public class MenuConoscopeWindow : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
@@ -101,6 +157,15 @@ namespace ProjectStarkSemi
         private LogOutput? logOutput;
 
         private DeviceCamera? Device;
+
+        // Polar angle line management
+        private ObservableCollection<PolarAngleLine> polarAngleLines = new ObservableCollection<PolarAngleLine>();
+        private PolarAngleLine? selectedPolarLine;
+        
+        // RGB channel visibility flags
+        private bool showRedChannel = true;
+        private bool showGreenChannel = true;
+        private bool showBlueChannel = true;
 
         public ConoscopeWindow()
         {
@@ -500,8 +565,308 @@ namespace ProjectStarkSemi
             {
                 ImageView.OpenImage(openFileDialog.FileName);
 
-                DVLine dVLine  = new DVLine();
-                ImageView.AddVisual(dVLine);
+                // Wait a moment for the image to load
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    CreateAndAnalyzePolarLines();
+                }, System.Windows.Threading.DispatcherPriority.Background);
+            }
+        }
+
+        /// <summary>
+        /// 创建极角线并进行分析
+        /// </summary>
+        private void CreateAndAnalyzePolarLines()
+        {
+            try
+            {
+                // Check if image is loaded
+                if (ImageView.ImageShow.Source == null)
+                {
+                    log.Warn("图像未加载，无法创建极角线");
+                    return;
+                }
+
+                BitmapSource bitmapSource = ImageView.ImageShow.Source as BitmapSource;
+                if (bitmapSource == null)
+                {
+                    log.Error("无法获取图像源");
+                    return;
+                }
+
+                // Get image dimensions
+                int imageWidth = bitmapSource.PixelWidth;
+                int imageHeight = bitmapSource.PixelHeight;
+                
+                // Use the smaller dimension for circular symmetry
+                int radius = Math.Min(imageWidth, imageHeight) / 2;
+                
+                // Calculate center point
+                Point center = new Point(imageWidth / 2.0, imageHeight / 2.0);
+
+                log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 中心: ({center.X}, {center.Y}), 半径: {radius}");
+
+                // Clear existing lines
+                ClearPolarLines();
+
+                // Default angles: 0, 20, 40, 90
+                double[] defaultAngles = { 0, 20, 40, 90 };
+
+                // Create lines for each angle
+                foreach (double angle in defaultAngles)
+                {
+                    CreatePolarLine(angle, center, radius, bitmapSource);
+                }
+
+                // Select the first line by default
+                if (polarAngleLines.Count > 0)
+                {
+                    selectedPolarLine = polarAngleLines[0];
+                    cbPolarAngleLines.ItemsSource = polarAngleLines;
+                    cbPolarAngleLines.SelectedIndex = 0;
+                    UpdatePlot();
+                }
+
+                log.Info($"成功创建 {polarAngleLines.Count} 条极角线");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"创建极角线失败: {ex.Message}", ex);
+                MessageBox.Show($"创建极角线失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 极角线选择改变事件
+        /// </summary>
+        private void cbPolarAngleLines_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (cbPolarAngleLines.SelectedItem is PolarAngleLine selectedLine)
+            {
+                selectedPolarLine = selectedLine;
+                UpdatePlot();
+            }
+        }
+
+        /// <summary>
+        /// RGB通道可见性改变事件
+        /// </summary>
+        private void RgbChannelVisibility_Changed(object sender, RoutedEventArgs e)
+        {
+            showRedChannel = chkShowRed.IsChecked ?? true;
+            showGreenChannel = chkShowGreen.IsChecked ?? true;
+            showBlueChannel = chkShowBlue.IsChecked ?? true;
+            UpdatePlot();
+        }
+
+        /// <summary>
+        /// 创建指定角度的极角线
+        /// </summary>
+        private void CreatePolarLine(double angle, Point center, int radius, BitmapSource bitmapSource)
+        {
+            // Convert angle to radians
+            double radians = angle * Math.PI / 180.0;
+
+            // Calculate line endpoints
+            double dx = radius * Math.Cos(radians);
+            double dy = radius * Math.Sin(radians);
+
+            Point start = new Point(center.X - dx, center.Y - dy);
+            Point end = new Point(center.X + dx, center.Y + dy);
+
+            // Create DVLine
+            DVLine line = new DVLine();
+            line.Points.Add(start);
+            line.Points.Add(end);
+            line.Pen = new Pen(Brushes.Yellow, 2);
+            line.Render();
+
+            // Add to ImageView
+            ImageView.AddVisual(line);
+
+            // Create PolarAngleLine object
+            PolarAngleLine polarLine = new PolarAngleLine
+            {
+                Angle = angle,
+                Line = line
+            };
+
+            // Extract RGB data along the line
+            ExtractRgbAlongLine(polarLine, start, end, bitmapSource, radius);
+
+            // Add to collection
+            polarAngleLines.Add(polarLine);
+
+            log.Info($"创建极角线: {angle}°, 起点({start.X:F1}, {start.Y:F1}), 终点({end.X:F1}, {end.Y:F1})");
+        }
+
+        /// <summary>
+        /// 沿线提取RGB数据
+        /// </summary>
+        private void ExtractRgbAlongLine(PolarAngleLine polarLine, Point start, Point end, BitmapSource bitmapSource, int radius)
+        {
+            try
+            {
+                // Convert BitmapSource to OpenCV Mat
+                Mat mat = BitmapSourceConverter.ToMat(bitmapSource);
+
+                // Calculate line length
+                double lineLength = Math.Sqrt(Math.Pow(end.X - start.X, 2) + Math.Pow(end.Y - start.Y, 2));
+                int numSamples = (int)lineLength;
+
+                if (numSamples == 0)
+                {
+                    log.Warn($"线长度为0，无法采样");
+                    mat.Dispose();
+                    return;
+                }
+
+                // Sample points along the line
+                for (int i = 0; i < numSamples; i++)
+                {
+                    double t = i / (double)(numSamples - 1);
+                    double x = start.X + t * (end.X - start.X);
+                    double y = start.Y + t * (end.Y - start.Y);
+
+                    // Ensure coordinates are within bounds
+                    int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
+                    int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+
+                    // Map position from pixel index to -80 to 80 range
+                    // Center of line (i = numSamples/2) maps to 0
+                    // Start of line (i = 0) maps to -80
+                    // End of line (i = numSamples-1) maps to 80
+                    double position = -80 + (i / (double)(numSamples - 1)) * 160;
+
+                    // Extract RGB values based on image type
+                    double r = 0, g = 0, b = 0;
+
+                    if (mat.Channels() == 1)
+                    {
+                        // Grayscale image
+                        if (mat.Depth() == MatType.CV_8U)
+                        {
+                            byte value = mat.At<byte>(iy, ix);
+                            r = g = b = value;
+                        }
+                        else if (mat.Depth() == MatType.CV_16U)
+                        {
+                            ushort value = mat.At<ushort>(iy, ix);
+                            r = g = b = value;
+                        }
+                    }
+                    else if (mat.Channels() >= 3)
+                    {
+                        // Color image (BGR or BGRA)
+                        if (mat.Depth() == MatType.CV_8U)
+                        {
+                            Vec3b pixel = mat.At<Vec3b>(iy, ix);
+                            b = pixel.Item0;
+                            g = pixel.Item1;
+                            r = pixel.Item2;
+                        }
+                        else if (mat.Depth() == MatType.CV_16U)
+                        {
+                            Vec3w pixel = mat.At<Vec3w>(iy, ix);
+                            b = pixel.Item0;
+                            g = pixel.Item1;
+                            r = pixel.Item2;
+                        }
+                    }
+
+                    polarLine.RgbData.Add(new RgbSample
+                    {
+                        Position = position,
+                        R = r,
+                        G = g,
+                        B = b
+                    });
+                }
+
+                mat.Dispose();
+                log.Info($"完成RGB采样: 角度{polarLine.Angle}°, 采样点数{polarLine.RgbData.Count}");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"提取RGB数据失败: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// 清除所有极角线
+        /// </summary>
+        private void ClearPolarLines()
+        {
+            foreach (var polarLine in polarAngleLines)
+            {
+                if (polarLine.Line != null)
+                {
+                    ImageView.DrawingVisualLists.Remove(polarLine.Line);
+                }
+            }
+            polarAngleLines.Clear();
+            selectedPolarLine = null;
+        }
+
+        /// <summary>
+        /// 更新ScottPlot显示
+        /// </summary>
+        private void UpdatePlot()
+        {
+            try
+            {
+                wpfPlot.Plot.Clear();
+
+                if (selectedPolarLine == null || selectedPolarLine.RgbData.Count == 0)
+                {
+                    wpfPlot.Refresh();
+                    return;
+                }
+
+                // Extract position and RGB data
+                double[] positions = selectedPolarLine.RgbData.Select(s => s.Position).ToArray();
+                double[] rValues = selectedPolarLine.RgbData.Select(s => s.R).ToArray();
+                double[] gValues = selectedPolarLine.RgbData.Select(s => s.G).ToArray();
+                double[] bValues = selectedPolarLine.RgbData.Select(s => s.B).ToArray();
+
+                // Add scatter plots for each channel based on visibility
+                if (showRedChannel)
+                {
+                    var redScatter = wpfPlot.Plot.Add.Scatter(positions, rValues);
+                    redScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Red);
+                    redScatter.LineWidth = 2;
+                    redScatter.Label = "R";
+                }
+
+                if (showGreenChannel)
+                {
+                    var greenScatter = wpfPlot.Plot.Add.Scatter(positions, gValues);
+                    greenScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Green);
+                    greenScatter.LineWidth = 2;
+                    greenScatter.Label = "G";
+                }
+
+                if (showBlueChannel)
+                {
+                    var blueScatter = wpfPlot.Plot.Add.Scatter(positions, bValues);
+                    blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Blue);
+                    blueScatter.LineWidth = 2;
+                    blueScatter.Label = "B";
+                }
+
+                wpfPlot.Plot.Title($"极角 {selectedPolarLine.Angle}° RGB分布曲线");
+                wpfPlot.Plot.XLabel("角度 (°)");
+                wpfPlot.Plot.YLabel("像素值");
+                wpfPlot.Plot.Legend.IsVisible = true;
+                wpfPlot.Plot.Axes.AutoScale();
+
+                wpfPlot.Refresh();
+
+                log.Info($"更新图表: 角度{selectedPolarLine.Angle}°");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"更新图表失败: {ex.Message}", ex);
             }
         }
     }

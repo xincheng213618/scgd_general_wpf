@@ -176,19 +176,53 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="300"/>
                 </Grid.ColumnDefinitions>
-                <im:ImageView x:Name="ImageView" Grid.Row="0" />
+                <im:ImageView x:Name="ImageView" Grid.Column="0" />
                 <Grid Grid.Column="1">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <ScottPlot:WpfPlot x:Name="wpfPlot"/>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal">
-                        <Button Content="线性显示"/>
-                        <Button Content="极坐标"/>
+                    <StackPanel Grid.Row="1" Orientation="Vertical" Margin="5">
+                        <!-- Line selection -->
+                        <GroupBox Header="选择极角线" Margin="0,0,0,5">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                <ComboBox x:Name="cbPolarAngleLines" 
+                                          MinWidth="100" 
+                                          SelectionChanged="cbPolarAngleLines_SelectionChanged"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <!-- RGB channel visibility -->
+                        <GroupBox Header="通道显示">
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox x:Name="chkShowRed" 
+                                          Content="R" 
+                                          Foreground="Red" 
+                                          IsChecked="True"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                                <CheckBox x:Name="chkShowGreen" 
+                                          Content="G" 
+                                          Foreground="Green" 
+                                          IsChecked="True"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                                <CheckBox x:Name="chkShowBlue" 
+                                          Content="B" 
+                                          Foreground="Blue" 
+                                          IsChecked="True"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                            </StackPanel>
+                        </GroupBox>
                     </StackPanel>
                 </Grid>
-                <Grid Grid.Column="1" x:Name="LogGrid">
+                <Grid Grid.Column="2" x:Name="LogGrid">
                     <!-- LogOutput will be added here programmatically -->
                 </Grid>
             </Grid>
