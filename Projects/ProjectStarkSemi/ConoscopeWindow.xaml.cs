@@ -8,6 +8,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
@@ -190,7 +191,7 @@ namespace ProjectStarkSemi
             {
                 case ConoscopeModelType.VA60:
                     // VA60: 显示观察相机控件和状态栏项
-                    ObservationCameraPanel.Visibility = Visibility.Visible;
+                    btnOpenObservationCamera.Visibility = Visibility.Visible;
                     if (ObservationCameraStatusItem != null)
                     {
                         ObservationCameraStatusItem.Visibility = Visibility.Visible;
@@ -203,7 +204,7 @@ namespace ProjectStarkSemi
                     
                 case ConoscopeModelType.VA80:
                     // VA80: 隐藏观察相机控件和状态栏项
-                    ObservationCameraPanel.Visibility = Visibility.Collapsed;
+                    btnOpenObservationCamera.Visibility = Visibility.Collapsed;
                     if (ObservationCameraStatusItem != null)
                     {
                         ObservationCameraStatusItem.Visibility = Visibility.Collapsed;
@@ -489,6 +490,19 @@ namespace ProjectStarkSemi
             windowTemplate.ShowDialog();
 
             ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                ImageView.OpenImage(openFileDialog.FileName);
+
+                DVLine dVLine  = new DVLine();
+                ImageView.AddVisual(dVLine);
+            }
         }
     }
 }

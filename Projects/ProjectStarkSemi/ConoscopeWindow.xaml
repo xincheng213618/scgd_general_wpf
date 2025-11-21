@@ -16,41 +16,31 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="300"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal">
-                <!-- Model Selection Section -->
-                <GroupBox Grid.Row="0"  Margin="0,0,0,10">
-                    <StackPanel Margin="10">
-                        <DockPanel Margin="0,0,0,10">
-                            <TextBlock Text="{x:Static properties:Resources.Model}" VerticalAlignment="Center" Width="80"/>
-                            <ComboBox x:Name="cbModelType" 
+            <Ribbon>
+                <RibbonTab Header="编辑"  Padding="10">
+                    <RibbonGroup x:Name="rbnGr1" Header="General">
+                        <Button Content="导入图片" VerticalAlignment="Top"  Click="Button_Click"/>
+                    </RibbonGroup>
+                    <RibbonGroup x:Name="rbnGr2" Header="General">
+                        <StackPanel>
+                            <DockPanel >
+                                <TextBlock Text="{x:Static properties:Resources.Model}" VerticalAlignment="Center" Width="80"/>
+                                <ComboBox x:Name="cbModelType" 
                                       SelectionChanged="cbModelType_SelectionChanged"
                                       SelectedIndex="0">
-                                <ComboBoxItem Content="VA60" Tag="VA60"/>
-                                <ComboBoxItem Content="VA80" Tag="VA80"/>
-                            </ComboBox>
-                        </DockPanel>
-
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- Observation Camera Section (VA60 only) -->
-                <GroupBox x:Name="ObservationCameraPanel" Grid.Row="1"  Margin="0,0,0,10">
-                    <StackPanel Margin="10">
+                                    <ComboBoxItem Content="VA60" Tag="VA60"/>
+                                    <ComboBoxItem Content="VA80" Tag="VA80"/>
+                                </ComboBox>
+                            </DockPanel>
+                        </StackPanel>
                         <Button x:Name="btnOpenObservationCamera" 
-                                Content="{x:Static properties:Resources.OpenObservationCamera}"
-                                Click="btnOpenObservationCamera_Click"
-                                Height="30"/>
-                    </StackPanel>
-                </GroupBox>
+                        Content="{x:Static properties:Resources.OpenObservationCamera}"
+                        Click="btnOpenObservationCamera_Click"
+                        Height="30"/>
+                    </RibbonGroup>
 
 
-                <!-- Measurement Camera Section -->
-                <GroupBox Grid.Row="2" Margin="0,0,0,10" Width="200">
-                    <StackPanel Margin="10">
+                    <RibbonGroup  Header="General" >
                         <DockPanel Margin="0,0,0,10">
                             <ComboBox x:Name="cbMeasurementCamera"  SelectionChanged="cbMeasurementCamera_SelectionChanged"/>
                         </DockPanel>
@@ -77,34 +67,34 @@
                         </DockPanel>
 
                         <Button x:Name="btnOpenMeasurementCamera" 
-                                Content="{x:Static properties:Resources.CaptureImage}"
-                                Click="btnOpenMeasurementCamera_Click"
-                                Margin="0,0,0,5"
-                                Height="30"/>
+                              Content="{x:Static properties:Resources.CaptureImage}"
+                              Click="btnOpenMeasurementCamera_Click"
+                              Margin="0,0,0,5"
+                              Height="30"/>
 
                         <Button x:Name="btnCalibration" 
-                                Content="{x:Static properties:Resources.Calibration}"
-                                Click="btnCalibration_Click"
-                                Height="30"/>
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- Image Filter Section -->
-                <GroupBox Grid.Row="3" Header="{x:Static properties:Resources.ImageFilter}" Margin="0,0,0,10">
-                    <StackPanel Margin="10">
-                        <DockPanel Margin="0,0,0,10">
-                            <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Width="80"/>
-                            <ComboBox x:Name="cbFilterType" 
+                              Content="{x:Static properties:Resources.Calibration}"
+                              Click="btnCalibration_Click"
+                              Height="30"/>
+                    </RibbonGroup>
+                    <RibbonGroup Header="{x:Static properties:Resources.ImageFilter}">
+                        <StackPanel >
+                            <DockPanel Margin="0,0,0,10">
+                                <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Width="80"/>
+                                <ComboBox x:Name="cbFilterType" 
                                       SelectionChanged="cbFilterType_SelectionChanged"
                                       SelectedIndex="0">
-                                <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}"/>
-                                <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}"/>
-                                <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}"/>
-                                <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}"/>
-                                <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}"/>
-                                <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}"/>
-                            </ComboBox>
-                        </DockPanel>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}"/>
+                                </ComboBox>
+                            </DockPanel>
+
+
+                        </StackPanel>
 
                         <!-- Kernel Size Parameter -->
                         <DockPanel Margin="0,0,0,5">
@@ -161,17 +151,16 @@
                                     Margin="5,0,0,0" IsEnabled="False"/>
                         </DockPanel>
 
-                    </StackPanel>
-                </GroupBox>
-
-                <Button x:Name="btnApplyFilter" 
+                        <Button x:Name="btnApplyFilter" 
                                 Content="{x:Static properties:Resources.ApplyFilter}"
                                 Click="btnApplyFilter_Click"
-                                Height="30"/>
-            </StackPanel>
-            <Grid Grid.Column="1" x:Name="LogGrid">
-                <!-- LogOutput will be added here programmatically -->
-            </Grid>
+                                />
+                    </RibbonGroup>
+
+
+                </RibbonTab>
+            </Ribbon>
+
         </Grid>
 
         <!-- Main Content Area -->
@@ -185,6 +174,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="300"/>
                 </Grid.ColumnDefinitions>
                 <im:ImageView x:Name="ImageView" Grid.Row="0" />
                 <Grid Grid.Column="1">
@@ -197,6 +187,9 @@
                         <Button Content="线性显示"/>
                         <Button Content="极坐标"/>
                     </StackPanel>
+                </Grid>
+                <Grid Grid.Column="1" x:Name="LogGrid">
+                    <!-- LogOutput will be added here programmatically -->
                 </Grid>
             </Grid>
 
