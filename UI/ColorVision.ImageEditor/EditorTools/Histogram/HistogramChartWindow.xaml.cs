@@ -72,8 +72,7 @@ namespace ColorVision.ImageEditor
             WpfPlot.Plot.YLabel(_isLogScale ? "Count (Log Scale)" : "Count");
 
             // Set Chinese font support
-            string fontSample = "Histogram";
-            string detectedFont = ScottPlot.Fonts.Detect(fontSample);
+            string detectedFont = ScottPlot.Fonts.Detect("直方图");
             WpfPlot.Plot.Axes.Title.Label.FontName = detectedFont;
             WpfPlot.Plot.Axes.Left.Label.FontName = detectedFont;
             WpfPlot.Plot.Axes.Bottom.Label.FontName = detectedFont;
