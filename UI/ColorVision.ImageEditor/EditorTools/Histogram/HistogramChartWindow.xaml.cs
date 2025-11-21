@@ -48,6 +48,7 @@ namespace ColorVision.ImageEditor
                 ShowGreenCheckBox.Visibility = Visibility.Visible;
                 ShowBlueCheckBox.Visibility = Visibility.Visible;
                 ShowGrayCheckBox.Visibility = Visibility.Visible; // Show gray for multi-channel too
+                ShowGrayCheckBox.IsChecked = false;
             }
             else
             {
@@ -207,32 +208,50 @@ namespace ColorVision.ImageEditor
             if (_histogramData.IsMultiChannel)
             {
                 if (ShowRedCheckBox.IsChecked == true)
-                    allValues.AddRange(PrepareHistogramValues(_histogramData.RedChannel));
+                {
+                    var doubles = PrepareHistogramValues(_histogramData.RedChannel);
+                    var sortedValues1 = doubles.OrderByDescending(v => v).Distinct().ToList();
+                    allValues.Add(sortedValues1[1] * 1.2);
+                }
                 if (ShowGreenCheckBox.IsChecked == true)
-                    allValues.AddRange(PrepareHistogramValues(_histogramData.GreenChannel));
+                {
+                    var doubles = PrepareHistogramValues(_histogramData.GreenChannel);
+                    var sortedValues1 = doubles.OrderByDescending(v => v).Distinct().ToList();
+                    allValues.Add(sortedValues1[1] * 1.1);
+                }
                 if (ShowBlueCheckBox.IsChecked == true)
-                    allValues.AddRange(PrepareHistogramValues(_histogramData.BlueChannel));
+                {
+                    var doubles = PrepareHistogramValues(_histogramData.BlueChannel);
+                    var sortedValues1 = doubles.OrderByDescending(v => v).Distinct().ToList();
+                    allValues.Add(sortedValues1[1] * 1.1);
+                }
                 if (ShowGrayCheckBox.IsChecked == true)
-                    allValues.AddRange(PrepareHistogramValues(_histogramData.GrayChannel));
+                {
+                    var doubles = PrepareHistogramValues(_histogramData.GrayChannel);
+                    var sortedValues1 = doubles.OrderByDescending(v => v).Distinct().ToList();
+                    allValues.Add(sortedValues1[1] * 1.1);
+                }
+                if (allValues.Count == 0)
+                    return 100;
+                return allValues.Max();
             }
             else
             {
                 if (ShowGrayCheckBox.IsChecked == true)
                     allValues.AddRange(PrepareHistogramValues(_histogramData.GrayChannel));
+                if (allValues.Count == 0)
+                    return 100;
+
+                // Sort and find second highest value
+                var sortedValues = allValues.OrderByDescending(v => v).Distinct().ToList();
+
+                if (sortedValues.Count < 2)
+                    return sortedValues.First() * 1.1;
+
+                // Use second highest value with 120% multiplier for better visibility
+                double secondHighest = sortedValues[1];
+                return secondHighest * 1.1;
             }
-
-            if (allValues.Count == 0)
-                return 100;
-
-            // Sort and find second highest value
-            var sortedValues = allValues.OrderByDescending(v => v).Distinct().ToList();
-            
-            if (sortedValues.Count < 2)
-                return sortedValues.First()* 1.1;
-
-            // Use second highest value with 120% multiplier for better visibility
-            double secondHighest = sortedValues[1];
-            return secondHighest * 1.2;
         }
 
         private double[] PrepareHistogramValues(int[] histogram)
