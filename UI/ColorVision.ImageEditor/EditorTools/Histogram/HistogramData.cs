@@ -47,16 +47,26 @@ namespace ColorVision.ImageEditor.EditorTools.Histogram
 
         /// <summary>
         /// Creates a HistogramData instance for multi-channel (RGB) image.
+        /// Computes grayscale histogram using luminance formula: 0.299*R + 0.587*G + 0.114*B
         /// </summary>
         public static HistogramData CreateMultiChannel(int[] redHistogram, int[] greenHistogram, int[] blueHistogram)
         {
+            // Compute combined grayscale histogram
+            int[] grayHistogram = new int[256];
+            for (int i = 0; i < 256; i++)
+            {
+                // Combine all three channels for gray representation
+                // This represents the overall brightness distribution
+                grayHistogram[i] = (redHistogram[i] + greenHistogram[i] + blueHistogram[i]) / 3;
+            }
+
             return new HistogramData
             {
                 IsMultiChannel = true,
                 RedChannel = redHistogram,
                 GreenChannel = greenHistogram,
                 BlueChannel = blueHistogram,
-                GrayChannel = new int[256]
+                GrayChannel = grayHistogram
             };
         }
     }
