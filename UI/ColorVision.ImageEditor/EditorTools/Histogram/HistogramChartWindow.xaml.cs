@@ -1,26 +1,18 @@
-﻿using LiveChartsCore.SkiaSharpView.Painting;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore;
+﻿using ColorVision.ImageEditor.EditorTools.Histogram;
+using ColorVision.Common.MVVM;
+using ColorVision.Themes;
+using ColorVision.UI;
+using ScottPlot;
+using ScottPlot.Plottables;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
-using LiveChartsCore.SkiaSharpView.WPF;
-using SkiaSharp;
-using System.Text.RegularExpressions;
-using ColorVision.Themes;
-using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using LiveChartsCore.Measure;
 
 namespace ColorVision.ImageEditor
 {
-
-    public class HistogramChartConfig:ViewModelBase ,IConfig
+    public class HistogramChartConfig : ViewModelBase, IConfig
     {
         public static HistogramChartConfig Instance => ConfigService.Instance.GetRequiredService<HistogramChartConfig>();
-
     }
 
     /// <summary>
@@ -28,200 +20,164 @@ namespace ColorVision.ImageEditor
     /// </summary>
     public partial class HistogramChartWindow : Window
     {
-        int[] channe1;
-        int[] GreenHistogram;
-        int[] BlueHistogram;
+        private HistogramData _histogramData;
+        private bool _isLogScale = false;
+        
+        private Bar? _redBars;
+        private Bar? _greenBars;
+        private Bar? _blueBars;
+        private Bar? _grayBars;
 
-        double MaxY;
-
-        public bool IsLog { get; set; }
-        private LineSeries<double> Serieschannel1;
-        private LineSeries<double> greenSeries;
-        private LineSeries<double> blueSeries;
-        private LineSeries<double> graySeries; // 灰度直方图
-        public ISeries[] SeriesCollection { get; set; }
-        public HistogramChartWindow(int[] redHistogram, int[] greenHistogram ,int[] blueHistogram)
+        public HistogramChartWindow(int[] redHistogram, int[] greenHistogram, int[] blueHistogram)
         {
-            //对数缩放
-            channe1 = redHistogram;
-            GreenHistogram = greenHistogram;
-            BlueHistogram = blueHistogram;
-
-            MaxY = (channe1.Sum() + GreenHistogram.Sum() + BlueHistogram.Sum()) / 100;
-
+            _histogramData = HistogramData.CreateMultiChannel(redHistogram, greenHistogram, blueHistogram);
             InitializeComponent();
             this.ApplyCaption();
-            DrawHistograms(HistogramChart, channe1, GreenHistogram, BlueHistogram);
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        public HistogramChartWindow(int[] grayHistogram)
         {
-            IsLog = !IsLog;
-            ToolStackPanel.Children.Clear();
-            if (GreenHistogram != null && BlueHistogram != null)
-            {
-                DrawHistograms(HistogramChart, channe1, GreenHistogram, BlueHistogram);
-            }
-            else
-            {
-                DrawHistograms(HistogramChart, channe1);
-
-            }
-
-            if (IsLog)
-            {
-                HistogramChart.YAxes = new Axis[]
-                {
-                    new Axis()
-                    {
-                    IsVisible =true ,
-                    MinLimit =0,
-                    }
-                };
-            }
-            else
-            {
-                HistogramChart.YAxes = new Axis[]
-                {
-                    new Axis()
-                    {
-                    IsVisible =true ,
-                    MaxLimit = MaxY ,
-                    MinLimit =0,
-                    Labeler = value => Regex.Replace(value.ToString("E1"), @"E\+?0*(\d+)", "x10^$1"),
-                    }
-                };
-
-            }
-        }
-
-        /// <summary>
-        /// 对数组做对数变换
-        /// </summary>
-        /// <summary>
-        /// 对数组做对数变换，返回 double[]
-        /// </summary>
-        private double[] ToLog(int[] hist)
-        {
-            return hist.Select(v => Math.Log(v + 1)).ToArray();
-        }
-
-        public HistogramChartWindow(int[] graySeries)
-        {
-            channe1 = graySeries;
-
+            _histogramData = HistogramData.CreateSingleChannel(grayHistogram);
             InitializeComponent();
             this.ApplyCaption();
-
-            DrawHistograms(HistogramChart, channe1);
-
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            HistogramChart.XAxes = new Axis[]
+            // Configure channel visibility checkboxes
+            if (_histogramData.IsMultiChannel)
             {
-                new Axis
+                ShowRedCheckBox.Visibility = Visibility.Visible;
+                ShowGreenCheckBox.Visibility = Visibility.Visible;
+                ShowBlueCheckBox.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                ShowGrayCheckBox.Visibility = Visibility.Visible;
+            }
+
+            // Initialize the plot
+            InitializePlot();
+            UpdatePlot();
+        }
+
+        private void InitializePlot()
+        {
+            // Clear any existing data
+            WpfPlot.Plot.Clear();
+
+            // Configure plot appearance
+            WpfPlot.Plot.Title("Histogram");
+            WpfPlot.Plot.XLabel("Pixel Value (0-255)");
+            WpfPlot.Plot.YLabel(_isLogScale ? "Count (Log Scale)" : "Count");
+
+            // Set Chinese font support
+            string fontSample = "Histogram";
+            string detectedFont = ScottPlot.Fonts.Detect(fontSample);
+            WpfPlot.Plot.Axes.Title.Label.FontName = detectedFont;
+            WpfPlot.Plot.Axes.Left.Label.FontName = detectedFont;
+            WpfPlot.Plot.Axes.Bottom.Label.FontName = detectedFont;
+
+            // Configure grid
+            WpfPlot.Plot.Grid.MajorLineColor = ScottPlot.Color.FromColor(System.Drawing.Color.LightGray);
+
+            // Set X axis limits
+            WpfPlot.Plot.Axes.SetLimitsX(0, 256);
+        }
+
+        private void UpdatePlot()
+        {
+            // Clear existing plottables
+            WpfPlot.Plot.Clear();
+
+            // Prepare X-axis data (bin positions 0-255)
+            double[] positions = Enumerable.Range(0, 256).Select(i => (double)i).ToArray();
+
+            if (_histogramData.IsMultiChannel)
+            {
+                // Multi-channel histogram
+                // Red channel
+                if (ShowRedCheckBox.IsChecked == true)
                 {
-                    MaxLimit = channe1.Length,
-                    MinLimit =0,
-                    Labels = Enumerable.Range(0, 256).Select(x => x.ToString()).ToArray() // 确保显示0到255的每个标签
+                    double[] redValues = PrepareHistogramValues(_histogramData.RedChannel);
+                    _redBars = WpfPlot.Plot.Add.Bars(positions, redValues);
+                    _redBars.Color = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(100, 255, 0, 0));
+                    _redBars.LegendText = "Red";
                 }
-            };
-            HistogramChart.YAxes = new Axis[]
-            {
-                new Axis(){
-                    IsVisible =true ,
-                    MaxLimit = MaxY ,
-                    MinLimit =0,
-                    Labeler = value => Regex.Replace(value.ToString("E1"), @"E\+?0*(\d+)", "x10^$1"),
+
+                // Green channel
+                if (ShowGreenCheckBox.IsChecked == true)
+                {
+                    double[] greenValues = PrepareHistogramValues(_histogramData.GreenChannel);
+                    _greenBars = WpfPlot.Plot.Add.Bars(positions, greenValues);
+                    _greenBars.Color = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(100, 0, 255, 0));
+                    _greenBars.LegendText = "Green";
                 }
-            };
 
-            HistogramChart.ZoomMode = ZoomAndPanMode.Both | ZoomAndPanMode.Y | ZoomAndPanMode.X;
+                // Blue channel
+                if (ShowBlueCheckBox.IsChecked == true)
+                {
+                    double[] blueValues = PrepareHistogramValues(_histogramData.BlueChannel);
+                    _blueBars = WpfPlot.Plot.Add.Bars(positions, blueValues);
+                    _blueBars.Color = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(100, 0, 0, 255));
+                    _blueBars.LegendText = "Blue";
+                }
 
+                // Show legend for multi-channel
+                WpfPlot.Plot.ShowLegend();
+            }
+            else
+            {
+                // Single-channel (grayscale) histogram
+                if (ShowGrayCheckBox.IsChecked == true)
+                {
+                    double[] grayValues = PrepareHistogramValues(_histogramData.GrayChannel);
+                    _grayBars = WpfPlot.Plot.Add.Bars(positions, grayValues);
+                    _grayBars.Color = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(150, 128, 128, 128));
+                    _grayBars.LegendText = "Gray";
+                }
+            }
+
+            // Update Y label
+            WpfPlot.Plot.YLabel(_isLogScale ? "Count (Log Scale)" : "Count");
+
+            // Auto-scale axes
+            WpfPlot.Plot.Axes.AutoScale();
+
+            // Refresh the plot
+            WpfPlot.Refresh();
         }
-        private void DrawHistograms(CartesianChart chart, int[] grayHistogram)
+
+        private double[] PrepareHistogramValues(int[] histogram)
         {
-            double[] valuesToUse = IsLog ? ToLog(grayHistogram) : grayHistogram.Select(x => (double)x).ToArray();
-            var grayValues = new List<double>(valuesToUse);
-
-            graySeries = new LineSeries<double>
+            if (_isLogScale)
             {
-                Values = grayValues,
-                Name = "Gray",
-                Fill = new SolidColorPaint(new SKColor(128, 128, 128, 100)),
-                Stroke = new SolidColorPaint(new SKColor(128, 128, 128)),
-                LineSmoothness = 10,
-                GeometrySize = 0
-            };
-
-            SeriesCollection = new ISeries[] { graySeries };
-            chart.Series = SeriesCollection;
-            AddCheckBoxForChannel("Gray", graySeries);
+                // Apply log scale: log(value + 1)
+                return histogram.Select(v => Math.Log(v + 1)).ToArray();
+            }
+            else
+            {
+                // Normal scale
+                return histogram.Select(v => (double)v).ToArray();
+            }
         }
 
-
-        private void DrawHistograms(CartesianChart chart, int[] redHistogram, int[] greenHistogram, int[] blueHistogram)
+        private void LogScaleButton_Click(object sender, RoutedEventArgs e)
         {
-            double[] redToUse = IsLog ? ToLog(redHistogram) : redHistogram.Select(x => (double)x).ToArray();
-            double[] greenToUse = IsLog ? ToLog(greenHistogram) : greenHistogram.Select(x => (double)x).ToArray();
-            double[] blueToUse = IsLog ? ToLog(blueHistogram) : blueHistogram.Select(x => (double)x).ToArray();
+            _isLogScale = !_isLogScale;
+            
+            // Update button text
+            if (sender is System.Windows.Controls.Button button)
+            {
+                button.Content = _isLogScale ? "Linear Scale" : "Log Scale";
+            }
 
-            var redValues = new List<double>(redToUse);
-            var greenValues = new List<double>(greenToUse);
-            var blueValues = new List<double>(blueToUse);
-
-            Serieschannel1 = new LineSeries<double>
-            {
-                Values = redValues,
-                Name = "Red",
-                Fill = new SolidColorPaint(new SKColor(255, 0, 0, 60)),
-                Stroke = new SolidColorPaint(new SKColor(255, 0, 0)),
-                LineSmoothness = 10,
-                GeometrySize = 0,
-            };
-            greenSeries = new LineSeries<double>
-            {
-                Values = greenValues,
-                Name = "Green",
-                Fill = new SolidColorPaint(new SKColor(0, 255, 0, 80)),
-                Stroke = new SolidColorPaint(new SKColor(0, 255, 0)),
-                LineSmoothness = 10,
-                GeometrySize = 0,
-            };
-            blueSeries = new LineSeries<double>
-            {
-                Values = blueValues,
-                Name = "Blue",
-                Fill = new SolidColorPaint(new SKColor(0, 0, 255, 100)),
-                Stroke = new SolidColorPaint(new SKColor(0, 0, 255)),
-                LineSmoothness = 10,
-                GeometrySize = 0,
-            };
-            SeriesCollection = new ISeries[] { Serieschannel1, greenSeries, blueSeries };
-            chart.Series = SeriesCollection;
-            AddCheckBoxForChannel("Red", Serieschannel1);
-            AddCheckBoxForChannel("Green", greenSeries);
-            AddCheckBoxForChannel("Blue", blueSeries);
+            UpdatePlot();
         }
 
-        // 添加复选框并设置切换逻辑
-        private void AddCheckBoxForChannel(string channelName, LineSeries<double> series)
+        private void ChannelCheckBox_CheckChanged(object sender, RoutedEventArgs e)
         {
-            CheckBox checkBox = new CheckBox
-            {
-                IsChecked = true,
-                Content = channelName.Substring(0, 1),
-                Margin = new Thickness(0, 0, 5, 0)
-            };
-
-            checkBox.Checked += (s, e) => series.IsVisible = true;
-            checkBox.Unchecked += (s, e) => series.IsVisible = false;
-
-            ToolStackPanel.Children.Add(checkBox);
+            UpdatePlot();
         }
-
-
     }
 }

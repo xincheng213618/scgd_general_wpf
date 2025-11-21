@@ -21,12 +21,16 @@ namespace ColorVision.ImageEditor.EditorTools.Histogram
 
             var (redHistogram, greenHistogram, blueHistogram) = ImageUtils.RenderHistogram(bitmapSource);
             HistogramChartWindow window;
+            
+            // Detect single-channel vs multi-channel
             if (bitmapSource.Format.Masks.Count == 1)
             {
+                // Single-channel (grayscale)
                 window = new HistogramChartWindow(redHistogram);
             }
             else
             {
+                // Multi-channel (RGB)
                 window = new HistogramChartWindow(redHistogram, greenHistogram, blueHistogram);
             }
 

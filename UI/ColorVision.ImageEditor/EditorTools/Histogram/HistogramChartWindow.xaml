@@ -3,25 +3,38 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.ImageEditor"     
-        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        xmlns:local="clr-namespace:ColorVision.ImageEditor"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="直方图" Height="450" Width="800" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
-    <Grid>
+        Title="直方图 (Histogram)" Height="450" Width="800" 
+        WindowStartupLocation="CenterScreen" 
+        Background="{DynamicResource GlobalBackground}" 
+        Initialized="Window_Initialized">
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         
-        <StackPanel Grid.Row="0"  Orientation="Horizontal" VerticalAlignment="Top" Margin="5">
-            <Button Content="Log" Click="Button_Click"/>
-            <StackPanel x:Name="ToolStackPanel" Orientation="Horizontal"  Margin="5,0">
-                
-            </StackPanel>
-
+        <!-- Toolbar -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button Content="Log Scale" Click="LogScaleButton_Click" Padding="5,2" Margin="0,0,10,0"/>
+            <CheckBox x:Name="ShowRedCheckBox" Content="Red" IsChecked="True" 
+                      Checked="ChannelCheckBox_CheckChanged" Unchecked="ChannelCheckBox_CheckChanged" 
+                      Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Collapsed" Foreground="Red"/>
+            <CheckBox x:Name="ShowGreenCheckBox" Content="Green" IsChecked="True" 
+                      Checked="ChannelCheckBox_CheckChanged" Unchecked="ChannelCheckBox_CheckChanged" 
+                      Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Collapsed" Foreground="Green"/>
+            <CheckBox x:Name="ShowBlueCheckBox" Content="Blue" IsChecked="True" 
+                      Checked="ChannelCheckBox_CheckChanged" Unchecked="ChannelCheckBox_CheckChanged" 
+                      Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Collapsed" Foreground="Blue"/>
+            <CheckBox x:Name="ShowGrayCheckBox" Content="Gray" IsChecked="True" 
+                      Checked="ChannelCheckBox_CheckChanged" Unchecked="ChannelCheckBox_CheckChanged" 
+                      Margin="0,0,10,0" VerticalAlignment="Center" Visibility="Collapsed"/>
         </StackPanel>
         
-        <lvc:CartesianChart Grid.Row="1" Name="HistogramChart" Foreground="{StaticResource GlobalTextBrush}"  ZoomingSpeed="0.5"/>
+        <!-- Chart -->
+        <ScottPlot:WpfPlot Grid.Row="1" x:Name="WpfPlot"/>
 
     </Grid>
 </Window>
