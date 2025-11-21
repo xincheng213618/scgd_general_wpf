@@ -7,6 +7,7 @@ using ScottPlot.Plottables;
 using System;
 using System.Linq;
 using System.Windows;
+using System.Collections.Generic;
 
 namespace ColorVision.ImageEditor
 {
@@ -227,7 +228,7 @@ namespace ColorVision.ImageEditor
             var sortedValues = allValues.OrderByDescending(v => v).Distinct().ToList();
             
             if (sortedValues.Count < 2)
-                return sortedValues.First() * 1.1;
+                return sortedValues.First()* 1.1;
 
             // Use second highest value with 120% multiplier for better visibility
             double secondHighest = sortedValues[1];
