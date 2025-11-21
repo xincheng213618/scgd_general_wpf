@@ -105,15 +105,15 @@ namespace ColorVision.ImageEditor.Tif
 
             WriteableBitmap? writeableBitmap = null;
             BitmapMetadata? metadata = null;
-
-            await Task.Run(() =>
+            BitmapSource source = null;
+           await Task.Run(() =>
             {
                 using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 var decoder = new TiffBitmapDecoder(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
 
                 if (decoder.Frames.Count > 0)
                 {
-                    BitmapSource source = decoder.Frames[0];
+                    source = decoder.Frames[0];
                     metadata = source.Metadata as BitmapMetadata;
 
                     // 检查 DPI 是否为 96，允许微小误差
@@ -140,11 +140,10 @@ namespace ColorVision.ImageEditor.Tif
 
                     source.Freeze();
                     // 这里将处理过（或原始）的 source 转换为 WriteableBitmap
-                    writeableBitmap = new WriteableBitmap(source);
-                    writeableBitmap.Freeze();
                 }
             });
 
+            writeableBitmap = new WriteableBitmap(source);
             if (writeableBitmap == null) return;
 
             // Add image dimensions

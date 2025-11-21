@@ -24,7 +24,6 @@ using System.Windows.Media.Imaging;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
-using OpenCvSharp;
 using Microsoft.Win32;
 
 namespace ProjectStarkSemi
