@@ -565,11 +565,11 @@ namespace ProjectStarkSemi
             {
                 ImageView.OpenImage(openFileDialog.FileName);
 
-                // Wait a moment for the image to load
+                // Use Render priority to ensure image is loaded before analysis
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     CreateAndAnalyzePolarLines();
-                }, System.Windows.Threading.DispatcherPriority.Background);
+                }, System.Windows.Threading.DispatcherPriority.Render);
             }
         }
 
@@ -714,9 +714,9 @@ namespace ProjectStarkSemi
                 double lineLength = Math.Sqrt(Math.Pow(end.X - start.X, 2) + Math.Pow(end.Y - start.Y, 2));
                 int numSamples = (int)lineLength;
 
-                if (numSamples == 0)
+                if (numSamples <= 1)
                 {
-                    log.Warn($"线长度为0，无法采样");
+                    log.Warn($"线长度太短 ({numSamples} 像素)，无法采样");
                     mat.Dispose();
                     return;
                 }
@@ -733,9 +733,8 @@ namespace ProjectStarkSemi
                     int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
 
                     // Map position from pixel index to -80 to 80 range
-                    // Center of line (i = numSamples/2) maps to 0
-                    // Start of line (i = 0) maps to -80
-                    // End of line (i = numSamples-1) maps to 80
+                    // The mapping ensures: start (i=0) -> -80, end (i=numSamples-1) -> 80
+                    // For odd numSamples, middle sample (i=numSamples/2) maps approximately to 0
                     double position = -80 + (i / (double)(numSamples - 1)) * 160;
 
                     // Extract RGB values based on image type
