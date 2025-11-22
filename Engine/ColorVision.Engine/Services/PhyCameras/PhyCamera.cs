@@ -851,13 +851,14 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                                     SysResourceModel sysResourceModel = new();
                                     sysResourceModel.Name = calzzom.Title;
-                                    sysResourceModel.Code = Id + md5;
+                                    sysResourceModel.Code = Id + md5 + calzzom.Title;
                                     sysResourceModel.Type = (int)calzzom.CalibrationType.ToResouceType();
                                     sysResourceModel.Pid = SysResourceModel.Id;
                                     sysResourceModel.Value = Path.GetFileName(FileName);
                                     sysResourceModel.CreateDate = DateTime.Now;
                                     sysResourceModel.Remark = calzzom.ToJsonN(new JsonSerializerSettings());
                                     int ret = SysResourceDao.Instance.Save(sysResourceModel);
+                                    log.Info(sysResourceModel.Code + $"Ret:{ret} id {sysResourceModel.Id}");
                                     if (sysResourceModel != null)
                                     {
                                         CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
@@ -947,11 +948,15 @@ namespace ColorVision.Engine.Services.PhyCameras
                     if (UploadList.Any(a => a.UploadStatus == UploadStatus.Failed))
                     {
                         SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
+                        if (Directory.Exists(path))
+                            Directory.Delete(path, true);
                     }
                     else
                     {
                         await Task.Delay(500);
                         SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/success.wav");
+                        if (Directory.Exists(path))
+                            Directory.Delete(path, true);
                         Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
                     }
                 }
@@ -960,6 +965,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                     log.Error(ex);
                     Msg = ex.Message;
                     SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
+                    if (Directory.Exists(path))
+                        Directory.Delete(path, true);
                     Application.Current.Dispatcher.Invoke(() => 
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");

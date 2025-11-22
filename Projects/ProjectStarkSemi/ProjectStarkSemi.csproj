@@ -6,13 +6,78 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.1.3</VersionPrefix>
+		<VersionPrefix>1.1.1.4</VersionPrefix>
 		<UseWindowsForms>True</UseWindowsForms>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>
 	  <None Remove="CHANGELOG.md" />
+	  <None Remove="Images\smallicon.png" />
+		<None Include="Images\AlignCenter16.png" />
+		<None Include="Images\AlignJustify16.png" />
+		<None Include="Images\AlignLeft16.PNG" />
+		<None Include="Images\AlignRight16.png" />
+		<None Include="Images\ApplicationMenuIcon.png" />
+		<None Include="Images\ArrowRedo16.png" />
+		<None Include="Images\ArrowUndo16.png" />
+		<None Include="Images\Bold16.png" />
+		<None Include="Images\Calendar16.png" />
+		<None Include="Images\Calendar32.png" />
+		<None Include="Images\Copy16.png" />
+		<None Include="Images\Copy32.png" />
+		<None Include="Images\Cut16.png" />
+		<None Include="Images\Cut32.png" />
+		<None Include="Images\Document16.png" />
+		<None Include="Images\Exit16.png" />
+		<None Include="Images\Exit32.png" />
+		<None Include="Images\Find16.png" />
+		<None Include="Images\FontColor16.png" />
+		<None Include="Images\FontGrow16.png" />
+		<None Include="Images\FontShrink16.png" />
+		<None Include="Images\Help16.png" />
+		<None Include="Images\Highlight16.png" />
+		<None Include="Images\Hyperlink16.png" />
+		<None Include="Images\Hyperlink32.png" />
+		<None Include="Images\Indent16.png" />
+		<None Include="Images\InsertPicture16.png" />
+		<None Include="Images\InsertPicture32.png" />
+		<None Include="Images\InsertShape16.png" />
+		<None Include="Images\InsertShape32.png" />
+		<None Include="Images\Italic16.png" />
+		<None Include="Images\LineSpacing16.png" />
+		<None Include="Images\ListBullets16.png" />
+		<None Include="Images\ListBullets32.png" />
+		<None Include="Images\ListNumbered16.png" />
+		<None Include="Images\Open32.png" />
+		<None Include="Images\Outdent16.png" />
+		<None Include="Images\Paste16.png" />
+		<None Include="Images\Paste32.png" />
+		<None Include="Images\PasteLg.png" />
+		<None Include="Images\Print32.png" />
+		<None Include="Images\PrintPreview32.png" />
+		<None Include="Images\PrintSetup32.png" />
+		<None Include="Images\QuickPrint32.png" />
+		<None Include="Images\Replace16.png" />
+		<None Include="Images\ReplaceSm0.png" />
+		<None Include="Images\Ruler16.png" />
+		<None Include="Images\Save16.png" />
+		<None Include="Images\Save32.png" />
+		<None Include="Images\SaveAs32.png" />
+		<None Include="Images\SaveAsRtf32.png" />
+		<None Include="Images\SaveAsTxt32.png" />
+		<None Include="Images\SelectAll16.png" />
+		<None Include="Images\Strikethrough16.png" />
+		<None Include="Images\Subscript16.png" />
+		<None Include="Images\Superscript16.png" />
+		<None Include="Images\Underline16.png" />
+		<None Include="Images\WordWrap16.png" />
+		<None Include="Images\ZoomActualSize16.png" />
+		<None Include="Images\ZoomActualSize32.png" />
+		<None Include="Images\ZoomIn16.png" />
+		<None Include="Images\ZoomIn32.png" />
+		<None Include="Images\ZoomOut16.png" />
+		<None Include="Images\ZoomOut32.png" />
 	  <None Remove="README.md" />
 	</ItemGroup>
 	<ItemGroup>
@@ -59,6 +124,76 @@
 
 	<ItemGroup>
 	  <Folder Include="Assets\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Resource Include="Images\AlignCenter16.png" />
+		<Resource Include="Images\AlignJustify16.png" />
+		<Resource Include="Images\AlignLeft16.PNG" />
+		<Resource Include="Images\AlignRight16.png" />
+		<Resource Include="Images\ApplicationMenuIcon.png" />
+		<Resource Include="Images\ArrowRedo16.png" />
+		<Resource Include="Images\ArrowUndo16.png" />
+		<Resource Include="Images\Bold16.png" />
+		<Resource Include="Images\Calendar16.png" />
+		<Resource Include="Images\Calendar32.png" />
+		<Resource Include="Images\Copy16.png" />
+		<Resource Include="Images\Copy32.png" />
+		<Resource Include="Images\Cut16.png" />
+		<Resource Include="Images\Cut32.png" />
+		<Resource Include="Images\Document16.png" />
+		<Resource Include="Images\Exit16.png" />
+		<Resource Include="Images\Exit32.png" />
+		<Resource Include="Images\Find16.png" />
+		<Resource Include="Images\FontColor16.png" />
+		<Resource Include="Images\FontGrow16.png" />
+		<Resource Include="Images\FontShrink16.png" />
+		<Resource Include="Images\Help16.png" />
+		<Resource Include="Images\Highlight16.png" />
+		<Resource Include="Images\Hyperlink16.png" />
+		<Resource Include="Images\Hyperlink32.png" />
+		<Resource Include="Images\Indent16.png" />
+		<Resource Include="Images\InsertPicture16.png" />
+		<Resource Include="Images\InsertPicture32.png" />
+		<Resource Include="Images\InsertShape16.png" />
+		<Resource Include="Images\InsertShape32.png" />
+		<Resource Include="Images\Italic16.png" />
+		<Resource Include="Images\LineSpacing16.png" />
+		<Resource Include="Images\ListBullets16.png" />
+		<Resource Include="Images\ListBullets32.png" />
+		<Resource Include="Images\ListNumbered16.png" />
+		<Resource Include="Images\Open32.png" />
+		<Resource Include="Images\Outdent16.png" />
+		<Resource Include="Images\Paste16.png" />
+		<Resource Include="Images\Paste32.png" />
+		<Resource Include="Images\PasteLg.png" />
+		<Resource Include="Images\Print32.png" />
+		<Resource Include="Images\PrintPreview32.png" />
+		<Resource Include="Images\PrintSetup32.png" />
+		<Resource Include="Images\QuickPrint32.png" />
+		<Resource Include="Images\Replace16.png" />
+		<Resource Include="Images\ReplaceSm0.png" />
+		<Resource Include="Images\Ruler16.png" />
+		<Resource Include="Images\Save16.png" />
+		<Resource Include="Images\Save32.png" />
+		<Resource Include="Images\SaveAs32.png" />
+		<Resource Include="Images\SaveAsRtf32.png" />
+		<Resource Include="Images\SaveAsTxt32.png" />
+		<Resource Include="Images\SelectAll16.png" />
+		<Resource Include="Images\smallicon.png">
+		  <CopyToOutputDirectory></CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Images\Strikethrough16.png" />
+		<Resource Include="Images\Subscript16.png" />
+		<Resource Include="Images\Superscript16.png" />
+		<Resource Include="Images\Underline16.png" />
+		<Resource Include="Images\WordWrap16.png" />
+		<Resource Include="Images\ZoomActualSize16.png" />
+		<Resource Include="Images\ZoomActualSize32.png" />
+		<Resource Include="Images\ZoomIn16.png" />
+		<Resource Include="Images\ZoomIn32.png" />
+		<Resource Include="Images\ZoomOut16.png" />
+		<Resource Include="Images\ZoomOut32.png" />
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
