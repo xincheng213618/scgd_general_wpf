@@ -118,6 +118,7 @@ namespace ColorVision.UI
             public Style ComboBoxSmallStyle { get; set; }
             public Style TextBoxSmallStyle { get; set; }
             public IValueConverter Bool2VisibilityConverter { get; set; }
+            public IValueConverter Bool2VisibilityReConverter { get; set; }
             public IValueConverter Enum2VisibilityConverter { get; set; }
             public IValueConverter Enum2VisibilityReConverter { get; set; }
 
@@ -133,6 +134,7 @@ namespace ColorVision.UI
                 TextBoxSmallStyle = (Style)app.FindResource("TextBox.Small");
                 Bool2VisibilityConverter = app.TryFindResource("bool2VisibilityConverter") as IValueConverter
                     ?? throw new InvalidOperationException(Properties.Resources.Bool2VisibilityConverterNotFound);
+                Bool2VisibilityReConverter = app.TryFindResource("bool2VisibilityConverter1") as IValueConverter;
                 Enum2VisibilityConverter = app.TryFindResource("enum2VisibilityConverter") as IValueConverter;
                 Enum2VisibilityReConverter = app.TryFindResource("enum2VisibilityConverter1") as IValueConverter;
             }
@@ -151,6 +153,7 @@ namespace ColorVision.UI
         public static Style ComboBoxSmallStyle => Resources.Value.ComboBoxSmallStyle;
         public static Style TextBoxSmallStyle => Resources.Value.TextBoxSmallStyle;
         public static IValueConverter Bool2VisibilityConverter => Resources.Value.Bool2VisibilityConverter;
+        public static IValueConverter Bool2VisibilityReConverter => Resources.Value.Bool2VisibilityReConverter;
         public static IValueConverter Enum2VisibilityConverter => Resources.Value.Enum2VisibilityConverter;
         public static IValueConverter Enum2VisibilityReConverter => Resources.Value.Enum2VisibilityReConverter;
 
@@ -385,10 +388,10 @@ namespace ColorVision.UI
                             vb.Converter = visibleAttr.IsInverted ? Enum2VisibilityReConverter : Enum2VisibilityConverter;
                             vb.ConverterParameter = visibleAttr.ExpectedValue;
                         }
-                        else if (Bool2VisibilityConverter != null)
+                        else
                         {
-                            // Boolean binding (original behavior)
-                            vb.Converter = Bool2VisibilityConverter;
+                            // Boolean binding - support both normal and inverted
+                            vb.Converter = visibleAttr.IsInverted ? Bool2VisibilityReConverter : Bool2VisibilityConverter;
                         }
 
                         if (vb.Converter != null)
