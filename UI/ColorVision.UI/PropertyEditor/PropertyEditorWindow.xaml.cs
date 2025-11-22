@@ -238,9 +238,11 @@ namespace ColorVision.UI
                             }
                             else
                             {
-                                // Boolean binding (original behavior)
+                                // Boolean binding - Corrected logic:
+                                // IsInverted=false: use standard converter (true→Visible)
+                                // IsInverted=true: use reversed converter (true→Collapsed)
                                 binding.Converter = (IValueConverter)Application.Current.FindResource(
-                                    VisibleBlindAttr.IsInverted ? "bool2VisibilityConverter" : "bool2VisibilityConverter1");
+                                    VisibleBlindAttr.IsInverted ? "bool2VisibilityConverter1" : "bool2VisibilityConverter");
                             }
                             
                             dockPanel.SetBinding(DockPanel.VisibilityProperty, binding);
@@ -583,9 +585,11 @@ namespace ColorVision.UI
                             }
                             else
                             {
-                                // Boolean binding (original behavior)
+                                // Boolean binding - Corrected logic:
+                                // IsInverted=false: use standard converter (true→Visible)
+                                // IsInverted=true: use reversed converter (true→Collapsed)
                                 binding.Converter = (IValueConverter)Application.Current.FindResource(
-                                    VisibleBlindAttr.IsInverted ? "bool2VisibilityConverter" : "bool2VisibilityConverter1");
+                                    VisibleBlindAttr.IsInverted ? "bool2VisibilityConverter1" : "bool2VisibilityConverter");
                             }
                             
                             dockPanel.SetBinding(DockPanel.VisibilityProperty, binding);

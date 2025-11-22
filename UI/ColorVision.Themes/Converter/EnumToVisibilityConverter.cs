@@ -30,8 +30,9 @@ namespace ColorVision.Themes.Converter
                         var expectedValue = Enum.Parse(value.GetType(), paramStr);
                         return value.Equals(expectedValue) ? Visibility.Visible : Visibility.Collapsed;
                     }
-                    catch
+                    catch (ArgumentException)
                     {
+                        // Invalid enum value string - property should remain collapsed
                         return Visibility.Collapsed;
                     }
                 }
@@ -45,7 +46,9 @@ namespace ColorVision.Themes.Converter
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException("EnumToVisibilityConverter does not support two-way binding.");
+            throw new NotImplementedException(
+                "EnumToVisibilityConverter does not support two-way binding. " +
+                "Use Mode=OneWay in your binding expression.");
         }
     }
 
@@ -74,8 +77,9 @@ namespace ColorVision.Themes.Converter
                         var expectedValue = Enum.Parse(value.GetType(), paramStr);
                         return value.Equals(expectedValue) ? Visibility.Collapsed : Visibility.Visible;
                     }
-                    catch
+                    catch (ArgumentException)
                     {
+                        // Invalid enum value string - property should remain visible
                         return Visibility.Visible;
                     }
                 }
@@ -89,7 +93,9 @@ namespace ColorVision.Themes.Converter
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException("EnumToVisibilityReConverter does not support two-way binding.");
+            throw new NotImplementedException(
+                "EnumToVisibilityReConverter does not support two-way binding. " +
+                "Use Mode=OneWay in your binding expression.");
         }
     }
 }
