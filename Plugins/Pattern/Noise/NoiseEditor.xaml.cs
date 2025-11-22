@@ -1,3 +1,4 @@
+using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,9 +23,9 @@ namespace Pattern.Noise
         {
             this.DataContext = Config;
             
-            // Initialize noise type combo box
+            // Initialize noise type combo box with Description attributes
             cmbNoiseType.ItemsSource = from e1 in Enum.GetValues(typeof(NoiseType)).Cast<NoiseType>()
-                                       select new KeyValuePair<NoiseType, string>(e1, e1.ToString());
+                                       select new KeyValuePair<NoiseType, string>(e1, e1.ToDescription());
 
             // Initialize size mode combo box
             cmbSizeMode.ItemsSource = from e1 in Enum.GetValues(typeof(SolidSizeMode)).Cast<SolidSizeMode>()

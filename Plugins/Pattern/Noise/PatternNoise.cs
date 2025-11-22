@@ -253,6 +253,11 @@ namespace Pattern.Noise
         {
             double u1 = random.NextDouble();
             double u2 = random.NextDouble();
+            
+            // Avoid log(0) by ensuring u1 is not zero
+            if (u1 < 1e-10)
+                u1 = 1e-10;
+            
             return Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);
         }
     }
