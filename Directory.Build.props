@@ -1,7 +1,11 @@
 <Project>
 	<PropertyGroup>
-		<AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)ColorVision.snk</AssemblyOriginatorKeyFile>
-		<SignAssembly>True</SignAssembly>
+		<AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)ColorVision.snk</AssemblyOriginatorKeyFile>	
+        <!-- 修改开始：添加条件判断 -->
+        <!-- 只有当 ColorVision.snk 存在时才开启签名 -->
+        <!-- 这样在 Agent 或 Linux 环境下找不到 key 时会自动关闭签名，避免编译报错 -->
+		<SignAssembly Condition="Exists('$(AssemblyOriginatorKeyFile)')">True</SignAssembly>
+        <SignAssembly Condition="!Exists('$(AssemblyOriginatorKeyFile)')">False</SignAssembly>
 		<Platforms>x64;ARM64</Platforms>
 		<PackageTags>ColorVision</PackageTags>
 		<EnableNETAnalyzers>true</EnableNETAnalyzers>
