@@ -406,10 +406,13 @@ namespace ColorVision.UI
                             // Boolean binding - support both normal and inverted
                             converter = visibleAttr.IsInverted ? Bool2VisibilityReConverter : Bool2VisibilityConverter;
                             
+                            // If the required converter is not available, we cannot bind correctly
+                            // The standard converter is always available, so only the inverted version might be missing
                             if (converter == null)
                             {
-                                // Fall back to standard boolean converter if inverted version not available
-                                converter = Bool2VisibilityConverter;
+                                // Cannot use IsInverted without the reversed converter - skip binding
+                                // to avoid incorrect visibility behavior
+                                continue;
                             }
                         }
 

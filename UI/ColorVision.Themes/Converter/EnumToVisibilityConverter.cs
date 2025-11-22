@@ -46,7 +46,9 @@ namespace ColorVision.Themes.Converter
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException("EnumToVisibilityConverter does not support two-way binding.");
+            throw new NotImplementedException(
+                "EnumToVisibilityConverter does not support two-way binding. " +
+                "Use Mode=OneWay in your binding expression.");
         }
     }
 
@@ -91,7 +93,9 @@ namespace ColorVision.Themes.Converter
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            throw new NotImplementedException("EnumToVisibilityReConverter does not support two-way binding.");
+            throw new NotImplementedException(
+                "EnumToVisibilityReConverter does not support two-way binding. " +
+                "Use Mode=OneWay in your binding expression.");
         }
     }
 }
