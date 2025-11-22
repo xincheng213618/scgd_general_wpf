@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
@@ -13,9 +14,9 @@ using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Data;
 
 namespace Pattern
 {
@@ -88,6 +89,7 @@ namespace Pattern
         public PatternWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
             this.Title += "-" + Assembly.GetAssembly(typeof(PatternWindow))?.GetName().Version?.ToString() ?? "";
 
             // 初始化CollectionView用于筛选
