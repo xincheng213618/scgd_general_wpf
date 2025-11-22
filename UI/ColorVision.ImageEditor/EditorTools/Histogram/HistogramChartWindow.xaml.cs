@@ -573,7 +573,7 @@ namespace ColorVision.ImageEditor
                     ushort green = BitConverter.ToUInt16(pixelData, i + 2);
                     ushort blue = BitConverter.ToUInt16(pixelData, i + 4);
 
-                    // Apply LUT to 8-bit values and scale back to 16-bit
+                    // Apply LUT to 8-bit values and scale properly to 16-bit
                     byte red8 = (byte)(red >> 8);
                     byte green8 = (byte)(green >> 8);
                     byte blue8 = (byte)(blue >> 8);
@@ -582,9 +582,11 @@ namespace ColorVision.ImageEditor
                     green8 = (byte)lut[green8];
                     blue8 = (byte)lut[blue8];
 
-                    ushort newRed = (ushort)(red8 << 8);
-                    ushort newGreen = (ushort)(green8 << 8);
-                    ushort newBlue = (ushort)(blue8 << 8);
+                    // Scale 8-bit result back to 16-bit, preserving precision
+                    // Using the full range: LUT[high8] * 257 to map 0-255 to 0-65535
+                    ushort newRed = (ushort)(red8 * 257);
+                    ushort newGreen = (ushort)(green8 * 257);
+                    ushort newBlue = (ushort)(blue8 * 257);
 
                     BitConverter.GetBytes(newRed).CopyTo(pixelData, i);
                     BitConverter.GetBytes(newGreen).CopyTo(pixelData, i + 2);

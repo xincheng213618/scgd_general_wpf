@@ -155,6 +155,12 @@ namespace ColorVision.ImageEditor.EditorTools.Histogram
             // If we have both points, interpolate
             if (lower != null && upper != null)
             {
+                // Prevent division by zero
+                if (upper.Input == lower.Input)
+                {
+                    return lower.Output;
+                }
+                
                 double t = (double)(input - lower.Input) / (upper.Input - lower.Input);
                 return (int)Math.Round(lower.Output + t * (upper.Output - lower.Output));
             }
