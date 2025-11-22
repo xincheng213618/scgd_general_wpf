@@ -226,10 +226,23 @@ namespace ColorVision.UI
                             var binding = new Binding(VisibleBlindAttr.PropertyName)
                             {
                                 Source = obj,
-                                Mode = BindingMode.TwoWay
+                                Mode = BindingMode.OneWay
                             };
 
-                            binding.Converter = (IValueConverter)Application.Current.FindResource(VisibleBlindAttr.IsInverted?"bool2VisibilityConverter": "bool2VisibilityConverter1");
+                            // If ExpectedValue is set, this is an enum binding
+                            if (VisibleBlindAttr.ExpectedValue != null)
+                            {
+                                binding.Converter = (IValueConverter)Application.Current.FindResource(
+                                    VisibleBlindAttr.IsInverted ? "enum2VisibilityConverter1" : "enum2VisibilityConverter");
+                                binding.ConverterParameter = VisibleBlindAttr.ExpectedValue;
+                            }
+                            else
+                            {
+                                // Boolean binding (original behavior)
+                                binding.Converter = (IValueConverter)Application.Current.FindResource(
+                                    VisibleBlindAttr.IsInverted ? "bool2VisibilityConverter" : "bool2VisibilityConverter1");
+                            }
+                            
                             dockPanel.SetBinding(DockPanel.VisibilityProperty, binding);
                         }
                         stackPanel.Children.Add(dockPanel);
@@ -558,10 +571,23 @@ namespace ColorVision.UI
                             var binding = new Binding(VisibleBlindAttr.PropertyName)
                             {
                                 Source = source,
-                                Mode = BindingMode.TwoWay
+                                Mode = BindingMode.OneWay
                             };
 
-                            binding.Converter = (IValueConverter)Application.Current.FindResource(VisibleBlindAttr.IsInverted ? "bool2VisibilityConverter" : "bool2VisibilityConverter1");
+                            // If ExpectedValue is set, this is an enum binding
+                            if (VisibleBlindAttr.ExpectedValue != null)
+                            {
+                                binding.Converter = (IValueConverter)Application.Current.FindResource(
+                                    VisibleBlindAttr.IsInverted ? "enum2VisibilityConverter1" : "enum2VisibilityConverter");
+                                binding.ConverterParameter = VisibleBlindAttr.ExpectedValue;
+                            }
+                            else
+                            {
+                                // Boolean binding (original behavior)
+                                binding.Converter = (IValueConverter)Application.Current.FindResource(
+                                    VisibleBlindAttr.IsInverted ? "bool2VisibilityConverter" : "bool2VisibilityConverter1");
+                            }
+                            
                             dockPanel.SetBinding(DockPanel.VisibilityProperty, binding);
                         }
                         stackPanel.Children.Add(dockPanel);
