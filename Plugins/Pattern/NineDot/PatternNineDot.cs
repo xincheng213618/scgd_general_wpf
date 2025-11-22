@@ -79,16 +79,27 @@ namespace Pattern.NineDot
         public string AltBrushTag { get => _AltBrushTag; set { _AltBrushTag = value; OnPropertyChanged(); } }
         private string _AltBrushTag = "W";
 
+
+        [DisplayName("尺寸模式")]
         public SolidSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
         private SolidSizeMode _SizeMode = SolidSizeMode.ByFieldOfView;
 
+        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByFieldOfView)]
+        [DisplayName("视场系数X")]
         public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
         private double _FieldOfViewX = 1.0;
+
+        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByFieldOfView)]
+        [DisplayName("视场系数Y")]
         public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
         private double _FieldOfViewY = 1.0;
 
+        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByPixelSize)]
+        [DisplayName("像素宽度")]
         public int PixelWidth { get => _PixelWidth; set { _PixelWidth = value; OnPropertyChanged(); } }
         private int _PixelWidth = 100;
+        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByPixelSize)]
+        [DisplayName("像素高度")]
         public int PixelHeight { get => _PixelHeight; set { _PixelHeight = value; OnPropertyChanged(); } }
         private int _PixelHeight = 100;
     }

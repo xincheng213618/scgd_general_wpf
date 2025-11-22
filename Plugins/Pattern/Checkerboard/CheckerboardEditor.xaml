@@ -27,21 +27,6 @@
                 <Button Content="W" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="W"/>
                 <Button Content="K" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="K"/>
             </StackPanel>
-            <ComboBox x:Name="cmbSizeMode" SelectedValue="{Binding SizeMode}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectionChanged="cmbSizeMode_SelectionChanged" Margin="0,0,0,5"/>
-            <StackPanel x:Name="CellStack" Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBox  Width="100" Text="{Binding CellW}" Margin="0,0,5,0"/>
-                <TextBox  Width="100" Text="{Binding CellH}" Margin="0,0,5,0"/>
-            </StackPanel>
-            <StackPanel x:Name="GridStack" Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBox Width="100" Text="{Binding GridX}" Margin="0,0,5,0"/>
-                <TextBox  Width="100" Text="{Binding GridY}" Margin="0,0,5,0"/>
-            </StackPanel>
-            <StackPanel  Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Text="FieldOfView" Margin="0,0,5,0"/>
-                <TextBox  Width="100" Text="{Binding FieldOfViewX}" Margin="0,0,5,0"/>
-                <TextBox  Width="100" Text="{Binding FieldOfViewY}" Margin="0,0,5,0"/>
-            </StackPanel>
-            
         </StackPanel>
 
     </Grid>

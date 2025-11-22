@@ -21,8 +21,6 @@ namespace Pattern.Checkerboard
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config; 
-            cmbSizeMode.ItemsSource = from e1 in Enum.GetValues(typeof(CheckerboardSizeMode)).Cast<CheckerboardSizeMode>()
-                                      select new KeyValuePair<CheckerboardSizeMode, string>(e1, e1.ToString());
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
 
         }
@@ -133,24 +131,6 @@ namespace Pattern.Checkerboard
                     Config.AltBrush = Brushes.Black;
                 }
 
-            }
-        }
-
-
-        private void cmbSizeMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is ComboBox comboBox && comboBox.SelectedValue is CheckerboardSizeMode checkerboardSizeMode)
-            {
-                if (checkerboardSizeMode == CheckerboardSizeMode.ByCellSize)
-                {
-                    CellStack.Visibility = Visibility.Visible;
-                    GridStack.Visibility = Visibility.Collapsed;
-                }
-                if (checkerboardSizeMode == CheckerboardSizeMode.ByGridCount)
-                {
-                    CellStack.Visibility = Visibility.Collapsed;
-                    GridStack.Visibility = Visibility.Visible;
-                }
             }
         }
     }

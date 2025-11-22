@@ -21,9 +21,6 @@ namespace Pattern.Solid
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-            cmbSizeMode.ItemsSource = from e1 in Enum.GetValues(typeof(SolidSizeMode)).Cast<SolidSizeMode>()
-                                      select new KeyValuePair<SolidSizeMode, string>(e1, e1.ToString());
-            UpdateVisibility();
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
         }
 
@@ -80,26 +77,5 @@ namespace Pattern.Solid
             }
         }
 
-        private void cmbSizeMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            UpdateVisibility();
-        }
-
-        private void UpdateVisibility()
-        {
-            if (cmbSizeMode?.SelectedValue is SolidSizeMode solidSizeMode)
-            {
-                if (solidSizeMode == SolidSizeMode.ByPixelSize)
-                {
-                    PixelStack.Visibility = Visibility.Visible;
-                    FieldOfViewStack.Visibility = Visibility.Collapsed;
-                }
-                else // ByFieldOfView
-                {
-                    PixelStack.Visibility = Visibility.Collapsed;
-                    FieldOfViewStack.Visibility = Visibility.Visible;
-                }
-            }
-        }
     }
 }

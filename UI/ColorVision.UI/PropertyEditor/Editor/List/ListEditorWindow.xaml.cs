@@ -1,4 +1,5 @@
 using System;
+using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -100,7 +101,18 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             
             if (editor.ShowDialog() == true)
             {
-                _items.Add(editor.EditedValue);
+                if (_elementType == typeof(int))
+                {
+                    _items.Add(int.Parse(editor.EditedValue.ToString()));
+                }
+                else if (_elementType == typeof(double))
+                {
+                    _items.Add(double.Parse(editor.EditedValue.ToString()));
+                }
+                else
+                {
+                    _items.Add(editor.EditedValue);
+                }
                 RefreshListView();
             }
         }
