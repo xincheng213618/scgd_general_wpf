@@ -132,8 +132,12 @@ namespace ColorVision.UI
                 ButtonCommandStyle = (Style)app.FindResource("ButtonCommand");
                 ComboBoxSmallStyle = (Style)app.FindResource("ComboBox.Small");
                 TextBoxSmallStyle = (Style)app.FindResource("TextBox.Small");
+                
+                // Required converter
                 Bool2VisibilityConverter = app.TryFindResource("bool2VisibilityConverter") as IValueConverter
                     ?? throw new InvalidOperationException(Properties.Resources.Bool2VisibilityConverterNotFound);
+                
+                // Optional converters (may not be present in all themes)
                 Bool2VisibilityReConverter = app.TryFindResource("bool2VisibilityConverter1") as IValueConverter;
                 Enum2VisibilityConverter = app.TryFindResource("enum2VisibilityConverter") as IValueConverter;
                 Enum2VisibilityReConverter = app.TryFindResource("enum2VisibilityConverter1") as IValueConverter;
@@ -382,22 +386,35 @@ namespace ColorVision.UI
                             Mode = BindingMode.OneWay
                         };
 
+                        IValueConverter? converter = null;
+                        
                         // If ExpectedValue is set, this is an enum binding
                         if (visibleAttr.ExpectedValue != null)
                         {
-                            vb.Converter = visibleAttr.IsInverted ? Enum2VisibilityReConverter : Enum2VisibilityConverter;
+                            converter = visibleAttr.IsInverted ? Enum2VisibilityReConverter : Enum2VisibilityConverter;
                             vb.ConverterParameter = visibleAttr.ExpectedValue;
+                            
+                            if (converter == null)
+                            {
+                                // Enum converters not available - skip binding
+                                // This can happen if the theme doesn't include them
+                                continue;
+                            }
                         }
                         else
                         {
                             // Boolean binding - support both normal and inverted
-                            vb.Converter = visibleAttr.IsInverted ? Bool2VisibilityReConverter : Bool2VisibilityConverter;
+                            converter = visibleAttr.IsInverted ? Bool2VisibilityReConverter : Bool2VisibilityConverter;
+                            
+                            if (converter == null)
+                            {
+                                // Fall back to standard boolean converter if inverted version not available
+                                converter = Bool2VisibilityConverter;
+                            }
                         }
 
-                        if (vb.Converter != null)
-                        {
-                            dockPanel.SetBinding(UIElement.VisibilityProperty, vb);
-                        }
+                        vb.Converter = converter;
+                        dockPanel.SetBinding(UIElement.VisibilityProperty, vb);
                     }
 
                     stackPanel.Children.Add(dockPanel);
