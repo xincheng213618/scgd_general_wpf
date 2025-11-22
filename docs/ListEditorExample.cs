@@ -92,6 +92,34 @@ namespace ColorVision.UI.Examples
             [DisplayName("长整数列表")]
             [Description("支持大数值")]
             public List<long> LongList { get; set; } = new List<long> { 1000000L, 2000000L };
+
+            [Category("嵌套列表")]
+            [DisplayName("整数矩阵")]
+            [Description("嵌套列表：List<List<int>>，支持二级编辑")]
+            public List<List<int>> IntegerMatrix { get; set; } = new List<List<int>>
+            {
+                new List<int> { 1, 2, 3 },
+                new List<int> { 4, 5, 6 },
+                new List<int> { 7, 8, 9 }
+            };
+
+            [Category("嵌套列表")]
+            [DisplayName("字符串分组")]
+            [Description("嵌套列表：List<List<string>>，用于分组数据")]
+            public List<List<string>> StringGroups { get; set; } = new List<List<string>>
+            {
+                new List<string> { "Group1-A", "Group1-B", "Group1-C" },
+                new List<string> { "Group2-A", "Group2-B" }
+            };
+
+            [Category("嵌套列表")]
+            [DisplayName("浮点数矩阵")]
+            [Description("嵌套列表：List<List<double>>，用于数学计算")]
+            public List<List<double>> DoubleMatrix { get; set; } = new List<List<double>>
+            {
+                new List<double> { 1.1, 2.2, 3.3 },
+                new List<double> { 4.4, 5.5, 6.6 }
+            };
         }
 
         /// <summary>
@@ -161,6 +189,49 @@ namespace ColorVision.UI.Examples
             if (enumEditor.ShowDialog() == true)
             {
                 System.Console.WriteLine($"新优先级: {enumEditor.EditedValue}");
+            }
+        }
+
+        /// <summary>
+        /// 示例：编辑嵌套列表 (List&lt;List&lt;T&gt;&gt;)
+        /// </summary>
+        public static void ShowNestedListEditing()
+        {
+            // 创建一个整数矩阵 (List<List<int>>)
+            var matrix = new List<List<int>>
+            {
+                new List<int> { 1, 2, 3 },
+                new List<int> { 4, 5, 6 },
+                new List<int> { 7, 8, 9 }
+            };
+
+            // 打开外层列表编辑器
+            var outerEditor = new PropertyEditor.Editor.List.ListEditorWindow(matrix, typeof(List<int>));
+            
+            if (outerEditor.ShowDialog() == true)
+            {
+                // 用户可以在外层编辑器中：
+                // 1. 添加新的内层列表（会自动打开嵌套编辑器）
+                // 2. 编辑现有的内层列表（会打开嵌套编辑器）
+                // 3. 删除整行
+                // 4. 调整行的顺序
+                
+                System.Console.WriteLine("矩阵已更新:");
+                foreach (var row in matrix)
+                {
+                    System.Console.WriteLine($"  [{string.Join(", ", row)}]");
+                }
+            }
+
+            // 也可以在配置类中使用嵌套列表
+            var config = new SampleConfig();
+            var window = new PropertyEditorWindow(config, isEdit: true);
+            
+            if (window.ShowDialog() == true)
+            {
+                // config.IntegerMatrix 已更新
+                System.Console.WriteLine($"整数矩阵行数: {config.IntegerMatrix.Count}");
+                System.Console.WriteLine($"字符串分组数: {config.StringGroups.Count}");
             }
         }
     }

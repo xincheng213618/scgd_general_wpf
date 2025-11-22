@@ -102,7 +102,8 @@ namespace ColorVision.UI.Languages
         {
             if (Thread.CurrentThread.CurrentUICulture.Name != lang)
             {
-                if (MessageBox1.Show(Properties.Resources.LanguageResartSign, DefalutProcessName, MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                //这里使用这个是因为MessageBox.Show是系统支持的，导致无法显示多语言
+                if (MessageBox1.Show(Application.Current.GetActiveWindow(),Properties.Resources.LanguageResartSign, DefalutProcessName, MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(lang);
                     LanguageConfig.Instance.UICulture = lang;

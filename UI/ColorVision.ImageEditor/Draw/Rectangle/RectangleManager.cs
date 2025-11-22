@@ -89,8 +89,6 @@ namespace ColorVision.ImageEditor.Draw
             DrawCanvas.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
             DrawCanvas.PreviewMouseUp -= Image_PreviewMouseUp;
             DrawingRectangleCache = null;
-
-            ImageViewModel.SelectEditorVisual.ClearRender();
         }
 
 
@@ -116,10 +114,6 @@ namespace ColorVision.ImageEditor.Draw
             if (ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP))
             {
                 return;
-            }
-            else
-            {
-                ImageViewModel.SelectEditorVisual.ClearRender();
             }
             int did = CheckNo();
 
@@ -161,10 +155,10 @@ namespace ColorVision.ImageEditor.Draw
             {
                 MouseUpP = e.GetPosition(DrawCanvas);
 
+                ImageViewModel.SelectEditorVisual.SetRender(DrawingRectangleCache);
                 if (DrawingRectangleCache.Attribute.Rect.Width == Config.DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == Config.DefalutHeight)
                     DrawingRectangleCache.Render();
 
-                ImageViewModel.SelectEditorVisual.SetRender(DrawingRectangleCache);
 
                 if (!Config.IsLocked)
                 {

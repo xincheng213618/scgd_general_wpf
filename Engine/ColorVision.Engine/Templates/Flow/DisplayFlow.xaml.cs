@@ -126,11 +126,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 _ = Refresh();
             };
-            MqttRCService.GetInstance().ServiceTokensInitialized +=(s,e) => 
-            {
-                View.FlowEngineControl.LoadFromBase64(string.Empty);
-                _ = Refresh();
-            };
+
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
@@ -140,6 +136,12 @@ namespace ColorVision.Engine.Templates.Flow
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
                 _=Refresh();
             };
+
+            MqttRCService.GetInstance().ServiceTokensUpdated += (s, e) =>
+            {
+                FlowNodeManager.Instance.UpdateDevice(MqttRCService.GetInstance().ServiceTokens);
+            };
+
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
             timer = new Timer(UpdateMsg, null, 0, 100);
@@ -164,9 +166,8 @@ namespace ColorVision.Engine.Templates.Flow
 
         public async Task Refresh()
         {
-            if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
-                MqttRCService.GetInstance().QueryServices();
             if (ComboBoxFlow.SelectedIndex  <0 || ComboBoxFlow.SelectedIndex >= TemplateFlow.Params.Count) return;
+            MqttRCService.GetInstance().QueryServices();
 
             FlowParam flowParam = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Value;
 
@@ -486,6 +487,7 @@ namespace ColorVision.Engine.Templates.Flow
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
             _= Refresh();
+
         }
     }
 }

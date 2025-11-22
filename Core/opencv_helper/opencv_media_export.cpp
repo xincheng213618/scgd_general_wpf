@@ -24,7 +24,7 @@ COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 COLORVISIONCORE_API int M_CalSFR(
 	HImage img,
 	double del,
-	int roi_x, int roi_y, int roi_width, int roi_height,
+	RoiRect roi,
 	double* freq,
 	double* sfr,
 	int    maxLen,
@@ -42,9 +42,10 @@ COLORVISIONCORE_API int M_CalSFR(
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty()) return -2;
 
-	cv::Rect roi(roi_x, roi_y, roi_width, roi_height);
-	bool use_roi = (roi.width > 0 && roi.height > 0 && (roi & cv::Rect(0, 0, mat.cols, mat.rows)) == roi);
-    mat = use_roi ? mat(roi) : mat;
+	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+	mat = use_roi ? mat(mroi) : mat;
+
 
 	auto res = sfr::CalSFR(mat, del, /*npol=*/5, /*nbin=*/4);
 
@@ -73,22 +74,179 @@ COLORVISIONCORE_API int M_CalSFR(
 	return 0;
 }
 
-
-
-COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, int roi_x, int roi_y, int roi_width, int roi_height)
+COLORVISIONCORE_API int M_CalSFRMultiChannel(
+	HImage img,
+	double del,
+	RoiRect roi,
+	double* freq,
+	double* sfr_r,
+	double* sfr_g,
+	double* sfr_b,
+	double* sfr_l,
+	int    maxLen,
+	int* outLen,
+	int* channelCount,
+	double* mtf10_norm_r, double* mtf50_norm_r, double* mtf10_cypix_r, double* mtf50_cypix_r,
+	double* mtf10_norm_g, double* mtf50_norm_g, double* mtf10_cypix_g, double* mtf50_cypix_g,
+	double* mtf10_norm_b, double* mtf50_norm_b, double* mtf10_cypix_b, double* mtf50_cypix_b,
+	double* mtf10_norm_l, double* mtf50_norm_l, double* mtf10_cypix_l, double* mtf50_cypix_l)
 {
-
-	// 1. �� HImage ���ݰ�װ�� cv::Mat�������ݿ���
-	cv::Mat full_mat(img.rows, img.cols, img.type(), img.pData);
-	if (full_mat.empty() || full_mat.data == nullptr) {
-		return -1.0; // ��Чͼ��
+	// Validate pointers
+	if (!freq || !sfr_l || !outLen || !channelCount ||
+		!mtf10_norm_l || !mtf50_norm_l || !mtf10_cypix_l || !mtf50_cypix_l) {
+		return -1;
 	}
 
-	// 2. ����ROI����ȷ����������
-	cv::Rect roi(roi_x, roi_y, roi_width, roi_height);
-	bool use_roi = (roi.width > 0 && roi.height > 0 && (roi & cv::Rect(0, 0, full_mat.cols, full_mat.rows)) == roi);
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty()) return -2;
 
-	cv::Mat mat = use_roi ? full_mat(roi) : full_mat;
+	// Apply ROI if specified
+	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+	mat = use_roi ? mat(mroi) : mat;
+
+	// Determine if this is a 3-channel (RGB) or single-channel image
+	bool isRGB = (mat.channels() == 3 || mat.channels() == 4);
+	
+	if (isRGB) {
+		// For RGB images: calculate SFR for R, G, B, and L channels
+		*channelCount = 4;
+		
+		// Validate RGB output pointers
+		if (!sfr_r || !sfr_g || !sfr_b ||
+			!mtf10_norm_r || !mtf50_norm_r || !mtf10_cypix_r || !mtf50_cypix_r ||
+			!mtf10_norm_g || !mtf50_norm_g || !mtf10_cypix_g || !mtf50_cypix_g ||
+			!mtf10_norm_b || !mtf50_norm_b || !mtf10_cypix_b || !mtf50_cypix_b) {
+			return -1;
+		}
+		
+		// Convert to BGR if BGRA
+
+		// Split into channels
+
+		std::vector<cv::Mat> channels;
+		cv::split(mat, channels);
+
+		// Helper function to convert BGR to L using custom weights: Y = 0.213*R + 0.715*G + 0.072*B
+		cv::Mat luminance(mat.size(), CV_64FC1);
+		for (int y = 0; y < mat.rows; ++y) {
+			const cv::Vec3b* bgr_row = mat.ptr<cv::Vec3b>(y);
+
+			uchar* r_row = channels[2].ptr<uchar>(y);
+			uchar* g_row = channels[1].ptr<uchar>(y);
+			uchar* b_row = channels[0].ptr<uchar>(y);
+
+			double* lum_row = luminance.ptr<double>(y);
+
+			for (int x = 0; x < mat.cols; ++x) {
+				double r = r_row[x];
+				double g = g_row[x];
+				double b = b_row[x];
+				// L = 0.213*R + 0.715*G + 0.072*B
+				lum_row[x] = 0.213 * r + 0.715 * g + 0.072 * b;
+			}
+		}
+		// Calculate SFR for each channel: B, G, R (OpenCV order)
+		auto res_l = sfr::CalSFR(luminance, del, 5, 4);
+		auto res_r = sfr::CalSFR(channels[2], del, 5, 4, res_l.vslope);
+		auto res_g = sfr::CalSFR(channels[1], del, 5, 4, res_l.vslope);
+		auto res_b = sfr::CalSFR(channels[0], del, 5, 4, res_l.vslope);
+		
+		// Verify all results have data
+		int N = static_cast<int>(res_r.freq.size());
+		if (N == 0 || res_g.freq.size() != N || res_b.freq.size() != N || res_l.freq.size() != N) {
+			*outLen = 0;
+			return -3;
+		}
+		
+		if (N > maxLen) {
+			*outLen = N;
+			return -4;
+		}
+		
+		// Copy results
+		for (int i = 0; i < N; ++i) {
+			freq[i] = res_r.freq[i];  // Use R's freq (all should be same)
+			sfr_r[i] = res_r.sfr[i];
+			sfr_g[i] = res_g.sfr[i];
+			sfr_b[i] = res_b.sfr[i];
+			sfr_l[i] = res_l.sfr[i];
+		}
+		
+		*outLen = N;
+		
+		// R channel MTF values
+		*mtf10_norm_r = res_r.mtf10_norm;
+		*mtf50_norm_r = res_r.mtf50_norm;
+		*mtf10_cypix_r = res_r.mtf10_cypix;
+		*mtf50_cypix_r = res_r.mtf50_cypix;
+		
+		// G channel MTF values
+		*mtf10_norm_g = res_g.mtf10_norm;
+		*mtf50_norm_g = res_g.mtf50_norm;
+		*mtf10_cypix_g = res_g.mtf10_cypix;
+		*mtf50_cypix_g = res_g.mtf50_cypix;
+		
+		// B channel MTF values
+		*mtf10_norm_b = res_b.mtf10_norm;
+		*mtf50_norm_b = res_b.mtf50_norm;
+		*mtf10_cypix_b = res_b.mtf10_cypix;
+		*mtf50_cypix_b = res_b.mtf50_cypix;
+		
+		// L channel MTF values
+		*mtf10_norm_l = res_l.mtf10_norm;
+		*mtf50_norm_l = res_l.mtf50_norm;
+		*mtf10_cypix_l = res_l.mtf10_cypix;
+		*mtf50_cypix_l = res_l.mtf50_cypix;
+	}
+	else {
+		// For single-channel images: only calculate L channel
+		*channelCount = 1;
+		
+		auto res_l = sfr::CalSFR(mat, del, 5, 4);
+		
+		int N = static_cast<int>(res_l.freq.size());
+		if (N == 0) {
+			*outLen = 0;
+			return -3;
+		}
+		
+		if (N > maxLen) {
+			*outLen = N;
+			return -4;
+		}
+		
+		// Copy results
+		for (int i = 0; i < N; ++i) {
+			freq[i] = res_l.freq[i];
+			sfr_l[i] = res_l.sfr[i];
+		}
+		
+		*outLen = N;
+		
+		// L channel MTF values
+		*mtf10_norm_l = res_l.mtf10_norm;
+		*mtf50_norm_l = res_l.mtf50_norm;
+		*mtf10_cypix_l = res_l.mtf10_cypix;
+		*mtf50_cypix_l = res_l.mtf50_cypix;
+	}
+
+	return 0;
+}
+
+
+
+COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, RoiRect roi)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty() || mat.data == nullptr) {
+		return -1.0; 
+	}
+
+	// Apply ROI if specified
+	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+	mat = use_roi ? mat(mroi) : mat;
 
 	// 3. ת��Ϊ�Ҷ�ͼ���м���
 	cv::Mat gray_mat;
@@ -459,12 +617,17 @@ COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, double thresh,
 	return 0;
 }
 
-COLORVISIONCORE_API int M_FindLuminousArea(HImage img, const char* config, char** result)
+COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi, const char* config, char** result)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty() || !config || !result) {
 		return -1;
 	}
+
+	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+	mat = use_roi ? mat(mroi) : mat;
+
 
 	json j = json::parse(config);
 	int threshold = j.at("Threshold").get<int>();

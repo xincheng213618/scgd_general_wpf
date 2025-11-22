@@ -1210,7 +1210,7 @@ namespace ColorVision.Engine.Templates.POI
                     string re = PoiConfig.FindLuminousArea.ToJsonN();
                     Task.Run(() =>
                     {
-                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, re,out IntPtr resultPtr);
+                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, new RoiRect(), re,out IntPtr resultPtr);
                         if (length > 0)
                         {
                             string result = Marshal.PtrToStringAnsi(resultPtr);

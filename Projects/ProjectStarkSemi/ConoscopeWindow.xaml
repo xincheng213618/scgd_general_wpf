@@ -6,126 +6,223 @@
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectStarkSemi"
         xmlns:properties="clr-namespace:ProjectStarkSemi.Properties"
+       xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="Conoscope" Height="720" Width="1280" Initialized="Window_Initialized">
-    <Grid>
+        Title="Conoscope" Height="720" Width="1280" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+    <Grid Margin="5,5,5,0">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
-        <!-- Main Content Area -->
         <Grid Grid.Row="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="400"/>
-            </Grid.ColumnDefinitions>
+            <Ribbon>
+                <Ribbon.Resources>
+                    <RibbonGroupSizeDefinitionBaseCollection x:Key="4ControlLSC">
+                        <RibbonGroupSizeDefinition>
+                            <RibbonControlSizeDefinition ImageSize="Large" IsLabelVisible="True" />
+                            <RibbonControlSizeDefinition ImageSize="Large" IsLabelVisible="True" />
+                            <RibbonControlSizeDefinition ImageSize="Large" IsLabelVisible="True" />
+                            <RibbonControlSizeDefinition ImageSize="Large" IsLabelVisible="True" />
+                        </RibbonGroupSizeDefinition>
+                        <RibbonGroupSizeDefinition>
+                            <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
+                            <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
+                            <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
+                            <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
+                        </RibbonGroupSizeDefinition>
+                        <RibbonGroupSizeDefinition IsCollapsed="True" />
+                    </RibbonGroupSizeDefinitionBaseCollection>
+                    <RibbonGroupSizeDefinitionBaseCollection x:Key="3ControlSC">
+                        <RibbonGroupSizeDefinition>
+                            <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="True" />
+                            <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="True" />
+                            <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="True" />
+                        </RibbonGroupSizeDefinition>
+                        <RibbonGroupSizeDefinition IsCollapsed="True" />
+                    </RibbonGroupSizeDefinitionBaseCollection>
+                    <RibbonGroupSizeDefinitionBaseCollection x:Key="5ControlSC">
+                        <RibbonGroupSizeDefinition>
+                            <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
+                            <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
+                            <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
+                            <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
+                            <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
+                        </RibbonGroupSizeDefinition>
+                        <RibbonGroupSizeDefinition IsCollapsed="True" />
+                    </RibbonGroupSizeDefinitionBaseCollection>
+                </Ribbon.Resources>
+                <Ribbon.HelpPaneContent>
+                    <RibbonButton SmallImageSource="Images/smallicon.png" />
+                </Ribbon.HelpPaneContent>
+                <!-- <snippetAppMenuItems> -->
+                <Ribbon.ApplicationMenu>
+                    <RibbonApplicationMenu SmallImageSource="Images/ApplicationMenuIcon.png" 
+                                             KeyTip="F">
+                        <RibbonApplicationMenuItem Header="Open"
+                                                      ImageSource="Images/Open32.png"
+                                                      KeyTip="O" Click="Button_Click" />
+                        <RibbonApplicationMenuItem Header="Save"
+                                                      Command="Save"
+                                                      ImageSource="Images/Save32.png"
+                                                      KeyTip="S" />
+                        <RibbonApplicationSplitMenuItem Header="Save As"
+                                                           Command="SaveAs"
+                                                           ImageSource="Images/SaveAs32.png" 
+                                                           KeyTip="V" >
+                            <RibbonApplicationMenuItem Header="Rich Text document"
+                                                          Command="SaveAs" CommandParameter="rtf"
+                                                          ImageSource="Images/SaveAsRtf32.png" 
+                                                          KeyTip="R" />
+                            <RibbonApplicationMenuItem Header="Plain Text document"
+                                                          Command="SaveAs" CommandParameter="txt"
+                                                          ImageSource="Images/SaveAsTxt32.png"
+                                                          KeyTip="P" />
+                            <RibbonApplicationMenuItem Header="Other format"
+                                                          Command="SaveAs"
+                                                          ImageSource="Images/SaveAs32.png" 
+                                                          KeyTip="O" />
+                        </RibbonApplicationSplitMenuItem>
+                        <RibbonSeparator />
+                        <RibbonApplicationSplitMenuItem Header="Print" 
+                                                           ImageSource="Images/Print32.png"
+                                                           KeyTip="R">
+                            <RibbonApplicationMenuItem Header="Print"
+                                                          ImageSource="Images/Print32.png"
+                                                          KeyTip="P" />
+                            <RibbonApplicationMenuItem Header="Quick Print"
+                                                          ImageSource="Images/QuickPrint32.png"
+                                                          KeyTip="Q" />
+                            <RibbonApplicationMenuItem Header="Print Preview"
+                                                          ImageSource="Images/PrintPreview32.png"
+                                                          KeyTip="V" />
+                        </RibbonApplicationSplitMenuItem>
+                        <RibbonApplicationMenuItem Header="Page Setup"
+                                                      ImageSource="Images/PrintSetup32.png"
+                                                      KeyTip="G" />
+                        <!-- </snippetAppMenuItems> -->
+                        <!-- <snippetAppMenuFooter> -->
+                        <RibbonApplicationMenu.FooterPaneContent>
+                            <DockPanel LastChildFill="False">
+                                <RibbonButton Command="ApplicationCommands.Close"
+                                                 Label="Exit"
+                                                 ToolTipTitle="Exit" 
+                                                 SmallImageSource="Images\Exit16.png"
+                                                 KeyTip="X"
+                                                 DockPanel.Dock="Right"
+                                                 Margin="2"
+                                                 BorderBrush="#B8114EAF" />
+                            </DockPanel>
+                        </RibbonApplicationMenu.FooterPaneContent>
+                        <!-- </snippetAppMenuFooter> -->
+                        <!-- <snippetAppMenuAuxPane> -->
+                        <RibbonApplicationMenu.AuxiliaryPaneContent>
+                            <RibbonGallery CanUserFilter="False"
+                                              ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                <RibbonGalleryCategory Header="Recent Documents" 
+                                                          Background="Transparent" 
+                                                          ItemsSource="{DynamicResource MostRecentFiles}">
+                                    <RibbonGalleryCategory.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Vertical" IsItemsHost="True"/>
+                                        </ItemsPanelTemplate>
+                                    </RibbonGalleryCategory.ItemsPanel>
+                                </RibbonGalleryCategory>
+                            </RibbonGallery>
+                        </RibbonApplicationMenu.AuxiliaryPaneContent>
+                        <!-- </snippetAppMenuAuxPane> -->
+                    </RibbonApplicationMenu>
+                </Ribbon.ApplicationMenu>
+                <Ribbon.QuickAccessToolBar>
+                    <RibbonQuickAccessToolBar >
+                        <RibbonButton Command="Save"   
+                                         SmallImageSource="Images/Save16.png"
+                                         KeyTip="1"/>
+                        <RibbonButton Command="Undo"   
+                                         SmallImageSource="Images/ArrowUndo16.png"
+                                         KeyTip="2" />
+                        <RibbonButton Command="Redo"  
+                                         SmallImageSource="Images/ArrowRedo16.png"
+                                         KeyTip="3"/>
+                    </RibbonQuickAccessToolBar>
+                </Ribbon.QuickAccessToolBar>
 
-            <!-- Left Side: Image Display -->
-            <Grid Grid.Column="0">
-                <im:ImageView x:Name="ImageView" />
-            </Grid>
-
-            <!-- Right Side: Controls and Log -->
-            <Grid Grid.Column="1" Margin="10">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-
-            <!-- Top: Controls -->
-            <Grid Grid.Row="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <!-- Model Selection Section -->
-                <GroupBox Grid.Row="0"  Margin="0,0,0,10">
-                    <StackPanel Margin="10">
-                        <DockPanel Margin="0,0,0,10">
-                            <TextBlock Text="{x:Static properties:Resources.Model}" VerticalAlignment="Center" Width="80"/>
-                            <ComboBox x:Name="cbModelType" 
+                <RibbonTab Header="编辑"  Padding="10">
+                    <RibbonGroup x:Name="rbnGr2" Header="General">
+                        <StackPanel>
+                            <DockPanel >
+                                <TextBlock Text="{x:Static properties:Resources.Model}" VerticalAlignment="Center" Width="80"/>
+                                <ComboBox x:Name="cbModelType" 
                                       SelectionChanged="cbModelType_SelectionChanged"
                                       SelectedIndex="0">
-                                <ComboBoxItem Content="VA60" Tag="VA60"/>
-                                <ComboBoxItem Content="VA80" Tag="VA80"/>
-                            </ComboBox>
-                        </DockPanel>
-                       
-                    </StackPanel>
-                </GroupBox>
-
-                <!-- Observation Camera Section (VA60 only) -->
-                <GroupBox x:Name="ObservationCameraPanel" Grid.Row="1"  Margin="0,0,0,10">
-                    <StackPanel Margin="10">
+                                    <ComboBoxItem Content="VA60" Tag="VA60"/>
+                                    <ComboBoxItem Content="VA80" Tag="VA80"/>
+                                </ComboBox>
+                            </DockPanel>
+                        </StackPanel>
                         <Button x:Name="btnOpenObservationCamera" 
-                                Content="{x:Static properties:Resources.OpenObservationCamera}"
-                                Click="btnOpenObservationCamera_Click"
-                                Height="30"/>
-                    </StackPanel>
-                </GroupBox>
+                        Content="{x:Static properties:Resources.OpenObservationCamera}"
+                        Click="btnOpenObservationCamera_Click"
+                        Height="30"/>
+                    </RibbonGroup>
 
-                <!-- Measurement Camera Section -->
-                <GroupBox Grid.Row="2" Margin="0,0,0,10">
-                    <StackPanel Margin="10">
+
+                    <RibbonGroup  Header="General" >
                         <DockPanel Margin="0,0,0,10">
                             <ComboBox x:Name="cbMeasurementCamera"  SelectionChanged="cbMeasurementCamera_SelectionChanged"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,10">
                             <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                                <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform4" CenterX="8" CenterY="8"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="MenuItem_Template">
-                                <Button.Triggers>
-                                    <EventTrigger RoutedEvent="Button.Click">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="rotateTransform4" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </Button.Triggers>
-                            </Button>
-                        </Grid>
-                        <ComboBox x:Name="ComboxCalibrationTemplate"  SelectedIndex="{Binding CalibrationTemplateIndex}"  SelectedValuePath="Value" DisplayMemberPath="Key"/>
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform4" CenterX="8" CenterY="8"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="MenuItem_Template">
+                                    <Button.Triggers>
+                                        <EventTrigger RoutedEvent="Button.Click">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform4" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Button.Triggers>
+                                </Button>
+                            </Grid>
+                            <ComboBox x:Name="ComboxCalibrationTemplate"  SelectedIndex="{Binding CalibrationTemplateIndex}"  SelectedValuePath="Value" DisplayMemberPath="Key"/>
                         </DockPanel>
 
                         <Button x:Name="btnOpenMeasurementCamera" 
-                                Content="{x:Static properties:Resources.CaptureImage}"
-                                Click="btnOpenMeasurementCamera_Click"
-                                Margin="0,0,0,5"
-                                Height="30"/>
-                        
-                        <Button x:Name="btnCalibration" 
-                                Content="{x:Static properties:Resources.Calibration}"
-                                Click="btnCalibration_Click"
-                                Height="30"/>
-                    </StackPanel>
-                </GroupBox>
+                              Content="{x:Static properties:Resources.CaptureImage}"
+                              Click="btnOpenMeasurementCamera_Click"
+                              Margin="0,0,0,5"
+                              Height="30"/>
 
-                <!-- Image Filter Section -->
-                <GroupBox Grid.Row="3" Header="{x:Static properties:Resources.ImageFilter}" Margin="0,0,0,10">
-                    <StackPanel Margin="10">
-                        <DockPanel Margin="0,0,0,10">
-                            <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Width="80"/>
-                            <ComboBox x:Name="cbFilterType" 
+                        <Button x:Name="btnCalibration" 
+                              Content="{x:Static properties:Resources.Calibration}"
+                              Click="btnCalibration_Click"
+                              Height="30"/>
+                    </RibbonGroup>
+                    <RibbonGroup Header="{x:Static properties:Resources.ImageFilter}">
+                        <StackPanel >
+                            <DockPanel Margin="0,0,0,10">
+                                <TextBlock Text="{x:Static properties:Resources.FilterType}" VerticalAlignment="Center" Width="80"/>
+                                <ComboBox x:Name="cbFilterType" 
                                       SelectionChanged="cbFilterType_SelectionChanged"
                                       SelectedIndex="0">
-                                <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}"/>
-                                <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}"/>
-                                <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}"/>
-                                <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}"/>
-                                <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}"/>
-                                <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}"/>
-                            </ComboBox>
-                        </DockPanel>
-                        
+                                    <ComboBoxItem Content="{x:Static properties:Resources.NoFilter}"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.LowPassFilter}"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.MovingAverage}"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.GaussianFilter}"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.MedianFilter}"/>
+                                    <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}"/>
+                                </ComboBox>
+                            </DockPanel>
+
+
+                        </StackPanel>
+
                         <!-- Kernel Size Parameter -->
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="{x:Static properties:Resources.KernelSize}" VerticalAlignment="Center" Width="80"/>
@@ -136,7 +233,7 @@
                                     TickFrequency="2" IsSnapToTickEnabled="True"
                                     Margin="5,0,0,0"/>
                         </DockPanel>
-                        
+
                         <!-- Sigma Parameter (for Gaussian) -->
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="σ (Sigma)" VerticalAlignment="Center" Width="80"/>
@@ -147,7 +244,7 @@
                                     TickFrequency="0.1" IsSnapToTickEnabled="True"
                                     Margin="5,0,0,0" IsEnabled="False"/>
                         </DockPanel>
-                        
+
                         <!-- D Parameter (for Bilateral) -->
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="d" VerticalAlignment="Center" Width="80"/>
@@ -158,7 +255,7 @@
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     Margin="5,0,0,0" IsEnabled="False"/>
                         </DockPanel>
-                        
+
                         <!-- Sigma Color Parameter (for Bilateral) -->
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="σColor" VerticalAlignment="Center" Width="80"/>
@@ -169,7 +266,7 @@
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     Margin="5,0,0,0" IsEnabled="False"/>
                         </DockPanel>
-                        
+
                         <!-- Sigma Space Parameter (for Bilateral) -->
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="σSpace" VerticalAlignment="Center" Width="80"/>
@@ -180,24 +277,432 @@
                                     TickFrequency="1" IsSnapToTickEnabled="True"
                                     Margin="5,0,0,0" IsEnabled="False"/>
                         </DockPanel>
-                        
+
                         <Button x:Name="btnApplyFilter" 
                                 Content="{x:Static properties:Resources.ApplyFilter}"
                                 Click="btnApplyFilter_Click"
-                                Height="30"/>
+                                />
+                    </RibbonGroup>
+
+
+                </RibbonTab>
+
+                <RibbonTab Header="Home" 
+                              KeyTip="H" 
+                              GroupSizeReductionOrder="Clipboard, Insert, Insert, Paragraph, Clipboard, Editing, Font, Clipboard" >
+                    <!-- <snippetRibbonGroupClipboard> -->
+                    <RibbonGroup Header="Clipboard" Name="Clipboard" SmallImageSource="Images/Paste16.png">
+                        <RibbonGroup.GroupSizeDefinitions>
+                            <RibbonGroupSizeDefinition>
+                                <RibbonControlSizeDefinition ImageSize="Large" IsLabelVisible="True" />
+                                <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="True" />
+                                <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="True" />
+                            </RibbonGroupSizeDefinition>
+                            <RibbonGroupSizeDefinition>
+                                <RibbonControlSizeDefinition ImageSize="Large" IsLabelVisible="True" />
+                                <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
+                                <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
+                            </RibbonGroupSizeDefinition>
+                            <RibbonGroupSizeDefinition IsCollapsed="True" />
+                        </RibbonGroup.GroupSizeDefinitions>
+                        <RibbonButton Label="Paste"
+                                         Command="ApplicationCommands.Paste" 
+                                         SmallImageSource="Images/Paste16.png" 
+                                         LargeImageSource="Images/Paste32.png" 
+                                         ToolTipTitle="Paste (Ctrl+V)" 
+                                         ToolTipDescription="Paste the contents of the Clipboard." />
+                        <RibbonButton Label="Cut" 
+                                         Command="ApplicationCommands.Cut" 
+                                         SmallImageSource="Images/Cut16.png" 
+                                         LargeImageSource="Images/Cut32.png" 
+                                         ToolTipTitle="Cut (Ctrl+X)" 
+                                         ToolTipDescription="Cut the selection from the document and put it on the clipboard." />
+                        <RibbonButton Label="Copy" 
+                                         Command="ApplicationCommands.Copy" 
+                                         SmallImageSource="Images/Copy16.png" 
+                                         LargeImageSource="Images/Copy32.png"
+                                         ToolTipTitle="Copy (Ctrl+C)" 
+                                         ToolTipDescription="Copy the selection from the document and put it on the clipboard." />
+                    </RibbonGroup>
+                    <!-- </snippetRibbonGroupClipboard> -->
+
+                    <!-- <snippetRibbonGroupFont> -->
+                    <RibbonGroup Header="Font" Name="Font"
+                                    SmallImageSource="Images\FontColor16.png"
+                                    KeyTip="F"
+                                    GroupSizeDefinitions="{StaticResource 5ControlSC}">
+                        <RibbonGroup.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" MaxWidth="300" />
+                            </ItemsPanelTemplate>
+                        </RibbonGroup.ItemsPanel>
+                        <RibbonComboBox Margin="-20,8,0,0" SelectionBoxWidth="116"
+                                           IsEditable="True"
+                                           ToolTipDescription="Change the font face."
+                                           ToolTipTitle="Font (Ctrl+Shift+F)"
+                                           QuickAccessToolBarId="FontFamilyComboBox"
+                                           KeyTip="F1" >
+                            <RibbonGallery SelectedValue="Arial"
+                                              SelectedValuePath="Content"
+                                              MaxColumnCount="1">
+                                <RibbonGalleryCategory HeaderVisibility="Collapsed">
+                                    <RibbonGalleryItem Content="Arial" FontFamily="Arial" />
+                                    <RibbonGalleryItem Content="Calibri" FontFamily="Calibri" />
+                                    <RibbonGalleryItem Content="Comic Sans MS" FontFamily="Comic Sans MS" />
+                                    <RibbonGalleryItem Content="Times New Roman" FontFamily="Times New Roman" />
+                                    <RibbonGalleryItem Content="Wide Latin" FontFamily="Wide Latin" />
+                                </RibbonGalleryCategory>
+                            </RibbonGallery>
+                        </RibbonComboBox>
+                        <RibbonComboBox SelectionBoxWidth="20"
+                                           ToolTipDescription="Change the font size."
+                                           ToolTipTitle="Font Size (Ctrl+Shift+P)"
+                                           KeyTip="S1" 
+                                           Margin="-20,8,0,0" >
+                            <RibbonGallery Command="{Binding FontSizeCommand}" 
+                                              SelectedValue="8"
+                                              SelectedValuePath="Content"
+                                              MaxColumnCount="1">
+                                <RibbonGalleryCategory HeaderVisibility="Collapsed">
+                                    <RibbonGalleryItem>8</RibbonGalleryItem>
+                                    <RibbonGalleryItem>10</RibbonGalleryItem>
+                                    <RibbonGalleryItem>16</RibbonGalleryItem>
+                                    <RibbonGalleryItem>24</RibbonGalleryItem>
+                                    <RibbonGalleryItem>36</RibbonGalleryItem>
+                                    <RibbonGalleryItem>48</RibbonGalleryItem>
+                                </RibbonGalleryCategory>
+                            </RibbonGallery>
+                        </RibbonComboBox>
+                        <RibbonControlGroup Margin="3,8,0,0">
+                            <RibbonButton Label="Increase" 
+                                             Command="EditingCommands.IncreaseFontSize" 
+                                             SmallImageSource="Images/FontGrow16.png" 
+                                             LargeImageSource="Images/FontGrow16.png"
+                                             ToolTipTitle="Grow font (Ctrl+])" 
+                                             ToolTipDescription="Increase font size."
+                                             KeyTip="G" />
+                            <RibbonButton Label="Decrease" 
+                                             Command="EditingCommands.DecreaseFontSize" 
+                                             SmallImageSource="Images/FontShrink16.png" 
+                                             LargeImageSource="Images/FontShrink16.png"
+                                             ToolTipTitle="Shrink font (Ctrl+[)" 
+                                             ToolTipDescription="Decrease font size."
+                                             KeyTip="K" />
+                        </RibbonControlGroup>
+
+                        <RibbonControlGroup Margin="0,6,0,0">
+                            <RibbonToggleButton Label="Bold" 
+                                                   Command="EditingCommands.ToggleBold" 
+                                                   SmallImageSource="Images/Bold16.png" 
+                                                   ToolTipTitle="Bold (Ctrl+B)" 
+                                                   ToolTipDescription="Change to a heavier font."
+                                                   KeyTip="B" />
+                            <RibbonToggleButton Label="Italic" 
+                                                   Command="EditingCommands.ToggleItalic" 
+                                                   SmallImageSource="Images/Italic16.png" 
+                                                   ToolTipTitle="Italic (Ctrl+I)" 
+                                                   ToolTipDescription="Change to an italic font."
+                                                   KeyTip="I" />
+                            <RibbonToggleButton Label="Underline" 
+                                                   Command="EditingCommands.ToggleUnderline" 
+                                                   SmallImageSource="Images/Underline16.png" 
+                                                   ToolTipTitle="Underline (Ctrl+U)" 
+                                                   ToolTipDescription="Draw a line below the text."
+                                                   KeyTip="U" />
+                            <RibbonToggleButton Label="Strikethrough" 
+                                                   Command="{Binding ToggleStrikethrough}"                                   
+                                                   SmallImageSource="Images\Strikethrough16.png"
+                                                   ToolTipTitle="Strikethrough" 
+                                                   ToolTipDescription="Draw a line through the text."
+                                                   KeyTip="X" />
+                            <RibbonToggleButton Label="Subscript" 
+                                                   Command="EditingCommands.ToggleSubscript"
+                                                   SmallImageSource="Images\Subscript16.png"
+                                                   ToolTipTitle="Subscript" 
+                                                   ToolTipDescription="Draw a line smaller and lower than regular text."
+                                                   KeyTip="A1" />
+                            <RibbonToggleButton Label="Superscript" 
+                                                   Command="EditingCommands.ToggleSuperscript"
+                                                   SmallImageSource="Images\Superscript16.png"
+                                                   ToolTipTitle="Superscript" 
+                                                   ToolTipDescription="Draw a line smaller and higher than regular text."
+                                                   KeyTip="Y" />
+                        </RibbonControlGroup>
+                        <RibbonControlGroup Margin="3,6,0,0">
+                            <!-- <snippetRibbonSplitButton> -->
+                            <RibbonSplitButton SmallImageSource="Images\Highlight16.png"
+                                                  KeyTip="H" >
+                                <RibbonMenuItem Header="Yellow" />
+                                <RibbonMenuItem Header="Green" />
+                                <RibbonMenuItem Header="Blue" />
+                                <RibbonMenuItem Header="Red" />
+                            </RibbonSplitButton>
+                            <RibbonSplitButton SmallImageSource="Images\FontColor16.png"
+                                                  KeyTip="C2" >
+                                <RibbonGallery>
+                                    <RibbonGalleryCategory>
+                                        <RibbonGalleryItem >
+                                            <Rectangle Fill="Yellow" Height="15" Width="15" />
+                                        </RibbonGalleryItem>
+                                        <RibbonGalleryItem >
+                                            <Rectangle Fill="Green" Height="15" Width="15" />
+                                        </RibbonGalleryItem>
+                                        <RibbonGalleryItem >
+                                            <Rectangle Fill="Blue" Height="15" Width="15" />
+                                        </RibbonGalleryItem>
+                                        <RibbonGalleryItem >
+                                            <Rectangle Fill="Red" Height="15" Width="15" />
+                                        </RibbonGalleryItem>
+                                    </RibbonGalleryCategory>
+                                </RibbonGallery>
+                            </RibbonSplitButton>
+                            <!-- <snippetRibbonSplitButton> -->
+                        </RibbonControlGroup>
+                    </RibbonGroup>
+                    <!-- </snippetRibbonGroupFont> -->
+
+                    <!-- <snippetRibbonGroupParagraph> -->
+                    <RibbonGroup Header="Paragraph" 
+                                    Name="Paragraph" 
+                                    SmallImageSource="Images/AlignLeft16.png"
+                                    GroupSizeDefinitions="{DynamicResource 5ControlSC}">
+                        <RibbonGroup.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel MaxWidth="150"  />
+                            </ItemsPanelTemplate>
+                        </RibbonGroup.ItemsPanel>
+                        <RibbonControlGroup Margin="0,8,0,0">
+                            <RibbonButton Label="Outdent"
+                                             Command="EditingCommands.DecreaseIndentation" 
+                                             SmallImageSource="Images/Outdent16.png" 
+                                             ToolTipTitle="Decrease indent (Ctrl+Shift+T)" 
+                                             ToolTipDescription="Decrease the indent level of the paragraph."
+                                             KeyTip="AO" />
+                            <RibbonButton Label="Indent"
+                                             Command="EditingCommands.IncreaseIndentation" 
+                                             SmallImageSource="Images/Indent16.png" 
+                                             ToolTipTitle="Increase indent (Ctrl+T)" 
+                                             ToolTipDescription="Increase the indent level of the paragraph."
+                                             KeyTip="AI" />
+                        </RibbonControlGroup>
+                        <RibbonControlGroup Margin="3,8,0,0">
+                            <RibbonSplitButton Label="Lists"
+                                                  Command="EditingCommands.ToggleBullets" 
+                                                  SmallImageSource="Images\ListBullets16.png" 
+                                                  LargeImageSource="Images\ListBullets32.png" 
+                                                  KeyTip="L" 
+                                                  IsCheckable="True">
+                                <RibbonMenuItem Header="Bulleted List" 
+                                                   Command="EditingCommands.ToggleBullets" 
+                                                   IsCheckable="True">
+                                </RibbonMenuItem>
+                                <RibbonMenuItem Header="Numbered List" 
+                                                   Command="EditingCommands.ToggleNumbering" 
+                                                   IsCheckable="True">
+                                </RibbonMenuItem>
+                            </RibbonSplitButton>
+                        </RibbonControlGroup>
+
+                        <RibbonControlGroup Margin="3,8,0,0">
+                            <RibbonMenuButton Label="Lists"
+                                                 SmallImageSource="Images\LineSpacing16.png"
+                                                 KeyTip="L" >
+                                <RibbonMenuItem Header="1.0" 
+                                                   Command="{Binding LineSpacingCommand}"
+                                                   CommandParameter="1.0"/>
+                                <RibbonMenuItem Header="1.15" 
+                                                   Command="{Binding LineSpacingCommand}"
+                                                   CommandParameter="1.15" />
+                                <RibbonMenuItem Header="1.5" 
+                                                   Command="{Binding LineSpacingCommand}"
+                                                   CommandParameter="1.5" />
+                                <RibbonMenuItem Header="2.0" 
+                                                   Command="{Binding LineSpacingCommand}"
+                                                   CommandParameter="2.0" />
+                            </RibbonMenuButton>
+                        </RibbonControlGroup>
+
+                        <RibbonControlGroup Margin="0,6,0,0">
+                            <RibbonButton Label="Left"
+                                             Command="EditingCommands.AlignLeft" 
+                                             SmallImageSource="Images/AlignLeft16.png" 
+                                             ToolTipTitle="Align text left (Ctrl+L)" 
+                                             ToolTipDescription="Align text to the left."
+                                             KeyTip="AL" />
+                            <RibbonButton Label="Center"
+                                             Command="EditingCommands.AlignCenter" 
+                                             SmallImageSource="Images/AlignCenter16.png" 
+                                             ToolTipTitle="Align text center (Ctrl+E)" 
+                                             ToolTipDescription="Center text."
+                                             KeyTip="AC" />
+                            <RibbonButton Label="Right"
+                                             Command="EditingCommands.AlignRight" 
+                                             SmallImageSource="Images/AlignRight16.png" 
+                                             ToolTipTitle="Align text right (Ctrl+R)" 
+                                             ToolTipDescription="Align text to the right."
+                                             KeyTip="AR" />
+                            <RibbonButton Label="Right"
+                                             Command="EditingCommands.AlignJustify" 
+                                             SmallImageSource="Images/AlignJustify16.png" 
+                                             ToolTipTitle="Justify (Ctrl+J)" 
+                                             ToolTipDescription="Align text to both left and right margins, adding space between words as necessary."
+                                             KeyTip="AJ" />
+                        </RibbonControlGroup>
+                    </RibbonGroup>
+                    <!-- </snippetRibbonGroupParagraph> -->
+
+                    <RibbonGroup Header="Insert" 
+                                    Name="Insert" 
+                                    SmallImageSource="Images/InsertPicture16.png"
+                                    GroupSizeDefinitions="{DynamicResource 4ControlLSC}">
+                        <RibbonMenuButton Label="Picture"
+                                             SmallImageSource="Images/InsertPicture16.png" 
+                                             LargeImageSource="Images/InsertPicture32.png"
+                                             ToolTipTitle="Insert Picture" 
+                                             ToolTipDescription="Insert a picture into the document."
+                                             KeyTip="PI" >
+                            <RibbonMenuItem Header="Picture"
+                                               ImageSource="Images/InsertPicture16.png"/>
+                            <RibbonMenuItem Header="Change picture" />
+                            <RibbonMenuItem Header="Resize picture" />
+                        </RibbonMenuButton>
+                        <RibbonMenuButton Label="Shape" 
+                                             SmallImageSource="Images/InsertShape16.png" 
+                                             LargeImageSource="Images/InsertShape32.png"
+                                             ToolTipTitle="Insert Shape" 
+                                             ToolTipDescription="Insert a shape into the document."
+                                             KeyTip="S" />
+                        <RibbonMenuButton Label="Date" 
+                                             SmallImageSource="Images/Calendar16.png"
+                                             LargeImageSource="Images/Calendar32.png"
+                                             ToolTipTitle="Insert Date/Time" 
+                                             ToolTipDescription="Insert a date and time into the document."
+                                             KeyTip="D" />
+                        <RibbonMenuButton Label="Link" 
+                                             SmallImageSource="Images/Hyperlink16.png" 
+                                             LargeImageSource="Images/Hyperlink32.png"
+                                             ToolTipTitle="Insert Hyperlink" 
+                                             ToolTipDescription="Insert a hyperlink into the document."
+                                             KeyTip="L" />
+                    </RibbonGroup>
+
+                    <RibbonGroup Header="Editing" 
+                                    Name="Editing" 
+                                    SmallImageSource="Images/Find16.png"
+                                    GroupSizeDefinitions="{DynamicResource 3ControlSC}">
+                        <RibbonButton Label="Find"
+                                         SmallImageSource="Images/Find16.png"
+                                         ToolTip="Find (Ctrl+F)" 
+                                         ToolTipDescription="Find text in the document."
+                                         KeyTip="FD" />
+                        <RibbonButton Label="Replace"
+                                         SmallImageSource="Images/Replace16.png"
+                                         ToolTip="Replace (Ctrl+H)" 
+                                         ToolTipDescription="Replace text in the document."
+                                         KeyTip="R" />
+                        <RibbonButton Label="Select all"
+                                         SmallImageSource="Images/SelectAll16.png"
+                                         ToolTip="Select all (Ctrl+A)" 
+                                         ToolTipDescription="Select all text in the document."
+                                         KeyTip="SA" />
+                    </RibbonGroup>
+                </RibbonTab>
+            </Ribbon>
+
+        </Grid>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left Side: Image Display -->
+            <Grid Grid.Column="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="300"/>
+                </Grid.ColumnDefinitions>
+                <im:ImageView x:Name="ImageView" Grid.Column="0"/>
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlot"/>
+                    <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5">
+                        <!-- Angle management -->
+                        <GroupBox Header="角度管理" Margin="0,0,0,5">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <TextBlock Text="添加角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <TextBox x:Name="txtAngle" 
+                                             MinWidth="60" 
+                                             VerticalAlignment="Center"
+                                             Margin="0,0,5,0"/>
+                                    <TextBlock Text="°" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <Button Content="添加" 
+                                            Click="btnAddAngle_Click"
+                                            Padding="10,2"
+                                            Margin="0,0,5,0"/>
+                                    <Button Content="删除选中" 
+                                            Click="btnRemoveAngle_Click"
+                                            Padding="10,2"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="当前角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                    <ComboBox x:Name="cbPolarAngleLines" 
+                                              MinWidth="100" 
+                                              SelectionChanged="cbPolarAngleLines_SelectionChanged"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <!-- RGB channel visibility -->
+                        <GroupBox Header="通道显示" Margin="0,0,0,5">
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox x:Name="chkShowRed" 
+                                          Content="R" 
+                                          Foreground="Red" 
+                                          IsChecked="True"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                                <CheckBox x:Name="chkShowGreen" 
+                                          Content="G" 
+                                          Foreground="Green" 
+                                          IsChecked="True"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                                <CheckBox x:Name="chkShowBlue" 
+                                          Content="B" 
+                                          Foreground="Blue" 
+                                          IsChecked="True"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
+                        <!-- Export -->
+                        <GroupBox Header="导出数据">
+                            <Button Content="导出CSV" 
+                                    Click="btnExportCSV_Click"
+                                    Padding="10,5"/>
+                        </GroupBox>
                     </StackPanel>
-                </GroupBox>
+                </Grid>
+                <Grid Grid.Column="2" x:Name="LogGrid">
+                    <!-- LogOutput will be added here programmatically -->
+                </Grid>
             </Grid>
 
-            <!-- Bottom: Log Display -->
-            <Grid Grid.Row="1" x:Name="LogGrid">
-                <!-- LogOutput will be added here programmatically -->
-            </Grid>
-        </Grid>
         </Grid>
 
         <!-- Status Bar at Bottom -->
-        <StatusBar Grid.Row="1" Height="25">
+        <StatusBar Grid.Row="2" Height="25">
             <StatusBar.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Grid>

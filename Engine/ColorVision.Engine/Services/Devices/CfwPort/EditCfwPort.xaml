@@ -23,11 +23,6 @@
         <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance local:ConfigCfwPort}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
                 <StackPanel x:Name="EditStackPanel" Margin="5,0">
-                    <DockPanel Margin="0,0,0,0" >
-                        <TextBlock Text="SN" Width="120"/>
-                        <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Text="{Binding SN}" hc:InfoElement.ShowClearButton="True"  />
-                    </DockPanel>
-
                 </StackPanel>
             </Border>
         </ScrollViewer>

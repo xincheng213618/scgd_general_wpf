@@ -85,7 +85,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
                     if (context.ImageView.HImageCache == null) return;
                     Task.Run(() =>
                     {
-                        double articulation = OpenCVMediaHelper.M_CalArtculation((HImage)context.ImageView.HImageCache, sharpnessConfig.FocusAlgorithm,roiX,roiY,roiW,roiH);
+                        double articulation = OpenCVMediaHelper.M_CalArtculation((HImage)context.ImageView.HImageCache, sharpnessConfig.FocusAlgorithm, new RoiRect(roiX,roiY,roiW,roiH));
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MessageBox.Show(
@@ -120,10 +120,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
         public void Execute()
         {
             if (_imageView.HImageCache == null) return;
-            int x = 0;
-            int y = 0;
-            int w = (int)Math.Round(_imageView.Width);
-            int h = (int)Math.Round(_imageView.Height);
 
             ArtculationConfig sharpnessConfig  = new ArtculationConfig();
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(sharpnessConfig)
@@ -138,7 +134,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate
             {
                 Task.Run(() =>
                 {
-                    double articulation = OpenCVMediaHelper.M_CalArtculation((HImage)_imageView.HImageCache, sharpnessConfig.FocusAlgorithm,x,y,w,h);
+                    double articulation = OpenCVMediaHelper.M_CalArtculation((HImage)_imageView.HImageCache, sharpnessConfig.FocusAlgorithm, new RoiRect(0,0, (int)Math.Round(_imageView.Width), (int)Math.Round(_imageView.Height)));
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MessageBox.Show(

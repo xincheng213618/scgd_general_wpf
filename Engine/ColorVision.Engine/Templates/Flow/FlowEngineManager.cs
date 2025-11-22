@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Flow;
+using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using FlowEngineLib;
 using log4net;
@@ -43,6 +45,7 @@ namespace ColorVision.Engine.Templates.Flow
         [DisplayName("修改保存提示")]
         public bool IsAutoEditSave { get => _IsAutoEditSave; set { _IsAutoEditSave = value; OnPropertyChanged(); } }
         private bool _IsAutoEditSave;
+
         [DisplayName("自动适配")]
         public bool IsAutoSize { get => _IsAutoSize; set { _IsAutoSize = value; OnPropertyChanged(); } }
         private bool _IsAutoSize;
@@ -90,7 +93,6 @@ namespace ColorVision.Engine.Templates.Flow
         public RelayCommand EditTemplateFlowCommand { get; set; }
 
         public RelayCommand MeasureBatchManagerCommand { get; set; }
-
         public ViewFlow View { get; set; }
         public FlowEngineControl FlowEngineControl { get; set; }
         public MeasureBatchModel Batch { get => _Batch; set { _Batch = value; OnPropertyChanged(); } }

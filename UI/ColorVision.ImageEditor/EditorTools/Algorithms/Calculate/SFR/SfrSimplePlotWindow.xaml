@@ -1,0 +1,69 @@
+<Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR.SfrSimplePlotWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR"
+        Title="SFR Plot" Height="700" Width="1000">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="1" DockPanel.Dock="Right" Width="350" Margin="8">
+            <TextBlock Text="SFR Information" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+            
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <TextBlock Text="MTF50 (norm):" Width="100" VerticalAlignment="Center"/>
+                <TextBox x:Name="TxtMtf50Norm"  IsReadOnly="True" BorderThickness="0" VerticalAlignment="Center" FontWeight="Bold"/>
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <TextBlock Text="MTF50 (cy/pix):" Width="100" VerticalAlignment="Center"/>
+                <TextBox x:Name="TxtMtf50CyPix"  IsReadOnly="True" BorderThickness="0" VerticalAlignment="Center" FontWeight="Bold"/>
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <TextBlock Text="MTF10 (norm):" Width="100" VerticalAlignment="Center"/>
+                <TextBox x:Name="TxtMtf10Norm"  IsReadOnly="True" BorderThickness="0" VerticalAlignment="Center"/>
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <TextBlock Text="MTF10 (cy/pix):" Width="100" VerticalAlignment="Center"/>
+                <TextBox x:Name="TxtMtf10CyPix" IsReadOnly="True" BorderThickness="0" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <Separator Margin="0,16,0,8"/>
+
+            <TextBlock Text="查询" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+            
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <TextBlock Text="频率:" VerticalAlignment="Center" Width="60"/>
+                <TextBox x:Name="TxtFreq" Width="120" Text="0.5"/>
+                <Button Content="MTF@Freq" Width="100" Margin="8,0,0,0" Click="BtnMtfAtFreq_Click"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <TextBlock Text="MTF:" VerticalAlignment="Center" Width="60"/>
+                <TextBox x:Name="TxtMtf" Width="120" Text="0.5"/>
+                <Button Content="Freq@MTF" Width="100" Margin="8,0,0,0" Click="BtnFreqAtMtf_Click"/>
+            </StackPanel>
+
+            <TextBlock x:Name="TxtResult" Margin="0,8,0,0" TextWrapping="Wrap"/>
+
+            <Separator Margin="0,16,0,8"/>
+
+            <TextBlock x:Name="TxtChannelVisibility" Text="通道显示" FontSize="14" FontWeight="Bold" Margin="0,0,0,8" Visibility="Collapsed"/>
+            
+            <CheckBox x:Name="ChkShowR" Content="显示 R 通道" IsChecked="True" Margin="0,4,0,0" Visibility="Collapsed" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#FF0000" FontWeight="Bold"/>
+            <CheckBox x:Name="ChkShowG" Content="显示 G 通道" IsChecked="True" Margin="0,4,0,0" Visibility="Collapsed" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#00AA00" FontWeight="Bold"/>
+            <CheckBox x:Name="ChkShowB" Content="显示 B 通道" IsChecked="True" Margin="0,4,0,0" Visibility="Collapsed" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#0000FF" FontWeight="Bold"/>
+            <CheckBox x:Name="ChkShowL" Content="显示 L 通道" IsChecked="True" Margin="0,4,0,0" Visibility="Collapsed" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#000000" FontWeight="Bold"/>
+
+            <Separator Margin="0,16,0,8"/>
+
+            <Button Content="导出到 CSV" Width="280" Height="32" Click="BtnExportCsv_Click" FontWeight="Bold"/>
+        </StackPanel>
+
+        <local:SfrSimplePlotControl x:Name="Plot" Margin="8"/>
+    </Grid>
+</Window>

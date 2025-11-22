@@ -29,13 +29,10 @@ namespace ColorVision.ImageEditor.Draw
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();
-            Pen whiteOutlinePen = new(Brushes.White, Attribute.Pen.Thickness + 2); // 描边比实际线条厚2个单位
-
             if (Points.Count >= 1)
             {
                 for (int i = 1; i < Points.Count; i++)
                 {
-                    dc.DrawLine(whiteOutlinePen, Points[i - 1], Points[i]);
                     dc.DrawLine(new Pen(Attribute.Pen.Brush, Attribute.Pen.Thickness), Points[i - 1], Points[i]);
                 }
 

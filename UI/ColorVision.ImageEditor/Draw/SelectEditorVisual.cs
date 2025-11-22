@@ -272,7 +272,6 @@ namespace ColorVision.ImageEditor.Draw
         SolidColorBrush SolidColorBrush = new SolidColorBrush(Color.FromArgb(1, 255, 255, 255));
         public void Render()
         {
-
             using DrawingContext dc = this.RenderOpen();
             if (SelectVisuals.Count == 0)
                 return;
