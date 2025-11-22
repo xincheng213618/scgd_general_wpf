@@ -22,17 +22,7 @@ namespace Pattern.Noise
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-            
-            // Initialize noise type combo box with Description attributes
-            cmbNoiseType.ItemsSource = from e1 in Enum.GetValues(typeof(NoiseType)).Cast<NoiseType>()
-                                       select new KeyValuePair<NoiseType, string>(e1, e1.ToDescription());
-
-            // Initialize size mode combo box
-            cmbSizeMode.ItemsSource = from e1 in Enum.GetValues(typeof(SolidSizeMode)).Cast<SolidSizeMode>()
-                                      select new KeyValuePair<SolidSizeMode, string>(e1, e1.ToString());
-            
-            UpdateNoiseTypeVisibility();
-            UpdateSizeModeVisibility();
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
         }
 
         private void BtnPickBackgroundColor_Click(object sender, RoutedEventArgs e)
@@ -122,53 +112,6 @@ namespace Pattern.Noise
                     "K" => Brushes.Black,
                     _ => Config.NoiseBrush
                 };
-            }
-        }
-
-        private void cmbNoiseType_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            UpdateNoiseTypeVisibility();
-        }
-
-        private void cmbSizeMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            UpdateSizeModeVisibility();
-        }
-
-        private void UpdateNoiseTypeVisibility()
-        {
-            if (cmbNoiseType?.SelectedValue is NoiseType noiseType)
-            {
-                // Show/hide intensity panel based on noise type
-                if (noiseType == NoiseType.Gaussian || noiseType == NoiseType.Uniform)
-                {
-                    IntensityPanel.Visibility = Visibility.Visible;
-                    DensityPanel.Visibility = Visibility.Collapsed;
-                    NoiseColorPanel.Visibility = Visibility.Collapsed;
-                }
-                else // SaltAndPepper
-                {
-                    IntensityPanel.Visibility = Visibility.Collapsed;
-                    DensityPanel.Visibility = Visibility.Visible;
-                    NoiseColorPanel.Visibility = Visibility.Visible;
-                }
-            }
-        }
-
-        private void UpdateSizeModeVisibility()
-        {
-            if (cmbSizeMode?.SelectedValue is SolidSizeMode solidSizeMode)
-            {
-                if (solidSizeMode == SolidSizeMode.ByPixelSize)
-                {
-                    PixelStack.Visibility = Visibility.Visible;
-                    FieldOfViewStack.Visibility = Visibility.Collapsed;
-                }
-                else // ByFieldOfView
-                {
-                    PixelStack.Visibility = Visibility.Collapsed;
-                    FieldOfViewStack.Visibility = Visibility.Visible;
-                }
             }
         }
     }
