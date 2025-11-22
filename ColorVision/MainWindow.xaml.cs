@@ -155,7 +155,29 @@ namespace ColorVision
             StartupRegistryChecker.Clear();
 
             this.AllowDrop = true;
+            this.Drop += MainWindow_Drop;
 
+        }
+
+        private void MainWindow_Drop(object sender, DragEventArgs e)
+        {
+            var b = e.Data.GetDataPresent(DataFormats.FileDrop);
+            if (b)
+            {
+                var sarr = e.Data.GetData(DataFormats.FileDrop);
+                var a = sarr as string[];
+                var fn = a?.First();
+
+                if (File.Exists(fn))
+                { 
+                    FileProcessorFactory.GetInstance().HandleFile(fn);
+                    e.Handled = true;
+                }
+                else if (Directory.Exists(fn))
+                {
+                    DirectoryInfo directoryInfo = new DirectoryInfo(fn);
+                }
+            }
         }
 
         private void InitRightMenuItemPanel()

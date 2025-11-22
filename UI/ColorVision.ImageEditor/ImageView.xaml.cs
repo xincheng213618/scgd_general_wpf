@@ -281,6 +281,7 @@ namespace ColorVision.ImageEditor
                 if (File.Exists(fn))
                 {
                     OpenImage(fn);
+                    e.Handled = true;
                 }
             }
         }
