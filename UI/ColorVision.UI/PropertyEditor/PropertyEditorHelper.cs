@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Extension;
+﻿using ColorVision.Themes;
+using ColorVision.UI.Extension;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Reflection;
@@ -110,15 +111,15 @@ namespace ColorVision.UI
         private static readonly Lazy<ResourceCache> Resources = new(() => new ResourceCache());
         private class ResourceCache
         {
-            public Brush GlobalTextBrush { get; }
-            public Brush GlobalBorderBrush { get; }
-            public Brush BorderBrush { get; }
-            public Style ButtonCommandStyle { get; }
-            public Style ComboBoxSmallStyle { get; }
-            public Style TextBoxSmallStyle { get; }
-            public IValueConverter Bool2VisibilityConverter { get; }
+            public Brush GlobalTextBrush { get; set; }
+            public Brush GlobalBorderBrush { get; set; }
+            public Brush BorderBrush { get; set; }
+            public Style ButtonCommandStyle { get; set; }
+            public Style ComboBoxSmallStyle { get; set; }
+            public Style TextBoxSmallStyle { get; set; }
+            public IValueConverter Bool2VisibilityConverter { get; set; }
 
-            public ResourceCache()
+            public void SetResources()
             {
                 var app = Application.Current ?? throw new InvalidOperationException(Properties.Resources.ApplicationCurrentNotInitialized);
 
@@ -130,6 +131,12 @@ namespace ColorVision.UI
                 TextBoxSmallStyle = (Style)app.FindResource("TextBox.Small");
                 Bool2VisibilityConverter = app.TryFindResource("bool2VisibilityConverter") as IValueConverter
                     ?? throw new InvalidOperationException(Properties.Resources.Bool2VisibilityConverterNotFound);
+            }
+
+            public ResourceCache()
+            {
+                SetResources();
+                ThemeManager.Current.CurrentUIThemeChanged += (e) => SetResources();
             }
         }
 
