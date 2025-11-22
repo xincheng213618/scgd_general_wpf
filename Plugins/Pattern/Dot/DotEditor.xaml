@@ -8,7 +8,7 @@
              d:DataContext="{d:DesignInstance local:PatternDotConfig}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
-        <StackPanel VerticalAlignment="Top">
+        <StackPanel x:Name="StackPanelInfo" VerticalAlignment="Top">
             <StackPanel Orientation="Horizontal"  Margin="0,0,0,5">
                 <Button Content="背景色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
                 <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Fill="{Binding MainBrush}" Margin="0,0,5,0"/>
@@ -27,39 +27,6 @@
                 <Button Content="W" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="W"/>
                 <Button Content="K" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="K"/>
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="50" Text="Period" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding Spacing}" Margin="0,0,5,0"/>
-            </StackPanel>
-
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="50" Text="Radius" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding Radius}" Margin="0,0,5,0"/>
-            </StackPanel>
-
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-
-                <TextBlock Width="50" Text="Rows" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding Rows}" Margin="0,0,5,0"/>
-                <TextBlock Width="50" Text="Cols" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding Cols}" Margin="0,0,5,0"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="100" Text="UseRectangle" Margin="0,0,5,0"/>
-                <CheckBox Width="70" IsChecked="{Binding UseRectangle}" Margin="0,0,5,0"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Visibility="{Binding UseRectangle,Converter={StaticResource bool2VisibilityConverter}}" Margin="0,0,0,5">
-                <TextBlock Width="50" Text="Width" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding RectWidth}" Margin="0,0,5,0"/>
-                <TextBlock Width="50" Text="Height" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding RectHeight}" Margin="0,0,5,0"/>
-            </StackPanel>
-            <StackPanel  Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Text="FieldOfView" Margin="0,0,5,0"/>
-                <TextBox  Width="100" Text="{Binding FieldOfViewX}" Margin="0,0,5,0"/>
-                <TextBox  Width="100" Text="{Binding FieldOfViewY}" Margin="0,0,5,0"/>
-            </StackPanel>
-
         </StackPanel>
 
     </Grid>

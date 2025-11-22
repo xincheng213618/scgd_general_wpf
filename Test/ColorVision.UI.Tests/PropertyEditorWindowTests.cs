@@ -8,6 +8,14 @@ namespace ColorVision.UI.Tests;
 /// </summary>
 public class PropertyEditorWindowTests
 {
+    // Test enum for visibility testing
+    public enum TestMode
+    {
+        ModeA,
+        ModeB,
+        ModeC
+    }
+
     // Test class with properties to display in PropertyEditorWindow
     private class TestConfig
     {
@@ -35,6 +43,44 @@ public class PropertyEditorWindowTests
         [DisplayName("Value")]
         [Description("An advanced value")]
         public double Value { get; set; } = 3.14;
+    }
+
+    // Test class with enum visibility attributes
+    private class TestConfigWithEnumVisibility
+    {
+        [Category("General")]
+        [DisplayName("Mode")]
+        [Description("The current mode")]
+        public TestMode Mode { get; set; } = TestMode.ModeA;
+
+        [Category("Settings")]
+        [DisplayName("Setting for Mode A")]
+        [Description("This should only be visible when Mode is ModeA")]
+        [PropertyVisibility(nameof(Mode), TestMode.ModeA)]
+        public string SettingForModeA { get; set; } = "A Setting";
+
+        [Category("Settings")]
+        [DisplayName("Setting for Mode B")]
+        [Description("This should only be visible when Mode is ModeB")]
+        [PropertyVisibility(nameof(Mode), TestMode.ModeB)]
+        public string SettingForModeB { get; set; } = "B Setting";
+
+        [Category("Settings")]
+        [DisplayName("Setting for Not Mode A")]
+        [Description("This should be hidden when Mode is ModeA")]
+        [PropertyVisibility(nameof(Mode), TestMode.ModeA, isInverted: true)]
+        public string SettingForNotModeA { get; set; } = "Not A Setting";
+
+        [Category("Advanced")]
+        [DisplayName("Boolean Visible Setting")]
+        [Description("This should be visible when BoolFlag is true")]
+        [PropertyVisibility(nameof(BoolFlag))]
+        public string BoolVisibleSetting { get; set; } = "Bool Setting";
+
+        [Category("Advanced")]
+        [DisplayName("Boolean Flag")]
+        [Description("A boolean flag for testing")]
+        public bool BoolFlag { get; set; } = true;
     }
 
     [Fact]
@@ -84,5 +130,65 @@ public class PropertyEditorWindowTests
         // Assert - Before initialization, categoryGroups should be empty
         Assert.NotNull(window.categoryGroups);
         Assert.Empty(window.categoryGroups);
+    }
+
+    [Fact]
+    public void PropertyVisibilityAttribute_WithBooleanProperty_CreatesCorrectAttribute()
+    {
+        // Arrange & Act
+        var attr = new PropertyVisibilityAttribute("IsEnabled");
+
+        // Assert
+        Assert.Equal("IsEnabled", attr.PropertyName);
+        Assert.False(attr.IsInverted);
+        Assert.Null(attr.ExpectedValue);
+    }
+
+    [Fact]
+    public void PropertyVisibilityAttribute_WithBooleanPropertyInverted_CreatesCorrectAttribute()
+    {
+        // Arrange & Act
+        var attr = new PropertyVisibilityAttribute("IsEnabled", isInverted: true);
+
+        // Assert
+        Assert.Equal("IsEnabled", attr.PropertyName);
+        Assert.True(attr.IsInverted);
+        Assert.Null(attr.ExpectedValue);
+    }
+
+    [Fact]
+    public void PropertyVisibilityAttribute_WithEnumValue_CreatesCorrectAttribute()
+    {
+        // Arrange & Act
+        var attr = new PropertyVisibilityAttribute("Mode", TestMode.ModeA);
+
+        // Assert
+        Assert.Equal("Mode", attr.PropertyName);
+        Assert.False(attr.IsInverted);
+        Assert.Equal(TestMode.ModeA, attr.ExpectedValue);
+    }
+
+    [Fact]
+    public void PropertyVisibilityAttribute_WithEnumValueInverted_CreatesCorrectAttribute()
+    {
+        // Arrange & Act
+        var attr = new PropertyVisibilityAttribute("Mode", TestMode.ModeB, isInverted: true);
+
+        // Assert
+        Assert.Equal("Mode", attr.PropertyName);
+        Assert.True(attr.IsInverted);
+        Assert.Equal(TestMode.ModeB, attr.ExpectedValue);
+    }
+
+    [Fact]
+    public void PropertyEditorWindow_WithEnumVisibilityConfig_DoesNotThrow()
+    {
+        // Arrange
+        var config = new TestConfigWithEnumVisibility();
+
+        // Act & Assert - Should not throw when creating window with enum visibility attributes
+        var window = new PropertyEditorWindow(config, isEdit: true);
+        Assert.NotNull(window);
+        Assert.Equal(config, window.Config);
     }
 }

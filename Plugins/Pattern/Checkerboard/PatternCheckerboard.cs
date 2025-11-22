@@ -29,17 +29,24 @@ namespace Pattern.Checkerboard
         public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _AltBrush = Brushes.Black;
 
+        [PropertyVisibility(nameof(CheckerboardSizeMode), CheckerboardSizeMode.ByGridCount)]
         public int GridX { get => _GridX; set { _GridX = value; OnPropertyChanged(); } }
         private int _GridX = 8;
+        [PropertyVisibility(nameof(CheckerboardSizeMode), CheckerboardSizeMode.ByGridCount)]
         public int GridY { get => _GridY; set { _GridY = value; OnPropertyChanged(); } }
         private int _GridY = 8;
+
+        [PropertyVisibility(nameof(CheckerboardSizeMode), CheckerboardSizeMode.ByCellSize)]
         public int CellW { get => _CellW; set { _CellW = value; OnPropertyChanged(); } }
         private int _CellW = 32;
+
+        [PropertyVisibility(nameof(CheckerboardSizeMode), CheckerboardSizeMode.ByCellSize)]
         public int CellH { get => _CellH; set { _CellH = value; OnPropertyChanged(); } }
         private int _CellH = 32;
 
-        public CheckerboardSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
-        private CheckerboardSizeMode _SizeMode = CheckerboardSizeMode.ByGridCount;
+        [DisplayName("绘制模式")]
+        public CheckerboardSizeMode CheckerboardSizeMode { get => _CheckerboardSizeMode; set { _CheckerboardSizeMode = value; OnPropertyChanged(); } }
+        private CheckerboardSizeMode _CheckerboardSizeMode = CheckerboardSizeMode.ByGridCount;
 
         public string MainBrushTag { get => _MainBrushTag; set { _MainBrushTag = value; OnPropertyChanged(); } }
         private string _MainBrushTag = "W";
@@ -51,16 +58,26 @@ namespace Pattern.Checkerboard
         public SolidColorBrush BackGroundBrush { get => _BackGroundBrush; set { _BackGroundBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _BackGroundBrush = Brushes.Black;
 
-        public SolidSizeMode FovSizeMode { get => _FovSizeMode; set { _FovSizeMode = value; OnPropertyChanged(); } }
-        private SolidSizeMode _FovSizeMode = SolidSizeMode.ByFieldOfView;
+        [DisplayName("尺寸模式")]
+        public SolidSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
+        private SolidSizeMode _SizeMode = SolidSizeMode.ByFieldOfView;
 
+        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByFieldOfView)]
+        [DisplayName("视场系数X")]
         public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
         private double _FieldOfViewX = 1.0;
+
+        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByFieldOfView)]
+        [DisplayName("视场系数Y")]
         public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
         private double _FieldOfViewY = 1.0;
 
+        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByPixelSize)]
+        [DisplayName("像素宽度")]
         public int PixelWidth { get => _PixelWidth; set { _PixelWidth = value; OnPropertyChanged(); } }
         private int _PixelWidth = 100;
+        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByPixelSize)]
+        [DisplayName("像素高度")]
         public int PixelHeight { get => _PixelHeight; set { _PixelHeight = value; OnPropertyChanged(); } }
         private int _PixelHeight = 100;
     }
@@ -72,7 +89,7 @@ namespace Pattern.Checkerboard
         public override string GetTemplateName()
         {
             string str = string.Empty;
-            if (Config.SizeMode == CheckerboardSizeMode.ByGridCount)
+            if (Config.CheckerboardSizeMode == CheckerboardSizeMode.ByGridCount)
             {
                 str = $"{Config.GridX}x{Config.GridY}";
             }
@@ -83,7 +100,7 @@ namespace Pattern.Checkerboard
             string baseName = "Checkerboard" + "_" + Config.MainBrushTag + Config.AltBrushTag + "_" + str;
             
             // Add FOV/Pixel suffix
-            if (Config.FovSizeMode == SolidSizeMode.ByPixelSize)
+            if (Config.SizeMode == SolidSizeMode.ByPixelSize)
             {
                 baseName += $"_Pixel_{Config.PixelWidth}x{Config.PixelHeight}";
             }
@@ -103,7 +120,7 @@ namespace Pattern.Checkerboard
             int fovWidth, fovHeight;
 
             // Calculate dimensions based on size mode
-            if (Config.FovSizeMode == SolidSizeMode.ByPixelSize)
+            if (Config.SizeMode == SolidSizeMode.ByPixelSize)
             {
                 // Use pixel-based dimensions
                 fovWidth = Math.Min(Config.PixelWidth, width);
@@ -123,7 +140,7 @@ namespace Pattern.Checkerboard
             Mat checker = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.MainBrush.ToScalar());
 
             double gridX, gridY, cellW, cellH;
-            if (Config.SizeMode == CheckerboardSizeMode.ByGridCount)
+            if (Config.CheckerboardSizeMode == CheckerboardSizeMode.ByGridCount)
             {
                 gridX = Config.GridX;
                 gridY = Config.GridY;

@@ -8,7 +8,7 @@
              d:DataContext="{d:DesignInstance local:PatternCrossConfig}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
-        <StackPanel VerticalAlignment="Top">
+        <StackPanel x:Name="StackPanelInfo" VerticalAlignment="Top">
             <StackPanel Orientation="Horizontal"  Margin="0,0,0,5">
                 <Button Content="背景色" Width="55" Margin="0,0,5,0" Click="BtnPickMainColor_Click"/>
                 <Rectangle x:Name="rectMainColor" Width="25" Height="25" Stroke="Black" Fill="{Binding MainBrush}" Margin="0,0,5,0"/>
@@ -28,31 +28,7 @@
                 <Button Content="K" Margin="0,0,5,0" Click="BtnPickAltColorSet_Click"  Tag="K"/>
             </StackPanel>
 
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="100" Text="HorizontalWidth" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding HorizontalWidth}" Margin="0,0,5,0"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="100" Text="VerticalWidth" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding VerticalWidth}" Margin="0,0,5,0"/>
-            </StackPanel>
 
-            <DockPanel Margin="0,0,0,5">
-                <TextBlock Text="XField" Margin="0,0,5,0"/>
-                <TextBox Text="{Binding FieldXJson}" Margin="0,0,5,0"/>
-            </DockPanel>
-            <DockPanel  Margin="0,0,0,5" >
-                <TextBlock Text="YField" Margin="0,0,5,0"/>
-                <TextBox Text="{Binding FieldYJson}" Margin="0,0,5,0"/>
-            </DockPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="100" Text="HorizontalLength" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding HorizontalLength}" Margin="0,0,5,0"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <TextBlock Width="100" Text="VerticalLength" Margin="0,0,5,0"/>
-                <TextBox Width="70" Text="{Binding VerticalLength}" Margin="0,0,5,0"/>
-            </StackPanel>
         </StackPanel>
 
     </Grid>
