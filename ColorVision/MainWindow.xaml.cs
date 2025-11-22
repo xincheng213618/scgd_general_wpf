@@ -153,6 +153,9 @@ namespace ColorVision
             InitRightMenuItemPanel();
 
             StartupRegistryChecker.Clear();
+
+            this.AllowDrop = true;
+
         }
 
         private void InitRightMenuItemPanel()
