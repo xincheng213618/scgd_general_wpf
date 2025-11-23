@@ -12,13 +12,8 @@
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<SignAssembly>False</SignAssembly>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<None Remove="ColorVision.Core.props" />
-		<None Remove="ColorVision.Core.targets" />
-	</ItemGroup>
 	<PropertyGroup>
 		<UseProjectReference Condition="!Exists('..\..\x64\Release\opencv_helper.dll')">true</UseProjectReference>
 	</PropertyGroup>
