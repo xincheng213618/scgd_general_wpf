@@ -11,7 +11,7 @@ using System.Windows.Data;
 
 namespace System.ComponentModel
 {    
-    // 通用：为所有数值型的 List<T>、ObservableCollection<T>、Collection<T> 等集合类型注册 JSON 文本编辑器
+    // 通用：为所有支持的集合类型注册 JSON 文本编辑器（List<T>、ObservableCollection<T>、Collection<T> 等）
     public class ListNumericJsonEditor : IPropertyEditor
     {
         static ListNumericJsonEditor()
@@ -170,11 +170,11 @@ namespace System.ComponentModel
 
             // 目标必须是支持的集合类型
             if (!IsSupportedCollectionType(targetType))
-                throw new NotSupportedException($"Collection type {targetType} is not supported. Supported types: List<T>, ObservableCollection<T>, Collection<T>, IList<T>, ICollection<T>, IEnumerable<T>");
+                throw new NotSupportedException($"Collection type {targetType} is not supported. Supported types: List<T>, ObservableCollection<T>, Collection<T>, IList<T>, ICollection<T>, IEnumerable<T>. Element types must be numeric, string, enum, or have a registered property editor.");
 
             var elemType = targetType.GetGenericArguments()[0];
             if (!IsNumericType(elemType))
-                throw new NotSupportedException($"Only numeric element types are supported. ElementType: {elemType}");
+                throw new NotSupportedException($"Element type {elemType} is not supported. Supported element types: numeric types (int, double, etc.), string, enum.");
 
             if (string.IsNullOrWhiteSpace(s))
             {

@@ -192,6 +192,8 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
         }
 
         // Helper class to create a PropertyInfo for dynamic types
+        // Note: This is a minimal implementation used only for type-based editor selection.
+        // Attributes like DisplayName, Description are not needed since editors are selected by type.
         private sealed class CustomPropertyInfo : PropertyInfo
         {
             private readonly string _name;
