@@ -1,0 +1,56 @@
+<!-- DictionaryItemEditorWindow.xaml -->
+<Window x:Class="ColorVision.UI.PropertyEditor.Editor.Dictionary.DictionaryItemEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="编辑字典项" Height="400" Width="600" 
+        Background="{DynamicResource GlobalBackground}"
+        WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Key Section -->
+        <GroupBox Header="键 (Key)" Grid.Row="0" Margin="0,0,0,10"
+                  BorderBrush="{DynamicResource BorderBrush}" 
+                  Foreground="{DynamicResource GlobalTextBrush}">
+            <ScrollViewer x:Name="KeyScrollViewer" VerticalScrollBarVisibility="Auto" MaxHeight="150">
+                <StackPanel x:Name="KeyEditorPanel" Margin="5"/>
+            </ScrollViewer>
+        </GroupBox>
+
+        <!-- Value Section -->
+        <GroupBox Header="值 (Value)" Grid.Row="1" Margin="0,0,0,10"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  Foreground="{DynamicResource GlobalTextBrush}">
+            <ScrollViewer x:Name="ValueScrollViewer" VerticalScrollBarVisibility="Auto" MaxHeight="150">
+                <StackPanel x:Name="ValueEditorPanel" Margin="5"/>
+            </ScrollViewer>
+        </GroupBox>
+
+        <!-- Spacer -->
+        <Grid Grid.Row="2"/>
+
+        <!-- Bottom Buttons -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="确定" Width="80" Click="OkButton_Click" 
+                    Margin="0,0,5,0" Background="{StaticResource PrimaryBrush}" 
+                    Foreground="White" BorderThickness="0"/>
+            <Button Content="取消" Width="80" Click="CancelButton_Click" 
+                    Background="{StaticResource PrimaryBrush}" 
+                    Foreground="White" BorderThickness="0"/>
+        </StackPanel>
+    </Grid>
+</Window>
