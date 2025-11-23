@@ -132,7 +132,7 @@ dotnet run --project Projects/ProjectStarkSemi/ProjectStarkSemi.csproj
 - [插件开发指南](../../docs/02-developer-guide/plugin-development/overview.md)
 - [项目架构文档](../../docs/03-architecture/README.md)
 - [引擎开发文档](../../docs/02-developer-guide/engine-development/README.md)
-- [核心概念](../../docs/02-developer-guide/core-concepts/extensibility.md)
+- [流程引擎文档](../../docs/04-api-reference/engine-components/README.md)
 
 ## 维护者
 
