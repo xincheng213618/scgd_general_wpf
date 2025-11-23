@@ -28,9 +28,9 @@ ColorVision 是一款基于 WPF 的专业视觉检测平台，采用模块化架
 
 ### 环境要求
 
-- **.NET 8.0** (推荐) 或 **.NET Framework 4.8**
+- **.NET 8.0**
 - **Windows 10 1903+** 或 **Windows 11**
-- **Visual Studio 2022** (开发环境)
+- **Visual Studio 2026** (开发环境)
 
 ### 构建与运行
 
