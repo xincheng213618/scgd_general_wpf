@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
