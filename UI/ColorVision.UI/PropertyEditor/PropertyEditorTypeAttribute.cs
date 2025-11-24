@@ -25,9 +25,30 @@ namespace System.ComponentModel
     {
         public string PropertyName { get; }
         public bool IsInverted { get; }
-        public PropertyVisibilityAttribute(string propertyName ,bool isInverted = false)
+        public object? ExpectedValue { get; }
+        
+        /// <summary>
+        /// Creates a PropertyVisibilityAttribute for boolean property binding.
+        /// </summary>
+        /// <param name="propertyName">Name of the boolean property to bind to</param>
+        /// <param name="isInverted">If true, inverts the visibility logic</param>
+        public PropertyVisibilityAttribute(string propertyName, bool isInverted = false)
         {
             PropertyName = propertyName;
+            IsInverted = isInverted;
+            ExpectedValue = null;
+        }
+        
+        /// <summary>
+        /// Creates a PropertyVisibilityAttribute for enum property binding.
+        /// </summary>
+        /// <param name="propertyName">Name of the enum property to bind to</param>
+        /// <param name="expectedValue">The enum value that should make the property visible</param>
+        /// <param name="isInverted">If true, inverts the visibility logic</param>
+        public PropertyVisibilityAttribute(string propertyName, object expectedValue, bool isInverted = false)
+        {
+            PropertyName = propertyName;
+            ExpectedValue = expectedValue;
             IsInverted = isInverted;
         }
     }

@@ -72,6 +72,7 @@ namespace ColorVision.Solution
 
                     var destFile = Path.Combine(destDir, Path.GetFileName(fn));
                     File.Copy(fn, destFile, overwrite: true);
+                    e.Handled = true;
 
                 }
                 else if (Directory.Exists(fn))
@@ -82,6 +83,7 @@ namespace ColorVision.Solution
                         if (item.Extension == ".cvproj")
                         {
                             SolutionManager.OpenSolution(item.FullName);
+                            e.Handled = true;
                             break;
                         }
                     }

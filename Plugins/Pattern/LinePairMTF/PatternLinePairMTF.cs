@@ -44,46 +44,9 @@ namespace Pattern.LinePairMTF
 
 
 
-        [PropertyEditorType(UpdateSourceTrigger = UpdateSourceTrigger.LostFocus)]
-        public string FieldXJson
-        {
-            get => JsonConvert.SerializeObject(FieldX);
-            set
-            {
-                try
-                {
-                    FieldX = JsonConvert.DeserializeObject<List<double>>(value) ?? FieldX;
-                }
-                catch
-                {
-
-                }
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(FieldX));
-            }
-        }
-        [PropertyEditorType(UpdateSourceTrigger = UpdateSourceTrigger.LostFocus)]
-        public string FieldYJson
-        {
-            get => JsonConvert.SerializeObject(FieldY);
-            set
-            {
-                try
-                {
-                    FieldY = JsonConvert.DeserializeObject<List<double>>(value) ?? FieldY;
-                }
-                catch
-                {
-                }
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(FieldY));
-            }
-        }
-
-        [JsonIgnore]
         public List<double> FieldX { get; set; } = new List<double> { 0,  0.5, 0.8};
-        [JsonIgnore]
         public List<double> FieldY { get; set; } = new List<double> { 0,0.5, 0.8 };
+
 
         public string LineBrushTag { get => _LineBrushTag; set { _LineBrushTag = value; OnPropertyChanged(); } }
         private string _LineBrushTag = "K";
@@ -91,19 +54,28 @@ namespace Pattern.LinePairMTF
         public string BackgroundBrushTag { get => _BackgroundBrushTag; set { _BackgroundBrushTag = value; OnPropertyChanged(); } }
         private string _BackgroundBrushTag = "W";
 
+        [DisplayName("尺寸模式")]
         public SolidSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
         private SolidSizeMode _SizeMode = SolidSizeMode.ByFieldOfView;
 
-        public int PixelWidth { get => _PixelWidth; set { _PixelWidth = value; OnPropertyChanged(); } }
-        private int _PixelWidth = 100;
-        public int PixelHeight { get => _PixelHeight; set { _PixelHeight = value; OnPropertyChanged(); } }
-        private int _PixelHeight = 100;
+        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByFieldOfView)]
+        [DisplayName("视场系数X")]
         public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
         private double _FieldOfViewX = 1.0;
+
+        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByFieldOfView)]
+        [DisplayName("视场系数Y")]
         public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
         private double _FieldOfViewY = 1.0;
 
-
+        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByPixelSize)]
+        [DisplayName("像素宽度")]
+        public int PixelWidth { get => _PixelWidth; set { _PixelWidth = value; OnPropertyChanged(); } }
+        private int _PixelWidth = 100;
+        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByPixelSize)]
+        [DisplayName("像素高度")]
+        public int PixelHeight { get => _PixelHeight; set { _PixelHeight = value; OnPropertyChanged(); } }
+        private int _PixelHeight = 100;
 
 
     }

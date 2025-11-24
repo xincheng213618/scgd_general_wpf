@@ -2,6 +2,7 @@ using ColorVision.UI;
 using ColorVision.UI.PropertyEditor.Editor.List;
 using Newtonsoft.Json;
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Reflection;
 using System.Windows;
@@ -10,18 +11,27 @@ using System.Windows.Data;
 
 namespace System.ComponentModel
 {    
-    // 通用：为所有数值型的 List<T> 注册 JSON 文本编辑器
+    // 通用：为所有支持的集合类型注册 JSON 文本编辑器（List<T>、ObservableCollection<T>、Collection<T> 等）
     public class ListNumericJsonEditor : IPropertyEditor
     {
         static ListNumericJsonEditor()
         {
-            // 通过谓词一次性注册：匹配 List<T> 且 T 为数值类型、字符串或枚举
+            // 通过谓词一次性注册：匹配支持的集合类型
             PropertyEditorHelper.RegisterEditor<ListNumericJsonEditor>(t =>
             {
                 t = Nullable.GetUnderlyingType(t) ?? t;
-                if (!t.IsGenericType || t.GetGenericTypeDefinition() != typeof(System.Collections.Generic.List<>))
+                if (!t.IsGenericType)
                     return false;
-                return true;
+                
+                var genericTypeDef = t.GetGenericTypeDefinition();
+                
+                // 支持 List<T>, ObservableCollection<T>, Collection<T>, IList<T>, ICollection<T>, IEnumerable<T>
+                return genericTypeDef == typeof(System.Collections.Generic.List<>) ||
+                       genericTypeDef == typeof(ObservableCollection<>) ||
+                       genericTypeDef == typeof(Collection<>) ||
+                       genericTypeDef == typeof(System.Collections.Generic.IList<>) ||
+                       genericTypeDef == typeof(System.Collections.Generic.ICollection<>) ||
+                       genericTypeDef == typeof(System.Collections.Generic.IEnumerable<>);
             });
         }
 
@@ -57,17 +67,47 @@ namespace System.ComponentModel
             };
             editButton.Click += (s, e) =>
             {
-                var list = property.GetValue(obj) as IList;
-                if (list != null)
+                // 获取集合实例
+                var collection = property.GetValue(obj);
+                if (collection != null)
                 {
-                    var elementType = property.PropertyType.GetGenericArguments()[0];
-                    var editorWindow = new ListEditorWindow(list, elementType);
-                    editorWindow.Owner = Window.GetWindow(dockPanel);
+                    // 确保集合实现了 IList 接口（用于可修改的集合）
+                    IList? list = null;
                     
-                    if (editorWindow.ShowDialog() == true)
+                    if (collection is IList ilist)
                     {
-                        // 更新 TextBox 显示
-                        textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
+                        list = ilist;
+                    }
+                    else if (collection is System.Collections.IEnumerable enumerable)
+                    {
+                        // 对于只读集合（如 IEnumerable），创建临时 List 用于编辑
+                        var elementType = property.PropertyType.GetGenericArguments()[0];
+                        var listType = typeof(List<>).MakeGenericType(elementType);
+                        list = (IList)Activator.CreateInstance(listType)!;
+                        foreach (var item in enumerable)
+                        {
+                            list.Add(item);
+                        }
+                    }
+                    
+                    if (list != null)
+                    {
+                        var elementType = property.PropertyType.GetGenericArguments()[0];
+                        var editorWindow = new ListEditorWindow(list, elementType);
+                        editorWindow.Owner = Window.GetWindow(dockPanel);
+                        
+                        if (editorWindow.ShowDialog() == true)
+                        {
+                            // 如果原集合不是 IList，需要重新创建集合并赋值
+                            if (collection is not IList)
+                            {
+                                var newCollection = CreateCollectionFromList(property.PropertyType, list, elementType);
+                                property.SetValue(obj, newCollection);
+                            }
+                            
+                            // 更新 TextBox 显示
+                            textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateTarget();
+                        }
                     }
                 }
             };
@@ -76,6 +116,37 @@ namespace System.ComponentModel
             dockPanel.Children.Add(editButton);
             dockPanel.Children.Add(textBox);
             return dockPanel;
+        }
+        
+        private static object CreateCollectionFromList(Type targetType, IList list, Type elementType)
+        {
+            var genericTypeDef = targetType.GetGenericTypeDefinition();
+            
+            if (genericTypeDef == typeof(ObservableCollection<>))
+            {
+                var obsCollType = typeof(ObservableCollection<>).MakeGenericType(elementType);
+                var obsColl = (IList)Activator.CreateInstance(obsCollType)!;
+                foreach (var item in list)
+                    obsColl.Add(item);
+                return obsColl;
+            }
+            else if (genericTypeDef == typeof(Collection<>))
+            {
+                var collType = typeof(Collection<>).MakeGenericType(elementType);
+                var coll = (IList)Activator.CreateInstance(collType)!;
+                foreach (var item in list)
+                    coll.Add(item);
+                return coll;
+            }
+            else if (genericTypeDef == typeof(System.Collections.Generic.IList<>) ||
+                     genericTypeDef == typeof(System.Collections.Generic.ICollection<>) ||
+                     genericTypeDef == typeof(System.Collections.Generic.IEnumerable<>))
+            {
+                // For interfaces, return a List<T>
+                return list;
+            }
+            
+            return list;
         }
     }
 
@@ -97,36 +168,31 @@ namespace System.ComponentModel
         {
             var s = value?.ToString();
 
-            // 目标必须是 List<T>
-            if (!IsGenericList(targetType))
-                throw new NotSupportedException($"Only List<T> is supported. TargetType: {targetType}");
+            // 目标必须是支持的集合类型
+            if (!IsSupportedCollectionType(targetType))
+                throw new NotSupportedException($"Collection type {targetType} is not supported. Supported types: List<T>, ObservableCollection<T>, Collection<T>, IList<T>, ICollection<T>, IEnumerable<T>. Element types must be numeric, string, enum, or have a registered property editor.");
 
             var elemType = targetType.GetGenericArguments()[0];
             if (!IsNumericType(elemType))
-                throw new NotSupportedException($"Only numeric element types are supported. ElementType: {elemType}");
+                throw new NotSupportedException($"Element type {elemType} is not supported. Supported element types: numeric types (int, double, etc.), string, enum.");
 
             if (string.IsNullOrWhiteSpace(s))
             {
-                // 空输入 -> 空列表
-                return Activator.CreateInstance(targetType)!;
+                // 空输入 -> 空集合
+                return CreateEmptyCollection(targetType, elemType);
             }
 
             try
             {
+                // 先反序列化为 List<T>
                 var concreteListType = typeof(List<>).MakeGenericType(elemType);
                 var result = JsonConvert.DeserializeObject(s, concreteListType);
-                // 确保返回确切的目标类型（避免出现 List<T> 以外的集合类型）
+                
                 if (result == null)
-                    return Activator.CreateInstance(targetType)!;
+                    return CreateEmptyCollection(targetType, elemType);
 
-                if (result.GetType() == targetType)
-                    return result;
-
-                // 如果是 List<T> 就直接返回；否则尝试拷贝到目标类型（一般不会进到这里）
-                var targetList = (System.Collections.IList)Activator.CreateInstance(targetType)!;
-                foreach (var item in (System.Collections.IEnumerable)result)
-                    targetList.Add(item);
-                return targetList;
+                // 转换为目标集合类型
+                return ConvertToTargetCollection(result as IList, targetType, elemType);
             }
             catch (Exception)
             {
@@ -135,8 +201,82 @@ namespace System.ComponentModel
             }
         }
 
-        private static bool IsGenericList(Type t)
-            => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(List<>);
+        private static bool IsSupportedCollectionType(Type t)
+        {
+            if (!t.IsGenericType)
+                return false;
+                
+            var genericTypeDef = t.GetGenericTypeDefinition();
+            return genericTypeDef == typeof(List<>) ||
+                   genericTypeDef == typeof(ObservableCollection<>) ||
+                   genericTypeDef == typeof(Collection<>) ||
+                   genericTypeDef == typeof(System.Collections.Generic.IList<>) ||
+                   genericTypeDef == typeof(System.Collections.Generic.ICollection<>) ||
+                   genericTypeDef == typeof(System.Collections.Generic.IEnumerable<>);
+        }
+
+        private static object CreateEmptyCollection(Type targetType, Type elementType)
+        {
+            var genericTypeDef = targetType.GetGenericTypeDefinition();
+            
+            if (genericTypeDef == typeof(ObservableCollection<>))
+            {
+                return Activator.CreateInstance(typeof(ObservableCollection<>).MakeGenericType(elementType))!;
+            }
+            else if (genericTypeDef == typeof(Collection<>))
+            {
+                return Activator.CreateInstance(typeof(Collection<>).MakeGenericType(elementType))!;
+            }
+            else if (genericTypeDef == typeof(System.Collections.Generic.IList<>) ||
+                     genericTypeDef == typeof(System.Collections.Generic.ICollection<>) ||
+                     genericTypeDef == typeof(System.Collections.Generic.IEnumerable<>))
+            {
+                // For interfaces, return a List<T>
+                return Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
+            }
+            
+            // Default to List<T>
+            return Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
+        }
+
+        private static object ConvertToTargetCollection(IList? sourceList, Type targetType, Type elementType)
+        {
+            if (sourceList == null)
+                return CreateEmptyCollection(targetType, elementType);
+                
+            var genericTypeDef = targetType.GetGenericTypeDefinition();
+            
+            // If target is already the source type, return as-is
+            if (sourceList.GetType() == targetType)
+                return sourceList;
+            
+            if (genericTypeDef == typeof(ObservableCollection<>))
+            {
+                var obsCollType = typeof(ObservableCollection<>).MakeGenericType(elementType);
+                var obsColl = (IList)Activator.CreateInstance(obsCollType)!;
+                foreach (var item in sourceList)
+                    obsColl.Add(item);
+                return obsColl;
+            }
+            else if (genericTypeDef == typeof(Collection<>))
+            {
+                var collType = typeof(Collection<>).MakeGenericType(elementType);
+                var coll = (IList)Activator.CreateInstance(collType)!;
+                foreach (var item in sourceList)
+                    coll.Add(item);
+                return coll;
+            }
+            else if (genericTypeDef == typeof(System.Collections.Generic.IList<>) ||
+                     genericTypeDef == typeof(System.Collections.Generic.ICollection<>) ||
+                     genericTypeDef == typeof(System.Collections.Generic.IEnumerable<>))
+            {
+                // For interfaces, return the List<T>
+                return sourceList;
+            }
+            
+            // Default: return the List<T> 
+            return sourceList;
+        }
 
         private static bool IsNumericType(Type t)
         {

@@ -229,5 +229,8 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int M_ApplyHistogramEqualization(HImage image, out HImage hImage);
 
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_FindLightBeads(HImage img, RoiRect roi, string config, out IntPtr str);
+
     }
 }

@@ -678,6 +678,75 @@ COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi, const char* 
 	return static_cast<int>(length);
 }
 
+COLORVISIONCORE_API int M_FindLightBeads(HImage img, RoiRect roi, const char* config, char** result)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty() || !config || !result) {
+		return -1;
+	}
+
+	// Validate and apply ROI
+	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+	cv::Rect imageRect(0, 0, mat.cols, mat.rows);
+	bool hasValidRoi = (mroi.width > 0 && mroi.height > 0);
+	bool roiWithinBounds = hasValidRoi && ((mroi & imageRect) == mroi);
+	bool use_roi = hasValidRoi && roiWithinBounds;
+	
+	mat = use_roi ? mat(mroi) : mat;
+
+	// 解析 JSON 配置
+	json j = json::parse(config);
+	int threshold = j.value("Threshold", 20);
+	int minSize = j.value("MinSize", 2);
+	int maxSize = j.value("MaxSize", 20);
+	int rows = j.value("Rows", 650);
+	int cols = j.value("Cols", 850);
+
+	std::vector<cv::Point> centers;
+	std::vector<cv::Point> blackCenters;
+
+	int ret = findLightBeads(mat, centers, blackCenters, threshold, minSize, maxSize, rows, cols);
+	if (ret != 0) {
+		return -2;
+	}
+
+	// 构建 JSON 输出
+	json outputJson;
+	
+	// 灯珠中心点
+	json centersArray = json::array();
+	for (const auto& center : centers) {
+		centersArray.push_back({ center.x, center.y });
+	}
+	outputJson["Centers"] = centersArray;
+	outputJson["CenterCount"] = centers.size();
+
+	// 缺失的灯珠
+	json blackCentersArray = json::array();
+	for (const auto& blackCenter : blackCenters) {
+		blackCentersArray.push_back({ blackCenter.x, blackCenter.y });
+	}
+	outputJson["BlackCenters"] = blackCentersArray;
+	outputJson["BlackCenterCount"] = blackCenters.size();
+
+	// 预期数量 (使用 size_t 避免整数溢出)
+	size_t expectedCount = static_cast<size_t>(rows) * static_cast<size_t>(cols);
+	size_t actualCount = centers.size();
+	size_t missingCount = (expectedCount > actualCount) ? (expectedCount - actualCount) : 0;
+	
+	outputJson["ExpectedCount"] = expectedCount;
+	outputJson["MissingCount"] = missingCount;
+
+	std::string output = outputJson.dump();
+	size_t length = output.length() + 1;
+	*result = new char[length];
+	if (!*result) {
+		return -3;
+	}
+	std::strcpy(*result, output.c_str());
+	return static_cast<int>(length);
+}
+
 
 StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv::Mat& result) {
 	if (image_files.empty()) {

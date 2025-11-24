@@ -34,44 +34,6 @@ namespace Pattern.Cross
         private int _VerticalLength = 10;
 
 
-        // 新增：视场坐标 Json 属性（支持界面配置）
-        public string FieldXJson
-        {
-            get => JsonConvert.SerializeObject(FieldX);
-            set
-            {
-                try
-                {
-                    FieldX = JsonConvert.DeserializeObject<List<double>>(value) ?? new List<double>();
-                }
-                catch
-                {
-                    FieldX = new List<double>();
-                }
-                OnPropertyChanged(nameof(FieldXJson));
-                OnPropertyChanged(nameof(FieldX));
-            }
-        }
-
-        public string FieldYJson
-        {
-            get => JsonConvert.SerializeObject(FieldY);
-            set
-            {
-                try
-                {
-                    FieldY = JsonConvert.DeserializeObject<List<double>>(value) ?? new List<double>();
-                }
-                catch
-                {
-                    FieldY = new List<double>();
-                }
-                OnPropertyChanged(nameof(FieldYJson));
-                OnPropertyChanged(nameof(FieldY));
-            }
-        }
-
-        [JsonIgnore]
         public List<double> FieldX
         {
             get => _FieldX;
@@ -79,7 +41,6 @@ namespace Pattern.Cross
             {
                 _FieldX = value;
                 OnPropertyChanged(nameof(FieldX));
-                OnPropertyChanged(nameof(FieldXJson));
             }
         }
         private List<double> _FieldX = new List<double>();
@@ -92,7 +53,6 @@ namespace Pattern.Cross
             {
                 _FieldY = value;
                 OnPropertyChanged(nameof(FieldY));
-                OnPropertyChanged(nameof(FieldYJson));
             }
         }
         private List<double> _FieldY = new List<double>();

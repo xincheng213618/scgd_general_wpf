@@ -28,8 +28,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Markdig.Signed" Version="0.42.0" />
-		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3485.44" />
+		<PackageReference Include="Markdig.Signed" Version="0.43.0" />
+		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3595.46" />
 		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
 		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.72.1" />
 		<PackageReference Include="WPFHexaEditor" Version="2.1.7" />

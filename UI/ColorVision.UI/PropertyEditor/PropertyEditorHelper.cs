@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Extension;
+﻿using ColorVision.Themes;
+using ColorVision.UI.Extension;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Reflection;
@@ -110,15 +111,18 @@ namespace ColorVision.UI
         private static readonly Lazy<ResourceCache> Resources = new(() => new ResourceCache());
         private class ResourceCache
         {
-            public Brush GlobalTextBrush { get; }
-            public Brush GlobalBorderBrush { get; }
-            public Brush BorderBrush { get; }
-            public Style ButtonCommandStyle { get; }
-            public Style ComboBoxSmallStyle { get; }
-            public Style TextBoxSmallStyle { get; }
-            public IValueConverter Bool2VisibilityConverter { get; }
+            public Brush GlobalTextBrush { get; set; }
+            public Brush GlobalBorderBrush { get; set; }
+            public Brush BorderBrush { get; set; }
+            public Style ButtonCommandStyle { get; set; }
+            public Style ComboBoxSmallStyle { get; set; }
+            public Style TextBoxSmallStyle { get; set; }
+            public IValueConverter Bool2VisibilityConverter { get; set; }
+            public IValueConverter Bool2VisibilityReConverter { get; set; }
+            public IValueConverter Enum2VisibilityConverter { get; set; }
+            public IValueConverter Enum2VisibilityReConverter { get; set; }
 
-            public ResourceCache()
+            public void SetResources()
             {
                 var app = Application.Current ?? throw new InvalidOperationException(Properties.Resources.ApplicationCurrentNotInitialized);
 
@@ -128,8 +132,21 @@ namespace ColorVision.UI
                 ButtonCommandStyle = (Style)app.FindResource("ButtonCommand");
                 ComboBoxSmallStyle = (Style)app.FindResource("ComboBox.Small");
                 TextBoxSmallStyle = (Style)app.FindResource("TextBox.Small");
+                
+                // Required converter
                 Bool2VisibilityConverter = app.TryFindResource("bool2VisibilityConverter") as IValueConverter
                     ?? throw new InvalidOperationException(Properties.Resources.Bool2VisibilityConverterNotFound);
+                
+                // Optional converters (may not be present in all themes)
+                Bool2VisibilityReConverter = app.TryFindResource("bool2VisibilityConverter1") as IValueConverter;
+                Enum2VisibilityConverter = app.TryFindResource("enum2VisibilityConverter") as IValueConverter;
+                Enum2VisibilityReConverter = app.TryFindResource("enum2VisibilityConverter1") as IValueConverter;
+            }
+
+            public ResourceCache()
+            {
+                SetResources();
+                ThemeManager.Current.CurrentUIThemeChanged += (e) => SetResources();
             }
         }
 
@@ -140,6 +157,9 @@ namespace ColorVision.UI
         public static Style ComboBoxSmallStyle => Resources.Value.ComboBoxSmallStyle;
         public static Style TextBoxSmallStyle => Resources.Value.TextBoxSmallStyle;
         public static IValueConverter Bool2VisibilityConverter => Resources.Value.Bool2VisibilityConverter;
+        public static IValueConverter Bool2VisibilityReConverter => Resources.Value.Bool2VisibilityReConverter;
+        public static IValueConverter Enum2VisibilityConverter => Resources.Value.Enum2VisibilityConverter;
+        public static IValueConverter Enum2VisibilityReConverter => Resources.Value.Enum2VisibilityReConverter;
 
 
         public static ResourceManager? GetResourceManager(object obj)
@@ -358,14 +378,45 @@ namespace ColorVision.UI
 
                     // Visibility binding based on PropertyVisibilityAttribute
                     var visibleAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
-                    if (visibleAttr != null && Bool2VisibilityConverter != null)
+                    if (visibleAttr != null)
                     {
                         var vb = new Binding(visibleAttr.PropertyName)
                         {
                             Source = obj,
-                            Mode = BindingMode.OneWay,
-                            Converter = Bool2VisibilityConverter
+                            Mode = BindingMode.OneWay
                         };
+
+                        IValueConverter? converter = null;
+                        
+                        // If ExpectedValue is set, this is an enum binding
+                        if (visibleAttr.ExpectedValue != null)
+                        {
+                            converter = visibleAttr.IsInverted ? Enum2VisibilityReConverter : Enum2VisibilityConverter;
+                            vb.ConverterParameter = visibleAttr.ExpectedValue;
+                            
+                            if (converter == null)
+                            {
+                                // Enum converters not available - skip binding
+                                // This can happen if the theme doesn't include them
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            // Boolean binding - support both normal and inverted
+                            converter = visibleAttr.IsInverted ? Bool2VisibilityReConverter : Bool2VisibilityConverter;
+                            
+                            // If the required converter is not available, we cannot bind correctly
+                            // The standard converter is always available, so only the inverted version might be missing
+                            if (converter == null)
+                            {
+                                // Cannot use IsInverted without the reversed converter - skip binding
+                                // to avoid incorrect visibility behavior
+                                continue;
+                            }
+                        }
+
+                        vb.Converter = converter;
                         dockPanel.SetBinding(UIElement.VisibilityProperty, vb);
                     }
 

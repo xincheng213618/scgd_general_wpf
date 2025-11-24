@@ -5,13 +5,13 @@
 #include <opencv2/opencv.hpp>
 
 /// <summary>
-/// Ħ�����˳�
+/// Ħ�����˳�
 /// </summary>
 /// <param name="image"></param>
 /// <returns></returns>
 cv::Mat removeMoire(const cv::Mat& image);
 /// <summary>
-/// Ѱ�ҷ���ȥ
+/// Ѱ�ҷ���ȥ
 /// </summary>
 /// <param name="src"></param>
 /// <param name="largestRect"></param>
@@ -21,7 +21,7 @@ int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold);
 int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int threshold);
 
 /// <summary>
-/// ������
+/// ������
 /// </summary>
 /// <param name="image"></param>
 /// <param name="rows"></param>
@@ -29,7 +29,7 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
 void LampBeadDetection(cv::Mat image, int rows, int cols);
 
 /// <summary>
-/// ����poi��ע��
+/// ����poi��ע��
 /// </summary>
 /// <param name="img"></param>
 /// <param name="dst"></param>
@@ -41,7 +41,7 @@ void LampBeadDetection(cv::Mat image, int rows, int cols);
 int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointCount,int thickness);
 
 /// <summary>
-/// α��ɫ
+/// α��ɫ
 /// </summary>
 /// <param name="image"></param>
 /// <param name="min1"></param>
@@ -51,20 +51,20 @@ int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointC
 int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types);
 
 /// <summary>
-///�Զ��Աȶȵ���
+///�Զ��Աȶȵ���
 /// </summary>
 /// <param name="src"></param>
 /// <param name="dst"></param>
 void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst);
 
 /// <summary>
-/// �Զ���ɫ����
+/// �Զ���ɫ����
 /// </summary>
 /// <param name="image"></param>
 void automaticColorAdjustment(cv::Mat& image);
 
 /// <summary>
-/// �Զ�ɫ������
+/// �Զ�ɫ������
 /// </summary>
 /// <param name="image"></param>
 /// <param name="clip_hist_percent"></param>
@@ -80,16 +80,16 @@ cv::Mat fusion(std::vector<cv::Mat> imgs, int STEP);
 
 int extractChannel(cv::Mat& input, cv::Mat& dst, int channel);
 
-//��ƽ��
+//��ƽ��
 void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, double redBalance, double greenBalance, double blueBalance);
 
 /// <summary>
-///�Զ�ɫ��
+///�Զ�ɫ��
 /// </summary>
 void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, double gamma);
 
 /// <summary>
-/// �������ȺͶԱȶ�
+/// �������ȺͶԱȶ�
 /// </summary>
 /// <param name="src"></param>
 /// <param name="dst"></param>
@@ -136,3 +136,26 @@ void ApplyCannyEdgeDetection(const cv::Mat& src, cv::Mat& dst, double threshold1
 /// <param name="src"></param>
 /// <param name="dst"></param>
 void ApplyHistogramEqualization(const cv::Mat& src, cv::Mat& dst);
+
+/// <summary>
+/// 寻找灯珠 (Find Light Beads)
+/// </summary>
+/// <param name="src">输入图像</param>
+/// <param name="centers">输出：检测到的灯珠中心点坐标</param>
+/// <param name="blackCenters">输出：缺失的灯珠位置坐标</param>
+/// <param name="threshold">二值化阈值</param>
+/// <param name="minSize">最小灯珠尺寸</param>
+/// <param name="maxSize">最大灯珠尺寸</param>
+/// <param name="rows">预期灯珠行数(用于计算缺失点)</param>
+/// <param name="cols">预期灯珠列数(用于计算缺失点)</param>
+/// <returns>0表示成功，负数表示错误</returns>
+int findLightBeads(
+    cv::Mat& src, 
+    std::vector<cv::Point>& centers, 
+    std::vector<cv::Point>& blackCenters,
+    int threshold = 20,
+    int minSize = 2,
+    int maxSize = 20,
+    int rows = 650,
+    int cols = 850
+);

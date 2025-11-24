@@ -1,6 +1,6 @@
 #   CHANGELOAG
 
-## [1.3.14.65] 2025.11.22
+## [1.3.14.71] 2025.11.24
 
 1.优化 ColorVision.UI 资源中的语言显示名称
 
@@ -93,6 +93,21 @@
 45.移除LivechartCore,优化直方图的显示优化DVline的逻辑
 
 46.确保在Linux中可以编译
+
+47.优化属性编辑器
+
+48.PropertyEditor 集合类型支持扩展
+- 新增 ObservableCollection<T> 支持
+- 新增 Collection<T> 支持
+- 新增 IList<T>, ICollection<T>, IEnumerable<T> 接口支持
+- 新增 Dictionary<TKey, TValue> 和 IDictionary<TKey, TValue> 支持
+- 所有集合类型支持 JSON 文本编辑和可视化编辑器
+- 字典编辑器支持键唯一性验证
+- 详细文档：docs/PropertyEditor-Collection-Support.md
+
+49.隐藏关于里面logo抖动的效果，因为老板提到不够严肃
+
+50.现在在图像控件中增加灯珠检测的代码
 
 ## [1.3.14.1] 2025.11.06
 

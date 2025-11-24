@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;
 using NetTaste;
@@ -425,6 +426,7 @@ namespace ColorVision.Database
         {
             GenericQueryBase = genericQueryBase;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
