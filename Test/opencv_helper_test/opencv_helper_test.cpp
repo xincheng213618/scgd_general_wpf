@@ -1,152 +1,161 @@
-﻿#include <opencv2/opencv.hpp>
-#include <string>
+﻿// OpenCVHelper_test.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
+//
+#include <chrono>
 #include <iostream>
-#include <sstream>
-#include <fstream>
-#include <cmath>
-#ifdef _WIN32
-#include <direct.h>
-#else
-#include <sys/stat.h>
-#endif
+#include <opencv2/opencv.hpp>
+#include <stack>
 
-int makeDir(const std::string& d) {
-#ifdef _WIN32
-    return _mkdir(d.c_str());
-#else
-    return mkdir(d.c_str(), 0777);
-#endif
-}
+int main()
+{
+    std::chrono::steady_clock::time_point start, end;
+    std::chrono::microseconds duration;
 
-inline int divCeil(int a, int b) { return (a + b - 1) / b; }
+    cv::Mat image = cv::imread("C:\\Users\\Xin\\Desktop\\20250618184915_1_src.tif", cv::ImreadModes::IMREAD_UNCHANGED);
 
-#include "CVCIEFile.hpp"
-bool ReadCIEFile(const std::string& filePath, CVCIEFile& fileInfo);
-
-int main() {
-
-    std::string path = "D:\\新建文件夹\\DEV.Camera.Default\\Data\\2025-02-26\\20250226T174538.8601002.cvraw"; // 或 .cvcie
-
-    CVCIEFile fileInfo;
-    if (!ReadCIEFile(path, fileInfo))
-    {
-        std::cerr << "Failed to read file: " << path << std::endl;
+    if (image.empty()) {
+        std::cerr << "无法读取图像文件！" << std::endl;
         return -1;
     }
+    start = std::chrono::high_resolution_clock::now();
+    cv::Mat image8bit;
+    image.convertTo(image8bit, CV_8UC3, 255.0 / 65535.0);
 
-    // 得到原始 Mat 视图
-    cv::Mat mat = fileInfo.toMatView();
-    if (mat.empty())
-    {
-        std::cerr << "Mat is empty" << std::endl;
-        return -1;
+    // Extract the blue channel
+    //std::vector<cv::Mat> channels;
+    //cv::split(image8bit, channels);
+    //cv::Mat gray = channels[0];
+
+    cv::Mat gray;
+    cv::cvtColor(image8bit, gray, cv::COLOR_BGR2GRAY);
+    //cv::extractChannel(image8bit, gray, 0); // 0 is the index for the blue channel
+
+   // 二值化
+
+   // 定义结构元素
+    cv::Mat binary;
+    cv::threshold(gray, binary, 20, 255, cv::THRESH_BINARY);
+
+    // 腐蚀操作
+    cv::erode(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
+
+    cv::dilate(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(4, 4)));
+    cv::erode(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
+
+
+    // 检测轮廓
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    std::vector<cv::Point> centers;
+
+    // 遍历轮廓
+    for (const auto& contour : contours) {
+        // 计算轮廓的边界框
+        cv::Rect boundingBox = cv::boundingRect(contour);
+
+        // 根据灯珠的已知大小过滤
+        if (boundingBox.width > 2 && boundingBox.height > 2 ) {
+
+            // 计算中心点
+            int cx = boundingBox.x + boundingBox.width / 2;
+            int cy = boundingBox.y + boundingBox.height / 2;
+            centers.push_back(cv::Point(cx, cy));
+        }
+        else {
+            int coutns = centers.size();
+        }
     }
 
-    // 得到可显示的 8U Mat（如果是 32 位浮点会归一化到 0-255）
-    cv::Mat disp = fileInfo.toDisplayMat();
+    //总亮点
+    int coutns = centers.size();
 
-    // 如果是灰度/单通道，OpenCV 直接显示
-    cv::imshow("disp", disp);
+    // 计算中心点的凸包
+    std::vector<cv::Point> hull;
+    if (!centers.empty()) {
+        cv::convexHull(centers, hull);
+    }
+
+    //绘制中心点
+    for (const auto& center : centers) {
+        cv::circle(image8bit, center, 4, cv::Scalar(255), -1);
+    }
+
+    // 绘制凸包
+    if (!hull.empty()) {
+        for (size_t i = 0; i < hull.size(); ++i) {
+            cv::line(image8bit, hull[i], hull[(i + 1) % hull.size()], cv::Scalar(255), 2);
+        }
+    }
+
+    // 创建一个掩码，初始为全零
+    cv::Mat mask = cv::Mat::zeros(image.size(), CV_8UC1);
+
+    // 在掩码上绘制凸包区域
+    std::vector<std::vector<cv::Point>> hulls = { hull };
+    cv::fillPoly(mask, hulls, cv::Scalar(255));
+
+    // 遍历图像的所有点
+    for (int y = 0; y < binary.rows; ++y) {
+        uchar* maskRow = mask.ptr<uchar>(y);
+        uchar* imgRow = binary.ptr<uchar>(y);
+        for (int x = 0; x < binary.cols; ++x) {
+            // 如果掩码中该点不在凸包内，则设置为255
+            if (maskRow[x] == 0) {
+                imgRow[x] = 255;
+            }
+        }
+    }
+
+    int rows = 650;
+    int cols = 850;
+
+    //缺少的点
+    int black = rows * cols - centers.size();
+    std::cout << black << std::endl;
+
+
+    std::vector<std::vector<cv::Point>> ledMatrix1;
+    std::vector<cv::Point> currentRow;
+
+    cv::dilate(binary, binary, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(12, 12)));
+
+    binary = 255 - binary;
+    std::vector<cv::Point> blackcenters;
+
+    std::vector<std::vector<cv::Point>> contourless;
+    cv::findContours(binary, contourless, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // 遍历轮廓
+    for (const auto& contour : contourless) {
+        // 计算轮廓的边界框
+        cv::Rect boundingBox = cv::boundingRect(contour);
+
+        // 根据灯珠的已知大小过滤
+        if (boundingBox.width > 2 && boundingBox.width < 20 &&
+            boundingBox.height > 2 && boundingBox.height < 20) {
+
+            // 计算中心点
+            int cx = boundingBox.x + boundingBox.width / 2;
+            int cy = boundingBox.y + boundingBox.height / 2;
+            blackcenters.push_back(cv::Point(cx, cy));
+        }
+    }
+    //缺少的点
+    std::cout << blackcenters.size() << std::endl;
+    for (const auto& contour : blackcenters)
+    {
+        //std::cout << contour << std::endl;
+        cv::circle(image8bit, contour, 5, cv::Scalar(0, 0, 255), 1);
+    }
+
+    end = std::chrono::high_resolution_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    std::cout << ": " << duration.count() / 1000.0 << " 毫秒" << std::endl;
+
+    cv::imwrite("reee.tif", image8bit);
+
+
+    //cv::imshow("tif读", image);
     cv::waitKey(0);
-
-    // 若需要保存到 PNG/TIFF 等
-    cv::imwrite("out.png", disp);
-
-    return 0;
-
-
-    //std::string inputPath = "C:\\Users\\17917\\xwechat_files\\wxid_htzn9mxqm4gw22_1d4c\\msg\\file\\2025 - 10\\CY - 1.tif";
-    //int tileSize = 512;                 // 可改 256 / 512
-    //bool limitMaxZoom = false;          // 若想手动限制层数，设 true
-    //int forcedMaxZoom = 6;              // 只在 limitMaxZoom = true 时生效
-    //bool enablePad = false;             // 若想所有瓦片都是 tileSize×tileSize，设 true
-
-    //cv::Mat imgOriginal = cv::imread(inputPath, cv::IMREAD_UNCHANGED);
-    //if (imgOriginal.empty()) {
-    //    std::cout << "Cannot load image!" << std::endl;
-    //    return -1;
-    //}
-
-    //int W = imgOriginal.cols;
-    //int H = imgOriginal.rows;
-    //int maxDim = std::max(W, H);
-
-    //// 使用 ceil，保证第 0 级尺寸 <= tileSize（即最小级为全局缩略）
-    //int autoMaxZoom = 0;
-    //if (maxDim > tileSize) {
-    //    double ratio = static_cast<double>(maxDim) / tileSize;
-    //    autoMaxZoom = static_cast<int>(std::ceil(std::log2(ratio)));
-    //}
-    //int maxZoom = limitMaxZoom ? std::min(forcedMaxZoom, autoMaxZoom) : autoMaxZoom;
-
-    //makeDir("tiles");
-
-    //std::ostringstream manifest;
-    //manifest << "Original " << W << "x" << H << "\n";
-    //manifest << "TileSize " << tileSize << "\n";
-    //manifest << "MaxZoom " << maxZoom << " (0.." << maxZoom << ")\n";
-    //manifest << "Format zoom: levelWidth levelHeight tilesX tilesY totalTiles scale\n";
-
-    //for (int z = 0; z <= maxZoom; ++z) {
-    //    // 最高级 (z = maxZoom) scale = 1
-    //    double scale = 1.0 / std::pow(2.0, maxZoom - z);
-    //    int levelW = static_cast<int>(std::round(W * scale));
-    //    int levelH = static_cast<int>(std::round(H * scale));
-    //    if (levelW < 1) levelW = 1;
-    //    if (levelH < 1) levelH = 1;
-
-    //    cv::Mat levelImg;
-    //    if (scale == 1.0) {
-    //        levelImg = imgOriginal;
-    //    }
-    //    else {
-    //        cv::resize(imgOriginal, levelImg, cv::Size(levelW, levelH), 0, 0, cv::INTER_AREA);
-    //    }
-
-    //    int tilesX = divCeil(levelW, tileSize);
-    //    int tilesY = divCeil(levelH, tileSize);
-
-    //    std::string zoomDir = "tiles/" + std::to_string(z);
-    //    makeDir(zoomDir);
-
-    //    std::cout << "Zoom " << z
-    //        << " size: " << levelW << "x" << levelH
-    //        << " tiles: " << tilesX << "x" << tilesY
-    //        << " (" << tilesX * tilesY << ") scale=" << scale << "\n";
-
-    //    manifest << z << " "
-    //        << levelW << " " << levelH << " "
-    //        << tilesX << " " << tilesY << " "
-    //        << (tilesX * tilesY) << " "
-    //        << scale << "\n";
-
-    //    for (int ty = 0; ty < tilesY; ++ty) {
-    //        for (int tx = 0; tx < tilesX; ++tx) {
-    //            int x0 = tx * tileSize;
-    //            int y0 = ty * tileSize;
-    //            int wTile = std::min(tileSize, levelW - x0);
-    //            int hTile = std::min(tileSize, levelH - y0);
-    //            cv::Rect roi(x0, y0, wTile, hTile);
-    //            cv::Mat tile = levelImg(roi);
-
-    //            if (enablePad && (wTile != tileSize || hTile != tileSize)) {
-    //                cv::Mat padded(tileSize, tileSize, tile.type(), cv::Scalar(0, 0, 0));
-    //                tile.copyTo(padded(cv::Rect(0, 0, wTile, hTile)));
-    //                tile = padded;
-    //            }
-
-    //            std::string outName = zoomDir + "/" + std::to_string(tx) + "_" + std::to_string(ty) + ".jpg";
-    //            cv::imwrite(outName, tile);
-    //        }
-    //    }
-    //}
-
-    //// 写出简单 manifest
-    //{
-    //    std::ofstream ofs("tiles/manifest.txt");
-    //    ofs << manifest.str();
-    //}
-
-    //std::cout << "Done. Manifest saved to tiles/manifest.txt\n";
-    return 0;
 }
+
