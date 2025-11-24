@@ -824,7 +824,7 @@ int findLightBeads(
 {
     // 用于网格遍历的偏移量，避免边界重复检测
     const int GRID_OFFSET = 4;
-    
+
     centers.clear();
     blackCenters.clear();
 
@@ -875,8 +875,8 @@ int findLightBeads(
         cv::Rect boundingBox = cv::boundingRect(contour);
 
 
-        if ((boundingBox.width > minSize || minSize<=0) && (maxSize <= 0 ||boundingBox.width < maxSize) &&
-           ( boundingBox.height > minSize || minSize <= 0) && (maxSize <= 0 || boundingBox.height < maxSize)) {
+        if ((boundingBox.width > minSize || minSize <= 0) && (maxSize <= 0 || boundingBox.width < maxSize) &&
+            (boundingBox.height > minSize || minSize <= 0) && (maxSize <= 0 || boundingBox.height < maxSize)) {
 
             // 计算中心点
             int cx = boundingBox.x + boundingBox.width / 2;
@@ -937,24 +937,25 @@ int findLightBeads(
             double width = hullBoundingRect.width;
             double height = hullBoundingRect.height;
 
-            if (cols > 0 && rows>0)
+            if (cols > 0 && rows > 0)
             {
                 double singleWidth = width / cols;
                 double singleHeight = height / rows;
 
-            // 在边界框内遍历网格点
-            for (double y = boundingBox.y + GRID_OFFSET; y < boundingBox.y + boundingBox.height; y += singleHeight) {
-                for (double x = boundingBox.x + GRID_OFFSET; x < boundingBox.x + boundingBox.width; x += singleWidth) {
-                    cv::Point p(static_cast<int>(x), static_cast<int>(y));
-                    // 检查是否在轮廓内
-                    if (cv::pointPolygonTest(contour, p, false) >= 0) {
-                        blackCenters.push_back(p);
+                // 在边界框内遍历网格点
+                for (double y = boundingBox.y + GRID_OFFSET; y < boundingBox.y + boundingBox.height; y += singleHeight) {
+                    for (double x = boundingBox.x + GRID_OFFSET; x < boundingBox.x + boundingBox.width; x += singleWidth) {
+                        cv::Point p(static_cast<int>(x), static_cast<int>(y));
+                        // 检查是否在轮廓内
+                        if (cv::pointPolygonTest(contour, p, false) >= 0) {
+                            blackCenters.push_back(p);
+                        }
                     }
                 }
             }
         }
-    }
 
-    return 0;
+        return 0;
+    }
 }
 
