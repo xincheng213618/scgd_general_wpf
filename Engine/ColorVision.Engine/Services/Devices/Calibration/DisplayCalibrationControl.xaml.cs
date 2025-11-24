@@ -21,7 +21,14 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 {
     public class DisplayCalibrationConfig : IDisPlayConfigBase
     {
+        public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; OnPropertyChanged(); } }
+        private double _ExpTimeR = 10;
 
+        public double ExpTimeG { get => _ExpTimeG; set { _ExpTimeG = value; OnPropertyChanged(); } }
+        private double _ExpTimeG = 10;
+
+        public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; OnPropertyChanged(); } }
+        private double _ExpTimeB = 10;
     }
 
     /// <summary>
@@ -194,7 +201,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                     {
                         var pm = Device.PhyCamera.CalibrationParams[ComboxCalibrationTemplate.SelectedIndex].Value;
 
-                        MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, fileExtType, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.Config.ExpTimeR, (float)Device.Config.ExpTimeG, (float)Device.Config.ExpTimeB);
+                        MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, fileExtType, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.DisplayConfig.ExpTimeR, (float)Device.DisplayConfig.ExpTimeG, (float)Device.DisplayConfig.ExpTimeB);
                         ServicesHelper.SendCommand(button, msgRecord);
                     }
                 }

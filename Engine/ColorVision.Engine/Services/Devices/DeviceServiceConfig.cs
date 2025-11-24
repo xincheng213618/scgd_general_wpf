@@ -13,14 +13,6 @@ namespace ColorVision.Engine.Services.Devices
     public class BaseConfig: ViewModelBase, IServiceConfig
     {
         [Category("Base")]
-        public string SubscribeTopic { get => _SubscribeTopic; set { _SubscribeTopic = value; OnPropertyChanged(); } }
-        private string _SubscribeTopic;
-
-        [Category("Base")]
-        public string SendTopic { get => _SendTopic; set { _SendTopic = value; OnPropertyChanged(); } }
-        private string _SendTopic;
-
-        [Category("Base")]
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
@@ -28,16 +20,27 @@ namespace ColorVision.Engine.Services.Devices
         public string Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }
         private string _Code;
 
-        //Token
-        [Category("Base")]
-        public string ServiceToken { get => _ServiceToken; set { _ServiceToken = value; OnPropertyChanged(); } }
-        private string _ServiceToken;
         /// <summary>
         /// 心跳时间
         /// </summary>
         [Category("Base")]
         public int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; OnPropertyChanged(); } }
         private int _HeartbeatTime = 5000;
+
+
+        [Category("Base")]
+        public string SubscribeTopic { get => _SubscribeTopic; set { _SubscribeTopic = value; OnPropertyChanged(); } }
+        private string _SubscribeTopic;
+
+        [Category("Base")]
+        public string SendTopic { get => _SendTopic; set { _SendTopic = value; OnPropertyChanged(); } }
+        private string _SendTopic;
+
+        //Token
+        [Category("Base")]
+        public string ServiceToken { get => _ServiceToken; set { _ServiceToken = value; OnPropertyChanged(); } }
+        private string _ServiceToken;
+
 
 
     }
