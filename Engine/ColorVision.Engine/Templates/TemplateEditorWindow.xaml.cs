@@ -419,18 +419,6 @@ namespace ColorVision.Engine.Templates
             }
         }
 
-        private void ListView1_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == System.Windows.Input.Key.Enter)
-            {
-                if (ListView1.SelectedIndex > -1)
-                {
-                    Searchbox.Text = string.Empty;
-                    ITemplate.PreviewMouseDoubleClick(ListView1.SelectedIndex);
-                }
-            }
-        }
-
         private void CreateTemplate_Click(object sender, RoutedEventArgs e)
         {
             ITemplate.Export(ListView1.SelectedIndex);
