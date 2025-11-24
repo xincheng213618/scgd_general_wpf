@@ -729,9 +729,13 @@ COLORVISIONCORE_API int M_FindLightBeads(HImage img, RoiRect roi, const char* co
 	outputJson["BlackCenters"] = blackCentersArray;
 	outputJson["BlackCenterCount"] = blackCenters.size();
 
-	// 预期数量
-	outputJson["ExpectedCount"] = rows * cols;
-	outputJson["MissingCount"] = rows * cols - centers.size();
+	// 预期数量 (使用 size_t 避免整数溢出)
+	size_t expectedCount = static_cast<size_t>(rows) * static_cast<size_t>(cols);
+	size_t actualCount = centers.size();
+	size_t missingCount = (expectedCount > actualCount) ? (expectedCount - actualCount) : 0;
+	
+	outputJson["ExpectedCount"] = expectedCount;
+	outputJson["MissingCount"] = missingCount;
 
 	std::string output = outputJson.dump();
 	size_t length = output.length() + 1;
