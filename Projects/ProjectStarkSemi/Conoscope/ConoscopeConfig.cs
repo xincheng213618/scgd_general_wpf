@@ -1,0 +1,20 @@
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+
+namespace ProjectStarkSemi.Conoscope
+{
+    public class ConoscopeConfig : ViewModelBase, IConfig
+    {
+        public double ConoscopeCoefficient { get => _ConoscopeCoefficient; set { _ConoscopeCoefficient = value; OnPropertyChanged(); } }
+        private double _ConoscopeCoefficient = 0.02645; 
+
+        public ObservableCollection<double> DefaultAngles { get => _DefaultAngles; set { _DefaultAngles = value; OnPropertyChanged(); } }
+        private ObservableCollection<double> _DefaultAngles = new ObservableCollection<double>() { 0,20,40,90,110,130,150 };
+
+
+        public ObservableCollection<double> DefaultRAngles { get => _DefaultRAngles; set { _DefaultRAngles = value; OnPropertyChanged(); } }
+        private ObservableCollection<double> _DefaultRAngles = new ObservableCollection<double>() {10 };
+    }
+}

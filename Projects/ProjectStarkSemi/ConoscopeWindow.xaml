@@ -5,10 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectStarkSemi"
+        xmlns:Conoscope="clr-namespace:ProjectStarkSemi.Conoscope"
         xmlns:properties="clr-namespace:ProjectStarkSemi.Properties"
-       xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="Conoscope" Height="720" Width="1280" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+        d:DataContext="{d:DesignInstance  Conoscope:ConoscopeManager}"
+        Title="Conoscope" Height="750" Width="1500" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="5,5,5,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -655,43 +657,75 @@
                                     <ComboBox x:Name="cbPolarAngleLines" 
                                               MinWidth="100" 
                                               SelectionChanged="cbPolarAngleLines_SelectionChanged"/>
+                                    <Button Grid.Column="1" Margin="5,0,5,0" HorizontalAlignment="Left" Command="{Binding EditConoscopeConfigCommand}" Padding="2" Height="28" Width="28" >
+                                        <Button.Triggers>
+                                            <EventTrigger RoutedEvent="Button.Click">
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </EventTrigger>
+                                        </Button.Triggers>
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                            <TextBlock.RenderTransform>
+                                                <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                                            </TextBlock.RenderTransform>
+                                        </TextBlock>
+                                    </Button>
+                                    <Button Content="导出CSV" 
+                                    Click="btnExportCSV_Click"
+                                    Padding="10,5"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox x:Name="chkShowRed" 
+                                          Content="R" 
+                                          Foreground="Red" 
+                                          IsChecked="{Binding IsShowRedChannel}"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                                    <CheckBox x:Name="chkShowGreen" 
+                                          Content="G" 
+                                          Foreground="Green" 
+                                          IsChecked="{Binding IsShowGreenChannel}"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                                    <CheckBox x:Name="chkShowBlue" 
+                                          Content="B" 
+                                          Foreground="Blue" 
+                                          IsChecked="{Binding IsShowBlueChannel}"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                                    <CheckBox x:Name="chkShowXlue" 
+                                          Content="X" 
+                                          Foreground="Gold" 
+                                          IsChecked="{Binding IsShowXChannel}"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                                    <CheckBox x:Name="chkShowYlue" 
+                                          Content="Y" 
+                                          Foreground="White" 
+                                          IsChecked="{Binding IsShowYChannel}"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                                    <CheckBox x:Name="chkShowZlue" 
+                                          Content="Z" 
+                                          Foreground="Violet" 
+                                          IsChecked="{Binding IsShowZChannel}"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>
                         
-                        <!-- RGB channel visibility -->
-                        <GroupBox Header="通道显示" Margin="0,0,0,5">
-                            <StackPanel Orientation="Horizontal">
-                                <CheckBox x:Name="chkShowRed" 
-                                          Content="R" 
-                                          Foreground="Red" 
-                                          IsChecked="True"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                <CheckBox x:Name="chkShowGreen" 
-                                          Content="G" 
-                                          Foreground="Green" 
-                                          IsChecked="True"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                <CheckBox x:Name="chkShowBlue" 
-                                          Content="B" 
-                                          Foreground="Blue" 
-                                          IsChecked="True"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                            </StackPanel>
-                        </GroupBox>
-                        
-                        <!-- Export -->
-                        <GroupBox Header="导出数据">
-                            <Button Content="导出CSV" 
-                                    Click="btnExportCSV_Click"
-                                    Padding="10,5"/>
-                        </GroupBox>
+
+                       
                     </StackPanel>
                 </Grid>
                 <Grid Grid.Column="2" x:Name="LogGrid">
