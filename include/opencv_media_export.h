@@ -78,6 +78,8 @@ extern "C" COLORVISIONCORE_API int M_ApplyCannyEdgeDetection(HImage img, HImage*
 
 extern "C" COLORVISIONCORE_API int M_ApplyHistogramEqualization(HImage img, HImage* outImage);
 
+extern "C" COLORVISIONCORE_API int M_FindLightBeads(HImage img, RoiRect roi, const char* config, char** result);
+
 extern "C" COLORVISIONCORE_API int FreeResult(char* result) {
     delete[] result;
     return 0;
