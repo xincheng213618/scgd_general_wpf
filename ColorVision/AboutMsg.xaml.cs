@@ -111,7 +111,8 @@ namespace ColorVision
             TranslateTransform translateTransform = new();
             translateTransform.ApplyAnimationClock(TranslateTransform.XProperty, myClockX);
             translateTransform.ApplyAnimationClock(TranslateTransform.YProperty, myClockY);
-            ImageLogo.RenderTransform = translateTransform;
+            //这里因为不够严肃，所以先隐藏
+            //ImageLogo.RenderTransform = translateTransform;
 
        }
 

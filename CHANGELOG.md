@@ -97,7 +97,6 @@
 47.优化属性编辑器
 
 48.PropertyEditor 集合类型支持扩展
-
 - 新增 ObservableCollection<T> 支持
 - 新增 Collection<T> 支持
 - 新增 IList<T>, ICollection<T>, IEnumerable<T> 接口支持
@@ -105,6 +104,9 @@
 - 所有集合类型支持 JSON 文本编辑和可视化编辑器
 - 字典编辑器支持键唯一性验证
 - 详细文档：docs/PropertyEditor-Collection-Support.md
+
+49.隐藏关于里面logo抖动的效果，因为老板提到不够严肃
+
 
 ## [1.3.14.1] 2025.11.06
 
