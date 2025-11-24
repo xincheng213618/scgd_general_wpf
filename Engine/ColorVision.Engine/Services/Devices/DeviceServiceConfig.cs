@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Services.Devices
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
-        [Category("Base")]
+        [Category("Base"), Browsable(false)]
         public string Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }
         private string _Code;
 
@@ -28,16 +28,16 @@ namespace ColorVision.Engine.Services.Devices
         private int _HeartbeatTime = 5000;
 
 
-        [Category("Base")]
+        [Category("Base"),Browsable(false)]
         public string SubscribeTopic { get => _SubscribeTopic; set { _SubscribeTopic = value; OnPropertyChanged(); } }
         private string _SubscribeTopic;
 
-        [Category("Base")]
+        [Category("Base"), Browsable(false)]
         public string SendTopic { get => _SendTopic; set { _SendTopic = value; OnPropertyChanged(); } }
         private string _SendTopic;
 
         //Token
-        [Category("Base")]
+        [Category("Base"), Browsable(false)]
         public string ServiceToken { get => _ServiceToken; set { _ServiceToken = value; OnPropertyChanged(); } }
         private string _ServiceToken;
 
