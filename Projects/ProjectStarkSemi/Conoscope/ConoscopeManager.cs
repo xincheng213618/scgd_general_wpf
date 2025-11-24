@@ -26,5 +26,24 @@ namespace ProjectStarkSemi.Conoscope
             ConoscopeConfig =ConfigService.Instance.GetRequiredService<ConoscopeConfig>();
             EditConoscopeConfigCommand = new RelayCommand(a=> EditConoscopeConfig());
         }
+
+        public bool IsShowRedChannel { get=> _IsShowRedChannel; set { _IsShowRedChannel = value; OnPropertyChanged(); } }
+        private bool _IsShowRedChannel = true;
+        public bool IsShowGreenChannel { get => _IsShowGreenChannel; set { _IsShowGreenChannel = value; OnPropertyChanged(); } }
+        private bool _IsShowGreenChannel = true;
+
+        public bool IsShowBlueChannel { get => _IsShowBlueChannel; set { _IsShowBlueChannel = value; OnPropertyChanged(); } }
+        private bool _IsShowBlueChannel = true;
+
+        public bool IsShowXChannel { get => _IsShowXChannel; set { _IsShowXChannel = value; OnPropertyChanged(); } }
+        private bool _IsShowXChannel = true;
+
+        public bool IsShowYChannel { get => _IsShowYChannel; set { _IsShowYChannel = value; OnPropertyChanged(); } }
+        private bool _IsShowYChannel = true;
+
+        public bool IsShowZChannel { get => _IsShowZChannel; set { _IsShowZChannel = value; OnPropertyChanged(); } }
+        private bool _IsShowZChannel = true;
+
+
     }
 }

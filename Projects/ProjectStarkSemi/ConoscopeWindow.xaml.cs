@@ -3,7 +3,6 @@ using ColorVision.Engine;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Services.Devices.Camera.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
@@ -30,59 +29,6 @@ using System.Windows.Media.Imaging;
 
 namespace ProjectStarkSemi
 {
-
-
-    /// <summary>
-    /// 硬件型号枚举
-    /// </summary>
-    public enum ConoscopeModelType
-    {
-        /// <summary>
-        /// VA60: 一台观察相机（视频模式）+ 一台测量相机（需要校正）
-        /// </summary>
-        VA60,
-        
-        /// <summary>
-        /// VA80: 一台测量相机（需要校正）
-        /// </summary>
-        VA80
-    }
-
-    /// <summary>
-    /// 图像滤波类型枚举
-    /// </summary>
-    public enum ImageFilterType
-    {
-        /// <summary>
-        /// 无滤波
-        /// </summary>
-        None,
-        
-        /// <summary>
-        /// 低通滤波（均值滤波）
-        /// </summary>
-        LowPass,
-        
-        /// <summary>
-        /// 移动平均滤波（方框滤波）
-        /// </summary>
-        MovingAverage,
-        
-        /// <summary>
-        /// 高斯滤波
-        /// </summary>
-        Gaussian,
-        
-        /// <summary>
-        /// 中值滤波
-        /// </summary>
-        Median,
-        
-        /// <summary>
-        /// 双边滤波
-        /// </summary>
-        Bilateral
-    }
 
     public class MenuConoscopeWindow : MenuItemBase
     {
@@ -114,10 +60,6 @@ namespace ProjectStarkSemi
         private ObservableCollection<PolarAngleLine> polarAngleLines = new ObservableCollection<PolarAngleLine>();
         private PolarAngleLine? selectedPolarLine;
         
-        // RGB channel visibility flags
-        private bool showRedChannel = true;
-        private bool showGreenChannel = true;
-        private bool showBlueChannel = true;
 
         // Current image state for dynamic angle addition
         private BitmapSource? currentBitmapSource;
@@ -362,11 +304,7 @@ namespace ProjectStarkSemi
 
         private void btnCalibration_Click(object sender, RoutedEventArgs e)
         {
-            // Placeholder for calibration functionality
-            // This will be implemented in future iterations
-            log.Info("校正功能将在后续版本中实现");
-            MessageBox.Show("校正功能将在后续版本中实现。\n\n这里将实现测量相机的常规校正流程。", 
-                "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+
         }
 
         private void cbFilterType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -634,10 +572,6 @@ namespace ProjectStarkSemi
         /// </summary>
         private void RgbChannelVisibility_Changed(object sender, RoutedEventArgs e)
         {
-            if (chkShowRed == null || chkShowGreen ==null || chkShowBlue ==null) return;
-            showRedChannel = chkShowRed.IsChecked ?? true;
-            showGreenChannel = chkShowGreen.IsChecked ?? true;
-            showBlueChannel = chkShowBlue.IsChecked ?? true;
             UpdatePlot();
         }
 
@@ -952,7 +886,7 @@ namespace ProjectStarkSemi
             }
             catch (Exception ex)
             {
-                log.Error($"提取RGB数据失败: {ex.Message}", ex);
+                log.Error($"提取数据失败: {ex.Message}", ex);
             }
         }
 
@@ -989,36 +923,61 @@ namespace ProjectStarkSemi
 
                 // Extract position and RGB data
                 double[] positions = selectedPolarLine.RgbData.Select(s => s.Position).ToArray();
-                double[] rValues = selectedPolarLine.RgbData.Select(s => s.R).ToArray();
-                double[] gValues = selectedPolarLine.RgbData.Select(s => s.G).ToArray();
-                double[] bValues = selectedPolarLine.RgbData.Select(s => s.B).ToArray();
 
                 // Add scatter plots for each channel based on visibility
-                if (showRedChannel)
+                if (ConoscopeManager.IsShowRedChannel)
                 {
+                    double[] rValues = selectedPolarLine.RgbData.Select(s => s.R).ToArray();
                     var redScatter = wpfPlot.Plot.Add.Scatter(positions, rValues);
                     redScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Red);
                     redScatter.LineWidth = 2;
                     redScatter.LegendText = "R";
                 }
 
-                if (showGreenChannel)
+                if (ConoscopeManager.IsShowGreenChannel)
                 {
+                    double[] gValues = selectedPolarLine.RgbData.Select(s => s.G).ToArray();
+
                     var greenScatter = wpfPlot.Plot.Add.Scatter(positions, gValues);
                     greenScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Green);
                     greenScatter.LineWidth = 2;
                     greenScatter.LegendText = "G";
                 }
 
-                if (showBlueChannel)
+                if (ConoscopeManager.IsShowBlueChannel)
                 {
+                    double[] bValues = selectedPolarLine.RgbData.Select(s => s.B).ToArray();
                     var blueScatter = wpfPlot.Plot.Add.Scatter(positions, bValues);
                     blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Blue);
                     blueScatter.LineWidth = 2;
                     blueScatter.LegendText = "B";
                 }
+                if (ConoscopeManager.IsShowXChannel)
+                {
+                    double[] XValues = selectedPolarLine.RgbData.Select(s => s.X).ToArray();
+                    var blueScatter = wpfPlot.Plot.Add.Scatter(positions, XValues);
+                    blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gold);
+                    blueScatter.LineWidth = 2;
+                    blueScatter.LegendText = "X";
+                }
+                if (ConoscopeManager.IsShowYChannel)
+                {
+                    double[] YValues = selectedPolarLine.RgbData.Select(s => s.Y).ToArray();
+                    var blueScatter = wpfPlot.Plot.Add.Scatter(positions, YValues);
+                    blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.White);
+                    blueScatter.LineWidth = 2;
+                    blueScatter.LegendText = "Y";
+                }
+                if (ConoscopeManager.IsShowZChannel)
+                {
+                    double[] ZValues = selectedPolarLine.RgbData.Select(s => s.Z).ToArray();
+                    var blueScatter = wpfPlot.Plot.Add.Scatter(positions, ZValues);
+                    blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Violet);
+                    blueScatter.LineWidth = 2;
+                    blueScatter.LegendText = "Z";
+                }
 
-                wpfPlot.Plot.Title($"极角 {selectedPolarLine.Angle}° RGB分布曲线");
+                wpfPlot.Plot.Title($"极角 {selectedPolarLine.Angle}°分布曲线");
                 wpfPlot.Plot.XLabel("角度 (°)");
                 wpfPlot.Plot.YLabel("像素值");
                 wpfPlot.Plot.Legend.IsVisible = true;
