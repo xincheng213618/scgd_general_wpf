@@ -110,10 +110,15 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         public void ShowResult(MeasureResultImgModel model)
         {
             ViewResultImage result = new(model);
-            ViewResults.Add(result);
+            if (Config.InsertAtBeginning)
+                ViewResults.Insert(0, result);
+            else
+                ViewResults.Add(result);
+
+
             if (Config.AutoRefreshView)
             {
-                if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
+                if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning ? 0 : listView1.Items.Count - 1;
                 listView1.ScrollIntoView(listView1.SelectedItem);
             }
         }
