@@ -16,6 +16,7 @@ using ColorVision.UI.Menus;
 using log4net;
 using Microsoft.Win32;
 using OpenCvSharp.WpfExtensions;
+using ProjectStarkSemi.Conoscope;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -29,6 +30,8 @@ using System.Windows.Media.Imaging;
 
 namespace ProjectStarkSemi
 {
+
+
     /// <summary>
     /// 硬件型号枚举
     /// </summary>
@@ -81,60 +84,6 @@ namespace ProjectStarkSemi
         Bilateral
     }
 
-    /// <summary>
-    /// 极角线数据类，存储角度、线对象和RGB数据
-    /// </summary>
-    public class PolarAngleLine
-    {
-        /// <summary>
-        /// 极角（度）
-        /// </summary>
-        public double Angle { get; set; }
-
-        /// <summary>
-        /// 绘制的线对象
-        /// </summary>
-        public DVLine? Line { get; set; }
-
-        /// <summary>
-        /// 沿线采样的RGB数据
-        /// </summary>
-        public List<RgbSample> RgbData { get; set; } = new List<RgbSample>();
-
-        /// <summary>
-        /// 是否显示此线的数据
-        /// </summary>
-        public bool IsVisible { get; set; } = true;
-
-        public override string ToString() => $"{Angle}°";
-    }
-
-    /// <summary>
-    /// RGB采样点数据
-    /// </summary>
-    public class RgbSample
-    {
-        /// <summary>
-        /// 位置（从-80到80映射）
-        /// </summary>
-        public double Position { get; set; }
-
-        /// <summary>
-        /// 红色通道值
-        /// </summary>
-        public double R { get; set; }
-
-        /// <summary>
-        /// 绿色通道值
-        /// </summary>
-        public double G { get; set; }
-
-        /// <summary>
-        /// 蓝色通道值
-        /// </summary>
-        public double B { get; set; }
-    }
-
     public class MenuConoscopeWindow : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
@@ -175,14 +124,21 @@ namespace ProjectStarkSemi
         private Point currentImageCenter;
         private int currentImageRadius;
 
+        public double MaxAngle { get; set; } = 60;
+
         public ConoscopeWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
         }
 
+        public ConoscopeManager ConoscopeManager { get; set; }
+        public ConoscopeConfig ConoscopeConfig => ConoscopeManager.ConoscopeConfig;
+
         private void Window_Initialized(object sender, EventArgs e)
         {
+            ConoscopeManager = ConoscopeManager.GetInstance();
+            this.DataContext = ConoscopeManager;
             // Initialize LogOutput control
             logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
             LogGrid.Children.Add(logOutput);
@@ -274,6 +230,8 @@ namespace ProjectStarkSemi
                     {
                         ObservationCameraSeparator.Visibility = Visibility.Visible;
                     }
+                    MaxAngle = 60;
+                    wpfPlot.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
                     break;
                     
                 case ConoscopeModelType.VA80:
@@ -287,6 +245,8 @@ namespace ProjectStarkSemi
                     {
                         ObservationCameraSeparator.Visibility = Visibility.Collapsed;
                     }
+                    MaxAngle = 80;
+                    wpfPlot.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
                     break;
             }
         }
@@ -605,10 +565,10 @@ namespace ProjectStarkSemi
                 // Get image dimensions
                 int imageWidth = bitmapSource.PixelWidth;
                 int imageHeight = bitmapSource.PixelHeight;
-                
+
                 // Use the smaller dimension for circular symmetry
-                int radius = Math.Min(imageWidth, imageHeight) / 2;
-                
+                int radius = (int)(MaxAngle / ConoscopeConfig.ConoscopeCoefficient);
+
                 // Calculate center point
                 Point center = new Point(imageWidth / 2.0, imageHeight / 2.0);
 
@@ -619,14 +579,24 @@ namespace ProjectStarkSemi
 
                 log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 中心: ({center.X}, {center.Y}), 半径: {radius}");
 
+                foreach (var item in ConoscopeConfig.DefaultRAngles)
+                {
+                    CircleProperties circleProperties = new CircleProperties
+                    {
+                        Center = center,
+                        Radius = radius * item / MaxAngle,
+                        Pen = new Pen(Brushes.Yellow, 1 / ImageView.EditorContext.ZoomRatio),
+                        Brush = Brushes.Transparent
+                    };
+                    DVCircle circle = new DVCircle(circleProperties);
+                    ImageView.AddVisual(circle);
+                }
+
                 // Clear existing lines
                 ClearPolarLines();
 
-                // Default angles: 0, 20, 40, 90
-                double[] defaultAngles = { 0, 20, 40, 90 };
-
                 // Create lines for each angle
-                foreach (double angle in defaultAngles)
+                foreach (double angle in ConoscopeConfig.DefaultAngles)
                 {
                     CreatePolarLine(angle, center, radius, bitmapSource);
                 }
@@ -639,8 +609,6 @@ namespace ProjectStarkSemi
                     cbPolarAngleLines.SelectedIndex = 0;
                     UpdatePlot();
                 }
-
-                log.Info($"成功创建 {polarAngleLines.Count} 条极角线");
             }
             catch (Exception ex)
             {
@@ -708,6 +676,8 @@ namespace ProjectStarkSemi
                     return;
                 }
 
+
+
                 // Create new line at specified angle
                 CreatePolarLine(angle, currentImageCenter, currentImageRadius, currentBitmapSource);
 
@@ -720,7 +690,7 @@ namespace ProjectStarkSemi
 
                 // Clear text box
                 txtAngle.Text = "";
-
+                ConoscopeConfig.DefaultAngles.Add(angle);
                 log.Info($"成功添加角度线: {angle:F1}°");
             }
             catch (Exception ex)
@@ -869,11 +839,15 @@ namespace ProjectStarkSemi
             DVLine line = new DVLine();
             line.Points.Add(start);
             line.Points.Add(end);
-            line.Pen = new Pen(Brushes.Yellow, 2);
+            line.Pen = new Pen(Brushes.Yellow,0.5/ ImageView.EditorContext.ZoomRatio);
             line.Render();
 
             // Add to ImageView
             ImageView.AddVisual(line);
+
+
+
+
 
             // Create PolarAngleLine object
             PolarAngleLine polarLine = new PolarAngleLine
@@ -1025,7 +999,7 @@ namespace ProjectStarkSemi
                     var redScatter = wpfPlot.Plot.Add.Scatter(positions, rValues);
                     redScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Red);
                     redScatter.LineWidth = 2;
-                    redScatter.Label = "R";
+                    redScatter.LegendText = "R";
                 }
 
                 if (showGreenChannel)
@@ -1033,7 +1007,7 @@ namespace ProjectStarkSemi
                     var greenScatter = wpfPlot.Plot.Add.Scatter(positions, gValues);
                     greenScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Green);
                     greenScatter.LineWidth = 2;
-                    greenScatter.Label = "G";
+                    greenScatter.LegendText = "G";
                 }
 
                 if (showBlueChannel)
@@ -1041,7 +1015,7 @@ namespace ProjectStarkSemi
                     var blueScatter = wpfPlot.Plot.Add.Scatter(positions, bValues);
                     blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Blue);
                     blueScatter.LineWidth = 2;
-                    blueScatter.Label = "B";
+                    blueScatter.LegendText = "B";
                 }
 
                 wpfPlot.Plot.Title($"极角 {selectedPolarLine.Angle}° RGB分布曲线");
