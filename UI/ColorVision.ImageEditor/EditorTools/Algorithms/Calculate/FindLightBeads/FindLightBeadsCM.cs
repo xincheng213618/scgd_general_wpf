@@ -42,7 +42,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                         var blackCenters = jObj["BlackCenters"].ToObject<List<List<int>>>();
                         int blackCenterCount = jObj["BlackCenterCount"].ToObject<int>();
 
-                        // 绘制检测到的灯珠（蓝色小圆圈）
                         foreach (var center in centers)
                         {
                             int cx = roiRect.X + center[0];
@@ -50,42 +49,40 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
 
                             DVCircle circle = new DVCircle();
                             circle.Attribute.Center = new Point(cx, cy);
-                            circle.Attribute.Radius = 4;
-                            circle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Context.Zoombox.ContentMatrix.M11);
+                            circle.Attribute.Radius = config.Radius;
+                            circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Context.Zoombox.ContentMatrix.M11);
                             circle.Attribute.Brush = Brushes.Transparent;
-                            circle.IsComple = true;
                             circle.Render();
                             Context.ImageView.ImageShow.AddVisualCommand(circle);
                         }
 
-                        // 绘制缺失的灯珠（红色小矩形）
                         foreach (var blackCenter in blackCenters)
                         {
                             int cx = roiRect.X + blackCenter[0];
                             int cy = roiRect.Y + blackCenter[1];
 
-                            DVRectangle rect = new DVRectangle();
-                            rect.Attribute.Rect = new Rect(cx - 5, cy - 5, 10, 10);
-                            rect.Attribute.Pen = new Pen(Brushes.Red, 1 / Context.Zoombox.ContentMatrix.M11);
-                            rect.Attribute.Brush = Brushes.Transparent;
-                            rect.IsComple = true;
-                            rect.Render();
-                            Context.ImageView.ImageShow.AddVisualCommand(rect);
+                            DVCircle circle = new DVCircle();
+                            circle.Attribute.Center = new Point(cx, cy);
+                            circle.Attribute.Radius = config.Radius;
+                            circle.Attribute.Pen = new Pen(Brushes.Yellow, 1 / Context.Zoombox.ContentMatrix.M11);
+                            circle.Attribute.Brush = Brushes.Transparent;
+                            circle.Render();
+                            Context.ImageView.ImageShow.AddVisualCommand(circle);
                         }
 
                         // 显示统计信息
-                        int expectedCount = jObj["ExpectedCount"].ToObject<int>();
-                        int missingCount = jObj["MissingCount"].ToObject<int>();
+                        //int expectedCount = jObj["ExpectedCount"].ToObject<int>();
+                        //int missingCount = jObj["MissingCount"].ToObject<int>();
                         
-                        MessageBox.Show(
-                            $"检测结果:\n" +
-                            $"检测到的灯珠: {centerCount}\n" +
-                            $"缺失的灯珠: {blackCenterCount}\n" +
-                            $"预期总数: {expectedCount}\n" +
-                            $"实际缺失: {missingCount}",
-                            "灯珠检测结果",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+                        //MessageBox.Show(
+                        //    $"检测结果:\n" +
+                        //    $"检测到的灯珠: {centerCount}\n" +
+                        //    $"缺失的灯珠: {blackCenterCount}\n" +
+                        //    $"预期总数: {expectedCount}\n" +
+                        //    $"实际缺失: {missingCount}",
+                        //    "灯珠检测结果",
+                        //    MessageBoxButton.OK,
+                        //    MessageBoxImage.Information);
                     });
                 }
                 else

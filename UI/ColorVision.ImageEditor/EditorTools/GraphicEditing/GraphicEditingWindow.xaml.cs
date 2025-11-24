@@ -188,6 +188,10 @@ namespace ColorVision.ImageEditor
         public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value; OnPropertyChanged(); } }
         private int _Threshold = 20;
 
+        [Description("灯珠尺寸")]
+        public int Radius { get => _Radius; set {  _Radius = value; OnPropertyChanged(); } }
+        private int _Radius = 20;
+
         [DisplayName("MinSize")]
         [Description("最小灯珠尺寸 (像素)")]
         public int MinSize { get => _MinSize; set { if (value < 1) value = 1; _MinSize = value; OnPropertyChanged(); } }
@@ -196,17 +200,17 @@ namespace ColorVision.ImageEditor
         [DisplayName("MaxSize")]
         [Description("最大灯珠尺寸 (像素)")]
         public int MaxSize { get => _MaxSize; set { if (value < 1) value = 1; _MaxSize = value; OnPropertyChanged(); } }
-        private int _MaxSize = 20;
+        private int _MaxSize = -1;
 
         [DisplayName("Rows")]
         [Description("预期灯珠行数")]
         public int Rows { get => _Rows; set { if (value < 1) value = 1; _Rows = value; OnPropertyChanged(); } }
-        private int _Rows = 650;
+        private int _Rows = -1;
 
         [DisplayName("Cols")]
         [Description("预期灯珠列数")]
         public int Cols { get => _Cols; set { if (value < 1) value = 1; _Cols = value; OnPropertyChanged(); } }
-        private int _Cols = 850;
+        private int _Cols = -1;
     }
 
     public enum GraphicTypes

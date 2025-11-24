@@ -867,9 +867,9 @@ int findLightBeads(
     for (const auto& contour : contours) {
         cv::Rect boundingBox = cv::boundingRect(contour);
 
-        // 根据灯珠的已知大小过滤
-        if (boundingBox.width > minSize && boundingBox.width < maxSize &&
-            boundingBox.height > minSize && boundingBox.height < maxSize) {
+
+        if ((boundingBox.width > minSize || minSize<=0) && (maxSize <= 0 ||boundingBox.width < maxSize) &&
+           ( boundingBox.height > minSize || minSize <= 0) && (maxSize <= 0 || boundingBox.height < maxSize)) {
 
             // 计算中心点
             int cx = boundingBox.x + boundingBox.width / 2;
@@ -930,18 +930,21 @@ int findLightBeads(
             double width = hullBoundingRect.width;
             double height = hullBoundingRect.height;
 
-            double singleWidth = width / cols;
-            double singleHeight = height / rows;
+            if (cols > 0 && rows>0)
+            {
+                double singleWidth = width / cols;
+                double singleHeight = height / rows;
 
-            int offset = 4;
+                int offset = 4;
 
-            // 在边界框内遍历网格点
-            for (double y = boundingBox.y + offset; y < boundingBox.y + boundingBox.height; y += singleHeight) {
-                for (double x = boundingBox.x + offset; x < boundingBox.x + boundingBox.width; x += singleWidth) {
-                    cv::Point p(static_cast<int>(x), static_cast<int>(y));
-                    // 检查是否在轮廓内
-                    if (cv::pointPolygonTest(contour, p, false) >= 0) {
-                        blackCenters.push_back(p);
+                // 在边界框内遍历网格点
+                for (double y = boundingBox.y + offset; y < boundingBox.y + boundingBox.height; y += singleHeight) {
+                    for (double x = boundingBox.x + offset; x < boundingBox.x + boundingBox.width; x += singleWidth) {
+                        cv::Point p(static_cast<int>(x), static_cast<int>(y));
+                        // 检查是否在轮廓内
+                        if (cv::pointPolygonTest(contour, p, false) >= 0) {
+                            blackCenters.push_back(p);
+                        }
                     }
                 }
             }
