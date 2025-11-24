@@ -811,3 +811,140 @@ void ApplyHistogramEqualization(const cv::Mat& src, cv::Mat& dst)
     cv::equalizeHist(gray, dst);
 }
 
+// 寻找灯珠 (Find Light Beads)
+int findLightBeads(
+    cv::Mat& src,
+    std::vector<cv::Point>& centers,
+    std::vector<cv::Point>& blackCenters,
+    int threshold,
+    int minSize,
+    int maxSize,
+    int rows,
+    int cols)
+{
+    centers.clear();
+    blackCenters.clear();
+
+    if (src.empty()) {
+        return -1;
+    }
+
+    // 转换为8位图像
+    cv::Mat image8bit;
+    if (src.depth() == CV_16U) {
+        src.convertTo(image8bit, CV_8UC3, 255.0 / 65535.0);
+    }
+    else {
+        image8bit = src.clone();
+    }
+
+    // 转换为灰度图
+    cv::Mat gray;
+    if (image8bit.channels() == 3 || image8bit.channels() == 4) {
+        cv::cvtColor(image8bit, gray, cv::COLOR_BGR2GRAY);
+    }
+    else {
+        gray = image8bit;
+    }
+
+    // 二值化
+    cv::Mat binary;
+    cv::threshold(gray, binary, threshold, 255, cv::THRESH_BINARY);
+
+    // 形态学操作
+    cv::erode(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
+    cv::dilate(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(4, 4)));
+    cv::erode(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
+
+    // 检测轮廓
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // 遍历轮廓，找到灯珠中心点
+    for (const auto& contour : contours) {
+        cv::Rect boundingBox = cv::boundingRect(contour);
+
+        // 根据灯珠的已知大小过滤
+        if (boundingBox.width > minSize && boundingBox.width < maxSize &&
+            boundingBox.height > minSize && boundingBox.height < maxSize) {
+
+            // 计算中心点
+            int cx = boundingBox.x + boundingBox.width / 2;
+            int cy = boundingBox.y + boundingBox.height / 2;
+            centers.push_back(cv::Point(cx, cy));
+        }
+    }
+
+    // 计算凸包
+    std::vector<cv::Point> hull;
+    if (!centers.empty()) {
+        cv::convexHull(centers, hull);
+    }
+
+    // 创建掩码
+    cv::Mat mask = cv::Mat::zeros(src.size(), CV_8UC1);
+
+    // 在掩码上绘制凸包区域
+    if (!hull.empty()) {
+        std::vector<std::vector<cv::Point>> hulls = { hull };
+        cv::fillPoly(mask, hulls, cv::Scalar(255));
+
+        // 遍历图像的所有点，将凸包外的点设为255
+        for (int y = 0; y < binary.rows; ++y) {
+            uchar* maskRow = mask.ptr<uchar>(y);
+            uchar* imgRow = binary.ptr<uchar>(y);
+            for (int x = 0; x < binary.cols; ++x) {
+                if (maskRow[x] == 0) {
+                    imgRow[x] = 255;
+                }
+            }
+        }
+    }
+
+    // 查找缺失的灯珠
+    cv::dilate(binary, binary, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(12, 12)));
+    binary = 255 - binary;
+
+    std::vector<std::vector<cv::Point>> contourless;
+    cv::findContours(binary, contourless, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // 遍历轮廓，找到缺失的灯珠
+    for (const auto& contour : contourless) {
+        cv::Rect boundingBox = cv::boundingRect(contour);
+
+        // 根据灯珠的已知大小过滤
+        if (boundingBox.width > minSize && boundingBox.width < maxSize &&
+            boundingBox.height > minSize && boundingBox.height < maxSize) {
+
+            // 计算中心点
+            int cx = boundingBox.x + boundingBox.width / 2;
+            int cy = boundingBox.y + boundingBox.height / 2;
+            blackCenters.push_back(cv::Point(cx, cy));
+        }
+        else if (!hull.empty()) {
+            // 对于较大的区域，计算单个灯珠的尺寸并填充网格点
+            cv::Rect boundingRect = cv::boundingRect(hull);
+            double width = boundingRect.width;
+            double height = boundingRect.height;
+
+            double singleWidth = width / cols;
+            double singleHeight = height / rows;
+
+            int offset = 4;
+
+            // 在边界框内遍历网格点
+            for (double y = boundingBox.y + offset; y < boundingBox.y + boundingBox.height; y += singleHeight) {
+                for (double x = boundingBox.x + offset; x < boundingBox.x + boundingBox.width; x += singleWidth) {
+                    cv::Point p(static_cast<int>(x), static_cast<int>(y));
+                    // 检查是否在凸包内
+                    if (cv::pointPolygonTest(contour, p, false) >= 0) {
+                        blackCenters.push_back(p);
+                    }
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
