@@ -685,8 +685,13 @@ COLORVISIONCORE_API int M_FindLightBeads(HImage img, RoiRect roi, const char* co
 		return -1;
 	}
 
+	// Validate and apply ROI
 	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
-	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+	cv::Rect imageRect(0, 0, mat.cols, mat.rows);
+	bool hasValidRoi = (mroi.width > 0 && mroi.height > 0);
+	bool roiWithinBounds = hasValidRoi && ((mroi & imageRect) == mroi);
+	bool use_roi = hasValidRoi && roiWithinBounds;
+	
 	mat = use_roi ? mat(mroi) : mat;
 
 	// 解析 JSON 配置

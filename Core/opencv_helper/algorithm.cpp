@@ -834,8 +834,11 @@ int findLightBeads(
     if (src.depth() == CV_16U) {
         src.convertTo(image8bit, CV_8UC3, 255.0 / 65535.0);
     }
+    else if (src.depth() != CV_8U) {
+        src.convertTo(image8bit, CV_8UC3);
+    }
     else {
-        image8bit = src.clone();
+        image8bit = src;
     }
 
     // 转换为灰度图
@@ -923,9 +926,9 @@ int findLightBeads(
         }
         else if (!hull.empty()) {
             // 对于较大的区域，计算单个灯珠的尺寸并填充网格点
-            cv::Rect boundingRect = cv::boundingRect(hull);
-            double width = boundingRect.width;
-            double height = boundingRect.height;
+            cv::Rect hullBoundingRect = cv::boundingRect(hull);
+            double width = hullBoundingRect.width;
+            double height = hullBoundingRect.height;
 
             double singleWidth = width / cols;
             double singleHeight = height / rows;
@@ -936,7 +939,7 @@ int findLightBeads(
             for (double y = boundingBox.y + offset; y < boundingBox.y + boundingBox.height; y += singleHeight) {
                 for (double x = boundingBox.x + offset; x < boundingBox.x + boundingBox.width; x += singleWidth) {
                     cv::Point p(static_cast<int>(x), static_cast<int>(y));
-                    // 检查是否在凸包内
+                    // 检查是否在轮廓内
                     if (cv::pointPolygonTest(contour, p, false) >= 0) {
                         blackCenters.push_back(p);
                     }

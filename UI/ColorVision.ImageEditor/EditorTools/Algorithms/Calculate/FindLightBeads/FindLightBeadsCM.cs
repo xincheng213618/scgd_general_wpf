@@ -90,7 +90,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.FindLightBead
                 }
                 else
                 {
-                    Console.WriteLine("Error occurred, code: " + length);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show(
+                            $"灯珠检测失败，错误代码: {length}\n请检查图像格式和参数设置。",
+                            "错误",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                    });
                 }
             });
         }
