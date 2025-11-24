@@ -104,7 +104,7 @@ namespace ColorVision.FileIO
                     if (ver != 1 && ver != 2) return -1;
                     int fileNameLen = br.ReadInt32();
                     if (fileNameLen > 0 && fs.Position + fileNameLen <= fs.Length)
-                        cvcie.SrcFileName = new string(br.ReadChars(fileNameLen));
+                        cvcie.SrcFileName = Encoding1.GetString(br.ReadBytes(fileNameLen));
                     cvcie.Gain = br.ReadSingle();
                     cvcie.Channels = (int)br.ReadUInt32();
                     if (fs.Position + cvcie.Channels * 4 > fs.Length) return -1;
