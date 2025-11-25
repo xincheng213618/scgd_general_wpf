@@ -148,6 +148,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
     public class NDConfig : ViewModelBase
     {
+        public bool EnableResetND { get => _EnableResetND; set { _EnableResetND = value; OnPropertyChanged(); } }
+        private bool _EnableResetND;
+
         public bool IsNDPort { get => _IsNDPort; set { _IsNDPort = value; OnPropertyChanged(); } }
         private bool _IsNDPort;
 
