@@ -124,6 +124,9 @@ namespace ColorVision.ImageEditor.Draw.Special
     
     public class ReferenceLine: DrawingVisualBase<ReferenceLineParam>
     {
+        // Constants for shape approximations
+        private const double FaceShapeWidthRatio = 0.8;
+        
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
         public ReferenceLine()
@@ -317,7 +320,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                         break;
                     case MaskShape.Face:
                         // 人脸形状（保留）- 目前用椭圆近似
-                        EllipseGeometry faceEllipse = new EllipseGeometry(CenterPoint, maskSize * 0.8, maskSize);
+                        EllipseGeometry faceEllipse = new EllipseGeometry(CenterPoint, maskSize * FaceShapeWidthRatio, maskSize);
                         maskGeometry = new CombinedGeometry(GeometryCombineMode.Exclude, outerRect, faceEllipse);
                         break;
                     case MaskShape.Emblem:
@@ -332,7 +335,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 }
                 
                 // 绘制半透明黑色遮罩
-                SolidColorBrush maskBrush = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
+                SolidColorBrush maskBrush = new SolidColorBrush(Color.FromArgb(Attribute.MaskOpacity, 0, 0, 0));
                 dc.DrawGeometry(maskBrush, null, maskGeometry);
                 
                 // 2. 绘制十字参考线（红色）
@@ -349,7 +352,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                     double overlaySize = Attribute.CenterOverlaySize;
                     
                     // 如果设置了物理尺寸，则根据像素/单位转换
-                    if (Attribute.PhysicalSizeX > 0 && Attribute.PixelPerUnit > 0)
+                    if (Attribute.PhysicalSizeX > double.Epsilon && Attribute.PixelPerUnit > double.Epsilon)
                     {
                         overlaySize = Attribute.PhysicalSizeX * Attribute.PixelPerUnit;
                     }
@@ -359,7 +362,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                     if (Attribute.CenterOverlay == CenterOverlayShape.Circle)
                     {
                         double overlaySizeY = overlaySize;
-                        if (Attribute.PhysicalSizeY > 0 && Attribute.PixelPerUnit > 0)
+                        if (Attribute.PhysicalSizeY > double.Epsilon && Attribute.PixelPerUnit > double.Epsilon)
                         {
                             overlaySizeY = Attribute.PhysicalSizeY * Attribute.PixelPerUnit;
                         }
@@ -368,7 +371,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                     else if (Attribute.CenterOverlay == CenterOverlayShape.Rectangle)
                     {
                         double overlaySizeY = overlaySize;
-                        if (Attribute.PhysicalSizeY > 0 && Attribute.PixelPerUnit > 0)
+                        if (Attribute.PhysicalSizeY > double.Epsilon && Attribute.PixelPerUnit > double.Epsilon)
                         {
                             overlaySizeY = Attribute.PhysicalSizeY * Attribute.PixelPerUnit;
                         }
@@ -548,6 +551,10 @@ namespace ColorVision.ImageEditor.Draw.Special
         [Category("遮罩设置"), DisplayName("遮罩透明区大小")]
         public double MaskSize { get => _MaskSize; set { _MaskSize = value; OnPropertyChanged(); } }
         private double _MaskSize = 100.0;
+
+        [Category("遮罩设置"), DisplayName("遮罩不透明度(0-255)")]
+        public byte MaskOpacity { get => _MaskOpacity; set { _MaskOpacity = value; OnPropertyChanged(); } }
+        private byte _MaskOpacity = 180;
 
         // 中心覆盖光栅相关属性
         [Category("中心覆盖"), DisplayName("覆盖形状")]
