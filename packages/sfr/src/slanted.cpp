@@ -400,6 +400,37 @@ std::vector<double> sfr::esf(const cv::Mat& mat, const std::vector<double>& fitm
     return esf;
 }
 
+cv::Mat1d deriv2_like(const cv::Mat1d& a, const cv::Mat1d& fil)
+{
+    const int nlin = a.rows;
+    const int npix = a.cols;
+
+    // MATLAB conv 是真正的卷积，会翻转核
+    // OpenCV filter2D 是相关，需要手动翻转
+    cv::Mat1d flipped_fil;
+    cv::flip(fil, flipped_fil, 1);  // 对于 1xN 的核，用 1（水平翻转）
+
+    // 锚点应该在滤波器中心，这样才能匹配 MATLAB 的 'same' 行为
+    // 对于 1x3 的核，中心是 (1, 0)，即 (col, row) 格式
+    int anchor_x = flipped_fil.cols / 2;
+    int anchor_y = flipped_fil.rows / 2;
+    cv::Point anchor(anchor_x, anchor_y);
+
+    // 使用 BORDER_CONSTANT 补零
+    cv::Mat1d b;
+    cv::filter2D(a, b, -1, flipped_fil, anchor, 0, cv::BORDER_CONSTANT);
+
+    // 边缘修正（与原始 MATLAB 代码一致）
+    if (npix >= 2) {
+        for (int i = 0; i < nlin; ++i) {
+            b.at<double>(i, 0) = b.at<double>(i, 1);
+            b.at<double>(i, npix - 1) = b.at<double>(i, npix - 2);
+        }
+    }
+
+    return b;
+}
+
 std::vector<double> sfr::lsf(const std::vector<double>& esf) {
     const int n = static_cast<int>(esf.size());
 
@@ -407,13 +438,28 @@ std::vector<double> sfr::lsf(const std::vector<double>& esf) {
     cv::Mat1d esfMat(1, n);
     for (int i = 0; i < n; ++i) esfMat(0, i) = esf[i];
 
+
     // 一维差分滤波（kernel: -0.5, 0, 0.5）
-    cv::Mat1d diffMat;
-    cv::filter2D(esfMat, diffMat, CV_64F, sfr::kernel);
+    //cv::Mat1d diffMat;
+    //cv::filter2D(esfMat, diffMat, CV_64F, sfr::kernel);
+
+    
+    // 一维差分滤波（kernel: -0.5, 0, 0.5）
+    // 使用 deriv1_like 代替直接调用 filter2D
+    cv::Mat1d kernel = (cv::Mat1d(1, 3) << -0.5, 0, 0.5);
+    cv::Mat1d diffMat = deriv2_like(esfMat, kernel);
+
 
     // diffMat -> diff
     std::vector<double> diff(n);
     for (int i = 0; i < n; ++i) diff[i] = diffMat(0, i);
+
+    if (diff[0] == 0.0) {
+        diff[0] = diff[1];
+    }
+    else if (diff[n - 1] == 0.0) {
+        diff[n - 1] = diff[n - 2];
+    }
 
     // 用“绝对值最大”作为峰
     double maxVal = 0.0;
@@ -428,13 +474,14 @@ std::vector<double> sfr::lsf(const std::vector<double>& esf) {
     // 中心移到中点
     diff = sfr::center_shift(diff, maxIdx + 1);
 
+    double newMm = n / 2.0;
     // 乘窗并用 maxVal 归一化
-    auto win = sfr::hamming(n);
+    auto win = sfr::tukey2(n, 1.0, newMm);
+
     std::vector<double> lsf(n);
     for (int i = 0; i < n; ++i) {
-        lsf[i] = win[i] * diff[i] / maxVal;
+        lsf[i] = win[i] * diff[i];
     }
-
     return lsf;
 }
 
@@ -453,19 +500,17 @@ std::vector<double> sfr::mtf(const std::vector<double>& lsf) {
         fft[i] = std::complex<double>(c[0], c[1]);
     }
 
-    const double DC = fft[0].real();
-    const int nn2 = nn / 2 + 1;
+    const double DC = std::abs(fft[0]);
+    const int nn2 = nn / 2 + 1;  // 249项，与MATLAB一致
 
     // 差分滤波器 MTF 修正
     auto corr = sfr::fir2fix(nn2, 3);
 
-    const int nOut = nn / sfr::factor;
-    const int nUse = std::min(nOut, nn2);
-
-    std::vector<double> mtf(nOut, 0.0);
-    for (int i = 0; i < nUse; ++i) {
+    // 返回 nn2 项，不是 nn2out
+    std::vector<double> mtf(nn2, 0.0);
+    for (int i = 0; i < nn2; ++i) {
         double raw = std::abs(fft[i]) / DC;
-        mtf[i] = raw* corr[i];
+        mtf[i] = raw * corr[i];
     }
     return mtf;
 }
@@ -564,6 +609,7 @@ SFRResult sfr::CalSFR(const cv::Mat& imgIn,
     if (nlin1 > 0 && nlin1 < nlin) {
         gray = gray.rowRange(0, nlin1);
     }
+    double delimage = del;
 
     double delfac = std::cos(std::atan(vslope));
     double del_image = del;               // 保存原始 del（像 MATLAB 的 delimage）
@@ -580,33 +626,34 @@ SFRResult sfr::CalSFR(const cv::Mat& imgIn,
     auto lsf_vec = lsf(esf_vec);
     if (lsf_vec.empty()) return result;
 
-    auto mtf_vec = mtf(lsf_vec);
-    if (mtf_vec.empty()) return result;
+    auto mtf_vec = mtf(lsf_vec);  // 249项
 
-    // 5. 物理频率轴 freq(i) = i / (del2 * nn)
-    int  nn = static_cast<int>(esf_vec.size());
-    int  Nmtf = static_cast<int>(mtf_vec.size()); // 现在应该等于 nn2
+    int nn = static_cast<int>(esf_vec.size());  // 496
+    int nn2 = nn / 2 + 1;                        // 249
+    double freqlim = 1.0;
+    int nn2out = static_cast<int>(std::round(nn2 * freqlim / 2.0));  // 125
 
-    result.freq.resize(Nmtf);
-    result.sfr.resize(Nmtf);
-    for (int i = 0; i < Nmtf; ++i) {
-        double f = static_cast<double>(i) / (del2 * nn); // 与 sfrmat5 一致
+    result.freq.resize(nn2out);
+    result.sfr.resize(nn2out);
+    for (int i = 0; i < nn2out; ++i) {
+        double f = static_cast<double>(i) / (del2 * nn);  // 频率轴基于 nn=496
         result.freq[i] = f;
         result.sfr[i] = mtf_vec[i];
     }
 
     double mtf10_cypix = find_freq_at_threshold(result.freq, result.sfr, 0.1);
     double mtf50_cypix = find_freq_at_threshold(result.freq, result.sfr, 0.5);
+    double hs = 0.495 / delimage;
+    double fNyquist = 0.5 / delimage;  // 用 delimage！
 
-    double fNyquist = 0.5 / del;
+    // clip到 [0, hs]
+    result.mtf10_cypix = std::min(mtf10_cypix, hs);
+    result.mtf50_cypix = std::min(mtf50_cypix, hs);
 
-    // The function already gives the absolute value in cy/pixel.
-    result.mtf10_cypix = mtf10_cypix;
-    result.mtf50_cypix = mtf50_cypix;
+    // norm 计算也用 delimage
+    result.mtf10_norm = (fNyquist > 0) ? result.mtf10_cypix / fNyquist : 0.0;
+    result.mtf50_norm = (fNyquist > 0) ? result.mtf50_cypix / fNyquist : 0.0;
 
-    // The "normalized" value is the absolute value divided by the Nyquist frequency.
-    result.mtf10_norm = (fNyquist > 0) ? mtf10_cypix / fNyquist : 0.0;
-    result.mtf50_norm = (fNyquist > 0) ? mtf50_cypix / fNyquist : 0.0;
 
     return result;
 }

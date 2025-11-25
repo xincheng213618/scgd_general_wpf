@@ -57,7 +57,10 @@
 
 
                             <StackPanel  Visibility="{Binding CFW.IsUseCFW,Converter={StaticResource bool2VisibilityConverter}}">
-
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="EnableResetND:" Width="120"/>
+                                    <ui:ToggleSwitch IsChecked="{Binding CFW.EnableResetND}"/>
+                                </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="IsNDPort:" Width="120"/>
                                     <ui:ToggleSwitch IsChecked="{Binding CFW.IsNDPort}"/>
