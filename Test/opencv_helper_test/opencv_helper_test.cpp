@@ -5,8 +5,46 @@
 #include <opencv2/opencv.hpp>
 #include <stack>
 
+cv::Mat1d deriv1_like(const cv::Mat1d& a, const cv::Mat1d& fil)
+{
+    const int nlin = a.rows;
+    const int npix = a.cols;
+
+    // MATLAB conv 是真正的卷积，会翻转核
+    // OpenCV filter2D 是相关，需要手动翻转
+    cv::Mat1d flipped_fil;
+    cv::flip(fil, flipped_fil, 1);  // 对于 1xN 的核，用 1（水平翻转）
+
+    // 锚点应该在滤波器中心，这样才能匹配 MATLAB 的 'same' 行为
+    // 对于 1x3 的核，中心是 (1, 0)，即 (col, row) 格式
+    int anchor_x = flipped_fil.cols / 2;
+    int anchor_y = flipped_fil.rows / 2;
+    cv::Point anchor(anchor_x, anchor_y);
+
+    // 使用 BORDER_CONSTANT 补零
+    cv::Mat1d b;
+    cv::filter2D(a, b, -1, flipped_fil, anchor, 0, cv::BORDER_CONSTANT);
+
+    // 边缘修正（与原始 MATLAB 代码一致）
+    if (npix >= 2) {
+        for (int i = 0; i < nlin; ++i) {
+            b.at<double>(i, 0) = b.at<double>(i, 1);
+            b.at<double>(i, npix - 1) = b.at<double>(i, npix - 2);
+        }
+    }
+
+    return b;
+}
+
 int main()
 {
+    cv::Mat1d a = (cv::Mat1d(1, 5) << 1, 2, 3, 4, 5);
+    cv::Mat1d kernel = (cv::Mat1d(1, 3) << 0.5, 0, -0.5);
+    cv::Mat1d c;
+    c = deriv1_like(a, kernel);
+
+
+
     std::chrono::steady_clock::time_point start, end;
     std::chrono::microseconds duration;
 
