@@ -294,47 +294,49 @@ namespace ColorVision.ImageEditor.Draw.Special
             }
             else if (Mode == ReferenceLineMode.CrossMask)
             {
-                // 十字遮罩模式：绘制十字参考线和带透明中心的遮罩
+                // 十字遮罩模式：绘制十字参考线，边缘遮罩，中心保持透明用于对焦
                 
-                // 1. 首先绘制黑色遮罩，中心透明
+                // 1. 绘制边缘遮罩，保留中间透明区域
                 double maskSize = Attribute.MaskSize;
-                Geometry maskGeometry;
                 
-                // 创建外部矩形
+                // 创建外部矩形（整个画布区域）
                 RectangleGeometry outerRect = new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight));
                 
-                // 根据遮罩形状创建内部透明区域
+                // 根据遮罩形状创建中心透明区域
+                Geometry innerGeometry;
                 switch (Attribute.MaskShape)
                 {
                     case MaskShape.Circle:
-                        EllipseGeometry innerCircle = new EllipseGeometry(CenterPoint, maskSize, maskSize);
-                        maskGeometry = new CombinedGeometry(GeometryCombineMode.Exclude, outerRect, innerCircle);
+                        innerGeometry = new EllipseGeometry(CenterPoint, maskSize, maskSize);
                         break;
                     case MaskShape.Rectangle:
-                        RectangleGeometry innerRect = new RectangleGeometry(new Rect(
+                        innerGeometry = new RectangleGeometry(new Rect(
                             CenterPoint.X - maskSize, 
                             CenterPoint.Y - maskSize, 
                             maskSize * 2, 
                             maskSize * 2));
-                        maskGeometry = new CombinedGeometry(GeometryCombineMode.Exclude, outerRect, innerRect);
                         break;
                     case MaskShape.Face:
                         // 人脸形状（保留）- 目前用椭圆近似
-                        EllipseGeometry faceEllipse = new EllipseGeometry(CenterPoint, maskSize * FaceShapeWidthRatio, maskSize);
-                        maskGeometry = new CombinedGeometry(GeometryCombineMode.Exclude, outerRect, faceEllipse);
+                        innerGeometry = new EllipseGeometry(CenterPoint, maskSize * FaceShapeWidthRatio, maskSize);
                         break;
                     case MaskShape.Emblem:
                         // 国徽形状（保留）- 目前用圆形近似
-                        EllipseGeometry emblemCircle = new EllipseGeometry(CenterPoint, maskSize, maskSize);
-                        maskGeometry = new CombinedGeometry(GeometryCombineMode.Exclude, outerRect, emblemCircle);
+                        innerGeometry = new EllipseGeometry(CenterPoint, maskSize, maskSize);
                         break;
                     default:
-                        EllipseGeometry defaultCircle = new EllipseGeometry(CenterPoint, maskSize, maskSize);
-                        maskGeometry = new CombinedGeometry(GeometryCombineMode.Exclude, outerRect, defaultCircle);
+                        innerGeometry = new EllipseGeometry(CenterPoint, maskSize, maskSize);
                         break;
                 }
                 
-                // 绘制半透明黑色遮罩
+                // 使用GeometryGroup配合EvenOdd填充规则创建带孔的遮罩
+                // EvenOdd规则：重叠区域变透明，实现边缘遮罩、中心透明的效果
+                GeometryGroup maskGeometry = new GeometryGroup();
+                maskGeometry.FillRule = FillRule.EvenOdd;
+                maskGeometry.Children.Add(outerRect);
+                maskGeometry.Children.Add(innerGeometry);
+                
+                // 绘制半透明黑色遮罩（边缘黑色，中心透明）
                 SolidColorBrush maskBrush = new SolidColorBrush(Color.FromArgb(Attribute.MaskOpacity, 0, 0, 0));
                 dc.DrawGeometry(maskBrush, null, maskGeometry);
                 
