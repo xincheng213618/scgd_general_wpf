@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<VersionPrefix>1.3.9.3</VersionPrefix>
+		<VersionPrefix>1.3.9.4</VersionPrefix>
 		<TargetFrameworks>net8.0-windows;net6.0-windows</TargetFrameworks>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>

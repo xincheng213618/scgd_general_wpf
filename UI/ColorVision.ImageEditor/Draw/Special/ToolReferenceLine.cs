@@ -335,10 +335,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 maskGeometry.FillRule = FillRule.EvenOdd;
                 maskGeometry.Children.Add(outerRect);
                 maskGeometry.Children.Add(innerGeometry);
-                
-                // 绘制半透明黑色遮罩（边缘黑色，中心透明）
-                SolidColorBrush maskBrush = new SolidColorBrush(Color.FromArgb(Attribute.MaskOpacity, 0, 0, 0));
-                dc.DrawGeometry(maskBrush, null, maskGeometry);
+
                 
                 // 2. 绘制十字参考线（红色）
                 List<Point> intersectionPoints = ReferenceLine.CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
@@ -347,7 +344,12 @@ namespace ColorVision.ImageEditor.Draw.Special
                     dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线
                     dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
                 }
-                
+
+
+                // 绘制半透明黑色遮罩（边缘黑色，中心透明）
+                SolidColorBrush maskBrush = new SolidColorBrush(Color.FromArgb(Attribute.MaskOpacity, 0, 0, 0));
+                dc.DrawGeometry(maskBrush, null, maskGeometry);
+
                 // 3. 绘制中心覆盖光栅（黄色）
                 if (Attribute.CenterOverlay != CenterOverlayShape.None)
                 {
