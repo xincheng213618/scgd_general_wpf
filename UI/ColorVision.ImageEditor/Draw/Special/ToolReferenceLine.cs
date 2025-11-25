@@ -34,7 +34,59 @@ namespace ColorVision.ImageEditor.Draw.Special
         /// <summary>
         /// 斜十字模式 - 显示相对当前角度偏移45°的对角线十字（X形）
         /// </summary>
-        DiagonalCross = 3
+        DiagonalCross = 3,
+
+        /// <summary>
+        /// 十字遮罩模式 - 显示十字参考线和中心透明遮罩
+        /// </summary>
+        CrossMask = 4
+    }
+
+    /// <summary>
+    /// 遮罩形状
+    /// </summary>
+    public enum MaskShape
+    {
+        /// <summary>
+        /// 圆形遮罩
+        /// </summary>
+        Circle = 0,
+
+        /// <summary>
+        /// 矩形遮罩
+        /// </summary>
+        Rectangle = 1,
+
+        /// <summary>
+        /// 人脸形状（保留）
+        /// </summary>
+        Face = 2,
+
+        /// <summary>
+        /// 国徽形状（保留）
+        /// </summary>
+        Emblem = 3
+    }
+
+    /// <summary>
+    /// 中心覆盖形状（光栅圆/矩形）
+    /// </summary>
+    public enum CenterOverlayShape
+    {
+        /// <summary>
+        /// 无覆盖
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// 圆形光栅
+        /// </summary>
+        Circle = 1,
+
+        /// <summary>
+        /// 矩形光栅
+        /// </summary>
+        Rectangle = 2
     }
 
     public class DVLineDVContextMenu : IDVContextMenu
@@ -237,6 +289,111 @@ namespace ColorVision.ImageEditor.Draw.Special
                 FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
             }
+            else if (Mode == ReferenceLineMode.CrossMask)
+            {
+                // 十字遮罩模式：绘制十字参考线和带透明中心的遮罩
+                
+                // 1. 首先绘制黑色遮罩，中心透明
+                double maskSize = Attribute.MaskSize;
+                Geometry maskGeometry;
+                
+                // 创建外部矩形
+                RectangleGeometry outerRect = new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight));
+                
+                // 根据遮罩形状创建内部透明区域
+                switch (Attribute.MaskShape)
+                {
+                    case MaskShape.Circle:
+                        EllipseGeometry innerCircle = new EllipseGeometry(CenterPoint, maskSize, maskSize);
+                        maskGeometry = new CombinedGeometry(GeometryCombineMode.Exclude, outerRect, innerCircle);
+                        break;
+                    case MaskShape.Rectangle:
+                        RectangleGeometry innerRect = new RectangleGeometry(new Rect(
+                            CenterPoint.X - maskSize, 
+                            CenterPoint.Y - maskSize, 
+                            maskSize * 2, 
+                            maskSize * 2));
+                        maskGeometry = new CombinedGeometry(GeometryCombineMode.Exclude, outerRect, innerRect);
+                        break;
+                    case MaskShape.Face:
+                        // 人脸形状（保留）- 目前用椭圆近似
+                        EllipseGeometry faceEllipse = new EllipseGeometry(CenterPoint, maskSize * 0.8, maskSize);
+                        maskGeometry = new CombinedGeometry(GeometryCombineMode.Exclude, outerRect, faceEllipse);
+                        break;
+                    case MaskShape.Emblem:
+                        // 国徽形状（保留）- 目前用圆形近似
+                        EllipseGeometry emblemCircle = new EllipseGeometry(CenterPoint, maskSize, maskSize);
+                        maskGeometry = new CombinedGeometry(GeometryCombineMode.Exclude, outerRect, emblemCircle);
+                        break;
+                    default:
+                        EllipseGeometry defaultCircle = new EllipseGeometry(CenterPoint, maskSize, maskSize);
+                        maskGeometry = new CombinedGeometry(GeometryCombineMode.Exclude, outerRect, defaultCircle);
+                        break;
+                }
+                
+                // 绘制半透明黑色遮罩
+                SolidColorBrush maskBrush = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0));
+                dc.DrawGeometry(maskBrush, null, maskGeometry);
+                
+                // 2. 绘制十字参考线（红色）
+                List<Point> intersectionPoints = ReferenceLine.CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
+                if (intersectionPoints.Count == 4)
+                {
+                    dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线
+                    dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
+                }
+                
+                // 3. 绘制中心覆盖光栅（黄色）
+                if (Attribute.CenterOverlay != CenterOverlayShape.None)
+                {
+                    double overlaySize = Attribute.CenterOverlaySize;
+                    
+                    // 如果设置了物理尺寸，则根据像素/单位转换
+                    if (Attribute.PhysicalSizeX > 0 && Attribute.PixelPerUnit > 0)
+                    {
+                        overlaySize = Attribute.PhysicalSizeX * Attribute.PixelPerUnit;
+                    }
+                    
+                    Pen overlayPen = new Pen(Attribute.OverlayBrush, Attribute.LineWidth / Ratio);
+                    
+                    if (Attribute.CenterOverlay == CenterOverlayShape.Circle)
+                    {
+                        double overlaySizeY = overlaySize;
+                        if (Attribute.PhysicalSizeY > 0 && Attribute.PixelPerUnit > 0)
+                        {
+                            overlaySizeY = Attribute.PhysicalSizeY * Attribute.PixelPerUnit;
+                        }
+                        dc.DrawEllipse(null, overlayPen, CenterPoint, overlaySize, overlaySizeY);
+                    }
+                    else if (Attribute.CenterOverlay == CenterOverlayShape.Rectangle)
+                    {
+                        double overlaySizeY = overlaySize;
+                        if (Attribute.PhysicalSizeY > 0 && Attribute.PixelPerUnit > 0)
+                        {
+                            overlaySizeY = Attribute.PhysicalSizeY * Attribute.PixelPerUnit;
+                        }
+                        dc.DrawRectangle(null, overlayPen, new Rect(
+                            CenterPoint.X - overlaySize, 
+                            CenterPoint.Y - overlaySizeY, 
+                            overlaySize * 2, 
+                            overlaySizeY * 2));
+                    }
+                }
+                
+                // 4. 显示文本信息
+                TextAttribute textAttribute = new();
+                textAttribute.FontSize = 15 / Ratio;
+                double a = 15 / Ratio;
+                
+                if (IsRMouseDown || IsLMouseDown)
+                {
+                    FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
+                }
+                
+                FormattedText angleText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(angleText, RMouseDownP + new Vector(a, a));
+            }
 
             if (IsLocked)
             {
@@ -359,6 +516,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen;
 
+        [DisplayName("模式")]
         public ReferenceLineMode Mode { get => _Mode; set { _Mode = value; OnPropertyChanged(); } }
         private ReferenceLineMode _Mode = ReferenceLineMode.SimpleCross;
 
@@ -366,17 +524,56 @@ namespace ColorVision.ImageEditor.Draw.Special
         public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged();  Pen.Brush = value; } }
         private Brush _Brush = Brushes.Red;
 
+        [DisplayName("线宽")]
+        public double LineWidth { get => _LineWidth; set { _LineWidth = value; OnPropertyChanged(); } }
+        private double _LineWidth = 1.0;
+
+        [DisplayName("角度")]
         public double Angle { get => _Angle; set { _Angle = value; OnPropertyChanged(); } }
         private double _Angle;
 
+        [DisplayName("中心点X")]
         public double PointX { get => _PointX; set { _PointX = value; OnPropertyChanged(); } }
         private double _PointX;
 
+        [DisplayName("中心点Y")]
         public double PointY { get => _PointY; set { _PointY = value; OnPropertyChanged(); } }
         private double _PointY;
 
+        // 遮罩相关属性
+        [Category("遮罩设置"), DisplayName("遮罩形状")]
+        public MaskShape MaskShape { get => _MaskShape; set { _MaskShape = value; OnPropertyChanged(); } }
+        private MaskShape _MaskShape = MaskShape.Circle;
 
+        [Category("遮罩设置"), DisplayName("遮罩透明区大小")]
+        public double MaskSize { get => _MaskSize; set { _MaskSize = value; OnPropertyChanged(); } }
+        private double _MaskSize = 100.0;
 
+        // 中心覆盖光栅相关属性
+        [Category("中心覆盖"), DisplayName("覆盖形状")]
+        public CenterOverlayShape CenterOverlay { get => _CenterOverlay; set { _CenterOverlay = value; OnPropertyChanged(); } }
+        private CenterOverlayShape _CenterOverlay = CenterOverlayShape.None;
+
+        [Category("中心覆盖"), DisplayName("覆盖颜色")]
+        public Brush OverlayBrush { get => _OverlayBrush; set { _OverlayBrush = value; OnPropertyChanged(); } }
+        private Brush _OverlayBrush = Brushes.Yellow;
+
+        [Category("中心覆盖"), DisplayName("覆盖大小")]
+        public double CenterOverlaySize { get => _CenterOverlaySize; set { _CenterOverlaySize = value; OnPropertyChanged(); } }
+        private double _CenterOverlaySize = 50.0;
+
+        // 物理尺寸转换
+        [Category("物理尺寸"), DisplayName("物理尺寸X(mm)")]
+        public double PhysicalSizeX { get => _PhysicalSizeX; set { _PhysicalSizeX = value; OnPropertyChanged(); } }
+        private double _PhysicalSizeX = 0.0;
+
+        [Category("物理尺寸"), DisplayName("物理尺寸Y(mm)")]
+        public double PhysicalSizeY { get => _PhysicalSizeY; set { _PhysicalSizeY = value; OnPropertyChanged(); } }
+        private double _PhysicalSizeY = 0.0;
+
+        [Category("物理尺寸"), DisplayName("像素/单位(px/mm)")]
+        public double PixelPerUnit { get => _PixelPerUnit; set { _PixelPerUnit = value; OnPropertyChanged(); } }
+        private double _PixelPerUnit = 1.0;
 
     }
 
@@ -428,7 +625,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                     
                     ReferenceLine.PointLen = new Vector();
 
-                    ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, 1 / ReferenceLine.Ratio);
+                    ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, ReferenceLine.Attribute.LineWidth / ReferenceLine.Ratio);
                     Image.MouseMove += MouseMove;
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
                     Image.PreviewMouseUp += PreviewMouseUp;
@@ -464,7 +661,7 @@ namespace ColorVision.ImageEditor.Draw.Special
             if (ReferenceLine.Ratio != ZoomboxSub.ContentMatrix.M11)
             {
                 ReferenceLine.Ratio = ZoomboxSub.ContentMatrix.M11;
-                ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, 1 / ReferenceLine.Ratio);
+                ReferenceLine.Attribute.Pen = new Pen(ReferenceLine.Attribute.Brush, ReferenceLine.Attribute.LineWidth / ReferenceLine.Ratio);
                 ReferenceLine.Render();
             }
         }
