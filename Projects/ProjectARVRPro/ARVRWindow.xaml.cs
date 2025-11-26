@@ -235,6 +235,7 @@ namespace ProjectARVRPro
         public async Task Refresh()
         {
             if (FlowTemplate.SelectedIndex < 0) return;
+            MqttRCService.GetInstance().QueryServices();
             string Refreshdata = TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64;
 
             try
