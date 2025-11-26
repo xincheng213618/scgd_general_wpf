@@ -59,7 +59,7 @@ namespace ProjectARVRPro.Process.Red
                                     LowLimit = recipeConfig.CenterLunimance.Min,
                                     UpLimit = recipeConfig.CenterLunimance.Max,
                                     Value = poi.Y,
-                                    TestValue = poi.Y.ToString("F3") + " nit"
+                                    TestValue = poi.Y.ToString("F4") + " nit"
                                 };
                                 redTestResult.CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem
                                 {
@@ -67,7 +67,7 @@ namespace ProjectARVRPro.Process.Red
                                     LowLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesx.Min,
                                     UpLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesx.Max,
                                     Value = poi.x,
-                                    TestValue = poi.x.ToString("F3")
+                                    TestValue = poi.x.ToString("F4")
                                 };
                                 redTestResult.CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem
                                 {
@@ -75,7 +75,7 @@ namespace ProjectARVRPro.Process.Red
                                     LowLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesy.Min,
                                     UpLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesy.Max,
                                     Value = poi.y,
-                                    TestValue = poi.y.ToString("F3")
+                                    TestValue = poi.y.ToString("F4")
                                 };
                                 redTestResult.CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem
                                 {
@@ -83,7 +83,7 @@ namespace ProjectARVRPro.Process.Red
                                     LowLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesu.Min,
                                     UpLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesu.Max,
                                     Value = poi.u,
-                                    TestValue = poi.u.ToString("F3")
+                                    TestValue = poi.u.ToString("F4")
                                 };
                                 redTestResult.CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem
                                 {
@@ -91,7 +91,7 @@ namespace ProjectARVRPro.Process.Red
                                     LowLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesv.Min,
                                     UpLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesv.Max,
                                     Value = poi.v,
-                                    TestValue = poi.v.ToString("F3")
+                                    TestValue = poi.v.ToString("F4")
                                 };
 
                                 ctx.Result.Result &= redTestResult.CenterLunimance.TestResult;
@@ -114,7 +114,7 @@ namespace ProjectARVRPro.Process.Red
                                 var uniform = new ObjectiveTestItem
                                 {
                                     Name = "Luminance_uniformity(%)",
-                                    TestValue = (view.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%",
+                                    TestValue = (view.PoiAnalysisResult.result.Value * 100).ToString("F4") + "%",
                                     Value = view.PoiAnalysisResult.result.Value,
                                     LowLimit = recipeConfig.LuminanceUniformity.Min,
                                     UpLimit = recipeConfig.LuminanceUniformity.Max

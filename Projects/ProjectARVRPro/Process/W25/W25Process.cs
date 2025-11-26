@@ -51,7 +51,7 @@ namespace ProjectARVRPro.Process.W25
                                 LowLimit = recipeConfig.W25CenterLunimance.Min,
                                 UpLimit = recipeConfig.W25CenterLunimance.Max,
                                 Value = center.Y,
-                                TestValue = center.Y.ToString("F3") + " nit"
+                                TestValue = center.Y.ToString("F4") + " nit"
                             };
                             ctx.ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem
                             {
@@ -59,7 +59,7 @@ namespace ProjectARVRPro.Process.W25
                                 LowLimit = recipeConfig.W25CenterCIE1931ChromaticCoordinatesx.Min,
                                 UpLimit = recipeConfig.W25CenterCIE1931ChromaticCoordinatesx.Max,
                                 Value = center.x,
-                                TestValue = center.x.ToString("F3")
+                                TestValue = center.x.ToString("F4")
                             };
                             ctx.ObjectiveTestResult.W25CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem
                             {
@@ -67,7 +67,7 @@ namespace ProjectARVRPro.Process.W25
                                 LowLimit = recipeConfig.W25CenterCIE1931ChromaticCoordinatesy.Min,
                                 UpLimit = recipeConfig.W25CenterCIE1931ChromaticCoordinatesy.Max,
                                 Value = center.y,
-                                TestValue = center.y.ToString("F3")
+                                TestValue = center.y.ToString("F4")
                             };
                             ctx.ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem
                             {
@@ -75,7 +75,7 @@ namespace ProjectARVRPro.Process.W25
                                 LowLimit = recipeConfig.W25CenterCIE1976ChromaticCoordinatesu.Min,
                                 UpLimit = recipeConfig.W25CenterCIE1976ChromaticCoordinatesu.Max,
                                 Value = center.u,
-                                TestValue = center.u.ToString("F3")
+                                TestValue = center.u.ToString("F4")
                             };
                             ctx.ObjectiveTestResult.W25CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem
                             {
@@ -83,7 +83,7 @@ namespace ProjectARVRPro.Process.W25
                                 LowLimit = recipeConfig.W25CenterCIE1976ChromaticCoordinatesv.Min,
                                 UpLimit = recipeConfig.W25CenterCIE1976ChromaticCoordinatesv.Max,
                                 Value = center.v,
-                                TestValue = center.v.ToString("F3")
+                                TestValue = center.v.ToString("F4")
                             };
 
                             ctx.Result.Result &= ctx.ObjectiveTestResult.W25CenterLunimance.TestResult;
