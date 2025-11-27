@@ -136,6 +136,11 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
                 CreateNestedListEditor();
                 return;
             }
+            else if (_elementType.IsClass)
+            {
+                EditorPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(_valueWrapper));
+                return;
+            }
 
             // Get the base property from ValueWrapper
             var baseProperty = typeof(ValueWrapper).GetProperty(nameof(ValueWrapper.Value))!;

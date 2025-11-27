@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 using System.CodeDom;
 using System.Collections;
@@ -21,6 +22,8 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
         {
             public int Index { get; set; }
             public object? Value { get; set; }
+
+            public Type Type { get; set; }
             
             public string DisplayValue
             {
@@ -34,12 +37,14 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
                     {
                         return $"[列表: {list.Count} 项]";
                     }
-                    
+                    if (Type.IsClass)
+                    {
+                        return JsonConvert.SerializeObject(Value);
+                    }
                     return Value.ToString() ?? string.Empty;
                 }
             }
         }
-
         public ListEditorWindow(IList items, Type elementType)
         {
             InitializeComponent();
@@ -53,7 +58,6 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             {
                 _items.Add(item);
             }
-
             RefreshListView();
         }
 
@@ -65,8 +69,11 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
                 viewModels.Add(new ListItemViewModel
                 {
                     Index = i,
+                    Type = _elementType,     
                     Value = _items[i]
+
                 });
+
             }
             ItemsListView.ItemsSource = viewModels;
         }
