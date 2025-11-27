@@ -112,7 +112,9 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             
             if (editor.ShowDialog() == true)
             {
-                _items.Add(editor.EditedKey!, editor.EditedValue);
+                var convertedKey = PropertyEditorHelper.ConvertToTargetType(editor.EditedKey, _keyType);
+                var convertedValue = PropertyEditorHelper.ConvertToTargetType(editor.EditedValue, _valueType);
+                _items.Add(convertedKey!, convertedValue);
                 RefreshListView();
             }
         }
@@ -140,7 +142,9 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             {
                 // Remove old entry and add new one
                 _items.Remove(currentKey!);
-                _items.Add(editor.EditedKey!, editor.EditedValue);
+                var convertedKey = PropertyEditorHelper.ConvertToTargetType(editor.EditedKey, _keyType);
+                var convertedValue = PropertyEditorHelper.ConvertToTargetType(editor.EditedValue, _valueType);
+                _items.Add(convertedKey!, convertedValue);
                 RefreshListView();
             }
         }

@@ -136,7 +136,8 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
                 CreateNestedListEditor();
                 return;
             }
-            else if (_elementType.IsClass)
+            // Special handling for class types (exclude string and other primitive-like types)
+            else if (IsEditableClass(_elementType))
             {
                 EditorPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(_valueWrapper));
                 return;
@@ -246,6 +247,15 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
         private static bool IsGenericList(Type type)
         {
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>);
+        }
+
+        private static bool IsEditableClass(Type type)
+        {
+            // A class is editable if it's a class type, not a string, not a primitive collection
+            return type.IsClass && 
+                   type != typeof(string) && 
+                   !IsGenericList(type) &&
+                   !typeof(System.Collections.IDictionary).IsAssignableFrom(type);
         }
 
         private Type? DetermineEditorType(Type elementType)
