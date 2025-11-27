@@ -44,6 +44,7 @@ namespace ColorVision.UI
         
         private string searchText = string.Empty;
         private Dictionary<Border, TreeViewItem> borderToTreeViewItem = new Dictionary<Border, TreeViewItem>();
+        private Dictionary<UIElement, List<PropertyInfo>> nestedPropertiesMap = new Dictionary<UIElement, List<PropertyInfo>>();
         private PropertySortMode currentSortMode = PropertySortMode.Default;
 
 
@@ -137,6 +138,7 @@ namespace ColorVision.UI
         {
             categoryGroups.Clear();
             borderToTreeViewItem.Clear();
+            nestedPropertiesMap.Clear();
             GenCategoryGroups(obj);
 
 
@@ -163,6 +165,8 @@ namespace ColorVision.UI
                     Margin = new Thickness(0, 0, 0, 5)
                 };
                 stackPanel.Children.Add(categoryHeader);
+
+                TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
 
                 foreach (var property in categoryGroup.Value)
                 {
@@ -203,11 +207,17 @@ namespace ColorVision.UI
                             }
                             else if (property.PropertyType == typeof(object))
                             {
-                                stackPanel.Margin = new Thickness(5);
-                                StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(property.GetValue(obj));
-                                if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
+                                var nestedValue = property.GetValue(obj);
+                                if (nestedValue != null)
                                 {
-                                    stackPanel.Children.Add(stackPanel1);
+                                    stackPanel.Margin = new Thickness(5);
+                                    StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedValue);
+                                    if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
+                                    {
+                                        stackPanel.Children.Add(stackPanel1);
+                                        // Add nested TreeViewItem and track nested properties
+                                        AddNestedTreeViewItems(treeViewItem, stackPanel1, nestedValue, property.Name);
+                                    }
                                 }
                                 continue;
                             }
@@ -222,6 +232,8 @@ namespace ColorVision.UI
                                     if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
                                     {
                                         stackPanel.Children.Add(stackPanel1);
+                                        // Add nested TreeViewItem and track nested properties
+                                        AddNestedTreeViewItems(treeViewItem, stackPanel1, nestedObj, property.Name);
                                     }
                                     continue;
                                 }
@@ -268,7 +280,6 @@ namespace ColorVision.UI
 
                 if (stackPanel.Children.Count > 1)
                 {
-                    TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
                     treeView.Items.Add(treeViewItem);
                     borderToTreeViewItem[border] = treeViewItem;
                     PropertyPanel.Children.Add(border);
@@ -282,6 +293,95 @@ namespace ColorVision.UI
             else
             {
                 treeView.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void AddNestedTreeViewItems(TreeViewItem parentItem, StackPanel nestedPanel, object nestedObj, string propertyName)
+        {
+            // Collect properties from nested object for search
+            var nestedProperties = new List<PropertyInfo>();
+            CollectNestedProperties(nestedObj, nestedProperties);
+            if (nestedProperties.Count > 0)
+            {
+                nestedPropertiesMap[nestedPanel] = nestedProperties;
+            }
+
+            // Add nested TreeViewItems for each border in the nested panel
+            foreach (UIElement child in nestedPanel.Children)
+            {
+                if (child is Border nestedBorder && nestedBorder.Tag is string nestedCategory && nestedBorder.Child is StackPanel)
+                {
+                    var displayNameAttr = nestedObj.GetType().GetProperty(propertyName)?.GetCustomAttribute<DisplayNameAttribute>();
+                    string header = displayNameAttr?.DisplayName ?? nestedCategory;
+                    
+                    TreeViewItem childItem = new TreeViewItem() { Header = header, Tag = nestedBorder };
+                    parentItem.Items.Add(childItem);
+                    borderToTreeViewItem[nestedBorder] = childItem;
+                    
+                    // Recursively process deeply nested content
+                    if (nestedBorder.Child is StackPanel nestedStackPanel)
+                    {
+                        AddNestedTreeViewItemsFromStackPanel(childItem, nestedStackPanel);
+                    }
+                }
+            }
+        }
+
+        private void AddNestedTreeViewItemsFromStackPanel(TreeViewItem parentItem, StackPanel stackPanel)
+        {
+            foreach (UIElement child in stackPanel.Children)
+            {
+                if (child is StackPanel nestedContainer)
+                {
+                    foreach (UIElement grandChild in nestedContainer.Children)
+                    {
+                        if (grandChild is Border nestedBorder && nestedBorder.Tag is string nestedCategory && nestedBorder.Child is StackPanel nestedStackPanel)
+                        {
+                            TreeViewItem childItem = new TreeViewItem() { Header = nestedCategory, Tag = nestedBorder };
+                            parentItem.Items.Add(childItem);
+                            borderToTreeViewItem[nestedBorder] = childItem;
+                            
+                            // Recursively process deeper nesting
+                            AddNestedTreeViewItemsFromStackPanel(childItem, nestedStackPanel);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void CollectNestedProperties(object obj, List<PropertyInfo> properties)
+        {
+            if (obj == null) return;
+            
+            var type = obj.GetType();
+            var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                           .Where(p => p.CanRead && p.CanWrite);
+            
+            foreach (var prop in props)
+            {
+                var browsableAttr = prop.GetCustomAttribute<BrowsableAttribute>();
+                if (!(browsableAttr?.Browsable ?? true))
+                    continue;
+                
+                properties.Add(prop);
+                
+                // Recursively collect from nested INotifyPropertyChanged objects
+                if (typeof(INotifyPropertyChanged).IsAssignableFrom(prop.PropertyType))
+                {
+                    var nestedObj = prop.GetValue(obj);
+                    if (nestedObj != null)
+                    {
+                        CollectNestedProperties(nestedObj, properties);
+                    }
+                }
+                else if (prop.PropertyType == typeof(object))
+                {
+                    var nestedValue = prop.GetValue(obj);
+                    if (nestedValue != null)
+                    {
+                        CollectNestedProperties(nestedValue, properties);
+                    }
+                }
             }
         }
 
@@ -309,22 +409,12 @@ namespace ColorVision.UI
             if (string.IsNullOrWhiteSpace(searchText))
             {
                 // Show all items when search is empty
-                foreach (UIElement child in PropertyPanel.Children)
-                {
-                    child.Visibility = Visibility.Visible;
-                    if (child is Border border && border.Child is StackPanel stackPanel)
-                    {
-                        foreach (UIElement item in stackPanel.Children)
-                        {
-                            item.Visibility = Visibility.Visible;
-                        }
-                    }
-                }
+                ShowAllItemsRecursively(PropertyPanel);
                 
-                // Show all tree view items and restore TreeView visibility
+                // Show all tree view items recursively
                 foreach (TreeViewItem item in treeView.Items)
                 {
-                    item.Visibility = Visibility.Visible;
+                    ShowTreeViewItemRecursively(item);
                 }
                 
                 // Restore TreeView visibility based on item count
@@ -345,36 +435,7 @@ namespace ColorVision.UI
             {
                 if (child is Border border && border.Child is StackPanel stackPanel && border.Tag is string category)
                 {
-                    bool categoryVisible = false;
-                    
-                    // Check if category name matches
-                    if (category.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-                    {
-                        categoryVisible = true;
-                        // Show all children if category matches
-                        foreach (UIElement item in stackPanel.Children)
-                        {
-                            item.Visibility = Visibility.Visible;
-                        }
-                    }
-                    else
-                    {
-                        // Filter individual properties
-                        foreach (UIElement item in stackPanel.Children)
-                        {
-                            if (item is DockPanel dockPanel && dockPanel.Tag is PropertyInfo property)
-                            {
-                                bool matches = MatchesSearch(property);
-                                item.Visibility = matches ? Visibility.Visible : Visibility.Collapsed;
-                                if (matches) categoryVisible = true;
-                            }
-                            else if (item is TextBlock textBlock)
-                            {
-                                // Keep category header visible
-                                item.Visibility = Visibility.Visible;
-                            }
-                        }
-                    }
+                    bool categoryVisible = FilterStackPanelRecursively(stackPanel, category);
 
                     border.Visibility = categoryVisible ? Visibility.Visible : Visibility.Collapsed;
                     if (categoryVisible) visibleCategories++;
@@ -383,6 +444,8 @@ namespace ColorVision.UI
                     if (borderToTreeViewItem.TryGetValue(border, out TreeViewItem? treeItem))
                     {
                         treeItem.Visibility = categoryVisible ? Visibility.Visible : Visibility.Collapsed;
+                        // Also update child tree view items
+                        UpdateChildTreeViewItemsVisibility(treeItem);
                     }
                 }
             }
@@ -395,6 +458,138 @@ namespace ColorVision.UI
             else
             {
                 treeView.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void ShowAllItemsRecursively(Panel panel)
+        {
+            foreach (UIElement child in panel.Children)
+            {
+                child.Visibility = Visibility.Visible;
+                if (child is Border border && border.Child is Panel childPanel)
+                {
+                    ShowAllItemsRecursively(childPanel);
+                }
+                else if (child is Panel nestedPanel)
+                {
+                    ShowAllItemsRecursively(nestedPanel);
+                }
+            }
+        }
+
+        private void ShowTreeViewItemRecursively(TreeViewItem item)
+        {
+            item.Visibility = Visibility.Visible;
+            foreach (var child in item.Items)
+            {
+                if (child is TreeViewItem childItem)
+                {
+                    ShowTreeViewItemRecursively(childItem);
+                }
+            }
+        }
+
+        private bool FilterStackPanelRecursively(StackPanel stackPanel, string category)
+        {
+            bool categoryVisible = false;
+            
+            // Check if category name matches
+            if (category.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            {
+                categoryVisible = true;
+                // Show all children if category matches
+                foreach (UIElement item in stackPanel.Children)
+                {
+                    item.Visibility = Visibility.Visible;
+                    // Also show nested items
+                    if (item is StackPanel nestedContainer)
+                    {
+                        ShowAllItemsRecursively(nestedContainer);
+                    }
+                }
+            }
+            else
+            {
+                // Filter individual properties
+                foreach (UIElement item in stackPanel.Children)
+                {
+                    if (item is DockPanel dockPanel && dockPanel.Tag is PropertyInfo property)
+                    {
+                        bool matches = MatchesSearch(property);
+                        item.Visibility = matches ? Visibility.Visible : Visibility.Collapsed;
+                        if (matches) categoryVisible = true;
+                    }
+                    else if (item is TextBlock textBlock)
+                    {
+                        // Keep category header visible
+                        item.Visibility = Visibility.Visible;
+                    }
+                    else if (item is StackPanel nestedContainer)
+                    {
+                        // Handle nested content - search in nested panels
+                        bool nestedVisible = FilterNestedContainerRecursively(nestedContainer);
+                        item.Visibility = nestedVisible ? Visibility.Visible : Visibility.Collapsed;
+                        if (nestedVisible) categoryVisible = true;
+                    }
+                }
+            }
+            
+            return categoryVisible;
+        }
+
+        private bool FilterNestedContainerRecursively(StackPanel container)
+        {
+            bool anyVisible = false;
+            
+            // Check if this container has tracked nested properties
+            if (nestedPropertiesMap.TryGetValue(container, out var nestedProperties))
+            {
+                foreach (var property in nestedProperties)
+                {
+                    if (MatchesSearch(property))
+                    {
+                        anyVisible = true;
+                        break;
+                    }
+                }
+            }
+            
+            foreach (UIElement child in container.Children)
+            {
+                if (child is Border nestedBorder && nestedBorder.Child is StackPanel nestedStackPanel)
+                {
+                    string nestedCategory = nestedBorder.Tag as string ?? string.Empty;
+                    bool nestedVisible = FilterStackPanelRecursively(nestedStackPanel, nestedCategory);
+                    child.Visibility = nestedVisible ? Visibility.Visible : Visibility.Collapsed;
+                    
+                    // Update corresponding tree view item
+                    if (borderToTreeViewItem.TryGetValue(nestedBorder, out TreeViewItem? treeItem))
+                    {
+                        treeItem.Visibility = nestedVisible ? Visibility.Visible : Visibility.Collapsed;
+                    }
+                    
+                    if (nestedVisible) anyVisible = true;
+                }
+                else if (child is StackPanel nestedPanel)
+                {
+                    bool nestedVisible = FilterNestedContainerRecursively(nestedPanel);
+                    child.Visibility = nestedVisible ? Visibility.Visible : Visibility.Collapsed;
+                    if (nestedVisible) anyVisible = true;
+                }
+            }
+            
+            return anyVisible;
+        }
+
+        private void UpdateChildTreeViewItemsVisibility(TreeViewItem parentItem)
+        {
+            foreach (var child in parentItem.Items)
+            {
+                if (child is TreeViewItem childItem && childItem.Tag is Border border)
+                {
+                    childItem.Visibility = border.Visibility;
+                    UpdateChildTreeViewItemsVisibility(childItem);
+                }
             }
         }
 
@@ -457,6 +652,7 @@ namespace ColorVision.UI
                     PropertyPanel.Children.Clear();
                     treeView.Items.Clear();
                     borderToTreeViewItem.Clear();
+                    nestedPropertiesMap.Clear();
                     DisplayProperties(IsEdit ? Config : EditConfig);
                     ApplySearchFilter();
                     return;
@@ -500,6 +696,7 @@ namespace ColorVision.UI
             PropertyPanel.Children.Clear();
             treeView.Items.Clear();
             borderToTreeViewItem.Clear();
+            nestedPropertiesMap.Clear();
 
             var source = IsEdit ? Config : EditConfig;
 
@@ -525,6 +722,8 @@ namespace ColorVision.UI
                     Margin = new Thickness(0, 0, 0, 5)
                 };
                 stackPanel.Children.Add(categoryHeader);
+
+                TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
 
                 foreach (var property in categoryGroup.Value)
                 {
@@ -565,11 +764,17 @@ namespace ColorVision.UI
                             }
                             else if (property.PropertyType == typeof(object))
                             {
-                                stackPanel.Margin = new Thickness(5);
-                                StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(property.GetValue(source));
-                                if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
+                                var nestedValue = property.GetValue(source);
+                                if (nestedValue != null)
                                 {
-                                    stackPanel.Children.Add(stackPanel1);
+                                    stackPanel.Margin = new Thickness(5);
+                                    StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedValue);
+                                    if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
+                                    {
+                                        stackPanel.Children.Add(stackPanel1);
+                                        // Add nested TreeViewItem and track nested properties
+                                        AddNestedTreeViewItems(treeViewItem, stackPanel1, nestedValue, property.Name);
+                                    }
                                 }
                                 continue;
                             }
@@ -584,6 +789,8 @@ namespace ColorVision.UI
                                     if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
                                     {
                                         stackPanel.Children.Add(stackPanel1);
+                                        // Add nested TreeViewItem and track nested properties
+                                        AddNestedTreeViewItems(treeViewItem, stackPanel1, nestedObj, property.Name);
                                     }
                                     continue;
                                 }
@@ -630,7 +837,6 @@ namespace ColorVision.UI
 
                 if (stackPanel.Children.Count > 1)
                 {
-                    TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
                     treeView.Items.Add(treeViewItem);
                     borderToTreeViewItem[border] = treeViewItem;
                     PropertyPanel.Children.Add(border);
