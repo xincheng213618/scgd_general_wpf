@@ -70,12 +70,9 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             TxtMtf10Norm.Text = $"R:{mtf10R:F4} G:{mtf10G:F4} B:{mtf10B:F4} L:{mtf10L:F4}";
             TxtMtf10CyPix.Text = $"R:{mtf10cR:F4} G:{mtf10cG:F4} B:{mtf10cB:F4} L:{mtf10cL:F4}";
             
-            // Show channel visibility controls
-            TxtChannelVisibility.Visibility = Visibility.Visible;
-            ChkShowR.Visibility = Visibility.Visible;
-            ChkShowG.Visibility = Visibility.Visible;
-            ChkShowB.Visibility = Visibility.Visible;
-            ChkShowL.Visibility = Visibility.Visible;
+            // Show channel-related controls for multi-channel mode
+            PnlQueryChannel.Visibility = Visibility.Visible;
+            PnlChannelVisibility.Visibility = Visibility.Visible;
         }
 
         private void ChkChannel_Changed(object sender, RoutedEventArgs e)
@@ -113,12 +110,23 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                 return;
             }
 
-            string channel = Plot.GetQueryChannel();
             double mtf = Plot.FindMtfAtFreq(freq);
             if (!double.IsNaN(mtf))
-                TxtResult.Text = $"[{channel}] MTF(Freq={freq:F4}) = {mtf:F5}";
+            {
+                if (_isMultiChannel)
+                {
+                    string channel = Plot.GetQueryChannel();
+                    TxtResult.Text = $"[{channel}] MTF(Freq={freq:F4}) = {mtf:F5}";
+                }
+                else
+                {
+                    TxtResult.Text = $"MTF(Freq={freq:F4}) = {mtf:F5}";
+                }
+            }
             else
-                TxtResult.Text = $"[{channel}] 未找到对应MTF";
+            {
+                TxtResult.Text = "未找到对应MTF";
+            }
         }
 
         private void BtnFreqAtMtf_Click(object sender, RoutedEventArgs e)
@@ -129,12 +137,23 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                 return;
             }
 
-            string channel = Plot.GetQueryChannel();
             double freq = Plot.FindFreqAtThreshold(m);
             if (freq > 0)
-                TxtResult.Text = $"[{channel}] Freq(MTF={m:F4}) = {freq:F5}";
+            {
+                if (_isMultiChannel)
+                {
+                    string channel = Plot.GetQueryChannel();
+                    TxtResult.Text = $"[{channel}] Freq(MTF={m:F4}) = {freq:F5}";
+                }
+                else
+                {
+                    TxtResult.Text = $"Freq(MTF={m:F4}) = {freq:F5}";
+                }
+            }
             else
-                TxtResult.Text = $"[{channel}] 未找到对应频率";
+            {
+                TxtResult.Text = "未找到对应频率";
+            }
         }
 
         private void BtnExportCsv_Click(object sender, RoutedEventArgs e)
