@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
         private const int DefaultChartWidth = 800;
         private const int DefaultChartHeight = 450;
         private const int DefaultDataPoints = 48;
-        private const double Epsilon = 1e-10;
+        private const double Epsilon = 1e-9;
         
         private static readonly string DetectedFont = ScottPlot.Fonts.Detect("频率");
 
@@ -99,80 +99,38 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
             WpfPlot.Refresh();
         }
 
-        private bool TryInterpolateValue(double[] frequencies, double[] samplingData, double targetFrequency, out double result)
+        /// <summary>
+        /// Find frequency at a given MTF threshold.
+        /// Implementation based on find_freq_at_threshold in slanted.cpp
+        /// </summary>
+        private double FindFreqAtThreshold(double[] freqAxis, double[] sfrData, double threshold)
         {
-            result = double.NaN;
-            
-            if (frequencies == null || samplingData == null || frequencies.Length != samplingData.Length || frequencies.Length < 2)
-                return false;
+            if (freqAxis == null || sfrData == null || freqAxis.Length != sfrData.Length || sfrData.Length == 0)
+                return 0.0;
 
-            if (targetFrequency <= frequencies[0])
+            // Find the first pair of points that bracket the threshold
+            // We need to find where y1 >= threshold && y2 < threshold
+            for (int i = 0; i < sfrData.Length - 1; i++)
             {
-                result = samplingData[0];
-                return true;
-            }
-            
-            int lastIndex = frequencies.Length - 1;
-            if (targetFrequency >= frequencies[lastIndex])
-            {
-                result = samplingData[lastIndex];
-                return true;
-            }
+                double y1 = sfrData[i];
+                double y2 = sfrData[i + 1];
 
-            for (int i = 0; i < frequencies.Length - 1; i++)
-            {
-                if (targetFrequency >= frequencies[i] && targetFrequency < frequencies[i + 1])
+                if (y1 >= threshold && y2 < threshold)
                 {
-                    // Linear interpolation
-                    double t = (targetFrequency - frequencies[i]) / (frequencies[i + 1] - frequencies[i]);
-                    result = samplingData[i] + t * (samplingData[i + 1] - samplingData[i]);
-                    return true;
-                }
-            }
+                    // Get the corresponding bracketing values for x (frequency)
+                    double x1 = freqAxis[i];
+                    double x2 = freqAxis[i + 1];
 
-            return false;
-        }
-
-        private bool TryInterpolateFrequency(double[] frequencies, double[] samplingData, double targetMtf, out double result)
-        {
-            result = double.NaN;
-            
-            if (frequencies == null || samplingData == null || frequencies.Length != samplingData.Length || frequencies.Length < 2)
-                return false;
-
-            for (int i = 0; i < samplingData.Length - 1; i++)
-            {
-                double y0 = samplingData[i], y1 = samplingData[i + 1];
-                double x0 = frequencies[i], x1 = frequencies[i + 1];
-
-                if (targetMtf >= Math.Min(y0, y1) && targetMtf <= Math.Max(y0, y1))
-                {
-                    if (Math.Abs(y1 - y0) < Epsilon) 
-                    { 
-                        result = x0; 
-                        return true; 
+                    // Perform linear interpolation
+                    if (Math.Abs(y2 - y1) < Epsilon)
+                    {
+                        return x1;
                     }
-                    double t = (targetMtf - y0) / (y1 - y0);
-                    result = x0 + t * (x1 - x0);
-                    return true;
+                    return x1 + (threshold - y1) * (x2 - x1) / (y2 - y1);
                 }
             }
 
-            return false;
-        }
-
-        private void BtnMtfAtFreq_Click(object sender, RoutedEventArgs e)
-        {
-            if (!double.TryParse(TxtFreq.Text, out var freq))
-            {
-                Resultextbox.Text = "频率输入错误";
-                return;
-            }
-
-            if (TryInterpolateValue(_frequencies, _sfrValues, freq, out var mtf))
-                Resultextbox.Text = $"MTF({freq:F4}) = {mtf:F5}";
-            else
-                Resultextbox.Text = "计算失败";
+            return 0.0;
         }
 
         private void BtnFreqAtMtf_Click(object sender, RoutedEventArgs e)
@@ -183,10 +141,11 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
                 return;
             }
 
-            if (TryInterpolateFrequency(_frequencies, _sfrValues, mtf, out var freq))
+            double freq = FindFreqAtThreshold(_frequencies, _sfrValues, mtf);
+            if (freq > 0)
                 Resultextbox.Text = $"Freq(MTF={mtf:F4}) = {freq:F5}";
             else
-                Resultextbox.Text = "计算失败";
+                Resultextbox.Text = "未找到对应频率";
         }
 
         private void BtnSaveChart_Click(object sender, RoutedEventArgs e)

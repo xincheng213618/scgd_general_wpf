@@ -89,20 +89,6 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                 ChkShowL.IsChecked == true);
         }
 
-        private void BtnMtfAtFreq_Click(object sender, RoutedEventArgs e)
-        {
-            if (!double.TryParse(TxtFreq.Text, out var f))
-            {
-                TxtResult.Text = "频率输入错误";
-                return;
-            }
-
-            if (Plot.TryEvaluateMtfAtFrequency(f, out var mtf))
-                TxtResult.Text = $"MTF({f:F4}) = {mtf:F5}";
-            else
-                TxtResult.Text = "计算失败";
-        }
-
         private void BtnFreqAtMtf_Click(object sender, RoutedEventArgs e)
         {
             if (!double.TryParse(TxtMtf.Text, out var m))
@@ -111,10 +97,11 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                 return;
             }
 
-            if (Plot.TryEvaluateFrequencyAtMtf(m, out var freq))
+            double freq = Plot.FindFreqAtThreshold(m);
+            if (freq > 0)
                 TxtResult.Text = $"Freq(MTF={m:F4}) = {freq:F5}";
             else
-                TxtResult.Text = "计算失败";
+                TxtResult.Text = "未找到对应频率";
         }
 
         private void BtnExportCsv_Click(object sender, RoutedEventArgs e)

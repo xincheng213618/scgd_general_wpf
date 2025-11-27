@@ -22,14 +22,8 @@
         <StackPanel Grid.Column="1" Width="200" Margin="5">
             <TextBlock Text="SFR 信息" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
             
-            <TextBlock Text="查询" FontSize="12" FontWeight="Bold" Margin="0,8,0,4"/>
+            <TextBlock Text="Freq@MTF 查询" FontSize="12" FontWeight="Bold" Margin="0,8,0,4"/>
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                <TextBlock Text="频率:" VerticalAlignment="Center" Width="50"/>
-                <TextBox x:Name="TxtFreq" Width="80" Text="0.5"/>
-            </StackPanel>
-            <Button Content="MTF@Freq" Margin="0,4,0,0" Click="BtnMtfAtFreq_Click"/>
-            
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                 <TextBlock Text="MTF:" VerticalAlignment="Center" Width="50"/>
                 <TextBox x:Name="TxtMtf" Width="80" Text="0.5"/>
             </StackPanel>
