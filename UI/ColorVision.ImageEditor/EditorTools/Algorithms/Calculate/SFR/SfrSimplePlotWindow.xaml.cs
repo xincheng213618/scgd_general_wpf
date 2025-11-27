@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Windows;
+using ColorVision.Themes;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
 {
@@ -23,6 +24,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
         public SfrSimplePlotWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         public void SetData(double[] frequencies, double[] sfrValues, 
@@ -65,10 +67,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             _mtf50CyPix = mtf50cL;
             
             // Show all channel values
-            TxtMtf50Norm.Text = $"R:{mtf50R:F4} G:{mtf50G:F4} B:{mtf50B:F4} L:{mtf50L:F4}";
-            TxtMtf50CyPix.Text = $"R:{mtf50cR:F4} G:{mtf50cG:F4} B:{mtf50cB:F4} L:{mtf50cL:F4}";
-            TxtMtf10Norm.Text = $"R:{mtf10R:F4} G:{mtf10G:F4} B:{mtf10B:F4} L:{mtf10L:F4}";
-            TxtMtf10CyPix.Text = $"R:{mtf10cR:F4} G:{mtf10cG:F4} B:{mtf10cB:F4} L:{mtf10cL:F4}";
+            TxtMtf50Norm.Text = $"L:{mtf50L:F4} R:{mtf50R:F4} G:{mtf50G:F4} B:{mtf50B:F4}";
+            TxtMtf50CyPix.Text = $"L:{mtf50cL:F4} R:{mtf50cR:F4} G:{mtf50cG:F4} B:{mtf50cB:F4}";
+            TxtMtf10Norm.Text = $"L:{mtf10L:F4} R:{mtf10R:F4} G:{mtf10G:F4} B:{mtf10B:F4}";
+            TxtMtf10CyPix.Text = $"L:{mtf10cL:F4} R:{mtf10cR:F4} G:{mtf10cG:F4} B:{mtf10cB:F4} ";
             
             // Show channel-related controls for multi-channel mode
             PnlQueryChannel.Visibility = Visibility.Visible;

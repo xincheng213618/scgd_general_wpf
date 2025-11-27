@@ -1,64 +1,176 @@
 <Window x:Class="ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR.SfrSimplePlotWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR"
-        Title="SFR Plot" Height="700" Width="1000">
-    <Grid>
+        mc:Ignorable="d"
+        Title="SFR Analysis Plot" Height="750" Width="1100"
+        Background="#F5F5F7" WindowStartupLocation="CenterScreen" >
+    <!-- Background set to a light gray for contrast with white cards -->
+
+    <Window.Resources>
+        <!-- 颜色定义 -->
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#007AFF"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="#333333"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="#666666"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#E5E5E5"/>
+        <SolidColorBrush x:Key="CardBackground" Color="White"/>
+
+        <!-- 阴影效果 -->
+        <DropShadowEffect x:Key="CardShadow" Color="Black" Direction="270" ShadowDepth="1" BlurRadius="10" Opacity="0.1"/>
+
+        <!-- 样式：通用文本 -->
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+
+        <!-- 样式：只读数据框 (看起来像标签但可选) -->
+        <Style x:Key="DataValueTextBox" TargetType="TextBox">
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <!-- 样式：通用按钮 -->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#D1D1D1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#F9F9F9"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#F0F0F0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 样式：强调按钮 (Primary) -->
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="White"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.9"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 样式：输入框 -->
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        
-        <!-- Right Panel -->
-        <Border Grid.Column="1" Width="320" Margin="8" Background="#FAFAFA" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
-                <StackPanel>
-                    <!-- SFR Information Section -->
-                    <Border Background="#2196F3" CornerRadius="4" Padding="8" Margin="0,0,0,12">
-                        <TextBlock Text="SFR Information" FontSize="14" FontWeight="Bold" Foreground="White"/>
-                    </Border>
-                    
-                    <Grid Margin="0,0,0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="MTF50 (norm):" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <TextBox x:Name="TxtMtf50Norm" Grid.Column="1" IsReadOnly="True" BorderThickness="0" Background="Transparent" FontWeight="Bold" Foreground="#1976D2"/>
-                    </Grid>
-                    
-                    <Grid Margin="0,0,0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="MTF50 (cy/pix):" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                        <TextBox x:Name="TxtMtf50CyPix" Grid.Column="1" IsReadOnly="True" BorderThickness="0" Background="Transparent" FontWeight="Bold" Foreground="#1976D2"/>
-                    </Grid>
-                    
-                    <Grid Margin="0,0,0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="MTF10 (norm):" VerticalAlignment="Center"/>
-                        <TextBox x:Name="TxtMtf10Norm" Grid.Column="1" IsReadOnly="True" BorderThickness="0" Background="Transparent"/>
-                    </Grid>
-                    
-                    <Grid Margin="0,0,0,8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="MTF10 (cy/pix):" VerticalAlignment="Center"/>
-                        <TextBox x:Name="TxtMtf10CyPix" Grid.Column="1" IsReadOnly="True" BorderThickness="0" Background="Transparent"/>
-                    </Grid>
 
-                    <!-- Query Channel Section (only visible for multi-channel) -->
-                    <StackPanel x:Name="PnlQueryChannel" Visibility="Collapsed">
-                        <Separator Margin="0,8,0,12"/>
-                        <TextBlock Text="查询通道" FontSize="12" FontWeight="Bold" Margin="0,0,0,6"/>
-                        <ComboBox x:Name="CmbQueryChannel" Margin="0,0,0,0" SelectionChanged="CmbQueryChannel_SelectionChanged">
+        <!-- 左侧：图表区域 (卡片) -->
+        <Border Grid.Column="0" Margin="0,0,16,0" 
+                Background="{StaticResource CardBackground}" 
+                CornerRadius="8" 
+                Effect="{StaticResource CardShadow}">
+            <Grid>
+                <!-- 标题栏 (可选，如果 Plot 控件自带标题可以去掉) -->
+                <TextBlock Text="SFR Analysis Plot" Margin="16,16,0,0" FontWeight="Bold" FontSize="16" VerticalAlignment="Top"/>
+                <local:SfrSimplePlotControl x:Name="Plot" Margin="8,40,8,8"/>
+            </Grid>
+        </Border>
+
+        <!-- 右侧：控制面板 (卡片) -->
+        <Border Grid.Column="1" Width="340" 
+                Background="{StaticResource CardBackground}" 
+                CornerRadius="8"
+                Effect="{StaticResource CardShadow}">
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+                <StackPanel>
+                    <!-- 头部 -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                        <Border Width="4" Height="20" Background="{StaticResource PrimaryBrush}" CornerRadius="2" Margin="0,0,8,0"/>
+                        <TextBlock Text="SFR Information" FontSize="18" FontWeight="Bold"/>
+                    </StackPanel>
+
+                    <!-- 1. 数据显示区域 -->
+                    <GroupBox Header="Metrics" BorderBrush="{StaticResource BorderBrush}" Padding="10" Margin="0,0,0,20">
+                        <GroupBox.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}"/>
+                            </DataTemplate>
+                        </GroupBox.HeaderTemplate>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="MTF50 (norm)" Foreground="{StaticResource TextSecondary}"/>
+                            <TextBox x:Name="TxtMtf50Norm" Grid.Row="0" Grid.Column="1" Style="{StaticResource DataValueTextBox}" Foreground="{StaticResource PrimaryBrush}"/>
+
+                            <TextBlock Grid.Row="1" Text="MTF50 (cy/pix)" Foreground="{StaticResource TextSecondary}"/>
+                            <TextBox x:Name="TxtMtf50CyPix" Grid.Row="1" Grid.Column="1" Style="{StaticResource DataValueTextBox}" Foreground="{StaticResource PrimaryBrush}"/>
+
+                            <TextBlock Grid.Row="2" Text="MTF10 (norm)" Foreground="{StaticResource TextSecondary}"/>
+                            <TextBox x:Name="TxtMtf10Norm" Grid.Row="2" Grid.Column="1" Style="{StaticResource DataValueTextBox}"/>
+
+                            <TextBlock Grid.Row="3" Text="MTF10 (cy/pix)" Foreground="{StaticResource TextSecondary}"/>
+                            <TextBox x:Name="TxtMtf10CyPix" Grid.Row="3" Grid.Column="1" Style="{StaticResource DataValueTextBox}"/>
+                        </Grid>
+                    </GroupBox>
+
+                    <!-- 2. 查询通道 (仅多通道可见) -->
+                    <StackPanel x:Name="PnlQueryChannel" Visibility="Collapsed" Margin="0,0,0,20">
+                        <TextBlock Text="Target Channel" FontWeight="SemiBold" Margin="0,0,0,8" Foreground="{StaticResource TextSecondary}"/>
+                        <ComboBox x:Name="CmbQueryChannel" Height="32" Padding="6,4" SelectionChanged="CmbQueryChannel_SelectionChanged">
                             <ComboBoxItem Content="L (Luminance)" IsSelected="True"/>
                             <ComboBoxItem Content="R (Red)"/>
                             <ComboBoxItem Content="G (Green)"/>
@@ -66,57 +178,66 @@
                         </ComboBox>
                     </StackPanel>
 
-                    <Separator Margin="0,12,0,12"/>
+                    <!-- 3. 数据查询区域 -->
+                    <GroupBox Header="Data Query" BorderBrush="{StaticResource BorderBrush}" Padding="10" Margin="0,0,0,20">
+                        <GroupBox.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}"/>
+                            </DataTemplate>
+                        </GroupBox.HeaderTemplate>
+                        <StackPanel>
+                            <!-- 频率查询行 -->
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="50"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Freq:" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBox x:Name="TxtFreq" Grid.Column="1" Text="0.5" Margin="0,0,8,0" Height="30"/>
+                                <Button Grid.Column="2" Content="MTF @ Freq" Width="90" Click="BtnMtfAtFreq_Click"/>
+                            </Grid>
 
-                    <!-- Query Section -->
-                    <TextBlock Text="数据查询" FontSize="12" FontWeight="Bold" Margin="0,0,0,8"/>
-                    
-                    <Grid Margin="0,0,0,6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="50"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="频率:" VerticalAlignment="Center"/>
-                        <TextBox x:Name="TxtFreq" Grid.Column="1" Text="0.5" Margin="0,0,6,0"/>
-                        <Button Grid.Column="2" Content="MTF@Freq" Width="80" Click="BtnMtfAtFreq_Click"/>
-                    </Grid>
-                    
-                    <Grid Margin="0,0,0,6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="50"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="MTF:" VerticalAlignment="Center"/>
-                        <TextBox x:Name="TxtMtf" Grid.Column="1" Text="0.5" Margin="0,0,6,0"/>
-                        <Button Grid.Column="2" Content="Freq@MTF" Width="80" Click="BtnFreqAtMtf_Click"/>
-                    </Grid>
+                            <!-- MTF查询行 -->
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="50"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="MTF:" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}"/>
+                                <TextBox x:Name="TxtMtf" Grid.Column="1" Text="0.5" Margin="0,0,8,0" Height="30"/>
+                                <Button Grid.Column="2" Content="Freq @ MTF" Width="90" Click="BtnFreqAtMtf_Click"/>
+                            </Grid>
 
-                    <Border Background="#E3F2FD" CornerRadius="4" Padding="8" Margin="0,4,0,0" MinHeight="32">
-                        <TextBlock x:Name="TxtResult" TextWrapping="Wrap" Foreground="#1565C0"/>
-                    </Border>
+                            <!-- 结果显示 -->
+                            <Border Background="#F0F7FF" BorderBrush="#CCE4FF" BorderThickness="1" CornerRadius="4" Padding="10" MinHeight="40">
+                                <TextBlock x:Name="TxtResult" Text="Query results will be shown here." TextWrapping="Wrap" Foreground="{StaticResource PrimaryBrush}"/>
+                            </Border>
+                        </StackPanel>
+                    </GroupBox>
 
-                    <!-- Channel Visibility Section (only visible for multi-channel) -->
-                    <StackPanel x:Name="PnlChannelVisibility" Visibility="Collapsed">
-                        <Separator Margin="0,12,0,12"/>
-                        <TextBlock x:Name="TxtChannelVisibility" Text="通道显示" FontSize="12" FontWeight="Bold" Margin="0,0,0,8"/>
-                        
-                        <WrapPanel>
-                            <CheckBox x:Name="ChkShowR" Content="R" IsChecked="True" Margin="0,0,12,4" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#FF0000" FontWeight="Bold"/>
-                            <CheckBox x:Name="ChkShowG" Content="G" IsChecked="True" Margin="0,0,12,4" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#00AA00" FontWeight="Bold"/>
-                            <CheckBox x:Name="ChkShowB" Content="B" IsChecked="True" Margin="0,0,12,4" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#0000FF" FontWeight="Bold"/>
-                            <CheckBox x:Name="ChkShowL" Content="L" IsChecked="True" Margin="0,0,0,4" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#000000" FontWeight="Bold"/>
-                        </WrapPanel>
+                    <!-- 4. 通道显示开关 (仅多通道可见) -->
+                    <StackPanel x:Name="PnlChannelVisibility" Visibility="Collapsed" Margin="0,0,0,20">
+                        <TextBlock Text="Visible Channels" FontWeight="SemiBold" Margin="0,0,0,8" Foreground="{StaticResource TextSecondary}"/>
+                        <Border BorderThickness="1" BorderBrush="{StaticResource BorderBrush}" CornerRadius="4" Padding="10">
+                            <WrapPanel>
+                                <CheckBox x:Name="ChkShowR" Content="R" IsChecked="True" Margin="0,0,16,0" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#E02020" FontWeight="Bold"/>
+                                <CheckBox x:Name="ChkShowG" Content="G" IsChecked="True" Margin="0,0,16,0" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#20A020" FontWeight="Bold"/>
+                                <CheckBox x:Name="ChkShowB" Content="B" IsChecked="True" Margin="0,0,16,0" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="#007AFF" FontWeight="Bold"/>
+                                <CheckBox x:Name="ChkShowL" Content="L" IsChecked="True" Checked="ChkChannel_Changed" Unchecked="ChkChannel_Changed" Foreground="Black" FontWeight="Bold"/>
+                            </WrapPanel>
+                        </Border>
                     </StackPanel>
 
-                    <Separator Margin="0,12,0,12"/>
-
-                    <Button Content="导出到 CSV" Height="32" Click="BtnExportCsv_Click" FontWeight="Bold"/>
+                    <!-- 底部导出按钮 -->
+                    <Button Content="Export Data to CSV" 
+                            Height="40" 
+                            Margin="0,10,0,0"
+                            Click="BtnExportCsv_Click" 
+                            Style="{StaticResource PrimaryButtonStyle}"/>
                 </StackPanel>
             </ScrollViewer>
         </Border>
-
-        <local:SfrSimplePlotControl x:Name="Plot" Margin="8"/>
     </Grid>
 </Window>
