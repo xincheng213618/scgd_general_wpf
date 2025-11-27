@@ -16,6 +16,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Dao
     /// </summary>
     public partial class TemperatureChartWindow : Window
     {
+        private const int MaxTickCount = 10;
+        private const int DefaultChartWidth = 800;
+        private const int DefaultChartHeight = 450;
+
         public TemperatureChartWindow(List<CameraTempModel> data)
         {
             this.data = data;
@@ -23,6 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Dao
         }
         public List<CameraTempModel> data { get; set; } = new List<CameraTempModel>();
         private Scatter? _temperatureScatter;
+        private string _detectedFont = string.Empty;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -47,28 +52,36 @@ namespace ColorVision.Engine.Services.Devices.Camera.Dao
             // Clear any existing data
             WpfPlot.Plot.Clear();
 
+            // Set Chinese font support (cache for reuse)
+            string fontSample = "温度";
+            _detectedFont = ScottPlot.Fonts.Detect(fontSample);
+
             // Configure plot appearance
             WpfPlot.Plot.Title("温度曲线图");
             WpfPlot.Plot.XLabel("时间");
             WpfPlot.Plot.YLabel("温度 (°C)");
 
-            // Set Chinese font support
-            string fontSample = "温度";
-            string detectedFont = ScottPlot.Fonts.Detect(fontSample);
-            WpfPlot.Plot.Axes.Title.Label.FontName = detectedFont;
-            WpfPlot.Plot.Axes.Left.Label.FontName = detectedFont;
-            WpfPlot.Plot.Axes.Bottom.Label.FontName = detectedFont;
+            WpfPlot.Plot.Axes.Title.Label.FontName = _detectedFont;
+            WpfPlot.Plot.Axes.Left.Label.FontName = _detectedFont;
+            WpfPlot.Plot.Axes.Bottom.Label.FontName = _detectedFont;
 
             // Configure grid
             WpfPlot.Plot.Grid.MajorLineColor = ScottPlot.Color.FromColor(System.Drawing.Color.LightGray);
+
+            // Configure Y-axis limits
+            WpfPlot.Plot.Axes.Left.Min = 10;
+            WpfPlot.Plot.Axes.Left.Max = 70;
         }
 
         private void UpdatePlot()
         {
             if (WpfPlot == null || data == null || data.Count == 0) return;
 
-            // Clear existing plottables
-            WpfPlot.Plot.Clear();
+            // Remove existing scatter plot if any
+            if (_temperatureScatter != null)
+            {
+                WpfPlot.Plot.Remove(_temperatureScatter);
+            }
 
             // Prepare X-axis data (sample indices)
             double[] xData = Enumerable.Range(0, data.Count).Select(i => (double)i).ToArray();
@@ -83,16 +96,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Dao
             _temperatureScatter.LegendText = "Temperature";
             _temperatureScatter.MarkerSize = 0;
 
-            // Configure Y-axis limits
-            WpfPlot.Plot.Axes.Left.Min = 10;
-            WpfPlot.Plot.Axes.Left.Max = 70;
-
             // Setup custom tick labels for X-axis with time labels
             var timeLabels = data.Select(d => d.CreateDate?.ToString("HH:mm") ?? "").ToArray();
             
             // Create tick positions and labels
             List<Tick> ticks = new List<Tick>();
-            int tickInterval = Math.Max(1, data.Count / 10); // Show approximately 10 ticks
+            int tickInterval = Math.Max(1, data.Count / MaxTickCount);
             for (int i = 0; i < data.Count; i += tickInterval)
             {
                 ticks.Add(new Tick(i, timeLabels[i]));
@@ -154,8 +163,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Dao
 
                 if (dlg.ShowDialog() == true)
                 {
+                    // Use actual dimensions if available, otherwise use defaults
+                    int width = WpfPlot.ActualWidth > 0 ? (int)WpfPlot.ActualWidth : DefaultChartWidth;
+                    int height = WpfPlot.ActualHeight > 0 ? (int)WpfPlot.ActualHeight : DefaultChartHeight;
+                    
                     // Save using ScottPlot's built-in save functionality
-                    WpfPlot.Plot.Save(dlg.FileName, (int)WpfPlot.ActualWidth, (int)WpfPlot.ActualHeight);
+                    WpfPlot.Plot.Save(dlg.FileName, width, height);
                     MessageBox.Show("Chart saved successfully!", "Save Chart", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
