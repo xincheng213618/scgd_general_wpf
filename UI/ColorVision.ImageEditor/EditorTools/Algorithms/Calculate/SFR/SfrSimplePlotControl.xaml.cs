@@ -14,6 +14,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
         private double[] _frequencies;
         private double[] _sfrValues;
         private Dictionary<string, double[]> _multiChannelData;
+        private string _queryChannel = "L"; // Default to L channel
         
         // Store references to scatter plots for visibility control
         private Scatter _scatterR;
@@ -68,6 +69,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
         {
             _frequencies = frequencies;
             _sfrValues = sfrL; // Default to L channel for queries
+            _queryChannel = "L";
             _multiChannelData = new Dictionary<string, double[]>
             {
                 { "R", sfrR },
@@ -148,6 +150,28 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             if (_scatterL != null) _scatterL.IsVisible = showL;
             
             WpfPlot.Refresh();
+        }
+
+        /// <summary>
+        /// Set the channel to use for query operations (MTF@Freq and Freq@MTF).
+        /// </summary>
+        /// <param name="channel">Channel name: "R", "G", "B", or "L"</param>
+        public void SetQueryChannel(string channel)
+        {
+            _queryChannel = channel;
+            
+            if (_multiChannelData != null && _multiChannelData.ContainsKey(channel))
+            {
+                _sfrValues = _multiChannelData[channel];
+            }
+        }
+
+        /// <summary>
+        /// Get the current query channel name.
+        /// </summary>
+        public string GetQueryChannel()
+        {
+            return _queryChannel;
         }
 
         public (double[] frequencies, double[] sfrValues) GetData()

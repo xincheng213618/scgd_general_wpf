@@ -89,6 +89,22 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                 ChkShowL.IsChecked == true);
         }
 
+        private void CmbQueryChannel_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (!_isMultiChannel || Plot == null) return;
+            
+            string channel = CmbQueryChannel.SelectedIndex switch
+            {
+                0 => "L",
+                1 => "R",
+                2 => "G",
+                3 => "B",
+                _ => "L"
+            };
+            
+            Plot.SetQueryChannel(channel);
+        }
+
         private void BtnMtfAtFreq_Click(object sender, RoutedEventArgs e)
         {
             if (!double.TryParse(TxtFreq.Text, out var freq))
@@ -97,11 +113,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                 return;
             }
 
+            string channel = Plot.GetQueryChannel();
             double mtf = Plot.FindMtfAtFreq(freq);
             if (!double.IsNaN(mtf))
-                TxtResult.Text = $"MTF(Freq={freq:F4}) = {mtf:F5}";
+                TxtResult.Text = $"[{channel}] MTF(Freq={freq:F4}) = {mtf:F5}";
             else
-                TxtResult.Text = "未找到对应MTF";
+                TxtResult.Text = $"[{channel}] 未找到对应MTF";
         }
 
         private void BtnFreqAtMtf_Click(object sender, RoutedEventArgs e)
@@ -112,11 +129,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                 return;
             }
 
+            string channel = Plot.GetQueryChannel();
             double freq = Plot.FindFreqAtThreshold(m);
             if (freq > 0)
-                TxtResult.Text = $"Freq(MTF={m:F4}) = {freq:F5}";
+                TxtResult.Text = $"[{channel}] Freq(MTF={m:F4}) = {freq:F5}";
             else
-                TxtResult.Text = "未找到对应频率";
+                TxtResult.Text = $"[{channel}] 未找到对应频率";
         }
 
         private void BtnExportCsv_Click(object sender, RoutedEventArgs e)

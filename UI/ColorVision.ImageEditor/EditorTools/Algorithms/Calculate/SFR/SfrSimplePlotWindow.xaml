@@ -34,6 +34,16 @@
 
             <Separator Margin="0,16,0,8"/>
 
+            <TextBlock Text="查询通道" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+            <ComboBox x:Name="CmbQueryChannel" Width="280" Margin="0,4,0,0" SelectionChanged="CmbQueryChannel_SelectionChanged">
+                <ComboBoxItem Content="L (Luminance)" IsSelected="True"/>
+                <ComboBoxItem Content="R (Red)"/>
+                <ComboBoxItem Content="G (Green)"/>
+                <ComboBoxItem Content="B (Blue)"/>
+            </ComboBox>
+
+            <Separator Margin="0,16,0,8"/>
+
             <TextBlock Text="MTF@Freq 查询" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
             
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
