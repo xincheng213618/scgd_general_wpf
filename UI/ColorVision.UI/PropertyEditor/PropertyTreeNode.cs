@@ -17,8 +17,8 @@ namespace ColorVision.UI
             set => SetProperty(ref _header, value);
         }
 
-        private Border? _associatedBorder;
-        public Border? AssociatedBorder
+        private StackPanel? _associatedBorder;
+        public StackPanel? AssociatedBorder
         {
             get => _associatedBorder;
             set => SetProperty(ref _associatedBorder, value);
@@ -45,10 +45,10 @@ namespace ColorVision.UI
         {
         }
 
-        public PropertyTreeNode(string header, Border? associatedBorder = null)
+        public PropertyTreeNode(string header, StackPanel? associatedPanel = null)
         {
             Header = header;
-            AssociatedBorder = associatedBorder;
+            AssociatedBorder = associatedPanel;
         }
 
         /// <summary>

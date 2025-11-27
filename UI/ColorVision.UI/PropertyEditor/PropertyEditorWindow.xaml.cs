@@ -22,6 +22,30 @@ using System.Windows.Media.Animation;
 
 namespace ColorVision.UI
 {
+    public class TreeViewItemMarginConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            double num = 0.0;
+            UIElement uIElement = value as TreeViewItem;
+            while (uIElement != null && uIElement.GetType() != typeof(TreeView))
+            {
+                uIElement = (UIElement)VisualTreeHelper.GetParent(uIElement);
+                if (uIElement is TreeViewItem)
+                {
+                    num += 12.0;
+                }
+            }
+
+            return new Thickness(num, 0.0, 0.0, 0.0);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
     public enum PropertySortMode
     {
         Default,
@@ -172,7 +196,7 @@ namespace ColorVision.UI
                 stackPanel.Children.Add(categoryHeader);
 
                 // Create tree node for binding
-                var treeNode = new PropertyTreeNode(categoryGroup.Key, border);
+                var treeNode = new PropertyTreeNode(categoryGroup.Key, stackPanel);
 
                 foreach (var property in categoryGroup.Value)
                 {
@@ -221,8 +245,8 @@ namespace ColorVision.UI
                                     if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
                                     {
                                         stackPanel.Children.Add(stackPanel1);
-                                        // Add nested tree nodes and track nested properties
-                                        AddNestedTreeNodes(treeNode, stackPanel1, nestedValue, property.Name);
+                                        var childNode = new PropertyTreeNode(property.Name, stackPanel1);
+                                        treeNode.Children.Add(childNode);
                                     }
                                 }
                                 continue;
@@ -238,8 +262,9 @@ namespace ColorVision.UI
                                     if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
                                     {
                                         stackPanel.Children.Add(stackPanel1);
-                                        // Add nested tree nodes and track nested properties
-                                        AddNestedTreeNodes(treeNode, stackPanel1, nestedObj, property.Name);
+
+                                        var childNode = new PropertyTreeNode(property.Name, stackPanel1);
+                                        treeNode.Children.Add(childNode);
                                     }
                                     continue;
                                 }
@@ -301,65 +326,6 @@ namespace ColorVision.UI
             }
         }
 
-        private void AddNestedTreeNodes(PropertyTreeNode parentNode, StackPanel nestedPanel, object nestedObj, string propertyName)
-        {
-            // Collect properties from nested object for search
-            var nestedProperties = new List<PropertyInfo>();
-            CollectNestedProperties(nestedObj, nestedProperties);
-            if (nestedProperties.Count > 0)
-            {
-                nestedPropertiesMap[nestedPanel] = nestedProperties;
-            }
-
-            // Add nested tree nodes for each border in the nested panel
-            foreach (UIElement child in nestedPanel.Children)
-            {
-                if (child is Border nestedBorder && nestedBorder.Tag is string nestedCategory && nestedBorder.Child is StackPanel)
-                {
-                    // Get display name from the property if available, otherwise use the category name
-                    string header = nestedCategory;
-                    var propertyInfo = nestedObj.GetType().GetProperty(propertyName);
-                    if (propertyInfo != null)
-                    {
-                        var displayNameAttr = propertyInfo.GetCustomAttribute<DisplayNameAttribute>();
-                        if (displayNameAttr?.DisplayName != null)
-                        {
-                            header = displayNameAttr.DisplayName;
-                        }
-                    }
-                    
-                    var childNode = new PropertyTreeNode(header, nestedBorder);
-                    parentNode.Children.Add(childNode);
-                    
-                    // Recursively process deeply nested content
-                    if (nestedBorder.Child is StackPanel nestedStackPanel)
-                    {
-                        AddNestedTreeNodesFromStackPanel(childNode, nestedStackPanel);
-                    }
-                }
-            }
-        }
-
-        private void AddNestedTreeNodesFromStackPanel(PropertyTreeNode parentNode, StackPanel stackPanel)
-        {
-            foreach (UIElement child in stackPanel.Children)
-            {
-                if (child is StackPanel nestedContainer)
-                {
-                    foreach (UIElement grandChild in nestedContainer.Children)
-                    {
-                        if (grandChild is Border nestedBorder && nestedBorder.Tag is string nestedCategory && nestedBorder.Child is StackPanel nestedStackPanel)
-                        {
-                            var childNode = new PropertyTreeNode(nestedCategory, nestedBorder);
-                            parentNode.Children.Add(childNode);
-                            
-                            // Recursively process deeper nesting
-                            AddNestedTreeNodesFromStackPanel(childNode, nestedStackPanel);
-                        }
-                    }
-                }
-            }
-        }
 
         private void CollectNestedProperties(object obj, List<PropertyInfo> properties)
         {
@@ -703,7 +669,7 @@ namespace ColorVision.UI
                 stackPanel.Children.Add(categoryHeader);
 
                 // Create tree node for binding
-                var treeNode = new PropertyTreeNode(categoryGroup.Key, border);
+                var treeNode = new PropertyTreeNode(categoryGroup.Key, stackPanel);
 
                 foreach (var property in categoryGroup.Value)
                 {
@@ -752,8 +718,8 @@ namespace ColorVision.UI
                                     if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count != 0)
                                     {
                                         stackPanel.Children.Add(stackPanel1);
-                                        // Add nested tree nodes and track nested properties
-                                        AddNestedTreeNodes(treeNode, stackPanel1, nestedValue, property.Name);
+                                        var childNode = new PropertyTreeNode(property.Name, stackPanel1);
+                                        treeNode.Children.Add(childNode);
                                     }
                                 }
                                 continue;
@@ -769,8 +735,8 @@ namespace ColorVision.UI
                                     if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
                                     {
                                         stackPanel.Children.Add(stackPanel1);
-                                        // Add nested tree nodes and track nested properties
-                                        AddNestedTreeNodes(treeNode, stackPanel1, nestedObj, property.Name);
+                                        var childNode = new PropertyTreeNode(property.Name, stackPanel1);
+                                        treeNode.Children.Add(childNode);
                                     }
                                     continue;
                                 }
@@ -830,6 +796,11 @@ namespace ColorVision.UI
             {
                 treeView.Visibility = Visibility.Visible;
             }
+        }
+
+        private void TreeViewItem_RequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)
+        {
+            e.Handled = true;
         }
     }
 }
