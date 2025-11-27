@@ -108,7 +108,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             
             if (editor.ShowDialog() == true)
             {
-                var convertedValue = ConvertToTargetType(editor.EditedValue, _elementType);
+                var convertedValue = PropertyEditorHelper.ConvertToTargetType(editor.EditedValue, _elementType);
                 _items.Add(convertedValue);
                 RefreshListView();
             }
@@ -124,81 +124,9 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
             
             if (editor.ShowDialog() == true)
             {
-                var convertedValue = ConvertToTargetType(editor.EditedValue, _elementType);
+                var convertedValue = PropertyEditorHelper.ConvertToTargetType(editor.EditedValue, _elementType);
                 _items[ItemsListView.SelectedIndex] = convertedValue;
                 RefreshListView();
-            }
-        }
-
-        private static object? ConvertToTargetType(object? value, Type targetType)
-        {
-            if (value == null)
-            {
-                return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
-            }
-
-            var valueType = value.GetType();
-            
-            // If the value is already the correct type, return it directly
-            if (valueType == targetType || targetType.IsAssignableFrom(valueType))
-            {
-                return value;
-            }
-
-            // Handle nullable types
-            var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-
-            // Convert from string for numeric types
-            if (value is string strValue)
-            {
-                if (string.IsNullOrWhiteSpace(strValue))
-                {
-                    return underlyingType.IsValueType ? Activator.CreateInstance(underlyingType) : null;
-                }
-
-                try
-                {
-                    if (underlyingType == typeof(int))
-                        return int.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
-                    if (underlyingType == typeof(long))
-                        return long.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
-                    if (underlyingType == typeof(short))
-                        return short.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
-                    if (underlyingType == typeof(byte))
-                        return byte.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
-                    if (underlyingType == typeof(uint))
-                        return uint.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
-                    if (underlyingType == typeof(ulong))
-                        return ulong.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
-                    if (underlyingType == typeof(ushort))
-                        return ushort.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
-                    if (underlyingType == typeof(sbyte))
-                        return sbyte.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
-                    if (underlyingType == typeof(float))
-                        return float.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
-                    if (underlyingType == typeof(double))
-                        return double.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
-                    if (underlyingType == typeof(decimal))
-                        return decimal.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
-                    if (underlyingType == typeof(bool))
-                        return bool.Parse(strValue);
-
-                    return Convert.ChangeType(strValue, underlyingType, System.Globalization.CultureInfo.InvariantCulture);
-                }
-                catch
-                {
-                    return underlyingType.IsValueType ? Activator.CreateInstance(underlyingType) : null;
-                }
-            }
-
-            // Try direct conversion for other types
-            try
-            {
-                return Convert.ChangeType(value, underlyingType, System.Globalization.CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                return value;
             }
         }
 

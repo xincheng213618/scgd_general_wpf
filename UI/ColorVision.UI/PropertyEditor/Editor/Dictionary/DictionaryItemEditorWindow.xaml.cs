@@ -155,7 +155,7 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
             return type.IsClass && 
                    type != typeof(string) && 
                    !IsGenericList(type) &&
-                   !typeof(IDictionary).IsAssignableFrom(type);
+                   !typeof(System.Collections.IDictionary).IsAssignableFrom(type);
         }
 
         private static bool IsGenericList(Type type)
