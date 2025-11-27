@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.ARVR.SFR
 {
@@ -29,6 +30,7 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
         private double[] _frequencies;
         private double[] _sfrValues;
         private Scatter _scatter;
+        private int _selectedIndex = 0;
 
         public WindowSFR(List<AlgResultSFRModel> algResultSFRModels)
         {
@@ -38,8 +40,31 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            InitializeLineSelector();
             InitializePlot();
-            Render(0);
+            Render(_selectedIndex);
+        }
+
+        private void InitializeLineSelector()
+        {
+            CmbLineSelect.Items.Clear();
+            if (AlgResultSFRModels != null && AlgResultSFRModels.Count > 0)
+            {
+                for (int i = 0; i < AlgResultSFRModels.Count; i++)
+                {
+                    CmbLineSelect.Items.Add($"数据线 {i + 1}");
+                }
+                CmbLineSelect.SelectedIndex = 0;
+            }
+        }
+
+        private void CmbLineSelect_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbLineSelect.SelectedIndex >= 0)
+            {
+                _selectedIndex = CmbLineSelect.SelectedIndex;
+                Render(_selectedIndex);
+            }
         }
 
         private void InitializePlot()
@@ -90,13 +115,46 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
             _scatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.FromArgb(33, 150, 243));
             _scatter.LineWidth = 4f;
             _scatter.MarkerSize = 0;
-            _scatter.LegendText = "MTF";
+            _scatter.LegendText = $"MTF (数据线 {index + 1})";
 
             // Auto-scale axes
             WpfPlot.Plot.Axes.AutoScale();
 
             // Refresh the plot
             WpfPlot.Refresh();
+            
+            // Clear previous result
+            Resultextbox.Text = "";
+        }
+
+        /// <summary>
+        /// Find MTF value at a given frequency using linear interpolation.
+        /// </summary>
+        private double FindMtfAtFreq(double[] freqAxis, double[] sfrData, double targetFreq)
+        {
+            if (freqAxis == null || sfrData == null || freqAxis.Length != sfrData.Length || sfrData.Length < 2)
+                return double.NaN;
+
+            // Find the bracket
+            for (int i = 0; i < freqAxis.Length - 1; i++)
+            {
+                double x1 = freqAxis[i];
+                double x2 = freqAxis[i + 1];
+
+                if (targetFreq >= x1 && targetFreq <= x2)
+                {
+                    double y1 = sfrData[i];
+                    double y2 = sfrData[i + 1];
+
+                    // Linear interpolation
+                    if (Math.Abs(x2 - x1) < Epsilon)
+                        return y1;
+                    
+                    return y1 + (targetFreq - x1) * (y2 - y1) / (x2 - x1);
+                }
+            }
+
+            return double.NaN;
         }
 
         /// <summary>
@@ -131,6 +189,21 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
             }
 
             return 0.0;
+        }
+
+        private void BtnMtfAtFreq_Click(object sender, RoutedEventArgs e)
+        {
+            if (!double.TryParse(TxtFreq.Text, out var freq))
+            {
+                Resultextbox.Text = "频率输入错误";
+                return;
+            }
+
+            double mtf = FindMtfAtFreq(_frequencies, _sfrValues, freq);
+            if (!double.IsNaN(mtf))
+                Resultextbox.Text = $"MTF(Freq={freq:F4}) = {mtf:F5}";
+            else
+                Resultextbox.Text = "未找到对应MTF";
         }
 
         private void BtnFreqAtMtf_Click(object sender, RoutedEventArgs e)
@@ -189,6 +262,7 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
                 {
                     var csv = new StringBuilder();
                     csv.AppendLine("# SFR Data Export");
+                    csv.AppendLine($"# 数据线: {_selectedIndex + 1}");
                     csv.AppendLine();
                     csv.AppendLine("Frequency,MTF");
 

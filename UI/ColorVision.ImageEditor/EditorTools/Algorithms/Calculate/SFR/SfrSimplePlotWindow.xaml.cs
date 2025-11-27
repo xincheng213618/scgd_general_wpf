@@ -89,6 +89,21 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                 ChkShowL.IsChecked == true);
         }
 
+        private void BtnMtfAtFreq_Click(object sender, RoutedEventArgs e)
+        {
+            if (!double.TryParse(TxtFreq.Text, out var freq))
+            {
+                TxtResult.Text = "频率输入错误";
+                return;
+            }
+
+            double mtf = Plot.FindMtfAtFreq(freq);
+            if (!double.IsNaN(mtf))
+                TxtResult.Text = $"MTF(Freq={freq:F4}) = {mtf:F5}";
+            else
+                TxtResult.Text = "未找到对应MTF";
+        }
+
         private void BtnFreqAtMtf_Click(object sender, RoutedEventArgs e)
         {
             if (!double.TryParse(TxtMtf.Text, out var m))

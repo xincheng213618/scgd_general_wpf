@@ -34,6 +34,16 @@
 
             <Separator Margin="0,16,0,8"/>
 
+            <TextBlock Text="MTF@Freq 查询" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+            
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <TextBlock Text="频率:" VerticalAlignment="Center" Width="60"/>
+                <TextBox x:Name="TxtFreq" Width="120" Text="0.5"/>
+                <Button Content="MTF@Freq" Width="100" Margin="8,0,0,0" Click="BtnMtfAtFreq_Click"/>
+            </StackPanel>
+
+            <Separator Margin="0,16,0,8"/>
+
             <TextBlock Text="Freq@MTF 查询" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
             
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">

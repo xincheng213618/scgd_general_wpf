@@ -161,6 +161,36 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
         }
 
         /// <summary>
+        /// Find MTF value at a given frequency using linear interpolation.
+        /// </summary>
+        public double FindMtfAtFreq(double targetFreq)
+        {
+            if (_frequencies == null || _sfrValues == null || _frequencies.Length != _sfrValues.Length || _sfrValues.Length < 2)
+                return double.NaN;
+
+            // Find the bracket
+            for (int i = 0; i < _frequencies.Length - 1; i++)
+            {
+                double x1 = _frequencies[i];
+                double x2 = _frequencies[i + 1];
+
+                if (targetFreq >= x1 && targetFreq <= x2)
+                {
+                    double y1 = _sfrValues[i];
+                    double y2 = _sfrValues[i + 1];
+
+                    // Linear interpolation
+                    if (Math.Abs(x2 - x1) < Epsilon)
+                        return y1;
+                    
+                    return y1 + (targetFreq - x1) * (y2 - y1) / (x2 - x1);
+                }
+            }
+
+            return double.NaN;
+        }
+
+        /// <summary>
         /// Find frequency at a given MTF threshold.
         /// Implementation based on find_freq_at_threshold in slanted.cpp
         /// </summary>
