@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera.Dao"
-        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         Title="TemperatureChartWindow" Height="450" Width="800" Initialized="Window_Initialized">
     <Grid>
@@ -13,9 +13,10 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" x:Name="ToolStackPanel" Orientation="Horizontal" VerticalAlignment="Top" Margin="5">
-            <TextBlock x:Name="TempatureText" Text=""/>
-            <Button x:Name="ButtonExport" Content="导出" Click="ButtonExport_Click"/>
+            <TextBlock x:Name="TempatureText" Text="" Margin="0,0,10,0" VerticalAlignment="Center"/>
+            <Button x:Name="ButtonExport" Content="导出" Click="ButtonExport_Click" Padding="5,2"/>
+            <Button x:Name="ButtonSaveChart" Content="保存图表" Click="ButtonSaveChart_Click" Padding="5,2" Margin="5,0,0,0"/>
         </StackPanel>
-        <lvc:CartesianChart x:Name="TemperatureChart"  Grid.Row="1" ZoomMode ="X"  ZoomingSpeed="0.5"/>
+        <ScottPlot:WpfPlot Grid.Row="1" x:Name="WpfPlot"/>
     </Grid>
 </Window>
