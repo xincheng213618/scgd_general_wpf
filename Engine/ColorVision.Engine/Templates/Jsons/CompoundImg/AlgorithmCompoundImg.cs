@@ -1,12 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.UI;
-using LiveChartsCore.SkiaSharpView.Painting.ImageFilters;
 using MQTTMessageLib;
-using MQTTMessageLib.FileServer;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.IO;
