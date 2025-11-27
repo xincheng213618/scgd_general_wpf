@@ -120,7 +120,7 @@ namespace ColorVision.UI
             foreach (PropertyInfo property in properties)
             {
                 var categoryAttr = property.GetCustomAttribute<CategoryAttribute>();
-                string category = categoryAttr?.Category ?? "default";
+                string category = categoryAttr?.Category ?? type.Name;
                 if (!categoryGroups.TryGetValue(category, out List<PropertyInfo>? value))
                 {
                     categoryGroups.Add(category, new List<PropertyInfo>() { property });
@@ -210,6 +210,21 @@ namespace ColorVision.UI
                                     stackPanel.Children.Add(stackPanel1);
                                 }
                                 continue;
+                            }
+                            else if (typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
+                            {
+                                // 如果属性是ViewModelBase的子类，递归解析
+                                var nestedObj = (INotifyPropertyChanged)property.GetValue(obj);
+                                if (nestedObj != null)
+                                {
+                                    stackPanel.Margin = new Thickness(5);
+                                    StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
+                                    if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
+                                    {
+                                        stackPanel.Children.Add(stackPanel1);
+                                    }
+                                    continue;
+                                }
                             }
                             else
                             {
@@ -557,6 +572,21 @@ namespace ColorVision.UI
                                     stackPanel.Children.Add(stackPanel1);
                                 }
                                 continue;
+                            }
+                            else if (typeof(INotifyPropertyChanged).IsAssignableFrom(property.PropertyType))
+                            {
+                                // 如果属性是ViewModelBase的子类，递归解析
+                                var nestedObj = (INotifyPropertyChanged)property.GetValue(source);
+                                if (nestedObj != null)
+                                {
+                                    stackPanel.Margin = new Thickness(5);
+                                    StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
+                                    if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
+                                    {
+                                        stackPanel.Children.Add(stackPanel1);
+                                    }
+                                    continue;
+                                }
                             }
                             else
                             {

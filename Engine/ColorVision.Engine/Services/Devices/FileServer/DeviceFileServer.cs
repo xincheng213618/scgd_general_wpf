@@ -1,8 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor;
+using ColorVision.UI;
+using ColorVision.UI.Authorizations;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.UI.Authorizations;
-using ColorVision.ImageEditor;
 
 namespace ColorVision.Engine.Services.Devices.FileServer
 {
@@ -21,10 +22,9 @@ namespace ColorVision.Engine.Services.Devices.FileServer
 
             EditCommand = new RelayCommand(a =>
             {
-                EditFileServer window = new EditFileServer(this);
-                window.Owner = Application.Current.GetActiveWindow();
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowDialog();
+                var propertyEditorWindow = new PropertyEditorWindow(Config, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                propertyEditorWindow.Submited += (s, e) => Save();
+                propertyEditorWindow.ShowDialog();
             },a => AccessControl.Check(PermissionMode.Administrator));
         }
 

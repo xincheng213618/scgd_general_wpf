@@ -2,6 +2,7 @@
 using ColorVision.Engine.Extension;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using System.Linq;
 using System.Windows;
@@ -39,10 +40,10 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 
             EditCommand = new RelayCommand(a =>
             {
-                EditCfwPort window = new EditCfwPort(this);
-                window.Owner = Application.Current.GetActiveWindow();
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowDialog();
+                var propertyEditorWindow = new PropertyEditorWindow(Config, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                propertyEditorWindow.Submited += (s, e) => Save();
+                propertyEditorWindow.ShowDialog();
+
             }, a => AccessControl.Check(PermissionMode.Administrator));
         }
 

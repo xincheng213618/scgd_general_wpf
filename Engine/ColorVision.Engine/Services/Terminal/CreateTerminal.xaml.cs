@@ -114,14 +114,6 @@ namespace ColorVision.Engine.Services.Terminal
                     {
                         Id = CreateCode.Text,
                         Name = CreateName.Text,
-                        ShutterCfg = new ShutterConfig()
-                        {
-                            Addr = "COM1",
-                            BaudRate = 115200,
-                            DelayTime = 1000,
-                            OpenCmd = "a",
-                            CloseCmd = "b"
-                        }
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
                     if (sysDevModel != null)

@@ -42,106 +42,78 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
     public class ConfigSpectrum : DeviceServiceConfig, IServiceConfig, IFileServerCfg
     {
-        [JsonIgnore]
-        public RelayCommand SetWavelengthFileCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand SetMaguideFileCommand { get; set; }
-
         public ConfigSpectrum()
         {
-            SetWavelengthFileCommand = new RelayCommand(a => SetWavelengthFile());
-            SetMaguideFileCommand = new RelayCommand(a => SetMaguideFile());
-        }
-        public void SetWavelengthFile()
-        {
-            using (var dialog = new System.Windows.Forms.OpenFileDialog())
-            {
-                dialog.Filter = "All Files|*.*"; // Optionally set a filter for file types
-                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                {
-                    WavelengthFile = dialog.FileName;
-                }
-            }
-        }
 
-        public void SetMaguideFile()
-        {
-            using (var dialog = new System.Windows.Forms.OpenFileDialog())
-            {
-                dialog.Filter = "All Files|*.*"; // Optionally set a filter for file types
-                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                {
-                    MaguideFile = dialog.FileName;
-                }
-            }
         }
-
-
+       
 
         [PropertyEditorType(typeof(TextSectrumSNPropertiesEditor)), Category("Base")]
         public override string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
 
-        [DisplayName("DeviceAutoConnect")]
+        [DisplayName("DeviceAutoConnect"), Category("Base")]
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
         private bool _IsAutoOpen;
 
         [DisplayName("WaveLengthFile")]
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor)), Category("Base")]
         public string WavelengthFile { get => _WavelengthFile; set { _WavelengthFile = value; OnPropertyChanged(); } }
         private string _WavelengthFile;
 
         [DisplayName("AmplitudeFile")]
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor)), Category("Base")]
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile;
 
-        [DisplayName("IsEnableNd")]
+        [DisplayName("IsEnableNd"), Category("Base")]
         public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
         private bool _IsWithND;
-        [DisplayName("ConnectType")]
+
+        [DisplayName("ConnectType"), Category("Base")]
         public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); if (value == SpectrometerType.CMvSpectra) _ComPort = "0"; OnPropertyChanged(nameof(ComPort)); } }
         private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
-
+        [ Category("Base")]
         public string ComPort { get => _ComPort; set { _ComPort = value; OnPropertyChanged(); } }
         private string _ComPort = "0";
 
+        [DisplayName("BaudRate"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor)), Category("Base")]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 9600;
 
-        [DisplayName("Saturation")]
+        [DisplayName("Saturation"), Category("Base")]
         public int Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
         private int _Saturation = 80;
 
-
-        [DisplayName("MaxIntegrationTime_Ms"), Category("ConfigerInfo")]
+        [DisplayName("MaxIntegrationTime_Ms"), Category("Base")]
         public int MaxIntegralTime { get => _TimeLimit; set { _TimeLimit = value; OnPropertyChanged(); } }
         private int _TimeLimit = 60000;
 
-        [DisplayName("AutoTestInterval_Ms"),Category("ConfigerInfo")]
+        [DisplayName("AutoTestInterval_Ms"),Category("Base")]
         public int AutoTestTime { get => _AutoTestTime; set { _AutoTestTime = value; OnPropertyChanged(); } }
         private int _AutoTestTime = 100;
 
-        [DisplayName("StartIntegrationTime_Ms"), Category("ConfigerInfo")]
+        [DisplayName("StartIntegrationTime_Ms"), Category("Base")]
         public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; OnPropertyChanged(); } }
         private float _TimeFrom = 10;
-
-
+        [DisplayName("StartIntegrationTime_Ms"), Category("Base")]
         public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutterEnable = false; _IsAutoDark = value; OnPropertyChanged(); } }
         private bool _IsAutoDark;
-
-        public bool IsShutterEnable { get => _IsShutter; set { if (value) IsAutoDark = false; _IsShutter = value; OnPropertyChanged(); } }
-        private bool _IsShutter;
-        public ShutterConfig ShutterCfg { get => _ShutterCfg; set { _ShutterCfg = value; OnPropertyChanged(); } }
-        private ShutterConfig _ShutterCfg;
-
-        public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
         public SelfAdaptionInitDark SelfAdaptionInitDark { get; set; } = new SelfAdaptionInitDark();
 
         public SetEmissionSP100Config SetEmissionSP100Config { get; set; } = new SetEmissionSP100Config();
 
         public NDConfig NDConfig { get; set; } = new NDConfig();
+
+        public bool IsShutterEnable { get => _IsShutter; set { if (value) IsAutoDark = false; _IsShutter = value; OnPropertyChanged(); } }
+        private bool _IsShutter;
+
+        public ShutterConfig ShutterCfg { get => _ShutterCfg; set { _ShutterCfg = value; OnPropertyChanged(); } }
+        private ShutterConfig _ShutterCfg = new ShutterConfig();
+
+        public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
+
     }
 
 

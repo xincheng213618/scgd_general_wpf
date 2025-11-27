@@ -271,7 +271,7 @@ namespace ColorVision.UI
                         continue;
 
                     var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
-                    string category = categoryAttr?.Category ?? "default";
+                    string category = categoryAttr?.Category ?? t.Name;
 
                     if (!categoryGroups.TryGetValue(category, out var list))
                     {

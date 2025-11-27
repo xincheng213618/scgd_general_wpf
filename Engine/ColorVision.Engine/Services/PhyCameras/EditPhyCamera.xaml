@@ -54,50 +54,7 @@
                                 <TextBlock Text="{x:Static properties:Resources.IsEnable}" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding CFW.IsUseCFW}"/>
                             </DockPanel>
-
-
-                            <StackPanel  Visibility="{Binding CFW.IsUseCFW,Converter={StaticResource bool2VisibilityConverter}}">
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="EnableResetND:" Width="120"/>
-                                    <ui:ToggleSwitch IsChecked="{Binding CFW.EnableResetND}"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="IsNDPort:" Width="120"/>
-                                    <ui:ToggleSwitch IsChecked="{Binding CFW.IsNDPort}"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="NDMinExpTime:" Width="120"/>
-                                    <TextBox Text="{Binding CFW.NDMinExpTime}"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="NDMaxExpTime:" Width="120"/>
-                                    <TextBox Text="{Binding CFW.NDMaxExpTime}"/>
-                                </DockPanel>
-
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="NDRatesJson:" Width="120"/>
-                                    <TextBox Text="{Binding CFW.NDRatesJson}"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="NDCaliNameGroupsJson:" Width="120"/>
-                                    <TextBox Text="{Binding CFW.NDCaliNameGroupsJson}"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="{x:Static properties:Resources.EnableSerialPort}" Width="120"/>
-                                    <ui:ToggleSwitch IsChecked="{Binding CFW.IsCOM}"/>
-                                </DockPanel>
-
-
-                                <StackPanel  Visibility="{Binding CFW.IsCOM,Converter={StaticResource bool2VisibilityConverter}}" >
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.Serial}" Width="120"/>
-                                        <hc:ComboBox  x:Name="TextSerial1" IsEditable="True" Text="{Binding CFW.SzComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.BaudRate}" Width="120"/>
-                                        <hc:ComboBox  x:Name="TextBaudRate1" IsEditable="True" Text="{Binding CFW.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                                    </DockPanel>
-                                </StackPanel>
+                            <StackPanel Visibility="{Binding CFW.IsUseCFW,Converter={StaticResource bool2VisibilityConverter}}">
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="{x:Static properties:Resources.FilterWheelNum}" Width="120"/>
                                     <hc:NumericUpDown Value="{Binding CFW.CFWNum}" Minimum="0"/>

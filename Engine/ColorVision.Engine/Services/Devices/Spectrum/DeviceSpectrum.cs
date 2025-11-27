@@ -68,10 +68,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             EditCommand = new RelayCommand(a =>
             {
-                EditSpectrum window = new(this);
+                PropertyEditorWindow window = new PropertyEditorWindow(Config);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.Submited +=(s,e)=>
+                {
+                    Save();
+                };
                 window.ShowDialog();
+
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
             DisplayLazy = new Lazy<DisplaySpectrum>(() => new DisplaySpectrum(this));
