@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using ColorVision.Engine.Messages;
-using CVCommCore;
+using ColorVision.Engine.Services.RC;
 
 namespace ColorVision.Engine.Services.Devices.Motor
 {

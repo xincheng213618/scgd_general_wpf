@@ -2,11 +2,9 @@
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
-using CVCommCore;
 using log4net;
 using MQTTMessageLib.Camera;
 using System;

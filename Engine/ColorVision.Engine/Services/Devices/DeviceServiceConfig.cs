@@ -1,8 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
-using CVCommCore;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows;

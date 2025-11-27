@@ -2,7 +2,6 @@
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
-using CVCommCore;
 using log4net;
 using MQTTnet.Client;
 using Newtonsoft.Json;

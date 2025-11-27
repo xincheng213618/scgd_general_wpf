@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
-using CVCommCore;
+using ColorVision.Engine.Services.RC;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices

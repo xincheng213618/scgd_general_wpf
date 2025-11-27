@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
-using CVCommCore;
 using MQTTMessageLib;
 using MQTTMessageLib.FileServer;
 using System;

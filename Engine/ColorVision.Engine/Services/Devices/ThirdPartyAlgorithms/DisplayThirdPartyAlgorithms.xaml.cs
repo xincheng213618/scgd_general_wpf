@@ -8,7 +8,6 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using CVCommCore;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -20,6 +19,7 @@ using System.Windows.Controls;
 using System.IO;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
 using ColorVision.Database;
+using ColorVision.Engine.Services.RC;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
