@@ -166,6 +166,7 @@ namespace ColorVision.UI
                 };
                 stackPanel.Children.Add(categoryHeader);
 
+                // Create TreeViewItem early so it can be passed to AddNestedTreeViewItems for nested property handling
                 TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
 
                 foreach (var property in categoryGroup.Value)
@@ -311,8 +312,17 @@ namespace ColorVision.UI
             {
                 if (child is Border nestedBorder && nestedBorder.Tag is string nestedCategory && nestedBorder.Child is StackPanel)
                 {
-                    var displayNameAttr = nestedObj.GetType().GetProperty(propertyName)?.GetCustomAttribute<DisplayNameAttribute>();
-                    string header = displayNameAttr?.DisplayName ?? nestedCategory;
+                    // Get display name from the property if available, otherwise use the category name
+                    string header = nestedCategory;
+                    var propertyInfo = nestedObj.GetType().GetProperty(propertyName);
+                    if (propertyInfo != null)
+                    {
+                        var displayNameAttr = propertyInfo.GetCustomAttribute<DisplayNameAttribute>();
+                        if (displayNameAttr?.DisplayName != null)
+                        {
+                            header = displayNameAttr.DisplayName;
+                        }
+                    }
                     
                     TreeViewItem childItem = new TreeViewItem() { Header = header, Tag = nestedBorder };
                     parentItem.Items.Add(childItem);
@@ -723,6 +733,7 @@ namespace ColorVision.UI
                 };
                 stackPanel.Children.Add(categoryHeader);
 
+                // Create TreeViewItem early so it can be passed to AddNestedTreeViewItems for nested property handling
                 TreeViewItem treeViewItem = new TreeViewItem() { Header = categoryGroup.Key, Tag = border };
 
                 foreach (var property in categoryGroup.Value)
