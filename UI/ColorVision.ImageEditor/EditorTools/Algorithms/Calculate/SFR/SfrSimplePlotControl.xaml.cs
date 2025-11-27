@@ -9,9 +9,12 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
 {
     public partial class SfrSimplePlotControl : UserControl
     {
+        private const double Epsilon = 1e-9;
+        
         private double[] _frequencies;
         private double[] _sfrValues;
         private Dictionary<string, double[]> _multiChannelData;
+        private string _queryChannel = "L"; // Default to L channel
         
         // Store references to scatter plots for visibility control
         private Scatter _scatterR;
@@ -66,6 +69,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
         {
             _frequencies = frequencies;
             _sfrValues = sfrL; // Default to L channel for queries
+            _queryChannel = "L";
             _multiChannelData = new Dictionary<string, double[]>
             {
                 { "R", sfrR },
@@ -148,6 +152,28 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             WpfPlot.Refresh();
         }
 
+        /// <summary>
+        /// Set the channel to use for query operations (MTF@Freq and Freq@MTF).
+        /// </summary>
+        /// <param name="channel">Channel name: "R", "G", "B", or "L"</param>
+        public void SetQueryChannel(string channel)
+        {
+            _queryChannel = channel;
+            
+            if (_multiChannelData != null && _multiChannelData.ContainsKey(channel))
+            {
+                _sfrValues = _multiChannelData[channel];
+            }
+        }
+
+        /// <summary>
+        /// Get the current query channel name.
+        /// </summary>
+        public string GetQueryChannel()
+        {
+            return _queryChannel;
+        }
+
         public (double[] frequencies, double[] sfrValues) GetData()
         {
             return (_frequencies, _sfrValues);
@@ -158,78 +184,68 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             return _multiChannelData;
         }
 
-        public bool TryEvaluateMtfAtFrequency(double freq, out double mtf)
+        /// <summary>
+        /// Find MTF value at a given frequency using linear interpolation.
+        /// </summary>
+        public double FindMtfAtFreq(double targetFreq)
         {
-            mtf = double.NaN;
-            if (_frequencies == null || _sfrValues == null || _frequencies.Length < 2)
-                return false;
+            if (_frequencies == null || _sfrValues == null || _frequencies.Length != _sfrValues.Length || _sfrValues.Length < 2)
+                return double.NaN;
 
-            return TryInterpolateY(_frequencies, _sfrValues, freq, out mtf);
-        }
-
-        public bool TryEvaluateFrequencyAtMtf(double mtf, out double freq)
-        {
-            freq = double.NaN;
-            if (_frequencies == null || _sfrValues == null || _frequencies.Length < 2)
-                return false;
-
-            return TryInterpolateX(_frequencies, _sfrValues, mtf, out freq);
-        }
-
-        private static bool TryInterpolateY(double[] xs, double[] ys, double xTarget, out double y)
-        {
-            y = double.NaN;
-            if (xs == null || ys == null || xs.Length < 2 || xs.Length != ys.Length) return false;
-
-            int n = xs.Length;
-            if (xTarget <= xs[0]) { y = ys[0]; return true; }
-            if (xTarget >= xs[n - 1]) { y = ys[n - 1]; return true; }
-
-            int i = Array.BinarySearch(xs, xTarget);
-            if (i >= 0)
+            // Find the bracket
+            for (int i = 0; i < _frequencies.Length - 1; i++)
             {
-                y = ys[i];
-                return true;
-            }
-            i = ~i;
-            int i0 = Math.Max(0, i - 1);
-            int i1 = Math.Min(n - 1, i);
+                double x1 = _frequencies[i];
+                double x2 = _frequencies[i + 1];
 
-            double x0 = xs[i0], x1 = xs[i1];
-            double y0 = ys[i0], y1 = ys[i1];
-            if (x1 == x0) { y = y0; return true; }
-
-            double t = (xTarget - x0) / (x1 - x0);
-            y = y0 + t * (y1 - y0);
-            return true;
-        }
-
-        private static bool TryInterpolateX(double[] xs, double[] ys, double yTarget, out double x)
-        {
-            x = double.NaN;
-            if (xs == null || ys == null || xs.Length < 2 || xs.Length != ys.Length) return false;
-
-            for (int i = 0; i < ys.Length - 1; i++)
-            {
-                double y0 = ys[i], y1 = ys[i + 1];
-                double x0 = xs[i], x1 = xs[i + 1];
-
-                if (yTarget >= Math.Min(y0, y1) && yTarget <= Math.Max(y0, y1))
+                if (targetFreq >= x1 && targetFreq <= x2)
                 {
-                    if (y1 == y0) { x = x0; return true; }
-                    double t = (yTarget - y0) / (y1 - y0);
-                    x = x0 + t * (x1 - x0);
-                    return true;
+                    double y1 = _sfrValues[i];
+                    double y2 = _sfrValues[i + 1];
+
+                    // Linear interpolation
+                    if (Math.Abs(x2 - x1) < Epsilon)
+                        return y1;
+                    
+                    return y1 + (targetFreq - x1) * (y2 - y1) / (x2 - x1);
                 }
             }
 
-            // Not in range, return closest endpoint
-            int idxMin = Array.IndexOf(ys, ys.Min());
-            int idxMax = Array.IndexOf(ys, ys.Max());
-            if (yTarget <= ys[idxMin]) { x = xs[idxMin]; return true; }
-            if (yTarget >= ys[idxMax]) { x = xs[idxMax]; return true; }
+            return double.NaN;
+        }
 
-            return false;
+        /// <summary>
+        /// Find frequency at a given MTF threshold.
+        /// Implementation based on find_freq_at_threshold in slanted.cpp
+        /// </summary>
+        public double FindFreqAtThreshold(double threshold)
+        {
+            if (_frequencies == null || _sfrValues == null || _frequencies.Length != _sfrValues.Length || _sfrValues.Length == 0)
+                return 0.0;
+
+            // Find the first pair of points that bracket the threshold
+            // We need to find where y1 >= threshold && y2 < threshold
+            for (int i = 0; i < _sfrValues.Length - 1; i++)
+            {
+                double y1 = _sfrValues[i];
+                double y2 = _sfrValues[i + 1];
+
+                if (y1 >= threshold && y2 < threshold)
+                {
+                    // Get the corresponding bracketing values for x (frequency)
+                    double x1 = _frequencies[i];
+                    double x2 = _frequencies[i + 1];
+
+                    // Perform linear interpolation
+                    if (Math.Abs(y2 - y1) < Epsilon)
+                    {
+                        return x1;
+                    }
+                    return x1 + (threshold - y1) * (x2 - x1) / (y2 - y1);
+                }
+            }
+
+            return 0.0;
         }
     }
 }

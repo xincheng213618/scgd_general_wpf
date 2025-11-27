@@ -4,27 +4,54 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.ARVR.SFR"
-        xmlns:skia="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="WindowSFR" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="WindowSFR" Height="450" Width="900" Initialized="Window_Initialized">
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal">
-
-            <TextBox Text="0.5"  Width="100"/>
-
-            <Button Content="计算" Click="Button_Click"/>
-            <TextBlock x:Name="Resultextbox" Text="" Width="150"/>
-
-        </StackPanel>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
         
-        <GroupBox Header="MTF Line"  Grid.Row="1" >
-            <skia:CartesianChart x:Name="MTFChart" Foreground="#FF000000"  >
-            </skia:CartesianChart>
+        <!-- Chart Area -->
+        <GroupBox Header="MTF Line" Grid.Column="0" Margin="5">
+            <ScottPlot:WpfPlot x:Name="WpfPlot"/>
         </GroupBox>
-
+        
+        <!-- Control Panel -->
+        <StackPanel Grid.Column="1" Width="200" Margin="5">
+            <TextBlock Text="SFR 信息" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+            
+            <!-- Line Selection -->
+            <TextBlock Text="选择数据线" FontSize="12" FontWeight="Bold" Margin="0,8,0,4"/>
+            <ComboBox x:Name="CmbLineSelect" Margin="0,4,0,0" SelectionChanged="CmbLineSelect_SelectionChanged"/>
+            
+            <Separator Margin="0,16,0,8"/>
+            
+            <!-- MTF@Freq Query -->
+            <TextBlock Text="MTF@Freq 查询" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <TextBlock Text="频率:" VerticalAlignment="Center" Width="50"/>
+                <TextBox x:Name="TxtFreq" Width="80" Text="0.5"/>
+            </StackPanel>
+            <Button Content="MTF@Freq" Margin="0,4,0,0" Click="BtnMtfAtFreq_Click"/>
+            
+            <Separator Margin="0,16,0,8"/>
+            
+            <!-- Freq@MTF Query -->
+            <TextBlock Text="Freq@MTF 查询" FontSize="12" FontWeight="Bold" Margin="0,0,0,4"/>
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <TextBlock Text="MTF:" VerticalAlignment="Center" Width="50"/>
+                <TextBox x:Name="TxtMtf" Width="80" Text="0.5"/>
+            </StackPanel>
+            <Button Content="Freq@MTF" Margin="0,4,0,0" Click="BtnFreqAtMtf_Click"/>
+            
+            <TextBlock x:Name="Resultextbox" Text="" TextWrapping="Wrap" Margin="0,8,0,0" FontWeight="Bold"/>
+            
+            <Separator Margin="0,16,0,8"/>
+            
+            <Button Content="保存图表" Margin="0,4,0,0" Click="BtnSaveChart_Click"/>
+            <Button Content="导出 CSV" Margin="0,4,0,0" Click="BtnExportCsv_Click"/>
+        </StackPanel>
     </Grid>
 </Window>
