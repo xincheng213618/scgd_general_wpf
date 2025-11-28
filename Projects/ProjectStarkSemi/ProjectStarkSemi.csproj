@@ -123,10 +123,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Assets\" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Resource Include="Images\AlignCenter16.png" />
 		<Resource Include="Images\AlignJustify16.png" />
 		<Resource Include="Images\AlignLeft16.PNG" />

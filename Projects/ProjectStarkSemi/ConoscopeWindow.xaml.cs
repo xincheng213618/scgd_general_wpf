@@ -992,5 +992,10 @@ namespace ProjectStarkSemi
                 log.Error($"更新图表失败: {ex.Message}", ex);
             }
         }
+
+        private void RibbonButton_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("视角测量");
+        }
     }
 }

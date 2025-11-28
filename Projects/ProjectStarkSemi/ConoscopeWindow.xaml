@@ -18,7 +18,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            <Ribbon>
+            <Ribbon Background="Transparent">
                 <Ribbon.Resources>
                     <RibbonGroupSizeDefinitionBaseCollection x:Key="4ControlLSC">
                         <RibbonGroupSizeDefinition>
@@ -59,8 +59,7 @@
                 </Ribbon.HelpPaneContent>
                 <!-- <snippetAppMenuItems> -->
                 <Ribbon.ApplicationMenu>
-                    <RibbonApplicationMenu SmallImageSource="Images/ApplicationMenuIcon.png" 
-                                             KeyTip="F">
+                    <RibbonApplicationMenu SmallImageSource="Assets/Image/ColorVision1.ico" Background="Transparent"  KeyTip="F">
                         <RibbonApplicationMenuItem Header="Open"
                                                       ImageSource="Images/Open32.png"
                                                       KeyTip="O" Click="Button_Click" />
@@ -289,8 +288,7 @@
 
                 </RibbonTab>
 
-                <RibbonTab Header="Home" 
-                              KeyTip="H" 
+                <RibbonTab Header="Home"  KeyTip="H" 
                               GroupSizeReductionOrder="Clipboard, Insert, Insert, Paragraph, Clipboard, Editing, Font, Clipboard" >
                     <!-- <snippetRibbonGroupClipboard> -->
                     <RibbonGroup Header="Clipboard" Name="Clipboard" SmallImageSource="Images/Paste16.png">
@@ -608,6 +606,17 @@
                                          ToolTipDescription="Select all text in the document."
                                          KeyTip="SA" />
                     </RibbonGroup>
+                </RibbonTab>
+
+
+                <RibbonTab Header="Help">
+                    <RibbonGroup Header="Help" x:Name="Help"  SmallImageSource="Images/InsertPicture16.png" GroupSizeDefinitions="{DynamicResource 4ControlLSC}">
+                    </RibbonGroup>
+
+                    <RibbonGroup Header="About" x:Name="About"  SmallImageSource="Images/InsertPicture16.png" GroupSizeDefinitions="{DynamicResource 4ControlLSC}">
+                        <RibbonButton SmallImageSource="Images/smallicon.png"  Click="RibbonButton_Click"/>
+                    </RibbonGroup>
+
                 </RibbonTab>
             </Ribbon>
 

@@ -10,6 +10,7 @@ using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -19,6 +20,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -57,6 +59,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public RelayCommand EmissionSP100SettingCommand { get; set; }
         public event Action SelfAdaptionInitDarkStarted;
         public event Action SelfAdaptionInitDarkCompleted;
+
+        [CommandDisplay("获取当前SN")]
+        public RelayCommand GetSpectrSerialNumberCommand { get; set; }
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
@@ -87,6 +92,25 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             SelfAdaptionInitDarkCommand = new RelayCommand(a => SelfAdaptionInitDark());
             SelfAdaptionInitDarkSettingCommand = new RelayCommand(a => SelfAdaptionInitDarkSetting());
             EmissionSP100SettingCommand = new RelayCommand(a => EmissionSP100Setting());
+
+            GetSpectrSerialNumberCommand = new RelayCommand(a => GetSpectrSerialNumber());
+
+        }
+        public int MyCallback(IntPtr strText, int nLen)
+        {
+            string text = Marshal.PtrToStringAnsi(strText, nLen);
+            return 0;
+        }
+
+        public void GetSpectrSerialNumber()
+        {
+            IntPtr Handle = Spectrometer.CM_CreateEmission(0, MyCallback);
+            int iR = Spectrometer.CM_Emission_Init(Handle, 0, Config.BaudRate);
+            int bufferLength = 1024;
+            StringBuilder stringBuilder = new StringBuilder(bufferLength);
+            cvColorVision.Spectrometer.CM_GetSpectrSerialNumber(Handle,stringBuilder);
+            Spectrometer.CM_ReleaseEmission(Handle);
+            MessageBox.Show(stringBuilder.ToString());
         }
 
         public void SelfAdaptionInitDark()
@@ -248,9 +272,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.AllSpectrumDeviceInfo + Environment.NewLine + result);
                 }
                 RefreshEmptySpectrum();
-
-
             };
+
         }
         public void RefreshEmptySpectrum()
         {
