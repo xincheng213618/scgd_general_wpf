@@ -16,6 +16,9 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
         </Style>
+        <HierarchicalDataTemplate x:Key="TreeNodeTemplate" DataType="{x:Type local:PropertyTreeNode}" ItemsSource="{Binding Children}">
+            <TextBlock Text="{Binding Header}"/>
+        </HierarchicalDataTemplate>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -68,7 +71,92 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TreeView Name="treeView" SelectedItemChanged="TreeView_SelectedItemChanged" Margin="5,5,0,0" Width="150"/>
+            <TreeView Name="treeView" SelectedItemChanged="TreeView_SelectedItemChanged" Margin="5,5,0,0" Width="150" ItemsSource="{Binding TreeNodes}" ItemTemplate="{StaticResource TreeNodeTemplate}">
+                <TreeView.Resources>
+                    <local:TreeViewItemMarginConverter x:Key="TreeViewItemMarginConverter" />
+                    <Style x:Key="ExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">
+                        <Setter Property="Focusable" Value="False" />
+                        <Setter Property="Width" Value="16" />
+                        <Setter Property="Height" Value="16" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                    <Viewbox x:Name="ExpandViewbox" Height="12" Width="12" VerticalAlignment="Center" >
+                                        <Rectangle  Height="12" Width="12" x:Name="ExpandPath" Fill="{DynamicResource DIScrollbarArrowCollapsed}"/>
+                                    </Viewbox>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="ToggleButton.IsChecked" Value="True">
+                                            <Setter TargetName="ExpandPath" Property="Fill" Value="{DynamicResource DIScrollbarArrowDownRight}" />
+                                            <Setter TargetName="ExpandViewbox" Property="Margin" Value="0,2,0,0" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </TreeView.Resources>
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="{x:Type TreeViewItem}"  BasedOn="{StaticResource TreeViewItemBaseStyle}">
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="MinHeight" Value="19"/>
+                        <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type TreeViewItem}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition MinHeight="{TemplateBinding MinHeight}" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Border Name="Bd"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" CornerRadius="{Binding Path=(hc:BorderElement.CornerRadius), RelativeSource={RelativeSource TemplatedParent}}">
+                                            <DockPanel LastChildFill="True" Margin="{Binding Converter={StaticResource TreeViewItemMarginConverter}, RelativeSource={RelativeSource TemplatedParent}}" >
+                                                <ToggleButton Name="Expander" ClickMode="Press" Margin="0,0,3,0" Style="{StaticResource ExpandCollapseToggleStyle}" IsChecked="{Binding IsExpanded , RelativeSource={RelativeSource TemplatedParent}}" />
+                                                <ContentPresenter Name="PART_Header" VerticalAlignment="Center" ContentSource="Header" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                            </DockPanel>
+                                        </Border>
+                                        <ItemsPresenter Name="ItemsHost" Grid.Row="1"/>
+
+                                    </Grid>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger SourceName="Bd" Property="UIElement.IsMouseOver" Value="true">
+                                            <Setter TargetName="Bd" Value="{DynamicResource SecondaryRegionBrush}" Property="Background" />
+                                        </Trigger>
+                                        <DataTrigger Binding="{Binding DisableExpanded}" Value="True">
+                                            <Setter TargetName="Expander" Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                        <Trigger Property="TreeViewItem.IsExpanded" Value="false">
+                                            <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
+                                        </Trigger>
+                                        <Trigger Property="ItemsControl.HasItems" Value="false">
+                                            <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
+                                        </Trigger>
+                                        <Trigger Property="TreeViewItem.IsSelected" Value="true">
+                                            <Setter TargetName="Bd" Value="{DynamicResource PrimaryBrush}" Property="Background" />
+                                            <Setter Value="{DynamicResource TextIconBrush}" Property="Foreground" />
+                                        </Trigger>
+                                        <MultiTrigger>
+                                            <MultiTrigger.Conditions>
+                                                <Condition Property="TreeViewItem.IsSelected" Value="true" />
+                                                <Condition Property="TreeViewItem.IsSelectionActive" Value="false" />
+                                            </MultiTrigger.Conditions>
+                                            <Setter TargetName="Bd" Value="{DynamicResource DarkDefaultBrush}" Property="Background" />
+                                            <Setter Value="{DynamicResource PrimaryTextBrush}" Property="Foreground" />
+                                        </MultiTrigger>
+                                        <Trigger Property="IsEnabled" Value="false">
+                                            <Setter Property="UIElement.Opacity" Value=".4" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                </TreeView.ItemContainerStyle>
+            </TreeView>
             <Border  Grid.Column="1" Margin="5,5,5,0"  Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5">
                 <ScrollViewer x:Name="PropertyScrollViewer" Margin="5">
                     <StackPanel x:Name="PropertyPanel">

@@ -12,10 +12,8 @@
   </PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Dapper" Version="2.1.66" />
 		<PackageReference Include="CsvHelper" Version="33.1.0" />
 		<PackageReference Include="DotNetCore.NPOI" Version="1.2.3" />
-		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc3.3" />
 		<PackageReference Include="itext" Version="9.4.0" />
 		<PackageReference Include="itext.bouncy-castle-adapter" Version="9.4.0" />
 		<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
