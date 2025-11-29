@@ -5,32 +5,6 @@ using System.IO;
 namespace ColorVision.UI.Plugins
 {
     /// <summary>
-    /// Represents a DLL to be copied with its relative path
-    /// </summary>
-    public class DllInfo
-    {
-        /// <summary>
-        /// Just the file name (e.g., "WPFHexaEditor.dll")
-        /// </summary>
-        public string FileName { get; set; }
-
-        /// <summary>
-        /// Relative path including subdirectory (e.g., "zh-CN/WPFHexaEditor.resources.dll")
-        /// </summary>
-        public string RelativePath { get; set; }
-
-        /// <summary>
-        /// True if this is a resource/localization DLL
-        /// </summary>
-        public bool IsResource { get; set; }
-
-        /// <summary>
-        /// Locale code if this is a resource DLL (e.g., "zh-CN")
-        /// </summary>
-        public string Locale { get; set; }
-    }
-
-    /// <summary>
     /// Extracts a plugin with all its stripped dependencies to a standalone folder
     /// </summary>
     public static class PluginExtractor
