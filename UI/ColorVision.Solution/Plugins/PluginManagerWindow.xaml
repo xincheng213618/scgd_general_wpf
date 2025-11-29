@@ -157,7 +157,10 @@
                             <StackPanel Orientation="Horizontal"  HorizontalAlignment="Right">
                                 <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PluginInfo.Manifest.Requires, StringFormat=Build By {0}}"/>
                             </StackPanel>
-                            <Button Content="OpenLocalPath" Background="Transparent" BorderThickness="0" Command="{Binding OpenLocalPathCommand}"  HorizontalAlignment="Right"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Content="OpenLocalPath" Background="Transparent" BorderThickness="0" Command="{Binding OpenLocalPathCommand}" Margin="0,0,5,0"/>
+                                <Button Content="{x:Static properties:Resources.ExtractPlugin}" Background="Transparent" BorderThickness="0" Command="{Binding ExtractPluginCommand}"/>
+                            </StackPanel>
 
                         </StackPanel>
                     </Grid>
