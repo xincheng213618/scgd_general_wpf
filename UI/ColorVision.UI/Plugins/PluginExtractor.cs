@@ -1,6 +1,7 @@
 using log4net;
 using Newtonsoft.Json;
 using System.IO;
+using System.Linq;
 
 namespace ColorVision.UI.Plugins
 {
