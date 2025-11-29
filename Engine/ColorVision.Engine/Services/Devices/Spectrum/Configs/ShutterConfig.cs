@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.PropertyEditor;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
