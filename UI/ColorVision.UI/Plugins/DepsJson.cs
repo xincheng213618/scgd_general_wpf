@@ -21,5 +21,17 @@ namespace ColorVision.UI.Plugins
     {
         [JsonProperty("dependencies")]
         public Dictionary<string, string> Dependencies { get; set; }
+
+        [JsonProperty("runtime")]
+        public Dictionary<string, RuntimeAssemblyInfo> Runtime { get; set; }
+    }
+
+    public class RuntimeAssemblyInfo
+    {
+        [JsonProperty("assemblyVersion")]
+        public string AssemblyVersion { get; set; }
+
+        [JsonProperty("fileVersion")]
+        public string FileVersion { get; set; }
     }
 }

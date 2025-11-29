@@ -88,34 +88,36 @@ namespace ColorVision.UI.Plugins
             if (mainTargetDict == null)
                 return;
 
-            // Collect all dependencies from all packages
-            var allDependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // Collect all DLL names from the runtime sections of all packages
+            var allDllNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var package in mainTargetDict)
             {
-                // Add the package itself (extract package name from "PackageName/Version")
-                string packageName = package.Key.Split('/')[0];
-                allDependencies.Add(packageName);
-
-                // Add all dependencies of this package
-                if (package.Value?.Dependencies != null)
+                // Extract DLL names from the runtime section
+                // The runtime section contains entries like "lib/net8.0-windows7.0/Wpf.Ui.dll"
+                if (package.Value?.Runtime != null)
                 {
-                    foreach (var dep in package.Value.Dependencies)
+                    foreach (var runtimeEntry in package.Value.Runtime)
                     {
-                        allDependencies.Add(dep.Key);
+                        // Extract the DLL filename from the path (e.g., "lib/net8.0-windows7.0/Wpf.Ui.dll" -> "Wpf.Ui.dll")
+                        string dllPath = runtimeEntry.Key;
+                        if (dllPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string dllName = Path.GetFileName(dllPath);
+                            allDllNames.Add(dllName);
+                        }
                     }
                 }
             }
 
-            // Copy each dependency DLL from source to output
-            foreach (var depName in allDependencies)
+            // Copy each DLL from source to output if it exists
+            foreach (var dllName in allDllNames)
             {
                 // Skip system assemblies
-                if (IsSystemAssembly(depName))
+                string assemblyName = Path.GetFileNameWithoutExtension(dllName);
+                if (IsSystemAssembly(assemblyName))
                     continue;
 
-                // Try to find and copy the DLL
-                string dllName = depName + ".dll";
                 string sourcePath = Path.Combine(sourceDirectory, dllName);
 
                 if (File.Exists(sourcePath))
@@ -127,6 +129,7 @@ namespace ColorVision.UI.Plugins
                         log.Debug($"Copied dependency: {dllName}");
                     }
                 }
+                // If the DLL doesn't exist in source directory, skip it (as per user request)
             }
         }
 
