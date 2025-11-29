@@ -1,7 +1,6 @@
 using log4net;
 using Newtonsoft.Json;
 using System.IO;
-using System.Linq;
 
 namespace ColorVision.UI.Plugins
 {
@@ -38,6 +37,8 @@ namespace ColorVision.UI.Plugins
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginExtractor));
 
+        private const string StrippedFilesJsonName = "stripped_files.json";
+
         /// <summary>
         /// Extracts a plugin and all its dependencies to the specified output folder
         /// </summary>
@@ -65,27 +66,16 @@ namespace ColorVision.UI.Plugins
                 // 1. Copy all files from the plugin directory
                 CopyDirectory(pluginDirectory, outputFolder);
 
-                // 2. Parse deps.json and copy required dependencies from app base directory
-                if (pluginInfo.DepsJson != null)
+                // 2. Read stripped_files.json and restore stripped dependencies from app base directory
+                string strippedFilesPath = Path.Combine(pluginDirectory, StrippedFilesJsonName);
+                if (File.Exists(strippedFilesPath))
                 {
-                    CopyDependencies(pluginInfo.DepsJson, appBaseDirectory, outputFolder);
+                    RestoreStrippedFiles(strippedFilesPath, appBaseDirectory, outputFolder);
                 }
                 else
                 {
-                    string[] depsFiles = Directory.GetFiles(pluginDirectory, "*. deps. json");
-                    if (depsFiles.Length == 1)
-                    {
-                        string json = File.ReadAllText(depsFiles[0]);
-                        var depsJson = JsonConvert.DeserializeObject<DepsJson>(json);
-                        if (depsJson != null)
-                        {
-                            CopyDependencies(depsJson, appBaseDirectory, outputFolder);
-                        }
-                    }
+                    log.Warn($"stripped_files.json not found in plugin directory: {pluginDirectory}");
                 }
-
-                // 3.  Copy native runtime DLLs if they exist
-                CopyRuntimesFolder(appBaseDirectory, outputFolder);
 
                 log.Info($"Plugin {pluginInfo.Name} extracted to {outputFolder}");
                 return true;
@@ -98,169 +88,57 @@ namespace ColorVision.UI.Plugins
         }
 
         /// <summary>
-        /// Extracts all DLL information from a DepsJson object
+        /// Restores stripped files from the main app directory using the stripped_files.json manifest
         /// </summary>
-        public static List<DllInfo> ExtractAllDlls(DepsJson depsJson)
+        private static void RestoreStrippedFiles(string strippedFilesJsonPath, string sourceDirectory, string outputFolder)
         {
-            var dllList = new List<DllInfo>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            if (depsJson?.Targets == null)
-                return dllList;
-
-            foreach (var target in depsJson.Targets.Values)
+            try
             {
-                if (target == null) continue;
+                string json = File.ReadAllText(strippedFilesJsonPath);
+                var strippedFiles = JsonConvert.DeserializeObject<List<string>>(json);
 
-                foreach (var entry in target.Values)
+                if (strippedFiles == null || strippedFiles.Count == 0)
                 {
-                    if (entry == null) continue;
+                    log.Debug("No stripped files to restore");
+                    return;
+                }
 
-                    // Extract from runtime section
-                    if (entry.Runtime != null)
+                int copiedCount = 0;
+                int skippedCount = 0;
+
+                foreach (var relativePath in strippedFiles)
+                {
+                    string sourcePath = Path.Combine(sourceDirectory, relativePath);
+                    string destPath = Path.Combine(outputFolder, relativePath);
+
+                    if (File.Exists(sourcePath))
                     {
-                        foreach (var runtimeKey in entry.Runtime.Keys)
+                        // Ensure destination directory exists
+                        string? destDir = Path.GetDirectoryName(destPath);
+                        if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
                         {
-                            if (string.IsNullOrEmpty(runtimeKey)) continue;
+                            Directory.CreateDirectory(destDir);
+                        }
 
-                            string fileName = Path.GetFileName(runtimeKey);
-                            if (fileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (seen.Add(fileName))
-                                {
-                                    dllList.Add(new DllInfo
-                                    {
-                                        FileName = fileName,
-                                        RelativePath = fileName,
-                                        IsResource = false
-                                    });
-                                }
-                            }
+                        if (!File.Exists(destPath))
+                        {
+                            File.Copy(sourcePath, destPath, false);
+                            copiedCount++;
+                            log.Debug($"Restored: {relativePath}");
                         }
                     }
-
-                    // Extract from resources section (localized DLLs)
-                    if (entry.Resources != null)
+                    else
                     {
-                        foreach (var kvp in entry.Resources)
-                        {
-                            string resourcePath = kvp.Key;
-                            var resourceInfo = kvp.Value;
-
-                            if (string.IsNullOrEmpty(resourcePath)) continue;
-
-                            string fileName = Path.GetFileName(resourcePath);
-                            if (fileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
-                                !string.IsNullOrEmpty(resourceInfo?.Locale))
-                            {
-                                // Build relative path: locale/filename (e.g., "zh-CN/WPFHexaEditor.resources.dll")
-                                string relativePath = Path.Combine(resourceInfo.Locale, fileName);
-
-                                if (seen.Add(relativePath))
-                                {
-                                    dllList.Add(new DllInfo
-                                    {
-                                        FileName = fileName,
-                                        RelativePath = relativePath,
-                                        IsResource = true,
-                                        Locale = resourceInfo.Locale
-                                    });
-                                }
-                            }
-                        }
-                    }
-
-                    // Extract from runtimeTargets section (native DLLs)
-                    if (entry.RuntimeTargets != null)
-                    {
-                        foreach (var kvp in entry.RuntimeTargets)
-                        {
-                            string runtimePath = kvp.Key;
-                            if (string.IsNullOrEmpty(runtimePath)) continue;
-
-                            // runtimeTargets paths are like "runtimes/win-x64/native/xxx.dll"
-                            // These are handled by CopyRuntimesFolder, but we can track them
-                            if (runtimePath.EndsWith(". dll", StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (seen.Add(runtimePath))
-                                {
-                                    dllList.Add(new DllInfo
-                                    {
-                                        FileName = Path.GetFileName(runtimePath),
-                                        RelativePath = runtimePath,
-                                        IsResource = false
-                                    });
-                                }
-                            }
-                        }
+                        skippedCount++;
+                        log.Debug($"Skipped (not found): {relativePath}");
                     }
                 }
+
+                log.Info($"Restored {copiedCount} stripped files, skipped {skippedCount}");
             }
-
-            return dllList;
-        }
-
-        /// <summary>
-        /// Copies all dependencies from the deps.json to the output folder
-        /// </summary>
-        private static void CopyDependencies(DepsJson depsJson, string sourceDirectory, string outputFolder)
-        {
-            if (depsJson?.Targets == null)
-                return;
-
-            var allDlls = ExtractAllDlls(depsJson);
-
-            log.Debug($"Found {allDlls.Count} DLLs in deps.json");
-
-            foreach (var dllInfo in allDlls)
+            catch (Exception ex)
             {
-                // Skip core system assemblies only (not Microsoft.Extensions.*)
-                string assemblyName = Path.GetFileNameWithoutExtension(dllInfo.FileName);
-
-                // Handle runtimeTargets separately (they're in runtimes folder)
-                if (dllInfo.RelativePath.StartsWith("runtimes", StringComparison.OrdinalIgnoreCase))
-                {
-                    // These are handled by CopyRuntimesFolder
-                    continue;
-                }
-
-                string sourcePath = Path.Combine(sourceDirectory, dllInfo.RelativePath);
-                string destPath = Path.Combine(outputFolder, dllInfo.RelativePath);
-
-                if (File.Exists(sourcePath))
-                {
-                    // Create directory structure if needed (for localized resources)
-                    string destDir = Path.GetDirectoryName(destPath);
-                    if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
-                    {
-                        Directory.CreateDirectory(destDir);
-                    }
-
-                    if (!File.Exists(destPath))
-                    {
-                        File.Copy(sourcePath, destPath, false);
-                        log.Debug($"Copied dependency: {dllInfo.RelativePath}");
-                    }
-                }
-                else
-                {
-                    log.Debug($"Dependency not found: {sourcePath}");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Copies the runtimes folder if it exists (for native DLLs)
-        /// </summary>
-        private static void CopyRuntimesFolder(string sourceDirectory, string outputFolder)
-        {
-            string runtimesSource = Path.Combine(sourceDirectory, "runtimes");
-            string runtimesDest = Path.Combine(outputFolder, "runtimes");
-
-            if (Directory.Exists(runtimesSource))
-            {
-                CopyDirectory(runtimesSource, runtimesDest);
-                log.Debug($"Copied runtimes folder");
+                log.Error($"Failed to restore stripped files: {ex.Message}", ex);
             }
         }
 

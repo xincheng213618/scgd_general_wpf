@@ -59,6 +59,9 @@ def compare_and_zip(src_dir, ref_dir, output_zip, project_name, base_path, type_
     project_path = os.path.join(temp_dir, project_name)
     os.makedirs(project_path)
 
+    # 记录所有被剥离的文件（相对路径）
+    stripped_files = []
+
     # 拷贝差异文件
     for root, _, files in os.walk(src_dir):
         for file in files:
@@ -66,11 +69,22 @@ def compare_and_zip(src_dir, ref_dir, output_zip, project_name, base_path, type_
                 continue
             src_file_path = os.path.join(root, file)
             ref_file_path = os.path.join(ref_dir, os.path.relpath(src_file_path, src_dir))
+            relative_path = os.path.relpath(src_file_path, src_dir)
+            
             if not os.path.exists(ref_file_path):
-                relative_path = os.path.relpath(src_file_path, src_dir)
+                # 文件不存在于ref_dir，需要打包
                 dest_path = os.path.join(project_path, relative_path)
                 os.makedirs(os.path.dirname(dest_path), exist_ok=True)
                 shutil.copy2(src_file_path, dest_path)
+            else:
+                # 文件存在于ref_dir，记录为被剥离的文件
+                stripped_files.append(relative_path)
+
+    # 生成 stripped_files.json 记录被剥离的文件
+    stripped_files_path = os.path.join(project_path, 'stripped_files.json')
+    with open(stripped_files_path, 'w', encoding='utf-8') as f:
+        json.dump(stripped_files, f, indent=2, ensure_ascii=False)
+    print(f"Generated stripped_files.json with {len(stripped_files)} entries")
 
     # 拷贝额外文件：全部直接覆盖到 project_path 下
     extra_files = find_extra_files(base_path, type_name, project_name)
