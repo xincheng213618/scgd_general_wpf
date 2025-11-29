@@ -1,7 +1,6 @@
 using log4net;
 using Newtonsoft.Json;
 using System.IO;
-using System.Linq;
 
 namespace ColorVision.UI.Plugins
 {
@@ -11,6 +10,8 @@ namespace ColorVision.UI.Plugins
     public static class PluginExtractor
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginExtractor));
+
+        private const string StrippedFilesJsonName = "stripped_files.json";
 
         /// <summary>
         /// Extracts a plugin and all its dependencies to the specified output folder
@@ -43,28 +44,16 @@ namespace ColorVision.UI.Plugins
                 // 1. Copy all files from the plugin directory
                 CopyDirectory(pluginDirectory, outputFolder);
 
-                // 2. Parse deps.json and copy required dependencies from app base directory
-                if (pluginInfo.DepsJson != null)
+                // 2. Read stripped_files.json and restore stripped dependencies from app base directory
+                string strippedFilesPath = Path.Combine(pluginDirectory, StrippedFilesJsonName);
+                if (File.Exists(strippedFilesPath))
                 {
-                    CopyDependencies(pluginInfo.DepsJson, appBaseDirectory, outputFolder);
+                    RestoreStrippedFiles(strippedFilesPath, appBaseDirectory, outputFolder);
                 }
                 else
                 {
-                    // Try to load deps.json from the plugin directory
-                    string[] depsFiles = Directory.GetFiles(pluginDirectory, "*.deps.json");
-                    if (depsFiles.Length == 1)
-                    {
-                        string json = File.ReadAllText(depsFiles[0]);
-                        var depsObj = JsonConvert.DeserializeObject<DepsJson>(json);
-                        if (depsObj != null)
-                        {
-                            CopyDependencies(depsObj, appBaseDirectory, outputFolder);
-                        }
-                    }
+                    log.Warn($"stripped_files.json not found in plugin directory: {pluginDirectory}");
                 }
-
-                // 3. Copy native runtime DLLs if they exist (e.g., runtimes folder for OpenCvSharp)
-                CopyRuntimesFolder(appBaseDirectory, outputFolder);
 
                 log.Info($"Plugin {pluginInfo.Name} extracted to {outputFolder}");
                 return true;
@@ -77,106 +66,57 @@ namespace ColorVision.UI.Plugins
         }
 
         /// <summary>
-        /// Copies all dependencies from the deps.json to the output folder
+        /// Restores stripped files from the main app directory using the stripped_files.json manifest
         /// </summary>
-        private static void CopyDependencies(DepsJson depsJson, string sourceDirectory, string outputFolder)
+        private static void RestoreStrippedFiles(string strippedFilesJsonPath, string sourceDirectory, string outputFolder)
         {
-            if (depsJson?.Targets == null)
-                return;
-
-            var mainTargetDict = depsJson.Targets.Values.FirstOrDefault();
-            if (mainTargetDict == null)
-                return;
-
-            // Collect all DLL names from the runtime sections of all packages
-            var allDllNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var package in mainTargetDict)
+            try
             {
-                // Extract DLL names from the runtime section
-                // The runtime section contains entries like "lib/net8.0-windows7.0/Wpf.Ui.dll"
-                if (package.Value?.Runtime != null)
+                string json = File.ReadAllText(strippedFilesJsonPath);
+                var strippedFiles = JsonConvert.DeserializeObject<List<string>>(json);
+
+                if (strippedFiles == null || strippedFiles.Count == 0)
                 {
-                    foreach (var runtimeEntry in package.Value.Runtime)
+                    log.Debug("No stripped files to restore");
+                    return;
+                }
+
+                int copiedCount = 0;
+                int skippedCount = 0;
+
+                foreach (var relativePath in strippedFiles)
+                {
+                    string sourcePath = Path.Combine(sourceDirectory, relativePath);
+                    string destPath = Path.Combine(outputFolder, relativePath);
+
+                    if (File.Exists(sourcePath))
                     {
-                        // Extract the DLL filename from the path (e.g., "lib/net8.0-windows7.0/Wpf.Ui.dll" -> "Wpf.Ui.dll")
-                        string dllPath = runtimeEntry.Key;
-                        if (dllPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                        // Ensure destination directory exists
+                        string? destDir = Path.GetDirectoryName(destPath);
+                        if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
                         {
-                            string dllName = Path.GetFileName(dllPath);
-                            allDllNames.Add(dllName);
+                            Directory.CreateDirectory(destDir);
+                        }
+
+                        if (!File.Exists(destPath))
+                        {
+                            File.Copy(sourcePath, destPath, false);
+                            copiedCount++;
+                            log.Debug($"Restored: {relativePath}");
                         }
                     }
-                }
-            }
-
-            // Copy each DLL from source to output if it exists
-            foreach (var dllName in allDllNames)
-            {
-                // Skip system assemblies
-                string assemblyName = Path.GetFileNameWithoutExtension(dllName);
-                if (IsSystemAssembly(assemblyName))
-                    continue;
-
-                string sourcePath = Path.Combine(sourceDirectory, dllName);
-
-                if (File.Exists(sourcePath))
-                {
-                    string destPath = Path.Combine(outputFolder, dllName);
-                    if (!File.Exists(destPath))
+                    else
                     {
-                        File.Copy(sourcePath, destPath, false);
-                        log.Debug($"Copied dependency: {dllName}");
+                        skippedCount++;
+                        log.Debug($"Skipped (not found): {relativePath}");
                     }
                 }
-                // If the DLL doesn't exist in source directory, skip it (as per user request)
+
+                log.Info($"Restored {copiedCount} stripped files, skipped {skippedCount}");
             }
-        }
-
-        /// <summary>
-        /// Checks if an assembly is a system assembly that should be skipped
-        /// </summary>
-        private static bool IsSystemAssembly(string assemblyName)
-        {
-            if (string.IsNullOrEmpty(assemblyName))
-                return true;
-
-            // Skip .NET runtime and common Microsoft assemblies
-            string[] systemPrefixes = new[]
+            catch (Exception ex)
             {
-                "System.",
-                "Microsoft.",
-                "mscorlib",
-                "netstandard",
-                "WindowsBase",
-                "PresentationCore",
-                "PresentationFramework"
-            };
-
-            foreach (var prefix in systemPrefixes)
-            {
-                if (assemblyName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
-                    assemblyName.Equals(prefix.TrimEnd('.'), StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Copies the runtimes folder if it exists (for native DLLs)
-        /// </summary>
-        private static void CopyRuntimesFolder(string sourceDirectory, string outputFolder)
-        {
-            string runtimesSource = Path.Combine(sourceDirectory, "runtimes");
-            string runtimesDest = Path.Combine(outputFolder, "runtimes");
-
-            if (Directory.Exists(runtimesSource))
-            {
-                CopyDirectory(runtimesSource, runtimesDest);
-                log.Debug($"Copied runtimes folder");
+                log.Error($"Failed to restore stripped files: {ex.Message}", ex);
             }
         }
 
