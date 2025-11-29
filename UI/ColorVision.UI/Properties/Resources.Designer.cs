@@ -547,6 +547,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 提取插件 的本地化字符串。
+        /// </summary>
+        public static string ExtractPlugin {
+            get {
+                return ResourceManager.GetString("ExtractPlugin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 过滤器支持正则 的本地化字符串。
         /// </summary>
         public static string FilterSupportsRegex {
@@ -1033,6 +1042,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 插件提取失败 的本地化字符串。
+        /// </summary>
+        public static string PluginExtractFailed {
+            get {
+                return ResourceManager.GetString("PluginExtractFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 插件已成功提取到: {0} 的本地化字符串。
+        /// </summary>
+        public static string PluginExtractSuccess {
+            get {
+                return ResourceManager.GetString("PluginExtractSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 加载插件或manifest错误：{0} 的本地化字符串。
         /// </summary>
         public static string PluginLoadError {
@@ -1155,6 +1182,15 @@ namespace ColorVision.UI.Properties {
         public static string Search {
             get {
                 return ResourceManager.GetString("Search", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择要提取插件的目标文件夹 的本地化字符串。
+        /// </summary>
+        public static string SelectExtractFolder {
+            get {
+                return ResourceManager.GetString("SelectExtractFolder", resourceCulture);
             }
         }
         

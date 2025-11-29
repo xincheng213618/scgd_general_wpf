@@ -30,7 +30,6 @@ using ColorVision.UI.LogImp;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using LiveChartsCore.Kernel;
 using log4net;
 using log4net.Util;
 using Newtonsoft.Json;
