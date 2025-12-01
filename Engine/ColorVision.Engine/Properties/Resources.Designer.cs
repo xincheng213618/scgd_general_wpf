@@ -3517,6 +3517,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 IV扫描处理 的本地化字符串。
+        /// </summary>
+        public static string IVScanProcessing {
+            get {
+                return ResourceManager.GetString("IVScanProcessing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 JND模板管理 的本地化字符串。
         /// </summary>
         public static string JNDTemplateManagement {
@@ -5097,6 +5106,15 @@ namespace ColorVision.Engine.Properties {
         public static string Processing {
             get {
                 return ResourceManager.GetString("Processing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 处理SMU扫描数据，保存到CSV并绘制IV曲线 的本地化字符串。
+        /// </summary>
+        public static string ProcessIVScanDataAndExportToCSV {
+            get {
+                return ResourceManager.GetString("ProcessIVScanDataAndExportToCSV", resourceCulture);
             }
         }
         
