@@ -180,6 +180,9 @@ namespace Pattern
             };
             cmbPattern1.ItemsSource = Patterns;
             cmbPattern1.SelectedIndex = 0;
+
+            // Initialize theme icon based on current theme
+            UpdateThemeIcon();
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -354,6 +357,21 @@ namespace Pattern
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             PatternManager.GetInstance().TemplatePatternFiles.Clear();
+        }
+
+        private void ThemeToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Toggle between Light and Dark themes only
+            Theme newTheme = ThemeManager.Current.CurrentUITheme == Theme.Dark ? Theme.Light : Theme.Dark;
+            ThemeConfig.Instance.Theme = newTheme;
+            Application.Current.ApplyTheme(newTheme);
+            UpdateThemeIcon();
+        }
+
+        private void UpdateThemeIcon()
+        {
+            // E793 = Sun (for light mode), E708 = Moon (for dark mode)
+            ThemeIconText.Text = ThemeManager.Current.CurrentUITheme == Theme.Dark ? "\uE706" : "\uE708";
         }
     }
 }
