@@ -20,6 +20,7 @@
             <TextBlock Text="Scan Series" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
             <ListBox x:Name="ScanSeriesList" Height="180" SelectionMode="Multiple" SelectionChanged="ScanSeriesList_SelectionChanged"/>
             <CheckBox x:Name="ChkShowAll" Content="Show All Series" IsChecked="True" Margin="0,12,0,8" Checked="ChkShowAll_Checked" Unchecked="ChkShowAll_Unchecked"/>
+            <CheckBox x:Name="ChkSortData" Content="Sort Data (Monotonic)" Margin="0,0,0,8" Checked="SortMode_Changed" Unchecked="SortMode_Changed" ToolTip="Uncheck to preserve original measurement sequence for round-trip (hysteresis) visualization"/>
             
             <Separator Margin="0,12,0,12"/>
             

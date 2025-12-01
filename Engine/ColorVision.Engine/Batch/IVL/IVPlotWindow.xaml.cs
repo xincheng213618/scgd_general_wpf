@@ -28,6 +28,7 @@ namespace ColorVision.Engine.Batch.IVL
         private Dictionary<string, Scatter> _scatterPlots;
         private List<string> _seriesNames;
         private bool _isVIMode = true; // true for V-I (X=Voltage, Y=Current), false for I-V (X=Current, Y=Voltage)
+        private bool _sortData = false; // true to sort data points, false to preserve original sequence (for round-trip)
         private Crosshair _crosshair;
         private Marker _highlightMarker;
         private Text _highlightText;
@@ -213,15 +214,25 @@ namespace ColorVision.Engine.Batch.IVL
                 if (!_groupedData.TryGetValue(seriesName, out List<IVDataPoint>? dataPoints) || dataPoints.Count == 0)
                     continue;
 
-                // Sort data points based on display mode
-                var sortedData = new List<IVDataPoint>(dataPoints);
-                if (_isVIMode)
+                // Apply sorting if enabled (for monotonic curves)
+                // Otherwise preserve original sequence (for round-trip/hysteresis visualization)
+                List<IVDataPoint> sortedData;
+                if (_sortData)
                 {
-                    sortedData.Sort((a, b) => a.Voltage.CompareTo(b.Voltage));
+                    sortedData = new List<IVDataPoint>(dataPoints);
+                    if (_isVIMode)
+                    {
+                        sortedData.Sort((a, b) => a.Voltage.CompareTo(b.Voltage));
+                    }
+                    else
+                    {
+                        sortedData.Sort((a, b) => a.Current.CompareTo(b.Current));
+                    }
                 }
                 else
                 {
-                    sortedData.Sort((a, b) => a.Current.CompareTo(b.Current));
+                    // Preserve original measurement sequence
+                    sortedData = dataPoints;
                 }
 
                 // Select X and Y data based on display mode
@@ -240,7 +251,7 @@ namespace ColorVision.Engine.Batch.IVL
                     MarkerSize = 6,
                     MarkerShape = MarkerShape.FilledCircle,
                     LegendText = seriesName,
-                    Smooth = false
+                    Smooth = false  // Disable smoothing to avoid strange curvature with non-monotonic data
                 };
 
                 _scatterPlots[seriesName] = scatter;
@@ -361,6 +372,19 @@ namespace ColorVision.Engine.Batch.IVL
 
             _isVIMode = RbVI.IsChecked == true;
             InitializePlot();
+        }
+
+        private void SortMode_Changed(object sender, RoutedEventArgs e)
+        {
+            if (ChkSortData == null) return;
+            if (_groupedData == null) return;
+
+            // Update the sort flag
+            _sortData = ChkSortData.IsChecked == true;
+
+            // Re-plot with new sort mode
+            PlotAllSeries();
+            wpfPlot.Refresh();
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
