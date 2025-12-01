@@ -92,33 +92,9 @@ namespace ProjectARVRPro
                     ViewResultW25 = JsonConvert.DeserializeObject<ViewResultW25>(value);
             }
         }
-
-
-        [SugarColumn(IsIgnore = true)]
-        public ViewResultBlack ViewResultBlack { get; set; } = new ViewResultBlack();
-
-        [Browsable(false)]
-        public string ViewResultBlackJson
-        {
-            get => JsonConvert.SerializeObject(ViewResultBlack);
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                    ViewResultBlack = JsonConvert.DeserializeObject<ViewResultBlack>(value);
-            }
-        }
     }
 
 
-    public class ViewResultBlack
-    {
-        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
-
-        /// <summary>
-        /// FOFO对比度 测试项
-        /// </summary>
-        public ObjectiveTestItem FOFOContrast { get; set; }
-    }
 
 
 

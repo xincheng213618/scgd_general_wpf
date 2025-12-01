@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Process.Blue;
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Distortion;
@@ -113,6 +114,9 @@ namespace ProjectARVRPro
     {
         [DisplayName("W255")]
         public W255TestResult W255TestResult { get; set; }
+        [DisplayName("Black")]
+        public BlackTestResult BlackTestResult { get; set; }
+
         [DisplayName("R255")]
         public RedTestResult RedTestResult { get; set; }
 
@@ -132,14 +136,6 @@ namespace ProjectARVRPro
 
         [DisplayName("Optical_Center")]
         public OpticCenterTestResult OpticCenterTestResult { get; set; }
-
-
-
-        /// <summary>
-        /// FOFO对比度 测试项
-        /// </summary>
-        public ObjectiveTestItem FOFOContrast { get; set; }
-
 
         /// <summary>
         /// 中心点亮度

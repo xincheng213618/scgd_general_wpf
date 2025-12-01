@@ -5,7 +5,9 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
+using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
+using ProjectARVRPro.Process.W255;
 using System.Windows;
 using System.Windows.Media;
 
@@ -19,6 +21,7 @@ namespace ProjectARVRPro.Process.Black
             var log = ctx.Logger;
             BlackRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<BlackRecipeConfig>();
             BlackFixConfig fixConfig = ctx.FixConfig.GetRequiredService<BlackFixConfig>();
+            BlackViewTestResult testResult = new BlackViewTestResult();
 
             try
             {
@@ -33,30 +36,24 @@ namespace ProjectARVRPro.Process.Black
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
-                        ctx.Result.ViewResultBlack.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
-                            ctx.Result.ViewResultBlack.PoiResultCIExyuvDatas.Add(poi);
+                            testResult.PoixyuvDatas.Add(poi);
                         }
                         // 需要白画面的亮度才能计算对比度
                         if (ctx.ObjectiveTestResult.W255TestResult != null && ctx.ObjectiveTestResult.W255TestResult.CenterLunimance != null)
                         {
-                            double contrast = ctx.ObjectiveTestResult.W255TestResult.CenterLunimance.Value / ctx.Result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+                            double contrast = ctx.ObjectiveTestResult.W255TestResult.CenterLunimance.Value / testResult.PoixyuvDatas[0].Y;
                             contrast *= fixConfig.FOFOContrast;
-                            var fofo = new ObjectiveTestItem
-                            {
-                                Name = "FOFOContrast",
-                                LowLimit = recipeConfig.FOFOContrast.Min,
-                                UpLimit = recipeConfig.FOFOContrast.Max,
-                                Value = contrast,
-                                TestValue = contrast.ToString("F2")
-                            };
-                            ctx.ObjectiveTestResult.FOFOContrast = fofo;
-                            ctx.Result.ViewResultBlack.FOFOContrast = fofo;
-                            ctx.Result.Result &= fofo.TestResult;
+                            testResult.FOFOContrast.LowLimit = recipeConfig.FOFOContrast.Min;
+                            testResult.FOFOContrast.UpLimit = recipeConfig.FOFOContrast.Max;
+                            testResult.FOFOContrast.Value = contrast;
+                            testResult.FOFOContrast.TestValue = contrast.ToString("F2");
+
+                            ctx.Result.Result &= testResult.FOFOContrast.TestResult;
                         }
                         else
                         {
@@ -64,6 +61,9 @@ namespace ProjectARVRPro.Process.Black
                         }
                     }
                 }
+
+                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
+                ctx.ObjectiveTestResult.BlackTestResult = JsonConvert.DeserializeObject<BlackTestResult>(ctx.Result.ViewResultJson) ?? new BlackTestResult();
                 return true;
             }
             catch (Exception ex)
@@ -75,7 +75,12 @@ namespace ProjectARVRPro.Process.Black
 
         public void Render(IProcessExecutionContext ctx)
         {
-            foreach (var poiResultCIExyuvData in ctx.Result.ViewResultBlack.PoiResultCIExyuvDatas)
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
+            BlackViewTestResult testResult = JsonConvert.DeserializeObject<BlackViewTestResult>(ctx.Result.ViewResultJson);
+            if (testResult == null) return;
+
+
+            foreach (var poiResultCIExyuvData in testResult.PoixyuvDatas)
             {
                 var item = poiResultCIExyuvData.Point;
                 switch (item.PointType)
@@ -115,21 +120,11 @@ namespace ProjectARVRPro.Process.Black
             string outtext = string.Empty;
 
             outtext += $"黑画面 测试项结果)" + Environment.NewLine;
-            if (result.ViewResultBlack.PoiResultCIExyuvDatas != null)
-            {
-                foreach (var item in result.ViewResultBlack.PoiResultCIExyuvDatas)
-                {
-                    outtext += $"{item.Name}  X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
-                }
-            }
-            if(result.ViewResultBlack.FOFOContrast != null)
-            {
-                outtext += $"FOFOContrast:{result.ViewResultBlack.FOFOContrast.TestValue}  LowLimit:{result.ViewResultBlack.FOFOContrast.LowLimit} UpLimit:{result.ViewResultBlack.FOFOContrast.UpLimit},Rsult{(result.ViewResultBlack.FOFOContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-            }
-            else
-            {
-                outtext += $"FOFOContrast: N/A (缺少白画面数据，无法计算对比度)" + Environment.NewLine;
-            }
+            if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return string.Empty;
+            BlackViewTestResult testResult = JsonConvert.DeserializeObject<BlackViewTestResult>(ctx.Result.ViewResultJson);
+            if (testResult == null) return string.Empty;
+
+            outtext += $"FOFOContrast:{testResult.FOFOContrast.TestValue}  LowLimit:{testResult.FOFOContrast.LowLimit} UpLimit:{testResult.FOFOContrast.UpLimit},Rsult{(testResult.FOFOContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
         }
 
