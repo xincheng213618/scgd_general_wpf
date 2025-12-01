@@ -410,7 +410,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 dc.DrawText(angleText, RMouseDownP + new Vector(a, a));
             }
 
-            if (IsLocked)
+            if (IsLocked && Attribute.IsShowLockedText)
             {
                 // 画一个小锁图标或者文字
                 FormattedText lockText = new(
@@ -527,6 +527,10 @@ namespace ColorVision.ImageEditor.Draw.Special
 
     public class ReferenceLineParam:BaseProperties
     {
+        public bool IsShowLockedText { get => _IsShowLockedText; set { _IsShowLockedText = value; OnPropertyChanged(); } }
+        private bool _IsShowLockedText = true;
+
+
         [Browsable(false),JsonIgnore]
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen;
@@ -555,42 +559,43 @@ namespace ColorVision.ImageEditor.Draw.Special
         public double PointY { get => _PointY; set { _PointY = value; OnPropertyChanged(); } }
         private double _PointY;
 
+
         // 遮罩相关属性
-        [Category("遮罩设置"), DisplayName("遮罩形状")]
+        [Category("遮罩设置"), DisplayName("遮罩形状"),PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public MaskShape MaskShape { get => _MaskShape; set { _MaskShape = value; OnPropertyChanged(); } }
         private MaskShape _MaskShape = MaskShape.Circle;
 
-        [Category("遮罩设置"), DisplayName("遮罩透明区大小")]
+        [Category("遮罩设置"), DisplayName("遮罩透明区大小"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public double MaskSize { get => _MaskSize; set { _MaskSize = value; OnPropertyChanged(); } }
         private double _MaskSize = 100.0;
 
-        [Category("遮罩设置"), DisplayName("遮罩不透明度(0-255)")]
+        [Category("遮罩设置"), DisplayName("遮罩不透明度(0-255)"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public byte MaskOpacity { get => _MaskOpacity; set { _MaskOpacity = value; OnPropertyChanged(); } }
         private byte _MaskOpacity = 180;
 
         // 中心覆盖光栅相关属性
-        [Category("中心覆盖"), DisplayName("覆盖形状")]
+        [Category("中心覆盖"), DisplayName("覆盖形状"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public CenterOverlayShape CenterOverlay { get => _CenterOverlay; set { _CenterOverlay = value; OnPropertyChanged(); } }
         private CenterOverlayShape _CenterOverlay = CenterOverlayShape.None;
 
-        [Category("中心覆盖"), DisplayName("覆盖颜色"), JsonIgnore]
+        [Category("中心覆盖"), DisplayName("覆盖颜色"), JsonIgnore, PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public Brush OverlayBrush { get => _OverlayBrush; set { _OverlayBrush = value; OnPropertyChanged(); } }
         private Brush _OverlayBrush = Brushes.Yellow;
 
-        [Category("中心覆盖"), DisplayName("覆盖大小")]
+        [Category("中心覆盖"), DisplayName("覆盖大小"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public double CenterOverlaySize { get => _CenterOverlaySize; set { _CenterOverlaySize = value; OnPropertyChanged(); } }
         private double _CenterOverlaySize = 50.0;
 
         // 物理尺寸转换
-        [Category("物理尺寸"), DisplayName("物理尺寸X(mm)")]
+        [Category("物理尺寸"), DisplayName("物理尺寸X(mm)"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public double PhysicalSizeX { get => _PhysicalSizeX; set { _PhysicalSizeX = value; OnPropertyChanged(); } }
         private double _PhysicalSizeX = 0.0;
 
-        [Category("物理尺寸"), DisplayName("物理尺寸Y(mm)")]
+        [Category("物理尺寸"), DisplayName("物理尺寸Y(mm)"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public double PhysicalSizeY { get => _PhysicalSizeY; set { _PhysicalSizeY = value; OnPropertyChanged(); } }
         private double _PhysicalSizeY = 0.0;
 
-        [Category("物理尺寸"), DisplayName("像素/单位(px/mm)")]
+        [Category("物理尺寸"), DisplayName("像素/单位(px/mm)"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public double PixelPerUnit { get => _PixelPerUnit; set { _PixelPerUnit = value; OnPropertyChanged(); } }
         private double _PixelPerUnit = 1.0;
 
