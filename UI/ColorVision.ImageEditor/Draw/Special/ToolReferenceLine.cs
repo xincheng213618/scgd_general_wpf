@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -133,6 +134,13 @@ namespace ColorVision.ImageEditor.Draw.Special
         {
             Attribute = new ReferenceLineParam();
             Attribute.Pen  = new Pen(Attribute.Brush, 1);
+            Attribute.PropertyChanged += (s, e) => Render();
+        }
+
+        public ReferenceLine(ReferenceLineParam referenceLineParam)
+        {
+            Attribute = referenceLineParam;
+            Attribute.Pen = new Pen(Attribute.Brush, 1);
             Attribute.PropertyChanged += (s, e) => Render();
         }
         public double Ratio { get; set; }
@@ -519,7 +527,7 @@ namespace ColorVision.ImageEditor.Draw.Special
 
     public class ReferenceLineParam:BaseProperties
     {
-        [Browsable(false)]
+        [Browsable(false),JsonIgnore]
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen;
 
@@ -527,7 +535,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         public ReferenceLineMode Mode { get => _Mode; set { _Mode = value; OnPropertyChanged(); } }
         private ReferenceLineMode _Mode = ReferenceLineMode.SimpleCross;
 
-        [DisplayName("颜色")]
+        [DisplayName("颜色"), JsonIgnore]
         public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged();  Pen.Brush = value; } }
         private Brush _Brush = Brushes.Red;
 
@@ -565,7 +573,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         public CenterOverlayShape CenterOverlay { get => _CenterOverlay; set { _CenterOverlay = value; OnPropertyChanged(); } }
         private CenterOverlayShape _CenterOverlay = CenterOverlayShape.None;
 
-        [Category("中心覆盖"), DisplayName("覆盖颜色")]
+        [Category("中心覆盖"), DisplayName("覆盖颜色"), JsonIgnore]
         public Brush OverlayBrush { get => _OverlayBrush; set { _OverlayBrush = value; OnPropertyChanged(); } }
         private Brush _OverlayBrush = Brushes.Yellow;
 

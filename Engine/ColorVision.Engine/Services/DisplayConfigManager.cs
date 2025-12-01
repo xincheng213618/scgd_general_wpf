@@ -21,6 +21,7 @@ namespace ColorVision.Engine.Services
     }
     public class DisplayConfigManager : IConfig
     {
+
         public static DisplayConfigManager Instance => ConfigService.Instance.GetRequiredService<DisplayConfigManager>();
 
         internal readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { Formatting = Formatting.Indented };
@@ -30,7 +31,14 @@ namespace ColorVision.Engine.Services
             {
                 foreach (var configPair in Configs)
                 {
-                    _Object[configPair.Key] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                    try
+                    {
+                        _Object[configPair.Key] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                    }
+                    catch
+                    {
+                        
+                    }
                 }
                 return _Object;
             }

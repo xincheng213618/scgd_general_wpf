@@ -29,6 +29,8 @@ namespace ColorVision.ImageEditor
 
         public DrawEditorManager DrawEditorManager { get; init; } = new DrawEditorManager();
 
+        public IEditorToolFactory IEditorToolFactory { get; set; }
+
     }
 
 }

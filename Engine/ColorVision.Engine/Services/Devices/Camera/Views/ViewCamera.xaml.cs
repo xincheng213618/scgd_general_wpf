@@ -2,9 +2,11 @@
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
+using HandyControl.Controls;
 using log4net;
 using MQTTMessageLib.Camera;
 using System;
@@ -49,6 +51,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             this.DataContext = Config;
             View = new View();
+
+            if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
+            {
+                toolReferenceLine.ReferenceLine = new ReferenceLine(Device.DisplayConfig.ReferenceLineParam);
+            }
 
             listView1.ItemsSource = ViewResults;
 
