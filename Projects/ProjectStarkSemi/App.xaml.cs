@@ -1,17 +1,12 @@
-﻿using ColorVision.Database;
-using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
-using ColorVision.UI.Plugins;
-using ProjectStarkSemi;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ProjectStarkSemi
@@ -36,20 +31,30 @@ namespace ProjectStarkSemi
         {
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigHandler.GetInstance().GetRequiredService<Authorization>();
+
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
 
-            PluginLoader.LoadPlugins("Plugins");
+            Assembly.LoadFrom("ColorVision.Engine.dll"); ;
 
-            MySqlControl.GetInstance().Connect();
-            MQTTControl.GetInstance().MQTTConnectChanged += async (s, e) =>
+            var _IComponentInitializers = new List<IInitializer>();
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                await MqttRCService.GetInstance().Connect();
-            };
-            Task.Run(() => MQTTControl.GetInstance().Connect());
-            ServiceManager.GetInstance().GenDeviceDisplayControl();
-            TemplateControl.GetInstance();
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IInitializer componentInitialize)
+                    {
+                        _IComponentInitializers.Add(componentInitialize);
+                    }
+                }
+            }
+            _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
+
+            foreach (var item in _IComponentInitializers)
+            {
+                await item.InitializeAsync();
+            }
 
             ConoscopeWindow conoscopeWindow = new ConoscopeWindow();
             conoscopeWindow.Show();
