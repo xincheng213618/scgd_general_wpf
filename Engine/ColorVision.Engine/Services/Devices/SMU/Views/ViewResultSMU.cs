@@ -43,18 +43,13 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             CreateTime = item.CreateDate;
             BatchID = item.BatchId;
             MeasurementType = item.IsSourceV == true ? MeasurementType.Voltage : MeasurementType.Current;
-            VList = new double[3];
-            IList = new double[3];
-            LimitEnd = item.LimitValue ??0;
+            LimitEnd = item.LimitValue ?? 0;
             VResult = item.VResult ?? 0;
             IResult = item.IResult ?? 0;
-            if (VList != null && IList != null)
-            {
-                for (int i = 0; i < VList.Length; i++)
-                {
-                    SMUDatas.Add(new SMUData() { Voltage = VList[i], Current = IList[i] });
-                }
-            }
+            // For single-point measurement (SMUResultModel), use actual VResult/IResult as the single data point
+            VList = new double[] { VResult };
+            IList = new double[] { IResult };
+            SMUDatas.Add(new SMUData() { Voltage = VResult, Current = IResult });
             Gen();
             Type = "GetData";
         }

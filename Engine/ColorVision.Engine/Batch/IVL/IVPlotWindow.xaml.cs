@@ -57,35 +57,63 @@ namespace ColorVision.Engine.Batch.IVL
                 return;
             }
 
-            int scanIndex = 1;
-            foreach (var result in scanResults)
+            // Check if all results are single-point data (GetData type from SMUResultModel)
+            // If so, combine them into one VI curve line (like IVL does)
+            bool allSinglePoint = scanResults.All(r => r.Type == "GetData" && r.SMUDatas.Count == 1);
+
+            if (allSinglePoint)
             {
-                string seriesName = $"Scan {scanIndex}";
-                if (result.Id > 0)
-                {
-                    seriesName = $"Scan {result.Id}";
-                }
-                else if (result.CreateTime.HasValue)
-                {
-                    seriesName = $"Scan {result.CreateTime.Value:HH:mm:ss}";
-                }
+                // Combine all single-point data into one series (VI Curve)
+                string seriesName = "VI Curve";
+                _groupedData[seriesName] = new List<IVDataPoint>();
+                _seriesNames.Add(seriesName);
 
-                if (!_groupedData.ContainsKey(seriesName))
+                foreach (var result in scanResults)
                 {
-                    _groupedData[seriesName] = new List<IVDataPoint>();
-                    _seriesNames.Add(seriesName);
-                }
-
-                foreach (var smuData in result.SMUDatas)
-                {
-                    _groupedData[seriesName].Add(new IVDataPoint
+                    if (result.SMUDatas.Count > 0)
                     {
-                        Voltage = smuData.Voltage,
-                        Current = smuData.Current
-                    });
+                        var smuData = result.SMUDatas[0];
+                        _groupedData[seriesName].Add(new IVDataPoint
+                        {
+                            Voltage = smuData.Voltage,
+                            Current = smuData.Current
+                        });
+                    }
                 }
+            }
+            else
+            {
+                // Original behavior: each scan result is a separate series (for Scan type data)
+                int scanIndex = 1;
+                foreach (var result in scanResults)
+                {
+                    string seriesName = $"Scan {scanIndex}";
+                    if (result.Id > 0)
+                    {
+                        seriesName = $"Scan {result.Id}";
+                    }
+                    else if (result.CreateTime.HasValue)
+                    {
+                        seriesName = $"Scan {result.CreateTime.Value:HH:mm:ss}";
+                    }
 
-                scanIndex++;
+                    if (!_groupedData.ContainsKey(seriesName))
+                    {
+                        _groupedData[seriesName] = new List<IVDataPoint>();
+                        _seriesNames.Add(seriesName);
+                    }
+
+                    foreach (var smuData in result.SMUDatas)
+                    {
+                        _groupedData[seriesName].Add(new IVDataPoint
+                        {
+                            Voltage = smuData.Voltage,
+                            Current = smuData.Current
+                        });
+                    }
+
+                    scanIndex++;
+                }
             }
 
             // Remove empty series
