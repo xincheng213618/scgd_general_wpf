@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Themes;
+using ColorVision.UI;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -50,7 +51,7 @@ namespace System.ComponentModel
                     Width = 250,
                     Height = 400
                 };
-
+                window.ApplyCaption();
                 colorPicker.Confirmed += (_, __) =>
                 {
                     property.SetValue(obj, colorPicker.SelectedBrush);
@@ -58,7 +59,7 @@ namespace System.ComponentModel
                     window.Close();
                 };
                 window.Closed += (_, __) => colorPicker.Dispose();
-                window.Show();
+                window.ShowDialog();
             };
             
             var binding = new Binding(property.Name)

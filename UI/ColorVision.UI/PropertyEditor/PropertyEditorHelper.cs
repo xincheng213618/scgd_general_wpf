@@ -289,12 +289,13 @@ namespace ColorVision.UI
             {
                 var border = new Border
                 {
-                    Background = GlobalBorderBrush,
                     BorderThickness = new Thickness(1),
-                    BorderBrush = BorderBrush,
                     CornerRadius = new CornerRadius(5),
                     Margin = new Thickness(0, 0, 0, 5)
                 };
+                border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
+                border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+
                 var stackPanel = new StackPanel { Margin = new Thickness(5, 5, 5, 0) };
 
 
@@ -305,6 +306,7 @@ namespace ColorVision.UI
                     Foreground = GlobalTextBrush,
                     Margin = new Thickness(0, 0, 0, 5)
                 };
+                categoryHeader.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
                 stackPanel.Children.Add(categoryHeader);
 
 
@@ -443,9 +445,10 @@ namespace ColorVision.UI
             {
                 Text = GetDisplayName(rm, property),
                 MinWidth = LabelMinWidth,
-                Foreground = GlobalTextBrush,
                 ToolTip = string.IsNullOrWhiteSpace(desc) ? null : desc
             };
+            tb.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+
             return tb;
         }
 
@@ -489,8 +492,8 @@ namespace ColorVision.UI
                 FontSize = 16,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 RenderTransformOrigin = new Point(0.5, 0.5),
-                Foreground = GlobalTextBrush
             };
+            glyph.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
 
             var rotate = new RotateTransform();
             glyph.RenderTransform = rotate;
