@@ -37,6 +37,14 @@ namespace ColorVision.UI
             }
         }
 
+        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; OnPropertyChanged(); } }
+        private bool _IsExpanded = true;    
+
+
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; OnPropertyChanged(); } }
+        private bool _IsSelected;
+
+
         public Visibility Visibility => IsVisible ? Visibility.Visible : Visibility.Collapsed;
 
         public ObservableCollection<PropertyTreeNode> Children { get; } = new ObservableCollection<PropertyTreeNode>();

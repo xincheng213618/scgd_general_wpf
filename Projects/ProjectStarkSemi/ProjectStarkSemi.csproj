@@ -6,12 +6,13 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.1.9</VersionPrefix>
+		<VersionPrefix>1.1.1.12</VersionPrefix>
 		<UseWindowsForms>True</UseWindowsForms>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Assets\Image\ColorVision1.ico" />
 	  <None Remove="CHANGELOG.md" />
 	  <None Remove="Images\smallicon.png" />
 		<None Include="Images\AlignCenter16.png" />
@@ -123,6 +124,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Resource Include="Assets\Image\ColorVision1.ico">
+		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
 		<Resource Include="Images\AlignCenter16.png" />
 		<Resource Include="Images\AlignJustify16.png" />
 		<Resource Include="Images\AlignLeft16.PNG" />
