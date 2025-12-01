@@ -26,6 +26,22 @@
                 <ToolBar Padding="3,2">
                     <Button Content="{x:Static properties:Resources.Query}" Command="{Binding MessageManager.QueryCommand}" Margin="2,0,0,0"/>
                     <Button Content="{x:Static properties:Resources.AdvancedQuery}" Command="{Binding MessageManager.GenericQueryCommand}" Margin="2,0,0,0"/>
+                    <Button Margin="2,0,0,0" HorizontalAlignment="Left" Command="{Binding MessageManager.EditConfigCommand}" Padding="2" Height="28" Width="28" ToolTip="{x:Static properties:Resources.Settings}">
+                        <Button.Triggers>
+                            <EventTrigger RoutedEvent="Button.Click">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="rotateTransform991" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Button.Triggers>
+                        <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform x:Name="rotateTransform991" CenterX="8" CenterY="8"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Button>
                 </ToolBar>
             </ToolBarTray>
             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
