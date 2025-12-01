@@ -60,12 +60,13 @@ namespace ColorVision.Engine.Batch.IVL
 
             // Check if all results are single-point data (GetData type from SMUResultModel)
             // If so, combine them into one VI curve line (like IVL does)
+            // Note: scanResults.Count == 0 case is already handled above, so All() won't run on empty collection
             bool allSinglePoint = scanResults.All(r => r.Type == "GetData" && r.SMUDatas.Count == 1);
 
             if (allSinglePoint)
             {
                 // Combine all single-point data into one series (VI Curve)
-                string seriesName = "VI Curve";
+                const string seriesName = "VI Curve";
                 _groupedData[seriesName] = new List<IVDataPoint>();
                 _seriesNames.Add(seriesName);
 
