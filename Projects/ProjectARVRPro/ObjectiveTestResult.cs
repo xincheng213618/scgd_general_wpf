@@ -7,6 +7,7 @@ using ProjectARVRPro.Process.Green;
 using ProjectARVRPro.Process.MTFHV;
 using ProjectARVRPro.Process.OpticCenter;
 using ProjectARVRPro.Process.Red;
+using ProjectARVRPro.Process.W25;
 using ProjectARVRPro.Process.W255;
 using System.ComponentModel;
 using System.IO;
@@ -112,6 +113,9 @@ namespace ProjectARVRPro
     /// </summary>
     public class ObjectiveTestResult:ViewModelBase
     {
+        [DisplayName("W25")]
+        public W25TestResult W25TestResult { get; set; }
+
         [DisplayName("W255")]
         public W255TestResult W255TestResult { get; set; }
         [DisplayName("Black")]
