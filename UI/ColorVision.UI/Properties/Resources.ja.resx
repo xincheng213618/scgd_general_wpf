@@ -466,9 +466,6 @@
   <data name="Rename" xml:space="preserve">
     <value>名前を変更</value>
   </data>
-  <data name="DumpFileSettings" xml:space="preserve">
-    <value>アーカイブファイルの設定</value>
-  </data>
   <data name="ProjectSolution_P" xml:space="preserve">
     <value>プロジェクト/ソリューション (P)...</value>
   </data>

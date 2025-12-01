@@ -116,7 +116,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             cvColorVision.Spectrometer.CM_GetSpectrSerialNumber(Handle,stringBuilder);
             Spectrometer.CM_Emission_Close(Handle);
             Spectrometer.CM_ReleaseEmission(Handle);
-            MessageBox.Show(stringBuilder.ToString());
+            string sn = stringBuilder.ToString();
+            if (string.IsNullOrWhiteSpace(sn))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "No Device", "Sprectrum");
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(),stringBuilder.ToString(),"Sprectrum");
+
+            }
+
         }
 
         public void SelfAdaptionInitDark()

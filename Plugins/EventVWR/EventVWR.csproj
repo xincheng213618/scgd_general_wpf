@@ -5,12 +5,11 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.7.3</VersionPrefix>
+		<VersionPrefix>1.1.7.4</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\UI\ColorVision.Common\ColorVision.Common.csproj" />
-		<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -33,7 +32,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Update="CHANGELOG.md">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	  <None Update="manifest.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="README.md">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
 	</ItemGroup>

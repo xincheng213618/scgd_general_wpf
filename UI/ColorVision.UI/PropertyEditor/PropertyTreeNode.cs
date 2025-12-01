@@ -10,6 +10,8 @@ namespace ColorVision.UI
     /// </summary>
     public class PropertyTreeNode : ViewModelBase
     {
+        public ContextMenu ContextMenu { get; set; } = new ContextMenu();
+
         private string _header = string.Empty;
         public string Header
         {

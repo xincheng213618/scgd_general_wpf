@@ -22,22 +22,6 @@ namespace ColorVision.ImageEditor
         public ImageViewConfig()
         {
             Configs = new Dictionary<Type, IImageEditorConfig>();
-            foreach (var a in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (var type in a.GetTypes())
-                {
-                    if (typeof(IImageEditorConfig).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
-                    {
-                        if (!Configs.ContainsKey(type))
-                        {
-                            if (Activator.CreateInstance(type) is IImageEditorConfig instance)
-                            {
-                                Configs[type] = instance;
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         public Dictionary<Type, IImageEditorConfig> Configs { get; set; }
@@ -107,14 +91,15 @@ namespace ColorVision.ImageEditor
         public string FilePath { get => _FilePath; set { _FilePath = value; OnPropertyChanged(); } }
         private string _FilePath;
 
-
-
         public event EventHandler ColormapTypesChanged;
 
         public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; OnPropertyChanged(); ColormapTypesChanged?.Invoke(this, new EventArgs()); } }
         private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
 
-        public bool IsPseudo { get => _IsPseudo; set { _IsPseudo = value; OnPropertyChanged(); } }
+
+        public event EventHandler PseudoChanged;
+
+        public bool IsPseudo { get => _IsPseudo; set { _IsPseudo = value; OnPropertyChanged(); PseudoChanged?.Invoke(this, new EventArgs()); } }
         private bool _IsPseudo ;
 
 

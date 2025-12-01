@@ -11,6 +11,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons.HDR;
+using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
@@ -43,6 +44,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public double OpenTime { get; set; } = 10;
         public double CloseTime { get; set; } = 10;
+
+        public ReferenceLineParam ReferenceLineParam { get => _ReferenceLineParam; set { _ReferenceLineParam = value; OnPropertyChanged(); } }
+        private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();
 
     }
 
