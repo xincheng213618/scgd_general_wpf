@@ -37,6 +37,11 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         }
 
 
+        /// <summary>
+        /// Constructor for single-point measurement data from SMUResultModel.
+        /// Unlike SmuScanModel (which has arrays of V/I data), SMUResultModel contains only one VI point.
+        /// VList and IList arrays are sized to 1 element to match the single measurement point.
+        /// </summary>
         public ViewResultSMU(SMUResultModel item)
         {
             Id = item.Id;
