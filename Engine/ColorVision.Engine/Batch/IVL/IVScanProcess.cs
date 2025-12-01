@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Batch.IVL
 
             try
             {
-                List<SmuScanModel> smuScanResults;
+                List<SMUResultModel> smuScanResults;
                 using (var db = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = MySqlControl.GetConnectionString(),
@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Batch.IVL
                 }))
                 {
                     // Query SMU scan data by batch ID
-                    smuScanResults = db.Queryable<SmuScanModel>()
+                    smuScanResults = db.Queryable<SMUResultModel>()
                         .Where(x => x.BatchId == ctx.Batch.Id)
                         .OrderBy(x => x.CreateDate)
                         .ToList();
