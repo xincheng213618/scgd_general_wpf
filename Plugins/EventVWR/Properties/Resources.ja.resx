@@ -120,10 +120,10 @@
   <data name="Search" xml:space="preserve">
     <value>検索</value>
   </data>
-  <data name="ChartGenerationTool" xml:space="preserve">
-    <value>画像生成ツール</value>
-  </data>
   <data name="EventWindow" xml:space="preserve">
     <value>イベントビューアー</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>アーカイブファイルの設定</value>
   </data>
 </root>

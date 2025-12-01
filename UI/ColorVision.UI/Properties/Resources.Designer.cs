@@ -358,15 +358,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 归档文件设置 的本地化字符串。
-        /// </summary>
-        public static string DumpFileSettings {
-            get {
-                return ResourceManager.GetString("DumpFileSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 echo 正在备份当前版本... 的本地化字符串。
         /// </summary>
         public static string EchoBackingUpCurrentVersion {

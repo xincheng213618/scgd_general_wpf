@@ -120,10 +120,10 @@
   <data name="Search" xml:space="preserve">
     <value>Search</value>
   </data>
-  <data name="ChartGenerationTool" xml:space="preserve">
-    <value>Image generation tool</value>
-  </data>
   <data name="EventWindow" xml:space="preserve">
     <value>Event Viewer</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>Archive file settings</value>
   </data>
 </root>

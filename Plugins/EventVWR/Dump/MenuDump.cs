@@ -1,8 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 
 
-namespace ColorVision.UI.Dump
+namespace  EventVWR.Dump
 {
 
     public class MenuDump : MenuItemBase
@@ -27,8 +28,7 @@ namespace ColorVision.UI.Dump
                 {
                     DumpConfig.DumpType = item;
                     DumpConfig.SetDump();
-
-                    ColorVision.UI.Menus.MenuManager.GetInstance().RefreshMenuItemsByGuid("MenuDump");
+                    MenuService.Instance.RefreshMenuItemsByGuid("MenuDump");
                 });
 
                 MenuItemMetadata menuItemMeta = new MenuItemMetadata
