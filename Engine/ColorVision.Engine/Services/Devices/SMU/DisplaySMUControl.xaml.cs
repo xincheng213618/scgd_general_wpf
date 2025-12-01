@@ -4,12 +4,12 @@ using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using CVCommCore;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.ComponentModel; // Added
+using System.ComponentModel;
+using ColorVision.Engine.Services.RC; // Added
 
 
 namespace ColorVision.Engine.Services.Devices.SMU

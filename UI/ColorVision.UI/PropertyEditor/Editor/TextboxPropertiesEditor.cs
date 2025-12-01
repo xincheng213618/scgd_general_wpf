@@ -20,6 +20,8 @@ namespace System.ComponentModel
                        t == typeof(ulong) ||
                        t == typeof(sbyte) ||
                        t == typeof(double) ||
+                       t == typeof(decimal) ||
+                       t == typeof(byte) ||
                        t == typeof(string)||
                        t == typeof(System.Windows.Rect)  ;
             });

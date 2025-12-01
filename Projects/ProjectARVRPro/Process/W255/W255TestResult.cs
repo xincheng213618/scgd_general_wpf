@@ -1,40 +1,11 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 
 namespace ProjectARVRPro.Process.W255
 {
     public class W255ViewTestResult : W255TestResult
     {
         public List<PoiResultCIExyuvData> ViewPoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
-    }
-
-
-    public class PoixyuvData
-    {
-        public int Id { get; set; }
-
-        public string Name { get; set; }
-
-        public double CCT { get; set; }
-
-        public double Wave { get; set; }
-
-        public double X { get; set; }
-
-        public double Y { get; set; }
-
-        public double Z { get; set; }
-
-        public double u { get; set; }
-
-
-        public double v { get; set; }
-
-        public double x { get; set; }
-
-
-        public double y { get; set; }
-
     }
 
     public class W255TestResult : ViewModelBase

@@ -14,7 +14,7 @@ namespace Pattern
         {
             ConfigHandler.GetInstance();
 
-            this.ApplyTheme(ThemeManager.Current.AppsTheme);
+            this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
 
             PatternWindow patternWindow = new PatternWindow();

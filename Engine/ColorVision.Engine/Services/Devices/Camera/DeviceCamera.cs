@@ -12,6 +12,7 @@ using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
@@ -136,7 +137,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 msgrecode.MsgSucessed += (e) =>
                 {
                     DService.IsVideoOpen = false;
-                    DService.DeviceStatus = CVCommCore.DeviceStatusType.Closed;
+                    DService.DeviceStatus = DeviceStatusType.Closed;
                     base.RestartRCService();
                 };
                 return;
@@ -291,7 +292,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
             }
 
-            if (DService.DeviceStatus == CVCommCore.DeviceStatusType.OffLine)
+            if (DService.DeviceStatus == DeviceStatusType.OffLine)
             {
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.LogicalCameraOffline_ClearBindingsAndRetryPromp, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {

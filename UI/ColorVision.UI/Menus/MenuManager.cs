@@ -7,7 +7,7 @@ using System.Reflection; // added for ReflectionTypeLoadException
 
 namespace ColorVision.UI.Menus
 {
-    public class MenuManager
+    public class MenuManager: IMenuService
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MenuManager));
         private static MenuManager _instance;
@@ -27,7 +27,10 @@ namespace ColorVision.UI.Menus
         private readonly List<Type> _menuItemProviderTypeCache = new();
         // ----------------------------------------------------------------
 
-        private MenuManager() { }
+        private MenuManager() 
+        {
+            MenuService.SetInstance(this);
+        }
 
         public void AddFilteredGuid(string guid) => FilteredGuids.Add(guid);
         public void AddFilteredGuids(IEnumerable<string> guids)

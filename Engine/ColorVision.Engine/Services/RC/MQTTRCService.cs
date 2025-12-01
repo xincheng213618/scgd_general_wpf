@@ -2,7 +2,6 @@
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
-using CVCommCore;
 using FlowEngineLib;
 using log4net;
 using MQTTMessageLib;

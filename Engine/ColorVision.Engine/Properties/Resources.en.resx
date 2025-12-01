@@ -2481,4 +2481,10 @@
   <data name="IsFront" xml:space="preserve">
     <value>IsFront</value>
   </data>
+  <data name="IVScanProcessing" xml:space="preserve">
+    <value>IV Scan Processing</value>
+  </data>
+  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
+    <value>Process SMU scan data, save to CSV and draw IV curve</value>
+  </data>
 </root>

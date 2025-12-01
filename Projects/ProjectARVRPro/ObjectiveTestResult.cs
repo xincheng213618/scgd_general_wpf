@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Process.Blue;
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Distortion;
@@ -6,7 +7,9 @@ using ProjectARVRPro.Process.Green;
 using ProjectARVRPro.Process.MTFHV;
 using ProjectARVRPro.Process.OpticCenter;
 using ProjectARVRPro.Process.Red;
+using ProjectARVRPro.Process.W25;
 using ProjectARVRPro.Process.W255;
+using System.Collections;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -46,7 +49,22 @@ namespace ProjectARVRPro
 
             }
         }
-
+        /// <summary>
+        /// 处理集合类型，为每个元素添加序号后缀
+        /// </summary>
+        private static void CollectRowsFromList(IList list, string baseTestScreenName, List<string> rows)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                var item = list[i];
+                if (item != null)
+                {
+                    // 生成带序号的名称，如 MTF1, MTF2, MTF3... 
+                    string indexedName = $"{baseTestScreenName}{i + 1}";
+                    CollectRows(item, indexedName, rows);
+                }
+            }
+        }
         private static string FormatCsvRow(string testScreenName, string propertyName, ObjectiveTestItem testItem)
         {
             string testResult = testItem.TestResult ? "pass" : "fail";
@@ -69,7 +87,16 @@ namespace ProjectARVRPro
                     var childObj = prop.GetValue(results);
                     if (childObj != null)
                     {
-                        CollectRows(childObj, raw, rows);
+                        // 检查是否为泛型集合类型 (如 List<T>)
+                        if (childObj is IList list && prop.PropertyType.IsGenericType)
+                        {
+                            CollectRowsFromList(list, raw, rows);
+                        }
+                        else
+                        {
+                            // 非集合类型，保持原有逻辑
+                            CollectRows(childObj, raw, rows);
+                        }
                     }
                 }
             }
@@ -111,8 +138,14 @@ namespace ProjectARVRPro
     /// </summary>
     public class ObjectiveTestResult:ViewModelBase
     {
+        [DisplayName("W25")]
+        public W25TestResult W25TestResult { get; set; }
+
         [DisplayName("W255")]
         public W255TestResult W255TestResult { get; set; }
+        [DisplayName("Black")]
+        public BlackTestResult BlackTestResult { get; set; }
+
         [DisplayName("R255")]
         public RedTestResult RedTestResult { get; set; }
 
@@ -132,35 +165,6 @@ namespace ProjectARVRPro
 
         [DisplayName("Optical_Center")]
         public OpticCenterTestResult OpticCenterTestResult { get; set; }
-
-
-
-        /// <summary>
-        /// FOFO对比度 测试项
-        /// </summary>
-        public ObjectiveTestItem FOFOContrast { get; set; }
-
-
-        /// <summary>
-        /// 中心点亮度
-        /// </summary>
-        public ObjectiveTestItem W25CenterLunimance { get; set; }
-        /// <summary>
-        /// CenterCIE1931ChromaticCoordinatesx
-        /// </summary>
-        public ObjectiveTestItem W25CenterCIE1931ChromaticCoordinatesx { get; set; }
-        /// <summary>
-        /// CenterCIE1931ChromaticCoordinatesy
-        /// </summary>
-        public ObjectiveTestItem W25CenterCIE1931ChromaticCoordinatesy { get; set; }
-        /// <summary>
-        /// CenterCIE1976ChromaticCoordinatesu
-        /// </summary>
-        public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesu { get; set; }
-        /// <summary>
-        /// CenterCIE1976ChromaticCoordinatesv
-        /// </summary>
-        public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesv { get; set; }
 
         /// <summary>
         /// 总体测试结果（true表示通过，false表示不通过）

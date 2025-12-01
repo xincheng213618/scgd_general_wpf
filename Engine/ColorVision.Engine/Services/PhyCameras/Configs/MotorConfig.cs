@@ -1,5 +1,6 @@
 ﻿#pragma warning disable
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.PropertyEditor;
 using ColorVision.UI;
 using cvColorVision;
 using Newtonsoft.Json;

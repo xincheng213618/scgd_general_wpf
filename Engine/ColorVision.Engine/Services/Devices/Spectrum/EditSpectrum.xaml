@@ -30,36 +30,7 @@
         <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance config:ConfigSpectrum}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" >
                 <StackPanel x:Name="EditStackPanel" >
-                    <GroupBox Header="Shutter" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="{x:Static properties:Resources.IsEnable}" Width="120"/>
-                                <ui:ToggleSwitch IsChecked="{Binding IsShutterEnable}"/>
-                            </DockPanel>
-                            <StackPanel Visibility="{Binding IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="{x:Static properties:Resources.Serial}" Width="120"/>
-                                    <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding ShutterCfg.Addr}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="{x:Static properties:Resources.BaudRate}" Width="120"/>
-                                    <hc:ComboBox  x:Name="TextBaudRate" IsEditable="True" Text="{Binding ShutterCfg.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="{x:Static properties:Resources.DelayMs}" Width="120"/>
-                                    <TextBox Text="{Binding ShutterCfg.DelayTime}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="{x:Static properties:Resources.OpenCmd}" Width="120"/>
-                                    <TextBox Text="{Binding ShutterCfg.OpenCmd}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="{x:Static properties:Resources.CloseCmd}" Width="120"/>
-                                    <TextBox Text="{Binding ShutterCfg.CloseCmd}" />
-                                </DockPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </GroupBox>
+
 
                 </StackPanel>
             </Border>

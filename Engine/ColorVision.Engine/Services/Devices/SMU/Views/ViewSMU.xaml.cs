@@ -10,8 +10,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -109,16 +111,55 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 MessageBox1.Show(ColorVision.Engine.Properties.Resources.SelectDataFirst);
                 return;
             }
-
             using var dialog = new System.Windows.Forms.SaveFileDialog();
-            dialog.Filter = "CSV files (*.csv) | *.csv";
+            dialog.Filter = "CSV files (*. csv) | *.csv";
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                CsvWriter.WriteToCsv(ViewResults[listView1.SelectedIndex], dialog.FileName);
+
+            var viewResult = ViewResults[listView1.SelectedIndex];
+            ExportToCsv(viewResult, dialog.FileName);
 
         }
+        private void ExportToCsv(ViewResultSMU viewResult, string fileName)
+        {
+            using var writer = new StreamWriter(fileName, false, Encoding.UTF8);
 
+            // 写入通用头部信息
+            writer.WriteLine($"ID,{viewResult.Id}");
+            writer.WriteLine($"创建时间,{viewResult.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A"}");
+            writer.WriteLine($"批次ID,{viewResult.BatchID}");
+            writer.WriteLine($"测量类型,{(viewResult.MeasurementType == MeasurementType.Voltage ? "电压源" : "电流源")}");
+            writer.WriteLine($"数据类型,{viewResult.Type}");
+            writer.WriteLine();  // 空行分隔
+
+            if (viewResult.Type == "GetData")
+            {
+                // GetData模式：导出单点测量结果
+                writer.WriteLine("参数,数值");
+                writer.WriteLine($"限制值,{viewResult.LimitEnd}");
+                writer.WriteLine($"测量电压(V),{viewResult.VResult}");
+                writer.WriteLine($"测量电流(A),{viewResult.IResult}");
+            }
+            else if (viewResult.Type == "Scan")
+            {
+                // Scan模式：导出扫描数据表
+                writer.WriteLine($"扫描起始值,{viewResult.LimitStart}");
+                writer.WriteLine($"扫描结束值,{viewResult.LimitEnd}");
+                writer.WriteLine($"数据点数,{viewResult.SMUDatas.Count}");
+                writer.WriteLine();  // 空行分隔
+
+                writer.WriteLine("序号,电压(V),电流(A)");
+                int index = 1;
+                foreach (var data in viewResult.SMUDatas)
+                {
+                    writer.WriteLine($"{index},{data.Voltage},{data.Current}");
+                    index++;
+                }
+            }
+
+            MessageBox1.Show("导出成功！");
+        }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Windows;
+using ColorVision.Themes;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
 {
@@ -23,6 +24,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
         public SfrSimplePlotWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         public void SetData(double[] frequencies, double[] sfrValues, 
@@ -65,17 +67,14 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
             _mtf50CyPix = mtf50cL;
             
             // Show all channel values
-            TxtMtf50Norm.Text = $"R:{mtf50R:F4} G:{mtf50G:F4} B:{mtf50B:F4} L:{mtf50L:F4}";
-            TxtMtf50CyPix.Text = $"R:{mtf50cR:F4} G:{mtf50cG:F4} B:{mtf50cB:F4} L:{mtf50cL:F4}";
-            TxtMtf10Norm.Text = $"R:{mtf10R:F4} G:{mtf10G:F4} B:{mtf10B:F4} L:{mtf10L:F4}";
-            TxtMtf10CyPix.Text = $"R:{mtf10cR:F4} G:{mtf10cG:F4} B:{mtf10cB:F4} L:{mtf10cL:F4}";
+            TxtMtf50Norm.Text = $"L:{mtf50L:F4} R:{mtf50R:F4} G:{mtf50G:F4} B:{mtf50B:F4}";
+            TxtMtf50CyPix.Text = $"L:{mtf50cL:F4} R:{mtf50cR:F4} G:{mtf50cG:F4} B:{mtf50cB:F4}";
+            TxtMtf10Norm.Text = $"L:{mtf10L:F4} R:{mtf10R:F4} G:{mtf10G:F4} B:{mtf10B:F4}";
+            TxtMtf10CyPix.Text = $"L:{mtf10cL:F4} R:{mtf10cR:F4} G:{mtf10cG:F4} B:{mtf10cB:F4} ";
             
-            // Show channel visibility controls
-            TxtChannelVisibility.Visibility = Visibility.Visible;
-            ChkShowR.Visibility = Visibility.Visible;
-            ChkShowG.Visibility = Visibility.Visible;
-            ChkShowB.Visibility = Visibility.Visible;
-            ChkShowL.Visibility = Visibility.Visible;
+            // Show channel-related controls for multi-channel mode
+            PnlQueryChannel.Visibility = Visibility.Visible;
+            PnlChannelVisibility.Visibility = Visibility.Visible;
         }
 
         private void ChkChannel_Changed(object sender, RoutedEventArgs e)
@@ -89,18 +88,47 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                 ChkShowL.IsChecked == true);
         }
 
+        private void CmbQueryChannel_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (!_isMultiChannel || Plot == null) return;
+            
+            string channel = CmbQueryChannel.SelectedIndex switch
+            {
+                0 => "L",
+                1 => "R",
+                2 => "G",
+                3 => "B",
+                _ => "L"
+            };
+            
+            Plot.SetQueryChannel(channel);
+        }
+
         private void BtnMtfAtFreq_Click(object sender, RoutedEventArgs e)
         {
-            if (!double.TryParse(TxtFreq.Text, out var f))
+            if (!double.TryParse(TxtFreq.Text, out var freq))
             {
                 TxtResult.Text = "频率输入错误";
                 return;
             }
 
-            if (Plot.TryEvaluateMtfAtFrequency(f, out var mtf))
-                TxtResult.Text = $"MTF({f:F4}) = {mtf:F5}";
+            double mtf = Plot.FindMtfAtFreq(freq);
+            if (!double.IsNaN(mtf))
+            {
+                if (_isMultiChannel)
+                {
+                    string channel = Plot.GetQueryChannel();
+                    TxtResult.Text = $"[{channel}] MTF(Freq={freq:F4}) = {mtf:F5}";
+                }
+                else
+                {
+                    TxtResult.Text = $"MTF(Freq={freq:F4}) = {mtf:F5}";
+                }
+            }
             else
-                TxtResult.Text = "计算失败";
+            {
+                TxtResult.Text = "未找到对应MTF";
+            }
         }
 
         private void BtnFreqAtMtf_Click(object sender, RoutedEventArgs e)
@@ -111,10 +139,23 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR
                 return;
             }
 
-            if (Plot.TryEvaluateFrequencyAtMtf(m, out var freq))
-                TxtResult.Text = $"Freq(MTF={m:F4}) = {freq:F5}";
+            double freq = Plot.FindFreqAtThreshold(m);
+            if (freq > 0)
+            {
+                if (_isMultiChannel)
+                {
+                    string channel = Plot.GetQueryChannel();
+                    TxtResult.Text = $"[{channel}] Freq(MTF={m:F4}) = {freq:F5}";
+                }
+                else
+                {
+                    TxtResult.Text = $"Freq(MTF={m:F4}) = {freq:F5}";
+                }
+            }
             else
-                TxtResult.Text = "计算失败";
+            {
+                TxtResult.Text = "未找到对应频率";
+            }
         }
 
         private void BtnExportCsv_Click(object sender, RoutedEventArgs e)

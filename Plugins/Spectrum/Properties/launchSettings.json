@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Spectrum": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

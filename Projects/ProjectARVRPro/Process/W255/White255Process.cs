@@ -58,7 +58,7 @@ namespace ProjectARVRPro.Process.W255
                                     LowLimit = recipeConfig.CenterLunimance.Min,
                                     UpLimit = recipeConfig.CenterLunimance.Max,
                                     Value = poi.Y,
-                                    TestValue = poi.Y.ToString("F3") + " nit"
+                                    TestValue = poi.Y.ToString("F4") + " nit"
                                 };
                                 testResult.CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem
                                 {
@@ -66,7 +66,7 @@ namespace ProjectARVRPro.Process.W255
                                     LowLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesx.Min,
                                     UpLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesx.Max,
                                     Value = poi.x,
-                                    TestValue = poi.x.ToString("F3")
+                                    TestValue = poi.x.ToString("F4")
                                 };
                                 testResult.CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem
                                 {
@@ -74,7 +74,7 @@ namespace ProjectARVRPro.Process.W255
                                     LowLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesy.Min,
                                     UpLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesy.Max,
                                     Value = poi.y,
-                                    TestValue = poi.y.ToString("F3")
+                                    TestValue = poi.y.ToString("F4")
                                 };
                                 testResult.CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem
                                 {
@@ -82,7 +82,7 @@ namespace ProjectARVRPro.Process.W255
                                     LowLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesu.Min,
                                     UpLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesu.Max,
                                     Value = poi.u,
-                                    TestValue = poi.u.ToString("F3")
+                                    TestValue = poi.u.ToString("F4")
                                 };
                                 testResult.CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem
                                 {
@@ -90,7 +90,7 @@ namespace ProjectARVRPro.Process.W255
                                     LowLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesv.Min,
                                     UpLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesv.Max,
                                     Value = poi.v,
-                                    TestValue = poi.v.ToString("F3")
+                                    TestValue = poi.v.ToString("F4")
                                 };
 
                                 ctx.Result.Result &= testResult.CenterLunimance.TestResult;
@@ -115,7 +115,7 @@ namespace ProjectARVRPro.Process.W255
                                 testResult.LuminanceUniformity.LowLimit = recipeConfig.LuminanceUniformity.Min;
                                 testResult.LuminanceUniformity.UpLimit = recipeConfig.LuminanceUniformity.Max;
                                 testResult.LuminanceUniformity.Value = view.PoiAnalysisResult.result.Value;
-                                testResult.LuminanceUniformity.TestValue = (view.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%";
+                                testResult.LuminanceUniformity.TestValue = (view.PoiAnalysisResult.result.Value * 100).ToString("F4") + "%";
 
                                 ctx.Result.Result &= testResult.LuminanceUniformity.TestResult;
 
@@ -156,17 +156,17 @@ namespace ProjectARVRPro.Process.W255
                             testResult.DiagonalFieldOfViewAngle.LowLimit = recipeConfig.DiagonalFieldOfViewAngle.Min;
                             testResult.DiagonalFieldOfViewAngle.UpLimit = recipeConfig.DiagonalFieldOfViewAngle.Max;
                             testResult.DiagonalFieldOfViewAngle.Value = view1.Result.result.D_Fov;
-                            testResult.DiagonalFieldOfViewAngle.TestValue = view1.Result.result.D_Fov.ToString("F3");
+                            testResult.DiagonalFieldOfViewAngle.TestValue = view1.Result.result.D_Fov.ToString("F4");
 
                             testResult.HorizontalFieldOfViewAngle.LowLimit = recipeConfig.HorizontalFieldOfViewAngle.Min;
                             testResult.HorizontalFieldOfViewAngle.UpLimit = recipeConfig.HorizontalFieldOfViewAngle.Max;
                             testResult.HorizontalFieldOfViewAngle.Value = view1.Result.result.ClolorVisionH_Fov;
-                            testResult.HorizontalFieldOfViewAngle.TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F3");
+                            testResult.HorizontalFieldOfViewAngle.TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F4");
 
                             testResult.VerticalFieldOfViewAngle.LowLimit = recipeConfig.VerticalFieldOfViewAngle.Min;
                             testResult.VerticalFieldOfViewAngle.UpLimit = recipeConfig.VerticalFieldOfViewAngle.Max;
                             testResult.VerticalFieldOfViewAngle.Value = view1.Result.result.ClolorVisionV_Fov;
-                            testResult.VerticalFieldOfViewAngle.TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3");
+                            testResult.VerticalFieldOfViewAngle.TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F4");
 
                             ctx.Result.Result = ctx.Result.Result && testResult.DiagonalFieldOfViewAngle.TestResult;
                             ctx.Result.Result = ctx.Result.Result && testResult.HorizontalFieldOfViewAngle.TestResult;

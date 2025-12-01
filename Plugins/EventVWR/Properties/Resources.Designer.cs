@@ -61,11 +61,11 @@ namespace EventVWR.Properties {
         }
         
         /// <summary>
-        ///   查找类似 图卡生成工具 的本地化字符串。
+        ///   查找类似 归档文件设置 的本地化字符串。
         /// </summary>
-        public static string ChartGenerationTool {
+        public static string DumpFileSettings {
             get {
-                return ResourceManager.GetString("ChartGenerationTool", resourceCulture);
+                return ResourceManager.GetString("DumpFileSettings", resourceCulture);
             }
         }
         

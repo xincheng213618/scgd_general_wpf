@@ -514,9 +514,6 @@
   <data name="Rename" xml:space="preserve">
     <value>重命名</value>
   </data>
-  <data name="DumpFileSettings" xml:space="preserve">
-    <value>归档文件设置</value>
-  </data>
   <data name="ProjectSolution_P" xml:space="preserve">
     <value>项目/解决方案(_P)...</value>
   </data>
@@ -534,5 +531,17 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
+  </data>
+  <data name="ExtractPlugin" xml:space="preserve">
+    <value>提取插件</value>
+  </data>
+  <data name="SelectExtractFolder" xml:space="preserve">
+    <value>选择要提取插件的目标文件夹</value>
+  </data>
+  <data name="PluginExtractSuccess" xml:space="preserve">
+    <value>插件已成功提取到: {0}</value>
+  </data>
+  <data name="PluginExtractFailed" xml:space="preserve">
+    <value>插件提取失败</value>
   </data>
 </root>

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.Messages;
-using CVCommCore;
 
 namespace ColorVision.Engine.Services.Devices.FlowDevice
 {

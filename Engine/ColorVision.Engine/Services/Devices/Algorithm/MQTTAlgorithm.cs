@@ -3,7 +3,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Cache;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using CVCommCore;
+using ColorVision.Engine.Services.RC;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using System;

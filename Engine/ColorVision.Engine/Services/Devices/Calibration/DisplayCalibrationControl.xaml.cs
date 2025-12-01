@@ -1,21 +1,20 @@
 ﻿using ColorVision.Database;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using CVCommCore;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using System;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.IO;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {

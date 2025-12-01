@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private MemoryMappedFile memoryMappedFile;
         private MemoryMappedViewStream memoryMappedViewStream;
         private BinaryReader binaryReader;
-        private ImageView? Image { get; set; }
+        private ImageView Image { get; set; }
 
         private byte[]? lastFrameData; // 上一帧池化数据
         private int lastFrameLen;      // 上一帧有效长度
@@ -73,12 +73,26 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 return -1;
             }
             openVideo = true;
-            Image?.ImageShow.AddVisualCommand(DVRectangleText);
+            Image.ImageShow.AddVisualCommand(DVRectangleText);
+
+            Image.Config.PseudoChanged -= Config_PseudoChanged;
+            Image.Config.PseudoChanged += Config_PseudoChanged;
             Task.Run(StartupAsync);
+
             return 0;
         }
+
+        private void Config_PseudoChanged(object? sender, EventArgs e)
+        {
+            if (Image.Config.IsPseudo)
+            {
+                VideoReaderConfig.UseA = true;
+            }
+        }
+
         HImage? _calculationHImage;
         DVRectangleText DVRectangleText = new DVRectangleText();
+
 
         public void Close()
         {
@@ -91,7 +105,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 lastFrameLen = 0;
             }
 
-            Image?.ImageShow.RemoveVisualCommand(DVRectangleText);
+
+            Image.ImageShow.RemoveVisualCommand(DVRectangleText);
+            Image.Config.PseudoChanged -= Config_PseudoChanged;
             Image = null;
             binaryReader?.Dispose();
             memoryMappedViewStream?.Dispose();
@@ -99,6 +115,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
             _calculationHImage?.Dispose();
             _calculationHImage = null;
+
         }
 
         private int frameCount;

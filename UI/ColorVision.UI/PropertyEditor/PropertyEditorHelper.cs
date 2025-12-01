@@ -271,7 +271,7 @@ namespace ColorVision.UI
                         continue;
 
                     var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
-                    string category = categoryAttr?.Category ?? "default";
+                    string category = categoryAttr?.Category ?? t.Name;
 
                     if (!categoryGroups.TryGetValue(category, out var list))
                     {
@@ -289,12 +289,13 @@ namespace ColorVision.UI
             {
                 var border = new Border
                 {
-                    Background = GlobalBorderBrush,
                     BorderThickness = new Thickness(1),
-                    BorderBrush = BorderBrush,
                     CornerRadius = new CornerRadius(5),
                     Margin = new Thickness(0, 0, 0, 5)
                 };
+                border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
+                border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+
                 var stackPanel = new StackPanel { Margin = new Thickness(5, 5, 5, 0) };
 
 
@@ -305,6 +306,7 @@ namespace ColorVision.UI
                     Foreground = GlobalTextBrush,
                     Margin = new Thickness(0, 0, 0, 5)
                 };
+                categoryHeader.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
                 stackPanel.Children.Add(categoryHeader);
 
 
@@ -443,9 +445,10 @@ namespace ColorVision.UI
             {
                 Text = GetDisplayName(rm, property),
                 MinWidth = LabelMinWidth,
-                Foreground = GlobalTextBrush,
                 ToolTip = string.IsNullOrWhiteSpace(desc) ? null : desc
             };
+            tb.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+
             return tb;
         }
 
@@ -489,8 +492,8 @@ namespace ColorVision.UI
                 FontSize = 16,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 RenderTransformOrigin = new Point(0.5, 0.5),
-                Foreground = GlobalTextBrush
             };
+            glyph.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
 
             var rotate = new RotateTransform();
             glyph.RenderTransform = rotate;
@@ -511,6 +514,84 @@ namespace ColorVision.UI
 
             btn.Click += (_, __) => storyboard.Begin();
             return btn;
+        }
+
+        /// <summary>
+        /// Converts a value to the specified target type, handling string-to-numeric conversions.
+        /// </summary>
+        /// <param name="value">The value to convert</param>
+        /// <param name="targetType">The target type to convert to</param>
+        /// <returns>The converted value, or a default value if conversion fails</returns>
+        public static object? ConvertToTargetType(object? value, Type targetType)
+        {
+            if (value == null)
+            {
+                return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
+            }
+
+            var valueType = value.GetType();
+            
+            // If the value is already the correct type, return it directly
+            if (valueType == targetType || targetType.IsAssignableFrom(valueType))
+            {
+                return value;
+            }
+
+            // Handle nullable types
+            var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+            // Convert from string for numeric types
+            if (value is string strValue)
+            {
+                if (string.IsNullOrWhiteSpace(strValue))
+                {
+                    return underlyingType.IsValueType ? Activator.CreateInstance(underlyingType) : null;
+                }
+
+                try
+                {
+                    if (underlyingType == typeof(int))
+                        return int.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
+                    if (underlyingType == typeof(long))
+                        return long.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
+                    if (underlyingType == typeof(short))
+                        return short.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
+                    if (underlyingType == typeof(byte))
+                        return byte.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
+                    if (underlyingType == typeof(uint))
+                        return uint.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
+                    if (underlyingType == typeof(ulong))
+                        return ulong.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
+                    if (underlyingType == typeof(ushort))
+                        return ushort.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
+                    if (underlyingType == typeof(sbyte))
+                        return sbyte.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
+                    if (underlyingType == typeof(float))
+                        return float.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
+                    if (underlyingType == typeof(double))
+                        return double.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
+                    if (underlyingType == typeof(decimal))
+                        return decimal.Parse(strValue, System.Globalization.CultureInfo.InvariantCulture);
+                    if (underlyingType == typeof(bool))
+                        return bool.Parse(strValue);
+
+                    return Convert.ChangeType(strValue, underlyingType, System.Globalization.CultureInfo.InvariantCulture);
+                }
+                catch
+                {
+                    return underlyingType.IsValueType ? Activator.CreateInstance(underlyingType) : null;
+                }
+            }
+
+            // Try direct conversion for other types
+            try
+            {
+                return Convert.ChangeType(value, underlyingType, System.Globalization.CultureInfo.InvariantCulture);
+            }
+            catch
+            {
+                return value;
+            }
         }
     }
 }

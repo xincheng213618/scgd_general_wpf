@@ -1,12 +1,13 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
+using ColorVision.UI;
 using Microsoft.Win32;
 using System.IO;
 using System.Reflection;
 using System.Windows;
 
-namespace ColorVision.UI.Dump
+namespace EventVWR.Dump
 {
     public class DumpConfig : IConfig
     {

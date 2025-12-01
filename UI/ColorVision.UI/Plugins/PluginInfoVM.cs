@@ -42,6 +42,7 @@ namespace ColorVision.UI.Plugins
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand UpdateCommand { get; set; }
         public RelayCommand OpenLocalPathCommand { get; set; }
+        public RelayCommand ExtractPluginCommand { get; set; }
 
         DownloadFile DownloadFile { get; set; }
         public PluginInfoVM(PluginInfo pluginInfo)
@@ -59,6 +60,7 @@ namespace ColorVision.UI.Plugins
             DeleteCommand = new RelayCommand(a => Delete());
             UpdateCommand = new RelayCommand(a => Update());
             OpenLocalPathCommand = new RelayCommand(a => OpenLocalPath());
+            ExtractPluginCommand = new RelayCommand(a => ExtractPlugin());
             ContextMenu = new ContextMenu();
 
             DownloadFile = new DownloadFile();
@@ -73,6 +75,7 @@ namespace ColorVision.UI.Plugins
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Delete });
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Update, Command = UpdateCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "OpenLocalPath", Command = OpenLocalPathCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.ExtractPlugin, Command = ExtractPluginCommand });
 
 
 
@@ -84,6 +87,51 @@ namespace ColorVision.UI.Plugins
             string localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins", PackageName);
             log.Info($"OpenLocalPath:{localPath}");
             PlatformHelper.OpenFolder(localPath);
+        }
+
+        public void ExtractPlugin()
+        {
+            // Use FolderBrowserDialog to select output folder
+            using var dialog = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description = Resources.SelectExtractFolder,
+                UseDescriptionForTitle = true,
+                ShowNewFolderButton = true
+            };
+
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string outputFolder = dialog.SelectedPath;
+
+                // Check if the folder is empty or create new subfolder with plugin name
+                if (Directory.Exists(outputFolder) && Directory.GetFileSystemEntries(outputFolder).Length > 0)
+                {
+                    // Folder is not empty, create a subfolder with plugin name
+                    outputFolder = Path.Combine(outputFolder, PackageName ?? Name ?? "Plugin");
+                }
+
+                bool success = PluginExtractor.ExtractPlugin(PluginInfo, outputFolder);
+
+                if (success)
+                {
+                    MessageBox.Show(
+                        string.Format(Resources.PluginExtractSuccess, outputFolder),
+                        Resources.ExtractPlugin,
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    // Open the output folder
+                    PlatformHelper.OpenFolder(outputFolder);
+                }
+                else
+                {
+                    MessageBox.Show(
+                        Resources.PluginExtractFailed,
+                        Resources.ExtractPlugin,
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
         }
 
         public async void CheckVersion()

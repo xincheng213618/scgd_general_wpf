@@ -243,7 +243,7 @@ namespace ProjectARVRPro.Process.MTFHV
 
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
-                ctx.ObjectiveTestResult.MTFHVTestResult = JsonConvert.DeserializeObject<MTFHVTestResult>(ctx.Result.ViewResultJson) ?? new MTFHVTestResult();
+                ctx.ObjectiveTestResult.MTFHVTestResult =JsonConvert.DeserializeObject<MTFHVTestResult>(ctx.Result.ViewResultJson) ?? new MTFHVTestResult();
                 return true;
             }
             catch (Exception ex)

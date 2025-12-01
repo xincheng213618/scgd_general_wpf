@@ -1,8 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
-using CVCommCore;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
@@ -72,6 +71,21 @@ namespace ColorVision.Engine.Services.Devices
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
             var dockPanel = new DockPanel();
+
+            Button button = new Button
+            {
+                Content = "编辑",
+                Margin = new Thickness(5, 0, 0, 0),
+                MinWidth = 70, 
+            };
+            RelayCommand relayCommand = new RelayCommand((o) =>
+            {
+                PhyCameraManagerWindow phyCameraManager = new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                phyCameraManager.ShowDialog();
+            });
+            button.Command =relayCommand;
+            DockPanel.SetDock(button, Dock.Right);
+            dockPanel.Children.Add(button);
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);
 

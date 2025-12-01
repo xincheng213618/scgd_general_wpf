@@ -1,4 +1,4 @@
-﻿namespace ColorVision.UI.Dump
+﻿namespace EventVWR.Dump
 {
     public enum DumpType
     {

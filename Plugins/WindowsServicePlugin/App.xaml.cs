@@ -27,31 +27,11 @@ namespace WindowsServicePlugin
         {
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigHandler.GetInstance().GetRequiredService<Authorization>();
-
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
-
-            Assembly.LoadFrom("ColorVision.Engine.dll"); ;
-
-            var _IComponentInitializers = new List<IInitializer>();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IInitializer componentInitialize)
-                    {
-                        _IComponentInitializers.Add(componentInitialize);
-                    }
-                }
-            }
-            _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
-
-            foreach (var item in _IComponentInitializers)
-            {
-                await item.InitializeAsync();
-            }
+            Assembly.LoadFrom("ColorVision.Engine.dll");
+            Application.Current.Shutdown();
         }
     }
-
 }

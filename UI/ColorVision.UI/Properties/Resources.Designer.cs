@@ -358,15 +358,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 归档文件设置 的本地化字符串。
-        /// </summary>
-        public static string DumpFileSettings {
-            get {
-                return ResourceManager.GetString("DumpFileSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 echo 正在备份当前版本... 的本地化字符串。
         /// </summary>
         public static string EchoBackingUpCurrentVersion {
@@ -543,6 +534,15 @@ namespace ColorVision.UI.Properties {
         public static string ExeNameCannotBeEmpty {
             get {
                 return ResourceManager.GetString("ExeNameCannotBeEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 提取插件 的本地化字符串。
+        /// </summary>
+        public static string ExtractPlugin {
+            get {
+                return ResourceManager.GetString("ExtractPlugin", resourceCulture);
             }
         }
         
@@ -1033,6 +1033,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 插件提取失败 的本地化字符串。
+        /// </summary>
+        public static string PluginExtractFailed {
+            get {
+                return ResourceManager.GetString("PluginExtractFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 插件已成功提取到: {0} 的本地化字符串。
+        /// </summary>
+        public static string PluginExtractSuccess {
+            get {
+                return ResourceManager.GetString("PluginExtractSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 加载插件或manifest错误：{0} 的本地化字符串。
         /// </summary>
         public static string PluginLoadError {
@@ -1155,6 +1173,15 @@ namespace ColorVision.UI.Properties {
         public static string Search {
             get {
                 return ResourceManager.GetString("Search", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择要提取插件的目标文件夹 的本地化字符串。
+        /// </summary>
+        public static string SelectExtractFolder {
+            get {
+                return ResourceManager.GetString("SelectExtractFolder", resourceCulture);
             }
         }
         

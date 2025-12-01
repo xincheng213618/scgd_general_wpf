@@ -1,7 +1,6 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI;
-using CVCommCore;
 using System;
 using System.Windows;
 using System.Windows.Controls;

@@ -34,7 +34,7 @@ namespace ColorVision.ImageEditor
 
         public MouseMagnifierManager MouseMagnifier { get; set; }
 
-        public IEditorToolFactory IEditorToolFactory { get; set; }
+        public IEditorToolFactory IEditorToolFactory => EditorContext.IEditorToolFactory;
 
         public EditorContext EditorContext { get; set; }
 
@@ -54,7 +54,8 @@ namespace ColorVision.ImageEditor
                 Zoombox = imageView.Zoombox1,
             };
             SelectEditorVisual = new SelectEditorVisual(EditorContext);
-            IEditorToolFactory = new IEditorToolFactory(imageView, EditorContext);
+            EditorContext.IEditorToolFactory = new IEditorToolFactory(imageView, EditorContext);
+
 
             MouseMagnifier = IEditorToolFactory.IEditorTools.OfType<MouseMagnifierManager>().FirstOrDefault();
 

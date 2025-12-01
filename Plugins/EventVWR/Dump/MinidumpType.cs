@@ -1,4 +1,4 @@
-﻿namespace ColorVision.UI.Dump
+﻿namespace EventVWR.Dump
 {
     /// <summary>
     /// https://learn.microsoft.com/en-us/windows/win32/api/minidumpapiset/ne-minidumpapiset-minidump_type

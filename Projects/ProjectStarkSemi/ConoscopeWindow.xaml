@@ -10,7 +10,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance  Conoscope:ConoscopeManager}"
-        Title="Conoscope" Height="750" Width="1500" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="Conoscope" Height="750" Width="1500" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
     <Grid Margin="5,5,5,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -18,7 +18,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            <Ribbon>
+            <Ribbon Background="Transparent">
                 <Ribbon.Resources>
                     <RibbonGroupSizeDefinitionBaseCollection x:Key="4ControlLSC">
                         <RibbonGroupSizeDefinition>
@@ -59,8 +59,7 @@
                 </Ribbon.HelpPaneContent>
                 <!-- <snippetAppMenuItems> -->
                 <Ribbon.ApplicationMenu>
-                    <RibbonApplicationMenu SmallImageSource="Images/ApplicationMenuIcon.png" 
-                                             KeyTip="F">
+                    <RibbonApplicationMenu SmallImageSource="Assets/Image/ColorVision1.ico" Background="Transparent"  KeyTip="F">
                         <RibbonApplicationMenuItem Header="Open"
                                                       ImageSource="Images/Open32.png"
                                                       KeyTip="O" Click="Button_Click" />
@@ -149,7 +148,14 @@
                     </RibbonQuickAccessToolBar>
                 </Ribbon.QuickAccessToolBar>
 
-                <RibbonTab Header="编辑"  Padding="10">
+                <RibbonTab Header="Home"  KeyTip="H"  GroupSizeReductionOrder="Clipboard, Insert, Insert, Paragraph, Clipboard, Editing, Font, Clipboard" >
+                    <RibbonGroup Header="Files">
+                        <RibbonButton Label="Open" SmallImageSource="Images/Open32.png"  KeyTip="O" Click="Button_Click" />
+                        <RibbonButton Label="SaveAs" SmallImageSource="Images/SaveAs32.png"  KeyTip="O" Click="Button_Click" />
+                        <RibbonButton Label="导出CSV"  Click="btnExportCSV_Click" Padding="10,5"/>
+                    </RibbonGroup>
+                </RibbonTab>
+                <RibbonTab Header="Camera"  Padding="10">
                     <RibbonGroup x:Name="rbnGr2" Header="General">
                         <StackPanel>
                             <DockPanel >
@@ -289,325 +295,40 @@
 
                 </RibbonTab>
 
-                <RibbonTab Header="Home" 
-                              KeyTip="H" 
-                              GroupSizeReductionOrder="Clipboard, Insert, Insert, Paragraph, Clipboard, Editing, Font, Clipboard" >
-                    <!-- <snippetRibbonGroupClipboard> -->
-                    <RibbonGroup Header="Clipboard" Name="Clipboard" SmallImageSource="Images/Paste16.png">
-                        <RibbonGroup.GroupSizeDefinitions>
-                            <RibbonGroupSizeDefinition>
-                                <RibbonControlSizeDefinition ImageSize="Large" IsLabelVisible="True" />
-                                <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="True" />
-                                <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="True" />
-                            </RibbonGroupSizeDefinition>
-                            <RibbonGroupSizeDefinition>
-                                <RibbonControlSizeDefinition ImageSize="Large" IsLabelVisible="True" />
-                                <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
-                                <RibbonControlSizeDefinition ImageSize="Small" IsLabelVisible="False" />
-                            </RibbonGroupSizeDefinition>
-                            <RibbonGroupSizeDefinition IsCollapsed="True" />
-                        </RibbonGroup.GroupSizeDefinitions>
-                        <RibbonButton Label="Paste"
-                                         Command="ApplicationCommands.Paste" 
-                                         SmallImageSource="Images/Paste16.png" 
-                                         LargeImageSource="Images/Paste32.png" 
-                                         ToolTipTitle="Paste (Ctrl+V)" 
-                                         ToolTipDescription="Paste the contents of the Clipboard." />
-                        <RibbonButton Label="Cut" 
-                                         Command="ApplicationCommands.Cut" 
-                                         SmallImageSource="Images/Cut16.png" 
-                                         LargeImageSource="Images/Cut32.png" 
-                                         ToolTipTitle="Cut (Ctrl+X)" 
-                                         ToolTipDescription="Cut the selection from the document and put it on the clipboard." />
-                        <RibbonButton Label="Copy" 
-                                         Command="ApplicationCommands.Copy" 
-                                         SmallImageSource="Images/Copy16.png" 
-                                         LargeImageSource="Images/Copy32.png"
-                                         ToolTipTitle="Copy (Ctrl+C)" 
-                                         ToolTipDescription="Copy the selection from the document and put it on the clipboard." />
+                <RibbonTab Header="Edit">
+
+                </RibbonTab>
+
+                <RibbonTab Header="View">
+
+                </RibbonTab>
+
+                <RibbonTab Header="Analysis">
+                    <RibbonGroup Header="Grey Levels">
+                        <RibbonButton  Content="NEw Data Set"/>
+                        <RibbonButton  Content="Open"/>
+                        <RibbonButton  Content="HideAll"/>
+                        <RibbonButton  Content="VT Curve"/>
                     </RibbonGroup>
-                    <!-- </snippetRibbonGroupClipboard> -->
-
-                    <!-- <snippetRibbonGroupFont> -->
-                    <RibbonGroup Header="Font" Name="Font"
-                                    SmallImageSource="Images\FontColor16.png"
-                                    KeyTip="F"
-                                    GroupSizeDefinitions="{StaticResource 5ControlSC}">
-                        <RibbonGroup.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal" MaxWidth="300" />
-                            </ItemsPanelTemplate>
-                        </RibbonGroup.ItemsPanel>
-                        <RibbonComboBox Margin="-20,8,0,0" SelectionBoxWidth="116"
-                                           IsEditable="True"
-                                           ToolTipDescription="Change the font face."
-                                           ToolTipTitle="Font (Ctrl+Shift+F)"
-                                           QuickAccessToolBarId="FontFamilyComboBox"
-                                           KeyTip="F1" >
-                            <RibbonGallery SelectedValue="Arial"
-                                              SelectedValuePath="Content"
-                                              MaxColumnCount="1">
-                                <RibbonGalleryCategory HeaderVisibility="Collapsed">
-                                    <RibbonGalleryItem Content="Arial" FontFamily="Arial" />
-                                    <RibbonGalleryItem Content="Calibri" FontFamily="Calibri" />
-                                    <RibbonGalleryItem Content="Comic Sans MS" FontFamily="Comic Sans MS" />
-                                    <RibbonGalleryItem Content="Times New Roman" FontFamily="Times New Roman" />
-                                    <RibbonGalleryItem Content="Wide Latin" FontFamily="Wide Latin" />
-                                </RibbonGalleryCategory>
-                            </RibbonGallery>
-                        </RibbonComboBox>
-                        <RibbonComboBox SelectionBoxWidth="20"
-                                           ToolTipDescription="Change the font size."
-                                           ToolTipTitle="Font Size (Ctrl+Shift+P)"
-                                           KeyTip="S1" 
-                                           Margin="-20,8,0,0" >
-                            <RibbonGallery Command="{Binding FontSizeCommand}" 
-                                              SelectedValue="8"
-                                              SelectedValuePath="Content"
-                                              MaxColumnCount="1">
-                                <RibbonGalleryCategory HeaderVisibility="Collapsed">
-                                    <RibbonGalleryItem>8</RibbonGalleryItem>
-                                    <RibbonGalleryItem>10</RibbonGalleryItem>
-                                    <RibbonGalleryItem>16</RibbonGalleryItem>
-                                    <RibbonGalleryItem>24</RibbonGalleryItem>
-                                    <RibbonGalleryItem>36</RibbonGalleryItem>
-                                    <RibbonGalleryItem>48</RibbonGalleryItem>
-                                </RibbonGalleryCategory>
-                            </RibbonGallery>
-                        </RibbonComboBox>
-                        <RibbonControlGroup Margin="3,8,0,0">
-                            <RibbonButton Label="Increase" 
-                                             Command="EditingCommands.IncreaseFontSize" 
-                                             SmallImageSource="Images/FontGrow16.png" 
-                                             LargeImageSource="Images/FontGrow16.png"
-                                             ToolTipTitle="Grow font (Ctrl+])" 
-                                             ToolTipDescription="Increase font size."
-                                             KeyTip="G" />
-                            <RibbonButton Label="Decrease" 
-                                             Command="EditingCommands.DecreaseFontSize" 
-                                             SmallImageSource="Images/FontShrink16.png" 
-                                             LargeImageSource="Images/FontShrink16.png"
-                                             ToolTipTitle="Shrink font (Ctrl+[)" 
-                                             ToolTipDescription="Decrease font size."
-                                             KeyTip="K" />
-                        </RibbonControlGroup>
-
-                        <RibbonControlGroup Margin="0,6,0,0">
-                            <RibbonToggleButton Label="Bold" 
-                                                   Command="EditingCommands.ToggleBold" 
-                                                   SmallImageSource="Images/Bold16.png" 
-                                                   ToolTipTitle="Bold (Ctrl+B)" 
-                                                   ToolTipDescription="Change to a heavier font."
-                                                   KeyTip="B" />
-                            <RibbonToggleButton Label="Italic" 
-                                                   Command="EditingCommands.ToggleItalic" 
-                                                   SmallImageSource="Images/Italic16.png" 
-                                                   ToolTipTitle="Italic (Ctrl+I)" 
-                                                   ToolTipDescription="Change to an italic font."
-                                                   KeyTip="I" />
-                            <RibbonToggleButton Label="Underline" 
-                                                   Command="EditingCommands.ToggleUnderline" 
-                                                   SmallImageSource="Images/Underline16.png" 
-                                                   ToolTipTitle="Underline (Ctrl+U)" 
-                                                   ToolTipDescription="Draw a line below the text."
-                                                   KeyTip="U" />
-                            <RibbonToggleButton Label="Strikethrough" 
-                                                   Command="{Binding ToggleStrikethrough}"                                   
-                                                   SmallImageSource="Images\Strikethrough16.png"
-                                                   ToolTipTitle="Strikethrough" 
-                                                   ToolTipDescription="Draw a line through the text."
-                                                   KeyTip="X" />
-                            <RibbonToggleButton Label="Subscript" 
-                                                   Command="EditingCommands.ToggleSubscript"
-                                                   SmallImageSource="Images\Subscript16.png"
-                                                   ToolTipTitle="Subscript" 
-                                                   ToolTipDescription="Draw a line smaller and lower than regular text."
-                                                   KeyTip="A1" />
-                            <RibbonToggleButton Label="Superscript" 
-                                                   Command="EditingCommands.ToggleSuperscript"
-                                                   SmallImageSource="Images\Superscript16.png"
-                                                   ToolTipTitle="Superscript" 
-                                                   ToolTipDescription="Draw a line smaller and higher than regular text."
-                                                   KeyTip="Y" />
-                        </RibbonControlGroup>
-                        <RibbonControlGroup Margin="3,6,0,0">
-                            <!-- <snippetRibbonSplitButton> -->
-                            <RibbonSplitButton SmallImageSource="Images\Highlight16.png"
-                                                  KeyTip="H" >
-                                <RibbonMenuItem Header="Yellow" />
-                                <RibbonMenuItem Header="Green" />
-                                <RibbonMenuItem Header="Blue" />
-                                <RibbonMenuItem Header="Red" />
-                            </RibbonSplitButton>
-                            <RibbonSplitButton SmallImageSource="Images\FontColor16.png"
-                                                  KeyTip="C2" >
-                                <RibbonGallery>
-                                    <RibbonGalleryCategory>
-                                        <RibbonGalleryItem >
-                                            <Rectangle Fill="Yellow" Height="15" Width="15" />
-                                        </RibbonGalleryItem>
-                                        <RibbonGalleryItem >
-                                            <Rectangle Fill="Green" Height="15" Width="15" />
-                                        </RibbonGalleryItem>
-                                        <RibbonGalleryItem >
-                                            <Rectangle Fill="Blue" Height="15" Width="15" />
-                                        </RibbonGalleryItem>
-                                        <RibbonGalleryItem >
-                                            <Rectangle Fill="Red" Height="15" Width="15" />
-                                        </RibbonGalleryItem>
-                                    </RibbonGalleryCategory>
-                                </RibbonGallery>
-                            </RibbonSplitButton>
-                            <!-- <snippetRibbonSplitButton> -->
-                        </RibbonControlGroup>
+                    <RibbonGroup Header="Display Aspect">
+                        <RibbonButton  Content="NEw Data Set"/>
+                        <RibbonButton  Content="Open"/>
                     </RibbonGroup>
-                    <!-- </snippetRibbonGroupFont> -->
-
-                    <!-- <snippetRibbonGroupParagraph> -->
-                    <RibbonGroup Header="Paragraph" 
-                                    Name="Paragraph" 
-                                    SmallImageSource="Images/AlignLeft16.png"
-                                    GroupSizeDefinitions="{DynamicResource 5ControlSC}">
-                        <RibbonGroup.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel MaxWidth="150"  />
-                            </ItemsPanelTemplate>
-                        </RibbonGroup.ItemsPanel>
-                        <RibbonControlGroup Margin="0,8,0,0">
-                            <RibbonButton Label="Outdent"
-                                             Command="EditingCommands.DecreaseIndentation" 
-                                             SmallImageSource="Images/Outdent16.png" 
-                                             ToolTipTitle="Decrease indent (Ctrl+Shift+T)" 
-                                             ToolTipDescription="Decrease the indent level of the paragraph."
-                                             KeyTip="AO" />
-                            <RibbonButton Label="Indent"
-                                             Command="EditingCommands.IncreaseIndentation" 
-                                             SmallImageSource="Images/Indent16.png" 
-                                             ToolTipTitle="Increase indent (Ctrl+T)" 
-                                             ToolTipDescription="Increase the indent level of the paragraph."
-                                             KeyTip="AI" />
-                        </RibbonControlGroup>
-                        <RibbonControlGroup Margin="3,8,0,0">
-                            <RibbonSplitButton Label="Lists"
-                                                  Command="EditingCommands.ToggleBullets" 
-                                                  SmallImageSource="Images\ListBullets16.png" 
-                                                  LargeImageSource="Images\ListBullets32.png" 
-                                                  KeyTip="L" 
-                                                  IsCheckable="True">
-                                <RibbonMenuItem Header="Bulleted List" 
-                                                   Command="EditingCommands.ToggleBullets" 
-                                                   IsCheckable="True">
-                                </RibbonMenuItem>
-                                <RibbonMenuItem Header="Numbered List" 
-                                                   Command="EditingCommands.ToggleNumbering" 
-                                                   IsCheckable="True">
-                                </RibbonMenuItem>
-                            </RibbonSplitButton>
-                        </RibbonControlGroup>
-
-                        <RibbonControlGroup Margin="3,8,0,0">
-                            <RibbonMenuButton Label="Lists"
-                                                 SmallImageSource="Images\LineSpacing16.png"
-                                                 KeyTip="L" >
-                                <RibbonMenuItem Header="1.0" 
-                                                   Command="{Binding LineSpacingCommand}"
-                                                   CommandParameter="1.0"/>
-                                <RibbonMenuItem Header="1.15" 
-                                                   Command="{Binding LineSpacingCommand}"
-                                                   CommandParameter="1.15" />
-                                <RibbonMenuItem Header="1.5" 
-                                                   Command="{Binding LineSpacingCommand}"
-                                                   CommandParameter="1.5" />
-                                <RibbonMenuItem Header="2.0" 
-                                                   Command="{Binding LineSpacingCommand}"
-                                                   CommandParameter="2.0" />
-                            </RibbonMenuButton>
-                        </RibbonControlGroup>
-
-                        <RibbonControlGroup Margin="0,6,0,0">
-                            <RibbonButton Label="Left"
-                                             Command="EditingCommands.AlignLeft" 
-                                             SmallImageSource="Images/AlignLeft16.png" 
-                                             ToolTipTitle="Align text left (Ctrl+L)" 
-                                             ToolTipDescription="Align text to the left."
-                                             KeyTip="AL" />
-                            <RibbonButton Label="Center"
-                                             Command="EditingCommands.AlignCenter" 
-                                             SmallImageSource="Images/AlignCenter16.png" 
-                                             ToolTipTitle="Align text center (Ctrl+E)" 
-                                             ToolTipDescription="Center text."
-                                             KeyTip="AC" />
-                            <RibbonButton Label="Right"
-                                             Command="EditingCommands.AlignRight" 
-                                             SmallImageSource="Images/AlignRight16.png" 
-                                             ToolTipTitle="Align text right (Ctrl+R)" 
-                                             ToolTipDescription="Align text to the right."
-                                             KeyTip="AR" />
-                            <RibbonButton Label="Right"
-                                             Command="EditingCommands.AlignJustify" 
-                                             SmallImageSource="Images/AlignJustify16.png" 
-                                             ToolTipTitle="Justify (Ctrl+J)" 
-                                             ToolTipDescription="Align text to both left and right margins, adding space between words as necessary."
-                                             KeyTip="AJ" />
-                        </RibbonControlGroup>
+                    <RibbonGroup Header="3D Displays">
+                        <RibbonButton  Content="NEw Data Set"/>
+                        <RibbonButton  Content="Open"/>
                     </RibbonGroup>
-                    <!-- </snippetRibbonGroupParagraph> -->
+                </RibbonTab>
 
-                    <RibbonGroup Header="Insert" 
-                                    Name="Insert" 
-                                    SmallImageSource="Images/InsertPicture16.png"
-                                    GroupSizeDefinitions="{DynamicResource 4ControlLSC}">
-                        <RibbonMenuButton Label="Picture"
-                                             SmallImageSource="Images/InsertPicture16.png" 
-                                             LargeImageSource="Images/InsertPicture32.png"
-                                             ToolTipTitle="Insert Picture" 
-                                             ToolTipDescription="Insert a picture into the document."
-                                             KeyTip="PI" >
-                            <RibbonMenuItem Header="Picture"
-                                               ImageSource="Images/InsertPicture16.png"/>
-                            <RibbonMenuItem Header="Change picture" />
-                            <RibbonMenuItem Header="Resize picture" />
-                        </RibbonMenuButton>
-                        <RibbonMenuButton Label="Shape" 
-                                             SmallImageSource="Images/InsertShape16.png" 
-                                             LargeImageSource="Images/InsertShape32.png"
-                                             ToolTipTitle="Insert Shape" 
-                                             ToolTipDescription="Insert a shape into the document."
-                                             KeyTip="S" />
-                        <RibbonMenuButton Label="Date" 
-                                             SmallImageSource="Images/Calendar16.png"
-                                             LargeImageSource="Images/Calendar32.png"
-                                             ToolTipTitle="Insert Date/Time" 
-                                             ToolTipDescription="Insert a date and time into the document."
-                                             KeyTip="D" />
-                        <RibbonMenuButton Label="Link" 
-                                             SmallImageSource="Images/Hyperlink16.png" 
-                                             LargeImageSource="Images/Hyperlink32.png"
-                                             ToolTipTitle="Insert Hyperlink" 
-                                             ToolTipDescription="Insert a hyperlink into the document."
-                                             KeyTip="L" />
+
+                <RibbonTab Header="Help">
+                    <RibbonGroup Header="Help" x:Name="Help"  SmallImageSource="Images/InsertPicture16.png" GroupSizeDefinitions="{DynamicResource 4ControlLSC}">
                     </RibbonGroup>
 
-                    <RibbonGroup Header="Editing" 
-                                    Name="Editing" 
-                                    SmallImageSource="Images/Find16.png"
-                                    GroupSizeDefinitions="{DynamicResource 3ControlSC}">
-                        <RibbonButton Label="Find"
-                                         SmallImageSource="Images/Find16.png"
-                                         ToolTip="Find (Ctrl+F)" 
-                                         ToolTipDescription="Find text in the document."
-                                         KeyTip="FD" />
-                        <RibbonButton Label="Replace"
-                                         SmallImageSource="Images/Replace16.png"
-                                         ToolTip="Replace (Ctrl+H)" 
-                                         ToolTipDescription="Replace text in the document."
-                                         KeyTip="R" />
-                        <RibbonButton Label="Select all"
-                                         SmallImageSource="Images/SelectAll16.png"
-                                         ToolTip="Select all (Ctrl+A)" 
-                                         ToolTipDescription="Select all text in the document."
-                                         KeyTip="SA" />
+                    <RibbonGroup Header="About" x:Name="About"  SmallImageSource="Images/InsertPicture16.png" GroupSizeDefinitions="{DynamicResource 4ControlLSC}">
+                        <RibbonButton SmallImageSource="Images/smallicon.png"  Click="RibbonButton_Click"/>
                     </RibbonGroup>
+
                 </RibbonTab>
             </Ribbon>
 
@@ -673,9 +394,7 @@
                                             </TextBlock.RenderTransform>
                                         </TextBlock>
                                     </Button>
-                                    <Button Content="导出CSV" 
-                                    Click="btnExportCSV_Click"
-                                    Padding="10,5"/>
+                                    <Button Content="导出CSV"  Click="btnExportCSV_Click" Padding="10,5"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <CheckBox x:Name="chkShowRed" 

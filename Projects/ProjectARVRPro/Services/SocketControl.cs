@@ -22,8 +22,10 @@ namespace ProjectARVRPro.Services
             SocketControl.Current.Stream = stream;
             if (ProjectWindowInstance.WindowInstance != null)
             {
-                ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
-                
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
+                });
                 // Find first enabled ProcessMeta index
                 int firstEnabledIndex = -1;
                 var processMetas = Process.ProcessManager.GetInstance().ProcessMetas;

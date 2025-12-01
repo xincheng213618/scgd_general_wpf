@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
@@ -36,6 +37,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
+
+
 
     }
 }

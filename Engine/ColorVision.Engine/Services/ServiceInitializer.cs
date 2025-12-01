@@ -6,7 +6,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using cvColorVision;
 using log4net;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

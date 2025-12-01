@@ -120,10 +120,10 @@
   <data name="Search" xml:space="preserve">
     <value>찾다</value>
   </data>
-  <data name="ChartGenerationTool" xml:space="preserve">
-    <value>이미지 생성 도구</value>
-  </data>
   <data name="EventWindow" xml:space="preserve">
     <value>이벤트 뷰어</value>
+  </data>
+  <data name="DumpFileSettings" xml:space="preserve">
+    <value>보관 파일 설정</value>
   </data>
 </root>

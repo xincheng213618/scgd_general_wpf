@@ -52,6 +52,9 @@
                 </StackPanel>
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right"  Margin="5,0,0,0">
+                        <Button x:Name="ThemeToggleButton" Click="ThemeToggleButton_Click" Padding="2" Height="25" Width="25" Margin="0,0,5,0" ToolTip="切换主题">
+                            <TextBlock x:Name="ThemeIconText" Text="&#xE708;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}"/>
+                        </Button>
                         <Button Command="{Binding ClearTemplatePatternFilesCommand}" Padding="2" Height="25" Width="25" Margin="0,0,5,0" ToolTip="清空模板列表">
                             <Image Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" RenderTransformOrigin="0.5,0.5">
                                 <Image.RenderTransform>
