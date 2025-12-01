@@ -133,34 +133,13 @@ namespace ProjectARVRPro
         public ChessboardTestResult ChessboardTestResult { get; set; }
 
         [DisplayName("MTF")]
-        public MTFHVTestResult MTFHVTestResult { get; set; }
+        public List<MTFHVTestResult> MTFHVTestResults { get; set; }
 
         [DisplayName("Distortion")]
         public DistortionTestResult DistortionTestResult { get; set; }
 
         [DisplayName("Optical_Center")]
         public OpticCenterTestResult OpticCenterTestResult { get; set; }
-
-        /// <summary>
-        /// 中心点亮度
-        /// </summary>
-        public ObjectiveTestItem W25CenterLunimance { get; set; }
-        /// <summary>
-        /// CenterCIE1931ChromaticCoordinatesx
-        /// </summary>
-        public ObjectiveTestItem W25CenterCIE1931ChromaticCoordinatesx { get; set; }
-        /// <summary>
-        /// CenterCIE1931ChromaticCoordinatesy
-        /// </summary>
-        public ObjectiveTestItem W25CenterCIE1931ChromaticCoordinatesy { get; set; }
-        /// <summary>
-        /// CenterCIE1976ChromaticCoordinatesu
-        /// </summary>
-        public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesu { get; set; }
-        /// <summary>
-        /// CenterCIE1976ChromaticCoordinatesv
-        /// </summary>
-        public ObjectiveTestItem W25CenterCIE1976ChromaticCoordinatesv { get; set; }
 
         /// <summary>
         /// 总体测试结果（true表示通过，false表示不通过）
