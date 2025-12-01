@@ -9,6 +9,7 @@ using ProjectARVRPro.Process.OpticCenter;
 using ProjectARVRPro.Process.Red;
 using ProjectARVRPro.Process.W25;
 using ProjectARVRPro.Process.W255;
+using System.Collections;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -48,7 +49,22 @@ namespace ProjectARVRPro
 
             }
         }
-
+        /// <summary>
+        /// 处理集合类型，为每个元素添加序号后缀
+        /// </summary>
+        private static void CollectRowsFromList(IList list, string baseTestScreenName, List<string> rows)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                var item = list[i];
+                if (item != null)
+                {
+                    // 生成带序号的名称，如 MTF1, MTF2, MTF3... 
+                    string indexedName = $"{baseTestScreenName}{i + 1}";
+                    CollectRows(item, indexedName, rows);
+                }
+            }
+        }
         private static string FormatCsvRow(string testScreenName, string propertyName, ObjectiveTestItem testItem)
         {
             string testResult = testItem.TestResult ? "pass" : "fail";
@@ -71,7 +87,16 @@ namespace ProjectARVRPro
                     var childObj = prop.GetValue(results);
                     if (childObj != null)
                     {
-                        CollectRows(childObj, raw, rows);
+                        // 检查是否为泛型集合类型 (如 List<T>)
+                        if (childObj is IList list && prop.PropertyType.IsGenericType)
+                        {
+                            CollectRowsFromList(list, raw, rows);
+                        }
+                        else
+                        {
+                            // 非集合类型，保持原有逻辑
+                            CollectRows(childObj, raw, rows);
+                        }
                     }
                 }
             }
