@@ -60,7 +60,6 @@ namespace ProjectStarkSemi
         private ObservableCollection<PolarAngleLine> polarAngleLines = new ObservableCollection<PolarAngleLine>();
         private PolarAngleLine? selectedPolarLine;
         
-
         // Current image state for dynamic angle addition
         private BitmapSource? currentBitmapSource;
         private Point currentImageCenter;
@@ -81,11 +80,9 @@ namespace ProjectStarkSemi
         {
             ConoscopeManager = ConoscopeManager.GetInstance();
             this.DataContext = ConoscopeManager;
-            // Initialize LogOutput control
             logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
             LogGrid.Children.Add(logOutput);
 
-            // Load available camera services
             LoadCameraServices();
 
             // Initialize UI
@@ -96,8 +93,6 @@ namespace ProjectStarkSemi
             wpfPlot.Plot.YLabel("Luminance (cd/m²)");
             wpfPlot.Plot.Legend.FontName = ScottPlot.Fonts.Detect("中文");
 
-            // Set font for labels to support international characters
-            // Use a consistent string for font detection
             string fontSample = $"中文 Luminance Voltage";
             wpfPlot.Plot.Axes.Title.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
             wpfPlot.Plot.Axes.Left.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
@@ -109,11 +104,6 @@ namespace ProjectStarkSemi
             wpfPlot.Plot.Axes.SetLimits(-80, 80, 0, 600);
 
             wpfPlot.Refresh();
-
-            this.Closed += (s, e) =>
-            {
-                this.Dispose();
-            };
         }
 
         private void LoadCameraServices()
@@ -996,6 +986,13 @@ namespace ProjectStarkSemi
         private void RibbonButton_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("视角测量");
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            ImageView.Dispose();
+
+            this.Dispose();
         }
     }
 }
