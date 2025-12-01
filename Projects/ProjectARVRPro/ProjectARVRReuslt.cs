@@ -3,10 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using Newtonsoft.Json;
 using SqlSugar;
-using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -74,35 +71,11 @@ namespace ProjectARVRPro
 
         public DateTime CreateTime { get; set; } = DateTime.Now;
 
-
         [SugarColumn(IsNullable =true)]
         public string ViewResultJson { get; set; } 
-
-
-        [SugarColumn(IsIgnore = true)]
-        public ViewResultW25 ViewResultW25 { get; set; } = new ViewResultW25();
-
-        [Browsable(false)]
-        public string ViewResultW25Json
-        {
-            get => JsonConvert.SerializeObject(ViewResultW25);
-            set
-            {
-                if (!string.IsNullOrEmpty(value))
-                    ViewResultW25 = JsonConvert.DeserializeObject<ViewResultW25>(value);
-            }
-        }
     }
 
 
-
-
-
-    public class ViewResultW25
-    {
-        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
-
-    }
 
 
 }

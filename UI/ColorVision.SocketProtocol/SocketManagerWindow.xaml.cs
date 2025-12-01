@@ -1,7 +1,12 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.Themes;
+using ColorVision.UI.Menus;
+using Newtonsoft.Json;
+using System.Net.Sockets;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.UI.Properties;
+using Clipboard = ColorVision.Common.NativeMethods.Clipboard;
+
 namespace ColorVision.SocketProtocol
 {
     /// <summary>
@@ -11,7 +16,7 @@ namespace ColorVision.SocketProtocol
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 9000;
-        public override string Header => Resources.SocketManagementWindow;
+        public override string Header => Properties.Resources.SocketManagementWindow;
 
         public override void Execute()
         {
@@ -35,22 +40,175 @@ namespace ColorVision.SocketProtocol
         {
             _socketManager = SocketManager.GetInstance();
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            // 设置数据上下文
             this.DataContext = _socketManager;
+            // 加载最近的消息记录
+            _socketManager.MessageManager.LoadAll();
         }
 
         /// <summary>
-        /// ListView选择改变事件
-        /// 当前未使用，保留用于未来扩展功能（如显示选中连接的详细信息）
+        /// TCP客户端列表选择改变事件
         /// </summary>
-        private void ListViewPlugins_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ClientsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // 预留：可以在此处实现选中TCP客户端时显示详细信息的逻辑
-            // 例如：显示客户端IP、端口、连接时间、发送/接收字节数等统计信息
+            // 显示选中客户端的详细信息
+        }
+
+        /// <summary>
+        /// 消息列表选择改变事件
+        /// </summary>
+        private void MessagesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (MessagesListView.SelectedItem is SocketMessage message)
+            {
+                DetailPanel.DataContext = message;
+            }
+        }
+
+        /// <summary>
+        /// 复制消息内容(右键菜单)
+        /// </summary>
+        private void CopyMessage_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is SocketMessage message)
+            {
+                Clipboard.SetText(message.Content ?? string.Empty);
+            }
+        }
+
+        /// <summary>
+        /// 重发消息(右键菜单)
+        /// </summary>
+        private void ResendMessage_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is SocketMessage message)
+            {
+                ResendMessageToClient(message);
+            }
+        }
+
+        /// <summary>
+        /// 删除消息(右键菜单)
+        /// </summary>
+        private void DeleteMessage_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is SocketMessage message)
+            {
+                _socketManager.MessageManager.DeleteMessage(message);
+            }
+        }
+
+        /// <summary>
+        /// 复制消息内容(底部按钮)
+        /// </summary>
+        private void CopyContent_Click(object sender, RoutedEventArgs e)
+        {
+            if (DetailPanel.DataContext is SocketMessage message)
+            {
+                Clipboard.SetText(message.Content ?? string.Empty);
+            }
+        }
+
+        /// <summary>
+        /// 复制格式化后的消息内容(底部按钮)
+        /// </summary>
+        private void CopyFormattedContent_Click(object sender, RoutedEventArgs e)
+        {
+            if (DetailPanel.DataContext is SocketMessage message && !string.IsNullOrEmpty(message.Content))
+            {
+                try
+                {
+                    // 尝试格式化JSON
+                    var obj = JsonConvert.DeserializeObject(message.Content);
+                    string formatted = JsonConvert.SerializeObject(obj, Formatting.Indented);
+                    Clipboard.SetText(formatted);
+                }
+                catch
+                {
+                    // 如果不是JSON，直接复制原内容
+                    Clipboard.SetText(message.Content);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 重发消息(底部按钮)
+        /// </summary>
+        private void ResendContent_Click(object sender, RoutedEventArgs e)
+        {
+            if (DetailPanel.DataContext is SocketMessage message)
+            {
+                ResendMessageToClient(message);
+            }
+        }
+
+        /// <summary>
+        /// 删除消息(底部按钮)
+        /// </summary>
+        private void DeleteContent_Click(object sender, RoutedEventArgs e)
+        {
+            if (DetailPanel.DataContext is SocketMessage message)
+            {
+                _socketManager.MessageManager.DeleteMessage(message);
+                DetailPanel.DataContext = null;
+            }
+        }
+
+        /// <summary>
+        /// 重发消息到客户端
+        /// </summary>
+        private void ResendMessageToClient(SocketMessage message)
+        {
+            if (string.IsNullOrEmpty(message.Content)) return;
+
+            // 查找匹配的客户端连接
+            // Note: Using string comparison as stored endpoint format matches
+            TcpClient? targetClient = null;
+            foreach (var client in _socketManager.TcpClients)
+            {
+                var remoteEndPoint = client.Client.RemoteEndPoint?.ToString();
+                if (remoteEndPoint != null && message.ClientEndPoint.Contains(remoteEndPoint, StringComparison.OrdinalIgnoreCase))
+                {
+                    targetClient = client;
+                    break;
+                }
+            }
+
+            if (targetClient != null && targetClient.Connected)
+            {
+                try
+                {
+                    var stream = targetClient.GetStream();
+                    byte[] data = Encoding.UTF8.GetBytes(message.Content);
+                    stream.Write(data, 0, data.Length);
+                    
+                    // 记录重发消息
+                    var resendMsg = new SocketMessage
+                    {
+                        ClientEndPoint = message.ClientEndPoint,
+                        Direction = SocketMessageDirection.Sent,
+                        Content = message.Content,
+                        MessageTime = DateTime.Now,
+                        EventName = message.EventName,
+                        MsgID = message.MsgID
+                    };
+                    _socketManager.MessageManager.AddMessage(resendMsg);
+                    
+                    MessageBox.Show(Properties.Resources.ResendSuccess, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(string.Format(Properties.Resources.ResendFailed, ex.Message), "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show(Properties.Resources.ClientNotConnected, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         /// <summary>
@@ -59,8 +217,6 @@ namespace ColorVision.SocketProtocol
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
-            // 当前SocketManager是单例，不在此处释放
-            // 如需清理，可在此添加特定逻辑
         }
     }
 }
