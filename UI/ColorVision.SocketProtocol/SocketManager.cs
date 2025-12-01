@@ -289,7 +289,9 @@ namespace ColorVision.SocketProtocol
             if (obj is not TcpClient client) return;
 
             NetworkStream stream = client.GetStream();
-            string clientEndPoint = client.Client.RemoteEndPoint?.ToString() ?? "Unknown";
+            // Use RemoteEndPoint if available, otherwise use LocalEndPoint with a unique hash
+            string clientEndPoint = client.Client.RemoteEndPoint?.ToString() 
+                ?? $"Local:{client.Client.LocalEndPoint}:{client.GetHashCode():X8}";
 
             byte[] buffer = Config.SocketBufferSize > 1024 ? new byte[Config.SocketBufferSize] : new byte[1024];
             int bytesRead;
