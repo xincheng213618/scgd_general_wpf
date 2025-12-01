@@ -4,6 +4,7 @@ using Microsoft.Win32;
 using ScottPlot;
 using ScottPlot.DataSources;
 using ScottPlot.Plottables;
+using ScottPlot.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -27,6 +28,7 @@ namespace ColorVision.Engine.Batch.IVL
         private Dictionary<string, Scatter> _scatterPlots;
         private List<string> _seriesNames;
         private bool _isVIMode = true; // true for V-I (X=Voltage, Y=Current), false for I-V (X=Current, Y=Voltage)
+        private bool _sortData = false; // true to sort data points, false to preserve original sequence (for round-trip)
         private Crosshair _crosshair;
         private Marker _highlightMarker;
         private Text _highlightText;
@@ -57,35 +59,64 @@ namespace ColorVision.Engine.Batch.IVL
                 return;
             }
 
-            int scanIndex = 1;
-            foreach (var result in scanResults)
+            // Check if all results are single-point data (GetData type from SMUResultModel)
+            // If so, combine them into one VI curve line (like IVL does)
+            // Note: scanResults.Count == 0 case is already handled above, so All() won't run on empty collection
+            bool allSinglePoint = scanResults.All(r => r.Type == "GetData" && r.SMUDatas.Count == 1);
+
+            if (allSinglePoint)
             {
-                string seriesName = $"Scan {scanIndex}";
-                if (result.Id > 0)
-                {
-                    seriesName = $"Scan {result.Id}";
-                }
-                else if (result.CreateTime.HasValue)
-                {
-                    seriesName = $"Scan {result.CreateTime.Value:HH:mm:ss}";
-                }
+                // Combine all single-point data into one series (VI Curve)
+                const string seriesName = "VI Curve";
+                _groupedData[seriesName] = new List<IVDataPoint>();
+                _seriesNames.Add(seriesName);
 
-                if (!_groupedData.ContainsKey(seriesName))
+                foreach (var result in scanResults)
                 {
-                    _groupedData[seriesName] = new List<IVDataPoint>();
-                    _seriesNames.Add(seriesName);
-                }
-
-                foreach (var smuData in result.SMUDatas)
-                {
-                    _groupedData[seriesName].Add(new IVDataPoint
+                    if (result.SMUDatas.Count > 0)
                     {
-                        Voltage = smuData.Voltage,
-                        Current = smuData.Current
-                    });
+                        var smuData = result.SMUDatas[0];
+                        _groupedData[seriesName].Add(new IVDataPoint
+                        {
+                            Voltage = smuData.Voltage,
+                            Current = smuData.Current
+                        });
+                    }
                 }
+            }
+            else
+            {
+                // Original behavior: each scan result is a separate series (for Scan type data)
+                int scanIndex = 1;
+                foreach (var result in scanResults)
+                {
+                    string seriesName = $"Scan {scanIndex}";
+                    if (result.Id > 0)
+                    {
+                        seriesName = $"Scan {result.Id}";
+                    }
+                    else if (result.CreateTime.HasValue)
+                    {
+                        seriesName = $"Scan {result.CreateTime.Value:HH:mm:ss}";
+                    }
 
-                scanIndex++;
+                    if (!_groupedData.ContainsKey(seriesName))
+                    {
+                        _groupedData[seriesName] = new List<IVDataPoint>();
+                        _seriesNames.Add(seriesName);
+                    }
+
+                    foreach (var smuData in result.SMUDatas)
+                    {
+                        _groupedData[seriesName].Add(new IVDataPoint
+                        {
+                            Voltage = smuData.Voltage,
+                            Current = smuData.Current
+                        });
+                    }
+
+                    scanIndex++;
+                }
             }
 
             // Remove empty series
@@ -150,6 +181,7 @@ namespace ColorVision.Engine.Batch.IVL
 
             UpdateLegendInfo();
             UpdateDataTable();
+            wpfPlot.Plot.Axes.AutoScale();
         }
 
         private void PlotAllSeries()
@@ -182,15 +214,25 @@ namespace ColorVision.Engine.Batch.IVL
                 if (!_groupedData.TryGetValue(seriesName, out List<IVDataPoint>? dataPoints) || dataPoints.Count == 0)
                     continue;
 
-                // Sort data points based on display mode
-                var sortedData = new List<IVDataPoint>(dataPoints);
-                if (_isVIMode)
+                // Apply sorting if enabled (for monotonic curves)
+                // Otherwise preserve original sequence (for round-trip/hysteresis visualization)
+                List<IVDataPoint> sortedData;
+                if (_sortData)
                 {
-                    sortedData.Sort((a, b) => a.Voltage.CompareTo(b.Voltage));
+                    sortedData = new List<IVDataPoint>(dataPoints);
+                    if (_isVIMode)
+                    {
+                        sortedData.Sort((a, b) => a.Voltage.CompareTo(b.Voltage));
+                    }
+                    else
+                    {
+                        sortedData.Sort((a, b) => a.Current.CompareTo(b.Current));
+                    }
                 }
                 else
                 {
-                    sortedData.Sort((a, b) => a.Current.CompareTo(b.Current));
+                    // Preserve original measurement sequence
+                    sortedData = dataPoints;
                 }
 
                 // Select X and Y data based on display mode
@@ -209,7 +251,7 @@ namespace ColorVision.Engine.Batch.IVL
                     MarkerSize = 6,
                     MarkerShape = MarkerShape.FilledCircle,
                     LegendText = seriesName,
-                    Smooth = false
+                    Smooth = false  // Disable smoothing to avoid strange curvature with non-monotonic data
                 };
 
                 _scatterPlots[seriesName] = scatter;
@@ -249,10 +291,10 @@ namespace ColorVision.Engine.Batch.IVL
                     wpfPlot.Plot.PlottableList.Add(_scatterPlots[seriesName]);
                 }
             }
-
             wpfPlot.Refresh();
             UpdateLegendInfo();
             UpdateDataTable();
+            wpfPlot.Plot.Axes.AutoScale();
         }
 
         private void UpdateDataTable()
@@ -330,6 +372,19 @@ namespace ColorVision.Engine.Batch.IVL
 
             _isVIMode = RbVI.IsChecked == true;
             InitializePlot();
+        }
+
+        private void SortMode_Changed(object sender, RoutedEventArgs e)
+        {
+            if (ChkSortData == null) return;
+            if (_groupedData == null) return;
+
+            // Update the sort flag
+            _sortData = ChkSortData.IsChecked == true;
+
+            // Re-plot with new sort mode
+            PlotAllSeries();
+            wpfPlot.Refresh();
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
