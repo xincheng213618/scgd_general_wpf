@@ -152,7 +152,7 @@ namespace ColorVision.SocketProtocol
     public class SocketManager:ViewModelBase
     {
         private static ILog log = LogManager.GetLogger(typeof(SocketManager));
-        private static SocketManager _instance;
+        private static SocketManager? _instance;
         private static readonly object _locker = new();
         
         /// <summary>
@@ -161,7 +161,7 @@ namespace ColorVision.SocketProtocol
         /// <returns>SocketManager实例</returns>
         public static SocketManager GetInstance() { lock (_locker) { return _instance ??= new SocketManager(); } }
 
-        private static TcpListener tcpListener;
+        private static TcpListener? tcpListener;
         
         /// <summary>
         /// Socket配置信息
@@ -182,11 +182,17 @@ namespace ColorVision.SocketProtocol
         /// 文本消息分发器
         /// </summary>
         public SocketTextDispatcher TextDispatcher { get;set; }
+
+        /// <summary>
+        /// 消息管理器(用于持久化)
+        /// </summary>
+        public SocketMessageManager MessageManager { get; set; }
         
         public SocketManager()
         {
             JsonDispatcher = new SocketJsonDispatcher();
             TextDispatcher  = new SocketTextDispatcher();
+            MessageManager = SocketMessageManager.GetInstance();
             EditCommand = new RelayCommand(a =>  new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
 
@@ -242,11 +248,6 @@ namespace ColorVision.SocketProtocol
         /// 已连接的TCP客户端集合
         /// </summary>
         public ObservableCollection<TcpClient> TcpClients { get; set; } = new ObservableCollection<TcpClient>();
-        
-        /// <summary>
-        /// Socket消息基础信息集合
-        /// </summary>
-        public ObservableCollection<string> SocketMessageBases { get; set; } = new ObservableCollection<string>();
 
         public void CheckUpdate()
         {
@@ -288,6 +289,7 @@ namespace ColorVision.SocketProtocol
             if (obj is not TcpClient client) return;
 
             NetworkStream stream = client.GetStream();
+            string clientEndPoint = client.Client.RemoteEndPoint?.ToString() ?? "Unknown";
 
             byte[] buffer = Config.SocketBufferSize > 1024 ? new byte[Config.SocketBufferSize] : new byte[1024];
             int bytesRead;
@@ -296,10 +298,16 @@ namespace ColorVision.SocketProtocol
                 while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    Application.Current.Dispatcher.Invoke(() =>
+                    
+                    // 创建接收消息记录并持久化
+                    var receivedMsg = new SocketMessage
                     {
-                        SocketMessageBases.Add(message);
-                    });
+                        ClientEndPoint = clientEndPoint,
+                        Direction = SocketMessageDirection.Received,
+                        Content = message,
+                        MessageTime = DateTime.Now
+                    };
+                    
                     log.Info("Received raw message: " + message);
                     switch (Config.SocketPhraseType)
                     {
@@ -308,17 +316,31 @@ namespace ColorVision.SocketProtocol
                             try
                             {
                                 request = JsonConvert.DeserializeObject<SocketRequest>(message);
-
+                                receivedMsg.EventName = request?.EventName;
+                                receivedMsg.MsgID = request?.MsgID;
+                                
+                                // 持久化接收消息
+                                MessageManager.AddMessage(receivedMsg);
 
                                 var response = JsonDispatcher.Dispatch(stream, request);
 
                                 if (response != null)
                                 {
-                                    Application.Current.Dispatcher.Invoke(() =>
-                                    {
-                                        SocketMessageBases.Add(response.ToJsonN());
-                                    });
                                     string respString = JsonConvert.SerializeObject(response);
+                                    
+                                    // 创建发送消息记录并持久化
+                                    var sentMsg = new SocketMessage
+                                    {
+                                        ClientEndPoint = clientEndPoint,
+                                        Direction = SocketMessageDirection.Sent,
+                                        Content = respString,
+                                        MessageTime = DateTime.Now,
+                                        EventName = response.EventName,
+                                        MsgID = response.MsgID,
+                                        ResponseCode = response.Code
+                                    };
+                                    MessageManager.AddMessage(sentMsg);
+                                    
                                     stream.Write(Encoding.UTF8.GetBytes(respString));
                                 }
                             }
@@ -334,12 +356,25 @@ namespace ColorVision.SocketProtocol
                                     Msg = ex.Message,
                                     Data = null
                                 };
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    SocketMessageBases.Add(response.ToJsonN());
-                                });
-
+                                
+                                // 持久化接收消息(即使出错)
+                                MessageManager.AddMessage(receivedMsg);
+                                
                                 string respString = JsonConvert.SerializeObject(response);
+                                
+                                // 创建错误响应消息记录并持久化
+                                var sentMsg = new SocketMessage
+                                {
+                                    ClientEndPoint = clientEndPoint,
+                                    Direction = SocketMessageDirection.Sent,
+                                    Content = respString,
+                                    MessageTime = DateTime.Now,
+                                    EventName = response.EventName,
+                                    MsgID = response.MsgID,
+                                    ResponseCode = response.Code
+                                };
+                                MessageManager.AddMessage(sentMsg);
+
                                 byte[] respBytes = Encoding.UTF8.GetBytes(respString);
                                 stream.Write(respBytes, 0, respBytes.Length);
                                 continue;
@@ -348,9 +383,22 @@ namespace ColorVision.SocketProtocol
                         case SocketPhraseType.Text:
                             try
                             {
+                                // 持久化接收消息
+                                MessageManager.AddMessage(receivedMsg);
+                                
                                 var string1 = TextDispatcher.Dispatch(stream, message);
                                 if (string1 != null)
                                 {
+                                    // 创建发送消息记录并持久化
+                                    var sentMsg = new SocketMessage
+                                    {
+                                        ClientEndPoint = clientEndPoint,
+                                        Direction = SocketMessageDirection.Sent,
+                                        Content = string1,
+                                        MessageTime = DateTime.Now
+                                    };
+                                    MessageManager.AddMessage(sentMsg);
+                                    
                                     byte[] respBytes = Encoding.UTF8.GetBytes(string1);
                                     stream.Write(respBytes, 0, respBytes.Length);
                                 }
@@ -358,11 +406,24 @@ namespace ColorVision.SocketProtocol
                             catch (Exception ex)
                             {
                                 log.Error(ex);
+                                
+                                // 创建错误响应消息记录并持久化
+                                var sentMsg = new SocketMessage
+                                {
+                                    ClientEndPoint = clientEndPoint,
+                                    Direction = SocketMessageDirection.Sent,
+                                    Content = ex.Message,
+                                    MessageTime = DateTime.Now
+                                };
+                                MessageManager.AddMessage(sentMsg);
+                                
                                 byte[] respBytes = Encoding.UTF8.GetBytes(ex.Message);
                                 stream.Write(respBytes, 0, respBytes.Length);
                             }
                             break;
                         default:
+                            // 默认情况下也持久化消息
+                            MessageManager.AddMessage(receivedMsg);
                             break;
                     }
 

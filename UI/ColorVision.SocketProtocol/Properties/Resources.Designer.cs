@@ -61,11 +61,119 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 高级查询 的本地化字符串。
+        /// </summary>
+        public static string AdvancedQuery {
+            get {
+                return ResourceManager.GetString("AdvancedQuery", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清空消息 的本地化字符串。
+        /// </summary>
+        public static string ClearMessages {
+            get {
+                return ResourceManager.GetString("ClearMessages", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 客户端 的本地化字符串。
+        /// </summary>
+        public static string Client {
+            get {
+                return ResourceManager.GetString("Client", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 目标客户端未连接 的本地化字符串。
+        /// </summary>
+        public static string ClientNotConnected {
+            get {
+                return ResourceManager.GetString("ClientNotConnected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 通信协议 的本地化字符串。
         /// </summary>
         public static string CommunicationProtocol {
             get {
                 return ResourceManager.GetString("CommunicationProtocol", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接的客户端 的本地化字符串。
+        /// </summary>
+        public static string ConnectedClients {
+            get {
+                return ResourceManager.GetString("ConnectedClients", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接状态 的本地化字符串。
+        /// </summary>
+        public static string ConnectionStatus {
+            get {
+                return ResourceManager.GetString("ConnectionStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 内容 的本地化字符串。
+        /// </summary>
+        public static string Content {
+            get {
+                return ResourceManager.GetString("Content", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 复制 的本地化字符串。
+        /// </summary>
+        public static string Copy {
+            get {
+                return ResourceManager.GetString("Copy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 格式化复制 的本地化字符串。
+        /// </summary>
+        public static string CopyFormatted {
+            get {
+                return ResourceManager.GetString("CopyFormatted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除 的本地化字符串。
+        /// </summary>
+        public static string Delete {
+            get {
+                return ResourceManager.GetString("Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 方向 的本地化字符串。
+        /// </summary>
+        public static string Direction {
+            get {
+                return ResourceManager.GetString("Direction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 事件名 的本地化字符串。
+        /// </summary>
+        public static string EventName {
+            get {
+                return ResourceManager.GetString("EventName", resourceCulture);
             }
         }
         
@@ -88,11 +196,128 @@ namespace ColorVision.SocketProtocol.Properties {
         }
         
         /// <summary>
+        ///   查找类似 本地地址 的本地化字符串。
+        /// </summary>
+        public static string LocalEndPoint {
+            get {
+                return ResourceManager.GetString("LocalEndPoint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 消息详情 的本地化字符串。
+        /// </summary>
+        public static string MessageDetail {
+            get {
+                return ResourceManager.GetString("MessageDetail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 消息日志 的本地化字符串。
+        /// </summary>
+        public static string MessageLog {
+            get {
+                return ResourceManager.GetString("MessageLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开 的本地化字符串。
+        /// </summary>
+        public static string OpenDb {
+            get {
+                return ResourceManager.GetString("OpenDb", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询 的本地化字符串。
+        /// </summary>
+        public static string Query {
+            get {
+                return ResourceManager.GetString("Query", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 远程地址 的本地化字符串。
+        /// </summary>
+        public static string RemoteEndPoint {
+            get {
+                return ResourceManager.GetString("RemoteEndPoint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重发 的本地化字符串。
+        /// </summary>
+        public static string Resend {
+            get {
+                return ResourceManager.GetString("Resend", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 消息重发失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string ResendFailed {
+            get {
+                return ResourceManager.GetString("ResendFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 消息重发成功 的本地化字符串。
+        /// </summary>
+        public static string ResendSuccess {
+            get {
+                return ResourceManager.GetString("ResendSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 响应码: 的本地化字符串。
+        /// </summary>
+        public static string ResponseCode {
+            get {
+                return ResourceManager.GetString("ResponseCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 端口 的本地化字符串。
         /// </summary>
         public static string ServerPort {
             get {
                 return ResourceManager.GetString("ServerPort", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 设置 的本地化字符串。
+        /// </summary>
+        public static string Settings {
+            get {
+                return ResourceManager.GetString("Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Socket 连接管理器 的本地化字符串。
+        /// </summary>
+        public static string SocketManagementWindow {
+            get {
+                return ResourceManager.GetString("SocketManagementWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 时间 的本地化字符串。
+        /// </summary>
+        public static string Time {
+            get {
+                return ResourceManager.GetString("Time", resourceCulture);
             }
         }
     }
