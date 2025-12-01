@@ -428,11 +428,9 @@ namespace ColorVision.Engine.Batch.IVL
         private void WpfPlot_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
         {
             var position = e.GetPosition(wpfPlot);
+            var scaledPosition = new System.Windows.Point(position.X * _dpiRatio, position.Y * _dpiRatio);
 
-            position.X = position.X * _dpiRatio;
-            position.Y = position.Y * _dpiRatio;
-
-            var pixel = new Pixel((float)position.X, (float)position.Y);
+            var pixel = new Pixel((float)scaledPosition.X, (float)scaledPosition.Y);
             var coords = wpfPlot.Plot.GetCoordinates(pixel);
 
             // Find the nearest data point
@@ -445,10 +443,10 @@ namespace ColorVision.Engine.Batch.IVL
                 if (!ScanSeriesList.SelectedItems.Contains(seriesName))
                     continue;
 
-                if (!_groupedData.ContainsKey(seriesName))
+                if (!_groupedData.TryGetValue(seriesName, out var dataPoints))
                     continue;
 
-                foreach (var point in _groupedData[seriesName])
+                foreach (var point in dataPoints)
                 {
                     double x = _isVIMode ? point.Voltage : point.Current;
                     double y = _isVIMode ? point.Current : point.Voltage;
@@ -508,7 +506,7 @@ namespace ColorVision.Engine.Batch.IVL
             public double Current { get; set; }
         }
 
-        private class IVDataTableRow
+        private sealed class IVDataTableRow
         {
             public string SeriesName { get; set; } = string.Empty;
             public int Index { get; set; }

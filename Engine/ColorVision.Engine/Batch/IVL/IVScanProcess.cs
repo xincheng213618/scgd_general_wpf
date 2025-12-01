@@ -28,20 +28,20 @@ namespace ColorVision.Engine.Batch.IVL
 
             try
             {
-                var DB = new SqlSugarClient(new ConnectionConfig
+                List<SmuScanModel> smuScanResults;
+                using (var db = new SqlSugarClient(new ConnectionConfig
                 {
                     ConnectionString = MySqlControl.GetConnectionString(),
                     DbType = SqlSugar.DbType.MySql,
                     IsAutoCloseConnection = true
-                });
-
-                // Query SMU scan data by batch ID
-                var smuScanResults = DB.Queryable<SmuScanModel>()
-                    .Where(x => x.BatchId == ctx.Batch.Id)
-                    .OrderBy(x => x.CreateDate)
-                    .ToList();
-
-                DB.Dispose();
+                }))
+                {
+                    // Query SMU scan data by batch ID
+                    smuScanResults = db.Queryable<SmuScanModel>()
+                        .Where(x => x.BatchId == ctx.Batch.Id)
+                        .OrderBy(x => x.CreateDate)
+                        .ToList();
+                }
 
                 if (smuScanResults.Count == 0)
                 {
