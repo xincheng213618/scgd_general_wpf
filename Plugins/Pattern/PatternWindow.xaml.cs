@@ -370,7 +370,8 @@ namespace Pattern
 
         private void UpdateThemeIcon()
         {
-            // E793 = Sun (for light mode), E708 = Moon (for dark mode)
+            // E706 = Sunny (show when in dark mode - click to switch to light)
+            // E708 = Moon (show when in light mode - click to switch to dark)
             ThemeIconText.Text = ThemeManager.Current.CurrentUITheme == Theme.Dark ? "\uE706" : "\uE708";
         }
     }
