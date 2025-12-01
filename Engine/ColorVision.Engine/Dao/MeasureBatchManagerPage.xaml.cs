@@ -182,18 +182,42 @@ namespace ColorVision.Engine
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             ViewResults.Clear();
-            foreach (var item in MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
+            if (string.IsNullOrWhiteSpace(SearchBox.Text))
             {
-                ViewResults.Add(new ViewBatchResult(item));
+                var BatchResultMasterModels = MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).OrderBy(x => x.Id, MeasureBatchManager.Config.OrderByType).Take(MeasureBatchManager.Config.Count).ToList();
+                foreach (var item in BatchResultMasterModels)
+                {
+                    ViewResults.Add(new ViewBatchResult(item));
+                }
             }
+            else
+            {
+                foreach (var item in MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
+                {
+                    ViewResults.Add(new ViewBatchResult(item));
+                }
+            }
+
         }
 
         private void Query_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            foreach (var item in MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
+
+            if (string.IsNullOrWhiteSpace(SearchBox.Text))
             {
-                ViewResults.Add(new ViewBatchResult(item));
+                var BatchResultMasterModels = MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).OrderBy(x => x.Id, MeasureBatchManager.Config.OrderByType).Take(MeasureBatchManager.Config.Count).ToList();
+                foreach (var item in BatchResultMasterModels)
+                {
+                    ViewResults.Add(new ViewBatchResult(item));
+                }
+            }
+            else
+            {
+                foreach (var item in MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
+                {
+                    ViewResults.Add(new ViewBatchResult(item));
+                }
             }
         }
 

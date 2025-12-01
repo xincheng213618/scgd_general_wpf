@@ -4,6 +4,7 @@ using Microsoft.Win32;
 using ScottPlot;
 using ScottPlot.DataSources;
 using ScottPlot.Plottables;
+using ScottPlot.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -178,6 +179,7 @@ namespace ColorVision.Engine.Batch.IVL
 
             UpdateLegendInfo();
             UpdateDataTable();
+            wpfPlot.Plot.Axes.AutoScale();
         }
 
         private void PlotAllSeries()
@@ -277,10 +279,10 @@ namespace ColorVision.Engine.Batch.IVL
                     wpfPlot.Plot.PlottableList.Add(_scatterPlots[seriesName]);
                 }
             }
-
             wpfPlot.Refresh();
             UpdateLegendInfo();
             UpdateDataTable();
+            wpfPlot.Plot.Axes.AutoScale();
         }
 
         private void UpdateDataTable()
