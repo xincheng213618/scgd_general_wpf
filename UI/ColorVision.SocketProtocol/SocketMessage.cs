@@ -68,7 +68,7 @@ namespace ColorVision.SocketProtocol
         public override string ToString()
         {
             var directionText = Direction == SocketMessageDirection.Received ? "←" : "→";
-            var shortContent = Content?.Length > 50 ? Content.Substring(0, 50) + "..." : Content;
+            var shortContent = Content?.Length > 50 ? string.Concat(Content.AsSpan(0, 50), "...") : Content;
             return $"[{MessageTime:HH:mm:ss}] {directionText} {shortContent}";
         }
     }

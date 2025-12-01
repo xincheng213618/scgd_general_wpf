@@ -166,10 +166,12 @@ namespace ColorVision.SocketProtocol
             if (string.IsNullOrEmpty(message.Content)) return;
 
             // 查找匹配的客户端连接
+            // Note: Using string comparison as stored endpoint format matches
             TcpClient? targetClient = null;
             foreach (var client in _socketManager.TcpClients)
             {
-                if (client.Client.RemoteEndPoint?.ToString() == message.ClientEndPoint)
+                var remoteEndPoint = client.Client.RemoteEndPoint?.ToString();
+                if (remoteEndPoint != null && message.ClientEndPoint.Contains(remoteEndPoint, StringComparison.OrdinalIgnoreCase))
                 {
                     targetClient = client;
                     break;

@@ -98,11 +98,14 @@ namespace ColorVision.SocketProtocol
         /// <summary>
         /// 从数据库加载消息记录
         /// </summary>
+        /// <param name="count">要加载的记录数，默认100条，最大1000条</param>
         public void LoadAll(int count = 100)
         {
             Messages.Clear();
+            // 限制最大加载数量以避免内存问题
+            int effectiveCount = count <= 0 ? Config.Count : Math.Min(count, 1000);
             var query = _db.Queryable<SocketMessage>().OrderBy(x => x.Id, Config.OrderByType);
-            var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
+            var dbList = query.Take(effectiveCount).ToList();
             foreach (var item in dbList)
             {
                 Messages.Add(item);
