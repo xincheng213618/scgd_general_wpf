@@ -158,7 +158,7 @@ namespace ProjectARVRPro
         public ChessboardTestResult ChessboardTestResult { get; set; }
 
         [DisplayName("MTF")]
-        public List<MTFHVTestResult> MTFHVTestResults { get; set; }
+        public MTFHVTestResult MTFHVTestResult { get; set; }
 
         [DisplayName("Distortion")]
         public DistortionTestResult DistortionTestResult { get; set; }
