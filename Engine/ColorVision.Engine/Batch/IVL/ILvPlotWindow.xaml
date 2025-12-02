@@ -12,7 +12,8 @@
             <TextBlock Text="Display Mode" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                 <RadioButton x:Name="RbILv" Content="I-Lv" IsChecked="True" Margin="0,0,16,0" Checked="DisplayMode_Changed" GroupName="DisplayMode"/>
-                <RadioButton x:Name="RbVLv" Content="V-Lv" Checked="DisplayMode_Changed" GroupName="DisplayMode"/>
+                <RadioButton x:Name="RbVLv" Content="V-Lv" Margin="0,0,16,0" Checked="DisplayMode_Changed" GroupName="DisplayMode"/>
+                <RadioButton x:Name="RbIV" Content="I-V" Checked="DisplayMode_Changed" GroupName="DisplayMode"/>
             </StackPanel>
             
             <Separator Margin="0,8,0,12"/>

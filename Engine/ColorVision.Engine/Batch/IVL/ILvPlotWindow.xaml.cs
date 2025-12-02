@@ -20,10 +20,19 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Batch.IVL
 {
+    /// <summary>
+    /// Display mode for ILvPlotWindow
+    /// </summary>
+    public enum ILvDisplayMode
+    {
+        IL,  // Current (I) vs Luminance (Lv)
+        VL,  // Voltage (V) vs Luminance (Lv)
+        IV   // Current (I) vs Voltage (V)
+    }
 
     /// <summary>
     /// IVL Curve Plot Window
-    /// Plots Current (I) or Voltage (V) vs Luminance (Lv) curves grouped by POI name
+    /// Plots Current (I) vs Luminance (Lv), Voltage (V) vs Luminance (Lv), or Current (I) vs Voltage (V) curves grouped by POI name
     /// </summary>
     public partial class ILvPlotWindow : Window
     {
@@ -32,7 +41,7 @@ namespace ColorVision.Engine.Batch.IVL
         private Dictionary<string, List<ILvDataPoint>> _groupedData;
         private Dictionary<string, Scatter> _scatterPlots;
         private List<string> _seriesNames;
-        private bool _isILvMode = true; // true for I-Lv, false for V-Lv
+        private ILvDisplayMode _displayMode = ILvDisplayMode.IL; // Display mode: IL, VL, or IV
         private bool _sortData = false; // true to sort data points, false to preserve original sequence (for round-trip)
         private Crosshair _crosshair;
 
@@ -203,7 +212,13 @@ namespace ColorVision.Engine.Batch.IVL
             // Check if there's any data to plot
             if (_groupedData.Count == 0)
             {
-                string modeText = _isILvMode ? "I-Lv" : "V-Lv";
+                string modeText = _displayMode switch
+                {
+                    ILvDisplayMode.IL => "I-Lv",
+                    ILvDisplayMode.VL => "V-Lv",
+                    ILvDisplayMode.IV => "I-V",
+                    _ => "I-Lv"
+                };
                 wpfPlot.Plot.Title($"{modeText} Curve (No Data)");
                 wpfPlot.Refresh();
                 TxtLegendInfo.Text = "No valid data to display";
@@ -212,12 +227,31 @@ namespace ColorVision.Engine.Batch.IVL
 
 
             // Set labels with proper formatting based on display mode
-            string modeLabel = _isILvMode ? "I-Lv" : "V-Lv";
-            string xLabel = _isILvMode ? "Current (mA)" : "Voltage (V)";
+            string modeLabel = _displayMode switch
+            {
+                ILvDisplayMode.IL => "I-Lv",
+                ILvDisplayMode.VL => "V-Lv",
+                ILvDisplayMode.IV => "I-V",
+                _ => "I-Lv"
+            };
+            string xLabel = _displayMode switch
+            {
+                ILvDisplayMode.IL => "Current (mA)",
+                ILvDisplayMode.VL => "Voltage (V)",
+                ILvDisplayMode.IV => "Current (mA)",
+                _ => "Current (mA)"
+            };
+            string yLabel = _displayMode switch
+            {
+                ILvDisplayMode.IL => "Luminance (cd/m²)",
+                ILvDisplayMode.VL => "Luminance (cd/m²)",
+                ILvDisplayMode.IV => "Voltage (V)",
+                _ => "Luminance (cd/m²)"
+            };
 
             wpfPlot.Plot.Title($"{modeLabel} Characteristics Curve");
             wpfPlot.Plot.XLabel(xLabel);
-            wpfPlot.Plot.YLabel("Luminance (cd/m²)");
+            wpfPlot.Plot.YLabel(yLabel);
             wpfPlot.Plot.Legend.FontName = Fonts.Detect("中文");
 
 
@@ -226,7 +260,7 @@ namespace ColorVision.Engine.Batch.IVL
 
             // Set font for labels to support international characters
             // Use a consistent string for font detection
-            string fontSample = $"{modeLabel} Characteristics Curve {xLabel} Luminance Voltage";
+            string fontSample = $"{modeLabel} Characteristics Curve {xLabel} {yLabel}";
             wpfPlot.Plot.Axes.Title.Label.FontName = Fonts.Detect(fontSample);
             wpfPlot.Plot.Axes.Left.Label.FontName = Fonts.Detect(fontSample);
             wpfPlot.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(fontSample);
@@ -235,6 +269,7 @@ namespace ColorVision.Engine.Batch.IVL
             wpfPlot.Plot.Grid.MajorLineColor = Color.FromColor(System.Drawing.Color.LightGray);
             wpfPlot.Plot.Grid.MajorLineWidth = 1;
             PlotAllSeries();
+            wpfPlot.Plot.Axes.AutoScale();
             wpfPlot.Refresh();
 
             UpdateLegendInfo();
@@ -279,13 +314,15 @@ namespace ColorVision.Engine.Batch.IVL
                 if (_sortData)
                 {
                     sortedData = new List<ILvDataPoint>(dataPoints);
-                    if (_isILvMode)
+                    switch (_displayMode)
                     {
-                        sortedData.Sort((a, b) => a.Current.CompareTo(b.Current));
-                    }
-                    else
-                    {
-                        sortedData.Sort((a, b) => a.Voltage.CompareTo(b.Voltage));
+                        case ILvDisplayMode.IL:
+                        case ILvDisplayMode.IV:
+                            sortedData.Sort((a, b) => a.Current.CompareTo(b.Current));
+                            break;
+                        case ILvDisplayMode.VL:
+                            sortedData.Sort((a, b) => a.Voltage.CompareTo(b.Voltage));
+                            break;
                     }
                 }
                 else
@@ -294,11 +331,28 @@ namespace ColorVision.Engine.Batch.IVL
                     sortedData = dataPoints;
                 }
 
-                // Select X-axis data based on display mode (Current for I-Lv, Voltage for V-Lv)
-                double[] x = _isILvMode
-                    ? sortedData.Select(p => p.Current).ToArray()
-                    : sortedData.Select(p => p.Voltage).ToArray();
-                double[] y = sortedData.Select(p => p.Luminance).ToArray();
+                // Select X-axis and Y-axis data based on display mode
+                double[] x;
+                double[] y;
+                switch (_displayMode)
+                {
+                    case ILvDisplayMode.IL:
+                        x = sortedData.Select(p => p.Current).ToArray();
+                        y = sortedData.Select(p => p.Luminance).ToArray();
+                        break;
+                    case ILvDisplayMode.VL:
+                        x = sortedData.Select(p => p.Voltage).ToArray();
+                        y = sortedData.Select(p => p.Luminance).ToArray();
+                        break;
+                    case ILvDisplayMode.IV:
+                        x = sortedData.Select(p => p.Current).ToArray();
+                        y = sortedData.Select(p => p.Voltage).ToArray();
+                        break;
+                    default:
+                        x = sortedData.Select(p => p.Current).ToArray();
+                        y = sortedData.Select(p => p.Luminance).ToArray();
+                        break;
+                }
 
                 // Create scatter plot with line and markers
                 var scatter = new Scatter(new ScatterSourceDoubleArray(x, y))
@@ -393,8 +447,38 @@ namespace ColorVision.Engine.Batch.IVL
             info.AppendLine($"Selected: {PoiSeriesList.SelectedItems.Count} series");
             info.AppendLine();
 
-            string xAxisLabel = _isILvMode ? "I" : "V";
-            string xAxisUnit = _isILvMode ? "mA" : "V";
+            string xAxisLabel;
+            string xAxisUnit;
+            string yAxisLabel;
+            string yAxisUnit;
+
+            switch (_displayMode)
+            {
+                case ILvDisplayMode.IL:
+                    xAxisLabel = "I";
+                    xAxisUnit = "mA";
+                    yAxisLabel = "Lv";
+                    yAxisUnit = "cd/m²";
+                    break;
+                case ILvDisplayMode.VL:
+                    xAxisLabel = "V";
+                    xAxisUnit = "V";
+                    yAxisLabel = "Lv";
+                    yAxisUnit = "cd/m²";
+                    break;
+                case ILvDisplayMode.IV:
+                    xAxisLabel = "I";
+                    xAxisUnit = "mA";
+                    yAxisLabel = "V";
+                    yAxisUnit = "V";
+                    break;
+                default:
+                    xAxisLabel = "I";
+                    xAxisUnit = "mA";
+                    yAxisLabel = "Lv";
+                    yAxisUnit = "cd/m²";
+                    break;
+            }
 
             foreach (var item in PoiSeriesList.SelectedItems)
             {
@@ -407,16 +491,28 @@ namespace ColorVision.Engine.Batch.IVL
                         info.AppendLine($"{seriesName}:");
                         info.AppendLine($"  Points: {data.Count}");
 
-                        if (_isILvMode)
+                        switch (_displayMode)
                         {
-                            info.AppendLine($"  {xAxisLabel}: {data.Min(p => p.Current):F2} - {data.Max(p => p.Current):F2} {xAxisUnit}");
-                        }
-                        else
-                        {
-                            info.AppendLine($"  {xAxisLabel}: {data.Min(p => p.Voltage):F2} - {data.Max(p => p.Voltage):F2} {xAxisUnit}");
+                            case ILvDisplayMode.IL:
+                            case ILvDisplayMode.IV:
+                                info.AppendLine($"  {xAxisLabel}: {data.Min(p => p.Current):F2} - {data.Max(p => p.Current):F2} {xAxisUnit}");
+                                break;
+                            case ILvDisplayMode.VL:
+                                info.AppendLine($"  {xAxisLabel}: {data.Min(p => p.Voltage):F2} - {data.Max(p => p.Voltage):F2} {xAxisUnit}");
+                                break;
                         }
 
-                        info.AppendLine($"  Lv: {data.Min(p => p.Luminance):F2} - {data.Max(p => p.Luminance):F2} cd/m²");
+                        switch (_displayMode)
+                        {
+                            case ILvDisplayMode.IL:
+                            case ILvDisplayMode.VL:
+                                info.AppendLine($"  {yAxisLabel}: {data.Min(p => p.Luminance):F2} - {data.Max(p => p.Luminance):F2} {yAxisUnit}");
+                                break;
+                            case ILvDisplayMode.IV:
+                                info.AppendLine($"  {yAxisLabel}: {data.Min(p => p.Voltage):F2} - {data.Max(p => p.Voltage):F2} {yAxisUnit}");
+                                break;
+                        }
+
                         info.AppendLine();
                     }
                 }
@@ -440,7 +536,12 @@ namespace ColorVision.Engine.Batch.IVL
             if (RbILv == null) return;
             if (_groupedData == null) return;
             // Update the mode flag
-            _isILvMode = RbILv.IsChecked == true;
+            if (RbILv.IsChecked == true)
+                _displayMode = ILvDisplayMode.IL;
+            else if (RbVLv.IsChecked == true)
+                _displayMode = ILvDisplayMode.VL;
+            else if (RbIV.IsChecked == true)
+                _displayMode = ILvDisplayMode.IV;
 
             // Re-initialize the plot with new mode
             InitializePlot();
@@ -461,7 +562,13 @@ namespace ColorVision.Engine.Batch.IVL
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
-            string modeText = _isILvMode ? "ILv" : "VLv";
+            string modeText = _displayMode switch
+            {
+                ILvDisplayMode.IL => "ILv",
+                ILvDisplayMode.VL => "VLv",
+                ILvDisplayMode.IV => "IV",
+                _ => "ILv"
+            };
             SaveFileDialog saveFileDialog = new SaveFileDialog
             {
                 Filter = "PNG Files|*.png|JPEG Files|*.jpg|BMP Files|*.bmp",
@@ -479,7 +586,13 @@ namespace ColorVision.Engine.Batch.IVL
 
         private void BtnSaveData_Click(object sender, RoutedEventArgs e)
         {
-            string modeText = _isILvMode ? "ILv" : "VLv";
+            string modeText = _displayMode switch
+            {
+                ILvDisplayMode.IL => "ILv",
+                ILvDisplayMode.VL => "VLv",
+                ILvDisplayMode.IV => "IV",
+                _ => "ILv"
+            };
             SaveFileDialog saveFileDialog = new SaveFileDialog
             {
                 Filter = "CSV Files|*.csv",
@@ -585,8 +698,26 @@ namespace ColorVision.Engine.Batch.IVL
 
                 foreach (var point in _groupedData[seriesName])
                 {
-                    double x = _isILvMode ? point.Current : point.Voltage;
-                    double y = point.Luminance;
+                    double x, y;
+                    switch (_displayMode)
+                    {
+                        case ILvDisplayMode.IL:
+                            x = point.Current;
+                            y = point.Luminance;
+                            break;
+                        case ILvDisplayMode.VL:
+                            x = point.Voltage;
+                            y = point.Luminance;
+                            break;
+                        case ILvDisplayMode.IV:
+                            x = point.Current;
+                            y = point.Voltage;
+                            break;
+                        default:
+                            x = point.Current;
+                            y = point.Luminance;
+                            break;
+                    }
 
                     // Calculate distance in plot coordinates
                     double dx = x - coords.X;
@@ -605,22 +736,66 @@ namespace ColorVision.Engine.Batch.IVL
             // Show crosshair if a point is close enough
             if (nearestPoint != null)
             {
-                double x = _isILvMode ? nearestPoint.Current : nearestPoint.Voltage;
-                double y = nearestPoint.Luminance;
+                double x, y;
+                switch (_displayMode)
+                {
+                    case ILvDisplayMode.IL:
+                        x = nearestPoint.Current;
+                        y = nearestPoint.Luminance;
+                        break;
+                    case ILvDisplayMode.VL:
+                        x = nearestPoint.Voltage;
+                        y = nearestPoint.Luminance;
+                        break;
+                    case ILvDisplayMode.IV:
+                        x = nearestPoint.Current;
+                        y = nearestPoint.Voltage;
+                        break;
+                    default:
+                        x = nearestPoint.Current;
+                        y = nearestPoint.Luminance;
+                        break;
+                }
                 var coords1 = new Coordinates(x, y);
 
                 _crosshair.Position = coords1;
                 _crosshair.IsVisible = true;
 
-                string xLabel = _isILvMode ? "I" : "V";
-                string xUnit = _isILvMode ? "mA" : "V";
+                string xLabel, xUnit, yLabel, yUnit;
+                switch (_displayMode)
+                {
+                    case ILvDisplayMode.IL:
+                        xLabel = "I";
+                        xUnit = "mA";
+                        yLabel = "Lv";
+                        yUnit = "cd/m²";
+                        break;
+                    case ILvDisplayMode.VL:
+                        xLabel = "V";
+                        xUnit = "V";
+                        yLabel = "Lv";
+                        yUnit = "cd/m²";
+                        break;
+                    case ILvDisplayMode.IV:
+                        xLabel = "I";
+                        xUnit = "mA";
+                        yLabel = "V";
+                        yUnit = "V";
+                        break;
+                    default:
+                        xLabel = "I";
+                        xUnit = "mA";
+                        yLabel = "Lv";
+                        yUnit = "cd/m²";
+                        break;
+                }
 
                 MyHighlightMarker.IsVisible = true;
                 MyHighlightMarker.Location = coords1;
 
                 MyHighlightText.IsVisible = true;
                 MyHighlightText.Location = coords1;
-                MyHighlightText.LabelText = $"{x:F2} {xUnit}\nLv: {y:F2} cd/m";
+                MyHighlightText.LabelText = $"{xLabel}: {x:F2} {xUnit}\n{yLabel}: {y:F2} {yUnit}";
                 MyHighlightText.LabelFontColor = Color.FromColor(System.Drawing.Color.Red);
                 //MyHighlightText.LabelBorderColor = Color.FromColor(System.Drawing.Color.Red);
 
