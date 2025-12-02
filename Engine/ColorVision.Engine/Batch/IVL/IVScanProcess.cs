@@ -1,12 +1,13 @@
+using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using log4net;
-using Newtonsoft.Json;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,17 +15,33 @@ using System.Text;
 namespace ColorVision.Engine.Batch.IVL
 {
     /// <summary>
+    /// Configuration for IVScanProcess
+    /// </summary>
+    public class IVScanProcessConfig : ViewModelBase
+    {
+        [DisplayName("保存CSV")]
+        [Description("是否将IV扫描数据保存到CSV文件")]
+        public bool SaveToCsv { get => _SaveToCsv; set { _SaveToCsv = value; OnPropertyChanged(); } }
+        private bool _SaveToCsv = true;
+
+        [DisplayName("显示图表")]
+        [Description("是否显示IV曲线图表窗口")]
+        public bool ShowPlot { get => _ShowPlot; set { _ShowPlot = value; OnPropertyChanged(); } }
+        private bool _ShowPlot = true;
+    }
+
+    /// <summary>
     /// IV Scan batch process - standalone IV scanning that saves data to CSV and displays IV chart.
     /// </summary>
     [BatchProcess("IVScanProcessing", "ProcessIVScanDataAndExportToCSV")]
-    public class IVScanProcess : IBatchProcess
+    public class IVScanProcess : BatchProcessBase<IVScanProcessConfig>
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(IVScanProcess));
 
-        public bool Process(IBatchContext ctx)
+        public override bool Process(IBatchContext ctx)
         {
             if (ctx?.Batch == null) return false;
-            var config = ctx.Config;
+            var batchConfig = ctx.Config;
 
             try
             {
@@ -49,14 +66,6 @@ namespace ColorVision.Engine.Batch.IVL
                     return true;
                 }
 
-                string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                
-                // Ensure save directory exists
-                if (!Directory.Exists(config.SavePath))
-                {
-                    Directory.CreateDirectory(config.SavePath);
-                }
-
                 // Build collection of ViewResultSMU for processing and display
                 ObservableCollection<ViewResultSMU> viewResults = new ObservableCollection<ViewResultSMU>();
                 foreach (var scanModel in smuScanResults)
@@ -65,14 +74,24 @@ namespace ColorVision.Engine.Batch.IVL
                     viewResults.Add(viewResult);
                 }
 
-                // Save to CSV
-                string csvFilePath = Path.Combine(config.SavePath, $"IV_Scan_{timeStr}.csv");
-                SaveIVScanToCsv(viewResults, csvFilePath);
+                // Save to CSV if enabled
+                if (Config.SaveToCsv)
+                {
+                    string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    
+                    // Ensure save directory exists
+                    if (!Directory.Exists(batchConfig.SavePath))
+                    {
+                        Directory.CreateDirectory(batchConfig.SavePath);
+                    }
 
-                log.Info($"IV Scan data saved to: {csvFilePath}");
+                    string csvFilePath = Path.Combine(batchConfig.SavePath, $"IV_Scan_{timeStr}.csv");
+                    SaveIVScanToCsv(viewResults, csvFilePath);
+                    log.Info($"IV Scan data saved to: {csvFilePath}");
+                }
 
-                // Show IV curve plot window
-                if (viewResults.Count > 0)
+                // Show IV curve plot window if enabled
+                if (Config.ShowPlot && viewResults.Count > 0)
                 {
                     System.Windows.Application.Current?.Dispatcher.Invoke(() =>
                     {

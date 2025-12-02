@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System.Linq;
+using System.Windows;
 
 namespace ColorVision.Engine.Batch
 {
@@ -11,6 +13,12 @@ namespace ColorVision.Engine.Batch
 
         public string TemplateName { get => _TemplateName; set { _TemplateName = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExecutionOrder)); } }
         private string _TemplateName;
+
+        /// <summary>
+        /// Gets or sets the JSON representation of the batch process configuration.
+        /// </summary>
+        public string ConfigJson { get => _ConfigJson; set { _ConfigJson = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasConfig)); } }
+        private string _ConfigJson;
 
         public IBatchProcess BatchProcess 
         { 
@@ -25,6 +33,7 @@ namespace ColorVision.Engine.Batch
                 OnPropertyChanged(nameof(ProcessDescription));
                 OnPropertyChanged(nameof(ProcessCategory));
                 OnPropertyChanged(nameof(Metadata));
+                OnPropertyChanged(nameof(HasConfig));
             } 
         }
         private IBatchProcess _BatchProcess;
@@ -33,6 +42,56 @@ namespace ColorVision.Engine.Batch
 
         public string ProcessTypeName => BatchProcess?.GetType().Name ?? string.Empty;
         public string ProcessTypeFullName => BatchProcess?.GetType().FullName ?? string.Empty;
+
+        /// <summary>
+        /// Gets a value indicating whether this batch process has a configurable config.
+        /// </summary>
+        [JsonIgnore]
+        public bool HasConfig => BatchProcess?.GetConfig() != null;
+
+        /// <summary>
+        /// Command to edit the batch process configuration.
+        /// </summary>
+        [JsonIgnore]
+        public RelayCommand EditConfigCommand => _EditConfigCommand ??= new RelayCommand(
+            a => EditConfig(),
+            a => HasConfig
+        );
+        private RelayCommand _EditConfigCommand;
+
+        /// <summary>
+        /// Opens the PropertyEditorWindow to edit the batch process configuration.
+        /// </summary>
+        private void EditConfig()
+        {
+            if (BatchProcess == null) return;
+            
+            var config = BatchProcess.GetConfig();
+            if (config == null) return;
+
+            var editor = new PropertyEditorWindow(config) 
+            { 
+                Owner = Application.Current.GetActiveWindow(), 
+                WindowStartupLocation = WindowStartupLocation.CenterOwner 
+            };
+            
+            if (editor.ShowDialog() == true || editor.DialogResult == null)
+            {
+                // Save the config as JSON after editing
+                ConfigJson = JsonConvert.SerializeObject(config);
+            }
+        }
+
+        /// <summary>
+        /// Applies the stored config JSON to the batch process.
+        /// </summary>
+        public void ApplyConfig()
+        {
+            if (BatchProcess != null && !string.IsNullOrEmpty(ConfigJson))
+            {
+                BatchProcess.SetConfig(ConfigJson);
+            }
+        }
 
         /// <summary>
         /// Gets the execution order of this process within its flow template.
