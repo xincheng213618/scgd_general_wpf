@@ -160,6 +160,10 @@ namespace ColorVision.Engine.Batch
 
         private void Meta_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            // Skip persistence for UI-only display properties like ExecutionOrder
+            if (e.PropertyName == nameof(BatchProcessMeta.ExecutionOrder))
+                return;
+            
             // 任意属性变更即持久化，避免频繁：可加节流，这里简单实现
             SavePersistedMetas();
         }
