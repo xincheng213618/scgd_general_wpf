@@ -109,8 +109,8 @@
                             <GridViewColumn Header="名称" Width="140" DisplayMemberBinding="{Binding Name}"/>
                             <GridViewColumn Header="流程模板" Width="140" DisplayMemberBinding="{Binding FlowTemplate}"/>
                             <GridViewColumn Header="处理类" Width="160" DisplayMemberBinding="{Binding ProcessTypeName}"/>
-                            <GridViewColumn Header="Recipe配置" Width="120" DisplayMemberBinding="{Binding RecipeConfigTypeName}"/>
-                            <GridViewColumn Header="Fix配置" Width="120" DisplayMemberBinding="{Binding FixConfigTypeName}"/>
+                            <GridViewColumn Header="Recipe配置" Width="140" DisplayMemberBinding="{Binding RecipeConfigTypeName}"/>
+                            <GridViewColumn Header="Fix配置" Width="140" DisplayMemberBinding="{Binding FixConfigTypeName}"/>
                             <GridViewColumn Header="是否启用" Width="80">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
@@ -141,9 +141,9 @@
                             <StackPanel>
                                 <DockPanel Margin="0 0 0 8">
                                     <TextBlock Text="Recipe类型:" VerticalAlignment="Center" Width="80"/>
-                                    <ComboBox ItemsSource="{Binding RecipeConfigTypes}" 
-                                              SelectedItem="{Binding SelectedRecipeConfigType}"
-                                              DisplayMemberPath="Name" Margin="5 0 0 0"/>
+                                    <TextBlock Text="{Binding SelectedProcessMeta.RecipeConfigTypeName, FallbackValue='(请选择流程)'}" 
+                                               VerticalAlignment="Center" Margin="5 0 0 0"
+                                               Foreground="{DynamicResource GlobalTextBrush}"/>
                                 </DockPanel>
                                 <Button Content="编辑 Recipe 配置" Padding="12 4" HorizontalAlignment="Left"
                                         Command="{Binding SelectedProcessMeta.EditRecipeConfigCommand}"
@@ -156,9 +156,9 @@
                             <StackPanel>
                                 <DockPanel Margin="0 0 0 8">
                                     <TextBlock Text="Fix类型:" VerticalAlignment="Center" Width="80"/>
-                                    <ComboBox ItemsSource="{Binding FixConfigTypes}" 
-                                              SelectedItem="{Binding SelectedFixConfigType}"
-                                              DisplayMemberPath="Name" Margin="5 0 0 0"/>
+                                    <TextBlock Text="{Binding SelectedProcessMeta.FixConfigTypeName, FallbackValue='(请选择流程)'}" 
+                                               VerticalAlignment="Center" Margin="5 0 0 0"
+                                               Foreground="{DynamicResource GlobalTextBrush}"/>
                                 </DockPanel>
                                 <Button Content="编辑 Fix 配置" Padding="12 4" HorizontalAlignment="Left"
                                         Command="{Binding SelectedProcessMeta.EditFixConfigCommand}"
@@ -166,21 +166,12 @@
                             </StackPanel>
                         </GroupBox>
                         
-                        <!-- Process Config Section -->
-                        <GroupBox Header="Process 配置" Padding="8" Margin="0 0 0 8">
-                            <StackPanel>
-                                <TextBlock Text="选择流程后，可编辑该流程的参数配置" 
-                                           Foreground="Gray" Margin="0 0 0 8" TextWrapping="Wrap"/>
-                                <Button Content="编辑 Process 配置" Padding="12 4" HorizontalAlignment="Left"
-                                        Command="{Binding SelectedProcessMeta.EditConfigCommand}"
-                                        IsEnabled="{Binding SelectedProcessMeta.HasConfig}"/>
-                            </StackPanel>
-                        </GroupBox>
-                        
-                        <!-- Property Editor Panel for selected config -->
-                        <GroupBox Header="属性编辑" Padding="8" Visibility="{Binding ElementName=ConfigEditPanel, Path=Tag, Converter={StaticResource bool2VisibilityConverter}, FallbackValue=Collapsed}">
-                            <StackPanel x:Name="PropertyEditorPanel">
-                            </StackPanel>
+                        <!-- Info Section -->
+                        <GroupBox Header="说明" Padding="8" Margin="0 0 0 8">
+                            <TextBlock TextWrapping="Wrap" Foreground="Gray">
+                                选择左侧列表中的流程后，系统会自动识别对应的Recipe和Fix配置类型。
+                                点击"编辑"按钮可打开属性编辑器修改配置参数。
+                            </TextBlock>
                         </GroupBox>
                     </StackPanel>
                 </ScrollViewer>

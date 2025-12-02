@@ -9,7 +9,6 @@ using System.Windows.Input;
 using System.Collections.Specialized;
 using Newtonsoft.Json;
 using System.IO;
-using ProjectARVRPro.Fix;
 
 namespace ProjectARVRPro.Process
 {
@@ -32,16 +31,6 @@ namespace ProjectARVRPro.Process
 
         public ObservableCollection<TemplateModel<FlowParam>> templateModels { get; set; } = TemplateFlow.Params;
 
-        /// <summary>
-        /// Available Recipe Config types for selection.
-        /// </summary>
-        public ObservableCollection<Type> RecipeConfigTypes { get; } = new ObservableCollection<Type>();
-
-        /// <summary>
-        /// Available Fix Config types for selection.
-        /// </summary>
-        public ObservableCollection<Type> FixConfigTypes { get; } = new ObservableCollection<Type>();
-
         public RelayCommand EditCommand { get; set; }
 
         // New properties for creation
@@ -63,52 +52,6 @@ namespace ProjectARVRPro.Process
         public ProcessMeta SelectedProcessMeta { get => _SelectedProcessMeta; set { _SelectedProcessMeta = value; OnPropertyChanged(); OnSelectedProcessMetaChanged(); CommandManager.InvalidateRequerySuggested(); } }
         private ProcessMeta _SelectedProcessMeta;
 
-        /// <summary>
-        /// Selected Recipe Config type for the current process meta.
-        /// </summary>
-        public Type SelectedRecipeConfigType 
-        { 
-            get => _SelectedRecipeConfigType; 
-            set 
-            { 
-                _SelectedRecipeConfigType = value; 
-                OnPropertyChanged();
-                if (SelectedProcessMeta != null && value != null)
-                {
-                    SelectedProcessMeta.RecipeConfigTypeName = value.Name;
-                }
-                else if (SelectedProcessMeta != null)
-                {
-                    SelectedProcessMeta.RecipeConfigTypeName = null;
-                }
-                CommandManager.InvalidateRequerySuggested(); 
-            } 
-        }
-        private Type _SelectedRecipeConfigType;
-
-        /// <summary>
-        /// Selected Fix Config type for the current process meta.
-        /// </summary>
-        public Type SelectedFixConfigType 
-        { 
-            get => _SelectedFixConfigType; 
-            set 
-            { 
-                _SelectedFixConfigType = value; 
-                OnPropertyChanged();
-                if (SelectedProcessMeta != null && value != null)
-                {
-                    SelectedProcessMeta.FixConfigTypeName = value.Name;
-                }
-                else if (SelectedProcessMeta != null)
-                {
-                    SelectedProcessMeta.FixConfigTypeName = null;
-                }
-                CommandManager.InvalidateRequerySuggested(); 
-            } 
-        }
-        private Type _SelectedFixConfigType;
-
         public RelayCommand AddMetaCommand { get; set; }
         public RelayCommand RemoveMetaCommand { get; set; }
         public RelayCommand UpdateMetaCommand { get; set; }
@@ -118,7 +61,6 @@ namespace ProjectARVRPro.Process
         public ProcessManager()
         {
             LoadProcesses();
-            LoadConfigTypes();
             ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged;
             EditCommand = new RelayCommand(a => Edit());
             AddMetaCommand = new RelayCommand(a => AddMeta(), a => CanAddMeta());
@@ -147,23 +89,6 @@ namespace ProjectARVRPro.Process
                 {
                     log.Error(ex);
                 }
-            }
-        }
-
-        private void LoadConfigTypes()
-        {
-            // Load Recipe Config types
-            var recipeManager = RecipeManager.GetInstance();
-            foreach (var type in recipeManager.RecipeConfig.Configs.Keys)
-            {
-                RecipeConfigTypes.Add(type);
-            }
-
-            // Load Fix Config types
-            var fixManager = FixManager.GetInstance();
-            foreach (var type in fixManager.FixConfig.Configs.Keys)
-            {
-                FixConfigTypes.Add(type);
             }
         }
 
@@ -234,18 +159,9 @@ namespace ProjectARVRPro.Process
         {
             if (SelectedProcessMeta != null)
             {
-                // Populate update fields when a BatchProcessMeta is selected
+                // Populate update fields when a ProcessMeta is selected
                 UpdateTemplate = templateModels.FirstOrDefault(t => t.Key == SelectedProcessMeta.FlowTemplate);
                 UpdateProcess = Processes.FirstOrDefault(p => p.GetType().FullName == SelectedProcessMeta.Process?.GetType().FullName);
-                
-                // Populate config type selections
-                SelectedRecipeConfigType = RecipeConfigTypes.FirstOrDefault(t => t.Name == SelectedProcessMeta.RecipeConfigTypeName);
-                SelectedFixConfigType = FixConfigTypes.FirstOrDefault(t => t.Name == SelectedProcessMeta.FixConfigTypeName);
-            }
-            else
-            {
-                SelectedRecipeConfigType = null;
-                SelectedFixConfigType = null;
             }
         }
 
@@ -258,7 +174,7 @@ namespace ProjectARVRPro.Process
         {
             if (!CanUpdateMeta()) return;
             
-            // Update the selected BatchProcessMeta with new values
+            // Update the selected ProcessMeta with new values
             SelectedProcessMeta.FlowTemplate = UpdateTemplate.Key;
             SelectedProcessMeta.Process = UpdateProcess;
         }
@@ -322,14 +238,8 @@ namespace ProjectARVRPro.Process
                         Name = item.Name, 
                         FlowTemplate = item.FlowTemplate, 
                         Process = proc, 
-                        IsEnabled = item.IsEnabled,
-                        ConfigJson = item.ConfigJson,
-                        RecipeConfigTypeName = item.RecipeConfigTypeName,
-                        FixConfigTypeName = item.FixConfigTypeName
+                        IsEnabled = item.IsEnabled
                     };
-                    
-                    // Apply the stored config to the process
-                    meta.ApplyConfig();
                     
                     meta.PropertyChanged += Meta_PropertyChanged;
                     ProcessMetas.Add(meta);
@@ -352,10 +262,7 @@ namespace ProjectARVRPro.Process
                     Name = m.Name,
                     FlowTemplate = m.FlowTemplate,
                     ProcessTypeFullName = m.Process?.GetType().FullName,
-                    IsEnabled = m.IsEnabled,
-                    ConfigJson = m.ConfigJson,
-                    RecipeConfigTypeName = m.RecipeConfigTypeName,
-                    FixConfigTypeName = m.FixConfigTypeName
+                    IsEnabled = m.IsEnabled
                 }).ToList();
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
                 File.WriteAllText(PersistFilePath, json);

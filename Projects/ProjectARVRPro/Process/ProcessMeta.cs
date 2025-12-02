@@ -2,6 +2,7 @@
 using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
+using System;
 using System.Linq;
 using System.Windows;
 
@@ -15,7 +16,21 @@ namespace ProjectARVRPro.Process
         public string FlowTemplate { get => _FlowTemplate; set { _FlowTemplate = value; OnPropertyChanged(); } }
         private string _FlowTemplate;
 
-        public IProcess Process { get => _Process; set { _Process = value; OnPropertyChanged(); OnPropertyChanged(nameof(ProcessTypeName)); OnPropertyChanged(nameof(HasConfig)); } }
+        public IProcess Process 
+        { 
+            get => _Process; 
+            set 
+            { 
+                _Process = value; 
+                OnPropertyChanged(); 
+                OnPropertyChanged(nameof(ProcessTypeName)); 
+                OnPropertyChanged(nameof(HasConfig));
+                OnPropertyChanged(nameof(RecipeConfigTypeName));
+                OnPropertyChanged(nameof(FixConfigTypeName));
+                OnPropertyChanged(nameof(HasRecipeConfig));
+                OnPropertyChanged(nameof(HasFixConfig));
+            } 
+        }
         private IProcess _Process;
 
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged(); } }
@@ -25,22 +40,52 @@ namespace ProjectARVRPro.Process
         public string ProcessTypeFullName => Process?.GetType().FullName ?? string.Empty;
 
         /// <summary>
-        /// Gets or sets the JSON representation of the process configuration.
+        /// Gets the corresponding recipe config type name based on the Process type.
+        /// Naming convention: {Prefix}Process -> {Prefix}RecipeConfig
         /// </summary>
-        public string ConfigJson { get => _ConfigJson; set { _ConfigJson = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasConfig)); } }
-        private string _ConfigJson;
+        [JsonIgnore]
+        public string RecipeConfigTypeName
+        {
+            get
+            {
+                if (Process == null) return string.Empty;
+                string processName = Process.GetType().Name;
+                // Handle special case: White255Process -> W255RecipeConfig
+                if (processName == "White255Process")
+                    return "W255RecipeConfig";
+                // Standard pattern: {Prefix}Process -> {Prefix}RecipeConfig
+                if (processName.EndsWith("Process", StringComparison.Ordinal))
+                {
+                    string prefix = processName.Substring(0, processName.Length - "Process".Length);
+                    return prefix + "RecipeConfig";
+                }
+                return string.Empty;
+            }
+        }
 
         /// <summary>
-        /// Gets or sets the selected recipe config type name.
+        /// Gets the corresponding fix config type name based on the Process type.
+        /// Naming convention: {Prefix}Process -> {Prefix}FixConfig
         /// </summary>
-        public string RecipeConfigTypeName { get => _RecipeConfigTypeName; set { _RecipeConfigTypeName = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasRecipeConfig)); } }
-        private string _RecipeConfigTypeName;
-
-        /// <summary>
-        /// Gets or sets the selected fix config type name.
-        /// </summary>
-        public string FixConfigTypeName { get => _FixConfigTypeName; set { _FixConfigTypeName = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasFixConfig)); } }
-        private string _FixConfigTypeName;
+        [JsonIgnore]
+        public string FixConfigTypeName
+        {
+            get
+            {
+                if (Process == null) return string.Empty;
+                string processName = Process.GetType().Name;
+                // Handle special case: White255Process -> W255FixConfig
+                if (processName == "White255Process")
+                    return "W255FixConfig";
+                // Standard pattern: {Prefix}Process -> {Prefix}FixConfig
+                if (processName.EndsWith("Process", StringComparison.Ordinal))
+                {
+                    string prefix = processName.Substring(0, processName.Length - "Process".Length);
+                    return prefix + "FixConfig";
+                }
+                return string.Empty;
+            }
+        }
 
         /// <summary>
         /// Gets a value indicating whether this process has a configurable config.
@@ -49,26 +94,32 @@ namespace ProjectARVRPro.Process
         public bool HasConfig => Process?.GetType().GetMethod("GetConfig") != null;
 
         /// <summary>
-        /// Gets a value indicating whether a recipe config is selected.
+        /// Gets a value indicating whether a recipe config exists for this process.
         /// </summary>
         [JsonIgnore]
-        public bool HasRecipeConfig => !string.IsNullOrEmpty(RecipeConfigTypeName);
+        public bool HasRecipeConfig
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(RecipeConfigTypeName)) return false;
+                var recipeManager = RecipeManager.GetInstance();
+                return recipeManager.RecipeConfig.Configs.Keys.Any(t => t.Name == RecipeConfigTypeName);
+            }
+        }
 
         /// <summary>
-        /// Gets a value indicating whether a fix config is selected.
+        /// Gets a value indicating whether a fix config exists for this process.
         /// </summary>
         [JsonIgnore]
-        public bool HasFixConfig => !string.IsNullOrEmpty(FixConfigTypeName);
-
-        /// <summary>
-        /// Command to edit the process configuration.
-        /// </summary>
-        [JsonIgnore]
-        public RelayCommand EditConfigCommand => _EditConfigCommand ??= new RelayCommand(
-            a => EditConfig(),
-            a => HasConfig
-        );
-        private RelayCommand _EditConfigCommand;
+        public bool HasFixConfig
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(FixConfigTypeName)) return false;
+                var fixManager = FixManager.GetInstance();
+                return fixManager.FixConfig.Configs.Keys.Any(t => t.Name == FixConfigTypeName);
+            }
+        }
 
         /// <summary>
         /// Command to edit the recipe configuration.
@@ -91,32 +142,7 @@ namespace ProjectARVRPro.Process
         private RelayCommand _EditFixConfigCommand;
 
         /// <summary>
-        /// Opens the PropertyEditorWindow to edit the process configuration.
-        /// </summary>
-        private void EditConfig()
-        {
-            if (Process == null) return;
-
-            var configMethod = Process.GetType().GetMethod("GetConfig");
-            if (configMethod == null) return;
-
-            var config = configMethod.Invoke(Process, null);
-            if (config == null) return;
-
-            var editor = new PropertyEditorWindow(config)
-            {
-                Owner = Application.Current.GetActiveWindow(),
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-
-            editor.ShowDialog();
-
-            // PropertyEditorWindow edits config in-place, so save after dialog closes
-            ConfigJson = JsonConvert.SerializeObject(config);
-        }
-
-        /// <summary>
-        /// Opens the PropertyEditorWindow to edit the selected recipe configuration.
+        /// Opens the PropertyEditorWindow to edit the corresponding recipe configuration.
         /// </summary>
         private void EditRecipeConfig()
         {
@@ -140,7 +166,7 @@ namespace ProjectARVRPro.Process
         }
 
         /// <summary>
-        /// Opens the PropertyEditorWindow to edit the selected fix configuration.
+        /// Opens the PropertyEditorWindow to edit the corresponding fix configuration.
         /// </summary>
         private void EditFixConfig()
         {
@@ -161,18 +187,6 @@ namespace ProjectARVRPro.Process
 
             editor.ShowDialog();
             fixManager.Save();
-        }
-
-        /// <summary>
-        /// Applies the stored config JSON to the process.
-        /// </summary>
-        public void ApplyConfig()
-        {
-            if (Process != null && !string.IsNullOrEmpty(ConfigJson))
-            {
-                var setConfigMethod = Process.GetType().GetMethod("SetConfig");
-                setConfigMethod?.Invoke(Process, new object[] { ConfigJson });
-            }
         }
     }
 }
