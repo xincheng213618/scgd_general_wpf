@@ -105,17 +105,24 @@
             <Button Content="删除选中" Padding="12 4" Command="{Binding RemoveMetaCommand}"/>
             <Button Content="上移" Padding="12 4" Margin="8 0 0 0" Command="{Binding MoveUpCommand}"/>
             <Button Content="下移" Padding="12 4" Margin="8 0 0 0" Command="{Binding MoveDownCommand}"/>
-            <TextBlock Text="  (双击可重命名, 当前仅内存保存)" VerticalAlignment="Center" Margin="12 0 0 0" Foreground="Gray"/>
+            <TextBlock Text="  (同一流程模板可配置多个处理，按列表顺序依次执行)" VerticalAlignment="Center" Margin="12 0 0 0" Foreground="Gray"/>
         </StackPanel>
 
         <Grid Grid.Row="3">
             <ListView ItemsSource="{Binding ProcessMetas}" SelectedItem="{Binding SelectedProcessMeta}" x:Name="lvMetas">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="名称" Width="160" DisplayMemberBinding="{Binding Name}"/>
-                        <GridViewColumn Header="流程模板" Width="180" DisplayMemberBinding="{Binding TemplateName}"/>
-                        <GridViewColumn Header="处理类" Width="200" DisplayMemberBinding="{Binding ProcessDisplayName}"/>
-                        <GridViewColumn Header="描述" Width="220" DisplayMemberBinding="{Binding ProcessDescription}"/>
+                        <GridViewColumn Header="序号" Width="50">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ExecutionOrder}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="名称" Width="140" DisplayMemberBinding="{Binding Name}"/>
+                        <GridViewColumn Header="流程模板" Width="160" DisplayMemberBinding="{Binding TemplateName}"/>
+                        <GridViewColumn Header="处理类" Width="180" DisplayMemberBinding="{Binding ProcessDisplayName}"/>
+                        <GridViewColumn Header="描述" Width="200" DisplayMemberBinding="{Binding ProcessDescription}"/>
                     </GridView>
                 </ListView.View>
             </ListView>

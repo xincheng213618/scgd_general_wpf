@@ -267,37 +267,43 @@ namespace ColorVision.Engine.Templates.Flow
         {
             try
             {
-                var meta = BatchManager.GetInstance().ProcessMetas.FirstOrDefault(m => string.Equals(m.TemplateName, FlowName, StringComparison.OrdinalIgnoreCase));
-                if (meta?.BatchProcess != null)
+                // Find all matching BatchProcessMeta entries for this flow template name
+                var matchingMetas = BatchManager.GetInstance().ProcessMetas
+                    .Where(m => string.Equals(m.TemplateName, FlowName, StringComparison.OrdinalIgnoreCase) && m.BatchProcess != null)
+                    .ToList();
+
+                if (matchingMetas.Count > 0)
                 {
-                    log.Info($"匹配到自定义流程 {meta.Name} -> {meta.ProcessTypeName}; 使用 IProcess 处理 {FlowName}");
-                    bool executed = false;
-                    try
+                    log.Info($"匹配到 {matchingMetas.Count} 个自定义流程处理 {FlowName}");
+                    
+                    var ctx = new IBatchContext
                     {
-                        var ctx = new IBatchContext
+                        Batch = batch,
+                        FlowName = FlowName,
+                    };
+
+                    // Execute all matching processes sequentially
+                    foreach (var meta in matchingMetas)
+                    {
+                        log.Info($"执行自定义流程 {meta.Name} -> {meta.ProcessTypeName}");
+                        try
                         {
-                            Batch = batch,
-                            FlowName = FlowName,
-                        };
-                        executed = meta.BatchProcess.Process(ctx);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error("自定义 IProcess 执行异常", ex);
-                    }
-                    if (executed)
-                    {
-                        return; // 已处理，直接返回
-                    }
-                    else
-                    {
-                        log.Warn("自定义 IProcess 执行失败，继续使用内置解析逻辑");
+                            bool executed = meta.BatchProcess.Process(ctx);
+                            if (!executed)
+                            {
+                                log.Warn($"自定义 IProcess {meta.Name} 执行返回失败");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error($"自定义 IProcess {meta.Name} 执行异常", ex);
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                log.Error("匹配/执行自定义 IProcess 出错，回退内置逻辑", ex);
+                log.Error("匹配/执行自定义 IProcess 出错", ex);
             }
         }
 

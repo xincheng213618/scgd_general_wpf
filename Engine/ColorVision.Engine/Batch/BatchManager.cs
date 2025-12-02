@@ -144,6 +144,18 @@ namespace ColorVision.Engine.Batch
                 }
             }
             SavePersistedMetas();
+            NotifyAllExecutionOrders();
+        }
+
+        /// <summary>
+        /// Notifies all BatchProcessMeta items to update their ExecutionOrder property.
+        /// </summary>
+        private void NotifyAllExecutionOrders()
+        {
+            foreach (var meta in ProcessMetas)
+            {
+                meta.NotifyExecutionOrderChanged();
+            }
         }
 
         private void Meta_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
