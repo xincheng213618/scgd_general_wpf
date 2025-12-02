@@ -28,7 +28,7 @@ namespace ProjectARVRPro.Process
     }
 
     /// <summary>
-    /// BatchProcessManagerWindow.xaml 的交互逻辑
+    /// ProcessManagerWindow.xaml 的交互逻辑
     /// </summary>
     public partial class ProcessManagerWindow : Window
     {
