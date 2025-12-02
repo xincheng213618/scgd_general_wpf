@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:BatchManager}"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-        Title="流程处理配置" Height="800" Width="1000" Initialized="Window_Initialized">
+        Title="流程处理配置" Height="720" Width="1280"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <local:TypeNameConverter x:Key="TypeNameConverter"/>
         <local:ProcessTooltipConverter x:Key="ProcessTooltipConverter"/>
