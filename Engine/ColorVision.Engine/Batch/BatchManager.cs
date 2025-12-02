@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Batch
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(BatchManager));
 
-        private const string PersistFileName = "ProcessMetas.json";
+        private const string PersistFileName = "BatchConfig.json";
         private static string PersistDirectory => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
         private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
 
