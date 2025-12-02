@@ -129,7 +129,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             return PublishAsyncClient(msg);
         }
 
-        public bool Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number)
+        public MsgRecord Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number)
         {
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Params = new Dictionary<string, object>();
@@ -140,8 +140,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 SerialNumber = sn,
                 Params = Params,
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
         public bool CloseOutput()

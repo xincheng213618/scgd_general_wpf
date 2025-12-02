@@ -9,7 +9,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.ComponentModel;
-using ColorVision.Engine.Services.RC; // Added
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Messages; // Added
 
 
 namespace ColorVision.Engine.Services.Devices.SMU
@@ -200,7 +201,13 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
         private void VIScan_Click(object sender, RoutedEventArgs e)
         {
-            DService.Scan(Config.IsSourceV, Config.StartMeasureVal, Config.StopMeasureVal, Config.LimitVal, Config.Number);
+            MsgRecord msgRecord = DService.Scan(Config.IsSourceV, Config.StartMeasureVal, Config.StopMeasureVal, Config.LimitVal, Config.Number);
+            msgRecord.MsgSucessed += (e) =>
+            {
+                DService.CloseOutput();
+                Config.V = null;
+                Config.I = null;
+            };
         }
 
 
