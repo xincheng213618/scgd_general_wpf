@@ -13,9 +13,9 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Black
 {
-    public class BlackProcess : IProcess
+    public class BlackProcess : ProcessBase<BlackProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -25,7 +25,7 @@ namespace ProjectARVRPro.Process.Black
 
             try
             {
-                log?.Info("´¦Àí Black Á÷³Ì½á¹û");
+                log?.Info("å¼€å§‹ Black æµç¨‹");
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -43,7 +43,7 @@ namespace ProjectARVRPro.Process.Black
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
                             testResult.PoixyuvDatas.Add(poi);
                         }
-                        // ĞèÒª°×»­ÃæµÄÁÁ¶È²ÅÄÜ¼ÆËã¶Ô±È¶È
+                        // éœ€è¦ç™½ç”»é¢äº®åº¦æ‰èƒ½è®¡ç®—å¯¹æ¯”åº¦
                         if (ctx.ObjectiveTestResult.W255TestResult != null && ctx.ObjectiveTestResult.W255TestResult.CenterLunimance != null)
                         {
                             double contrast = ctx.ObjectiveTestResult.W255TestResult.CenterLunimance.Value / testResult.PoixyuvDatas[0].Y;
@@ -57,13 +57,14 @@ namespace ProjectARVRPro.Process.Black
                         }
                         else
                         {
-                            log?.Info("¼ÆËã¶Ô±È¶ÈÇ°ĞèÒª°×»­ÃæÊı¾İ");
+                            log?.Info("è®¡ç®—å¯¹æ¯”åº¦å‰éœ€è¦ç™½ç”»é¢äº®åº¦");
                         }
                     }
                 }
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 ctx.ObjectiveTestResult.BlackTestResult = JsonConvert.DeserializeObject<BlackTestResult>(ctx.Result.ViewResultJson) ?? new BlackTestResult();
+
                 return true;
             }
             catch (Exception ex)
@@ -73,7 +74,7 @@ namespace ProjectARVRPro.Process.Black
             }
         }
 
-        public void Render(IProcessExecutionContext ctx)
+        public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             BlackViewTestResult testResult = JsonConvert.DeserializeObject<BlackViewTestResult>(ctx.Result.ViewResultJson);
@@ -114,12 +115,12 @@ namespace ProjectARVRPro.Process.Black
             }
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
 
-            outtext += $"ºÚ»­Ãæ ²âÊÔÏî½á¹û)" + Environment.NewLine;
+            outtext += $"é»‘ç”»é¢ ï¼šï¼ˆæµ‹è¯•é¡¹)" + Environment.NewLine;
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return string.Empty;
             BlackViewTestResult testResult = JsonConvert.DeserializeObject<BlackViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return string.Empty;
@@ -128,5 +129,14 @@ namespace ProjectARVRPro.Process.Black
             return outtext;
         }
 
+        public override IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<BlackRecipeConfig>();
+        }
+
+        public override IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<BlackFixConfig>();
+        }
     }
 }

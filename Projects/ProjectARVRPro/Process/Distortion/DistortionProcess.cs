@@ -5,15 +5,16 @@ using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Green;
 using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Distortion
 {
-    public class DistortionProcess : IProcess
+    public class DistortionProcess : ProcessBase<DistortionProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -79,7 +80,7 @@ namespace ProjectARVRPro.Process.Distortion
             }
         }
 
-        public void Render(IProcessExecutionContext ctx)
+        public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             DistortionViewTestResult testResult = JsonConvert.DeserializeObject<DistortionViewTestResult>(ctx.Result.ViewResultJson);
@@ -99,7 +100,7 @@ namespace ProjectARVRPro.Process.Distortion
 
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
@@ -112,6 +113,16 @@ namespace ProjectARVRPro.Process.Distortion
             outtext += $"HorizontalTVDistortion:{testResult.HorizontalTVDistortion.TestValue} LowLimit:{testResult.HorizontalTVDistortion.LowLimit}  UpLimit:{testResult.HorizontalTVDistortion.UpLimit},Rsult{(testResult.HorizontalTVDistortion.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"VerticalTVDistortion:{testResult.VerticalTVDistortion.TestValue} LowLimit:{testResult.VerticalTVDistortion.LowLimit}  UpLimit:{testResult.VerticalTVDistortion.UpLimit},Rsult{(testResult.VerticalTVDistortion.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
+        }
+
+        public override IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
+        }
+
+        public override IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<DistortionFixConfig>();
         }
     }
 }

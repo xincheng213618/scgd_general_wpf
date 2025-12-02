@@ -7,15 +7,16 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using ProjectARVRPro.Process.Green;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Chessboard
 {
-    public class ChessboardProcess : IProcess
+    public class ChessboardProcess : ProcessBase<ChessboardProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -26,7 +27,7 @@ namespace ProjectARVRPro.Process.Chessboard
 
             try
             {
-                log?.Info("´¦Àí Chessboard Á÷³Ì½á¹û");
+                log?.Info("ï¿½ï¿½ï¿½ï¿½ Chessboard ï¿½ï¿½ï¿½Ì½ï¿½ï¿½");
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -78,7 +79,7 @@ namespace ProjectARVRPro.Process.Chessboard
             }
         }
 
-        public void Render(IProcessExecutionContext ctx)
+        public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             ChessboardViewTestResult testResult = JsonConvert.DeserializeObject<ChessboardViewTestResult>(ctx.Result.ViewResultJson);
@@ -118,11 +119,11 @@ namespace ProjectARVRPro.Process.Chessboard
             }
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
-            outtext += $"ÆåÅÌ¸ñ ²âÊÔÏî£º" + Environment.NewLine;
+            outtext += $"ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½î£º" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             ChessboardViewTestResult testResult = JsonConvert.DeserializeObject<ChessboardViewTestResult>(ctx.Result.ViewResultJson);
@@ -135,6 +136,16 @@ namespace ProjectARVRPro.Process.Chessboard
 
             outtext += $"ChessboardContrast:{testResult.ChessboardContrast.TestValue} LowLimit:{testResult.ChessboardContrast.LowLimit}  UpLimit:{testResult.ChessboardContrast.UpLimit},Rsult{(testResult.ChessboardContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
+        }
+
+        public override IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
+        }
+
+        public override IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<ChessboardFixConfig>();
         }
     }
 }

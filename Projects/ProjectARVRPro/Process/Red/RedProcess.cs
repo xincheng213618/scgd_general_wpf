@@ -7,6 +7,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using System.Windows;
 using System.Windows.Media;
 
@@ -15,9 +16,9 @@ namespace ProjectARVRPro.Process.Red
 
 
 
-    public class RedProcess : IProcess
+    public class RedProcess : ProcessBase<RedProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -156,7 +157,7 @@ namespace ProjectARVRPro.Process.Red
             }
         }
 
-        public void Render (IProcessExecutionContext ctx)
+        public override void Render (IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             RedViewTestResult redTestResult = JsonConvert.DeserializeObject<RedViewTestResult>(ctx.Result.ViewResultJson);
@@ -196,11 +197,11 @@ namespace ProjectARVRPro.Process.Red
 
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
 
             string outtext = string.Empty;
-            outtext += $"Red »­Ãæ½á¹û" + Environment.NewLine;
+            outtext += $"Red ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             RedViewTestResult redTestResult = JsonConvert.DeserializeObject<RedViewTestResult>(ctx.Result.ViewResultJson);
@@ -215,6 +216,16 @@ namespace ProjectARVRPro.Process.Red
             outtext += $"Color_uniformity:{redTestResult.ColorUniformity.TestValue} LowLimit:{redTestResult.ColorUniformity.LowLimit} UpLimit:{redTestResult.ColorUniformity.UpLimit},Rsult{(redTestResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
             return outtext;
+        }
+
+        public override IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<RedRecipeConfig>();
+        }
+
+        public override IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<RedFixConfig>();
         }
     }
 }

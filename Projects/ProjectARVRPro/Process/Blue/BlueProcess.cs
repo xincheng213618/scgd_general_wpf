@@ -8,6 +8,7 @@ using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Dm.util;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using ProjectARVRPro.Process.Green;
 using System.Windows;
 using System.Windows.Media;
@@ -15,9 +16,9 @@ using System.Windows.Media;
 namespace ProjectARVRPro.Process.Blue
 {
 
-    public class BlueProcess : IProcess
+    public class BlueProcess : ProcessBase<BlueProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -157,7 +158,7 @@ namespace ProjectARVRPro.Process.Blue
             }
         }
 
-        public void Render(IProcessExecutionContext ctx)
+        public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             BlueViewTestResult BlueTestResult = JsonConvert.DeserializeObject<BlueViewTestResult>(ctx.Result.ViewResultJson);
@@ -197,11 +198,11 @@ namespace ProjectARVRPro.Process.Blue
 
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
 
             string outtext = string.Empty;
-            outtext += $"Blue »­Ãæ½á¹û" + Environment.NewLine;
+            outtext += $"Blue ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             BlueViewTestResult BlueTestResult = JsonConvert.DeserializeObject<BlueViewTestResult>(ctx.Result.ViewResultJson);
@@ -216,6 +217,16 @@ namespace ProjectARVRPro.Process.Blue
             outtext += $"Color_uniformity:{BlueTestResult.ColorUniformity.TestValue} LowLimit:{BlueTestResult.ColorUniformity.LowLimit} UpLimit:{BlueTestResult.ColorUniformity.UpLimit},Rsult{(BlueTestResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
             return outtext;
+        }
+
+        public override IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<BlueRecipeConfig>();
+        }
+
+        public override IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<BlueFixConfig>();
         }
     }
 }
