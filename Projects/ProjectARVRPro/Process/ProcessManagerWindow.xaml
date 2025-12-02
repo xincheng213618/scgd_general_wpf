@@ -6,14 +6,16 @@
         xmlns:local="clr-namespace:ProjectARVRPro.Process"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProcessManager}"
-        Title="流程处理配置" Height="800" Width="1400" Initialized="Window_Initialized">
+        Title="流程处理配置" Height="800" Width="1400" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <local:TypeNameConverter x:Key="TypeNameConverter"/>
+        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Window.Resources>
     <Grid Margin="8">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="350"/>
+            <ColumnDefinition Width="*" MinWidth="500"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="450" MinWidth="350"/>
         </Grid.ColumnDefinitions>
         
         <!-- Left Panel: Process Meta List -->
@@ -92,102 +94,62 @@
                 <TextBlock Text="  (双击可重命名, 当前仅内存保存)" VerticalAlignment="Center" Margin="12 0 0 0" Foreground="Gray"/>
             </StackPanel>
 
-            <Grid Grid.Row="3">
-                <ListView ItemsSource="{Binding ProcessMetas}" SelectedItem="{Binding SelectedProcessMeta}" x:Name="lvMetas">
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                    <ListView.View>
-                        <GridView>
-                            <GridView.ColumnHeaderContainerStyle>
-                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                    <Setter Property="Background" Value="Transparent"/>
-                                </Style>
-                            </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn Header="名称" Width="140" DisplayMemberBinding="{Binding Name}"/>
-                            <GridViewColumn Header="流程模板" Width="140" DisplayMemberBinding="{Binding FlowTemplate}"/>
-                            <GridViewColumn Header="处理类" Width="160" DisplayMemberBinding="{Binding ProcessTypeName}"/>
-                            <GridViewColumn Header="Recipe配置" Width="140" DisplayMemberBinding="{Binding RecipeConfigTypeName}"/>
-                            <GridViewColumn Header="Fix配置" Width="140" DisplayMemberBinding="{Binding FixConfigTypeName}"/>
-                            <GridViewColumn Header="是否启用" Width="80">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <CheckBox IsChecked="{Binding IsEnabled}" HorizontalAlignment="Center"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
-            </Grid>
+            <ListView Grid.Row="3" ItemsSource="{Binding ProcessMetas}" SelectedItem="{Binding SelectedProcessMeta}" x:Name="lvMetas" SelectionChanged="ListView_SelectionChanged">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn Header="名称" Width="180" DisplayMemberBinding="{Binding Name}"/>
+                        <GridViewColumn Header="流程模板" Width="180" DisplayMemberBinding="{Binding FlowTemplate}"/>
+                        <GridViewColumn Header="处理类" Width="200" DisplayMemberBinding="{Binding ProcessTypeName}"/>
+                        <GridViewColumn Header="是否启用" Width="80">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsEnabled}" HorizontalAlignment="Center"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
         </Grid>
         
+        <!-- GridSplitter -->
+        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent"/>
+        
         <!-- Right Panel: Configuration Editing -->
-        <Border Grid.Column="1" Margin="8 0 0 0" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="5">
+        <Border Grid.Column="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 
-                <TextBlock Text="配置编辑" FontWeight="Bold" FontSize="14" Margin="10 10 10 5" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <!-- Header -->
+                <Border Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="4,4,0,0" Padding="12,8">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="&#xE713;" FontFamily="Segoe MDL2 Assets" 
+                                Command="{Binding SelectedProcessMeta.EditProcessConfigCommand}"
+                                Visibility="{Binding SelectedProcessMeta.HasProcessConfig, Converter={StaticResource BoolToVisibilityConverter}}"
+                                ToolTip="在独立窗口编辑配置"
+                                Padding="6,4" Margin="8,0,0,0"/>
+                        <TextBlock Text="配置编辑" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                    </DockPanel>
+                </Border>
                 
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <StackPanel x:Name="ConfigEditPanel" Margin="10">
-                        <!-- Recipe Config Section -->
-                        <GroupBox Header="Recipe 配置" Padding="8" Margin="0 0 0 8">
-                            <StackPanel>
-                                <DockPanel Margin="0 0 0 8">
-                                    <TextBlock Text="Recipe类型:" VerticalAlignment="Center" Width="80"/>
-                                    <TextBlock Text="{Binding SelectedProcessMeta.RecipeConfigTypeName, FallbackValue='(请选择流程)'}" 
-                                               VerticalAlignment="Center" Margin="5 0 0 0"
-                                               Foreground="{DynamicResource GlobalTextBrush}"/>
-                                </DockPanel>
-                                <Button Content="编辑 Recipe 配置" Padding="12 4" HorizontalAlignment="Left"
-                                        Command="{Binding SelectedProcessMeta.EditRecipeConfigCommand}"
-                                        IsEnabled="{Binding SelectedProcessMeta.HasRecipeConfig}"/>
-                            </StackPanel>
-                        </GroupBox>
-                        
-                        <!-- Fix Config Section -->
-                        <GroupBox Header="Fix 配置" Padding="8" Margin="0 0 0 8">
-                            <StackPanel>
-                                <DockPanel Margin="0 0 0 8">
-                                    <TextBlock Text="Fix类型:" VerticalAlignment="Center" Width="80"/>
-                                    <TextBlock Text="{Binding SelectedProcessMeta.FixConfigTypeName, FallbackValue='(请选择流程)'}" 
-                                               VerticalAlignment="Center" Margin="5 0 0 0"
-                                               Foreground="{DynamicResource GlobalTextBrush}"/>
-                                </DockPanel>
-                                <Button Content="编辑 Fix 配置" Padding="12 4" HorizontalAlignment="Left"
-                                        Command="{Binding SelectedProcessMeta.EditFixConfigCommand}"
-                                        IsEnabled="{Binding SelectedProcessMeta.HasFixConfig}"/>
-                            </StackPanel>
-                        </GroupBox>
-                        
-                        <!-- Process Config Section -->
-                        <GroupBox Header="Process 配置" Padding="8" Margin="0 0 0 8">
-                            <StackPanel>
-                                <DockPanel Margin="0 0 0 8">
-                                    <TextBlock Text="Process类型:" VerticalAlignment="Center" Width="80"/>
-                                    <TextBlock Text="{Binding SelectedProcessMeta.ProcessConfigTypeName, FallbackValue='(无)'}" 
-                                               VerticalAlignment="Center" Margin="5 0 0 0"
-                                               Foreground="{DynamicResource GlobalTextBrush}"/>
-                                </DockPanel>
-                                <Button Content="编辑 Process 配置" Padding="12 4" HorizontalAlignment="Left"
-                                        Command="{Binding SelectedProcessMeta.EditProcessConfigCommand}"
-                                        IsEnabled="{Binding SelectedProcessMeta.HasProcessConfig}"/>
-                            </StackPanel>
-                        </GroupBox>
-                        
-                        <!-- Info Section -->
-                        <GroupBox Header="说明" Padding="8" Margin="0 0 0 8">
-                            <TextBlock TextWrapping="Wrap" Foreground="Gray">
-                                选择左侧列表中的流程后，系统会从 IProcess 接口获取对应的 Recipe、Fix 和 Process 配置。
-                                点击"编辑"按钮可打开属性编辑器修改配置参数。
-                            </TextBlock>
-                        </GroupBox>
+                <!-- Properties Content -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
+                    <StackPanel x:Name="PropertyPanel">
+                        <TextBlock Text="请选择一个处理项查看配置" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"
+                                   x:Name="PlaceholderText"/>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
