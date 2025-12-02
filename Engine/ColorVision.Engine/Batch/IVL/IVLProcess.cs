@@ -1,3 +1,4 @@
+using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.SMU;
@@ -10,6 +11,7 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -90,15 +92,36 @@ namespace ColorVision.Engine.Batch.IVL
         }
     }
 
+    /// <summary>
+    /// Configuration for IVLProcess
+    /// </summary>
+    public class IVLProcessConfig : ViewModelBase
+    {
+        [DisplayName("保存相机CSV")]
+        [Description("是否将相机数据保存到CSV文件")]
+        public bool SaveCameraCsv { get => _SaveCameraCsv; set { _SaveCameraCsv = value; OnPropertyChanged(); } }
+        private bool _SaveCameraCsv = true;
+
+        [DisplayName("保存光谱CSV")]
+        [Description("是否将光谱数据保存到CSV文件")]
+        public bool SaveSpectrumCsv { get => _SaveSpectrumCsv; set { _SaveSpectrumCsv = value; OnPropertyChanged(); } }
+        private bool _SaveSpectrumCsv = true;
+
+        [DisplayName("显示图表")]
+        [Description("是否显示I-Lv曲线图表窗口")]
+        public bool ShowPlot { get => _ShowPlot; set { _ShowPlot = value; OnPropertyChanged(); } }
+        private bool _ShowPlot = true;
+    }
+
     [BatchProcess("IVL完整处理", "处理IVL批次数据，包含Camera和Spectrum数据的导出")]
-    public class IVLProcess : IBatchProcess
+    public class IVLProcess : BatchProcessBase<IVLProcessConfig>
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(IVLProcess));
 
-        public bool Process(IBatchContext ctx)
+        public override bool Process(IBatchContext ctx)
         {
             if (ctx?.Batch == null) return false;
-            var config = ctx.Config;
+            var batchConfig = ctx.Config;
 
             IVLViewTestResult testResult = new IVLViewTestResult();
             try
@@ -133,28 +156,37 @@ namespace ColorVision.Engine.Batch.IVL
                 }
                 DB.Dispose();
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string filePath = Path.Combine(config.SavePath, $"Camera_IVL_{timeStr}.csv");
-                var rows = new List<string> { "Time,Meas_id,PoiName,Voltage(V),Current(mA),Lv(cd/m2),X,Y,Z,cx,cy,u',v',CCT(K),Dominant Wavelength" };
-
-                string DateTimeNow = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                int z = 0;
-                for (int i = 0; i < testResult.PoixyuvDatas.Count; i++)
+                
+                // Save Camera CSV if enabled
+                if (Config.SaveCameraCsv)
                 {
-                    z = i / cout;
-                    if (testResult.SMUResultModels.Count > z)
+                    if (!Directory.Exists(batchConfig.SavePath))
                     {
-                        var SMUResultModel = testResult.SMUResultModels[z];
-                        rows.Add($"{DateTimeNow},{i + 1},{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},{SMUResultModel.VResult},{SMUResultModel.IResult},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
+                        Directory.CreateDirectory(batchConfig.SavePath);
                     }
-                    else
-                    {
-                        rows.Add($"{DateTimeNow},{i + 1},{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},,,{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
+                    
+                    string filePath = Path.Combine(batchConfig.SavePath, $"Camera_IVL_{timeStr}.csv");
+                    var rows = new List<string> { "Time,Meas_id,PoiName,Voltage(V),Current(mA),Lv(cd/m2),X,Y,Z,cx,cy,u',v',CCT(K),Dominant Wavelength" };
 
+                    string DateTimeNow = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    int z = 0;
+                    for (int i = 0; i < testResult.PoixyuvDatas.Count; i++)
+                    {
+                        z = i / cout;
+                        if (testResult.SMUResultModels.Count > z)
+                        {
+                            var SMUResultModel = testResult.SMUResultModels[z];
+                            rows.Add($"{DateTimeNow},{i + 1},{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},{SMUResultModel.VResult},{SMUResultModel.IResult},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
+                        }
+                        else
+                        {
+                            rows.Add($"{DateTimeNow},{i + 1},{testResult.PoixyuvDatas[i].POIPointResultModel.PoiName},,,{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].X},{testResult.PoixyuvDatas[i].Y},{testResult.PoixyuvDatas[i].Z},{testResult.PoixyuvDatas[i].x},{testResult.PoixyuvDatas[i].y},{testResult.PoixyuvDatas[i].u},{testResult.PoixyuvDatas[i].v},{testResult.PoixyuvDatas[i].CCT},{testResult.PoixyuvDatas[i].Wave}");
+
+                        }
                     }
+                    File.WriteAllLines(filePath, rows);
                 }
-                File.WriteAllLines(filePath, rows);
-
 
                 var DB1 = new SqlSugarClient(new ConnectionConfig
                 {
@@ -168,9 +200,16 @@ namespace ColorVision.Engine.Batch.IVL
                 ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();
                 if (list.Count == 0)
                 {
-                    log.Info("�Ҳ��������ǵ�����");
-                    string sprectrumfilePath = Path.Combine(config.SavePath, $"SP_IVL_{timeStr}.csv");
-                    ViewResults.SaveToCsv(sprectrumfilePath);
+                    log.Info("找不到光谱数据");
+                    if (Config.SaveSpectrumCsv)
+                    {
+                        if (!Directory.Exists(batchConfig.SavePath))
+                        {
+                            Directory.CreateDirectory(batchConfig.SavePath);
+                        }
+                        string sprectrumfilePath = Path.Combine(batchConfig.SavePath, $"SP_IVL_{timeStr}.csv");
+                        ViewResults.SaveToCsv(sprectrumfilePath);
+                    }
                 }
                 else
                 {
@@ -192,12 +231,20 @@ namespace ColorVision.Engine.Batch.IVL
                         i++;
                         ViewResults.Add(viewResultSpectrum);
                     }
-                    string sprectrumfilePath = Path.Combine(config.SavePath, $"SP_IVL_{timeStr}.csv");
-                    ViewResults.SaveToCsv(sprectrumfilePath);
+                    
+                    if (Config.SaveSpectrumCsv)
+                    {
+                        if (!Directory.Exists(batchConfig.SavePath))
+                        {
+                            Directory.CreateDirectory(batchConfig.SavePath);
+                        }
+                        string sprectrumfilePath = Path.Combine(batchConfig.SavePath, $"SP_IVL_{timeStr}.csv");
+                        ViewResults.SaveToCsv(sprectrumfilePath);
+                    }
                 }
                 
-                // Show I-Lv curve plot window
-                if (testResult.SMUResultModels.Count > 0 && (testResult.PoixyuvDatas.Count > 0 || ViewResults.Count > 0))
+                // Show I-Lv curve plot window if enabled
+                if (Config.ShowPlot && testResult.SMUResultModels.Count > 0 && (testResult.PoixyuvDatas.Count > 0 || ViewResults.Count > 0))
                 {
                     System.Windows.Application.Current?.Dispatcher.Invoke(() =>
                     {
