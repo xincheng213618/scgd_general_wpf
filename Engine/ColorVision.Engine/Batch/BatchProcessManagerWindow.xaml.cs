@@ -1,6 +1,7 @@
 ﻿using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
+using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -67,10 +68,35 @@ namespace ColorVision.Engine.Batch
     public partial class BatchProcessManagerWindow : Window
     {
         private BatchProcessMeta _currentSelectedMeta;
+        private INotifyPropertyChanged _currentConfig;
+        private PropertyChangedEventHandler _configPropertyChangedHandler;
 
         public BatchProcessManagerWindow()
         {
             InitializeComponent();
+            Closing += Window_Closing;
+        }
+
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            // Cleanup event handlers on window close
+            CleanupEventHandlers();
+        }
+
+        private void CleanupEventHandlers()
+        {
+            if (_currentSelectedMeta != null)
+            {
+                _currentSelectedMeta.PropertyChanged -= SelectedMeta_PropertyChanged;
+                _currentSelectedMeta = null;
+            }
+
+            if (_currentConfig != null && _configPropertyChangedHandler != null)
+            {
+                _currentConfig.PropertyChanged -= _configPropertyChangedHandler;
+                _currentConfig = null;
+                _configPropertyChangedHandler = null;
+            }
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -86,6 +112,14 @@ namespace ColorVision.Engine.Batch
         private void RefreshPropertyPanel()
         {
             PropertyPanel.Children.Clear();
+
+            // Cleanup previous config handler
+            if (_currentConfig != null && _configPropertyChangedHandler != null)
+            {
+                _currentConfig.PropertyChanged -= _configPropertyChangedHandler;
+                _currentConfig = null;
+                _configPropertyChangedHandler = null;
+            }
 
             var manager = DataContext as BatchManager;
             var selectedMeta = manager?.SelectedProcessMeta;
@@ -104,13 +138,16 @@ namespace ColorVision.Engine.Batch
             }
 
             // Unsubscribe from previous meta if any
-            if (_currentSelectedMeta != null)
+            if (_currentSelectedMeta != null && _currentSelectedMeta != selectedMeta)
             {
                 _currentSelectedMeta.PropertyChanged -= SelectedMeta_PropertyChanged;
             }
 
-            _currentSelectedMeta = selectedMeta;
-            _currentSelectedMeta.PropertyChanged += SelectedMeta_PropertyChanged;
+            if (_currentSelectedMeta != selectedMeta)
+            {
+                _currentSelectedMeta = selectedMeta;
+                _currentSelectedMeta.PropertyChanged += SelectedMeta_PropertyChanged;
+            }
 
             // Add meta info section
             AddMetaInfoSection(selectedMeta);
@@ -123,7 +160,7 @@ namespace ColorVision.Engine.Batch
             }
         }
 
-        private void SelectedMeta_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void SelectedMeta_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             // Refresh when BatchProcess changes (which may change the config)
             if (e.PropertyName == nameof(BatchProcessMeta.BatchProcess))
@@ -200,14 +237,16 @@ namespace ColorVision.Engine.Batch
             // Generate property editor controls
             var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config);
             
-            // Subscribe to config changes to persist
-            if (config is System.ComponentModel.INotifyPropertyChanged notifyConfig)
+            // Subscribe to config changes to persist (with proper cleanup)
+            if (config is INotifyPropertyChanged notifyConfig)
             {
-                notifyConfig.PropertyChanged += (s, e) =>
+                _currentConfig = notifyConfig;
+                _configPropertyChangedHandler = (s, e) =>
                 {
                     // Save config changes
                     meta.ConfigJson = JsonConvert.SerializeObject(config);
                 };
+                _currentConfig.PropertyChanged += _configPropertyChangedHandler;
             }
 
             stack.Children.Add(configPanel);
@@ -248,7 +287,8 @@ namespace ColorVision.Engine.Batch
                 Text = value ?? "", 
                 VerticalAlignment = VerticalAlignment.Center
             };
-            textBox.TextChanged += (s, e) => onChanged?.Invoke(textBox.Text);
+            // Use LostFocus instead of TextChanged to reduce update frequency
+            textBox.LostFocus += (s, e) => onChanged?.Invoke(textBox.Text);
             
             dock.Children.Add(textBox);
             parent.Children.Add(dock);
