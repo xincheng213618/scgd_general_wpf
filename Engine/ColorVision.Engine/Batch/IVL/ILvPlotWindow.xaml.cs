@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Batch.IVL
 
     /// <summary>
     /// IVL Curve Plot Window
-    /// Plots Current (I) or Voltage (V) vs Luminance (Lv) curves grouped by POI name
+    /// Plots Current (I) vs Luminance (Lv), Voltage (V) vs Luminance (Lv), or Current (I) vs Voltage (V) curves grouped by POI name
     /// </summary>
     public partial class ILvPlotWindow : Window
     {
