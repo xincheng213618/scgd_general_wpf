@@ -31,8 +31,8 @@ namespace ProjectARVRPro.Process
         /// <summary>
         /// Gets the process-specific configuration for this process.
         /// </summary>
-        /// <returns>The process configuration object, or null if no process config is available.</returns>
-        public object GetProcessConfig()
+        /// <returns>The process configuration, or null if no process config is available.</returns>
+        public IProcessConfig GetProcessConfig()
         {
             return null;
         }

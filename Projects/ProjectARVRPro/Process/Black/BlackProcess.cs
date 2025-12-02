@@ -8,6 +8,7 @@ using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
 using ProjectARVRPro.Process.W255;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 
@@ -21,11 +22,12 @@ namespace ProjectARVRPro.Process.Black
             var log = ctx.Logger;
             BlackRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<BlackRecipeConfig>();
             BlackFixConfig fixConfig = ctx.FixConfig.GetRequiredService<BlackFixConfig>();
+            BlackProcessConfig processConfig = GetProcessConfig() as BlackProcessConfig;
             BlackViewTestResult testResult = new BlackViewTestResult();
 
             try
             {
-                log?.Info("���� Black ���̽��");
+                log?.Info("开始 Black 流程");
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -43,7 +45,7 @@ namespace ProjectARVRPro.Process.Black
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
                             testResult.PoixyuvDatas.Add(poi);
                         }
-                        // ��Ҫ�׻�������Ȳ��ܼ���Աȶ�
+                        // 需要白画面亮度才能计算对比度
                         if (ctx.ObjectiveTestResult.W255TestResult != null && ctx.ObjectiveTestResult.W255TestResult.CenterLunimance != null)
                         {
                             double contrast = ctx.ObjectiveTestResult.W255TestResult.CenterLunimance.Value / testResult.PoixyuvDatas[0].Y;
@@ -57,13 +59,23 @@ namespace ProjectARVRPro.Process.Black
                         }
                         else
                         {
-                            log?.Info("����Աȶ�ǰ��Ҫ�׻�������");
+                            log?.Info("计算对比度前需要白画面亮度");
                         }
                     }
                 }
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 ctx.ObjectiveTestResult.BlackTestResult = JsonConvert.DeserializeObject<BlackTestResult>(ctx.Result.ViewResultJson) ?? new BlackTestResult();
+
+                // Save CSV if enabled
+                if (processConfig?.SaveCsv == true)
+                {
+                    string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    string csvPath = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, $"BlackTestResult_{timeStr}.csv");
+                    TestResultCsvHelper.ExportToCsv(testResult, csvPath);
+                    log?.Info($"Black测试结果已保存到: {csvPath}");
+                }
+
                 return true;
             }
             catch (Exception ex)
@@ -136,6 +148,11 @@ namespace ProjectARVRPro.Process.Black
         public IFixConfig GetFixConfig()
         {
             return FixManager.GetInstance().FixConfig.GetRequiredService<BlackFixConfig>();
+        }
+
+        public IProcessConfig GetProcessConfig()
+        {
+            return ProcessConfigManager.GetInstance().ProcessConfig.GetRequiredService<BlackProcessConfig>();
         }
 
     }
