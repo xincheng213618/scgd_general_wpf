@@ -5,8 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ProjectARVRPro"
         mc:Ignorable="d"
-        Title="TestResult View" Height="500" Width="800"
+        Title="TestResult View" Height="500" Width="900"
         WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <local:BoolToPassFailConverter x:Key="BoolToPassFailConverter"/>
+        <local:BoolToColorConverter x:Key="BoolToColorConverter"/>
+    </Window.Resources>
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -43,8 +47,5 @@
         </DataGrid>
     </Grid>
     
-    <Window.Resources>
-        <local:BoolToPassFailConverter x:Key="BoolToPassFailConverter"/>
-        <local:BoolToColorConverter x:Key="BoolToColorConverter"/>
-    </Window.Resources>
+
 </Window>
