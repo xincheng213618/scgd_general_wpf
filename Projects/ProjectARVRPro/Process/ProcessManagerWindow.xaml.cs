@@ -82,12 +82,15 @@ namespace ProjectARVRPro.Process
 
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            RefreshPropertyPanel();
+            RefreshConfigPanels();
         }
 
-        private void RefreshPropertyPanel()
+        private void RefreshConfigPanels()
         {
-            PropertyPanel.Children.Clear();
+            // Clear all panels
+            RecipePanel.Children.Clear();
+            FixPanel.Children.Clear();
+            ProcessPanel.Children.Clear();
 
             // Cleanup previous config handlers
             CleanupConfigHandler(ref _currentRecipeConfig, ref _recipeConfigPropertyChangedHandler);
@@ -99,14 +102,10 @@ namespace ProjectARVRPro.Process
 
             if (selectedMeta == null)
             {
-                // Show placeholder text
-                PropertyPanel.Children.Add(new TextBlock
-                {
-                    Text = "请选择一个处理项查看配置",
-                    Foreground = System.Windows.Media.Brushes.Gray,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    Margin = new Thickness(0, 20, 0, 0)
-                });
+                // Show placeholder text in all panels
+                AddPlaceholderText(RecipePanel);
+                AddPlaceholderText(FixPanel);
+                AddPlaceholderText(ProcessPanel);
                 return;
             }
 
@@ -122,29 +121,60 @@ namespace ProjectARVRPro.Process
                 _currentSelectedMeta.PropertyChanged += SelectedMeta_PropertyChanged;
             }
 
-            // Add meta info section
-            AddMetaInfoSection(selectedMeta);
-
             // Add Recipe config if available
             var recipeConfig = selectedMeta.Process?.GetRecipeConfig();
             if (recipeConfig != null)
             {
-                AddConfigSection(recipeConfig, "Recipe 配置", selectedMeta, ConfigType.Recipe);
+                AddConfigToPanel(recipeConfig, RecipePanel, selectedMeta, ConfigType.Recipe);
+            }
+            else
+            {
+                AddNoConfigText(RecipePanel, "无Recipe配置");
             }
 
             // Add Fix config if available
             var fixConfig = selectedMeta.Process?.GetFixConfig();
             if (fixConfig != null)
             {
-                AddConfigSection(fixConfig, "Fix 配置", selectedMeta, ConfigType.Fix);
+                AddConfigToPanel(fixConfig, FixPanel, selectedMeta, ConfigType.Fix);
+            }
+            else
+            {
+                AddNoConfigText(FixPanel, "无Fix配置");
             }
 
             // Add Process config if available
             var processConfig = selectedMeta.Process?.GetProcessConfig();
             if (processConfig != null)
             {
-                AddConfigSection(processConfig, "Process 配置", selectedMeta, ConfigType.Process);
+                AddConfigToPanel(processConfig, ProcessPanel, selectedMeta, ConfigType.Process);
             }
+            else
+            {
+                AddNoConfigText(ProcessPanel, "无Process配置");
+            }
+        }
+
+        private void AddPlaceholderText(StackPanel panel)
+        {
+            panel.Children.Add(new TextBlock
+            {
+                Text = "请选择一个处理项",
+                Foreground = System.Windows.Media.Brushes.Gray,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 20, 0, 0)
+            });
+        }
+
+        private void AddNoConfigText(StackPanel panel, string message)
+        {
+            panel.Children.Add(new TextBlock
+            {
+                Text = message,
+                Foreground = System.Windows.Media.Brushes.Gray,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 20, 0, 0)
+            });
         }
 
         private enum ConfigType
@@ -159,69 +189,12 @@ namespace ProjectARVRPro.Process
             // Refresh when Process changes (which may change the configs)
             if (e.PropertyName == nameof(ProcessMeta.Process))
             {
-                RefreshPropertyPanel();
+                RefreshConfigPanels();
             }
         }
 
-        private void AddMetaInfoSection(ProcessMeta meta)
+        private void AddConfigToPanel(object config, StackPanel panel, ProcessMeta meta, ConfigType configType)
         {
-            var border = new Border
-            {
-                BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(4),
-                Padding = new Thickness(10),
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-
-            var stack = new StackPanel();
-            border.Child = stack;
-
-            // Header
-            stack.Children.Add(new TextBlock
-            {
-                Text = "基本信息",
-                FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 0, 0, 8)
-            });
-
-            // Name
-            AddLabeledTextBox(stack, "名称:", meta.Name, text => meta.Name = text);
-
-            // Template Name (read-only)
-            AddLabeledText(stack, "流程模板:", meta.FlowTemplate);
-
-            // Process Type (read-only)
-            AddLabeledText(stack, "处理类:", meta.ProcessTypeName);
-
-            // Enabled status
-            AddLabeledCheckBox(stack, "是否启用:", meta.IsEnabled, isChecked => meta.IsEnabled = isChecked);
-
-            PropertyPanel.Children.Add(border);
-        }
-
-        private void AddConfigSection(object config, string headerText, ProcessMeta meta, ConfigType configType)
-        {
-            var border = new Border
-            {
-                BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(4),
-                Padding = new Thickness(10),
-                Margin = new Thickness(0, 0, 0, 10)
-            };
-
-            var stack = new StackPanel();
-            border.Child = stack;
-
-            // Header
-            stack.Children.Add(new TextBlock
-            {
-                Text = headerText,
-                FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 0, 0, 8)
-            });
-
             // Generate property editor controls
             var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config);
 
@@ -265,71 +238,7 @@ namespace ProjectARVRPro.Process
                 }
             }
 
-            stack.Children.Add(configPanel);
-
-            PropertyPanel.Children.Add(border);
-        }
-
-        private void AddLabeledText(StackPanel parent, string label, string value)
-        {
-            var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
-            dock.Children.Add(new TextBlock
-            {
-                Text = label,
-                Width = 70,
-                VerticalAlignment = VerticalAlignment.Center
-            });
-            dock.Children.Add(new TextBlock
-            {
-                Text = value ?? "",
-                VerticalAlignment = VerticalAlignment.Center,
-                TextWrapping = TextWrapping.Wrap
-            });
-            parent.Children.Add(dock);
-        }
-
-        private void AddLabeledTextBox(StackPanel parent, string label, string value, Action<string> onChanged)
-        {
-            var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
-            dock.Children.Add(new TextBlock
-            {
-                Text = label,
-                Width = 70,
-                VerticalAlignment = VerticalAlignment.Center
-            });
-
-            var textBox = new TextBox
-            {
-                Text = value ?? "",
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            // Use LostFocus instead of TextChanged to reduce update frequency
-            textBox.LostFocus += (s, e) => onChanged?.Invoke(textBox.Text);
-
-            dock.Children.Add(textBox);
-            parent.Children.Add(dock);
-        }
-
-        private void AddLabeledCheckBox(StackPanel parent, string label, bool value, Action<bool> onChanged)
-        {
-            var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
-            dock.Children.Add(new TextBlock
-            {
-                Text = label,
-                Width = 70,
-                VerticalAlignment = VerticalAlignment.Center
-            });
-
-            var checkBox = new CheckBox
-            {
-                IsChecked = value,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            checkBox.Checked += (s, e) => onChanged?.Invoke(true);
-            checkBox.Unchecked += (s, e) => onChanged?.Invoke(false);
-
-            dock.Children.Add(checkBox);
-            parent.Children.Add(dock);
+            panel.Children.Add(configPanel);
         }
     }
 }
