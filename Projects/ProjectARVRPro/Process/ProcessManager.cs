@@ -238,8 +238,12 @@ namespace ProjectARVRPro.Process
                         Name = item.Name, 
                         FlowTemplate = item.FlowTemplate, 
                         Process = proc, 
-                        IsEnabled = item.IsEnabled
+                        IsEnabled = item.IsEnabled,
+                        ConfigJson = item.ConfigJson
                     };
+                    
+                    // Apply the stored config to the process
+                    meta.ApplyConfig();
                     
                     meta.PropertyChanged += Meta_PropertyChanged;
                     ProcessMetas.Add(meta);
@@ -262,7 +266,8 @@ namespace ProjectARVRPro.Process
                     Name = m.Name,
                     FlowTemplate = m.FlowTemplate,
                     ProcessTypeFullName = m.Process?.GetType().FullName,
-                    IsEnabled = m.IsEnabled
+                    IsEnabled = m.IsEnabled,
+                    ConfigJson = m.ConfigJson
                 }).ToList();
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
                 File.WriteAllText(PersistFilePath, json);

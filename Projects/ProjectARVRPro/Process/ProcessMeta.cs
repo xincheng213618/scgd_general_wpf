@@ -14,6 +14,12 @@ namespace ProjectARVRPro.Process
         public string FlowTemplate { get => _FlowTemplate; set { _FlowTemplate = value; OnPropertyChanged(); } }
         private string _FlowTemplate;
 
+        /// <summary>
+        /// Gets or sets the JSON representation of the process configuration.
+        /// </summary>
+        public string ConfigJson { get => _ConfigJson; set { _ConfigJson = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasProcessConfig)); } }
+        private string _ConfigJson;
+
         public IProcess Process 
         { 
             get => _Process; 
@@ -145,16 +151,32 @@ namespace ProjectARVRPro.Process
         /// </summary>
         private void EditProcessConfig()
         {
-            var processConfig = Process?.GetProcessConfig();
-            if (processConfig == null) return;
+            if (Process == null) return;
 
-            var editor = new PropertyEditorWindow(processConfig)
+            var config = Process.GetProcessConfig();
+            if (config == null) return;
+
+            var editor = new PropertyEditorWindow(config)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
 
             editor.ShowDialog();
+
+            // Save the config as JSON after editing
+            ConfigJson = JsonConvert.SerializeObject(config);
+        }
+
+        /// <summary>
+        /// Applies the stored config JSON to the process.
+        /// </summary>
+        public void ApplyConfig()
+        {
+            if (Process != null && !string.IsNullOrEmpty(ConfigJson))
+            {
+                Process.SetProcessConfig(ConfigJson);
+            }
         }
     }
 }

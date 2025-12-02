@@ -8,21 +8,19 @@ using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
 using ProjectARVRPro.Process.W255;
-using System.IO;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Black
 {
-    public class BlackProcess : IProcess
+    public class BlackProcess : ProcessBase<BlackProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
             BlackRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<BlackRecipeConfig>();
             BlackFixConfig fixConfig = ctx.FixConfig.GetRequiredService<BlackFixConfig>();
-            BlackProcessConfig processConfig = GetProcessConfig() as BlackProcessConfig;
             BlackViewTestResult testResult = new BlackViewTestResult();
 
             try
@@ -67,15 +65,6 @@ namespace ProjectARVRPro.Process.Black
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 ctx.ObjectiveTestResult.BlackTestResult = JsonConvert.DeserializeObject<BlackTestResult>(ctx.Result.ViewResultJson) ?? new BlackTestResult();
 
-                // Save CSV if enabled
-                if (processConfig?.SaveCsv == true)
-                {
-                    string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    string csvPath = Path.Combine(ViewResultManager.GetInstance().Config.CsvSavePath, $"BlackTestResult_{timeStr}.csv");
-                    TestResultCsvHelper.ExportToCsv(testResult, csvPath);
-                    log?.Info($"Black测试结果已保存到: {csvPath}");
-                }
-
                 return true;
             }
             catch (Exception ex)
@@ -85,7 +74,7 @@ namespace ProjectARVRPro.Process.Black
             }
         }
 
-        public void Render(IProcessExecutionContext ctx)
+        public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             BlackViewTestResult testResult = JsonConvert.DeserializeObject<BlackViewTestResult>(ctx.Result.ViewResultJson);
@@ -126,12 +115,12 @@ namespace ProjectARVRPro.Process.Black
             }
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
 
-            outtext += $"�ڻ��� ��������)" + Environment.NewLine;
+            outtext += $"黑画面 ：（测试项)" + Environment.NewLine;
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return string.Empty;
             BlackViewTestResult testResult = JsonConvert.DeserializeObject<BlackViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return string.Empty;
@@ -140,20 +129,14 @@ namespace ProjectARVRPro.Process.Black
             return outtext;
         }
 
-        public IRecipeConfig GetRecipeConfig()
+        public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<BlackRecipeConfig>();
         }
 
-        public IFixConfig GetFixConfig()
+        public override IFixConfig GetFixConfig()
         {
             return FixManager.GetInstance().FixConfig.GetRequiredService<BlackFixConfig>();
         }
-
-        public IProcessConfig GetProcessConfig()
-        {
-            return ProcessConfigManager.GetInstance().ProcessConfig.GetRequiredService<BlackProcessConfig>();
-        }
-
     }
 }

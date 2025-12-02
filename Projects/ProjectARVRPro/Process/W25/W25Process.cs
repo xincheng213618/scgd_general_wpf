@@ -11,9 +11,9 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.W25
 {
-    public class W25Process : IProcess
+    public class W25Process : ProcessBase<W25ProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -111,7 +111,7 @@ namespace ProjectARVRPro.Process.W25
             }
         }
 
-        public void Render(IProcessExecutionContext ctx)
+        public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             W25ViewTestResult testResult = JsonConvert.DeserializeObject<W25ViewTestResult>(ctx.Result.ViewResultJson);
@@ -152,7 +152,7 @@ namespace ProjectARVRPro.Process.W25
 
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
@@ -170,12 +170,12 @@ namespace ProjectARVRPro.Process.W25
             return outtext;
         }
 
-        public IRecipeConfig GetRecipeConfig()
+        public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<W25RecipeConfig>();
         }
 
-        public IFixConfig GetFixConfig()
+        public override IFixConfig GetFixConfig()
         {
             return FixManager.GetInstance().FixConfig.GetRequiredService<W25FixConfig>();
         }

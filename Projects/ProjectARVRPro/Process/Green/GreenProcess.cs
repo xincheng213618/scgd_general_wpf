@@ -15,9 +15,9 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Green
 {
-    public class GreenProcess : IProcess
+    public class GreenProcess : ProcessBase<GreenProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -156,7 +156,7 @@ namespace ProjectARVRPro.Process.Green
             }
         }
 
-        public void Render(IProcessExecutionContext ctx)
+        public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             GreenViewTestResult GreenTestResult = JsonConvert.DeserializeObject<GreenViewTestResult>(ctx.Result.ViewResultJson);
@@ -196,7 +196,7 @@ namespace ProjectARVRPro.Process.Green
 
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
 
             string outtext = string.Empty;
@@ -217,12 +217,12 @@ namespace ProjectARVRPro.Process.Green
             return outtext;
         }
 
-        public IRecipeConfig GetRecipeConfig()
+        public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<GreenRecipeConfig>();
         }
 
-        public IFixConfig GetFixConfig()
+        public override IFixConfig GetFixConfig()
         {
             return FixManager.GetInstance().FixConfig.GetRequiredService<GreenFixConfig>();
         }

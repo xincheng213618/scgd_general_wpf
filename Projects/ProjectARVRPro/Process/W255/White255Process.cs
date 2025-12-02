@@ -15,9 +15,9 @@ using static HelixToolkit.Wpf.Viewport3DHelper;
 
 namespace ProjectARVRPro.Process.W255
 {
-    public class White255Process : IProcess
+    public class White255Process : ProcessBase<W255ProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -189,7 +189,7 @@ namespace ProjectARVRPro.Process.W255
             }
         }
 
-        public void Render (IProcessExecutionContext ctx)
+        public override void Render (IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             W255ViewTestResult testResult = JsonConvert.DeserializeObject<W255ViewTestResult>(ctx.Result.ViewResultJson);
@@ -230,7 +230,7 @@ namespace ProjectARVRPro.Process.W255
 
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
@@ -254,12 +254,12 @@ namespace ProjectARVRPro.Process.W255
             return outtext;
         }
 
-        public IRecipeConfig GetRecipeConfig()
+        public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<W255RecipeConfig>();
         }
 
-        public IFixConfig GetFixConfig()
+        public override IFixConfig GetFixConfig()
         {
             return FixManager.GetInstance().FixConfig.GetRequiredService<W255FixConfig>();
         }

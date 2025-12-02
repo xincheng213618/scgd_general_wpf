@@ -16,9 +16,9 @@ namespace ProjectARVRPro.Process.Red
 
 
 
-    public class RedProcess : IProcess
+    public class RedProcess : ProcessBase<RedProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -157,7 +157,7 @@ namespace ProjectARVRPro.Process.Red
             }
         }
 
-        public void Render (IProcessExecutionContext ctx)
+        public override void Render (IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             RedViewTestResult redTestResult = JsonConvert.DeserializeObject<RedViewTestResult>(ctx.Result.ViewResultJson);
@@ -197,7 +197,7 @@ namespace ProjectARVRPro.Process.Red
 
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
 
             string outtext = string.Empty;
@@ -218,12 +218,12 @@ namespace ProjectARVRPro.Process.Red
             return outtext;
         }
 
-        public IRecipeConfig GetRecipeConfig()
+        public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<RedRecipeConfig>();
         }
 
-        public IFixConfig GetFixConfig()
+        public override IFixConfig GetFixConfig()
         {
             return FixManager.GetInstance().FixConfig.GetRequiredService<RedFixConfig>();
         }

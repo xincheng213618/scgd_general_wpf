@@ -14,9 +14,9 @@ using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.MTFHV
 {
-    public class MTFHVProcess : IProcess
+    public class MTFHVProcess : ProcessBase<MTFHVProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -255,7 +255,7 @@ namespace ProjectARVRPro.Process.MTFHV
         }
 
 
-        public void Render(IProcessExecutionContext ctx)
+        public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             MTFHVViewTestResult testResult = JsonConvert.DeserializeObject<MTFHVViewTestResult>(ctx.Result.ViewResultJson);
@@ -280,7 +280,7 @@ namespace ProjectARVRPro.Process.MTFHV
             }
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             StringBuilder sb = new StringBuilder();
@@ -310,12 +310,12 @@ namespace ProjectARVRPro.Process.MTFHV
             return sb.ToString();
         }
 
-        public IRecipeConfig GetRecipeConfig()
+        public override IRecipeConfig GetRecipeConfig()
         {
             return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<MTFHVRecipeConfig>();
         }
 
-        public IFixConfig GetFixConfig()
+        public override IFixConfig GetFixConfig()
         {
             return FixManager.GetInstance().FixConfig.GetRequiredService<MTFHVFixConfig>();
         }

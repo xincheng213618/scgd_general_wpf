@@ -1,14 +1,15 @@
 using ColorVision.Common.MVVM;
+using System.ComponentModel;
 
 namespace ProjectARVRPro.Process
 {
-    public interface IProcessConfig
+    /// <summary>
+    /// Base class for process configurations with SaveCsv support.
+    /// </summary>
+    public abstract class ProcessConfigBase : ViewModelBase
     {
-        bool SaveCsv { get; set; }
-    }
-
-    public abstract class ProcessConfigBase : ViewModelBase, IProcessConfig
-    {
+        [DisplayName("保存CSV")]
+        [Description("是否保存测试结果到CSV文件")]
         public bool SaveCsv { get => _SaveCsv; set { _SaveCsv = value; OnPropertyChanged(); } }
         private bool _SaveCsv = false;
     }
