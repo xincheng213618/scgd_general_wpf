@@ -301,7 +301,8 @@ namespace ColorVision.Engine.Batch
                         Name = item.Name, 
                         TemplateName = item.TemplateName, 
                         BatchProcess = proc,
-                        ConfigJson = item.ConfigJson
+                        ConfigJson = item.ConfigJson,
+                        Tag = item.Tag
                     };
                     
                     // Apply the stored config to the batch process
@@ -328,7 +329,8 @@ namespace ColorVision.Engine.Batch
                     Name = m.Name,
                     TemplateName = m.TemplateName,
                     ProcessTypeFullName = m.BatchProcess?.GetType().FullName,
-                    ConfigJson = m.ConfigJson
+                    ConfigJson = m.ConfigJson,
+                    Tag = m.Tag
                 }).ToList();
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
                 File.WriteAllText(PersistFilePath, json);

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 
@@ -13,6 +14,14 @@ namespace ColorVision.Engine.Batch
 
         public string TemplateName { get => _TemplateName; set { _TemplateName = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExecutionOrder)); } }
         private string _TemplateName;
+
+        /// <summary>
+        /// Gets or sets user-defined tag/label for this batch process.
+        /// </summary>
+        [DisplayName("标签")]
+        [Description("用户自定义标签信息")]
+        public string Tag { get => _Tag; set { _Tag = value; OnPropertyChanged(); } }
+        private string _Tag;
 
         /// <summary>
         /// Gets or sets the JSON representation of the batch process configuration.

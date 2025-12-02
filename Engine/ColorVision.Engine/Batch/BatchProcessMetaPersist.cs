@@ -10,5 +10,10 @@
         /// JSON representation of the batch process configuration.
         /// </summary>
         public string ConfigJson { get; set; }
+        
+        /// <summary>
+        /// User-defined tag/label for this batch process.
+        /// </summary>
+        public string Tag { get; set; }
     }
 }
