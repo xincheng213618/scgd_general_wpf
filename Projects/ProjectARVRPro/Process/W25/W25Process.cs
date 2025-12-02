@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using System.Windows;
 using System.Windows.Media;
 
@@ -167,6 +168,16 @@ namespace ProjectARVRPro.Process.W25
             }
 
             return outtext;
+        }
+
+        public IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<W25RecipeConfig>();
+        }
+
+        public IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<W25FixConfig>();
         }
     }
 }

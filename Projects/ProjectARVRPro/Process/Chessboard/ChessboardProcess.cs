@@ -7,6 +7,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using ProjectARVRPro.Process.Green;
 using System.Windows;
 using System.Windows.Media;
@@ -26,7 +27,7 @@ namespace ProjectARVRPro.Process.Chessboard
 
             try
             {
-                log?.Info("´¦Àí Chessboard Á÷³Ì½á¹û");
+                log?.Info("ï¿½ï¿½ï¿½ï¿½ Chessboard ï¿½ï¿½ï¿½Ì½ï¿½ï¿½");
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -122,7 +123,7 @@ namespace ProjectARVRPro.Process.Chessboard
         {
             var result = ctx.Result;
             string outtext = string.Empty;
-            outtext += $"ÆåÅÌ¸ñ ²âÊÔÏî£º" + Environment.NewLine;
+            outtext += $"ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½î£º" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             ChessboardViewTestResult testResult = JsonConvert.DeserializeObject<ChessboardViewTestResult>(ctx.Result.ViewResultJson);
@@ -135,6 +136,16 @@ namespace ProjectARVRPro.Process.Chessboard
 
             outtext += $"ChessboardContrast:{testResult.ChessboardContrast.TestValue} LowLimit:{testResult.ChessboardContrast.LowLimit}  UpLimit:{testResult.ChessboardContrast.UpLimit},Rsult{(testResult.ChessboardContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
+        }
+
+        public IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<ChessboardRecipeConfig>();
+        }
+
+        public IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<ChessboardFixConfig>();
         }
     }
 }

@@ -7,6 +7,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using System.Windows;
 using System.Windows.Media;
 
@@ -200,7 +201,7 @@ namespace ProjectARVRPro.Process.Red
         {
 
             string outtext = string.Empty;
-            outtext += $"Red »­Ãæ½á¹û" + Environment.NewLine;
+            outtext += $"Red ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             RedViewTestResult redTestResult = JsonConvert.DeserializeObject<RedViewTestResult>(ctx.Result.ViewResultJson);
@@ -215,6 +216,16 @@ namespace ProjectARVRPro.Process.Red
             outtext += $"Color_uniformity:{redTestResult.ColorUniformity.TestValue} LowLimit:{redTestResult.ColorUniformity.LowLimit} UpLimit:{redTestResult.ColorUniformity.UpLimit},Rsult{(redTestResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
             return outtext;
+        }
+
+        public IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<RedRecipeConfig>();
+        }
+
+        public IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<RedFixConfig>();
         }
     }
 }

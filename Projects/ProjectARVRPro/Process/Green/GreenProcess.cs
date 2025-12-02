@@ -8,6 +8,7 @@ using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Dm.util;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using ProjectARVRPro.Process.Red;
 using System.Windows;
 using System.Windows.Media;
@@ -199,7 +200,7 @@ namespace ProjectARVRPro.Process.Green
         {
 
             string outtext = string.Empty;
-            outtext += $"Green »­Ãæ½á¹û" + Environment.NewLine;
+            outtext += $"Green ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             GreenViewTestResult GreenTestResult = JsonConvert.DeserializeObject<GreenViewTestResult>(ctx.Result.ViewResultJson);
@@ -214,6 +215,16 @@ namespace ProjectARVRPro.Process.Green
             outtext += $"Color_uniformity:{GreenTestResult.ColorUniformity.TestValue} LowLimit:{GreenTestResult.ColorUniformity.LowLimit} UpLimit:{GreenTestResult.ColorUniformity.UpLimit},Rsult{(GreenTestResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
             return outtext;
+        }
+
+        public IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<GreenRecipeConfig>();
+        }
+
+        public IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<GreenFixConfig>();
         }
     }
 }

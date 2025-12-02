@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Green;
 using System.Windows.Media;
@@ -112,6 +113,16 @@ namespace ProjectARVRPro.Process.Distortion
             outtext += $"HorizontalTVDistortion:{testResult.HorizontalTVDistortion.TestValue} LowLimit:{testResult.HorizontalTVDistortion.LowLimit}  UpLimit:{testResult.HorizontalTVDistortion.UpLimit},Rsult{(testResult.HorizontalTVDistortion.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"VerticalTVDistortion:{testResult.VerticalTVDistortion.TestValue} LowLimit:{testResult.VerticalTVDistortion.LowLimit}  UpLimit:{testResult.VerticalTVDistortion.UpLimit},Rsult{(testResult.VerticalTVDistortion.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
+        }
+
+        public IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<DistortionRecipeConfig>();
+        }
+
+        public IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<DistortionFixConfig>();
         }
     }
 }

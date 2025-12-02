@@ -166,10 +166,25 @@
                             </StackPanel>
                         </GroupBox>
                         
+                        <!-- Process Config Section -->
+                        <GroupBox Header="Process 配置" Padding="8" Margin="0 0 0 8">
+                            <StackPanel>
+                                <DockPanel Margin="0 0 0 8">
+                                    <TextBlock Text="Process类型:" VerticalAlignment="Center" Width="80"/>
+                                    <TextBlock Text="{Binding SelectedProcessMeta.ProcessConfigTypeName, FallbackValue='(无)'}" 
+                                               VerticalAlignment="Center" Margin="5 0 0 0"
+                                               Foreground="{DynamicResource GlobalTextBrush}"/>
+                                </DockPanel>
+                                <Button Content="编辑 Process 配置" Padding="12 4" HorizontalAlignment="Left"
+                                        Command="{Binding SelectedProcessMeta.EditProcessConfigCommand}"
+                                        IsEnabled="{Binding SelectedProcessMeta.HasProcessConfig}"/>
+                            </StackPanel>
+                        </GroupBox>
+                        
                         <!-- Info Section -->
                         <GroupBox Header="说明" Padding="8" Margin="0 0 0 8">
                             <TextBlock TextWrapping="Wrap" Foreground="Gray">
-                                选择左侧列表中的流程后，系统会自动识别对应的Recipe和Fix配置类型。
+                                选择左侧列表中的流程后，系统会从 IProcess 接口获取对应的 Recipe、Fix 和 Process 配置。
                                 点击"编辑"按钮可打开属性编辑器修改配置参数。
                             </TextBlock>
                         </GroupBox>

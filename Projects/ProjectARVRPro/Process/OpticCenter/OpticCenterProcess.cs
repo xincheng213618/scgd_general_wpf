@@ -3,6 +3,7 @@ using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.FindCross; // FindCrossDetailViewReslut
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using ProjectARVRPro.Process.Red;
 using ProjectARVRPro.Process.W25;
 
@@ -111,6 +112,16 @@ namespace ProjectARVRPro.Process.OpticCenter
         public void Render(IProcessExecutionContext ctx)
         {
             
+        }
+
+        public IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<OpticCenterRecipeConfig>();
+        }
+
+        public IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<OpticCenterFixConfig>();
         }
     }
 }

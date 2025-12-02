@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates.Jsons.MTF2; // MTFDetailViewReslut
 using ColorVision.ImageEditor.Draw;
 using Dm.util;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using SqlSugar;
 using System.Reflection;
 using System.Text;
@@ -307,6 +308,16 @@ namespace ProjectARVRPro.Process.MTFHV
             }
 
             return sb.ToString();
+        }
+
+        public IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<MTFHVRecipeConfig>();
+        }
+
+        public IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<MTFHVFixConfig>();
         }
     }
 }

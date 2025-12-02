@@ -25,7 +25,7 @@ namespace ProjectARVRPro.Process.Black
 
             try
             {
-                log?.Info("´¦Àí Black Á÷³Ì½á¹û");
+                log?.Info("ï¿½ï¿½ï¿½ï¿½ Black ï¿½ï¿½ï¿½Ì½ï¿½ï¿½");
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 if (values.Count > 0)
@@ -43,7 +43,7 @@ namespace ProjectARVRPro.Process.Black
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
                             testResult.PoixyuvDatas.Add(poi);
                         }
-                        // ÐèÒª°×»­ÃæµÄÁÁ¶È²ÅÄÜ¼ÆËã¶Ô±È¶È
+                        // ï¿½ï¿½Òªï¿½×»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È²ï¿½ï¿½Ü¼ï¿½ï¿½ï¿½Ô±È¶ï¿½
                         if (ctx.ObjectiveTestResult.W255TestResult != null && ctx.ObjectiveTestResult.W255TestResult.CenterLunimance != null)
                         {
                             double contrast = ctx.ObjectiveTestResult.W255TestResult.CenterLunimance.Value / testResult.PoixyuvDatas[0].Y;
@@ -57,7 +57,7 @@ namespace ProjectARVRPro.Process.Black
                         }
                         else
                         {
-                            log?.Info("¼ÆËã¶Ô±È¶ÈÇ°ÐèÒª°×»­ÃæÊý¾Ý");
+                            log?.Info("ï¿½ï¿½ï¿½ï¿½Ô±È¶ï¿½Ç°ï¿½ï¿½Òªï¿½×»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
                         }
                     }
                 }
@@ -119,13 +119,23 @@ namespace ProjectARVRPro.Process.Black
             var result = ctx.Result;
             string outtext = string.Empty;
 
-            outtext += $"ºÚ»­Ãæ ²âÊÔÏî½á¹û)" + Environment.NewLine;
+            outtext += $"ï¿½Ú»ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)" + Environment.NewLine;
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return string.Empty;
             BlackViewTestResult testResult = JsonConvert.DeserializeObject<BlackViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return string.Empty;
 
             outtext += $"FOFOContrast:{testResult.FOFOContrast.TestValue}  LowLimit:{testResult.FOFOContrast.LowLimit} UpLimit:{testResult.FOFOContrast.UpLimit},Rsult{(testResult.FOFOContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
+        }
+
+        public IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<BlackRecipeConfig>();
+        }
+
+        public IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<BlackFixConfig>();
         }
 
     }
