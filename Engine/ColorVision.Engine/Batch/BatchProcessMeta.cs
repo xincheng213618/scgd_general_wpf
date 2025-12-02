@@ -75,11 +75,10 @@ namespace ColorVision.Engine.Batch
                 WindowStartupLocation = WindowStartupLocation.CenterOwner 
             };
             
-            if (editor.ShowDialog() == true || editor.DialogResult == null)
-            {
-                // Save the config as JSON after editing
-                ConfigJson = JsonConvert.SerializeObject(config);
-            }
+            editor.ShowDialog();
+            
+            // PropertyEditorWindow edits config in-place, so save after dialog closes
+            ConfigJson = JsonConvert.SerializeObject(config);
         }
 
         /// <summary>

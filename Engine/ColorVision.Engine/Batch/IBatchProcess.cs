@@ -36,7 +36,15 @@ namespace ColorVision.Engine.Batch
         /// <returns>A new instance of the batch process.</returns>
         public IBatchProcess CreateInstance()
         {
-            return (IBatchProcess)System.Activator.CreateInstance(this.GetType());
+            try
+            {
+                return (IBatchProcess)System.Activator.CreateInstance(this.GetType());
+            }
+            catch
+            {
+                // If instance creation fails, return this instance as fallback
+                return this;
+            }
         }
     }
 
@@ -73,7 +81,15 @@ namespace ColorVision.Engine.Batch
         /// </summary>
         public IBatchProcess CreateInstance()
         {
-            return (IBatchProcess)System.Activator.CreateInstance(this.GetType());
+            try
+            {
+                return (IBatchProcess)System.Activator.CreateInstance(this.GetType());
+            }
+            catch
+            {
+                // If instance creation fails, return this instance as fallback
+                return this;
+            }
         }
 
         /// <summary>
