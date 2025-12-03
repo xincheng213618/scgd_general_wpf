@@ -61,6 +61,15 @@ namespace Pattern.Properties {
         }
         
         /// <summary>
+        ///   查找类似 浏览... 的本地化字符串。
+        /// </summary>
+        public static string Browse {
+            get {
+                return ResourceManager.GetString("Browse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 图卡生成工具 的本地化字符串。
         /// </summary>
         public static string ChartGenerationTool {
@@ -205,11 +214,11 @@ namespace Pattern.Properties {
         }
         
         /// <summary>
-        ///   查找类似 浏览... 的本地化字符串。
+        ///   查找类似 搜索 的本地化字符串。
         /// </summary>
-        public static string Browse {
+        public static string Search {
             get {
-                return ResourceManager.GetString("Browse", resourceCulture);
+                return ResourceManager.GetString("Search", resourceCulture);
             }
         }
         
@@ -223,11 +232,11 @@ namespace Pattern.Properties {
         }
         
         /// <summary>
-        ///   查找类似 搜索 的本地化字符串。
+        ///   查找类似 选择图片文件 的本地化字符串。
         /// </summary>
-        public static string Search {
+        public static string SelectImageFile {
             get {
-                return ResourceManager.GetString("Search", resourceCulture);
+                return ResourceManager.GetString("SelectImageFile", resourceCulture);
             }
         }
         
@@ -237,15 +246,6 @@ namespace Pattern.Properties {
         public static string SelectImageFirst {
             get {
                 return ResourceManager.GetString("SelectImageFirst", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 选择图片文件 的本地化字符串。
-        /// </summary>
-        public static string SelectImageFile {
-            get {
-                return ResourceManager.GetString("SelectImageFile", resourceCulture);
             }
         }
         
