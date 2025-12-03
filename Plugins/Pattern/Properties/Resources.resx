@@ -123,4 +123,73 @@
   <data name="ChartGenerationTool" xml:space="preserve">
     <value>图卡生成工具</value>
   </data>
+  <data name="ImageProjector" xml:space="preserve">
+    <value>图片投影工具</value>
+  </data>
+  <data name="MonitorSelection" xml:space="preserve">
+    <value>显示器选择</value>
+  </data>
+  <data name="TargetMonitor" xml:space="preserve">
+    <value>目标显示器:</value>
+  </data>
+  <data name="PrimaryMonitor" xml:space="preserve">
+    <value>主显示器</value>
+  </data>
+  <data name="SecondaryMonitor" xml:space="preserve">
+    <value>副显示器</value>
+  </data>
+  <data name="ImageSelection" xml:space="preserve">
+    <value>图片选择</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>浏览...</value>
+  </data>
+  <data name="SupportedFormats" xml:space="preserve">
+    <value>支持格式: TIF, PNG, JPG, BMP</value>
+  </data>
+  <data name="ImagePreview" xml:space="preserve">
+    <value>图片预览</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>投影</value>
+  </data>
+  <data name="StopProjection" xml:space="preserve">
+    <value>停止投影</value>
+  </data>
+  <data name="ImageFileFilter" xml:space="preserve">
+    <value>图片文件|*.tif;*.tiff;*.png;*.jpg;*.jpeg;*.bmp|TIF 文件|*.tif;*.tiff|PNG 文件|*.png|JPEG 文件|*.jpg;*.jpeg|BMP 文件|*.bmp|所有文件|*.*</value>
+  </data>
+  <data name="SelectImageFile" xml:space="preserve">
+    <value>选择图片文件</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>文件不存在</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>警告</value>
+  </data>
+  <data name="ImageLoaded" xml:space="preserve">
+    <value>已加载图片</value>
+  </data>
+  <data name="FailedToLoadImage" xml:space="preserve">
+    <value>无法加载图片</value>
+  </data>
+  <data name="SelectImageFirst" xml:space="preserve">
+    <value>请先选择图片和显示器</value>
+  </data>
+  <data name="FailedToStartProjection" xml:space="preserve">
+    <value>无法开始投影</value>
+  </data>
+  <data name="ProjectionStarted" xml:space="preserve">
+    <value>投影中... 按 ESC 键关闭</value>
+  </data>
+  <data name="ProjectionStopped" xml:space="preserve">
+    <value>投影已停止</value>
+  </data>
+  <data name="PressEscToClose" xml:space="preserve">
+    <value>按 ESC 键关闭</value>
+  </data>
 </root>

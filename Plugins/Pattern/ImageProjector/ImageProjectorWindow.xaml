@@ -1,0 +1,73 @@
+<Window x:Class="Pattern.ImageProjector.ImageProjectorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Pattern.ImageProjector"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:properties="clr-namespace:Pattern.Properties"
+        mc:Ignorable="d"
+        Title="{x:Static properties:Resources.ImageProjector}" Height="450" Width="600" 
+        Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" 
+        Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBoxBaseStyle}"/>
+        <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}">
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        </Style>
+    </Window.Resources>
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Monitor Selection -->
+        <GroupBox Grid.Row="0" Header="{x:Static properties:Resources.MonitorSelection}" Margin="0,0,0,10">
+            <StackPanel Margin="5">
+                <DockPanel Margin="0,5">
+                    <TextBlock Text="{x:Static properties:Resources.TargetMonitor}" Width="100" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="MonitorComboBox" DisplayMemberPath="DeviceName"/>
+                </DockPanel>
+                <TextBlock x:Name="MonitorInfoText" Margin="0,5,0,0" FontStyle="Italic" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Image Selection -->
+        <GroupBox Grid.Row="1" Header="{x:Static properties:Resources.ImageSelection}" Margin="0,0,0,10">
+            <StackPanel Margin="5">
+                <DockPanel Margin="0,5">
+                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Browse}" Click="BrowseImage_Click" Width="80" Margin="5,0,0,0"/>
+                    <TextBox x:Name="ImagePathTextBox" IsReadOnly="True"/>
+                </DockPanel>
+                <TextBlock Text="{x:Static properties:Resources.SupportedFormats}" Margin="0,5,0,0" FontStyle="Italic" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Image Preview -->
+        <GroupBox Grid.Row="2" Header="{x:Static properties:Resources.ImagePreview}" Margin="0,0,0,10">
+            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="4">
+                <Image x:Name="PreviewImage" Stretch="Uniform" Margin="5"/>
+            </Border>
+        </GroupBox>
+
+        <!-- Action Buttons -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            </StackPanel>
+            <Button Grid.Column="1" x:Name="ProjectButton" Content="{x:Static properties:Resources.Project}" 
+                    Click="Project_Click" Width="100" Height="35" Margin="0,0,10,0" IsEnabled="False"/>
+            <Button Grid.Column="2" x:Name="StopButton" Content="{x:Static properties:Resources.StopProjection}" 
+                    Click="Stop_Click" Width="100" Height="35" IsEnabled="False"/>
+        </Grid>
+    </Grid>
+</Window>
