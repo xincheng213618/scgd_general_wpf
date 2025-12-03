@@ -173,24 +173,25 @@ def build_project(project_name, type_name):
     print(f"Building project: {project_name}")
     script_path = os.path.abspath(os.path.dirname(__file__))
     base_path = os.path.abspath(os.path.join(script_path, '..'))  # 获取 base_path 的父级节点
+    print("1" +type_name)
     src_dir = os.path.join(base_path, type_name, project_name, 'bin', 'x64', 'Release', 'net8.0-windows')
     ref_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net8.0-windows')
     target_dir = os.path.join("H:\\", 'ColorVision', 'Plugins')
     
         # --- Start: Update manifest.json ---
     # 1. Get version from ColorVision.Engine.dll
-    engine_dll_path = os.path.join(ref_dir, 'ColorVision.Engine.dll')
-    engine_version = get_file_version(engine_dll_path)
+    # engine_dll_path = os.path.join(ref_dir, 'ColorVision.Engine.dll')
+    # engine_version = get_file_version(engine_dll_path)
     
-    if engine_version:
-        print(f'Found ColorVision.Engine.dll version: {engine_version}')
-        # 2. Find and update the project's manifest.json
-        manifest_path = os.path.join(base_path, type_name, project_name, 'manifest.json')
-        update_manifest_requires(manifest_path, engine_version)
-        manifest_path = os.path.join(src_dir, 'manifest.json')
-        update_manifest_requires(manifest_path, engine_version)
-    else:
-        print("Warning: Could not determine engine version. 'requires' field in manifest.json will not be updated.")
+    # if engine_version:
+        # print(f'Found ColorVision.Engine.dll version: {engine_version}')
+        # # 2. Find and update the project's manifest.json
+        # manifest_path = os.path.join(base_path, type_name, project_name, 'manifest.json')
+        # update_manifest_requires(manifest_path, engine_version)
+        # manifest_path = os.path.join(src_dir, 'manifest.json')
+        # update_manifest_requires(manifest_path, engine_version)
+    # else:
+        # print("Warning: Could not determine engine version. 'requires' field in manifest.json will not be updated.")
     # --- End: Update manifest.json ---
     
     # 获取 DLL 版本号
