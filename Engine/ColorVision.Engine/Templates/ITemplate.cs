@@ -362,7 +362,6 @@ namespace ColorVision.Engine.Templates
                         string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(kvp.Key)}.cfg");
                         kvp.Value.ToJsonNFile(filePath);
                     }
-
                     // 创建压缩文件
                     using (FileStream zipToOpen = new FileStream(sfd.FileName, FileMode.Create))
                     {

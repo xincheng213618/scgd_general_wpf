@@ -8,6 +8,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Templates;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using cvColorVision;
@@ -119,14 +120,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             string sn = stringBuilder.ToString();
             if (string.IsNullOrWhiteSpace(sn))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "No Device", "Sprectrum");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "No Device", "Sprectrum");
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),stringBuilder.ToString(),"Sprectrum");
-
+                MessageBox1.Show(Application.Current.GetActiveWindow(),stringBuilder.ToString(),"Sprectrum");
             }
-
         }
 
         public void SelfAdaptionInitDark()
