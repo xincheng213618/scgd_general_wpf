@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.0.2.3</VersionPrefix>
+		<VersionPrefix>1.0.3.2</VersionPrefix>
 	</PropertyGroup>
 	
 	<ItemGroup>
@@ -23,6 +23,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
 	  <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+	  <ProjectReference Include="..\ImageProjector\ImageProjector.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

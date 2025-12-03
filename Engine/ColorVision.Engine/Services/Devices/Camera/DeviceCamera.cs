@@ -268,11 +268,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         if (ret == 1)
                         {
                             string cameraIdsMd5 = snBuilder.ToString();
-                            MessageBox.Show(cameraIdsMd5, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                            MessageBox1.Show(cameraIdsMd5, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                         }
                         else
                         {
-                            MessageBox.Show("获取相机ID MD5失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            MessageBox1.Show("获取相机ID MD5失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                         }
                     });
                 });
@@ -280,7 +280,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             if (PhyCamera !=null && PhyCamera.LicenseState != LicenseState.Licensed)
             {
-                if ( MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt, "ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt, "ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     Config.CameraCode = string.Empty;
                     Save();
@@ -294,7 +294,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (DService.DeviceStatus == DeviceStatusType.OffLine)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.LogicalCameraOffline_ClearBindingsAndRetryPromp, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.LogicalCameraOffline_ClearBindingsAndRetryPromp, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     Config.CameraCode = string.Empty;
                     Save();

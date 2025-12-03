@@ -30,6 +30,7 @@ namespace ProjectARVRPro.Process
         public ObservableCollection<ProcessMeta> ProcessMetas { get; } = new ObservableCollection<ProcessMeta>();
 
         public ObservableCollection<TemplateModel<FlowParam>> templateModels { get; set; } = TemplateFlow.Params;
+
         public RelayCommand EditCommand { get; set; }
 
         // New properties for creation
@@ -158,7 +159,7 @@ namespace ProjectARVRPro.Process
         {
             if (SelectedProcessMeta != null)
             {
-                // Populate update fields when a BatchProcessMeta is selected
+                // Populate update fields when a ProcessMeta is selected
                 UpdateTemplate = templateModels.FirstOrDefault(t => t.Key == SelectedProcessMeta.FlowTemplate);
                 UpdateProcess = Processes.FirstOrDefault(p => p.GetType().FullName == SelectedProcessMeta.Process?.GetType().FullName);
             }
@@ -173,7 +174,7 @@ namespace ProjectARVRPro.Process
         {
             if (!CanUpdateMeta()) return;
             
-            // Update the selected BatchProcessMeta with new values
+            // Update the selected ProcessMeta with new values
             SelectedProcessMeta.FlowTemplate = UpdateTemplate.Key;
             SelectedProcessMeta.Process = UpdateProcess;
         }
@@ -232,7 +233,18 @@ namespace ProjectARVRPro.Process
                             log.Warn($"无法实例化进程类型 {item.ProcessTypeFullName}: {ex.Message}");
                         }
                     }
-                    ProcessMeta meta = new ProcessMeta() { Name = item.Name, FlowTemplate = item.FlowTemplate, Process = proc, IsEnabled = item.IsEnabled };
+                    ProcessMeta meta = new ProcessMeta() 
+                    { 
+                        Name = item.Name, 
+                        FlowTemplate = item.FlowTemplate, 
+                        Process = proc, 
+                        IsEnabled = item.IsEnabled,
+                        ConfigJson = item.ConfigJson
+                    };
+                    
+                    // Apply the stored config to the process
+                    meta.ApplyConfig();
+                    
                     meta.PropertyChanged += Meta_PropertyChanged;
                     ProcessMetas.Add(meta);
                 }
@@ -254,7 +266,8 @@ namespace ProjectARVRPro.Process
                     Name = m.Name,
                     FlowTemplate = m.FlowTemplate,
                     ProcessTypeFullName = m.Process?.GetType().FullName,
-                    IsEnabled = m.IsEnabled
+                    IsEnabled = m.IsEnabled,
+                    ConfigJson = m.ConfigJson
                 }).ToList();
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
                 File.WriteAllText(PersistFilePath, json);

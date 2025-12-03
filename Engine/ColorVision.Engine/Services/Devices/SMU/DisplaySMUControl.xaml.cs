@@ -1,15 +1,17 @@
 ﻿using ColorVision.Database;
+using ColorVision.Engine.Messages; // Added
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Views;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using log4net;
 using System;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.ComponentModel;
-using ColorVision.Engine.Services.RC; // Added
 
 
 namespace ColorVision.Engine.Services.Devices.SMU
@@ -19,6 +21,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
     /// </summary>
     public partial class DisplaySMUControl : UserControl, IDisPlayControl
     {
+
+        private static readonly ILog log = LogManager.GetLogger(typeof(DisplaySMUControl));
 
         public DeviceSMU Device { get; set; }
         private MQTTSMU DService { get => Device.DService;  }
@@ -200,7 +204,18 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
         private void VIScan_Click(object sender, RoutedEventArgs e)
         {
-            DService.Scan(Config.IsSourceV, Config.StartMeasureVal, Config.StopMeasureVal, Config.LimitVal, Config.Number);
+            MsgRecord msgRecord = DService.Scan(Config.IsSourceV, Config.StartMeasureVal, Config.StopMeasureVal, Config.LimitVal, Config.Number);
+            msgRecord.MsgSucessed += async (e) =>
+            {
+                log.Info("DelyaClose1000");
+                await Task.Delay(1000);
+                DService.CloseOutput();
+                Config.V = null;
+                Config.I = null;
+                log.Info("DelyaClose1000 1");
+                await Task.Delay(1000);
+                DService.CloseOutput();
+            };
         }
 
 

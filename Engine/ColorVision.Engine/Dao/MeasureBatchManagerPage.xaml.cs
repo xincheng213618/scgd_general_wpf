@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Solution.Searches;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -156,6 +157,10 @@ namespace ColorVision.Engine
         public ObservableCollection<ViewBatchResult> ViewResults => MeasureBatchManager.ViewResults;
 
         public Frame Frame { get; set; }
+        
+        private IBatchProcess _selectedProcess;
+        private INotifyPropertyChanged _currentProcessConfig;
+        private PropertyChangedEventHandler _configChangedHandler;
 
         public MeasureBatchManagerPage() { }
         public MeasureBatchManagerPage(Frame MainFrame)
@@ -167,7 +172,14 @@ namespace ColorVision.Engine
         {
             MeasureBatchManager.Load();
             this.DataContext = MeasureBatchManager;
-
+            
+            // Initialize process ComboBox
+            var batchManager = BatchManager.GetInstance();
+            ProcessComboBox.ItemsSource = batchManager.Processes;
+            if (batchManager.Processes.Count > 0)
+            {
+                ProcessComboBox.SelectedIndex = 0;
+            }
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -223,7 +235,175 @@ namespace ColorVision.Engine
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            UpdateExecuteButtonState();
+            UpdateSelectedBatchText();
+        }
+        
+        private void UpdateSelectedBatchText()
+        {
+            if (listView1.SelectedItem is ViewBatchResult viewBatch)
+            {
+                SelectedBatchText.Text = $"ID: {viewBatch.MeasureBatchModel.Id} - {viewBatch.MeasureBatchModel.Name}";
+                SelectedBatchText.Foreground = System.Windows.Media.Brushes.Black;
+            }
+            else
+            {
+                SelectedBatchText.Text = "未选择";
+                SelectedBatchText.Foreground = System.Windows.Media.Brushes.Gray;
+            }
+        }
+        
+        private void ProcessComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            RefreshProcessConfigPanel();
+            UpdateExecuteButtonState();
+        }
+        
+        private void RefreshProcessConfigPanel()
+        {
+            ProcessConfigPanel.Children.Clear();
+            
+            // Cleanup previous config handler
+            if (_currentProcessConfig != null && _configChangedHandler != null)
+            {
+                _currentProcessConfig.PropertyChanged -= _configChangedHandler;
+                _currentProcessConfig = null;
+                _configChangedHandler = null;
+            }
+            
+            if (ProcessComboBox.SelectedItem is IBatchProcess process)
+            {
+                _selectedProcess = process;
+                
+                var metadata = BatchProcessMetadata.FromProcess(process);
+                
+                // Add process info section
+                var infoBorder = new Border
+                {
+                    BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(4),
+                    Padding = new Thickness(10),
+                    Margin = new Thickness(0, 0, 0, 10)
+                };
+                
+                var infoStack = new StackPanel();
+                infoBorder.Child = infoStack;
+                
+                infoStack.Children.Add(new TextBlock 
+                { 
+                    Text = "处理信息", 
+                    FontWeight = FontWeights.Bold, 
+                    Margin = new Thickness(0, 0, 0, 8) 
+                });
+                
+                AddLabeledText(infoStack, "名称:", metadata.DisplayName);
+                if (!string.IsNullOrEmpty(metadata.Description))
+                {
+                    AddLabeledText(infoStack, "描述:", metadata.Description);
+                }
+                if (!string.IsNullOrEmpty(metadata.Category))
+                {
+                    AddLabeledText(infoStack, "分类:", metadata.Category);
+                }
+                
+                ProcessConfigPanel.Children.Add(infoBorder);
+                
+                // Add config section if available
+                var config = process.GetConfig();
+                if (config != null)
+                {
+                    var configBorder = new Border
+                    {
+                        BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
+                        BorderThickness = new Thickness(1),
+                        CornerRadius = new CornerRadius(4),
+                        Padding = new Thickness(10),
+                        Margin = new Thickness(0, 0, 0, 10)
+                    };
+                    
+                    var configStack = new StackPanel();
+                    configBorder.Child = configStack;
+                    
+                    configStack.Children.Add(new TextBlock 
+                    { 
+                        Text = "配置选项", 
+                        FontWeight = FontWeights.Bold, 
+                        Margin = new Thickness(0, 0, 0, 8) 
+                    });
+                    
+                    // Generate property editor controls
+                    var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config);
+                    configStack.Children.Add(configPanel);
+                    
+                    ProcessConfigPanel.Children.Add(configBorder);
+                }
+            }
+            else
+            {
+                _selectedProcess = null;
+                ProcessConfigPanel.Children.Add(new TextBlock 
+                { 
+                    Text = "请选择处理类型查看配置", 
+                    Foreground = System.Windows.Media.Brushes.Gray, 
+                    HorizontalAlignment = HorizontalAlignment.Center, 
+                    Margin = new Thickness(0, 20, 0, 0) 
+                });
+            }
+        }
+        
+        private void AddLabeledText(StackPanel parent, string label, string value)
+        {
+            var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+            dock.Children.Add(new TextBlock 
+            { 
+                Text = label, 
+                Width = 50, 
+                VerticalAlignment = VerticalAlignment.Center 
+            });
+            dock.Children.Add(new TextBlock 
+            { 
+                Text = value ?? "", 
+                VerticalAlignment = VerticalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap
+            });
+            parent.Children.Add(dock);
+        }
+        
+        private void UpdateExecuteButtonState()
+        {
+            ExecuteButton.IsEnabled = listView1.SelectedItem != null && _selectedProcess != null;
+        }
+        
+        private void ExecuteProcess_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.SelectedItem is ViewBatchResult viewBatch && _selectedProcess != null)
+            {
+                try
+                {
+                    var context = new IBatchContext
+                    {
+                        Batch = viewBatch.MeasureBatchModel,
+                        Config = BatchConfig.Instance
+                    };
 
+                    bool success = _selectedProcess.Process(context);
+                    
+                    var metadata = BatchProcessMetadata.FromProcess(_selectedProcess);
+                    if (success)
+                    {
+                        MessageBox.Show($"处理成功: {metadata.DisplayName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"处理失败: {metadata.DisplayName}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"处理出错: {ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
         }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilities { get; set; } = new ObservableCollection<GridViewColumnVisibility>();

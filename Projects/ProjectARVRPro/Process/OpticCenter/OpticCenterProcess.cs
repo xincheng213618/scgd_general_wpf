@@ -3,14 +3,15 @@ using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.FindCross; // FindCrossDetailViewReslut
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using ProjectARVRPro.Process.Red;
 using ProjectARVRPro.Process.W25;
 
 namespace ProjectARVRPro.Process.OpticCenter
 {
-    public class OpticCenterProcess : IProcess
+    public class OpticCenterProcess : ProcessBase<OpticCenterProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -83,7 +84,7 @@ namespace ProjectARVRPro.Process.OpticCenter
             TestValue = value.ToString(fmt)
         };
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
@@ -108,9 +109,19 @@ namespace ProjectARVRPro.Process.OpticCenter
             return outtext;
         }
 
-        public void Render(IProcessExecutionContext ctx)
+        public override void Render(IProcessExecutionContext ctx)
         {
             
+        }
+
+        public override IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<OpticCenterRecipeConfig>();
+        }
+
+        public override IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<OpticCenterFixConfig>();
         }
     }
 }

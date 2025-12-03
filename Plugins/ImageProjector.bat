@@ -1,0 +1,2 @@
+"C:\Program Files\Microsoft Visual Studio\2022\Preview\MSBuild\Current\Bin\msbuild.exe" ..\scgd_general_wpf.sln /t:Plugins\ImageProjector /p:Configuration=Release /p:Platform=x64 /p:BuildProjectReferences=false
+python ..\Scripts\build_plugin.py -t Plugins -p ImageProjector

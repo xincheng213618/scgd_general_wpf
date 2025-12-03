@@ -540,7 +540,7 @@ namespace ColorVision.ImageEditor.Draw.Special
         private ReferenceLineMode _Mode = ReferenceLineMode.SimpleCross;
 
         [DisplayName("颜色"), JsonIgnore]
-        public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged();  Pen.Brush = value; } }
+        public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged();  if (Pen!=null) Pen.Brush = value; } }
         private Brush _Brush = Brushes.Red;
 
         [DisplayName("线宽")]
@@ -653,14 +653,12 @@ namespace ColorVision.ImageEditor.Draw.Special
                     Image.MouseMove += MouseMove;
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
                     Image.PreviewMouseUp += PreviewMouseUp;
-                    Image.MouseDoubleClick += Image_MouseDoubleClick;
                     ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
 
                 }
                 else
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-
 
                     Image.MouseMove -= MouseMove;
                     Image.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;

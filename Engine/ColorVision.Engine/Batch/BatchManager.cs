@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Batch
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(BatchManager));
 
-        private const string PersistFileName = "ProcessMetas.json";
+        private const string PersistFileName = "BatchConfig.json";
         private static string PersistDirectory => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
         private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
 
@@ -144,10 +144,26 @@ namespace ColorVision.Engine.Batch
                 }
             }
             SavePersistedMetas();
+            NotifyAllExecutionOrders();
+        }
+
+        /// <summary>
+        /// Notifies all BatchProcessMeta items to update their ExecutionOrder property.
+        /// </summary>
+        private void NotifyAllExecutionOrders()
+        {
+            foreach (var meta in ProcessMetas)
+            {
+                meta.NotifyExecutionOrderChanged();
+            }
         }
 
         private void Meta_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            // Skip persistence for UI-only display properties like ExecutionOrder
+            if (e.PropertyName == nameof(BatchProcessMeta.ExecutionOrder))
+                return;
+            
             // 任意属性变更即持久化，避免频繁：可加节流，这里简单实现
             SavePersistedMetas();
         }
@@ -172,11 +188,15 @@ namespace ColorVision.Engine.Batch
                 MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.DuplicateName, "ColorVision");
                 return;
             }
+            
+            // Create a new instance of the batch process for this meta to have its own config
+            var newProcess = SelectedProcess.CreateInstance();
+            
             ProcessMetas.Add(new BatchProcessMeta
             {
                 Name = NewMetaName,
                 TemplateName = SelectedTemplate.Key,
-                BatchProcess = SelectedProcess
+                BatchProcess = newProcess
             });
             NewMetaName = string.Empty;
         }
@@ -249,8 +269,15 @@ namespace ColorVision.Engine.Batch
                 ProcessMetas.CollectionChanged -= ProcessMetas_CollectionChanged; // 暂停事件
                 foreach (var item in list)
                 {
-                    IBatchProcess proc = Processes.FirstOrDefault(p => p.GetType().FullName == item.ProcessTypeFullName);
-                    if (proc == null)
+                    IBatchProcess proc = null;
+                    var templateProc = Processes.FirstOrDefault(p => p.GetType().FullName == item.ProcessTypeFullName);
+                    
+                    if (templateProc != null)
+                    {
+                        // Create a new instance for each meta to have its own config
+                        proc = templateProc.CreateInstance();
+                    }
+                    else
                     {
                         // 尝试反射创建
                         try
@@ -268,7 +295,19 @@ namespace ColorVision.Engine.Batch
                             log.Warn(ColorVision.Engine.Properties.Resources.UnableToInstantiateProcessType+$" {item.ProcessTypeFullName}: {ex.Message}");
                         }
                     }
-                    BatchProcessMeta meta = new BatchProcessMeta() { Name = item.Name, TemplateName = item.TemplateName, BatchProcess = proc };
+                    
+                    BatchProcessMeta meta = new BatchProcessMeta() 
+                    { 
+                        Name = item.Name, 
+                        TemplateName = item.TemplateName, 
+                        BatchProcess = proc,
+                        ConfigJson = item.ConfigJson,
+                        Tag = item.Tag
+                    };
+                    
+                    // Apply the stored config to the batch process
+                    meta.ApplyConfig();
+                    
                     meta.PropertyChanged += Meta_PropertyChanged;
                     ProcessMetas.Add(meta);
                 }
@@ -289,7 +328,9 @@ namespace ColorVision.Engine.Batch
                 {
                     Name = m.Name,
                     TemplateName = m.TemplateName,
-                    ProcessTypeFullName = m.BatchProcess?.GetType().FullName
+                    ProcessTypeFullName = m.BatchProcess?.GetType().FullName,
+                    ConfigJson = m.ConfigJson,
+                    Tag = m.Tag
                 }).ToList();
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
                 File.WriteAllText(PersistFilePath, json);

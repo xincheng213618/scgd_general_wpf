@@ -129,27 +129,34 @@ namespace ColorVision.Update
             {
                 // 获取服务器版本
                 LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+                log.Info(LatestVersion);
                 if (LatestVersion == new Version()) return;
 
                 var Version = Assembly.GetExecutingAssembly().GetName().Version;
                 if (LatestVersion > Version)
                 {
                     // 检查是否是用户已跳过的版本
-                    if (!string.IsNullOrEmpty(AutoUpdateConfig.Instance.SkippedVersion))
+                    if (skipped)
                     {
-                        try
+                        if (!string.IsNullOrEmpty(AutoUpdateConfig.Instance.SkippedVersion))
                         {
-                            Version skippedVersion = new Version(AutoUpdateConfig.Instance.SkippedVersion);
-                            if (LatestVersion == skippedVersion)
+                            try
                             {
-                                return;
+                                Version skippedVersion = new Version(AutoUpdateConfig.Instance.SkippedVersion);
+                                if (LatestVersion == skippedVersion)
+                                {
+                                    return;
+                                }
+                            }
+                            catch
+                            {
+                                AutoUpdateConfig.Instance.SkippedVersion = string.Empty;
                             }
                         }
-                        catch
-                        {
-                            AutoUpdateConfig.Instance.SkippedVersion = string.Empty;
-                        }
+
                     }
+
+
 
                     bool IsIncrement = false;
                     if (LatestVersion.Minor == Version.Minor)

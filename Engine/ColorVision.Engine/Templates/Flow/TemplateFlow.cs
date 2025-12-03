@@ -201,7 +201,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (selectedCount <= 1)
             {
-                System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
+                using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
                 sfd.DefaultExt = "stn";
                 sfd.Filter = "*.stn|*.stn";
                 sfd.AddExtension = true;
@@ -231,7 +231,7 @@ namespace ColorVision.Engine.Templates.Flow
                     foreach (var kvp in TemplateParams.Where(item => item.IsSelected == true))
                     {
                         string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(kvp.Key)}.stn");
-                        byte[] fileBytes = Convert.FromBase64String(TemplateParams[index].Value.DataBase64);
+                        byte[] fileBytes = Convert.FromBase64String(kvp.Value.DataBase64);  // ✅ Use kvp instead
                         File.WriteAllBytes(filePath, fileBytes);
                     }
 

@@ -4,44 +4,44 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine
 {
-    public class MenuEngine : MenuItemMenuBase
-    {
-        public override string GuidId => EngineCommands.EngineGuidId;
-        public override string Header => ColorVision.Engine.Properties.Resources.MenuEngine;
-        public override int Order => 2;
-    }
-    public class MenuStartExecutionCommand : MenuItemBase
-    {
-        public override string OwnerGuid => EngineCommands.EngineGuidId;
-        public override string Header => ColorVision.Engine.Properties.Resources.StartExecition;
-        public override int Order => 99;
+    //public class MenuEngine : MenuItemMenuBase
+    //{
+    //    public override string GuidId => EngineCommands.EngineGuidId;
+    //    public override string Header => ColorVision.Engine.Properties.Resources.MenuEngine;
+    //    public override int Order => 2;
+    //}
+    //public class MenuStartExecutionCommand : MenuItemBase
+    //{
+    //    public override string OwnerGuid => EngineCommands.EngineGuidId;
+    //    public override string Header => ColorVision.Engine.Properties.Resources.StartExecition;
+    //    public override int Order => 99;
 
-        public override ICommand Command => EngineCommands.StartExecutionCommand;
-        public override object? Icon => MenuItemIcon.TryFindResource("DIRun");
+    //    public override ICommand Command => EngineCommands.StartExecutionCommand;
+    //    public override object? Icon => MenuItemIcon.TryFindResource("DIRun");
 
-        public override string InputGestureText => "F6";
-    }
+    //    public override string InputGestureText => "F6";
+    //}
 
-    public class MenuStopExecutionCommand : MenuItemBase
-    {
-        public override string OwnerGuid => EngineCommands.EngineGuidId;
-        public override string Header => ColorVision.Engine.Properties.Resources.StopExecution;
-        public override int Order => 99;
-        public override ICommand Command => EngineCommands.StopExecutionCommand;
-        public override object? Icon => MenuItemIcon.TryFindResource("DIRunPaused");
-        public override string InputGestureText => "F7";
-    }
+    //public class MenuStopExecutionCommand : MenuItemBase
+    //{
+    //    public override string OwnerGuid => EngineCommands.EngineGuidId;
+    //    public override string Header => ColorVision.Engine.Properties.Resources.StopExecution;
+    //    public override int Order => 99;
+    //    public override ICommand Command => EngineCommands.StopExecutionCommand;
+    //    public override object? Icon => MenuItemIcon.TryFindResource("DIRunPaused");
+    //    public override string InputGestureText => "F7";
+    //}
 
-    public class MenuTakePhotoCommand : MenuItemBase
-    {
-        public override string OwnerGuid => EngineCommands.EngineGuidId;
+    //public class MenuTakePhotoCommand : MenuItemBase
+    //{
+    //    public override string OwnerGuid => EngineCommands.EngineGuidId;
 
-        public override string Header => ColorVision.Engine.Properties.Resources.CaptureImage;
-        public override int Order => 99;
+    //    public override string Header => ColorVision.Engine.Properties.Resources.CaptureImage;
+    //    public override int Order => 99;
 
-        public override ICommand Command => EngineCommands.TakePhotoCommand;
-        public override string InputGestureText => "Ctrl+T";
-    }
+    //    public override ICommand Command => EngineCommands.TakePhotoCommand;
+    //    public override string InputGestureText => "Ctrl+T";
+    //}
 
 
     public static class EngineCommands

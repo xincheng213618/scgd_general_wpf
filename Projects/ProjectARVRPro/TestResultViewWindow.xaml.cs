@@ -1,0 +1,156 @@
+using Newtonsoft.Json;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Reflection;
+using System.Windows;
+using System.Windows.Data;
+using System.Windows.Media;
+
+namespace ProjectARVRPro
+{
+    /// <summary>
+    /// Converter to convert bool to "PASS" or "FAIL" string
+    /// </summary>
+    public class BoolToPassFailConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value is bool b && b ? "PASS" : "FAIL";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converter to convert bool to color (Green for PASS, Red for FAIL)
+    /// </summary>
+    public class BoolToColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value is bool b && b ? Brushes.Green : Brushes.Red;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Window to display ObjectiveTestItem list from ViewResultJson
+    /// </summary>
+    public partial class TestResultViewWindow : Window
+    {
+        public ObservableCollection<ObjectiveTestItem> TestItems { get; set; } = new ObservableCollection<ObjectiveTestItem>();
+
+        public TestResultViewWindow(string viewResultJson)
+        {
+            InitializeComponent();
+            ParseAndDisplayTestResult(viewResultJson);
+            dataGrid.ItemsSource = TestItems;
+        }
+
+        private void ParseAndDisplayTestResult(string viewResultJson)
+        {
+            if (string.IsNullOrWhiteSpace(viewResultJson))
+                return;
+
+            try
+            {
+                // Try to parse the JSON and extract ObjectiveTestItem properties
+                var obj = JsonConvert.DeserializeObject<object>(viewResultJson);
+                if (obj != null)
+                {
+                    CollectTestItems(obj, TestItems);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to parse ViewResultJson: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void CollectTestItems(object obj, ObservableCollection<ObjectiveTestItem> items)
+        {
+            if (obj == null) return;
+
+            // Handle JObject from JSON deserialization
+            if (obj is Newtonsoft.Json.Linq.JObject jObject)
+            {
+                foreach (var property in jObject.Properties())
+                {
+                    if (property.Value is Newtonsoft.Json.Linq.JObject childObj)
+                    {
+                        // Check if this looks like an ObjectiveTestItem
+                        if (childObj.ContainsKey("Name") && childObj.ContainsKey("Value"))
+                        {
+                            try
+                            {
+                                var testItem = childObj.ToObject<ObjectiveTestItem>();
+                                if (testItem != null)
+                                {
+                                    items.Add(testItem);
+                                }
+                            }
+                            catch
+                            {
+                                // Not an ObjectiveTestItem, try to recurse
+                                CollectTestItems(childObj, items);
+                            }
+                        }
+                        else
+                        {
+                            // Recurse into child object
+                            CollectTestItems(childObj, items);
+                        }
+                    }
+                    else if (property.Value is Newtonsoft.Json.Linq.JArray jArray)
+                    {
+                        // Handle arrays
+                        foreach (var arrayItem in jArray)
+                        {
+                            if (arrayItem is Newtonsoft.Json.Linq.JObject arrayObj)
+                            {
+                                CollectTestItems(arrayObj, items);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Handle regular .NET objects
+                foreach (var property in obj.GetType().GetProperties())
+                {
+                    if (property.PropertyType == typeof(ObjectiveTestItem))
+                    {
+                        var testItem = (ObjectiveTestItem)property.GetValue(obj);
+                        if (testItem != null)
+                        {
+                            items.Add(testItem);
+                        }
+                    }
+                    else if (!property.PropertyType.IsValueType && property.PropertyType != typeof(string))
+                    {
+                        try
+                        {
+                            var childObj = property.GetValue(obj);
+                            if (childObj != null)
+                            {
+                                CollectTestItems(childObj, items);
+                            }
+                        }
+                        catch
+                        {
+                            // Ignore errors
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

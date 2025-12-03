@@ -31,7 +31,7 @@
             <StackPanel Margin="0,0,0,5">
                 <!-- 操作按钮组1 -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <Button Content="打开模板文件夹" Command="{Binding OpenPatternPathCommand}" ToolTip="打开模板存储目录" Margin="0,0,8,0">
+                    <Button Content="模板文件夹" Command="{Binding OpenPatternPathCommand}" ToolTip="打开模板存储目录" Margin="0,0,8,0">
                         <Button.ContentTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -41,8 +41,9 @@
                             </DataTemplate>
                         </Button.ContentTemplate>
                     </Button>
-                    <Button Content="导出模板组" Command="{Binding ExportZipCommand}" ToolTip="导出所有模板为ZIP" Margin="0,0,8,0"/>
-                    <Button Content="导入模板组" Command="{Binding ImportZipCommand}" ToolTip="导入ZIP模板组"/>
+                    <Button Content="导出" Command="{Binding ExportZipCommand}" ToolTip="导出所有模板为ZIP" Margin="0,0,8,0"/>
+                    <Button Content="导入" Command="{Binding ImportZipCommand}" ToolTip="导入ZIP模板组"/>
+                    <Button Content="投影工具" Command="{Binding OpenImageProjectorCommand}" ToolTip="导入ZIP模板组"/>
                 </StackPanel>
                 <!-- 操作按钮组2 -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">

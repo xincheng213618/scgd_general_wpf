@@ -8,15 +8,16 @@ using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Dm.util;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using ProjectARVRPro.Process.Red;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Green
 {
-    public class GreenProcess : IProcess
+    public class GreenProcess : ProcessBase<GreenProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -155,7 +156,7 @@ namespace ProjectARVRPro.Process.Green
             }
         }
 
-        public void Render(IProcessExecutionContext ctx)
+        public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             GreenViewTestResult GreenTestResult = JsonConvert.DeserializeObject<GreenViewTestResult>(ctx.Result.ViewResultJson);
@@ -195,11 +196,11 @@ namespace ProjectARVRPro.Process.Green
 
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
 
             string outtext = string.Empty;
-            outtext += $"Green »­Ãæ½á¹û" + Environment.NewLine;
+            outtext += $"Green ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             GreenViewTestResult GreenTestResult = JsonConvert.DeserializeObject<GreenViewTestResult>(ctx.Result.ViewResultJson);
@@ -214,6 +215,16 @@ namespace ProjectARVRPro.Process.Green
             outtext += $"Color_uniformity:{GreenTestResult.ColorUniformity.TestValue} LowLimit:{GreenTestResult.ColorUniformity.LowLimit} UpLimit:{GreenTestResult.ColorUniformity.UpLimit},Rsult{(GreenTestResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
 
             return outtext;
+        }
+
+        public override IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<GreenRecipeConfig>();
+        }
+
+        public override IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<GreenFixConfig>();
         }
     }
 }

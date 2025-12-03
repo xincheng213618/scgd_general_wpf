@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ImageProjector;
 using log4net;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
@@ -50,6 +51,8 @@ namespace Pattern
         public RelayCommand ExportZipCommand { get; set; }
         public RelayCommand ImportZipCommand { get; set; }
 
+        public RelayCommand OpenImageProjectorCommand { get; set; }
+
         private PatternManager()
         {
             // 异步加载插件和模板文件
@@ -62,7 +65,18 @@ namespace Pattern
             ClearTemplatePatternFilesCommand = new RelayCommand(a => ClearTemplatePatternFiles());
             ExportZipCommand = new RelayCommand(async a => await ExportPatternZipAsync());
             ImportZipCommand = new RelayCommand(async a => await ImportPatternZipAsync());
+            OpenImageProjectorCommand = new RelayCommand(a =>
+            {
+                ImageProjectorWindow window = new ImageProjectorWindow
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                window.Show();
+            });
         }
+
+
 
         private async Task LoadPatternsAndFilesAsync()
         {
