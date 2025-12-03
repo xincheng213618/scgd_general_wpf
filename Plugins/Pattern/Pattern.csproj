@@ -23,6 +23,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
 	  <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+	  <ProjectReference Include="..\ImageProjector\ImageProjector.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
