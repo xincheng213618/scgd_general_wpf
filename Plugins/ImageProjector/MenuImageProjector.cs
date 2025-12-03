@@ -12,7 +12,7 @@ namespace ImageProjector
 
         public override void Execute()
         {
-            new ImageProjectorWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new ImageProjectorWindow() { Owner = System.Windows.Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 }

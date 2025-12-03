@@ -5,7 +5,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ImageProjector
 {
@@ -39,7 +38,7 @@ namespace ImageProjector
 
         public MonitorLayoutControl()
         {
-            this.Background = Brushes.Transparent;
+            this.Background = System.Windows.Media.Brushes.Transparent;
             this.MinHeight = 150;
             this.Loaded += (s, e) => RefreshMonitors();
         }
@@ -213,7 +212,7 @@ namespace ImageProjector
             {
                 if (!IsSelected)
                 {
-                    this.BorderBrush = new SolidColorBrush(Color.FromRgb(0, 120, 215));
+                    this.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
                     this.Opacity = 0.9;
                 }
             };
@@ -233,16 +232,16 @@ namespace ImageProjector
             if (IsSelected)
             {
                 // Selected state - blue
-                this.BorderBrush = new SolidColorBrush(Color.FromRgb(0, 103, 192));
-                _innerBorder.Background = new SolidColorBrush(Color.FromRgb(0, 120, 215));
-                _numberText.Foreground = Brushes.White;
+                this.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 103, 192));
+                _innerBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
+                _numberText.Foreground = System.Windows.Media.Brushes.White;
             }
             else
             {
                 // Unselected state - gray
-                this.BorderBrush = new SolidColorBrush(Color.FromRgb(180, 180, 180));
-                _innerBorder.Background = new SolidColorBrush(Color.FromRgb(225, 225, 225));
-                _numberText.Foreground = new SolidColorBrush(Color.FromRgb(60, 60, 60));
+                this.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(180, 180, 180));
+                _innerBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(225, 225, 225));
+                _numberText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(60, 60, 60));
             }
         }
     }
