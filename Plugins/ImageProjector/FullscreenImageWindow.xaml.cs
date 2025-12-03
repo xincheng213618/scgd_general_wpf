@@ -6,7 +6,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 
-namespace Pattern.ImageProjector
+namespace ImageProjector
 {
     public partial class FullscreenImageWindow : Window
     {
@@ -29,11 +29,11 @@ namespace Pattern.ImageProjector
             _targetScreen = targetScreen;
             FullscreenImage.Source = image;
 
-            // 初始状态设为 Normal
+            // Initial state as Normal
             this.WindowState = WindowState.Normal;
             this.WindowStartupLocation = WindowStartupLocation.Manual;
 
-            // 在 SourceInitialized 事件中设置位置
+            // Set position in SourceInitialized event
             this.SourceInitialized += OnSourceInitialized;
 
             HintText.Text = Properties.Resources.PressEscToClose;
@@ -57,14 +57,11 @@ namespace Pattern.ImageProjector
             var dpiScale = GetDpiScaleForScreen(_targetScreen);
             var bounds = _targetScreen.Bounds;
 
-            // 先移动到目标屏幕
+            // Move to target screen
             this.Left = bounds.Left / dpiScale;
             this.Top = bounds.Top / dpiScale;
             this.Width = bounds.Width / dpiScale;
             this.Height = bounds.Height / dpiScale;
-
-            // 如果需要使用系统最大化，可以在这里设置
-            // this.WindowState = WindowState. Maximized;
         }
 
         private double GetDpiScaleForScreen(System.Windows.Forms.Screen screen)

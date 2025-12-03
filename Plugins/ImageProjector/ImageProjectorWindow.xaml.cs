@@ -9,10 +9,10 @@ using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace Pattern.ImageProjector
+namespace ImageProjector
 {
     /// <summary>
-    /// ImageProjectorWindow. xaml interaction logic
+    /// ImageProjectorWindow.xaml interaction logic
     /// </summary>
     public partial class ImageProjectorWindow : Window, IDisposable
     {
@@ -39,7 +39,7 @@ namespace Pattern.ImageProjector
         {
             var screens = Screen.AllScreens.ToList();
 
-            // 设置默认选择的屏幕（优先选择非主显示器）
+            // Default to secondary screen, or primary if none available
             _selectedScreen = screens.FirstOrDefault(s => !s.Primary) ?? screens.FirstOrDefault();
 
             if (_selectedScreen != null)

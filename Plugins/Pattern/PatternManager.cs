@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ImageProjector;
 using log4net;
 using Microsoft.Win32;
-using Pattern.ImageProjector;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;

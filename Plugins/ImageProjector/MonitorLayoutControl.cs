@@ -1,4 +1,3 @@
-using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,17 +5,16 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
-using System.Windows.Media;
 
-namespace Pattern.ImageProjector
+namespace ImageProjector
 {
     /// <summary>
-    /// 可视化显示器布局选择控件
+    /// Visual monitor layout selection control
     /// </summary>
     public class MonitorLayoutControl : Canvas
     {
         private readonly List<MonitorItem> _monitorItems = new();
-        private MonitorItem?  _selectedItem;
+        private MonitorItem? _selectedItem;
 
         public event EventHandler<Screen>? ScreenSelected;
 
@@ -24,7 +22,7 @@ namespace Pattern.ImageProjector
             DependencyProperty.Register(nameof(SelectedScreen), typeof(Screen), typeof(MonitorLayoutControl),
                 new PropertyMetadata(null, OnSelectedScreenChanged));
 
-        public Screen?  SelectedScreen
+        public Screen? SelectedScreen
         {
             get => (Screen?)GetValue(SelectedScreenProperty);
             set => SetValue(SelectedScreenProperty, value);
@@ -34,15 +32,15 @@ namespace Pattern.ImageProjector
         {
             if (d is MonitorLayoutControl control && e.NewValue is Screen screen)
             {
-                control. SelectScreen(screen);
+                control.SelectScreen(screen);
             }
         }
 
         public MonitorLayoutControl()
         {
-            this.Background = Brushes. Transparent;
+            this.Background = System.Windows.Media.Brushes.Transparent;
             this.MinHeight = 150;
-            this. Loaded += (s, e) => RefreshMonitors();
+            this.Loaded += (s, e) => RefreshMonitors();
         }
 
         public void RefreshMonitors()
@@ -51,36 +49,36 @@ namespace Pattern.ImageProjector
             _monitorItems.Clear();
 
             var screens = Screen.AllScreens.ToList();
-            if (! screens.Any()) return;
+            if (!screens.Any()) return;
 
-            // 计算所有屏幕的边界
-            int minX = screens. Min(s => s.Bounds.Left);
-            int minY = screens.Min(s => s. Bounds.Top);
-            int maxX = screens.Max(s => s. Bounds.Right);
+            // Calculate bounds of all screens
+            int minX = screens.Min(s => s.Bounds.Left);
+            int minY = screens.Min(s => s.Bounds.Top);
+            int maxX = screens.Max(s => s.Bounds.Right);
             int maxY = screens.Max(s => s.Bounds.Bottom);
 
             int totalWidth = maxX - minX;
             int totalHeight = maxY - minY;
 
-            // 计算缩放比例，使所有屏幕适应控件大小
+            // Calculate scale to fit all screens in control
             double availableWidth = Math.Max(this.ActualWidth - 40, 200);
-            double availableHeight = Math. Max(this.ActualHeight - 40, 100);
+            double availableHeight = Math.Max(this.ActualHeight - 40, 100);
 
             double scaleX = availableWidth / totalWidth;
             double scaleY = availableHeight / totalHeight;
-            double scale = Math.Min(scaleX, scaleY) * 0.85; // 留一些边距
+            double scale = Math.Min(scaleX, scaleY) * 0.85; // Leave some margin
 
-            // 计算居中偏移
+            // Calculate centering offset
             double offsetX = (this.ActualWidth - totalWidth * scale) / 2 - minX * scale;
             double offsetY = (this.ActualHeight - totalHeight * scale) / 2 - minY * scale;
 
-            // 创建每个显示器的可视化元素
+            // Create visual element for each monitor
             for (int i = 0; i < screens.Count; i++)
             {
                 var screen = screens[i];
                 var bounds = screen.Bounds;
 
-                // 计算缩放后的位置和大小
+                // Calculate scaled position and size
                 double x = bounds.Left * scale + offsetX;
                 double y = bounds.Top * scale + offsetY;
                 double width = bounds.Width * scale;
@@ -93,8 +91,8 @@ namespace Pattern.ImageProjector
                 this.Children.Add(item);
             }
 
-            // 默认选择第一个非主显示器，或者主显示器
-            var defaultScreen = screens.FirstOrDefault(s => ! s.Primary) ?? screens. FirstOrDefault();
+            // Default to first non-primary monitor, or primary
+            var defaultScreen = screens.FirstOrDefault(s => !s.Primary) ?? screens.FirstOrDefault();
             if (defaultScreen != null && SelectedScreen == null)
             {
                 SelectedScreen = defaultScreen;
@@ -117,7 +115,7 @@ namespace Pattern.ImageProjector
 
         private void SelectScreen(Screen screen)
         {
-            var item = _monitorItems.FirstOrDefault(m => m.Screen. DeviceName == screen. DeviceName);
+            var item = _monitorItems.FirstOrDefault(m => m.Screen.DeviceName == screen.DeviceName);
             if (item != null)
             {
                 SelectItem(item);
@@ -126,26 +124,26 @@ namespace Pattern.ImageProjector
 
         private void SelectItem(MonitorItem item)
         {
-            // 取消之前的选择
+            // Deselect previous
             if (_selectedItem != null)
             {
                 _selectedItem.IsSelected = false;
             }
 
-            // 设置新的选择
+            // Select new
             _selectedItem = item;
-            _selectedItem. IsSelected = true;
+            _selectedItem.IsSelected = true;
         }
 
         protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
         {
-            base. OnRenderSizeChanged(sizeInfo);
+            base.OnRenderSizeChanged(sizeInfo);
             RefreshMonitors();
         }
     }
 
     /// <summary>
-    /// 单个显示器的可视化项
+    /// Visual item for a single monitor
     /// </summary>
     public class MonitorItem : Border
     {
@@ -171,25 +169,25 @@ namespace Pattern.ImageProjector
             Screen = screen;
             MonitorNumber = number;
 
-            // 设置位置和大小
+            // Set position and size
             Canvas.SetLeft(this, x);
             Canvas.SetTop(this, y);
             this.Width = width;
             this.Height = height;
 
-            // 外边框
+            // Outer border
             this.BorderThickness = new Thickness(2);
             this.CornerRadius = new CornerRadius(4);
             this.Cursor = System.Windows.Input.Cursors.Hand;
 
-            // 内部边框（用于显示主显示器标记）
+            // Inner border (for primary monitor marker)
             _innerBorder = new Border
             {
                 CornerRadius = new CornerRadius(2),
                 Margin = new Thickness(1)
             };
 
-            // 显示器编号
+            // Monitor number
             _numberText = new TextBlock
             {
                 Text = number.ToString(),
@@ -202,19 +200,19 @@ namespace Pattern.ImageProjector
             _innerBorder.Child = _numberText;
             this.Child = _innerBorder;
 
-            // 添加工具提示
-            var resolution = $"{screen. Bounds.Width} x {screen. Bounds.Height}";
-            var primaryText = screen.Primary ? " (主显示器)" : "";
-            this.ToolTip = $"显示器 {number}{primaryText}\n{screen.DeviceName}\n分辨率: {resolution}";
+            // Add tooltip
+            var resolution = $"{screen.Bounds.Width} x {screen.Bounds.Height}";
+            var primaryText = screen.Primary ? " (Primary)" : "";
+            this.ToolTip = $"Monitor {number}{primaryText}\n{screen.DeviceName}\nResolution: {resolution}";
 
             UpdateVisualState();
 
-            // 鼠标悬停效果
-            this. MouseEnter += (s, e) =>
+            // Mouse hover effect
+            this.MouseEnter += (s, e) =>
             {
-                if (! IsSelected)
+                if (!IsSelected)
                 {
-                    this.BorderBrush = new SolidColorBrush(Color.FromRgb(0, 120, 215));
+                    this.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
                     this.Opacity = 0.9;
                 }
             };
@@ -233,17 +231,17 @@ namespace Pattern.ImageProjector
         {
             if (IsSelected)
             {
-                // 选中状态 - 蓝色
-                this.BorderBrush = new SolidColorBrush(Color.FromRgb(0, 103, 192));
-                _innerBorder.Background = new SolidColorBrush(Color.FromRgb(0, 120, 215));
-                _numberText. Foreground = Brushes.White;
+                // Selected state - blue
+                this.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 103, 192));
+                _innerBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0, 120, 215));
+                _numberText.Foreground = System.Windows.Media.Brushes.White;
             }
             else
             {
-                // 未选中状态 - 灰色
-                this.BorderBrush = new SolidColorBrush(Color.FromRgb(180, 180, 180));
-                _innerBorder.Background = new SolidColorBrush(Color.FromRgb(225, 225, 225));
-                _numberText.Foreground = new SolidColorBrush(Color.FromRgb(60, 60, 60));
+                // Unselected state - gray
+                this.BorderBrush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(180, 180, 180));
+                _innerBorder.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(225, 225, 225));
+                _numberText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(60, 60, 60));
             }
         }
     }

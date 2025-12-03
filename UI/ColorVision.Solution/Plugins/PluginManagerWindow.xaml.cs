@@ -28,7 +28,7 @@ namespace ColorVision.UI.Plugins
         private void Window_Initialized(object sender, System.EventArgs e)
         {
             this.DataContext = PluginManager.GetInstance(); ;
-            DefalutSearchComboBox.ItemsSource = new List<string>() { "Pattern", "EventVWR", "ScreenRecorder", "SystemMonitor", "WindowsServicePlugin", "Spectrum" };
+            DefalutSearchComboBox.ItemsSource = new List<string>() { "ImageProjector", "Pattern", "EventVWR", "ScreenRecorder", "SystemMonitor", "WindowsServicePlugin", "Spectrum" };
             ListViewPlugins.SelectedIndex = 0;
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex].Delete(), (s, e) => e.CanExecute = ListViewPlugins.SelectedIndex > -1));
         }
