@@ -59,10 +59,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
                 fSpect1 = 380;
                 fSpect2 = 780;
-                double[] xs = new double[fPL.Length];
-                double[] ys = new double[fPL.Length];
-                double[] ysAbsolute = new double[fPL.Length];
-                for (int i = 0; i < fPL.Length; i++)
+                int length = fPL.Length>4000 ?4000:fPL.Length;
+                double[] xs = new double[length];
+                double[] ys = new double[length];
+                double[] ysAbsolute = new double[length];
+                for (int i = 0; i < length; i++)
                 {
                     xs[i] = ((double)fSpect1 + Math.Round(fInterval, 1) * i);
                     ys[i] = fPL[i];
