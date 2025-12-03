@@ -10,6 +10,15 @@ on:
       - 'package.json'
       - '.github/workflows/deploy.yml'
   
+  # Trigger on pull requests to master (only build, not deploy)
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'docs/**'
+      - 'package.json'
+      - '.github/workflows/deploy. yml'
+  
   # Allow manual trigger
   workflow_dispatch:
 
