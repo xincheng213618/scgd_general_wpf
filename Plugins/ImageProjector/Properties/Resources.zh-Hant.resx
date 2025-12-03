@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -117,10 +117,73 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Search" xml:space="preserve">
-    <value>搜索</value>
+  <data name="ImageProjector" xml:space="preserve">
+    <value>圖片投影工具</value>
   </data>
-  <data name="ChartGenerationTool" xml:space="preserve">
-    <value>图卡生成工具</value>
+  <data name="MonitorSelection" xml:space="preserve">
+    <value>顯示器選擇</value>
+  </data>
+  <data name="TargetMonitor" xml:space="preserve">
+    <value>目標顯示器:</value>
+  </data>
+  <data name="PrimaryMonitor" xml:space="preserve">
+    <value>主顯示器</value>
+  </data>
+  <data name="SecondaryMonitor" xml:space="preserve">
+    <value>副顯示器</value>
+  </data>
+  <data name="ImageSelection" xml:space="preserve">
+    <value>圖片選擇</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>瀏覽...</value>
+  </data>
+  <data name="SupportedFormats" xml:space="preserve">
+    <value>支援格式: TIF, PNG, JPG, BMP</value>
+  </data>
+  <data name="ImagePreview" xml:space="preserve">
+    <value>圖片預覽</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>投影</value>
+  </data>
+  <data name="StopProjection" xml:space="preserve">
+    <value>停止投影</value>
+  </data>
+  <data name="ImageFileFilter" xml:space="preserve">
+    <value>圖片檔案|*.tif;*.tiff;*.png;*.jpg;*.jpeg;*.bmp|TIF 檔案|*.tif;*.tiff|PNG 檔案|*.png|JPEG 檔案|*.jpg;*.jpeg|BMP 檔案|*.bmp|所有檔案|JPEG 檔案|*.jpg;*.jpeg|BMP 檔案|*.bmp|所有檔案|*.*</value>
+  </data>
+  <data name="SelectImageFile" xml:space="preserve">
+    <value>選擇圖片文件</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>文件不存在</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>錯誤</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>警告</value>
+  </data>
+  <data name="ImageLoaded" xml:space="preserve">
+    <value>已載入圖片</value>
+  </data>
+  <data name="FailedToLoadImage" xml:space="preserve">
+    <value>無法載入圖片</value>
+  </data>
+  <data name="SelectImageFirst" xml:space="preserve">
+    <value>請先選擇圖片和顯示器</value>
+  </data>
+  <data name="FailedToStartProjection" xml:space="preserve">
+    <value>無法開始投影</value>
+  </data>
+  <data name="ProjectionStarted" xml:space="preserve">
+    <value>投影中... 按 ESC 鍵關閉</value>
+  </data>
+  <data name="ProjectionStopped" xml:space="preserve">
+    <value>投影已停止</value>
+  </data>
+  <data name="PressEscToClose" xml:space="preserve">
+    <value>按 ESC 鍵關閉</value>
   </data>
 </root>

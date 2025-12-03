@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -117,10 +117,73 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Search" xml:space="preserve">
-    <value>搜索</value>
+  <data name="ImageProjector" xml:space="preserve">
+    <value>Инструмент проецирования изображений</value>
   </data>
-  <data name="ChartGenerationTool" xml:space="preserve">
-    <value>图卡生成工具</value>
+  <data name="MonitorSelection" xml:space="preserve">
+    <value>Выбор монитора</value>
+  </data>
+  <data name="TargetMonitor" xml:space="preserve">
+    <value>Отображение цели:</value>
+  </data>
+  <data name="PrimaryMonitor" xml:space="preserve">
+    <value>Основной дисплей</value>
+  </data>
+  <data name="SecondaryMonitor" xml:space="preserve">
+    <value>вторичный дисплей</value>
+  </data>
+  <data name="ImageSelection" xml:space="preserve">
+    <value>Выбор изображения</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Просматривать...</value>
+  </data>
+  <data name="SupportedFormats" xml:space="preserve">
+    <value>Поддерживаемые форматы: TIF, PNG, JPG, BMP</value>
+  </data>
+  <data name="ImagePreview" xml:space="preserve">
+    <value>Предварительный просмотр изображения</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>проекция</value>
+  </data>
+  <data name="StopProjection" xml:space="preserve">
+    <value>Остановить проекцию</value>
+  </data>
+  <data name="ImageFileFilter" xml:space="preserve">
+    <value>Файлы изображений | *.tif; *.tiff; *.png; *.jpg; *.jpeg; *.bmp | Файлы TIF | *.tif; *.tiff | Файлы PNG | *.png | Файлы JPEG | *.jpg; *.jpeg | Файлы BMP | *.bmp | Все файлы | *.*</value>
+  </data>
+  <data name="SelectImageFile" xml:space="preserve">
+    <value>Выберите файл изображения</value>
+  </data>
+  <data name="FileNotFound" xml:space="preserve">
+    <value>Файл не существует.</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>ошибка</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>предупреждать</value>
+  </data>
+  <data name="ImageLoaded" xml:space="preserve">
+    <value>Изображения загружены</value>
+  </data>
+  <data name="FailedToLoadImage" xml:space="preserve">
+    <value>Не удалось загрузить изображение.</value>
+  </data>
+  <data name="SelectImageFirst" xml:space="preserve">
+    <value>Сначала выберите изображение и монитор.</value>
+  </data>
+  <data name="FailedToStartProjection" xml:space="preserve">
+    <value>Невозможно начать проекцию</value>
+  </data>
+  <data name="ProjectionStarted" xml:space="preserve">
+    <value>Проецирование... Нажмите ESC, чтобы выключить.</value>
+  </data>
+  <data name="ProjectionStopped" xml:space="preserve">
+    <value>Проекция остановлена</value>
+  </data>
+  <data name="PressEscToClose" xml:space="preserve">
+    <value>Нажмите ESC, чтобы закрыть</value>
   </data>
 </root>
