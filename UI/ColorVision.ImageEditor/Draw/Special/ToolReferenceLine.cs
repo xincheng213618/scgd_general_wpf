@@ -653,14 +653,12 @@ namespace ColorVision.ImageEditor.Draw.Special
                     Image.MouseMove += MouseMove;
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
                     Image.PreviewMouseUp += PreviewMouseUp;
-                    Image.MouseDoubleClick += Image_MouseDoubleClick;
                     ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
 
                 }
                 else
                 {
                     EditorContext.DrawEditorManager.SetCurrentDrawEditor(null);
-
 
                     Image.MouseMove -= MouseMove;
                     Image.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
