@@ -1,13 +1,13 @@
 <Window x:Class="Pattern.ImageProjector.ImageProjectorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:d="http://schemas. microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Pattern.ImageProjector"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:Pattern.Properties"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.ImageProjector}" Height="450" Width="600" 
+        Title="{x:Static properties:Resources.ImageProjector}" Height="550" Width="650" 
         Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" 
         Initialized="Window_Initialized">
     <Window.Resources>
@@ -25,15 +25,34 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Monitor Selection -->
+        <!-- Monitor Selection with Visual Layout -->
         <GroupBox Grid.Row="0" Header="{x:Static properties:Resources.MonitorSelection}" Margin="0,0,0,10">
-            <StackPanel Margin="5">
-                <DockPanel Margin="0,5">
-                    <TextBlock Text="{x:Static properties:Resources.TargetMonitor}" Width="100" VerticalAlignment="Center"/>
-                    <ComboBox x:Name="MonitorComboBox" DisplayMemberPath="DeviceName"/>
-                </DockPanel>
-                <TextBlock x:Name="MonitorInfoText" Margin="0,5,0,0" FontStyle="Italic" Foreground="{DynamicResource SecondaryTextBrush}"/>
-            </StackPanel>
+            <Grid Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Border Grid.Row="0" 
+                        Background="{DynamicResource RegionBrush}" 
+                        BorderBrush="{DynamicResource BorderBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="4" 
+                        MinHeight="120"
+                        Margin="0,5,0,10">
+                    <local:MonitorLayoutControl x:Name="MonitorLayout" 
+                                                 Margin="10"
+                                                 ScreenSelected="MonitorLayout_ScreenSelected"/>
+                </Border>
+
+                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                    <TextBlock Text="{x:Static properties:Resources.TargetMonitor}" 
+                               VerticalAlignment="Center" 
+                               Margin="0,0,10,0"/>
+                    <TextBlock x:Name="MonitorInfoText" 
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold"/>
+                </StackPanel>
+            </Grid>
         </GroupBox>
 
         <!-- Image Selection -->
@@ -60,13 +79,13 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0" Orientation="Horizontal">
-                <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
-            </StackPanel>
-            <Button Grid.Column="1" x:Name="ProjectButton" Content="{x:Static properties:Resources.Project}" 
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </StackPanel>
+                <Button Grid.Column="1" x:Name="ProjectButton" Content="{x:Static properties:Resources.Project}" 
                     Click="Project_Click" Width="100" Height="35" Margin="0,0,10,0" IsEnabled="False"/>
-            <Button Grid.Column="2" x:Name="StopButton" Content="{x:Static properties:Resources.StopProjection}" 
+                <Button Grid.Column="2" x:Name="StopButton" Content="{x:Static properties:Resources.StopProjection}" 
                     Click="Stop_Click" Width="100" Height="35" IsEnabled="False"/>
         </Grid>
     </Grid>

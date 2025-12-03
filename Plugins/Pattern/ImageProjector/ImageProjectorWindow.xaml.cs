@@ -12,7 +12,7 @@ using System.Windows.Media.Imaging;
 namespace Pattern.ImageProjector
 {
     /// <summary>
-    /// ImageProjectorWindow.xaml interaction logic
+    /// ImageProjectorWindow. xaml interaction logic
     /// </summary>
     public partial class ImageProjectorWindow : Window, IDisposable
     {
@@ -38,23 +38,23 @@ namespace Pattern.ImageProjector
         private void LoadMonitors()
         {
             var screens = Screen.AllScreens.ToList();
-            MonitorComboBox.ItemsSource = screens;
 
-            // Select secondary monitor if available, otherwise select primary
+            // 设置默认选择的屏幕（优先选择非主显示器）
             _selectedScreen = screens.FirstOrDefault(s => !s.Primary) ?? screens.FirstOrDefault();
-            MonitorComboBox.SelectedItem = _selectedScreen;
 
-            MonitorComboBox.SelectionChanged += (s, e) =>
+            if (_selectedScreen != null)
             {
-                if (MonitorComboBox.SelectedItem is Screen screen)
-                {
-                    _selectedScreen = screen;
-                    UpdateMonitorInfo();
-                    UpdateProjectButtonState();
-                }
-            };
+                MonitorLayout.SelectedScreen = _selectedScreen;
+            }
 
             UpdateMonitorInfo();
+        }
+
+        private void MonitorLayout_ScreenSelected(object? sender, Screen screen)
+        {
+            _selectedScreen = screen;
+            UpdateMonitorInfo();
+            UpdateProjectButtonState();
         }
 
         private void UpdateMonitorInfo()
@@ -62,7 +62,7 @@ namespace Pattern.ImageProjector
             if (_selectedScreen != null)
             {
                 var isPrimary = _selectedScreen.Primary ? Properties.Resources.PrimaryMonitor : Properties.Resources.SecondaryMonitor;
-                MonitorInfoText.Text = $"{isPrimary}: {_selectedScreen.Bounds.Width}x{_selectedScreen.Bounds.Height}";
+                MonitorInfoText.Text = $"{isPrimary}: {_selectedScreen.Bounds.Width} x {_selectedScreen.Bounds.Height}";
             }
         }
 
