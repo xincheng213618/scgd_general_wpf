@@ -51,7 +51,7 @@ namespace Pattern
         public RelayCommand ExportZipCommand { get; set; }
         public RelayCommand ImportZipCommand { get; set; }
 
-        public RelayCommand OpenImageProjector { get; set; }
+        public RelayCommand OpenImageProjectorCommand { get; set; }
 
         private PatternManager()
         {
@@ -65,7 +65,7 @@ namespace Pattern
             ClearTemplatePatternFilesCommand = new RelayCommand(a => ClearTemplatePatternFiles());
             ExportZipCommand = new RelayCommand(async a => await ExportPatternZipAsync());
             ImportZipCommand = new RelayCommand(async a => await ImportPatternZipAsync());
-            OpenImageProjector = new RelayCommand(a =>
+            OpenImageProjectorCommand = new RelayCommand(a =>
             {
                 ImageProjectorWindow window = new ImageProjectorWindow
                 {
