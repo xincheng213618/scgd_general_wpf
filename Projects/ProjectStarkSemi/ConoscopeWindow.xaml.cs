@@ -837,12 +837,14 @@ namespace ProjectStarkSemi
                     return channel;
                 }
             }
-            return ExportChannel.All;
+            return ExportChannel.R;
         }
 
         /// <summary>
         /// 按角度模式导出数据到CSV文件
-        /// 从0°到180°，沿着极角线方向采样
+        /// 格式: Phi \ Theta 矩阵格式
+        /// 行: Theta (采样点位置，从-MaxAngle到MaxAngle)
+        /// 列: Phi (角度线，如0°, 20°, 40°等)
         /// </summary>
         private void ExportAngleModeToCSV(string filePath, ExportChannel channel)
         {
@@ -851,51 +853,69 @@ namespace ProjectStarkSemi
                 // Sort polar lines by angle for organized output
                 var sortedLines = polarAngleLines.OrderBy(line => line.Angle).ToList();
 
-                // Write header
-                writer.WriteLine("# 角度模式导出数据");
+                if (sortedLines.Count == 0)
+                {
+                    log.Warn("没有角度线数据可导出");
+                    return;
+                }
+
+                // Write header comments
+                writer.WriteLine($"# 角度模式导出数据 (Phi \\ Theta 格式)");
                 writer.WriteLine($"# 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                 writer.WriteLine($"# 导出通道: {channel}");
                 writer.WriteLine($"# 型号: {currentModel}");
                 writer.WriteLine($"# 最大视角: {MaxAngle}°");
-                writer.WriteLine($"# 角度数量: {sortedLines.Count}");
+                writer.WriteLine($"# Phi (列): 角度线方向");
+                writer.WriteLine($"# Theta (行): 采样点位置");
                 writer.WriteLine();
 
-                // Write CSV header based on channel
-                string header = channel == ExportChannel.All 
-                    ? "Angle(°),Position(°),R,G,B,X,Y,Z,Luminance"
-                    : $"Angle(°),Position(°),{channel}";
-                writer.WriteLine(header);
-
-                // Export each angle's data
-                foreach (var polarLine in sortedLines)
+                // Write CSV header: Phi \ Theta, followed by each Phi angle
+                StringBuilder headerLine = new StringBuilder();
+                headerLine.Append("Phi \\ Theta");
+                foreach (var line in sortedLines)
                 {
-                    foreach (var sample in polarLine.RgbData)
+                    headerLine.Append($",{line.Angle:F1}");
+                }
+                writer.WriteLine(headerLine.ToString());
+
+                // Find the maximum number of samples across all lines
+                int maxSamples = sortedLines.Max(l => l.RgbData.Count);
+                if (maxSamples == 0) return;
+
+                // Export each row (Theta position)
+                for (int i = 0; i < maxSamples; i++)
+                {
+                    StringBuilder dataLine = new StringBuilder();
+                    
+                    // Get Theta position from first line (assuming consistent sampling)
+                    double theta = sortedLines[0].RgbData.Count > i ? sortedLines[0].RgbData[i].Position : 0;
+                    dataLine.Append($"{theta:F2}");
+
+                    // Add value for each Phi angle
+                    foreach (var line in sortedLines)
                     {
-                        double luminance = 0.299 * sample.R + 0.587 * sample.G + 0.114 * sample.B;
-                        
-                        string dataLine;
-                        if (channel == ExportChannel.All)
+                        if (line.RgbData.Count > i)
                         {
-                            dataLine = $"{polarLine.Angle:F2},{sample.Position:F2},{sample.R:F2},{sample.G:F2},{sample.B:F2},{sample.X:F2},{sample.Y:F2},{sample.Z:F2},{luminance:F2}";
+                            double value = GetChannelValue(line.RgbData[i], channel);
+                            dataLine.Append($",{value:F2}");
                         }
                         else
                         {
-                            double value = GetChannelValue(sample, channel);
-                            dataLine = $"{polarLine.Angle:F2},{sample.Position:F2},{value:F2}";
+                            dataLine.Append(",");
                         }
-                        writer.WriteLine(dataLine);
                     }
+                    writer.WriteLine(dataLine.ToString());
                 }
 
-                log.Info($"角度模式导出了 {sortedLines.Count} 个角度的数据, 通道: {channel}");
+                log.Info($"角度模式导出了 {sortedLines.Count} 个Phi角度的数据, 通道: {channel}");
             }
         }
 
         /// <summary>
         /// 按同心圆模式导出数据到CSV文件
-        /// 从中心点到边缘，按照同心圆采样
-        /// VA60: 60个同心圆 (0-60°)
-        /// VA80: 80个同心圆 (0-80°)
+        /// 格式: Phi \ Theta 矩阵格式
+        /// 行: Theta (圆周角度，0-359°)
+        /// 列: Phi (半径角度，1-60或1-80)
         /// </summary>
         private void ExportCircleModeToCSV(string filePath, ExportChannel channel)
         {
@@ -904,43 +924,57 @@ namespace ProjectStarkSemi
 
             using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
             {
-                // Write header
-                writer.WriteLine("# 同心圆模式导出数据");
+                if (concentricCircleLines.Count == 0)
+                {
+                    log.Warn("没有同心圆数据可导出");
+                    return;
+                }
+
+                var sortedCircles = concentricCircleLines.OrderBy(c => c.RadiusAngle).ToList();
+
+                // Write header comments
+                writer.WriteLine($"# 同心圆模式导出数据 (Phi \\ Theta 格式)");
                 writer.WriteLine($"# 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                 writer.WriteLine($"# 导出通道: {channel}");
                 writer.WriteLine($"# 型号: {currentModel}");
                 writer.WriteLine($"# 最大视角: {MaxAngle}°");
-                writer.WriteLine($"# 同心圆数量: {concentricCircleLines.Count}");
+                writer.WriteLine($"# 同心圆数量: {sortedCircles.Count}");
+                writer.WriteLine($"# Phi (列): 半径角度 (视角)");
+                writer.WriteLine($"# Theta (行): 圆周角度 (0-359°)");
                 writer.WriteLine();
 
-                // Write CSV header based on channel
-                string header = channel == ExportChannel.All 
-                    ? "RadiusAngle(°),CirclePosition(°),R,G,B,X,Y,Z,Luminance"
-                    : $"RadiusAngle(°),CirclePosition(°),{channel}";
-                writer.WriteLine(header);
-
-                // Export each concentric circle's data
-                foreach (var circleLine in concentricCircleLines.OrderBy(c => c.RadiusAngle))
+                // Write CSV header: Phi \ Theta, followed by each Phi (radius angle)
+                StringBuilder headerLine = new StringBuilder();
+                headerLine.Append("Phi \\ Theta");
+                foreach (var circle in sortedCircles)
                 {
-                    foreach (var sample in circleLine.RgbData)
+                    headerLine.Append($",{circle.RadiusAngle:F0}");
+                }
+                writer.WriteLine(headerLine.ToString());
+
+                // Export each row (Theta = 0-359)
+                for (int theta = 0; theta < 360; theta++)
+                {
+                    StringBuilder dataLine = new StringBuilder();
+                    dataLine.Append($"{theta}");
+
+                    // Add value for each Phi (radius angle)
+                    foreach (var circle in sortedCircles)
                     {
-                        double luminance = 0.299 * sample.R + 0.587 * sample.G + 0.114 * sample.B;
-                        
-                        string dataLine;
-                        if (channel == ExportChannel.All)
+                        if (circle.RgbData.Count > theta)
                         {
-                            dataLine = $"{circleLine.RadiusAngle:F2},{sample.Position:F2},{sample.R:F2},{sample.G:F2},{sample.B:F2},{sample.X:F2},{sample.Y:F2},{sample.Z:F2},{luminance:F2}";
+                            double value = GetChannelValue(circle.RgbData[theta], channel);
+                            dataLine.Append($",{value:F2}");
                         }
                         else
                         {
-                            double value = GetChannelValue(sample, channel);
-                            dataLine = $"{circleLine.RadiusAngle:F2},{sample.Position:F2},{value:F2}";
+                            dataLine.Append(",");
                         }
-                        writer.WriteLine(dataLine);
                     }
+                    writer.WriteLine(dataLine.ToString());
                 }
 
-                log.Info($"同心圆模式导出了 {concentricCircleLines.Count} 个同心圆的数据, 通道: {channel}");
+                log.Info($"同心圆模式导出了 {sortedCircles.Count} 个Phi角度 x 360 Theta的数据, 通道: {channel}");
             }
         }
 
@@ -957,7 +991,7 @@ namespace ProjectStarkSemi
                 ExportChannel.X => sample.X,
                 ExportChannel.Y => sample.Y,
                 ExportChannel.Z => sample.Z,
-                _ => 0.299 * sample.R + 0.587 * sample.G + 0.114 * sample.B // Luminance for All
+                _ => sample.R // Default to R channel
             };
         }
 

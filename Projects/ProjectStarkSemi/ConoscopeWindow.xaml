@@ -460,7 +460,6 @@
                                     <ComboBox x:Name="cbExportChannel" 
                                               MinWidth="120" 
                                               SelectedIndex="0">
-                                        <ComboBoxItem Content="所有通道" Tag="All"/>
                                         <ComboBoxItem Content="R通道" Tag="R"/>
                                         <ComboBoxItem Content="G通道" Tag="G"/>
                                         <ComboBoxItem Content="B通道" Tag="B"/>

@@ -24,11 +24,6 @@ namespace ProjectStarkSemi.Conoscope
     public enum ExportChannel
     {
         /// <summary>
-        /// 所有通道
-        /// </summary>
-        All,
-
-        /// <summary>
         /// 红色通道
         /// </summary>
         R,
