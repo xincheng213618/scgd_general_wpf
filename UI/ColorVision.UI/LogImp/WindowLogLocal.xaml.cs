@@ -31,12 +31,20 @@ namespace ColorVision.UI.LogImp
         private readonly object _fileLock = new object();
 
         /// <summary>
+        /// GB2312编码
+        /// </summary>
+        public Encoding Encoding { get; set; } = Encoding.Default;
+        /// <summary>
         /// 创建一个新的 WindowLogLocal 实例
         /// </summary>
         /// <param name="logFilePath">日志文件路径</param>
-        public WindowLogLocal(string logFilePath)
+        public WindowLogLocal(string logFilePath, Encoding encoding = null)
         {
             LogFilePath = logFilePath;
+            if (encoding != null)
+            {
+                Encoding = encoding;
+            }
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -96,10 +104,7 @@ namespace ColorVision.UI.LogImp
             }
         }
 
-        /// <summary>
-        /// GB2312编码
-        /// </summary>
-        private static readonly Encoding GB2312Encoding = Encoding.GetEncoding("GB2312");
+
 
         /// <summary>
         /// 加载日志文件内容
@@ -117,7 +122,7 @@ namespace ColorVision.UI.LogImp
                 lock (_fileLock)
                 {
                     using var fileStream = new FileStream(LogFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var reader = new StreamReader(fileStream, GB2312Encoding);
+                    using var reader = new StreamReader(fileStream, Encoding);
 
                     var lines = new List<string>();
                     string? line;
@@ -191,7 +196,7 @@ namespace ColorVision.UI.LogImp
                     }
 
                     fileStream.Seek(_lastReadPosition, SeekOrigin.Begin);
-                    using var reader = new StreamReader(fileStream, GB2312Encoding);
+                    using var reader = new StreamReader(fileStream, Encoding);
 
                     var newLines = new List<string>();
                     string? line;
