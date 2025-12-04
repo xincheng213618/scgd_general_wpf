@@ -13,139 +13,139 @@ namespace ProjectARVRPro.Process.MTFHV058
     {
 
         /// <summary>
-        /// MTF_HV_H 中心_0F 水平方向
+        /// MTF058_H 中心_0F 水平方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_H_Center_0F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_Center_0F", Unit = "%" };
+        public ObjectiveTestItem MTF058_H_Center_0F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_Center_0F", Unit = "%" };
         /// <summary>
-        /// MTF_HV_V 中心_0F 垂直方向
+        /// MTF058_V 中心_0F 垂直方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_V_Center_0F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_Center_0F", Unit = "%" };
+        public ObjectiveTestItem MTF058_V_Center_0F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_Center_0F", Unit = "%" };
 
         /// <summary>
-        /// MTF_HV_H 左上_0.3F 水平方向
+        /// MTF058_H 左上_0.3F 水平方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftUp_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_LeftUp_0_3F", Unit = "%" };
-
-
-        /// <summary>
-        /// MTF_HV_V 左上_0.3F 垂直方向
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftUp_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_LeftUp_0_3F", Unit = "%" };
-
-        /// <summary>
-        /// MTF_HV_H 右上_0.3F 水平方向
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightUp_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_RightUp_0_3F", Unit = "%" };
-
-        /// <summary>
-        /// MTF_HV_V 右上_0.3F 垂直方向
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightUp_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_RightUp_0_3F", Unit = "%" };
+        public ObjectiveTestItem MTF058_H_LeftUp_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_LeftUp_0_3F", Unit = "%" };
 
 
         /// <summary>
-        /// MTF_HV_H 右下_0.3F 水平方向
+        /// MTF058_V 左上_0.3F 垂直方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightDown_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_RightDown_0_3F", Unit = "%" };
+        public ObjectiveTestItem MTF058_V_LeftUp_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_LeftUp_0_3F", Unit = "%" };
 
         /// <summary>
-        /// MTF_HV_V 右下_0.3F 垂直方向
+        /// MTF058_H 右上_0.3F 水平方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightDown_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_RightDown_0_3F", Unit = "%" };
+        public ObjectiveTestItem MTF058_H_RightUp_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_RightUp_0_3F", Unit = "%" };
 
         /// <summary>
-        /// MTF_HV_H 左下_0.3F 水平方向
+        /// MTF058_V 右上_0.3F 垂直方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftDown_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_LeftDown_0_3F", Unit = "%" };
-
-
-        /// <summary>
-        /// MTF_HV_V 左下_0.3F 垂直方向
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftDown_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_LeftDown_0_3F", Unit = "%" };
-
-        /// <summary>
-        /// MTF_HV_H 左上_0.6F 水平方向
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftUp_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_LeftUp_0_6F", Unit = "%" };
-
-        /// <summary>
-        /// MTF_HV_V 左上_0.6F 垂直方向
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftUp_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_LeftUp_0_6F", Unit = "%" };
-
-        /// <summary>
-        /// MTF_HV_H 右上_0.6F 水平方向
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightUp_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_RightUp_0_6F", Unit = "%" };
-
-        /// <summary>
-        /// MTF_HV_V 右上_0.6F 垂直方向
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightUp_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_RightUp_0_6F", Unit = "%" };
-
-        /// <summary>
-        /// MTF_HV_H 右下_0.6F 水平方向
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightDown_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_RightDown_0_6F", Unit = "%" };
-
-        /// <summary>
-        /// MTF_HV_V 右下_0.6F 垂直方向
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightDown_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_RightDown_0_6F", Unit = "%" };
-
-        /// <summary>
-        /// MTF_HV_H 左下_0.6F 水平方向
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftDown_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_LeftDown_0_6F", Unit = "%" };
-
+        public ObjectiveTestItem MTF058_V_RightUp_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_RightUp_0_3F", Unit = "%" };
 
 
         /// <summary>
-        /// MTF_HV_V 左下_0.6F 垂直方向
+        /// MTF058_H 右下_0.3F 水平方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftDown_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_LeftDown_0_6F", Unit = "%" };
+        public ObjectiveTestItem MTF058_H_RightDown_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_RightDown_0_3F", Unit = "%" };
 
         /// <summary>
-        /// MTF_HV_H 左上_0.8F 水平方向
+        /// MTF058_V 右下_0.3F 垂直方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftUp_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_LeftUp_0_8F", Unit = "%" };
+        public ObjectiveTestItem MTF058_V_RightDown_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_RightDown_0_3F", Unit = "%" };
 
         /// <summary>
-        /// MTF_HV_V 左上_0.8F 垂直方向
+        /// MTF058_H 左下_0.3F 水平方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftUp_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_LeftUp_0_8F", Unit = "%" };
-
-        /// <summary>
-        /// MTF_HV_H 右上_0.8F 水平方向
-        /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightUp_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_RightUp_0_8F", Unit = "%" };
+        public ObjectiveTestItem MTF058_H_LeftDown_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_LeftDown_0_3F", Unit = "%" };
 
 
         /// <summary>
-        /// MTF_HV_V 右上_0.8F 垂直方向
+        /// MTF058_V 左下_0.3F 垂直方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightUp_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_RightUp_0_8F", Unit = "%" };
+        public ObjectiveTestItem MTF058_V_LeftDown_0_3F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_LeftDown_0_3F", Unit = "%" };
 
         /// <summary>
-        /// MTF_HV_H 右下_0.8F 水平方向
+        /// MTF058_H 左上_0.6F 水平方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_H_RightDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_RightDown_0_8F", Unit = "%" };
+        public ObjectiveTestItem MTF058_H_LeftUp_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_LeftUp_0_6F", Unit = "%" };
+
+        /// <summary>
+        /// MTF058_V 左上_0.6F 垂直方向
+        /// </summary>
+        public ObjectiveTestItem MTF058_V_LeftUp_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_LeftUp_0_6F", Unit = "%" };
+
+        /// <summary>
+        /// MTF058_H 右上_0.6F 水平方向
+        /// </summary>
+        public ObjectiveTestItem MTF058_H_RightUp_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_RightUp_0_6F", Unit = "%" };
+
+        /// <summary>
+        /// MTF058_V 右上_0.6F 垂直方向
+        /// </summary>
+        public ObjectiveTestItem MTF058_V_RightUp_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_RightUp_0_6F", Unit = "%" };
+
+        /// <summary>
+        /// MTF058_H 右下_0.6F 水平方向
+        /// </summary>
+        public ObjectiveTestItem MTF058_H_RightDown_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_RightDown_0_6F", Unit = "%" };
+
+        /// <summary>
+        /// MTF058_V 右下_0.6F 垂直方向
+        /// </summary>
+        public ObjectiveTestItem MTF058_V_RightDown_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_RightDown_0_6F", Unit = "%" };
+
+        /// <summary>
+        /// MTF058_H 左下_0.6F 水平方向
+        /// </summary>
+        public ObjectiveTestItem MTF058_H_LeftDown_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_LeftDown_0_6F", Unit = "%" };
+
 
 
         /// <summary>
-        /// MTF_HV_V 右下_0.8F 垂直方向
+        /// MTF058_V 左下_0.6F 垂直方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_V_RightDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_RightDown_0_8F", Unit = "%" };
+        public ObjectiveTestItem MTF058_V_LeftDown_0_6F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_LeftDown_0_6F", Unit = "%" };
 
         /// <summary>
-        /// MTF_HV_H 左下_0.8F 水平方向
+        /// MTF058_H 左上_0.8F 水平方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_H_LeftDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_H_LeftDown_0_8F", Unit = "%" };
+        public ObjectiveTestItem MTF058_H_LeftUp_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_LeftUp_0_8F", Unit = "%" };
+
         /// <summary>
-        /// MTF_HV_V 左下_0.8F 垂直方向
+        /// MTF058_V 左上_0.8F 垂直方向
         /// </summary>
-        public ObjectiveTestItem MTF_HV_V_LeftDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF_HV_V_LeftDown_0_8F", Unit = "%" };
+        public ObjectiveTestItem MTF058_V_LeftUp_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_LeftUp_0_8F", Unit = "%" };
+
+        /// <summary>
+        /// MTF058_H 右上_0.8F 水平方向
+        /// </summary>
+        public ObjectiveTestItem MTF058_H_RightUp_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_RightUp_0_8F", Unit = "%" };
+
+
+        /// <summary>
+        /// MTF058_V 右上_0.8F 垂直方向
+        /// </summary>
+        public ObjectiveTestItem MTF058_V_RightUp_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_RightUp_0_8F", Unit = "%" };
+
+        /// <summary>
+        /// MTF058_H 右下_0.8F 水平方向
+        /// </summary>
+        public ObjectiveTestItem MTF058_H_RightDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_RightDown_0_8F", Unit = "%" };
+
+
+        /// <summary>
+        /// MTF058_V 右下_0.8F 垂直方向
+        /// </summary>
+        public ObjectiveTestItem MTF058_V_RightDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_RightDown_0_8F", Unit = "%" };
+
+        /// <summary>
+        /// MTF058_H 左下_0.8F 水平方向
+        /// </summary>
+        public ObjectiveTestItem MTF058_H_LeftDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_H_LeftDown_0_8F", Unit = "%" };
+        /// <summary>
+        /// MTF058_V 左下_0.8F 垂直方向
+        /// </summary>
+        public ObjectiveTestItem MTF058_V_LeftDown_0_8F { get; set; } = new ObjectiveTestItem() { Name = "MTF058_V_LeftDown_0_8F", Unit = "%" };
 
     }
 
