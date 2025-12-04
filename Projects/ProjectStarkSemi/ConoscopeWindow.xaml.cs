@@ -843,17 +843,23 @@ namespace ProjectStarkSemi
         /// <summary>
         /// 按角度模式导出数据到CSV文件
         /// 格式: Phi \ Theta 矩阵格式
-        /// 行: Theta (采样点位置，从-MaxAngle到MaxAngle)
-        /// 列: Phi (角度线，如0°, 20°, 40°等)
+        /// 行: Theta (采样点位置，从0到MaxAngle)
+        /// 列: Phi (角度线，从0°到180°)
         /// </summary>
         private void ExportAngleModeToCSV(string filePath, ExportChannel channel)
         {
+            if (currentBitmapSource == null)
+            {
+                log.Warn("没有图像数据，无法导出");
+                return;
+            }
+
+            // Create angle lines from 0° to 180°
+            var angleLines = CreateAngleLinesForExport();
+
             using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
             {
-                // Sort polar lines by angle for organized output
-                var sortedLines = polarAngleLines.OrderBy(line => line.Angle).ToList();
-
-                if (sortedLines.Count == 0)
+                if (angleLines.Count == 0)
                 {
                     log.Warn("没有角度线数据可导出");
                     return;
@@ -865,34 +871,34 @@ namespace ProjectStarkSemi
                 writer.WriteLine($"# 导出通道: {channel}");
                 writer.WriteLine($"# 型号: {currentModel}");
                 writer.WriteLine($"# 最大视角: {MaxAngle}°");
-                writer.WriteLine($"# Phi (列): 角度线方向");
-                writer.WriteLine($"# Theta (行): 采样点位置");
+                writer.WriteLine($"# Phi (列): 角度线方向 (0°-180°)");
+                writer.WriteLine($"# Theta (行): 采样点位置 (0 到 MaxAngle)");
                 writer.WriteLine();
 
-                // Write CSV header: Phi \ Theta, followed by each Phi angle
+                // Write CSV header: Phi \ Theta, followed by each Phi angle (0-180)
                 StringBuilder headerLine = new StringBuilder();
                 headerLine.Append("Phi \\ Theta");
-                foreach (var line in sortedLines)
+                foreach (var line in angleLines)
                 {
-                    headerLine.Append($",{line.Angle:F1}");
+                    headerLine.Append($",{line.Angle:F0}");
                 }
                 writer.WriteLine(headerLine.ToString());
 
                 // Find the maximum number of samples across all lines
-                int maxSamples = sortedLines.Max(l => l.RgbData.Count);
+                int maxSamples = angleLines.Max(l => l.RgbData.Count);
                 if (maxSamples == 0) return;
 
-                // Export each row (Theta position)
+                // Export each row (Theta position from 0 to MaxAngle)
                 for (int i = 0; i < maxSamples; i++)
                 {
                     StringBuilder dataLine = new StringBuilder();
                     
-                    // Get Theta position from first line (assuming consistent sampling)
-                    double theta = sortedLines[0].RgbData.Count > i ? sortedLines[0].RgbData[i].Position : 0;
+                    // Get Theta position from first line
+                    double theta = angleLines[0].RgbData.Count > i ? angleLines[0].RgbData[i].Position : 0;
                     dataLine.Append($"{theta:F2}");
 
                     // Add value for each Phi angle
-                    foreach (var line in sortedLines)
+                    foreach (var line in angleLines)
                     {
                         if (line.RgbData.Count > i)
                         {
@@ -907,15 +913,77 @@ namespace ProjectStarkSemi
                     writer.WriteLine(dataLine.ToString());
                 }
 
-                log.Info($"角度模式导出了 {sortedLines.Count} 个Phi角度的数据, 通道: {channel}");
+                log.Info($"角度模式导出了 {angleLines.Count} 个Phi角度 (0°-180°) 的数据, 通道: {channel}");
             }
+        }
+
+        /// <summary>
+        /// 为导出创建从0°到180°的角度线数据
+        /// 每条线采样从中心点(0)到边缘(MaxAngle)
+        /// </summary>
+        private List<PolarAngleLine> CreateAngleLinesForExport()
+        {
+            var angleLines = new List<PolarAngleLine>();
+
+            if (currentBitmapSource == null) return angleLines;
+
+            OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
+
+            try
+            {
+                int numSamples = (int)MaxAngle + 1; // 0 to MaxAngle inclusive
+                int radius = (int)(MaxAngle / ConoscopeConfig.ConoscopeCoefficient);
+
+                // Create lines from 0° to 180° (181 lines)
+                for (int phi = 0; phi <= 180; phi++)
+                {
+                    PolarAngleLine polarLine = new PolarAngleLine
+                    {
+                        Angle = phi
+                    };
+
+                    double radians = phi * Math.PI / 180.0;
+
+                    // Sample from center (theta=0) to edge (theta=MaxAngle)
+                    for (int theta = 0; theta <= (int)MaxAngle; theta++)
+                    {
+                        double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
+                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
+
+                        int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
+                        int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+
+                        double r = 0, g = 0, b = 0;
+                        ExtractPixelValues(mat, ix, iy, out r, out g, out b);
+
+                        polarLine.RgbData.Add(new RgbSample
+                        {
+                            Position = theta, // 0 to MaxAngle
+                            R = r,
+                            G = g,
+                            B = b
+                        });
+                    }
+
+                    angleLines.Add(polarLine);
+                }
+
+                log.Info($"创建了 {angleLines.Count} 条角度线 (0°-180°) 用于导出");
+            }
+            finally
+            {
+                mat.Dispose();
+            }
+
+            return angleLines;
         }
 
         /// <summary>
         /// 按同心圆模式导出数据到CSV文件
         /// 格式: Phi \ Theta 矩阵格式
         /// 行: Theta (圆周角度，0-359°)
-        /// 列: Phi (半径角度，1-60或1-80)
+        /// 列: Phi (半径角度，0-60或0-80，包含0度中心点)
         /// </summary>
         private void ExportCircleModeToCSV(string filePath, ExportChannel channel)
         {
@@ -938,8 +1006,8 @@ namespace ProjectStarkSemi
                 writer.WriteLine($"# 导出通道: {channel}");
                 writer.WriteLine($"# 型号: {currentModel}");
                 writer.WriteLine($"# 最大视角: {MaxAngle}°");
-                writer.WriteLine($"# 同心圆数量: {sortedCircles.Count}");
-                writer.WriteLine($"# Phi (列): 半径角度 (视角)");
+                writer.WriteLine($"# 同心圆数量: {sortedCircles.Count} (包含0度中心点)");
+                writer.WriteLine($"# Phi (列): 半径角度 (视角, 0-{MaxAngle}°)");
                 writer.WriteLine($"# Theta (行): 圆周角度 (0-359°)");
                 writer.WriteLine();
 
@@ -997,8 +1065,9 @@ namespace ProjectStarkSemi
 
         /// <summary>
         /// 创建同心圆数据
-        /// VA60: 60个同心圆 (每度一个，从1度到60度)
-        /// VA80: 80个同心圆 (每度一个，从1度到80度)
+        /// VA60: 61个同心圆 (每度一个，从0度到60度)
+        /// VA80: 81个同心圆 (每度一个，从0度到80度)
+        /// 0度为中心点，使用插值
         /// </summary>
         private void CreateConcentricCirclesData()
         {
@@ -1014,81 +1083,114 @@ namespace ProjectStarkSemi
                 // Calculate the number of concentric circles based on model
                 int numCircles = (int)MaxAngle;
 
-                // For each degree from 1 to MaxAngle, create a concentric circle
-                for (int degree = 1; degree <= numCircles; degree++)
+                // For each degree from 0 to MaxAngle, create a concentric circle
+                // 0 degree is center point
+                for (int degree = 0; degree <= numCircles; degree++)
                 {
-                    // Calculate radius in pixels for this degree angle
-                    double radiusPixels = degree / ConoscopeConfig.ConoscopeCoefficient;
-
                     ConcentricCircleLine circleLine = new ConcentricCircleLine
                     {
                         RadiusAngle = degree
                     };
 
-                    // Sample points along the circle (360 samples for full circle, one per degree)
-                    for (int anglePos = 0; anglePos < 360; anglePos++)
+                    if (degree == 0)
                     {
-                        double radians = anglePos * Math.PI / 180.0;
-                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
+                        // Center point (0 degree): Use the center pixel value for all 360 samples
+                        int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(currentImageCenter.X)));
+                        int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(currentImageCenter.Y)));
 
-                        // Ensure coordinates are within bounds
-                        int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
-                        int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
-
-                        // Extract RGB values based on image type
                         double r = 0, g = 0, b = 0;
+                        ExtractPixelValues(mat, ix, iy, out r, out g, out b);
 
-                        if (mat.Channels() == 1)
+                        // Fill all 360 samples with the center point value
+                        for (int anglePos = 0; anglePos < 360; anglePos++)
                         {
-                            // Grayscale image
-                            if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
+                            circleLine.RgbData.Add(new RgbSample
                             {
-                                byte value = mat.At<byte>(iy, ix);
-                                r = g = b = value;
-                            }
-                            else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
-                            {
-                                ushort value = mat.At<ushort>(iy, ix);
-                                r = g = b = value;
-                            }
+                                Position = anglePos,
+                                R = r,
+                                G = g,
+                                B = b
+                            });
                         }
-                        else if (mat.Channels() >= 3)
-                        {
-                            // Color image (BGR or BGRA)
-                            if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
-                            {
-                                OpenCvSharp.Vec3b pixel = mat.At<OpenCvSharp.Vec3b>(iy, ix);
-                                b = pixel.Item0;
-                                g = pixel.Item1;
-                                r = pixel.Item2;
-                            }
-                            else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
-                            {
-                                OpenCvSharp.Vec3w pixel = mat.At<OpenCvSharp.Vec3w>(iy, ix);
-                                b = pixel.Item0;
-                                g = pixel.Item1;
-                                r = pixel.Item2;
-                            }
-                        }
+                    }
+                    else
+                    {
+                        // Calculate radius in pixels for this degree angle
+                        double radiusPixels = degree / ConoscopeConfig.ConoscopeCoefficient;
 
-                        circleLine.RgbData.Add(new RgbSample
+                        // Sample points along the circle (360 samples for full circle, one per degree)
+                        for (int anglePos = 0; anglePos < 360; anglePos++)
                         {
-                            Position = anglePos, // 0-359 degrees around the circle
-                            R = r,
-                            G = g,
-                            B = b
-                        });
+                            double radians = anglePos * Math.PI / 180.0;
+                            double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                            double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
+
+                            // Ensure coordinates are within bounds
+                            int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
+                            int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+
+                            double r = 0, g = 0, b = 0;
+                            ExtractPixelValues(mat, ix, iy, out r, out g, out b);
+
+                            circleLine.RgbData.Add(new RgbSample
+                            {
+                                Position = anglePos, // 0-359 degrees around the circle
+                                R = r,
+                                G = g,
+                                B = b
+                            });
+                        }
                     }
 
                     concentricCircleLines.Add(circleLine);
                 }
 
-                log.Info($"创建了 {concentricCircleLines.Count} 个同心圆数据");
+                log.Info($"创建了 {concentricCircleLines.Count} 个同心圆数据 (包含0度中心点)");
             }
             finally
             {
                 mat.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 从Mat中提取像素值
+        /// </summary>
+        private void ExtractPixelValues(OpenCvSharp.Mat mat, int ix, int iy, out double r, out double g, out double b)
+        {
+            r = 0; g = 0; b = 0;
+
+            if (mat.Channels() == 1)
+            {
+                // Grayscale image
+                if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
+                {
+                    byte value = mat.At<byte>(iy, ix);
+                    r = g = b = value;
+                }
+                else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
+                {
+                    ushort value = mat.At<ushort>(iy, ix);
+                    r = g = b = value;
+                }
+            }
+            else if (mat.Channels() >= 3)
+            {
+                // Color image (BGR or BGRA)
+                if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
+                {
+                    OpenCvSharp.Vec3b pixel = mat.At<OpenCvSharp.Vec3b>(iy, ix);
+                    b = pixel.Item0;
+                    g = pixel.Item1;
+                    r = pixel.Item2;
+                }
+                else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
+                {
+                    OpenCvSharp.Vec3w pixel = mat.At<OpenCvSharp.Vec3w>(iy, ix);
+                    b = pixel.Item0;
+                    g = pixel.Item1;
+                    r = pixel.Item2;
+                }
             }
         }
 
