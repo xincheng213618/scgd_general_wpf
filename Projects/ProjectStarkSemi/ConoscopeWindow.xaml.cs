@@ -8,10 +8,12 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
+using FlowEngineLib;
 using log4net;
 using Microsoft.Win32;
 using OpenCvSharp.WpfExtensions;
@@ -73,19 +75,21 @@ namespace ProjectStarkSemi
             this.ApplyCaption();
         }
 
-        public ConoscopeManager ConoscopeManager { get; set; }
+        public ConoscopeManager ConoscopeManager => ConoscopeManager.GetInstance();
         public ConoscopeConfig ConoscopeConfig => ConoscopeManager.ConoscopeConfig;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
             ImageView.SetBackGround(Brushes.Transparent);
+            if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
+            {
+                toolReferenceLine.ReferenceLine = new ReferenceLine(ConoscopeConfig.ReferenceLineParam);
+            }
 
-            ConoscopeManager = ConoscopeManager.GetInstance();
+            cbModelType.ItemsSource = Enum.GetValues(typeof(ConoscopeModelType));
             this.DataContext = ConoscopeManager;
 
             LoadCameraServices();
-
-            // Initialize UI
             UpdateUIForModel(ConoscopeConfig.CurrentModel);
 
             wpfPlot.Plot.Title($"视角分布曲线");
@@ -132,14 +136,10 @@ namespace ProjectStarkSemi
 
         private void cbModelType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (cbModelType.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is string modelTag)
+            if (cbModelType.SelectedItem is ConoscopeModelType conoscopeModelType)
             {
-                if (Enum.TryParse<ConoscopeModelType>(modelTag, out var modelType))
-                {
-                    ConoscopeConfig.CurrentModel = modelType;
-                    UpdateUIForModel(ConoscopeConfig.CurrentModel);
-                    log.Info($"已切换到型号: {ConoscopeConfig.CurrentModel}");
-                }
+                ConoscopeConfig.CurrentModel = conoscopeModelType;
+                UpdateUIForModel(ConoscopeConfig.CurrentModel);
             }
         }
 
@@ -148,7 +148,6 @@ namespace ProjectStarkSemi
             if (tbCurrentModel == null) return;
             
             tbCurrentModel.Text = model.ToString();
-
             switch (model)
             {
                 case ConoscopeModelType.VA60:

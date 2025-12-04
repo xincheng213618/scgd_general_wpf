@@ -142,6 +142,7 @@
                         <RibbonButton Command="Redo"  
                                          SmallImageSource="Images/ArrowRedo16.png"
                                          KeyTip="3"/>
+                        
                     </RibbonQuickAccessToolBar>
                 </Ribbon.QuickAccessToolBar>
 
@@ -157,11 +158,7 @@
                         <StackPanel>
                             <DockPanel >
                                 <TextBlock Text="{x:Static properties:Resources.Model}" VerticalAlignment="Center" Width="80"/>
-                                <ComboBox x:Name="cbModelType" 
-                                      SelectionChanged="cbModelType_SelectionChanged"
-                                      SelectedIndex="0">
-                                    <ComboBoxItem Content="VA60" Tag="VA60"/>
-                                    <ComboBoxItem Content="VA80" Tag="VA80"/>
+                                <ComboBox x:Name="cbModelType"  SelectionChanged="cbModelType_SelectionChanged" SelectedItem="{Binding ConoscopeConfig.CurrentModel}">
                                 </ComboBox>
                             </DockPanel>
                         </StackPanel>
@@ -328,7 +325,22 @@
 
                 </RibbonTab>
             </Ribbon>
-
+            <Button  VerticalAlignment="Top" Margin="5,0,5,0" HorizontalAlignment="Right" Command="{Binding EditConoscopeConfigCommand}" Padding="2" Height="20" Width="20" >
+                <Button.Triggers>
+                    <EventTrigger RoutedEvent="Button.Click">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Button.Triggers>
+                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
+                    <TextBlock.RenderTransform>
+                        <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+            </Button>
         </Grid>
 
         <!-- Main Content Area -->
@@ -351,7 +363,51 @@
                     </Grid.RowDefinitions>
                     <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlot"/>
                     <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5">
-                        <!-- Angle management -->
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="chkShowRed" 
+                                          Content="R" 
+                                          Foreground="Red" 
+                                          IsChecked="{Binding IsShowRedChannel}"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                            <CheckBox x:Name="chkShowGreen" 
+                                          Content="G" 
+                                          Foreground="Green" 
+                                          IsChecked="{Binding IsShowGreenChannel}"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                            <CheckBox x:Name="chkShowBlue" 
+                                          Content="B" 
+                                          Foreground="Blue" 
+                                          IsChecked="{Binding IsShowBlueChannel}"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                            <CheckBox x:Name="chkShowXlue" 
+                                          Content="X" 
+                                          Foreground="Gold" 
+                                          IsChecked="{Binding IsShowXChannel}"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                            <CheckBox x:Name="chkShowYlue" 
+                                          Content="Y" 
+                                          Foreground="White" 
+                                          IsChecked="{Binding IsShowYChannel}"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                            <CheckBox x:Name="chkShowZlue" 
+                                          Content="Z" 
+                                          Foreground="Violet" 
+                                          IsChecked="{Binding IsShowZChannel}"
+                                          Margin="5,0"
+                                          Checked="RgbChannelVisibility_Changed"
+                                          Unchecked="RgbChannelVisibility_Changed"/>
+                        </StackPanel>
+
                         <GroupBox Header="角度管理" Margin="0,0,0,5">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
@@ -374,67 +430,7 @@
                                     <ComboBox x:Name="cbPolarAngleLines" 
                                               MinWidth="100" 
                                               SelectionChanged="cbPolarAngleLines_SelectionChanged"/>
-                                    <Button Grid.Column="1" Margin="5,0,5,0" HorizontalAlignment="Left" Command="{Binding EditConoscopeConfigCommand}" Padding="2" Height="28" Width="28" >
-                                        <Button.Triggers>
-                                            <EventTrigger RoutedEvent="Button.Click">
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Button.Triggers>
-                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                                            <TextBlock.RenderTransform>
-                                                <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
-                                            </TextBlock.RenderTransform>
-                                        </TextBlock>
-                                    </Button>
                                     <Button Content="导出CSV"  Click="btnExportCSV_Click" Padding="10,5"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <CheckBox x:Name="chkShowRed" 
-                                          Content="R" 
-                                          Foreground="Red" 
-                                          IsChecked="{Binding IsShowRedChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                    <CheckBox x:Name="chkShowGreen" 
-                                          Content="G" 
-                                          Foreground="Green" 
-                                          IsChecked="{Binding IsShowGreenChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                    <CheckBox x:Name="chkShowBlue" 
-                                          Content="B" 
-                                          Foreground="Blue" 
-                                          IsChecked="{Binding IsShowBlueChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                    <CheckBox x:Name="chkShowXlue" 
-                                          Content="X" 
-                                          Foreground="Gold" 
-                                          IsChecked="{Binding IsShowXChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                    <CheckBox x:Name="chkShowYlue" 
-                                          Content="Y" 
-                                          Foreground="White" 
-                                          IsChecked="{Binding IsShowYChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                    <CheckBox x:Name="chkShowZlue" 
-                                          Content="Z" 
-                                          Foreground="Violet" 
-                                          IsChecked="{Binding IsShowZChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>

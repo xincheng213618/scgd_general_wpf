@@ -12,7 +12,7 @@ namespace System.ComponentModel
     {
         static BrushesPropertiesEditor()
         {
-            PropertyEditorHelper.RegisterEditor<BrushesPropertiesEditor>(t => typeof(Brush).IsAssignableFrom(t));
+            PropertyEditorHelper.RegisterEditor<BrushesPropertiesEditor>(t => typeof(Brush).IsAssignableFrom(t) || t == typeof(Color));
         }
 
         public DockPanel GenProperties(PropertyInfo property, object obj)
@@ -35,13 +35,18 @@ namespace System.ComponentModel
                 if (property.GetValue(obj) is SolidColorBrush scb)
                 {
                     colorPicker.SelectedBrush = scb;
+                    colorPicker.SelectedColorChanged += (_, __) =>
+                    {
+                        property.SetValue(obj, colorPicker.SelectedBrush);
+                        button.Background = colorPicker.SelectedBrush;
+                    };
+                }
+                if (property.GetValue(obj) is Color color)
+                {
+                    colorPicker.SelectedBrush = new SolidColorBrush(color);
                 }
 
-                colorPicker.SelectedColorChanged += (_, __) =>
-                {
-                    property.SetValue(obj, colorPicker.SelectedBrush);
-                    button.Background = colorPicker.SelectedBrush;
-                };
+
 
                 var window = new Window
                 {
@@ -54,21 +59,35 @@ namespace System.ComponentModel
                 window.ApplyCaption();
                 colorPicker.Confirmed += (_, __) =>
                 {
-                    property.SetValue(obj, colorPicker.SelectedBrush);
+                    if (property.GetValue(obj) is Color color)
+                    {
+                        property.SetValue(obj, colorPicker.SelectedBrush.Color);
+                    }
+                    else
+                    {
+                        property.SetValue(obj, colorPicker.SelectedBrush);
+                    }
                     button.Background = colorPicker.SelectedBrush;
                     window.Close();
                 };
                 window.Closed += (_, __) => colorPicker.Dispose();
                 window.ShowDialog();
             };
-            
-            var binding = new Binding(property.Name)
+            if (property.GetValue(obj) is Color color)
             {
-                Source = obj,
-                Mode = BindingMode.OneWay,
-                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
-            };
-            button.SetBinding(Control.BackgroundProperty, binding);
+                button.Background = new SolidColorBrush(color);
+            }
+            else
+            {
+                var binding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.OneWay,
+                    UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+                };
+                button.SetBinding(Control.BackgroundProperty, binding);
+            }
+
 
             DockPanel.SetDock(button, Dock.Right);
             dockPanel.Children.Add(button);

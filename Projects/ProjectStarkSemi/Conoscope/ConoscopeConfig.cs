@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -21,5 +22,8 @@ namespace ProjectStarkSemi.Conoscope
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public ObservableCollection<double> DefaultRAngles { get => _DefaultRAngles; set { _DefaultRAngles = value; OnPropertyChanged(); } }
         private ObservableCollection<double> _DefaultRAngles = new ObservableCollection<double>() {10 };
+
+        public ReferenceLineParam ReferenceLineParam { get => _ReferenceLineParam; set { _ReferenceLineParam = value; OnPropertyChanged(); } }
+        private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();
     }
 }
