@@ -17,74 +17,40 @@ namespace ProjectARVRPro.Process.MTFHV058
 
 
         [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_H_LeftUp_0_3F { get => _MTF_HV_H_LeftUp_0_3F; set { _MTF_HV_H_LeftUp_0_3F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_H_LeftUp_0_3F = new RecipeBase(0.5, 0);
+        public RecipeBase MTF_HV_H_LeftUp_0_5F { get => _MTF_HV_H_LeftUp_0_5F; set { _MTF_HV_H_LeftUp_0_5F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_H_LeftUp_0_5F = new RecipeBase(0.5, 0);
 
         [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_V_LeftUp_0_3F { get => _MTF_HV_V_LeftUp_0_3F; set { _MTF_HV_V_LeftUp_0_3F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_V_LeftUp_0_3F = new RecipeBase(0.5, 0);
-
-
-        [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_H_RightUp_0_3F { get => _MTF_HV_H_RightUp_0_3F; set { _MTF_HV_H_RightUp_0_3F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_H_RightUp_0_3F = new RecipeBase(0.5, 0);
-        [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_V_RightUp_0_3F { get => _MTF_HV_V_RightUp_0_3F; set { _MTF_HV_V_RightUp_0_3F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_V_RightUp_0_3F = new RecipeBase(0.5, 0);
+        public RecipeBase MTF_HV_V_LeftUp_0_5F { get => _MTF_HV_V_LeftUp_0_5F; set { _MTF_HV_V_LeftUp_0_5F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_V_LeftUp_0_5F = new RecipeBase(0.5, 0);
 
 
         [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_H_RightDown_0_3F { get => _MTF_HV_H_RightDown_0_3F; set { _MTF_HV_H_RightDown_0_3F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_H_RightDown_0_3F = new RecipeBase(0.5, 0);
+        public RecipeBase MTF_HV_H_RightUp_0_5F { get => _MTF_HV_H_RightUp_0_5F; set { _MTF_HV_H_RightUp_0_5F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_H_RightUp_0_5F = new RecipeBase(0.5, 0);
+        [Category("MTF_HV_058")]
+        public RecipeBase MTF_HV_V_RightUp_0_5F { get => _MTF_HV_V_RightUp_0_5F; set { _MTF_HV_V_RightUp_0_5F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_V_RightUp_0_5F = new RecipeBase(0.5, 0);
+
 
         [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_V_RightDown_0_3F { get => _MTF_HV_V_RightDown_0_3F; set { _MTF_HV_V_RightDown_0_3F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_V_RightDown_0_3F = new RecipeBase(0.5, 0);
+        public RecipeBase MTF_HV_H_RightDown_0_5F { get => _MTF_HV_H_RightDown_0_5F; set { _MTF_HV_H_RightDown_0_5F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_H_RightDown_0_5F = new RecipeBase(0.5, 0);
+
+        [Category("MTF_HV_058")]
+        public RecipeBase MTF_HV_V_RightDown_0_5F { get => _MTF_HV_V_RightDown_0_5F; set { _MTF_HV_V_RightDown_0_5F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_V_RightDown_0_5F = new RecipeBase(0.5, 0);
 
         
 
         [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_H_LeftDown_0_3F { get => _MTF_HV_H_LeftDown_0_3F; set { _MTF_HV_H_LeftDown_0_3F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_H_LeftDown_0_3F = new RecipeBase(0.5, 0);
+        public RecipeBase MTF_HV_H_LeftDown_0_5F { get => _MTF_HV_H_LeftDown_0_5F; set { _MTF_HV_H_LeftDown_0_5F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_H_LeftDown_0_5F = new RecipeBase(0.5, 0);
 
         [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_V_LeftDown_0_3F { get => _MTF_HV_V_LeftDown_0_3F; set { _MTF_HV_V_LeftDown_0_3F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_V_LeftDown_0_3F = new RecipeBase(0.5, 0);
+        public RecipeBase MTF_HV_V_LeftDown_0_5F { get => _MTF_HV_V_LeftDown_0_5F; set { _MTF_HV_V_LeftDown_0_5F = value; OnPropertyChanged(); } }
+        private RecipeBase _MTF_HV_V_LeftDown_0_5F = new RecipeBase(0.5, 0);
 
-
-        [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_H_LeftUp_0_6F { get => _MTF_HV_H_LeftUp_0_6F; set { _MTF_HV_H_LeftUp_0_6F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_H_LeftUp_0_6F = new RecipeBase(0.5, 0);
-
-
-        [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_V_LeftUp_0_6F { get => _MTF_HV_V_LeftUp_0_6F; set { _MTF_HV_V_LeftUp_0_6F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_V_LeftUp_0_6F = new RecipeBase(0.5, 0);
-
-
-        [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_H_RightUp_0_6F { get => _MTF_HV_H_RightUp_0_6F; set { _MTF_HV_H_RightUp_0_6F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_H_RightUp_0_6F = new RecipeBase(0.5, 0);
-
-        [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_V_RightDown_0_6F { get => _MTF_HV_V_RightDown_0_6F; set { _MTF_HV_V_RightDown_0_6F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_V_RightDown_0_6F = new RecipeBase(0.5, 0);
-
-
-        [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_H_RightDown_0_6F { get => _MTF_HV_H_RightDown_0_6F; set { _MTF_HV_H_RightDown_0_6F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_H_RightDown_0_6F = new RecipeBase(0.5, 0);
-
-        [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_V_RightUp_0_6F { get => _MTF_HV_V_RightUp_0_6F; set { _MTF_HV_V_RightUp_0_6F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_V_RightUp_0_6F = new RecipeBase(0.5, 0);
-
-        [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_H_LeftDown_0_6F { get => _MTF_HV_H_LeftDown_0_6F; set { _MTF_HV_H_LeftDown_0_6F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_H_LeftDown_0_6F = new RecipeBase(0.5, 0);
-        [Category("MTF_HV_058")]
-        public RecipeBase MTF_HV_V_LeftDown_0_6F { get => _MTF_HV_V_LeftDown_0_6F; set { _MTF_HV_V_LeftDown_0_6F = value; OnPropertyChanged(); } }
-        private RecipeBase _MTF_HV_V_LeftDown_0_6F = new RecipeBase(0.5, 0);
 
 
         [Category("MTF_HV_058")]
