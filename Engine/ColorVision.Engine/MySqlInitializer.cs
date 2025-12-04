@@ -74,7 +74,7 @@ namespace ColorVision.Engine
                     }
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MySqlConnect mySqlConnect = new() { Owner = Application.Current.MainWindow };
+                        MySqlConnect mySqlConnect = new MySqlConnect() { Owner = Application.Current.GetActiveWindow() };
                         mySqlConnect.ShowDialog();
                     });
                 }

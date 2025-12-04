@@ -76,15 +76,18 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
 
             }
             ItemsListView.ItemsSource = viewModels;
+            UpdateButtonStates();
         }
 
         private void UpdateButtonStates()
         {
-            bool hasSelection = ItemsListView.SelectedIndex >= 0;
-            EditButton.IsEnabled = hasSelection;
+            bool hasSelection = ItemsListView.SelectedItems.Count > 0;
+            bool hasSingleSelection = ItemsListView.SelectedItems.Count == 1;
+            EditButton.IsEnabled = hasSingleSelection;
             DeleteButton.IsEnabled = hasSelection;
-            MoveUpButton.IsEnabled = hasSelection && ItemsListView.SelectedIndex > 0;
-            MoveDownButton.IsEnabled = hasSelection && ItemsListView.SelectedIndex < _items.Count - 1;
+            DeleteAllButton.IsEnabled = _items.Count > 0;
+            MoveUpButton.IsEnabled = hasSingleSelection && ItemsListView.SelectedIndex > 0;
+            MoveDownButton.IsEnabled = hasSingleSelection && ItemsListView.SelectedIndex < _items.Count - 1;
         }
 
         private void ItemsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -132,22 +135,44 @@ namespace ColorVision.UI.PropertyEditor.Editor.List
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ItemsListView.SelectedIndex < 0) return;
+            if (ItemsListView.SelectedItems.Count == 0) return;
 
-            var result = MessageBox.Show("确定要删除选中的项吗？", "确认删除", 
+            int selectedCount = ItemsListView.SelectedItems.Count;
+            var result = MessageBox.Show($"确定要删除选中的 {selectedCount} 项吗？", "确认删除", 
                 MessageBoxButton.YesNo, MessageBoxImage.Question);
             
             if (result == MessageBoxResult.Yes)
             {
-                int selectedIndex = ItemsListView.SelectedIndex;
-                _items.RemoveAt(selectedIndex);
+                // Get selected indices in descending order to avoid index shifting issues
+                var selectedIndices = ItemsListView.SelectedItems
+                    .Cast<ListItemViewModel>()
+                    .Select(item => item.Index)
+                    .OrderByDescending(i => i)
+                    .ToList();
+
+                foreach (var index in selectedIndices)
+                {
+                    _items.RemoveAt(index);
+                }
                 RefreshListView();
                 
-                // Restore selection
-                if (_items.Count > 0)
-                {
-                    ItemsListView.SelectedIndex = Math.Min(selectedIndex, _items.Count - 1);
-                }
+                // Update button states after deletion
+                UpdateButtonStates();
+            }
+        }
+
+        private void DeleteAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_items.Count == 0) return;
+
+            var result = MessageBox.Show($"确定要删除全部 {_items.Count} 项吗？", "确认全部删除", 
+                MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                _items.Clear();
+                RefreshListView();
+                UpdateButtonStates();
             }
         }
 

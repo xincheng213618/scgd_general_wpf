@@ -29,13 +29,15 @@
                     Margin="0,0,5,0" IsEnabled="False"/>
             <Button x:Name="DeleteButton" Content="删除" Width="80" Click="DeleteButton_Click" 
                     Margin="0,0,5,0" IsEnabled="False" />
+            <Button x:Name="DeleteAllButton" Content="全部删除" Width="80" Click="DeleteAllButton_Click" 
+                    Margin="0,0,5,0" IsEnabled="False" />
         </StackPanel>
 
         <!-- Dictionary Display -->
         <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" 
                 BorderThickness="1" CornerRadius="5">
             <ListView x:Name="ItemsListView" 
-                      SelectionMode="Single"
+                      SelectionMode="Extended"
                       SelectionChanged="ItemsListView_SelectionChanged"
                       MouseDoubleClick="ItemsListView_MouseDoubleClick">
                 <ListView.View>

@@ -30,6 +30,7 @@ namespace ProjectStarkSemi
         private async void Application_Startup(object s, StartupEventArgs e)
         {
             ConfigHandler.GetInstance();
+
             Authorization.Instance = ConfigHandler.GetInstance().GetRequiredService<Authorization>();
 
             LogConfig.Instance.SetLog();

@@ -80,13 +80,16 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
                 });
             }
             ItemsListView.ItemsSource = viewModels;
+            UpdateButtonStates();
         }
 
         private void UpdateButtonStates()
         {
-            bool hasSelection = ItemsListView.SelectedIndex >= 0;
-            EditButton.IsEnabled = hasSelection;
+            bool hasSelection = ItemsListView.SelectedItems.Count > 0;
+            bool hasSingleSelection = ItemsListView.SelectedItems.Count == 1;
+            EditButton.IsEnabled = hasSingleSelection;
             DeleteButton.IsEnabled = hasSelection;
+            DeleteAllButton.IsEnabled = _items.Count > 0;
         }
 
         private void ItemsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -151,15 +154,38 @@ namespace ColorVision.UI.PropertyEditor.Editor.Dictionary
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ItemsListView.SelectedIndex < 0) return;
+            if (ItemsListView.SelectedItems.Count == 0) return;
 
-            var result = MessageBox.Show("确定要删除选中的项吗？", "确认删除", 
+            int selectedCount = ItemsListView.SelectedItems.Count;
+            var result = MessageBox.Show($"确定要删除选中的 {selectedCount} 项吗？", "确认删除", 
                 MessageBoxButton.YesNo, MessageBoxImage.Question);
             
             if (result == MessageBoxResult.Yes)
             {
-                var selectedItem = (DictionaryItemViewModel)ItemsListView.SelectedItem;
-                _items.Remove(selectedItem.Key!);
+                // Get keys of selected items
+                var keysToDelete = ItemsListView.SelectedItems
+                    .Cast<DictionaryItemViewModel>()
+                    .Select(item => item.Key)
+                    .ToList();
+
+                foreach (var key in keysToDelete)
+                {
+                    _items.Remove(key!);
+                }
+                RefreshListView();
+            }
+        }
+
+        private void DeleteAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_items.Count == 0) return;
+
+            var result = MessageBox.Show($"确定要删除全部 {_items.Count} 项吗？", "确认全部删除", 
+                MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                _items.Clear();
                 RefreshListView();
             }
         }

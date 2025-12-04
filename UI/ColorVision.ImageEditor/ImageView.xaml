@@ -11,7 +11,7 @@
              xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ImageViewModel}"
-             d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True" FocusVisualStyle="{x:Null}">
+             d:DesignHeight="600" d:DesignWidth="800" Initialized="UserControl_Initialized" AllowDrop="True" FocusVisualStyle="{x:Null}">
     <UserControl.Resources>
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
