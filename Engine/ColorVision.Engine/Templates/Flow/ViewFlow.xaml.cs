@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.LogImp;
 using ColorVision.UI.Views;
 using FlowEngineLib;
 using ST.Library.UI.NodeEditor;
@@ -431,6 +432,12 @@ namespace ColorVision.Engine.Services.Flow
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             BatchManager.GetInstance().Edit();
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            WindowLogLocal windowLogLocal = new WindowLogLocal(@"C:\Users\17917\Desktop\CVWindowsService\CVWindowsService\CVMainWindowsService_x64\log\20251205.log");
+            windowLogLocal.Show();
         }
     }
 

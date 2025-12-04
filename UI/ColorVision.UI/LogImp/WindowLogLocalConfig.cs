@@ -7,7 +7,7 @@ namespace ColorVision.UI.LogImp
     /// <summary>
     /// WindowLogLocal 配置管理类
     /// </summary>
-    public class WindowLogLocalConfig : ViewModelBase
+    public class WindowLogLocalConfig : ViewModelBase,IConfig
     {
         /// <summary>
         /// 是否自动滚动到日志末尾

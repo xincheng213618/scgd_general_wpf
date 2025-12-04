@@ -24,9 +24,9 @@ namespace ColorVision.UI.LogImp
         /// <summary>
         /// 配置实例
         /// </summary>
-        public WindowLogLocalConfig Config { get; private set; }
+        public WindowLogLocalConfig Config => ConfigHandler.GetInstance().GetRequiredService<WindowLogLocalConfig>();
 
-        private readonly DispatcherTimer _refreshTimer;
+        private DispatcherTimer _refreshTimer;
         private long _lastReadPosition;
         private readonly object _fileLock = new object();
 
@@ -36,12 +36,25 @@ namespace ColorVision.UI.LogImp
         /// <param name="logFilePath">日志文件路径</param>
         public WindowLogLocal(string logFilePath)
         {
+            LogFilePath = logFilePath;
             InitializeComponent();
             this.ApplyCaption();
+        }
 
-            LogFilePath = logFilePath;
-            Config = new WindowLogLocalConfig();
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            this.DataContext = Config;
+            this.Title = $"Log - {Path.GetFileName(LogFilePath)}";
 
+            SearchBar1Brush = SearchBar1.BorderBrush;
+
+            this.Closed += (s, e) =>
+            {
+                _refreshTimer.Stop();
+            };
+
+            // 初始加载日志
+            LoadLogFile();
             _refreshTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(Config.RefreshIntervalMs)
@@ -70,23 +83,6 @@ namespace ColorVision.UI.LogImp
                         _refreshTimer.Stop();
                 }
             };
-        }
-
-        private void Window_Initialized(object sender, EventArgs e)
-        {
-            this.DataContext = Config;
-            this.Title = $"Log - {Path.GetFileName(LogFilePath)}";
-
-            SearchBar1Brush = SearchBar1.BorderBrush;
-
-            this.Closed += (s, e) =>
-            {
-                _refreshTimer.Stop();
-            };
-
-            // 初始加载日志
-            LoadLogFile();
-
             // 启动自动刷新
             if (Config.AutoRefresh)
             {
