@@ -91,6 +91,7 @@
                     </StackPanel>
                     <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
                         <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1"/>
+                        <Button Content="Log" Click="Button_Click_2"/>
                     </StackPanel>
                     <ProgressBar x:Name="ProgressBar1" Maximum="100"/>
                     <TextBox x:FieldModifier="public"  x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="105" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" Margin="0,0,0,5" />

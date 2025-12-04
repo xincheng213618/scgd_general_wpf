@@ -5,12 +5,16 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.LogImp;
 using ColorVision.UI.Views;
 using FlowEngineLib;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
 using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -432,6 +436,62 @@ namespace ColorVision.Engine.Services.Flow
         {
             BatchManager.GetInstance().Edit();
         }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            string baseDir =Directory.GetParent(FlowEngineManager.ServiceConfig.CVMainService_x64).FullName;
+            string latestLogPath = LogFileHelper.GetLatestMainLogPath(baseDir);
+            if (!string.IsNullOrEmpty(latestLogPath))
+            {
+                WindowLogLocal windowLogLocal = new WindowLogLocal(latestLogPath, Encoding.GetEncoding("GB2312"));
+                windowLogLocal.Show();
+            }
+        }
     }
 
+    public class LogFileHelper
+    {
+        /// <summary>
+        /// 获取最新的日志文件路径（主日志）
+        /// </summary>
+        public static string GetLatestMainLogPath(string baseDir)
+        {
+            string logDir = Path.Combine(baseDir, "log");
+            return Path.Combine(logDir, $"{DateTime.Now:yyyyMMdd}.log");
+        }
+
+        /// <summary>
+        /// 获取最新的Info日志文件路径
+        /// </summary>
+        public static string GetLatestInfoLogPath(string baseDir)
+        {
+            string logDir = Path.Combine(baseDir, "log", "LogInfo");
+            return Path.Combine(logDir, $"{DateTime.Now:yyyyMMdd}.log");
+        }
+
+        /// <summary>
+        /// 获取最新的Error日志文件路径
+        /// </summary>
+        public static string GetLatestErrorLogPath(string baseDir)
+        {
+            string logDir = Path.Combine(baseDir, "log", "LogError");
+            return Path.Combine(logDir, $"{DateTime.Now:yyyyMMdd}.log");
+        }
+
+        /// <summary>
+        /// 获取目录下最新修改的日志文件（备用方案）
+        /// </summary>
+        public static string GetMostRecentLogFile(string logDirectory)
+        {
+            if (!Directory.Exists(logDirectory))
+                return null;
+
+            var directory = new DirectoryInfo(logDirectory);
+            var latestFile = directory.GetFiles("*.log")
+                                      .OrderByDescending(f => f.LastWriteTime)
+                                      .FirstOrDefault();
+
+            return latestFile?.FullName;
+        }
+    }
 }
