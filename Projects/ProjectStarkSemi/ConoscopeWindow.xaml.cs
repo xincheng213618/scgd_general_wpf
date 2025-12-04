@@ -50,10 +50,7 @@ namespace ProjectStarkSemi
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeWindow));
 
-        private ConoscopeModelType currentModel = ConoscopeModelType.VA60;
         private MVSViewWindow? observationCameraWindow;
-        private LogOutput? logOutput;
-
         private DeviceCamera? Device;
 
         // Polar angle line management
@@ -81,15 +78,15 @@ namespace ProjectStarkSemi
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            ImageView.SetBackGround(Brushes.Transparent);
+
             ConoscopeManager = ConoscopeManager.GetInstance();
             this.DataContext = ConoscopeManager;
-            logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
-            LogGrid.Children.Add(logOutput);
 
             LoadCameraServices();
 
             // Initialize UI
-            UpdateUIForModel(currentModel);
+            UpdateUIForModel(ConoscopeConfig.CurrentModel);
 
             wpfPlot.Plot.Title($"视角分布曲线");
             wpfPlot.Plot.XLabel("Degress");
@@ -139,9 +136,9 @@ namespace ProjectStarkSemi
             {
                 if (Enum.TryParse<ConoscopeModelType>(modelTag, out var modelType))
                 {
-                    currentModel = modelType;
-                    UpdateUIForModel(currentModel);
-                    log.Info($"已切换到型号: {currentModel}");
+                    ConoscopeConfig.CurrentModel = modelType;
+                    UpdateUIForModel(ConoscopeConfig.CurrentModel);
+                    log.Info($"已切换到型号: {ConoscopeConfig.CurrentModel}");
                 }
             }
         }
@@ -437,7 +434,6 @@ namespace ProjectStarkSemi
 
         public void Dispose()
         {
-            logOutput?.Dispose();
             ImageView?.Dispose();
             GC.SuppressFinalize(this);
         }
@@ -807,7 +803,7 @@ namespace ProjectStarkSemi
                 {
                     Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
                     DefaultExt = "csv",
-                    FileName = $"同心圆模式导出_{channel}_{currentModel}_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                    FileName = $"同心圆模式导出_{channel}_{ConoscopeConfig.CurrentModel}_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
                     RestoreDirectory = true
                 };
 
@@ -869,7 +865,7 @@ namespace ProjectStarkSemi
                 writer.WriteLine($"# 角度模式导出数据 (Phi \\ Theta 格式)");
                 writer.WriteLine($"# 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                 writer.WriteLine($"# 导出通道: {channel}");
-                writer.WriteLine($"# 型号: {currentModel}");
+                writer.WriteLine($"# 型号: {ConoscopeConfig.CurrentModel}");
                 writer.WriteLine($"# 最大视角: {MaxAngle}°");
                 writer.WriteLine($"# Phi (列): 角度线方向 (0°-180°)");
                 writer.WriteLine($"# Theta (行): 采样点位置 (0 到 MaxAngle)");
@@ -1004,7 +1000,7 @@ namespace ProjectStarkSemi
                 writer.WriteLine($"# 同心圆模式导出数据 (Phi \\ Theta 格式)");
                 writer.WriteLine($"# 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                 writer.WriteLine($"# 导出通道: {channel}");
-                writer.WriteLine($"# 型号: {currentModel}");
+                writer.WriteLine($"# 型号: {ConoscopeConfig.CurrentModel}");
                 writer.WriteLine($"# 最大视角: {MaxAngle}°");
                 writer.WriteLine($"# 同心圆数量: {sortedCircles.Count} (包含0度中心点)");
                 writer.WriteLine($"# Phi (列): 半径角度 (视角, 0-{MaxAngle}°)");
@@ -1440,8 +1436,6 @@ namespace ProjectStarkSemi
 
         private void Window_Closed(object sender, EventArgs e)
         {
-            ImageView.Dispose();
-
             this.Dispose();
         }
     }

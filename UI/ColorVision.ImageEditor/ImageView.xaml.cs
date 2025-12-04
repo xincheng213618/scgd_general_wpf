@@ -41,6 +41,10 @@ namespace ColorVision.ImageEditor
             InitializeComponent();
         }
 
+        public void SetBackGround(SolidColorBrush color)
+        {
+            ZoomGrid.Background = color;    
+        }
 
         private void Config_ColormapTypesChanged(object? sender, EventArgs e)
         {

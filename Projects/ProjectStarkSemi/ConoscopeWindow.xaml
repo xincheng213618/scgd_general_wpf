@@ -54,9 +54,6 @@
                         <RibbonGroupSizeDefinition IsCollapsed="True" />
                     </RibbonGroupSizeDefinitionBaseCollection>
                 </Ribbon.Resources>
-                <Ribbon.HelpPaneContent>
-                    <RibbonButton SmallImageSource="Images/smallicon.png" />
-                </Ribbon.HelpPaneContent>
                 <!-- <snippetAppMenuItems> -->
                 <Ribbon.ApplicationMenu>
                     <RibbonApplicationMenu SmallImageSource="Assets/Image/ColorVision1.ico" Background="Transparent"  KeyTip="F">
@@ -345,7 +342,6 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="300"/>
                 </Grid.ColumnDefinitions>
                 <im:ImageView x:Name="ImageView" Grid.Column="0"/>
                 <Grid Grid.Column="1">
@@ -442,7 +438,7 @@
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>
-                        
+
                         <!-- Export Settings -->
                         <GroupBox Header="导出设置" Margin="0,0,0,5">
                             <StackPanel>
@@ -479,11 +475,8 @@
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>
-                       
+
                     </StackPanel>
-                </Grid>
-                <Grid Grid.Column="2" x:Name="LogGrid">
-                    <!-- LogOutput will be added here programmatically -->
                 </Grid>
             </Grid>
 
