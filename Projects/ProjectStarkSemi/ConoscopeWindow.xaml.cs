@@ -60,6 +60,9 @@ namespace ProjectStarkSemi
         private ObservableCollection<PolarAngleLine> polarAngleLines = new ObservableCollection<PolarAngleLine>();
         private PolarAngleLine? selectedPolarLine;
         
+        // Concentric circle line management
+        private ObservableCollection<ConcentricCircleLine> concentricCircleLines = new ObservableCollection<ConcentricCircleLine>();
+        
         // Current image state for dynamic angle addition
         private BitmapSource? currentBitmapSource;
         private Point currentImageCenter;
@@ -741,6 +744,317 @@ namespace ProjectStarkSemi
                 }
 
                 log.Info($"导出了 {sortedLines.Count} 个角度的数据");
+            }
+        }
+
+        /// <summary>
+        /// 按角度模式导出按钮点击事件
+        /// </summary>
+        private void btnExportAngleMode_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (currentBitmapSource == null)
+                {
+                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Get selected export channel
+                ExportChannel channel = GetSelectedExportChannel();
+
+                // Open save file dialog
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                    DefaultExt = "csv",
+                    FileName = $"角度模式导出_{channel}_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                    RestoreDirectory = true
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    ExportAngleModeToCSV(saveFileDialog.FileName, channel);
+                    MessageBox.Show($"数据已成功导出到:\n{saveFileDialog.FileName}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    log.Info($"成功导出角度模式CSV: {saveFileDialog.FileName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"角度模式导出失败: {ex.Message}", ex);
+                MessageBox.Show($"角度模式导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 按同心圆模式导出按钮点击事件
+        /// </summary>
+        private void btnExportCircleMode_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (currentBitmapSource == null)
+                {
+                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Get selected export channel
+                ExportChannel channel = GetSelectedExportChannel();
+
+                // Open save file dialog
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                    DefaultExt = "csv",
+                    FileName = $"同心圆模式导出_{channel}_{currentModel}_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                    RestoreDirectory = true
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    ExportCircleModeToCSV(saveFileDialog.FileName, channel);
+                    MessageBox.Show($"数据已成功导出到:\n{saveFileDialog.FileName}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    log.Info($"成功导出同心圆模式CSV: {saveFileDialog.FileName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"同心圆模式导出失败: {ex.Message}", ex);
+                MessageBox.Show($"同心圆模式导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 获取选中的导出通道
+        /// </summary>
+        private ExportChannel GetSelectedExportChannel()
+        {
+            if (cbExportChannel.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is string channelTag)
+            {
+                if (Enum.TryParse<ExportChannel>(channelTag, out var channel))
+                {
+                    return channel;
+                }
+            }
+            return ExportChannel.All;
+        }
+
+        /// <summary>
+        /// 按角度模式导出数据到CSV文件
+        /// 从0°到180°，沿着极角线方向采样
+        /// </summary>
+        private void ExportAngleModeToCSV(string filePath, ExportChannel channel)
+        {
+            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+            {
+                // Sort polar lines by angle for organized output
+                var sortedLines = polarAngleLines.OrderBy(line => line.Angle).ToList();
+
+                // Write header
+                writer.WriteLine("# 角度模式导出数据");
+                writer.WriteLine($"# 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                writer.WriteLine($"# 导出通道: {channel}");
+                writer.WriteLine($"# 型号: {currentModel}");
+                writer.WriteLine($"# 最大视角: {MaxAngle}°");
+                writer.WriteLine($"# 角度数量: {sortedLines.Count}");
+                writer.WriteLine();
+
+                // Write CSV header based on channel
+                string header = channel == ExportChannel.All 
+                    ? "Angle(°),Position(°),R,G,B,X,Y,Z,Luminance"
+                    : $"Angle(°),Position(°),{channel}";
+                writer.WriteLine(header);
+
+                // Export each angle's data
+                foreach (var polarLine in sortedLines)
+                {
+                    foreach (var sample in polarLine.RgbData)
+                    {
+                        double luminance = 0.299 * sample.R + 0.587 * sample.G + 0.114 * sample.B;
+                        
+                        string dataLine;
+                        if (channel == ExportChannel.All)
+                        {
+                            dataLine = $"{polarLine.Angle:F2},{sample.Position:F2},{sample.R:F2},{sample.G:F2},{sample.B:F2},{sample.X:F2},{sample.Y:F2},{sample.Z:F2},{luminance:F2}";
+                        }
+                        else
+                        {
+                            double value = GetChannelValue(sample, channel);
+                            dataLine = $"{polarLine.Angle:F2},{sample.Position:F2},{value:F2}";
+                        }
+                        writer.WriteLine(dataLine);
+                    }
+                }
+
+                log.Info($"角度模式导出了 {sortedLines.Count} 个角度的数据, 通道: {channel}");
+            }
+        }
+
+        /// <summary>
+        /// 按同心圆模式导出数据到CSV文件
+        /// 从中心点到边缘，按照同心圆采样
+        /// VA60: 60个同心圆 (0-60°)
+        /// VA80: 80个同心圆 (0-80°)
+        /// </summary>
+        private void ExportCircleModeToCSV(string filePath, ExportChannel channel)
+        {
+            // Create concentric circles and extract data
+            CreateConcentricCirclesData();
+
+            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+            {
+                // Write header
+                writer.WriteLine("# 同心圆模式导出数据");
+                writer.WriteLine($"# 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                writer.WriteLine($"# 导出通道: {channel}");
+                writer.WriteLine($"# 型号: {currentModel}");
+                writer.WriteLine($"# 最大视角: {MaxAngle}°");
+                writer.WriteLine($"# 同心圆数量: {concentricCircleLines.Count}");
+                writer.WriteLine();
+
+                // Write CSV header based on channel
+                string header = channel == ExportChannel.All 
+                    ? "RadiusAngle(°),CirclePosition(°),R,G,B,X,Y,Z,Luminance"
+                    : $"RadiusAngle(°),CirclePosition(°),{channel}";
+                writer.WriteLine(header);
+
+                // Export each concentric circle's data
+                foreach (var circleLine in concentricCircleLines.OrderBy(c => c.RadiusAngle))
+                {
+                    foreach (var sample in circleLine.RgbData)
+                    {
+                        double luminance = 0.299 * sample.R + 0.587 * sample.G + 0.114 * sample.B;
+                        
+                        string dataLine;
+                        if (channel == ExportChannel.All)
+                        {
+                            dataLine = $"{circleLine.RadiusAngle:F2},{sample.Position:F2},{sample.R:F2},{sample.G:F2},{sample.B:F2},{sample.X:F2},{sample.Y:F2},{sample.Z:F2},{luminance:F2}";
+                        }
+                        else
+                        {
+                            double value = GetChannelValue(sample, channel);
+                            dataLine = $"{circleLine.RadiusAngle:F2},{sample.Position:F2},{value:F2}";
+                        }
+                        writer.WriteLine(dataLine);
+                    }
+                }
+
+                log.Info($"同心圆模式导出了 {concentricCircleLines.Count} 个同心圆的数据, 通道: {channel}");
+            }
+        }
+
+        /// <summary>
+        /// 获取指定通道的值
+        /// </summary>
+        private double GetChannelValue(RgbSample sample, ExportChannel channel)
+        {
+            return channel switch
+            {
+                ExportChannel.R => sample.R,
+                ExportChannel.G => sample.G,
+                ExportChannel.B => sample.B,
+                ExportChannel.X => sample.X,
+                ExportChannel.Y => sample.Y,
+                ExportChannel.Z => sample.Z,
+                _ => 0.299 * sample.R + 0.587 * sample.G + 0.114 * sample.B // Luminance for All
+            };
+        }
+
+        /// <summary>
+        /// 创建同心圆数据
+        /// VA60: 60个同心圆 (每度一个，从1度到60度)
+        /// VA80: 80个同心圆 (每度一个，从1度到80度)
+        /// </summary>
+        private void CreateConcentricCirclesData()
+        {
+            concentricCircleLines.Clear();
+
+            if (currentBitmapSource == null) return;
+
+            // Convert BitmapSource to OpenCV Mat
+            OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
+
+            try
+            {
+                // Calculate the number of concentric circles based on model
+                int numCircles = (int)MaxAngle;
+
+                // For each degree from 1 to MaxAngle, create a concentric circle
+                for (int degree = 1; degree <= numCircles; degree++)
+                {
+                    // Calculate radius in pixels for this degree angle
+                    double radiusPixels = degree / ConoscopeConfig.ConoscopeCoefficient;
+
+                    ConcentricCircleLine circleLine = new ConcentricCircleLine
+                    {
+                        RadiusAngle = degree
+                    };
+
+                    // Sample points along the circle (360 samples for full circle, one per degree)
+                    for (int anglePos = 0; anglePos < 360; anglePos++)
+                    {
+                        double radians = anglePos * Math.PI / 180.0;
+                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
+
+                        // Ensure coordinates are within bounds
+                        int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
+                        int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+
+                        // Extract RGB values based on image type
+                        double r = 0, g = 0, b = 0;
+
+                        if (mat.Channels() == 1)
+                        {
+                            // Grayscale image
+                            if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
+                            {
+                                byte value = mat.At<byte>(iy, ix);
+                                r = g = b = value;
+                            }
+                            else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
+                            {
+                                ushort value = mat.At<ushort>(iy, ix);
+                                r = g = b = value;
+                            }
+                        }
+                        else if (mat.Channels() >= 3)
+                        {
+                            // Color image (BGR or BGRA)
+                            if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
+                            {
+                                OpenCvSharp.Vec3b pixel = mat.At<OpenCvSharp.Vec3b>(iy, ix);
+                                b = pixel.Item0;
+                                g = pixel.Item1;
+                                r = pixel.Item2;
+                            }
+                            else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
+                            {
+                                OpenCvSharp.Vec3w pixel = mat.At<OpenCvSharp.Vec3w>(iy, ix);
+                                b = pixel.Item0;
+                                g = pixel.Item1;
+                                r = pixel.Item2;
+                            }
+                        }
+
+                        circleLine.RgbData.Add(new RgbSample
+                        {
+                            Position = anglePos, // 0-359 degrees around the circle
+                            R = r,
+                            G = g,
+                            B = b
+                        });
+                    }
+
+                    concentricCircleLines.Add(circleLine);
+                }
+
+                log.Info($"创建了 {concentricCircleLines.Count} 个同心圆数据");
+            }
+            finally
+            {
+                mat.Dispose();
             }
         }
 
