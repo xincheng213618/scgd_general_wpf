@@ -173,6 +173,8 @@ namespace ColorVision.Engine.Templates
                 ITemplate.NewCreateFileName(ITemplate.Code + "_" + TemplateSetting.Instance.DefaultCreateTemplateName),
                 ITemplate.NewCreateFileName(TemplateSetting.Instance.DefaultCreateTemplateName),
             ];
+            if (!string.IsNullOrWhiteSpace(ITemplate.ImportName))
+                list.Insert(0, ITemplate.ImportName);
 
             CreateCode.ItemsSource = list;
             CreateCode.SelectedIndex = 0;

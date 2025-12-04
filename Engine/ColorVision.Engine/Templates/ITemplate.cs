@@ -49,6 +49,7 @@ namespace ColorVision.Engine.Templates
         {
             throw new NotImplementedException();
         }
+
         public virtual int GetTemplateIndex(string templateName)
         {
             throw new NotImplementedException();
@@ -105,6 +106,7 @@ namespace ColorVision.Engine.Templates
 
         }
         public virtual Type GetTemplateType { get; }
+
         public virtual void Export(int index)
         {
 
@@ -114,6 +116,7 @@ namespace ColorVision.Engine.Templates
         {
             return false;
         }
+        public string ImportName { get; set; }
 
         public virtual bool Import()
         {
@@ -402,6 +405,7 @@ namespace ColorVision.Engine.Templates
             ofd.RestoreDirectory = true;
             ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolutionExplorer.DirectoryInfo.FullName;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
+
             return ImportFile(ofd.FileName);
 
         }
@@ -410,6 +414,7 @@ namespace ColorVision.Engine.Templates
             if (!File.Exists(filePath)) return false;
             byte[] fileBytes = File.ReadAllBytes(filePath);
             string fileContent = System.Text.Encoding.UTF8.GetString(fileBytes);
+            ImportName = Path.GetFileNameWithoutExtension(filePath);
             CreateDefault();
             try
             {

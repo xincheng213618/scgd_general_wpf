@@ -226,6 +226,7 @@ namespace ColorVision.Engine.Templates.Jsons
         public override bool ImportFile(string filePath)
         {
             if (!File.Exists(filePath)) return false;
+            ImportName = Path.GetFileNameWithoutExtension(filePath);
             byte[] fileBytes = File.ReadAllBytes(filePath);
             string fileContent = System.Text.Encoding.UTF8.GetString(fileBytes);
             CreateDefault();
