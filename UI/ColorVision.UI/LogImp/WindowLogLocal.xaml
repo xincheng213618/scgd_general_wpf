@@ -28,6 +28,7 @@
             </Grid.ColumnDefinitions>
             <hc:SearchBar x:Name="SearchBar1"  Margin="0,0,5,0" TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="{x:Static properties:Resources.FilterSupportsRegex}" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
             <StackPanel Grid.Column="1"  Orientation="Horizontal" x:Name="QucikToolStackPanel">
+                <ToggleButton x:Name="ButtonLogReverse" Style="{StaticResource ToggleButtonSwitchBaseStyle}" Content="倒序" IsChecked="{Binding LogReverse}" Margin="5,0"/>
                 <ToggleButton x:Name="ButtonAutoScrollToEnd" Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="{x:Static properties:Resources.AutoScrollToEnd}" IsChecked="{Binding AutoScrollToEnd}" Margin="5,0"/>
                 <ToggleButton  x:Name="ButtonAutoRefresh" Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="{x:Static properties:Resources.AutoRefresh}" IsChecked="{Binding AutoRefresh}" Margin="5,0"/>
                 <TextBlock Text="Max:" VerticalAlignment="Center" Margin="5,0,2,0"/>

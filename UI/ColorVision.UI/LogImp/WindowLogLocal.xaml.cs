@@ -82,6 +82,12 @@ namespace ColorVision.UI.LogImp
                     else
                         _refreshTimer.Stop();
                 }
+                else if (e.PropertyName == nameof(WindowLogLocalConfig.LogReverse))
+                {
+                    // 切换倒序模式时重新加载日志
+                    _lastReadPosition = 0;
+                    LoadLogFile();
+                }
             };
             // 启动自动刷新
             if (Config.AutoRefresh)
@@ -89,6 +95,11 @@ namespace ColorVision.UI.LogImp
                 _refreshTimer.Start();
             }
         }
+
+        /// <summary>
+        /// GB2312编码
+        /// </summary>
+        private static readonly Encoding GB2312Encoding = Encoding.GetEncoding("GB2312");
 
         /// <summary>
         /// 加载日志文件内容
@@ -106,7 +117,7 @@ namespace ColorVision.UI.LogImp
                 lock (_fileLock)
                 {
                     using var fileStream = new FileStream(LogFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var reader = new StreamReader(fileStream, Encoding.Default);
+                    using var reader = new StreamReader(fileStream, GB2312Encoding);
 
                     var lines = new List<string>();
                     string? line;
@@ -121,13 +132,23 @@ namespace ColorVision.UI.LogImp
                         lines = lines.Skip(lines.Count - Config.MaxLines).ToList();
                     }
 
+                    // 倒序模式：最新日志在顶部
+                    if (Config.LogReverse)
+                    {
+                        lines.Reverse();
+                    }
+
                     logTextBox.Text = string.Join(Environment.NewLine, lines);
                     _lastReadPosition = fileStream.Position;
                 }
 
-                if (Config.AutoScrollToEnd)
+                if (Config.AutoScrollToEnd && !Config.LogReverse)
                 {
                     logTextBox.ScrollToEnd();
+                }
+                else if (Config.LogReverse)
+                {
+                    logTextBox.ScrollToHome();
                 }
             }
             catch (IOException ex)
@@ -170,7 +191,7 @@ namespace ColorVision.UI.LogImp
                     }
 
                     fileStream.Seek(_lastReadPosition, SeekOrigin.Begin);
-                    using var reader = new StreamReader(fileStream, Encoding.Default);
+                    using var reader = new StreamReader(fileStream, GB2312Encoding);
 
                     var newLines = new List<string>();
                     string? line;
@@ -181,34 +202,63 @@ namespace ColorVision.UI.LogImp
 
                     if (newLines.Count > 0)
                     {
-                        var newContent = string.Join(Environment.NewLine, newLines);
-                        
-                        // 追加新内容
-                        if (!string.IsNullOrEmpty(logTextBox.Text))
+                        // 倒序模式：新内容插入到顶部
+                        if (Config.LogReverse)
                         {
-                            logTextBox.AppendText(Environment.NewLine + newContent);
+                            newLines.Reverse();
+                            var newContent = string.Join(Environment.NewLine, newLines);
+                            
+                            if (!string.IsNullOrEmpty(logTextBox.Text))
+                            {
+                                logTextBox.Text = newContent + Environment.NewLine + logTextBox.Text;
+                            }
+                            else
+                            {
+                                logTextBox.Text = newContent;
+                            }
+
+                            // 检查并限制最大行数（倒序模式从底部截断）
+                            EnforceMaxLinesReverse();
+
+                            // 滚动到顶部显示最新内容
+                            logTextBox.ScrollToHome();
+                            if (logTextBoxSerch.Visibility == Visibility.Visible)
+                            {
+                                logTextBoxSerch.ScrollToHome();
+                            }
                         }
                         else
                         {
-                            logTextBox.Text = newContent;
-                        }
+                            var newContent = string.Join(Environment.NewLine, newLines);
+                            
+                            // 追加新内容
+                            if (!string.IsNullOrEmpty(logTextBox.Text))
+                            {
+                                logTextBox.AppendText(Environment.NewLine + newContent);
+                            }
+                            else
+                            {
+                                logTextBox.Text = newContent;
+                            }
 
-                        // 检查并限制最大行数
-                        EnforceMaxLines();
+                            // 检查并限制最大行数
+                            EnforceMaxLines();
+
+                            if (Config.AutoScrollToEnd)
+                            {
+                                logTextBox.ScrollToEnd();
+                                if (logTextBoxSerch.Visibility == Visibility.Visible)
+                                {
+                                    logTextBoxSerch.ScrollToEnd();
+                                }
+                            }
+                        }
 
                         // 更新搜索结果
                         if (!string.IsNullOrEmpty(SearchBar1.Text))
                         {
+                            var newContent = string.Join(Environment.NewLine, newLines);
                             UpdateSearchResults(newContent);
-                        }
-
-                        if (Config.AutoScrollToEnd)
-                        {
-                            logTextBox.ScrollToEnd();
-                            if (logTextBoxSerch.Visibility == Visibility.Visible)
-                            {
-                                logTextBoxSerch.ScrollToEnd();
-                            }
                         }
                     }
 
@@ -236,6 +286,21 @@ namespace ColorVision.UI.LogImp
             if (lines.Length > Config.MaxLines)
             {
                 var trimmedLines = lines.Skip(lines.Length - Config.MaxLines);
+                logTextBox.Text = string.Join(Environment.NewLine, trimmedLines);
+            }
+        }
+
+        /// <summary>
+        /// 限制显示的最大行数（倒序模式，从底部截断）
+        /// </summary>
+        private void EnforceMaxLinesReverse()
+        {
+            if (Config.MaxLines <= 0) return;
+
+            var lines = logTextBox.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            if (lines.Length > Config.MaxLines)
+            {
+                var trimmedLines = lines.Take(Config.MaxLines);
                 logTextBox.Text = string.Join(Environment.NewLine, trimmedLines);
             }
         }

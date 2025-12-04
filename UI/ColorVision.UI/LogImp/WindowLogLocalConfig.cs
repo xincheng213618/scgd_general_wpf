@@ -39,6 +39,12 @@ namespace ColorVision.UI.LogImp
         public TextWrapping TextWrapping { get => _TextWrapping; set { _TextWrapping = value; OnPropertyChanged(); } }
         private TextWrapping _TextWrapping = TextWrapping.NoWrap;
 
+        /// <summary>
+        /// 是否倒序显示日志（最新日志在顶部）
+        /// </summary>
+        public bool LogReverse { get => _LogReverse; set { _LogReverse = value; OnPropertyChanged(); } }
+        private bool _LogReverse = true;
+
         [JsonIgnore]
         public RelayCommand EditCommand { get; set; }
 
