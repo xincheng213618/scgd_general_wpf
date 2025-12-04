@@ -353,9 +353,8 @@ namespace ColorVision.ImageEditor.Draw.Special
                     dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
                 }
 
-
                 // 绘制半透明黑色遮罩（边缘黑色，中心透明）
-                SolidColorBrush maskBrush = new SolidColorBrush(Color.FromArgb(Attribute.MaskOpacity, 0, 0, 0));
+                SolidColorBrush maskBrush = new SolidColorBrush(Color.FromArgb(Attribute.MaskOpacity, Attribute.Color.R, Attribute.Color.G, Attribute.Color.B));
                 dc.DrawGeometry(maskBrush, null, maskGeometry);
 
                 // 3. 绘制中心覆盖光栅（黄色）
@@ -573,6 +572,8 @@ namespace ColorVision.ImageEditor.Draw.Special
         public byte MaskOpacity { get => _MaskOpacity; set { _MaskOpacity = value; OnPropertyChanged(); } }
         private byte _MaskOpacity = 180;
 
+        [Category("遮罩设置"), DisplayName("Color"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
+        public Color Color { get; set; } = Color.FromArgb(255,0,0,0);
         // 中心覆盖光栅相关属性
         [Category("中心覆盖"), DisplayName("覆盖形状"), PropertyVisibility(nameof(Mode), ReferenceLineMode.CrossMask)]
         public CenterOverlayShape CenterOverlay { get => _CenterOverlay; set { _CenterOverlay = value; OnPropertyChanged(); } }
