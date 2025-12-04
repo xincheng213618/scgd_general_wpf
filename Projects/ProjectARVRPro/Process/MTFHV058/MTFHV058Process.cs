@@ -56,7 +56,7 @@ namespace ProjectARVRPro.Process.MTFHV058
                                     testResult.MTF_HV_V_Center_0F.UpLimit = recipeConfig.MTF_HV_V_Center_0F.Max;
                                     ctx.Result.Result &= testResult.MTF_HV_V_Center_0F.TestResult;
                                     break;
-                                case "0.3F_MTF_HV_LeftUp":
+                                case "0.5F_MTF_HV_LeftUp":
                                     testResult.MTF_HV_H_LeftUp_0_5F.Value = mtf.horizontalAverage;
                                     testResult.MTF_HV_H_LeftUp_0_5F.Value *= fixConfig.MTF_HV_H_LeftUp_0_5F;
                                     testResult.MTF_HV_H_LeftUp_0_5F.TestValue = testResult.MTF_HV_H_LeftUp_0_5F.Value.ToString();
@@ -71,7 +71,7 @@ namespace ProjectARVRPro.Process.MTFHV058
                                     testResult.MTF_HV_V_LeftUp_0_5F.UpLimit = recipeConfig.MTF_HV_V_LeftUp_0_5F.Max;
                                     ctx.Result.Result &= testResult.MTF_HV_V_LeftUp_0_5F.TestResult;
                                     break;
-                                case "0.3F_MTF_HV_LeftDown":
+                                case "0.5F_MTF_HV_LeftDown":
                                     testResult.MTF_HV_H_LeftDown_0_5F.Value = mtf.horizontalAverage;
                                     testResult.MTF_HV_H_LeftDown_0_5F.Value *= fixConfig.MTF_HV_H_LeftDown_0_5F;
                                     testResult.MTF_HV_H_LeftDown_0_5F.TestValue = testResult.MTF_HV_H_LeftDown_0_5F.Value.ToString();
@@ -86,7 +86,7 @@ namespace ProjectARVRPro.Process.MTFHV058
                                     testResult.MTF_HV_V_LeftDown_0_5F.UpLimit = recipeConfig.MTF_HV_V_LeftDown_0_5F.Max;
                                     ctx.Result.Result &= testResult.MTF_HV_V_LeftDown_0_5F.TestResult;
                                     break;
-                                case "0.3F_MTF_HV_RightDown":
+                                case "0.5F_MTF_HV_RightDown":
                                     testResult.MTF_HV_H_RightDown_0_5F.Value = mtf.horizontalAverage;
                                     testResult.MTF_HV_H_RightDown_0_5F.Value *= fixConfig.MTF_HV_H_RightDown_0_5F;
                                     testResult.MTF_HV_H_RightDown_0_5F.TestValue = testResult.MTF_HV_H_RightDown_0_5F.Value.ToString();
@@ -101,7 +101,7 @@ namespace ProjectARVRPro.Process.MTFHV058
                                     testResult.MTF_HV_V_RightDown_0_5F.UpLimit = recipeConfig.MTF_HV_V_RightDown_0_5F.Max;
                                     ctx.Result.Result &= testResult.MTF_HV_V_RightDown_0_5F.TestResult;
                                     break;
-                                case "0.3F_MTF_HV_RightUp":
+                                case "0.5F_MTF_HV_RightUp":
                                     testResult.MTF_HV_H_RightUp_0_5F.Value = mtf.horizontalAverage;
                                     testResult.MTF_HV_H_RightUp_0_5F.Value *= fixConfig.MTF_HV_H_RightUp_0_5F;
                                     testResult.MTF_HV_H_RightUp_0_5F.TestValue = testResult.MTF_HV_H_RightUp_0_5F.Value.ToString();
