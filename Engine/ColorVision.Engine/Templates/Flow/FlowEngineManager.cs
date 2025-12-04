@@ -98,10 +98,11 @@ namespace ColorVision.Engine.Templates.Flow
         public MeasureBatchModel Batch { get => _Batch; set { _Batch = value; OnPropertyChanged(); } }
         private MeasureBatchModel _Batch;
 
+        public ServiceConfig ServiceConfig { get; set; }
+
         public FlowEngineManager()
         {
             ContextMenu = new ContextMenu();
-
 
             EditFlowCommand = new RelayCommand(a => EditFlow());
             EditTemplateFlowCommand = new RelayCommand(a=> EditTemplateFlow());
@@ -115,6 +116,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             View = new ViewFlow(FlowEngineControl);
             View.View.Title = ColorVision.Engine.Properties.Resources.Flow;
+            ServiceConfig = ServiceConfig.Instance;
         }
 
         public void MeasureBatchManager()
