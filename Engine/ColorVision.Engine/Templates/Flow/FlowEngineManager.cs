@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -100,6 +101,9 @@ namespace ColorVision.Engine.Templates.Flow
 
         public ServiceConfig ServiceConfig { get; set; }
 
+        [DisplayName("OpenService")]
+        public RelayCommand OpenServiceCommand { get; set; }
+
         public FlowEngineManager()
         {
             ContextMenu = new ContextMenu();
@@ -112,11 +116,15 @@ namespace ColorVision.Engine.Templates.Flow
 
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Inquire, Command = MeasureBatchManagerCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Property, Command = Config.EditCommand });
+
             FlowEngineControl = new FlowEngineControl(false);
 
             View = new ViewFlow(FlowEngineControl);
             View.View.Title = ColorVision.Engine.Properties.Resources.Flow;
             ServiceConfig = ServiceConfig.Instance;
+            OpenServiceCommand = new RelayCommand(a => ColorVision.Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(ServiceConfig.RegistrationCenterService),a=>File.Exists(ServiceConfig.RegistrationCenterService));
+            ContextMenu.Items.Add(new MenuItem() { Header = "OpenService", Command = OpenServiceCommand });
+
         }
 
         public void MeasureBatchManager()
