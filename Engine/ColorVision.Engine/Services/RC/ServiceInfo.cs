@@ -1,0 +1,146 @@
+﻿using ColorVision.Common.MVVM;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ColorVision.Engine.Services.RC
+{
+    /// <summary>
+    /// 服务详细信息
+    /// </summary>
+    public class ServiceInfo:ViewModelBase
+    {
+        /// <summary>
+        /// 服务名称
+        /// </summary>
+        public string ServiceName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 可执行文件路径
+        /// </summary>
+        public string ExecutablePath { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 文件版本
+        /// </summary>
+        public string FileVersion { get => _FileVersion; set { _FileVersion = value; OnPropertyChanged(); } }
+        private string _FileVersion = string.Empty;
+
+        /// <summary>
+        /// 产品版本
+        /// </summary>
+        public string ProductVersion { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 文件描述
+        /// </summary>
+        public string FileDescription { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 产品名称
+        /// </summary>
+        public string ProductName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 公司名称
+        /// </summary>
+        public string CompanyName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 文件创建时间
+        /// </summary>
+        public DateTime? CreationTime { get; set; }
+
+        /// <summary>
+        /// 文件最后修改时间
+        /// </summary>
+        public DateTime? LastWriteTime { get; set; }
+
+        /// <summary>
+        /// 文件大小（字节）
+        /// </summary>
+        public long FileSize { get; set; }
+
+        /// <summary>
+        /// 文件是否存在
+        /// </summary>
+        public bool Exists { get; set; }
+
+        /// <summary>
+        /// 格式化的文件大小
+        /// </summary>
+        public string FileSizeFormatted => FormatFileSize(FileSize);
+
+        /// <summary>
+        /// 从服务名称获取服务信息
+        /// </summary>
+        public static ServiceInfo FromServiceName(string serviceName)
+        {
+            var info = new ServiceInfo { ServiceName = serviceName };
+
+            string? exePath = ServiceManagerUitl.GetServiceExecutablePath(serviceName);
+            if (string.IsNullOrEmpty(exePath))
+            {
+                info.Exists = false;
+                return info;
+            }
+
+            info.ExecutablePath = exePath;
+
+            if (!File.Exists(exePath))
+            {
+                info.Exists = false;
+                return info;
+            }
+
+            info.Exists = true;
+
+            try
+            {
+                // 获取文件信息
+                var fileInfo = new FileInfo(exePath);
+                info.FileSize = fileInfo.Length;
+                info.CreationTime = fileInfo.CreationTime;
+                info.LastWriteTime = fileInfo.LastWriteTime;
+
+                // 获取版本信息
+                var versionInfo = FileVersionInfo.GetVersionInfo(exePath);
+                info.FileVersion = versionInfo.FileVersion ?? string.Empty;
+                info.ProductVersion = versionInfo.ProductVersion ?? string.Empty;
+                info.FileDescription = versionInfo.FileDescription ?? string.Empty;
+                info.ProductName = versionInfo.ProductName ?? string.Empty;
+                info.CompanyName = versionInfo.CompanyName ?? string.Empty;
+            }
+            catch
+            {
+                // 忽略获取信息时的异常
+            }
+
+            return info;
+        }
+
+        private static string FormatFileSize(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+            int order = 0;
+            double size = bytes;
+            while (size >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                size /= 1024;
+            }
+            return $"{size:0.##} {sizes[order]}";
+        }
+
+        public override string ToString()
+        {
+            if (!Exists)
+                return $"{ServiceName}: 未安装";
+            return $"{ServiceName}: v{FileVersion} ({LastWriteTime:yyyy-MM-dd HH:mm:ss})";
+        }
+    }
+}
