@@ -2484,4 +2484,10 @@
   <data name="IsFront" xml:space="preserve">
     <value>Включить переднюю панель</value>
   </data>
+  <data name="IVScanProcessing" xml:space="preserve">
+    <value>Обработка внутривенного сканирования</value>
+  </data>
+  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
+    <value>Обработать данные сканирования SMU, сохранить в CSV и построить кривые IV</value>
+  </data>
 </root>

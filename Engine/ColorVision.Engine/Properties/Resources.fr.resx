@@ -2484,4 +2484,10 @@
   <data name="IsFront" xml:space="preserve">
     <value>Activer le panneau avant</value>
   </data>
+  <data name="IVScanProcessing" xml:space="preserve">
+    <value>traitement par scanner IV</value>
+  </data>
+  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
+    <value>Traiter les données de numérisation SMU, les enregistrer au format CSV et tracer les courbes IV.</value>
+  </data>
 </root>

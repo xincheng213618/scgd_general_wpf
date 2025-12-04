@@ -2484,4 +2484,10 @@
   <data name="IsFront" xml:space="preserve">
     <value>フロントパネルを有効にする</value>
   </data>
+  <data name="IVScanProcessing" xml:space="preserve">
+    <value>IVスキャン処理</value>
+  </data>
+  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
+    <value>SMUスキャンデータを処理し、CSVに保存してIV曲線をプロットする</value>
+  </data>
 </root>

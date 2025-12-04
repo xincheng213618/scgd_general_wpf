@@ -2484,4 +2484,10 @@
   <data name="IsFront" xml:space="preserve">
     <value>전면 패널 활성화</value>
   </data>
+  <data name="IVScanProcessing" xml:space="preserve">
+    <value>IV 스캔 처리</value>
+  </data>
+  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
+    <value>SMU 스캔 데이터를 처리하고 CSV로 저장하고 IV 곡선을 그립니다.</value>
+  </data>
 </root>
