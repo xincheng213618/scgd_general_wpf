@@ -162,7 +162,7 @@ namespace ProjectARVRPro
         public MTFHVTestResult MTFHVTestResult { get; set; }
 
         [DisplayName("MTF058")]
-        public MTFHV058TestResult MTFHV058TestResult { get; set; }
+        public List<MTFHV058TestResult> MTFHV058TestResults { get; set; } = new List<MTFHV058TestResult>();
 
         [DisplayName("Distortion")]
         public DistortionTestResult DistortionTestResult { get; set; }
