@@ -121,13 +121,19 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </StackPanel>
-                <Button Grid.Column="1" x:Name="ProjectButton" Content="{x:Static properties:Resources.Project}" 
+                <Button Grid.Column="1" x:Name="PreviousButton" Content="{x:Static properties:Resources.Previous}" 
+                    Click="Previous_Click" Width="80" Height="35" Margin="0,0,10,0" IsEnabled="False"/>
+                <Button Grid.Column="2" x:Name="NextButton" Content="{x:Static properties:Resources.Next}" 
+                    Click="Next_Click" Width="80" Height="35" Margin="0,0,10,0" IsEnabled="False"/>
+                <Button Grid.Column="3" x:Name="ProjectButton" Content="{x:Static properties:Resources.Project}" 
                     Click="Project_Click" Width="100" Height="35" Margin="0,0,10,0" IsEnabled="False"/>
-                <Button Grid.Column="2" x:Name="StopButton" Content="{x:Static properties:Resources.StopProjection}" 
+                <Button Grid.Column="4" x:Name="StopButton" Content="{x:Static properties:Resources.StopProjection}" 
                     Click="Stop_Click" Width="100" Height="35" IsEnabled="False"/>
             </Grid>
         </Grid>

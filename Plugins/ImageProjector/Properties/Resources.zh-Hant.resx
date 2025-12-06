@@ -201,4 +201,10 @@
   <data name="MoveDown" xml:space="preserve">
     <value>下移</value>
   </data>
+  <data name="Previous" xml:space="preserve">
+    <value>上一張</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>下一張</value>
+  </data>
 </root>

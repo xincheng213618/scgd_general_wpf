@@ -311,5 +311,23 @@ namespace ImageProjector.Properties {
                 return ResourceManager.GetString("MoveDown", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 上一张 的本地化字符串。
+        /// </summary>
+        public static string Previous {
+            get {
+                return ResourceManager.GetString("Previous", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下一张 的本地化字符串。
+        /// </summary>
+        public static string Next {
+            get {
+                return ResourceManager.GetString("Next", resourceCulture);
+            }
+        }
     }
 }

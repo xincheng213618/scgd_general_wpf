@@ -201,4 +201,10 @@
   <data name="MoveDown" xml:space="preserve">
     <value>Bas</value>
   </data>
+  <data name="Previous" xml:space="preserve">
+    <value>Précédent</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Suivant</value>
+  </data>
 </root>

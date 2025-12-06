@@ -290,6 +290,46 @@ namespace ImageProjector
         private void UpdateStopButtonState()
         {
             StopButton.IsEnabled = _fullscreenWindow != null;
+            UpdateNavigationButtonsState();
+        }
+
+        private void UpdateNavigationButtonsState()
+        {
+            bool isProjecting = _fullscreenWindow != null;
+            int index = ImageListView.SelectedIndex;
+            
+            // Previous and Next buttons are enabled only when projecting and there are multiple images
+            PreviousButton.IsEnabled = isProjecting && index > 0;
+            NextButton.IsEnabled = isProjecting && index >= 0 && index < ImageItems.Count - 1;
+        }
+
+        private void Previous_Click(object sender, RoutedEventArgs e)
+        {
+            int index = ImageListView.SelectedIndex;
+            if (index > 0)
+            {
+                ImageListView.SelectedIndex = index - 1;
+                UpdateProjectedImage();
+            }
+        }
+
+        private void Next_Click(object sender, RoutedEventArgs e)
+        {
+            int index = ImageListView.SelectedIndex;
+            if (index >= 0 && index < ImageItems.Count - 1)
+            {
+                ImageListView.SelectedIndex = index + 1;
+                UpdateProjectedImage();
+            }
+        }
+
+        private void UpdateProjectedImage()
+        {
+            if (_fullscreenWindow != null && _currentImage != null)
+            {
+                _fullscreenWindow.UpdateImage(_currentImage);
+                UpdateNavigationButtonsState();
+            }
         }
 
         private void SaveConfig()

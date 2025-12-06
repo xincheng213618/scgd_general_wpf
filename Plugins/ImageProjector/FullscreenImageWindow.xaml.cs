@@ -86,5 +86,14 @@ namespace ImageProjector
             if (e.Key == Key.Escape)
                 this.Close();
         }
+
+        /// <summary>
+        /// Updates the displayed image without recreating the window
+        /// </summary>
+        /// <param name="image">The new image to display</param>
+        public void UpdateImage(BitmapImage image)
+        {
+            FullscreenImage.Source = image;
+        }
     }
 }
