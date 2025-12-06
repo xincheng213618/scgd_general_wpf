@@ -305,7 +305,7 @@ public class BuildPOINode : CVBaseServerNode
 	{
 		return buildCommonParam(start);
 	}
-
+	//这里在8月版本里会是int,所以之前的版本无法使用这个，之后的版本可以使用，非兼容
 	private object buildCommonParam(CVStartCFC start)
 	{
 		BuildPOIData buildPOIData = null;
