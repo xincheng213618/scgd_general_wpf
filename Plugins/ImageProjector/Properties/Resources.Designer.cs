@@ -329,5 +329,50 @@ namespace ImageProjector.Properties {
                 return ResourceManager.GetString("Next", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 显示模式: 的本地化字符串。
+        /// </summary>
+        public static string StretchMode {
+            get {
+                return ResourceManager.GetString("StretchMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 适应 的本地化字符串。
+        /// </summary>
+        public static string StretchUniform {
+            get {
+                return ResourceManager.GetString("StretchUniform", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 拉伸 的本地化字符串。
+        /// </summary>
+        public static string StretchFill {
+            get {
+                return ResourceManager.GetString("StretchFill", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 居中 的本地化字符串。
+        /// </summary>
+        public static string StretchNone {
+            get {
+                return ResourceManager.GetString("StretchNone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 填充 的本地化字符串。
+        /// </summary>
+        public static string StretchUniformToFill {
+            get {
+                return ResourceManager.GetString("StretchUniformToFill", resourceCulture);
+            }
+        }
     }
 }

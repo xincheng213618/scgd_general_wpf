@@ -41,6 +41,9 @@ namespace ImageProjector
             // Bind ListView to ImageItems
             ImageListView.ItemsSource = ImageItems;
             
+            // Initialize stretch mode ComboBox
+            InitializeStretchModeComboBox();
+            
             // Restore last selected index if valid
             if (Config.LastSelectedIndex >= 0 && Config.LastSelectedIndex < ImageItems.Count)
             {
@@ -65,6 +68,37 @@ namespace ImageProjector
             }
 
             this.Closed += (s, e) => Dispose();
+        }
+
+        private void InitializeStretchModeComboBox()
+        {
+            var stretchModes = new[]
+            {
+                new { Value = ImageStretchMode.Uniform, Display = Properties.Resources.StretchUniform },
+                new { Value = ImageStretchMode.Fill, Display = Properties.Resources.StretchFill },
+                new { Value = ImageStretchMode.None, Display = Properties.Resources.StretchNone },
+                new { Value = ImageStretchMode.UniformToFill, Display = Properties.Resources.StretchUniformToFill }
+            };
+            
+            StretchModeComboBox.ItemsSource = stretchModes;
+            StretchModeComboBox.DisplayMemberPath = "Display";
+            StretchModeComboBox.SelectedValuePath = "Value";
+            StretchModeComboBox.SelectedValue = Config.StretchMode;
+        }
+
+        private void StretchModeComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (StretchModeComboBox.SelectedValue is ImageStretchMode selectedMode)
+            {
+                Config.StretchMode = selectedMode;
+                SaveConfig();
+                
+                // Update the fullscreen window if it's open
+                if (_fullscreenWindow != null)
+                {
+                    _fullscreenWindow.UpdateStretch(ImageProjectorConfig.ToStretch(selectedMode));
+                }
+            }
         }
 
         private void LoadMonitors()
@@ -247,8 +281,9 @@ namespace ImageProjector
                 // Close existing fullscreen window if any
                 CloseFullscreenWindow();
 
-                // Create and show new fullscreen window on selected monitor
-                _fullscreenWindow = new FullscreenImageWindow(_currentImage, _selectedScreen);
+                // Create and show new fullscreen window on selected monitor with current stretch mode
+                var stretch = ImageProjectorConfig.ToStretch(Config.StretchMode);
+                _fullscreenWindow = new FullscreenImageWindow(_currentImage, _selectedScreen, stretch);
                 _fullscreenWindow.Closed += (s, args) =>
                 {
                     _fullscreenWindow = null;

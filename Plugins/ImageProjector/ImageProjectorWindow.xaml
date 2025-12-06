@@ -84,6 +84,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" 
                             Background="{DynamicResource RegionBrush}" 
@@ -104,6 +105,15 @@
                         <TextBlock x:Name="MonitorInfoText" 
                                    VerticalAlignment="Center"
                                    FontWeight="SemiBold"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
+                        <TextBlock Text="{x:Static properties:Resources.StretchMode}" 
+                                   VerticalAlignment="Center" 
+                                   Margin="0,0,10,0"/>
+                        <ComboBox x:Name="StretchModeComboBox" 
+                                  Width="120" 
+                                  SelectionChanged="StretchModeComboBox_SelectionChanged"/>
                     </StackPanel>
                 </Grid>
             </GroupBox>

@@ -207,4 +207,19 @@
   <data name="Next" xml:space="preserve">
     <value>Следующий</value>
   </data>
+  <data name="StretchMode" xml:space="preserve">
+    <value>Режим отображения:</value>
+  </data>
+  <data name="StretchUniform" xml:space="preserve">
+    <value>По размеру</value>
+  </data>
+  <data name="StretchFill" xml:space="preserve">
+    <value>Растянуть</value>
+  </data>
+  <data name="StretchNone" xml:space="preserve">
+    <value>По центру</value>
+  </data>
+  <data name="StretchUniformToFill" xml:space="preserve">
+    <value>Заполнить</value>
+  </data>
 </root>
