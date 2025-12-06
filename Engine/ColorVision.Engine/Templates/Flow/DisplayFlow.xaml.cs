@@ -252,7 +252,10 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
             {
-                MarkColorProperty.SetValue(LastNode, System.Drawing.Color.Red);
+                if(LastNode != null)
+                {
+                    MarkColorProperty.SetValue(LastNode, System.Drawing.Color.Red);
+                }
             }
             else if (FlowControlData.EventName == "Completed")
             {

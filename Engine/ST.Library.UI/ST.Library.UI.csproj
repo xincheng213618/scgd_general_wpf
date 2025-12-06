@@ -10,6 +10,7 @@
 		<NoWarn>CA1864,CA1854,CA1822,CA1510,CA1852,CA1310,CA1001,CA1861,CA2208,CA1805,CA1707,CA2022,CA1711,CA1051,CA2211,CA2200,CA1018,CA1010,CA1311,CA1304,CA2249,CA1806,CA1720</NoWarn>
 		<NuGetAuditLevel>low</NuGetAuditLevel>
 		<Nullable>disable</Nullable>
+		<SignAssembly>False</SignAssembly>
 	</PropertyGroup>
 	<ItemGroup>
 	  <None Include="Properties\Resources.en.resx" />
