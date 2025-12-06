@@ -186,4 +186,19 @@
   <data name="PressEscToClose" xml:space="preserve">
     <value>按 ESC 键关闭</value>
   </data>
+  <data name="ImageList" xml:space="preserve">
+    <value>图片列表</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>添加</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>上移</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>下移</value>
+  </data>
 </root>

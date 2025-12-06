@@ -186,4 +186,19 @@
   <data name="PressEscToClose" xml:space="preserve">
     <value>Appuyez sur ÉCHAP pour fermer</value>
   </data>
+  <data name="ImageList" xml:space="preserve">
+    <value>Liste d'images</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Ajouter</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Haut</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Bas</value>
+  </data>
 </root>

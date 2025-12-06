@@ -186,4 +186,19 @@
   <data name="PressEscToClose" xml:space="preserve">
     <value>Нажмите ESC, чтобы закрыть</value>
   </data>
+  <data name="ImageList" xml:space="preserve">
+    <value>Список изображений</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Добавить</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Вверх</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Вниз</value>
+  </data>
 </root>

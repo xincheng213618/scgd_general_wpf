@@ -186,4 +186,19 @@
   <data name="PressEscToClose" xml:space="preserve">
     <value>ESCキーを押して閉じる</value>
   </data>
+  <data name="ImageList" xml:space="preserve">
+    <value>画像リスト</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>追加</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>削除</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>上へ</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>下へ</value>
+  </data>
 </root>
