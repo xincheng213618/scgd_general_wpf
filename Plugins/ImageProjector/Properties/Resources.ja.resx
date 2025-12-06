@@ -186,4 +186,40 @@
   <data name="PressEscToClose" xml:space="preserve">
     <value>ESCキーを押して閉じる</value>
   </data>
+  <data name="ImageList" xml:space="preserve">
+    <value>画像リスト</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>追加</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>削除</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>上へ</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>下へ</value>
+  </data>
+  <data name="Previous" xml:space="preserve">
+    <value>前へ</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>次へ</value>
+  </data>
+  <data name="StretchMode" xml:space="preserve">
+    <value>表示モード:</value>
+  </data>
+  <data name="StretchUniform" xml:space="preserve">
+    <value>適応</value>
+  </data>
+  <data name="StretchFill" xml:space="preserve">
+    <value>ストレッチ</value>
+  </data>
+  <data name="StretchNone" xml:space="preserve">
+    <value>中央</value>
+  </data>
+  <data name="StretchUniformToFill" xml:space="preserve">
+    <value>塗りつぶし</value>
+  </data>
 </root>

@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ImageProjector
@@ -22,12 +23,13 @@ namespace ImageProjector
         private const uint MONITOR_DEFAULTTONEAREST = 2;
         private const int MDT_EFFECTIVE_DPI = 0;
 
-        public FullscreenImageWindow(BitmapImage image, System.Windows.Forms.Screen targetScreen)
+        public FullscreenImageWindow(BitmapImage image, System.Windows.Forms.Screen targetScreen, Stretch stretch = Stretch.Uniform)
         {
             InitializeComponent();
 
             _targetScreen = targetScreen;
             FullscreenImage.Source = image;
+            FullscreenImage.Stretch = stretch;
 
             // Initial state as Normal
             this.WindowState = WindowState.Normal;
@@ -85,6 +87,24 @@ namespace ImageProjector
         {
             if (e.Key == Key.Escape)
                 this.Close();
+        }
+
+        /// <summary>
+        /// Updates the displayed image without recreating the window
+        /// </summary>
+        /// <param name="image">The new image to display</param>
+        public void UpdateImage(BitmapImage image)
+        {
+            FullscreenImage.Source = image;
+        }
+
+        /// <summary>
+        /// Updates the stretch mode of the displayed image
+        /// </summary>
+        /// <param name="stretch">The new stretch mode</param>
+        public void UpdateStretch(Stretch stretch)
+        {
+            FullscreenImage.Stretch = stretch;
         }
     }
 }

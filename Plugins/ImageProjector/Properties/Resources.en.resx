@@ -186,4 +186,40 @@
   <data name="PressEscToClose" xml:space="preserve">
     <value>Press ESC to close</value>
   </data>
+  <data name="ImageList" xml:space="preserve">
+    <value>Image List</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>Up</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="Previous" xml:space="preserve">
+    <value>Previous</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Next</value>
+  </data>
+  <data name="StretchMode" xml:space="preserve">
+    <value>Display Mode:</value>
+  </data>
+  <data name="StretchUniform" xml:space="preserve">
+    <value>Uniform</value>
+  </data>
+  <data name="StretchFill" xml:space="preserve">
+    <value>Stretch</value>
+  </data>
+  <data name="StretchNone" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="StretchUniformToFill" xml:space="preserve">
+    <value>Fill</value>
+  </data>
 </root>
