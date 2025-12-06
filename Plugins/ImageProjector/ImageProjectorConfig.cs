@@ -16,9 +16,6 @@ namespace ImageProjector
 
         public string FileName => string.IsNullOrEmpty(FilePath) ? string.Empty : Path.GetFileName(FilePath);
 
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; OnPropertyChanged(); } }
-        private bool _IsSelected;
-
         public ImageProjectorItem() { }
 
         public ImageProjectorItem(string filePath)
