@@ -7,7 +7,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ImageProjector.Properties"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.ImageProjector}" Height="550" Width="650" 
+        Title="{x:Static properties:Resources.ImageProjector}" Height="600" Width="800" 
         Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" 
         Initialized="Window_Initialized">
     <Window.Resources>
@@ -18,75 +18,134 @@
         </Style>
     </Window.Resources>
     <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        <!-- Monitor Selection with Visual Layout -->
-        <GroupBox Grid.Row="0" Header="{x:Static properties:Resources.MonitorSelection}" Margin="0,0,0,10">
-            <Grid Margin="5">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Border Grid.Row="0" 
-                        Background="{DynamicResource RegionBrush}" 
-                        BorderBrush="{DynamicResource BorderBrush}" 
-                        BorderThickness="1" 
-                        CornerRadius="4" 
-                        MinHeight="120"
-                        Margin="0,5,0,10">
-                    <local:MonitorLayoutControl x:Name="MonitorLayout" 
-                                                 Margin="10"
-                                                 ScreenSelected="MonitorLayout_ScreenSelected"/>
-                </Border>
+        <!-- Left Panel: Image List Management -->
+        <Grid Grid.Column="0" Margin="0,0,10,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="1" Orientation="Horizontal">
-                    <TextBlock Text="{x:Static properties:Resources.TargetMonitor}" 
-                               VerticalAlignment="Center" 
-                               Margin="0,0,10,0"/>
-                    <TextBlock x:Name="MonitorInfoText" 
-                               VerticalAlignment="Center"
-                               FontWeight="SemiBold"/>
+            <!-- Image List Header with Buttons -->
+            <GroupBox Grid.Row="0" Header="{x:Static properties:Resources.ImageList}" Margin="0,0,0,5">
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <Button x:Name="AddImageButton" Content="{x:Static properties:Resources.Add}" Click="AddImage_Click" Width="50" Height="28" Margin="0,0,5,0"/>
+                    <Button x:Name="RemoveImageButton" Content="{x:Static properties:Resources.Remove}" Click="RemoveImage_Click" Width="50" Height="28" Margin="0,0,5,0"/>
+                    <Button x:Name="MoveUpButton" Content="{x:Static properties:Resources.MoveUp}" Click="MoveUp_Click" Width="50" Height="28" Margin="0,0,5,0"/>
+                    <Button x:Name="MoveDownButton" Content="{x:Static properties:Resources.MoveDown}" Click="MoveDown_Click" Width="50" Height="28"/>
                 </StackPanel>
-            </Grid>
-        </GroupBox>
+            </GroupBox>
 
-        <!-- Image Selection -->
-        <GroupBox Grid.Row="1" Header="{x:Static properties:Resources.ImageSelection}" Margin="0,0,0,10">
-            <StackPanel Margin="5">
-                <DockPanel Margin="0,5">
-                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Browse}" Click="BrowseImage_Click" Width="80" Margin="5,0,0,0"/>
-                    <TextBox x:Name="ImagePathTextBox" IsReadOnly="True"/>
-                </DockPanel>
-                <TextBlock Text="{x:Static properties:Resources.SupportedFormats}" Margin="0,5,0,0" FontStyle="Italic" Foreground="{DynamicResource SecondaryTextBrush}"/>
-            </StackPanel>
-        </GroupBox>
+            <!-- Image List -->
+            <ListView Grid.Row="1" x:Name="ImageListView" Background="Transparent" Padding="0" BorderThickness="1" 
+                      BorderBrush="{DynamicResource BorderBrush}" SelectionChanged="ImageListView_SelectionChanged">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                        <Setter Property="Padding" Value="5,2"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn Width="220">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate DataType="{x:Type local:ImageProjectorItem}">
+                                    <TextBlock Text="{Binding FileName}" ToolTip="{Binding FilePath}" Padding="2,0"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
 
-        <!-- Image Preview -->
-        <GroupBox Grid.Row="2" Header="{x:Static properties:Resources.ImagePreview}" Margin="0,0,0,10">
-            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="4">
-                <Image x:Name="PreviewImage" Stretch="Uniform" Margin="5"/>
-            </Border>
-        </GroupBox>
+            <TextBlock Grid.Row="2" Text="{x:Static properties:Resources.SupportedFormats}" Margin="0,5,0,0" FontStyle="Italic" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"/>
+        </Grid>
 
-        <!-- Action Buttons -->
-        <Grid Grid.Row="3">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
+        <!-- Right Panel: Monitor, Preview, Actions -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Monitor Selection with Visual Layout -->
+            <GroupBox Grid.Row="0" Header="{x:Static properties:Resources.MonitorSelection}" Margin="0,0,0,10">
+                <Grid Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" 
+                            Background="{DynamicResource RegionBrush}" 
+                            BorderBrush="{DynamicResource BorderBrush}" 
+                            BorderThickness="1" 
+                            CornerRadius="4" 
+                            MinHeight="100"
+                            Margin="0,5,0,10">
+                        <local:MonitorLayoutControl x:Name="MonitorLayout" 
+                                                     Margin="10"
+                                                     ScreenSelected="MonitorLayout_ScreenSelected"/>
+                    </Border>
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal">
+                        <TextBlock Text="{x:Static properties:Resources.TargetMonitor}" 
+                                   VerticalAlignment="Center" 
+                                   Margin="0,0,10,0"/>
+                        <TextBlock x:Name="MonitorInfoText" 
+                                   VerticalAlignment="Center"
+                                   FontWeight="SemiBold"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
+                        <TextBlock Text="{x:Static properties:Resources.StretchMode}" 
+                                   VerticalAlignment="Center" 
+                                   Margin="0,0,10,0"/>
+                        <ComboBox x:Name="StretchModeComboBox" 
+                                  Width="120" 
+                                  SelectionChanged="StretchModeComboBox_SelectionChanged"/>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
+
+            <!-- Image Preview -->
+            <GroupBox Grid.Row="1" Header="{x:Static properties:Resources.ImagePreview}" Margin="0,0,0,10">
+                <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="4">
+                    <Image x:Name="PreviewImage" Stretch="Uniform" Margin="5"/>
+                </Border>
+            </GroupBox>
+
+            <!-- Action Buttons -->
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
                 </StackPanel>
-                <Button Grid.Column="1" x:Name="ProjectButton" Content="{x:Static properties:Resources.Project}" 
+                <Button Grid.Column="1" x:Name="PreviousButton" Content="{x:Static properties:Resources.Previous}" 
+                    Click="Previous_Click" Width="80" Height="35" Margin="0,0,10,0" IsEnabled="False"/>
+                <Button Grid.Column="2" x:Name="NextButton" Content="{x:Static properties:Resources.Next}" 
+                    Click="Next_Click" Width="80" Height="35" Margin="0,0,10,0" IsEnabled="False"/>
+                <Button Grid.Column="3" x:Name="ProjectButton" Content="{x:Static properties:Resources.Project}" 
                     Click="Project_Click" Width="100" Height="35" Margin="0,0,10,0" IsEnabled="False"/>
-                <Button Grid.Column="2" x:Name="StopButton" Content="{x:Static properties:Resources.StopProjection}" 
+                <Button Grid.Column="4" x:Name="StopButton" Content="{x:Static properties:Resources.StopProjection}" 
                     Click="Stop_Click" Width="100" Height="35" IsEnabled="False"/>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

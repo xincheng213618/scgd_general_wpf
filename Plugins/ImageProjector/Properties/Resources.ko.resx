@@ -186,4 +186,40 @@
   <data name="PressEscToClose" xml:space="preserve">
     <value>ESC를 눌러 닫으세요</value>
   </data>
+  <data name="ImageList" xml:space="preserve">
+    <value>이미지 목록</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>추가</value>
+  </data>
+  <data name="Remove" xml:space="preserve">
+    <value>삭제</value>
+  </data>
+  <data name="MoveUp" xml:space="preserve">
+    <value>위로</value>
+  </data>
+  <data name="MoveDown" xml:space="preserve">
+    <value>아래로</value>
+  </data>
+  <data name="Previous" xml:space="preserve">
+    <value>이전</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>다음</value>
+  </data>
+  <data name="StretchMode" xml:space="preserve">
+    <value>표시 모드:</value>
+  </data>
+  <data name="StretchUniform" xml:space="preserve">
+    <value>적응</value>
+  </data>
+  <data name="StretchFill" xml:space="preserve">
+    <value>늘리기</value>
+  </data>
+  <data name="StretchNone" xml:space="preserve">
+    <value>중앙</value>
+  </data>
+  <data name="StretchUniformToFill" xml:space="preserve">
+    <value>채우기</value>
+  </data>
 </root>
