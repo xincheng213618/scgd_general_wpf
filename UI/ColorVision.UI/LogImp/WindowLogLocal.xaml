@@ -31,12 +31,11 @@
                 <ToggleButton x:Name="ButtonLogReverse" Style="{StaticResource ToggleButtonSwitchBaseStyle}" Content="倒序" IsChecked="{Binding LogReverse}" Margin="5,0"/>
                 <ToggleButton x:Name="ButtonAutoScrollToEnd" Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="{x:Static properties:Resources.AutoScrollToEnd}" IsChecked="{Binding AutoScrollToEnd}" Margin="5,0"/>
                 <ToggleButton  x:Name="ButtonAutoRefresh" Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="{x:Static properties:Resources.AutoRefresh}" IsChecked="{Binding AutoRefresh}" Margin="5,0"/>
-                <TextBlock Text="Max:" VerticalAlignment="Center" Margin="5,0,2,0"/>
-                <hc:NumericUpDown x:Name="NumericMaxLines" Value="{Binding MaxLines}" Minimum="100" Maximum="100000" Width="100" Margin="0,0,5,0"/>
             </StackPanel>
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <Button Content="{x:Static properties:Resources.Clear}" Click="Clear_Click" Margin="5,0,0,0"/>
                 <Button x:Name="ButtonRefresh" Content="&#xE72C;" FontFamily="Segoe MDL2 Assets" Click="Refresh_Click" Margin="5,0,0,0" Padding="5,2" ToolTip="Refresh"/>
+                <Button Content="打开文件夹" Click="Open_Click" Margin="5,0,0,0"/>
                 <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="27" Width="27" >
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">
                         <TextBlock.RenderTransform>
