@@ -206,6 +206,13 @@ namespace ProjectARVRLite
                     CurrentTestType = TestType;
                     RunTemplate();
                 }
+                //if (TestType == ARVR1TestType.Ghost)
+                //{
+                //    ProjectConfig.StepIndex = 8;
+                //    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Ghost")).Value;
+                //    CurrentTestType = TestType;
+                //    RunTemplate();
+                //}
                 if (CurrentTestType != TestType)
                 {
                     log.Info("无法找到测试类型对应的测试模板,正在切换下一张图");
@@ -610,6 +617,7 @@ namespace ProjectARVRLite
                 log.Info("正在解析White51的流程");
 
                 ObjectiveTestResult.FlowW51TestReslut = true;
+                result.TestType = ARVR1TestType.W51;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
@@ -680,6 +688,7 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析白画面的流程");
                 ObjectiveTestResult.FlowWhiteTestReslut = true;
+                result.TestType = ARVR1TestType.White;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
@@ -940,6 +949,8 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析黑画面的流程");
                 ObjectiveTestResult.FlowBlackTestReslut = true;
+                //result.TestType = ARVR1TestType.Black;
+
                 if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRLiteConfig.Instance.SN) is ProjectARVRReuslt result1)
                 {
                     result.ViewResultWhite =result1.ViewResultWhite;
@@ -996,6 +1007,7 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析棋盘格画面的流程");
                 ObjectiveTestResult.FlowChessboardTestReslut = true;
+                result.TestType = ARVR1TestType.Chessboard;
 
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
@@ -1056,6 +1068,8 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析MTF_HV画面的流程");
                 ObjectiveTestResult.FlowMTFHVTestReslut = true;
+                result.TestType = ARVR1TestType.MTFHV;
+
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
@@ -1330,6 +1344,7 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析Distortion画面的流程");
                 ObjectiveTestResult.FlowDistortionTestReslut = true;
+                result.TestType = ARVR1TestType.Distortion;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
@@ -1385,6 +1400,7 @@ namespace ProjectARVRLite
             {
                 log.Info("正在解析OpticCenter画面的流程");
                 ObjectiveTestResult.FlowOpticCenterTestReslut = true;
+                result.TestType = ARVR1TestType.OpticCenter;
 
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
                 if (values.Count > 0)
