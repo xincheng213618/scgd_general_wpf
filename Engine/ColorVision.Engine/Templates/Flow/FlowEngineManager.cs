@@ -4,6 +4,7 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
+using ColorVision.UI.LogImp;
 using FlowEngineLib;
 using log4net;
 using Newtonsoft.Json;
@@ -12,6 +13,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -74,6 +76,9 @@ namespace ColorVision.Engine.Templates.Flow
         private bool _IsReady;
     }
 
+
+
+
     public class FlowEngineManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowEngineManager));
@@ -104,6 +109,11 @@ namespace ColorVision.Engine.Templates.Flow
         [DisplayName("OpenService")]
         public RelayCommand OpenServiceCommand { get; set; }
 
+        public WindowsServiceBase WindowsServiceX64 { get; set; }
+        public WindowsServiceBase WindowsServiceDev { get; set; }
+        public WindowsServiceBase WindowsServiceReg { get; set; }
+        public RelayCommand OpenCameraLogCommand { get; set; }
+
         public FlowEngineManager()
         {
             ContextMenu = new ContextMenu();
@@ -124,8 +134,24 @@ namespace ColorVision.Engine.Templates.Flow
             ServiceConfig = ServiceConfig.Instance;
             OpenServiceCommand = new RelayCommand(a => ColorVision.Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(ServiceConfig.RegistrationCenterService),a=>File.Exists(ServiceConfig.RegistrationCenterService));
             ContextMenu.Items.Add(new MenuItem() { Header = "OpenService", Command = OpenServiceCommand });
-
+            WindowsServiceX64 = new WindowsServiceBase(ServiceConfig.CVMainService_x64Info);
+            WindowsServiceDev = new WindowsServiceBase(ServiceConfig.CVMainService_devInfo);
+            WindowsServiceReg = new WindowsServiceBase(ServiceConfig.RegistrationCenterServiceInfo);
+            OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog()); 
         }
+
+
+        public void OpenCameraLog()
+        {
+            string baseDir = Directory.GetParent(ServiceConfig.CVMainService_x64).FullName;
+            string latestLogPath = LogFileHelper.GetMostRecentLogFile(Path.Combine(baseDir,"log"), "CVMainWindowsService_x64_camera");
+            if (!string.IsNullOrEmpty(latestLogPath))
+            {
+                WindowLogLocal windowLogLocal = new WindowLogLocal(latestLogPath, Encoding.GetEncoding("GB2312"));
+                windowLogLocal.Show();
+            }
+        }
+
 
         public void MeasureBatchManager()
         {
