@@ -172,6 +172,11 @@ namespace ProjectARVRLite
 
 
         /// <summary>
+        /// 鬼影(%) 测试项
+        /// </summary>
+        public ObjectiveTestItem Ghost1 { get; set; }
+
+        /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>
         public ObjectiveTestItem W255LuminanceUniformity { get; set; }

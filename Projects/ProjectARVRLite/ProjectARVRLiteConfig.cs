@@ -143,7 +143,7 @@ namespace ProjectARVRLite
 
         [DisplayName("测试结束类型")]
         public ARVR1TestType TestTypeCompleted { get => _TestTypeCompleted; set { _TestTypeCompleted = value; OnPropertyChanged(); } }
-        private ARVR1TestType _TestTypeCompleted = ARVR1TestType.Ghost;
+        private ARVR1TestType _TestTypeCompleted = ARVR1TestType.DotMatrix;
 
 
         public event EventHandler<string> SNChanged;

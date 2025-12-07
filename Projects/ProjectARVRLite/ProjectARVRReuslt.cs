@@ -64,10 +64,6 @@ namespace ProjectARVRLite
         /// </summary>
         White,
         /// <summary>
-        /// 黑画面25
-        /// </summary>
-        Black,
-        /// <summary>
         /// 25的图像
         /// </summary>
         W25,
@@ -83,11 +79,11 @@ namespace ProjectARVRLite
         /// 畸变，9点
         /// </summary>
         Distortion,
+        Ghost,
         /// <summary>
         /// 光轴偏角
         /// </summary>
         OpticCenter,
-        Ghost,
         /// <summary>
         /// 屏幕定位
         /// </summary>

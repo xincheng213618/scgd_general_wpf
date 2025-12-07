@@ -225,11 +225,11 @@
                             <hc:StepBarItem Content="初始化"/>
                             <hc:StepBarItem Content="W51"/>
                             <hc:StepBarItem Content="W255"/>
-                            <hc:StepBarItem Content="Black"/>
                             <hc:StepBarItem Content="W25"/>
                             <hc:StepBarItem Content="Chessboard"/>
                             <hc:StepBarItem Content="MTFHV"/>
                             <hc:StepBarItem Content="Distortion"/>
+                            <hc:StepBarItem Content="Ghost"/>
                             <hc:StepBarItem Content="OpticCenter"/>
                         </hc:StepBar>
                     </Border>
