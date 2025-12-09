@@ -2,6 +2,7 @@
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.CUDA;
+using ColorVision.UI.Graphics;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System;
@@ -55,7 +56,7 @@ namespace ColorVision
             TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug)" : "")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位 -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd})";
 #endif
             Icon = null;
-
+            TextSharp1.Text = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             TextBlockVision.Text += Environment.NewLine + SystemHelper.LocalCpuInfo.TrimEnd() + " " + SystemHelper.GetTotalPhysicalMemory();
 
             if (ConfigCuda.Instance.IsCudaSupported && ConfigCuda.Instance.DeviceCount >0)
