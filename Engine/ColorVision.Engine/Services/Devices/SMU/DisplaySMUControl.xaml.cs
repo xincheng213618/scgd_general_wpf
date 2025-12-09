@@ -57,8 +57,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 };
             }
 
-            this.ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
+            this.ContextMenu = Device.ContextMenu;
+
 
             void UpdateUI(DeviceStatusType status)
             {

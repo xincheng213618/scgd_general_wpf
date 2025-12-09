@@ -48,9 +48,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 });
             };
             this.AddViewConfig(View,ComboxView);
+            this.ContextMenu = Device.ContextMenu;
 
-            this.ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
 
             void UpdateUI(DeviceStatusType status)
             {

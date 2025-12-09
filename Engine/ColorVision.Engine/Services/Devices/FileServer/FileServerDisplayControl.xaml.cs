@@ -19,20 +19,20 @@ namespace ColorVision.Engine.Services.Devices.FileServer
     public partial class FileServerDisplayControl : UserControl,IDisPlayControl
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(FileServerDisplayControl));
-        public DeviceFileServer DeviceFileServer { get; set; }
+        public DeviceFileServer Device { get; set; }
 
-        public MQTTFileServer MQTTFileServer { get => DeviceFileServer.DService; }
-        public string DisPlayName => DeviceFileServer.Config.Name;
+        public MQTTFileServer MQTTFileServer { get => Device.DService; }
+        public string DisPlayName => Device.Config.Name;
 
-        public ImageView View { get => DeviceFileServer.View; }
+        public ImageView View { get => Device.View; }
 
 
         public FileServerDisplayControl(DeviceFileServer deviceFileServer)
         {
-            DeviceFileServer = deviceFileServer;
+            Device = deviceFileServer;
             InitializeComponent();
 
-            DeviceFileServer.DService.OnImageData += Service_OnImageData;
+            Device.DService.OnImageData += Service_OnImageData;
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
@@ -67,7 +67,9 @@ namespace ColorVision.Engine.Services.Devices.FileServer
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            DataContext = DeviceFileServer;
+            DataContext = Device;
+
+            this.ContextMenu = Device.ContextMenu;
             Task.Run(() => { MQTTFileServer.GetAllFiles(); });
         }
 
