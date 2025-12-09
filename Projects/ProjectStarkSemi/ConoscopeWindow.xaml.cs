@@ -722,42 +722,6 @@ namespace ProjectStarkSemi
         }
 
         /// <summary>
-        /// 导出CSV按钮点击事件
-        /// </summary>
-        private void btnExportCSV_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (polarAngleLines.Count == 0)
-                {
-                    MessageBox.Show("没有可导出的数据", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                // Open save file dialog (WPF version)
-                var saveFileDialog = new SaveFileDialog
-                {
-                    Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
-                    DefaultExt = "csv",
-                    FileName = $"极角RGB数据_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
-                    RestoreDirectory = true
-                };
-
-                if (saveFileDialog.ShowDialog() == true)
-                {
-                    ExportToCSV(saveFileDialog.FileName);
-                    MessageBox.Show($"数据已成功导出到:\n{saveFileDialog.FileName}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
-                    log.Info($"成功导出CSV: {saveFileDialog.FileName}");
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error($"导出CSV失败: {ex.Message}", ex);
-                MessageBox.Show($"导出CSV失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
         /// 导出数据到CSV文件
         /// </summary>
         private void ExportToCSV(string filePath)
