@@ -320,10 +320,12 @@
 
                 <RibbonTab Header="Help">
                     <RibbonGroup Header="Help" x:Name="Help"  SmallImageSource="Images/InsertPicture16.png" GroupSizeDefinitions="{DynamicResource 4ControlLSC}">
+                        <RibbonButton Label="README" SmallImageSource="Images/InsertPicture16.png" Click="btnShowReadme_Click"/>
+                        <RibbonButton Label="CHANGELOG" SmallImageSource="Images/InsertPicture16.png" Click="btnShowChangelog_Click"/>
                     </RibbonGroup>
 
                     <RibbonGroup Header="About" x:Name="About"  SmallImageSource="Images/InsertPicture16.png" GroupSizeDefinitions="{DynamicResource 4ControlLSC}">
-                        <RibbonButton SmallImageSource="Images/smallicon.png"  Click="RibbonButton_Click"/>
+                        <RibbonButton Label="About" SmallImageSource="Images/smallicon.png"  Click="RibbonButton_Click"/>
                     </RibbonGroup>
 
                 </RibbonTab>

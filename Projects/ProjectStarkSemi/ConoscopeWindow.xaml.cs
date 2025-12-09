@@ -1556,9 +1556,12 @@ namespace ProjectStarkSemi
                 // Calculate radius in pixels
                 double radiusPixels = radiusAngle / ConoscopeConfig.ConoscopeCoefficient;
 
-                // Sample 360 points around the circle (0-359 degrees)
-                for (int anglePos = 0; anglePos < 360; anglePos++)
+                // Sample 720 points around the circle for smoother visualization (0.5 degree intervals)
+                // Export still uses original data, but display benefits from higher resolution
+                int numSamples = 720;
+                for (int i = 0; i < numSamples; i++)
                 {
+                    double anglePos = i * 360.0 / numSamples; // 0.5 degree intervals
                     double radians = anglePos * Math.PI / 180.0;
                     double x = center.X + radiusPixels * Math.Cos(radians);
                     double y = center.Y + radiusPixels * Math.Sin(radians);
@@ -1575,7 +1578,7 @@ namespace ProjectStarkSemi
 
                     circleLine.RgbData.Add(new RgbSample
                     {
-                        Position = anglePos, // 0 to 359 degrees
+                        Position = anglePos, // 0 to 360 with 0.5 degree intervals
                         R = r,
                         G = g,
                         B = b,
@@ -1783,6 +1786,151 @@ namespace ProjectStarkSemi
             catch (Exception ex)
             {
                 log.Error($"更新R圆图表失败: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// 显示README文档
+        /// </summary>
+        private void btnShowReadme_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string readmePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "README.md");
+                
+                // 创建一个窗口显示README内容
+                var readmeWindow = new Window
+                {
+                    Title = "ProjectStarkSemi - README",
+                    Width = 800,
+                    Height = 600,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Owner = this
+                };
+
+                var scrollViewer = new ScrollViewer
+                {
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    Padding = new Thickness(20)
+                };
+
+                var textBlock = new TextBlock
+                {
+                    TextWrapping = TextWrapping.Wrap,
+                    FontFamily = new System.Windows.Media.FontFamily("Consolas, Microsoft YaHei"),
+                    FontSize = 12
+                };
+
+                if (System.IO.File.Exists(readmePath))
+                {
+                    textBlock.Text = System.IO.File.ReadAllText(readmePath, System.Text.Encoding.UTF8);
+                }
+                else
+                {
+                    textBlock.Text = @"# ProjectStarkSemi (星钥半导体)
+
+## 🎯 功能定位
+星钥半导体客户定制项目 - 集成了锥光镜观察系统和MVS相机控制的专业光学测试解决方案
+
+## 主要功能
+- **锥光镜观察系统** - 支持VA60和VA80两种硬件型号
+- **直径线分析** - 极角线RGB/XYZ分布分析
+- **R圆分析** - 同心圆周向RGB/XYZ分布分析  
+- **MVS相机集成** - 海康威视工业相机支持
+- **数据导出** - 支持CSV格式导出分析数据
+
+## 使用方式
+1. 打开图像文件
+2. 选择分析模式（直径线或R圆）
+3. 添加分析线/圆
+4. 查看RGB/XYZ分布图表
+5. 导出分析数据
+
+README.md 文件未找到，显示默认内容。";
+                }
+
+                scrollViewer.Content = textBlock;
+                readmeWindow.Content = scrollViewer;
+                readmeWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"显示README失败: {ex.Message}", ex);
+                MessageBox.Show($"显示README失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 显示CHANGELOG文档
+        /// </summary>
+        private void btnShowChangelog_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string changelogPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CHANGELOG.md");
+                
+                // 创建一个窗口显示CHANGELOG内容
+                var changelogWindow = new Window
+                {
+                    Title = "ProjectStarkSemi - CHANGELOG",
+                    Width = 800,
+                    Height = 600,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Owner = this
+                };
+
+                var scrollViewer = new ScrollViewer
+                {
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    Padding = new Thickness(20)
+                };
+
+                var textBlock = new TextBlock
+                {
+                    TextWrapping = TextWrapping.Wrap,
+                    FontFamily = new System.Windows.Media.FontFamily("Consolas, Microsoft YaHei"),
+                    FontSize = 12
+                };
+
+                if (System.IO.File.Exists(changelogPath))
+                {
+                    textBlock.Text = System.IO.File.ReadAllText(changelogPath, System.Text.Encoding.UTF8);
+                }
+                else
+                {
+                    textBlock.Text = @"# CHANGELOG
+
+## [1.0.0] 最新版本
+
+### 新增功能
+- ✨ 直径线分析功能 - 支持极角线RGB/XYZ分布分析
+- ✨ R圆分析功能 - 支持同心圆周向RGB/XYZ分布分析
+- ✨ 双Tab图表显示 - 直径线和R圆各自独立图表
+- ✨ 中英文双语界面 - 支持界面中英文混合显示
+- ✨ 数据导出功能 - 支持CSV格式导出（英文标题）
+
+### 改进
+- 📈 R圆采样点增加到720个，显示更平滑
+- 🎨 优化UI布局，使用TabControl分离不同分析模式
+- 🔧 完善数据验证和错误处理
+
+### 技术栈
+- .NET 8.0
+- WPF
+- ScottPlot 5.x
+- OpenCvSharp4
+
+CHANGELOG.md 文件未找到，显示默认内容。";
+                }
+
+                scrollViewer.Content = textBlock;
+                changelogWindow.Content = scrollViewer;
+                changelogWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"显示CHANGELOG失败: {ex.Message}", ex);
+                MessageBox.Show($"显示CHANGELOG失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
