@@ -1,10 +1,17 @@
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Layout.Properties;
+using Microsoft.Win32;
 
 namespace ProjectARVRPro
 {
@@ -151,6 +158,110 @@ namespace ProjectARVRPro
                     }
                 }
             }
+        }
+
+        private void ExportCsv_Click(object sender, RoutedEventArgs e)
+        {
+            if (TestItems.Count == 0)
+            {
+                MessageBox.Show("没有可导出的数据", "Export CSV", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new SaveFileDialog
+            {
+                Filter = "CSV files (*.csv)|*.csv",
+                FileName = $"TestResults_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+            };
+            if (dialog.ShowDialog() != true) return;
+
+            try
+            {
+                using var writer = new StreamWriter(dialog.FileName, false, Encoding.UTF8);
+                writer.WriteLine("Name,TestValue,Value,LowLimit,UpLimit,Unit,Result");
+                foreach (var item in TestItems)
+                {
+                    writer.WriteLine(string.Join(",", new[]
+                    {
+                        EscapeCsv(item.Name),
+                        EscapeCsv(item.TestValue),
+                        item.Value.ToString("F4"),
+                        item.LowLimit.ToString("F4"),
+                        item.UpLimit.ToString("F4"),
+                        EscapeCsv(item.Unit),
+                        item.TestResult ? "PASS" : "FAIL"
+                    }));
+                }
+                MessageBox.Show("CSV 导出完成", "Export CSV", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"导出失败: {ex.Message}", "Export CSV", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ExportPdf_Click(object sender, RoutedEventArgs e)
+        {
+            if (TestItems.Count == 0)
+            {
+                MessageBox.Show("没有可导出的数据", "Export PDF", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new SaveFileDialog
+            {
+                Filter = "PDF files (*.pdf)|*.pdf",
+                FileName = $"TestResults_{DateTime.Now:yyyyMMdd_HHmmss}.pdf"
+            };
+            if (dialog.ShowDialog() != true) return;
+
+            try
+            {
+                using var writer = new PdfWriter(dialog.FileName);
+                using var pdf = new PdfDocument(writer);
+                using var document = new Document(pdf);
+
+                document.Add(new Paragraph("ObjectiveTestItem List").SetBold().SetFontSize(14));
+
+                var table = new Table(new float[] { 2, 2, 1, 1, 1, 1, 1 }).UseAllAvailableWidth();
+                string[] headers = { "Name", "TestValue", "Value", "LowLimit", "UpLimit", "Unit", "Result" };
+                foreach (var header in headers)
+                {
+                    table.AddHeaderCell(new Cell().Add(new Paragraph(header).SetBold()).SetTextAlignment(TextAlignment.CENTER));
+                }
+
+                foreach (var item in TestItems)
+                {
+                    table.AddCell(new Paragraph(item.Name ?? string.Empty));
+                    table.AddCell(new Paragraph(item.TestValue ?? string.Empty));
+                    table.AddCell(new Paragraph(item.Value.ToString("F4")));
+                    table.AddCell(new Paragraph(item.LowLimit.ToString("F4")));
+                    table.AddCell(new Paragraph(item.UpLimit.ToString("F4")));
+                    table.AddCell(new Paragraph(item.Unit ?? string.Empty));
+                    table.AddCell(new Paragraph(item.TestResult ? "PASS" : "FAIL"));
+                }
+
+                document.Add(table);
+                MessageBox.Show("PDF 导出完成", "Export PDF", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"导出失败: {ex.Message}", "Export PDF", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private static string EscapeCsv(string? input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return string.Empty;
+
+            bool requiresQuotes = input.Contains('"') || input.Contains(',') || input.Contains('\n') || input.Contains('\r');
+            if (requiresQuotes)
+            {
+                return $"\"{input.Replace("\"", "\"\"")}\"";
+            }
+
+            return input;
         }
     }
 }
