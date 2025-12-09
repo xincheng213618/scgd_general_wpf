@@ -10,21 +10,20 @@ ARVR Pro 专业版测试系统 - 针对AR/VR显示设备的全面光学性能测
 
 ## 主要功能点
 
-- **初始化管理** - 通过ProjectARVRProInit进行完整的测试参数初始化
-- **多模式处理** - 支持多种测试模式和图像处理算法：
-  - **White255Process** - 白色255灰度测试处理
-  - **White51Process** - 白色51灰度测试处理  
-  - **W25Process** - W25测试模式处理
-  - **BlackProcess** - 黑色画面测试处理
-  - **ChessboardProcess** - 棋盘格测试处理
-  - **DistortionProcess** - 畸变测试处理
-  - **MTFHVProcess** - 水平垂直MTF测试处理
-  - **OpticCenterProcess** - 光轴中心测试处理
+- **初始化管理** - 通过 ProjectARVRProInit 进行完整的测试参数初始化
+- **多模式处理** - 覆盖核心测试/修正流程：
+  - **White255Process / W25Process** - 白场/灰阶亮度测试
+  - **RedProcess / GreenProcess / BlueProcess** - 单色通道测试与修正
+  - **BlackProcess** - 黑场表现与噪声测试
+  - **ChessboardProcess** - 棋盘格测试与几何精度
+  - **DistortionProcess** - 畸变测试与校正
+  - **MTFHVProcess** - 水平/垂直 MTF 测试
+  - **OpticCenterProcess** - 光轴中心定位与偏移分析
 - **Recipe管理** - 完整的测试配方管理系统
 - **数据分析** - 客观测试结果分析和修正功能
 - **流程管理** - 基于大流程模板的测试执行
   - **ProcessMeta管理** - 支持多流程配置和选择性执行
-  - **IsEnabled属性** - 可选择性启用/禁用特定测试步骤
+  - **IsEnabled属性** - 按需启用/禁用测试步骤，自动跳过禁用项
 - **结果管理** - 测试结果的存储、查询和展示
 
 ## 与主程序的依赖关系
@@ -54,6 +53,11 @@ ARVR Pro 专业版测试系统 - 针对AR/VR显示设备的全面光学性能测
 - 算法参数设定
 - 硬件设备初始化
 - 流程模板加载
+
+### 配置与流程裁剪
+- 在 ProcessManager 中可通过 `IsEnabled` 控制具体流程是否执行
+- `ProcessMetas.json` 持久化流程开关状态，执行时自动跳过禁用步骤
+- 详见 `Process/README_IsEnabled_Feature.md`
 
 ## 开发调试
 
@@ -107,9 +111,9 @@ dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj
 
 ## 相关文档链接
 
-- [ARVR测试规范](../../docs/testing/ARVR-testing.md)
-- [光学测试算法](../../docs/algorithms/optical-testing.md)
-- [流程引擎文档](../../docs/04-api-reference/engine-components/README.md)
+- [ProjectARVRPro 项目说明](../../docs/05-resources/project-structure/project-arvrpro.md)
+- [ProjectARVRPro 优化计划](../../docs/02-developer-guide/performance/arvrpro-optimization.md)
+- [流程引擎文档](../../docs/01-user-guide/workflow/README.md)
 
 ## 维护者
 

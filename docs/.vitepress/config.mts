@@ -166,7 +166,8 @@ export default withMermaid(
               text: '性能优化',
               collapsed: true,
               items: [
-                { text: '性能优化指南', link: '/02-developer-guide/performance/overview' }
+                { text: '性能优化指南', link: '/02-developer-guide/performance/overview' },
+                { text: 'ProjectARVRPro 优化路线', link: '/02-developer-guide/performance/arvrpro-optimization' }
               ]
             },
             {
@@ -306,7 +307,8 @@ export default withMermaid(
               collapsed: true,
               items: [
                 { text: '项目结构总览', link: '/05-resources/project-structure/README' },
-                { text: '模块与文档对照', link: '/05-resources/project-structure/module-documentation-map' }
+                { text: '模块与文档对照', link: '/05-resources/project-structure/module-documentation-map' },
+                { text: 'ProjectARVRPro 项目说明', link: '/05-resources/project-structure/project-arvrpro' }
               ]
             },
             {
