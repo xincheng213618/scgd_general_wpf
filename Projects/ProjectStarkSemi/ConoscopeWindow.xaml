@@ -337,9 +337,9 @@
                         </BeginStoryboard>
                     </EventTrigger>
                 </Button.Triggers>
-                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="25" Foreground="{DynamicResource GlobalTextBrush}">
+                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="26" Foreground="{DynamicResource GlobalTextBrush}">
                     <TextBlock.RenderTransform>
-                        <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                        <RotateTransform x:Name="rotateTransform2" CenterX="13" CenterY="13"/>
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
