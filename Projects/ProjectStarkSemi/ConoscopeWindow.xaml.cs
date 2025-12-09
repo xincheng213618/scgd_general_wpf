@@ -799,15 +799,19 @@ namespace ProjectStarkSemi
                     RadiusAngle = radiusAngle,
                     Circle = circle
                 };
-                displayedCircles.Add(newCircle);
-
-                // Sort the collection by radius angle for better organization
-                var sortedCircles = displayedCircles.OrderBy(c => c.RadiusAngle).ToList();
-                displayedCircles.Clear();
-                foreach (var c in sortedCircles)
+                
+                // Insert the circle in sorted order by radius angle
+                int insertIndex = 0;
+                for (int i = 0; i < displayedCircles.Count; i++)
                 {
-                    displayedCircles.Add(c);
+                    if (displayedCircles[i].RadiusAngle > radiusAngle)
+                    {
+                        insertIndex = i;
+                        break;
+                    }
+                    insertIndex = i + 1;
                 }
+                displayedCircles.Insert(insertIndex, newCircle);
 
                 // Select the newly added circle
                 cbConcentricCircles.SelectedItem = newCircle;
