@@ -1,4 +1,5 @@
-﻿using ColorVision.FileIO;
+﻿using ColorVision.Core;
+using ColorVision.FileIO;
 using ColorVision.Themes.Controls;
 using log4net;
 using OpenCvSharp.WpfExtensions;
@@ -9,6 +10,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
 {
+
     public static class MediaHelper
     {
         private static ILog log = LogManager.GetLogger(typeof(MediaHelper));

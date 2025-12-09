@@ -175,7 +175,7 @@ namespace ColorVision.Core
                 cols = writeableBitmap.PixelWidth,
                 channels = channels,
                 depth = depth, // You might need to adjust this based on the actual bits per pixel
-                pData = Marshal.AllocHGlobal(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * channels* (depth/8))
+                pData = Marshal.AllocCoTaskMem(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * channels* (depth/8))
             };
 
             // Copy the pixel data from the WriteableBitmap to the HImageCache
