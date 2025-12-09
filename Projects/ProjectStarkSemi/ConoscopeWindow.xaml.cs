@@ -13,7 +13,6 @@ using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.LogImp;
-using ColorVision.UI.Menus;
 using FlowEngineLib;
 using log4net;
 using Microsoft.Win32;
@@ -33,19 +32,6 @@ using System.Windows.Shapes;
 
 namespace ProjectStarkSemi
 {
-
-    public class MenuConoscopeWindow : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-        public override int Order => 50;
-        public override string Header => "Conoscope";
-
-        public override void Execute()
-        {
-            ConoscopeWindow conoscopeWindow = new ConoscopeWindow();
-            conoscopeWindow.Show();
-        }
-    }
 
     /// <summary>
     /// ConoscopeWindow.xaml 的交互逻辑
@@ -78,7 +64,7 @@ namespace ProjectStarkSemi
         }
 
         public ConoscopeManager ConoscopeManager => ConoscopeManager.GetInstance();
-        public ConoscopeConfig ConoscopeConfig => ConoscopeManager.ConoscopeConfig;
+        public ConoscopeConfig ConoscopeConfig => ConoscopeManager.Config;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -450,7 +436,9 @@ namespace ProjectStarkSemi
             ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
         }
 
-        public OpenCvSharp.Mat XYZMat { get; set; } 
+        public OpenCvSharp.Mat XMat { get; set; }
+        public OpenCvSharp.Mat YMat { get; set; }
+        public OpenCvSharp.Mat ZMat { get; set; }
 
         private void OpenFile_Click(object sender, RoutedEventArgs e)
         {
@@ -461,6 +449,10 @@ namespace ProjectStarkSemi
                 string filename = openFileDialog.FileName;
                 if (CVFileUtil.IsCVCIEFile(filename))
                 {
+                    XMat?.Dispose();
+                    YMat?.Dispose();
+                    ZMat?.Dispose();
+
                     CVCIEFile fileInfo = new CVCIEFile();
                     CVFileUtil.Read(filename, out fileInfo);
                     // Calculate the size of a single channel in bytes
@@ -485,15 +477,9 @@ namespace ProjectStarkSemi
                     Buffer.BlockCopy(fileInfo.Data, channelSize, dataY, 0, channelSize);
                     Buffer.BlockCopy(fileInfo.Data, channelSize * 2, dataZ, 0, channelSize);
 
-                    using (var matX = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX))
-                    using (var matY = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataY))
-                    using (var matZ = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataZ))
-                    {
-                        // Merge the three single-channel Mats into one 3-channel Mat (XYZ)
-                        XYZMat = new OpenCvSharp.Mat();
-                        OpenCvSharp.Cv2.Merge(new[] { matX, matY, matZ }, XYZMat);
-                    }
-
+                    XMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
+                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataY);
+                    ZMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataZ);
                 }
 
                 ImageView.OpenImage(filename);
@@ -1243,17 +1229,12 @@ namespace ProjectStarkSemi
                     r = pixel.Item2;
                 }
 
-                if (XYZMat != null)
-                {
-                    OpenCvSharp.Vec3w pixel = mat.At<OpenCvSharp.Vec3w>(iy, ix);
-                    Y = pixel.Item0;
-                    Z = pixel.Item1;
-                    X = pixel.Item2;
-                }
-                else
-                {
-                    X = Y = Z = 0;
-                }
+                if (XMat != null)
+                    X = XMat.At<float>(iy, ix);
+                if (YMat != null)
+                    Y = YMat.At<float>(iy, ix);
+                if (ZMat != null)
+                    Z = ZMat.At<float>(iy, ix);
             }
         }
 
@@ -1372,13 +1353,12 @@ namespace ProjectStarkSemi
                             r = pixel.Item2;
                         }
 
-                        if(XYZMat != null)
-                        {
-                            OpenCvSharp.Vec3w pixel = mat.At<OpenCvSharp.Vec3w>(iy, ix);
-                            Y = pixel.Item0;
-                            Z = pixel.Item1;
-                            X = pixel.Item2;
-                        }
+                        if (XMat != null)
+                            X = XMat.At<float>(iy, ix);
+                        if (YMat != null)
+                            Y = YMat.At<float>(iy, ix);
+                        if (ZMat != null)
+                            Z = ZMat.At<float>(iy, ix);
                     }
 
                     polarLine.RgbData.Add(new RgbSample
@@ -1437,7 +1417,7 @@ namespace ProjectStarkSemi
                 double[] positions = selectedPolarLine.RgbData.Select(s => s.Position).ToArray();
 
                 // Add scatter plots for each channel based on visibility
-                if (ConoscopeManager.IsShowRedChannel)
+                if (ConoscopeConfig.IsShowRedChannel)
                 {
                     double[] rValues = selectedPolarLine.RgbData.Select(s => s.R).ToArray();
                     var redScatter = wpfPlot.Plot.Add.Scatter(positions, rValues);
@@ -1446,7 +1426,7 @@ namespace ProjectStarkSemi
                     redScatter.LegendText = "R";
                 }
 
-                if (ConoscopeManager.IsShowGreenChannel)
+                if (ConoscopeConfig.IsShowGreenChannel)
                 {
                     double[] gValues = selectedPolarLine.RgbData.Select(s => s.G).ToArray();
 
@@ -1456,7 +1436,7 @@ namespace ProjectStarkSemi
                     greenScatter.LegendText = "G";
                 }
 
-                if (ConoscopeManager.IsShowBlueChannel)
+                if (ConoscopeConfig.IsShowBlueChannel)
                 {
                     double[] bValues = selectedPolarLine.RgbData.Select(s => s.B).ToArray();
                     var blueScatter = wpfPlot.Plot.Add.Scatter(positions, bValues);
@@ -1464,7 +1444,7 @@ namespace ProjectStarkSemi
                     blueScatter.LineWidth = 2;
                     blueScatter.LegendText = "B";
                 }
-                if (ConoscopeManager.IsShowXChannel)
+                if (ConoscopeConfig.IsShowXChannel)
                 {
                     double[] XValues = selectedPolarLine.RgbData.Select(s => s.X).ToArray();
                     var blueScatter = wpfPlot.Plot.Add.Scatter(positions, XValues);
@@ -1472,7 +1452,7 @@ namespace ProjectStarkSemi
                     blueScatter.LineWidth = 2;
                     blueScatter.LegendText = "X";
                 }
-                if (ConoscopeManager.IsShowYChannel)
+                if (ConoscopeConfig.IsShowYChannel)
                 {
                     double[] YValues = selectedPolarLine.RgbData.Select(s => s.Y).ToArray();
                     var blueScatter = wpfPlot.Plot.Add.Scatter(positions, YValues);
@@ -1480,7 +1460,7 @@ namespace ProjectStarkSemi
                     blueScatter.LineWidth = 2;
                     blueScatter.LegendText = "Y";
                 }
-                if (ConoscopeManager.IsShowZChannel)
+                if (ConoscopeConfig.IsShowZChannel)
                 {
                     double[] ZValues = selectedPolarLine.RgbData.Select(s => s.Z).ToArray();
                     var blueScatter = wpfPlot.Plot.Add.Scatter(positions, ZValues);
@@ -1511,8 +1491,12 @@ namespace ProjectStarkSemi
         }
         public void Dispose()
         {
-            XYZMat?.Dispose();
-            XYZMat = null;
+            XMat?.Dispose();
+            XMat = null;
+            YMat?.Dispose();
+            YMat = null;
+            ZMat?.Dispose();
+            ZMat = null;
             ImageView?.Dispose();
             GC.SuppressFinalize(this);
         }
