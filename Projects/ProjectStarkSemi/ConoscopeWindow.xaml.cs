@@ -52,6 +52,10 @@ namespace ProjectStarkSemi
         
         // Concentric circle line management
         private ObservableCollection<ConcentricCircleLine> concentricCircleLines = new ObservableCollection<ConcentricCircleLine>();
+        private ConcentricCircleLine? selectedCircleLine;
+        
+        // Displayed circles for UI management
+        private ObservableCollection<ConcentricCircleLine> displayedCircles = new ObservableCollection<ConcentricCircleLine>();
         
         // Current image state for dynamic angle addition
         private BitmapSource? currentBitmapSource;
@@ -558,6 +562,9 @@ namespace ProjectStarkSemi
 
                 log.Info($"图像尺寸: {imageWidth}x{imageHeight}, 中心: ({center.X}, {center.Y}), 半径: {radius}");
 
+                // Clear existing displayed circles
+                ClearDisplayedCircles();
+
                 foreach (var item in ConoscopeConfig.DefaultRAngles)
                 {
                     CircleProperties circleProperties = new CircleProperties
@@ -569,6 +576,21 @@ namespace ProjectStarkSemi
                     };
                     DVCircle circle = new DVCircle(circleProperties);
                     ImageView.AddVisual(circle);
+                    
+                    // Add to displayed circles collection for management
+                    displayedCircles.Add(new ConcentricCircleLine
+                    {
+                        RadiusAngle = item,
+                        Circle = circle
+                    });
+                }
+                
+                // Set up circles ComboBox
+                if (displayedCircles.Count > 0)
+                {
+                    cbConcentricCircles.ItemsSource = displayedCircles;
+                    cbConcentricCircles.SelectedIndex = 0;
+                    selectedCircleLine = displayedCircles[0];
                 }
 
                 // Clear existing lines
@@ -719,6 +741,169 @@ namespace ProjectStarkSemi
                 log.Error($"删除角度失败: {ex.Message}", ex);
                 MessageBox.Show($"删除角度失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>
+        /// 添加同心圆角度按钮点击事件
+        /// </summary>
+        private void btnAddCircleAngle_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Check if image is loaded
+                if (currentBitmapSource == null)
+                {
+                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    log.Warn("未加载图像，无法添加同心圆");
+                    return;
+                }
+
+                // Parse radius angle from text box
+                if (!double.TryParse(txtCircleAngle.Text, out double radiusAngle))
+                {
+                    MessageBox.Show("请输入有效的半径角度数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    log.Warn($"无效的半径角度输入: {txtCircleAngle.Text}");
+                    return;
+                }
+
+                // Validate radius angle is within valid range (0 to MaxAngle)
+                if (radiusAngle < 0 || radiusAngle > MaxAngle)
+                {
+                    MessageBox.Show($"半径角度必须在 0 到 {MaxAngle} 度之间", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    log.Warn($"半径角度超出范围: {radiusAngle}");
+                    return;
+                }
+
+                // Check if radius angle already exists
+                if (displayedCircles.Any(circle => Math.Abs(circle.RadiusAngle - radiusAngle) < 0.01))
+                {
+                    MessageBox.Show($"半径角度 {radiusAngle:F1}° 已存在", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    log.Info($"半径角度 {radiusAngle:F1}° 已存在，跳过添加");
+                    return;
+                }
+
+                // Create new circle at specified radius angle
+                CircleProperties circleProperties = new CircleProperties
+                {
+                    Center = currentImageCenter,
+                    Radius = currentImageRadius * radiusAngle / MaxAngle,
+                    Pen = new Pen(Brushes.Yellow, 1 / ImageView.EditorContext.ZoomRatio),
+                    Brush = Brushes.Transparent
+                };
+                DVCircle circle = new DVCircle(circleProperties);
+                ImageView.AddVisual(circle);
+
+                // Add to displayed circles collection
+                ConcentricCircleLine newCircle = new ConcentricCircleLine
+                {
+                    RadiusAngle = radiusAngle,
+                    Circle = circle
+                };
+                displayedCircles.Add(newCircle);
+
+                // Sort the collection by radius angle for better organization
+                var sortedCircles = displayedCircles.OrderBy(c => c.RadiusAngle).ToList();
+                displayedCircles.Clear();
+                foreach (var c in sortedCircles)
+                {
+                    displayedCircles.Add(c);
+                }
+
+                // Select the newly added circle
+                cbConcentricCircles.SelectedItem = newCircle;
+                selectedCircleLine = newCircle;
+
+                // Add to config for persistence
+                if (!ConoscopeConfig.DefaultRAngles.Contains(radiusAngle))
+                {
+                    ConoscopeConfig.DefaultRAngles.Add(radiusAngle);
+                }
+
+                // Clear text box
+                txtCircleAngle.Text = "";
+                
+                log.Info($"成功添加同心圆: 半径角度 {radiusAngle:F1}°");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"添加同心圆失败: {ex.Message}", ex);
+                MessageBox.Show($"添加同心圆失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 删除选中同心圆按钮点击事件
+        /// </summary>
+        private void btnRemoveCircleAngle_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (selectedCircleLine == null)
+                {
+                    MessageBox.Show("请先选择要删除的同心圆", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Remove from visual
+                if (selectedCircleLine.Circle != null)
+                {
+                    ImageView.DrawingVisualLists.Remove(selectedCircleLine.Circle);
+                }
+
+                double removedAngle = selectedCircleLine.RadiusAngle;
+
+                // Remove from collection
+                displayedCircles.Remove(selectedCircleLine);
+
+                // Remove from config
+                ConoscopeConfig.DefaultRAngles.Remove(removedAngle);
+
+                // Select first circle if available
+                if (displayedCircles.Count > 0)
+                {
+                    selectedCircleLine = displayedCircles[0];
+                    cbConcentricCircles.SelectedIndex = 0;
+                }
+                else
+                {
+                    selectedCircleLine = null;
+                }
+
+                log.Info($"成功删除同心圆: 半径角度 {removedAngle:F1}°");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"删除同心圆失败: {ex.Message}", ex);
+                MessageBox.Show($"删除同心圆失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 同心圆选择改变事件
+        /// </summary>
+        private void cbConcentricCircles_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (cbConcentricCircles.SelectedItem is ConcentricCircleLine selectedCircle)
+            {
+                selectedCircleLine = selectedCircle;
+                log.Info($"选中同心圆: 半径角度 {selectedCircle.RadiusAngle:F1}°");
+            }
+        }
+
+        /// <summary>
+        /// 清除所有显示的同心圆
+        /// </summary>
+        private void ClearDisplayedCircles()
+        {
+            foreach (var circleLine in displayedCircles)
+            {
+                if (circleLine.Circle != null)
+                {
+                    ImageView.DrawingVisualLists.Remove(circleLine.Circle);
+                }
+            }
+            displayedCircles.Clear();
+            selectedCircleLine = null;
         }
 
         /// <summary>
