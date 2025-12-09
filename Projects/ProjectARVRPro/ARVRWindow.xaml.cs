@@ -348,7 +348,7 @@ namespace ProjectARVRPro
             }
 
             FlowName = FlowTemplate.Text;
-            CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff"+ ProjectARVRProConfig.Instance.SN);
+            CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff" + ProjectARVRProConfig.Instance.SN);
 
             await Refresh();
 
