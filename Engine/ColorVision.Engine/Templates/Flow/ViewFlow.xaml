@@ -92,6 +92,21 @@
                     <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
                         <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1"/>
                     </StackPanel>
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="x64Log" Command="{Binding FlowEngineManager.WindowsServiceX64.OpenLogCommand}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="devLog" Command="{Binding FlowEngineManager.WindowsServiceDev.OpenLogCommand}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="RCLog" Command="{Binding FlowEngineManager.WindowsServiceReg.OpenLogCommand}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="CameraLog" Command="{Binding FlowEngineManager.OpenCameraLogCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
+                    
                     <ProgressBar x:Name="ProgressBar1" Maximum="100"/>
                     <TextBox x:FieldModifier="public"  x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="105" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" Margin="0,0,0,5" />
                 </StackPanel>

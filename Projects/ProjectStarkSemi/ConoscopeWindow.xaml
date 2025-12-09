@@ -10,11 +10,12 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance  Conoscope:ConoscopeManager}"
-        Title="Conoscope" Height="750" Width="1500" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
+        Title="Conoscope" Height="750" Width="1280" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
     <Grid Margin="5,5,5,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
@@ -54,15 +55,12 @@
                         <RibbonGroupSizeDefinition IsCollapsed="True" />
                     </RibbonGroupSizeDefinitionBaseCollection>
                 </Ribbon.Resources>
-                <Ribbon.HelpPaneContent>
-                    <RibbonButton SmallImageSource="Images/smallicon.png" />
-                </Ribbon.HelpPaneContent>
                 <!-- <snippetAppMenuItems> -->
                 <Ribbon.ApplicationMenu>
                     <RibbonApplicationMenu SmallImageSource="Assets/Image/ColorVision1.ico" Background="Transparent"  KeyTip="F">
                         <RibbonApplicationMenuItem Header="Open"
                                                       ImageSource="Images/Open32.png"
-                                                      KeyTip="O" Click="Button_Click" />
+                                                      KeyTip="O" Click="OpenFile_Click" />
                         <RibbonApplicationMenuItem Header="Save"
                                                       Command="Save"
                                                       ImageSource="Images/Save32.png"
@@ -145,14 +143,17 @@
                         <RibbonButton Command="Redo"  
                                          SmallImageSource="Images/ArrowRedo16.png"
                                          KeyTip="3"/>
+                        
                     </RibbonQuickAccessToolBar>
                 </Ribbon.QuickAccessToolBar>
 
                 <RibbonTab Header="Home"  KeyTip="H"  GroupSizeReductionOrder="Clipboard, Insert, Insert, Paragraph, Clipboard, Editing, Font, Clipboard" >
                     <RibbonGroup Header="Files">
-                        <RibbonButton Label="Open" SmallImageSource="Images/Open32.png"  KeyTip="O" Click="Button_Click" />
-                        <RibbonButton Label="SaveAs" SmallImageSource="Images/SaveAs32.png"  KeyTip="O" Click="Button_Click" />
-                        <RibbonButton Label="导出CSV"  Click="btnExportCSV_Click" Padding="10,5"/>
+                        <RibbonButton Label="Open" SmallImageSource="Images/Open32.png"  KeyTip="O" Click="OpenFile_Click" />
+                        <RibbonButton Label="SaveAs" SmallImageSource="Images/SaveAs32.png"  KeyTip="O" Click="OpenFile_Click" />
+                        <RibbonButton Label="直径线导出"  Click="btnExportAngleMode_Click" Padding="10,5"/>
+                        <RibbonButton Label="R圆导出"  Click="btnExportCircleMode_Click" Padding="10,5"/>
+   
                     </RibbonGroup>
                 </RibbonTab>
                 <RibbonTab Header="Camera"  Padding="10">
@@ -160,11 +161,7 @@
                         <StackPanel>
                             <DockPanel >
                                 <TextBlock Text="{x:Static properties:Resources.Model}" VerticalAlignment="Center" Width="80"/>
-                                <ComboBox x:Name="cbModelType" 
-                                      SelectionChanged="cbModelType_SelectionChanged"
-                                      SelectedIndex="0">
-                                    <ComboBoxItem Content="VA60" Tag="VA60"/>
-                                    <ComboBoxItem Content="VA80" Tag="VA80"/>
+                                <ComboBox x:Name="cbModelType"  SelectionChanged="cbModelType_SelectionChanged" SelectedItem="{Binding ConoscopeConfig.CurrentModel}">
                                 </ComboBox>
                             </DockPanel>
                         </StackPanel>
@@ -323,15 +320,32 @@
 
                 <RibbonTab Header="Help">
                     <RibbonGroup Header="Help" x:Name="Help"  SmallImageSource="Images/InsertPicture16.png" GroupSizeDefinitions="{DynamicResource 4ControlLSC}">
+                        <RibbonButton Label="README" SmallImageSource="Images/InsertPicture16.png" Click="btnShowReadme_Click"/>
+                        <RibbonButton Label="CHANGELOG" SmallImageSource="Images/InsertPicture16.png" Click="btnShowChangelog_Click"/>
                     </RibbonGroup>
 
                     <RibbonGroup Header="About" x:Name="About"  SmallImageSource="Images/InsertPicture16.png" GroupSizeDefinitions="{DynamicResource 4ControlLSC}">
-                        <RibbonButton SmallImageSource="Images/smallicon.png"  Click="RibbonButton_Click"/>
+                        <RibbonButton Label="About" SmallImageSource="Images/smallicon.png"  Click="RibbonButton_Click"/>
                     </RibbonGroup>
 
                 </RibbonTab>
             </Ribbon>
-
+            <Button  VerticalAlignment="Top" HorizontalAlignment="Right" Command="{Binding EditConoscopeConfigCommand}" Padding="2" Height="40" Width="40" >
+                <Button.Triggers>
+                    <EventTrigger RoutedEvent="Button.Click">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Button.Triggers>
+                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="26" Foreground="{DynamicResource GlobalTextBrush}">
+                    <TextBlock.RenderTransform>
+                        <RotateTransform x:Name="rotateTransform2" CenterX="13" CenterY="13"/>
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+            </Button>
         </Grid>
 
         <!-- Main Content Area -->
@@ -343,119 +357,149 @@
             <!-- Left Side: Image Display -->
             <Grid Grid.Column="0">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="640"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="300"/>
                 </Grid.ColumnDefinitions>
                 <im:ImageView x:Name="ImageView" Grid.Column="0"/>
-                <Grid Grid.Column="1">
+                <Grid Grid.Column="1" Margin="5">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlot"/>
-                    <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5">
-                        <!-- Angle management -->
-                        <GroupBox Header="角度管理" Margin="0,0,0,5">
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                                    <TextBlock Text="添加角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                    <TextBox x:Name="txtAngle" 
-                                             MinWidth="60" 
-                                             VerticalAlignment="Center"
-                                             Margin="0,0,5,0"/>
-                                    <TextBlock Text="°" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <Button Content="添加" 
-                                            Click="btnAddAngle_Click"
-                                            Padding="10,2"
-                                            Margin="0,0,5,0"/>
-                                    <Button Content="删除选中" 
-                                            Click="btnRemoveAngle_Click"
-                                            Padding="10,2"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="当前角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                    <ComboBox x:Name="cbPolarAngleLines" 
-                                              MinWidth="100" 
-                                              SelectionChanged="cbPolarAngleLines_SelectionChanged"/>
-                                    <Button Grid.Column="1" Margin="5,0,5,0" HorizontalAlignment="Left" Command="{Binding EditConoscopeConfigCommand}" Padding="2" Height="28" Width="28" >
-                                        <Button.Triggers>
-                                            <EventTrigger RoutedEvent="Button.Click">
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Button.Triggers>
-                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                                            <TextBlock.RenderTransform>
-                                                <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
-                                            </TextBlock.RenderTransform>
-                                        </TextBlock>
-                                    </Button>
-                                    <Button Content="导出CSV"  Click="btnExportCSV_Click" Padding="10,5"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <CheckBox x:Name="chkShowRed" 
-                                          Content="R" 
-                                          Foreground="Red" 
-                                          IsChecked="{Binding IsShowRedChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                    <CheckBox x:Name="chkShowGreen" 
-                                          Content="G" 
-                                          Foreground="Green" 
-                                          IsChecked="{Binding IsShowGreenChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                    <CheckBox x:Name="chkShowBlue" 
-                                          Content="B" 
-                                          Foreground="Blue" 
-                                          IsChecked="{Binding IsShowBlueChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                    <CheckBox x:Name="chkShowXlue" 
-                                          Content="X" 
-                                          Foreground="Gold" 
-                                          IsChecked="{Binding IsShowXChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                    <CheckBox x:Name="chkShowYlue" 
-                                          Content="Y" 
-                                          Foreground="White" 
-                                          IsChecked="{Binding IsShowYChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                    <CheckBox x:Name="chkShowZlue" 
-                                          Content="Z" 
-                                          Foreground="Violet" 
-                                          IsChecked="{Binding IsShowZChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </GroupBox>
-                        
-
-                       
+                    <StackPanel Orientation="Horizontal" Margin="5">
+                        <CheckBox x:Name="chkShowRed" 
+                                                  Content="R" 
+                                                  Foreground="Red" 
+                                                  IsChecked="{Binding Config.IsShowRedChannel}"
+                                                  Margin="5,0"
+                                                  Checked="RgbChannelVisibility_Changed"
+                                                  Unchecked="RgbChannelVisibility_Changed"/>
+                        <CheckBox x:Name="chkShowGreen" 
+                                                  Content="G" 
+                                                  Foreground="Green" 
+                                                  IsChecked="{Binding Config.IsShowGreenChannel}"
+                                                  Margin="5,0"
+                                                  Checked="RgbChannelVisibility_Changed"
+                                                  Unchecked="RgbChannelVisibility_Changed"/>
+                        <CheckBox x:Name="chkShowBlue" 
+                                                  Content="B" 
+                                                  Foreground="Blue" 
+                                                  IsChecked="{Binding Config.IsShowBlueChannel}"
+                                                  Margin="5,0"
+                                                  Checked="RgbChannelVisibility_Changed"
+                                                  Unchecked="RgbChannelVisibility_Changed"/>
+                        <CheckBox x:Name="chkShowXlue" 
+                                                  Content="X" 
+                                                  Foreground="Gold" 
+                                                  IsChecked="{Binding Config.IsShowXChannel}"
+                                                  Margin="5,0"
+                                                  Checked="RgbChannelVisibility_Changed"
+                                                  Unchecked="RgbChannelVisibility_Changed"/>
+                        <CheckBox x:Name="chkShowYlue" 
+                                                  Content="Y" 
+                                                  Foreground="Gray" 
+                                                  IsChecked="{Binding Config.IsShowYChannel}"
+                                                  Margin="5,0"
+                                                  Checked="RgbChannelVisibility_Changed"
+                                                  Unchecked="RgbChannelVisibility_Changed"/>
+                        <CheckBox x:Name="chkShowZlue" 
+                                                  Content="Z" 
+                                                  Foreground="Violet" 
+                                                  IsChecked="{Binding Config.IsShowZChannel}"
+                                                  Margin="5,0"
+                                                  Checked="RgbChannelVisibility_Changed"
+                                                  Unchecked="RgbChannelVisibility_Changed"/>
                     </StackPanel>
+                    <!-- Export Settings -->
+                    <GroupBox Grid.Row="1" Header="导出设置" Margin="0,0,0,5">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                <TextBlock Text="导出模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                <ComboBox x:Name="cbExportMode" 
+                                             MinWidth="120" 
+                                             SelectedIndex="0">
+                                    <ComboBoxItem Content="按直径线导出" Tag="Angle"/>
+                                    <ComboBoxItem Content="按R圆导出" Tag="Circle"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                <TextBlock Text="导出通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="4">
+                                    <ComboBoxItem Content="R通道" Tag="R"/>
+                                    <ComboBoxItem Content="G通道" Tag="G"/>
+                                    <ComboBoxItem Content="B通道" Tag="B"/>
+                                    <ComboBoxItem Content="X通道" Tag="X"/>
+                                    <ComboBoxItem Content="Y通道" Tag="Y"/>
+                                    <ComboBoxItem Content="Z通道" Tag="Z"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="直径线导出"   Click="btnExportAngleMode_Click"    Padding="10,5"  Margin="5,0,5,0"/>
+                                <Button Content="R圆导出"    Click="btnExportCircleMode_Click"   Padding="10,5"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+                    <TabControl Grid.Row="2" Margin="5">
+                        <!-- Diameter Line Tab -->
+                        <TabItem Header="Diameter Line" >
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Diameter Line Plot -->
+                                <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotDiameterLine" />
+
+                                <!-- Diameter Line Controls -->
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                        <TextBlock Text="添加角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <TextBox x:Name="txtAngle" MinWidth="60"   VerticalAlignment="Center"   Margin="0,0,5,0"/>
+                                        <Button Content="添加"  Click="btnAddAngle_Click"   Padding="10,2" Margin="0,0,5,0"/>
+                                        <Button Content="删除选中" Click="btnRemoveAngle_Click"   Padding="10,2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="当前角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <ComboBox x:Name="cbPolarAngleLines"  MinWidth="100"  SelectionChanged="cbPolarAngleLines_SelectionChanged"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="R Circle">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Diameter Line Plot -->
+                                <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotRCircle"/>
+
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                        <TextBlock Text="添加半径角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <TextBox x:Name="txtCircleAngle" MinWidth="60"   VerticalAlignment="Center"   Margin="0,0,5,0"/>
+                                        <Button Content="添加"  Click="btnAddCircleAngle_Click"   Padding="10,2" Margin="0,0,5,0"/>
+                                        <Button Content="删除选中" Click="btnRemoveCircleAngle_Click"   Padding="10,2"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="当前半径角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <ComboBox x:Name="cbConcentricCircles"  MinWidth="100"  SelectionChanged="cbConcentricCircles_SelectionChanged"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </TabItem>
+                    </TabControl>
                 </Grid>
-                <Grid Grid.Column="2" x:Name="LogGrid">
-                    <!-- LogOutput will be added here programmatically -->
-                </Grid>
+ 
             </Grid>
 
         </Grid>
 
         <!-- Status Bar at Bottom -->
-        <StatusBar Grid.Row="2" Height="25">
+        <StatusBar Grid.Row="3" Height="25">
             <StatusBar.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Grid>
@@ -492,9 +536,6 @@
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{x:Static properties:Resources.ObservationCameraStatus}" Margin="0,0,5,0"/>
                     <TextBlock x:Name="tbObservationCameraStatus" Text="{x:Static properties:Resources.NotOpened}" Foreground="Gray"/>
-                    <TextBlock Text=" | " Margin="10,0,5,0"/>
-                    <TextBlock Text="{x:Static properties:Resources.CalibrationStatus}" Margin="0,0,5,0"/>
-                    <TextBlock x:Name="tbCalibrationStatus" Text="{x:Static properties:Resources.NotCalibrated}" Foreground="Orange"/>
                 </StackPanel>
             </StatusBarItem>
         </StatusBar>

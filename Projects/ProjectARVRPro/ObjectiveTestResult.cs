@@ -5,6 +5,7 @@ using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Distortion;
 using ProjectARVRPro.Process.Green;
 using ProjectARVRPro.Process.MTFHV;
+using ProjectARVRPro.Process.MTFHV058;
 using ProjectARVRPro.Process.OpticCenter;
 using ProjectARVRPro.Process.Red;
 using ProjectARVRPro.Process.W25;
@@ -159,6 +160,9 @@ namespace ProjectARVRPro
 
         [DisplayName("MTF")]
         public MTFHVTestResult MTFHVTestResult { get; set; }
+
+        [DisplayName("MTF058")]
+        public List<MTFHV058TestResult> MTFHV058TestResults { get; set; } = new List<MTFHV058TestResult>();
 
         [DisplayName("Distortion")]
         public DistortionTestResult DistortionTestResult { get; set; }

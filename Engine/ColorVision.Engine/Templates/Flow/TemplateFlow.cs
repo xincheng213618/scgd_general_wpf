@@ -268,6 +268,7 @@ namespace ColorVision.Engine.Templates.Flow
         public override bool ImportFile(string filePath)
         {
             if (!File.Exists(filePath)) return false;
+            ImportName = Path.GetFileNameWithoutExtension(filePath);
             byte[] fileBytes = File.ReadAllBytes(filePath);
             string base64 = Convert.ToBase64String(fileBytes);
             FlowParam param = new FlowParam();

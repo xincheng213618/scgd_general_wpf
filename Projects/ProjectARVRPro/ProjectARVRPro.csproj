@@ -6,12 +6,13 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.0.4.3</VersionPrefix>
+		<VersionPrefix>1.1.1.0</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
 	  <None Remove="CHANGELOG.md" />
 	  <None Remove="README.md" />
+	  <None Remove="ROADMAP.md" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
@@ -29,6 +30,9 @@
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </EmbeddedResource>
 	  <EmbeddedResource Include="README.md">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </EmbeddedResource>
+	  <EmbeddedResource Include="ROADMAP.md">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </EmbeddedResource>
 	</ItemGroup>

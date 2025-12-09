@@ -85,8 +85,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DataContext = Device;
             this.AddViewConfig(View, ComboxView);
 
-            this.ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
+            this.ContextMenu = Device.ContextMenu;
 
 
             ButtonProgressBarGetData = new ButtonProgressBar(ProgressBar, TakePhotoButton);

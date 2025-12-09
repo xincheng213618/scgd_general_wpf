@@ -1,0 +1,879 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="LoopNode" xml:space="preserve">
+    <value>LoopNode</value>
+  </data>
+  <data name="电(压/流)源" xml:space="preserve">
+    <value>Напряжение (В) / Ток (мА)</value>
+  </data>
+  <data name="灯珠检测" xml:space="preserve">
+    <value>Тестирование светодиодных бусин</value>
+  </data>
+  <data name="灯带检测" xml:space="preserve">
+    <value>Тестирование светодиодных лент</value>
+  </data>
+  <data name="相机模板" xml:space="preserve">
+    <value>Шаблон камеры</value>
+  </data>
+  <data name="Current_I" xml:space="preserve">
+    <value>Ток(I)(мА)</value>
+  </data>
+  <data name="状态触发" xml:space="preserve">
+    <value>Государственный триггер</value>
+  </data>
+  <data name="积分时间" xml:space="preserve">
+    <value>Очки Время</value>
+  </data>
+  <data name="OLED数据提取" xml:space="preserve">
+    <value>Извлечение данных OLED</value>
+  </data>
+  <data name="绝对位置" xml:space="preserve">
+    <value>Абсолютное положение</value>
+  </data>
+  <data name="缓存大小" xml:space="preserve">
+    <value>Размер кэша</value>
+  </data>
+  <data name="SolidPoint" xml:space="preserve">
+    <value>твердая точка</value>
+  </data>
+  <data name="BExpDesc" xml:space="preserve">
+    <value>Время экспозиции канала B (мс)</value>
+  </data>
+  <data name="算子模板" xml:space="preserve">
+    <value>Шаблон оператора</value>
+  </data>
+  <data name="曝光模板" xml:space="preserve">
+    <value>Шаблон экспозиции</value>
+  </data>
+  <data name="曝光时间" xml:space="preserve">
+    <value>Время экспозиции (мс)</value>
+  </data>
+  <data name="是否新增" xml:space="preserve">
+    <value>Можно ли добавить новые?</value>
+  </data>
+  <data name="服务名称" xml:space="preserve">
+    <value>Название услуги</value>
+  </data>
+  <data name="最小超时" xml:space="preserve">
+    <value>Минимальный тайм-аут</value>
+  </data>
+  <data name="最大超时" xml:space="preserve">
+    <value>Максимальный тайм-аут</value>
+  </data>
+  <data name="手动确认" xml:space="preserve">
+    <value>Ручное подтверждение</value>
+  </data>
+  <data name="控制命令" xml:space="preserve">
+    <value>Команды управления</value>
+  </data>
+  <data name="指令类型" xml:space="preserve">
+    <value>Тип инструкции</value>
+  </data>
+  <data name="接收指令" xml:space="preserve">
+    <value>Получить инструкции</value>
+  </data>
+  <data name="指定画面" xml:space="preserve">
+    <value>Назначенный экран</value>
+  </data>
+  <data name="模板文件" xml:space="preserve">
+    <value>файл шаблона</value>
+  </data>
+  <data name="模板匹配" xml:space="preserve">
+    <value>Сопоставление шаблонов</value>
+  </data>
+  <data name="03_2 Algorithm" xml:space="preserve">
+    <value>032 Алгоритм</value>
+  </data>
+  <data name="自适应校零" xml:space="preserve">
+    <value>Адаптивное обнуление</value>
+  </data>
+  <data name="Spectrum_FilterWheel" xml:space="preserve">
+    <value>Спектрометр + ND</value>
+  </data>
+  <data name="校正模板" xml:space="preserve">
+    <value>Шаблон исправления</value>
+  </data>
+  <data name="图像裁剪" xml:space="preserve">
+    <value>Обрезка изображения</value>
+  </data>
+  <data name="图像文件" xml:space="preserve">
+    <value>Файлы изображений</value>
+  </data>
+  <data name="图像拼接" xml:space="preserve">
+    <value>Сшивание изображений</value>
+  </data>
+  <data name="图像翻转" xml:space="preserve">
+    <value>Перевернуть изображение</value>
+  </data>
+  <data name="发送指令" xml:space="preserve">
+    <value>Отправить команду</value>
+  </data>
+  <data name="SFR_FindROI" xml:space="preserve">
+    <value>SFRFindROI</value>
+  </data>
+  <data name="启用ND" xml:space="preserve">
+    <value>Включить ND</value>
+  </data>
+  <data name="名称前缀" xml:space="preserve">
+    <value>Префикс имени</value>
+  </data>
+  <data name="十字计算" xml:space="preserve">
+    <value>Крестообразный расчет</value>
+  </data>
+  <data name="合规算法" xml:space="preserve">
+    <value>Алгоритм соответствия</value>
+  </data>
+  <data name="发光区定位" xml:space="preserve">
+    <value>Позиционирование светоизлучающей области</value>
+  </data>
+  <data name="发光区检测" xml:space="preserve">
+    <value>Обнаружение люминесцирующих областей</value>
+  </data>
+  <data name="ARVR算法" xml:space="preserve">
+    <value>Алгоритм ARVR</value>
+  </data>
+  <data name="双目融合" xml:space="preserve">
+    <value>Бинокулярное слияние</value>
+  </data>
+  <data name="参数模板" xml:space="preserve">
+    <value>Шаблон параметров</value>
+  </data>
+  <data name="关闭输出" xml:space="preserve">
+    <value>Выключить выход</value>
+  </data>
+  <data name="布点类型" xml:space="preserve">
+    <value>Тип распространения</value>
+  </data>
+  <data name="平均次数" xml:space="preserve">
+    <value>Среднее количество раз</value>
+  </data>
+  <data name="MQTT订阅HUB" xml:space="preserve">
+    <value>Подписаться на HUB</value>
+  </data>
+  <data name="Timer.Time" xml:space="preserve">
+    <value>Время</value>
+  </data>
+  <data name="定位输出" xml:space="preserve">
+    <value>Позиционирование выходного сигнала</value>
+  </data>
+  <data name="自动/自适应" xml:space="preserve">
+    <value>Автоматический/Адаптивный</value>
+  </data>
+  <data name="发光区检测OLED" xml:space="preserve">
+    <value>Обнаружение области излучения OLED</value>
+  </data>
+  <data name="保存原图" xml:space="preserve">
+    <value>Сохранить исходное изображение</value>
+  </data>
+  <data name="修正模板" xml:space="preserve">
+    <value>Изменить шаблон</value>
+  </data>
+  <data name="修正输出" xml:space="preserve">
+    <value>Правильный вывод</value>
+  </data>
+  <data name="Common" xml:space="preserve">
+    <value>Общий</value>
+  </data>
+  <data name="Camera" xml:space="preserve">
+    <value>камера</value>
+  </data>
+  <data name="Circle" xml:space="preserve">
+    <value>круглый</value>
+  </data>
+  <data name="03_3 第三方算法" xml:space="preserve">
+    <value>033 Сторонние алгоритмы</value>
+  </data>
+  <data name="Start_MQTT" xml:space="preserve">
+    <value>StartMQTT</value>
+  </data>
+  <data name="实时关注点算法" xml:space="preserve">
+    <value>Алгоритм внимания в реальном времени</value>
+  </data>
+  <data name="ReMapping" xml:space="preserve">
+    <value>Перекартографирование</value>
+  </data>
+  <data name="L/BV相机" xml:space="preserve">
+    <value>камера L/BV</value>
+  </data>
+  <data name="Locate" xml:space="preserve">
+    <value>позиция</value>
+  </data>
+  <data name="OLED算法" xml:space="preserve">
+    <value>OLED-алгоритм</value>
+  </data>
+  <data name="布点ROI" xml:space="preserve">
+    <value>Местоположение ROI</value>
+  </data>
+  <data name="SolidPoint_KB" xml:space="preserve">
+    <value>Real Point - КБ</value>
+  </data>
+  <data name="通用AOI相机" xml:space="preserve">
+    <value>Универсальная камера AOI</value>
+  </data>
+  <data name="关注点布点2" xml:space="preserve">
+    <value>Точка фокусировки 2</value>
+  </data>
+  <data name="Height" xml:space="preserve">
+    <value>высокий</value>
+  </data>
+  <data name="OLED.AOI" xml:space="preserve">
+    <value>Алгоритм OLED-AOI</value>
+  </data>
+  <data name="通用传感器" xml:space="preserve">
+    <value>Общие датчики</value>
+  </data>
+  <data name="03_4 KB" xml:space="preserve">
+    <value>034 КБ</value>
+  </data>
+  <data name="Reopen" xml:space="preserve">
+    <value>Открыть заново</value>
+  </data>
+  <data name="物理设备控制" xml:space="preserve">
+    <value>Контроль физического оборудования</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>сервер</value>
+  </data>
+  <data name="保存/翻转" xml:space="preserve">
+    <value>Сохранить/Перевернуть</value>
+  </data>
+  <data name="POI点名称" xml:space="preserve">
+    <value>Названия точек интереса</value>
+  </data>
+  <data name="MQTT自定义订阅" xml:space="preserve">
+    <value>Индивидуальная подписка</value>
+  </data>
+  <data name="第三方算法2" xml:space="preserve">
+    <value>Сторонний алгоритм 2</value>
+  </data>
+  <data name="MQTT自定义发布" xml:space="preserve">
+    <value>Индивидуальная публикация</value>
+  </data>
+  <data name="Voltage_V" xml:space="preserve">
+    <value>Напряжение (В)</value>
+  </data>
+  <data name="POI保存模板" xml:space="preserve">
+    <value>Шаблон сохранения POI</value>
+  </data>
+  <data name="POI修正模板" xml:space="preserve">
+    <value>Шаблон коррекции POI</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>Команда</value>
+  </data>
+  <data name="05 光谱仪" xml:space="preserve">
+    <value>05 Спектрометр</value>
+  </data>
+  <data name="07 传感器" xml:space="preserve">
+    <value>07 Датчик</value>
+  </data>
+  <data name="POI算法模板" xml:space="preserve">
+    <value>Шаблон алгоритма POI</value>
+  </data>
+  <data name="11 ROI" xml:space="preserve">
+    <value>11 РОИ</value>
+  </data>
+  <data name="第三方算法" xml:space="preserve">
+    <value>Сторонний алгоритм</value>
+  </data>
+  <data name="09 合规验证" xml:space="preserve">
+    <value>09 Проверка соответствия</value>
+  </data>
+  <data name="POI过滤模板" xml:space="preserve">
+    <value>Шаблон фильтра POI</value>
+  </data>
+  <data name="EndNode" xml:space="preserve">
+    <value>EndNode</value>
+  </data>
+  <data name="Y" xml:space="preserve">
+    <value>Y</value>
+  </data>
+  <data name="X" xml:space="preserve">
+    <value>Х</value>
+  </data>
+  <data name="下" xml:space="preserve">
+    <value>Вниз</value>
+  </data>
+  <data name="上" xml:space="preserve">
+    <value>начальство</value>
+  </data>
+  <data name="重置" xml:space="preserve">
+    <value>Перезагрузить</value>
+  </data>
+  <data name="限值" xml:space="preserve">
+    <value>Пределы (ток/напряжение)</value>
+  </data>
+  <data name="颜色" xml:space="preserve">
+    <value>цвет</value>
+  </data>
+  <data name="鬼影" xml:space="preserve">
+    <value>Призрак</value>
+  </data>
+  <data name="输出" xml:space="preserve">
+    <value>Выход</value>
+  </data>
+  <data name="Db" xml:space="preserve">
+    <value>база данных</value>
+  </data>
+  <data name="PG" xml:space="preserve">
+    <value>ПГ</value>
+  </data>
+  <data name="XY" xml:space="preserve">
+    <value>XY</value>
+  </data>
+  <data name="畸变" xml:space="preserve">
+    <value>искажение</value>
+  </data>
+  <data name="点数" xml:space="preserve">
+    <value>Очки</value>
+  </data>
+  <data name="相机" xml:space="preserve">
+    <value>камера</value>
+  </data>
+  <data name="焦距" xml:space="preserve">
+    <value>фокусное расстояние</value>
+  </data>
+  <data name="类别" xml:space="preserve">
+    <value>категория</value>
+  </data>
+  <data name="算子" xml:space="preserve">
+    <value>Оператор</value>
+  </data>
+  <data name="曝光" xml:space="preserve">
+    <value>Экспозиция (мс)</value>
+  </data>
+  <data name="指定" xml:space="preserve">
+    <value>Указать</value>
+  </data>
+  <data name="校零" xml:space="preserve">
+    <value>Калибровка нуля</value>
+  </data>
+  <data name="模板" xml:space="preserve">
+    <value>шаблон</value>
+  </data>
+  <data name="源表" xml:space="preserve">
+    <value>Исходная таблица</value>
+  </data>
+  <data name="校正" xml:space="preserve">
+    <value>Исправление</value>
+  </data>
+  <data name="检测" xml:space="preserve">
+    <value>Обнаружение</value>
+  </data>
+  <data name="其他" xml:space="preserve">
+    <value>другой</value>
+  </data>
+  <data name="命令" xml:space="preserve">
+    <value>Заказ</value>
+  </data>
+  <data name="停止" xml:space="preserve">
+    <value>останавливаться</value>
+  </data>
+  <data name="光圈" xml:space="preserve">
+    <value>диафрагма</value>
+  </data>
+  <data name="开始" xml:space="preserve">
+    <value>начинать</value>
+  </data>
+  <data name="增益" xml:space="preserve">
+    <value>Прирост</value>
+  </data>
+  <data name="位置" xml:space="preserve">
+    <value>Расположение</value>
+  </data>
+  <data name="图像水平翻转" xml:space="preserve">
+    <value>Изображение по горизонтали</value>
+  </data>
+  <data name="RExpDesc" xml:space="preserve">
+    <value>Время экспозиции R-канала (мс)</value>
+  </data>
+  <data name="04 源表" xml:space="preserve">
+    <value>04 Исходная таблица</value>
+  </data>
+  <data name="00 全局" xml:space="preserve">
+    <value>00 Глобальный</value>
+  </data>
+  <data name="01 运算" xml:space="preserve">
+    <value>01 Расчет</value>
+  </data>
+  <data name="02 相机" xml:space="preserve">
+    <value>02 Камера</value>
+  </data>
+  <data name="Spectrometer" xml:space="preserve">
+    <value>Спектрометр</value>
+  </data>
+  <data name="值显示HUB" xml:space="preserve">
+    <value>Значение отображения HUB</value>
+  </data>
+  <data name="FixedLEDToFile" xml:space="preserve">
+    <value>FixedLEDToFile</value>
+  </data>
+  <data name="逻辑与" xml:space="preserve">
+    <value>Логическое И</value>
+  </data>
+  <data name="校正ROI" xml:space="preserve">
+    <value>Корректировка рентабельности инвестиций</value>
+  </data>
+  <data name="起始值" xml:space="preserve">
+    <value>начальное значение</value>
+  </data>
+  <data name="z-index" xml:space="preserve">
+    <value>z-индекс</value>
+  </data>
+  <data name="10 MQTT" xml:space="preserve">
+    <value>10 MQTT</value>
+  </data>
+  <data name="R曝光" xml:space="preserve">
+    <value>Воздействие R (мс)</value>
+  </data>
+  <data name="B曝光" xml:space="preserve">
+    <value>Экспозиция B (мс)</value>
+  </data>
+  <data name="G曝光" xml:space="preserve">
+    <value>Воздействие G (мс)</value>
+  </data>
+  <data name="FOV" xml:space="preserve">
+    <value>Поле зрения</value>
+  </data>
+  <data name="F/R" xml:space="preserve">
+    <value>Ф/П</value>
+  </data>
+  <data name="Mem" xml:space="preserve">
+    <value>Мем</value>
+  </data>
+  <data name="MTF" xml:space="preserve">
+    <value>МТФ</value>
+  </data>
+  <data name="CIE" xml:space="preserve">
+    <value>МКО</value>
+  </data>
+  <data name="JND" xml:space="preserve">
+    <value>JND</value>
+  </data>
+  <data name="HDR" xml:space="preserve">
+    <value>HDR</value>
+  </data>
+  <data name="Hex" xml:space="preserve">
+    <value>Шестигранник</value>
+  </data>
+  <data name="RED" xml:space="preserve">
+    <value>красный</value>
+  </data>
+  <data name="P/O" xml:space="preserve">
+    <value>П/О</value>
+  </data>
+  <data name="POI" xml:space="preserve">
+    <value>POI</value>
+  </data>
+  <data name="SFR" xml:space="preserve">
+    <value>СФР</value>
+  </data>
+  <data name="SMU" xml:space="preserve">
+    <value>Исходная таблица</value>
+  </data>
+  <data name="点类型" xml:space="preserve">
+    <value>Тип точки</value>
+  </data>
+  <data name="点缺陷" xml:space="preserve">
+    <value>Точечные дефекты</value>
+  </data>
+  <data name="线缺陷" xml:space="preserve">
+    <value>Линейные дефекты</value>
+  </data>
+  <data name="结束值" xml:space="preserve">
+    <value>Конечное значение</value>
+  </data>
+  <data name="滤色轮" xml:space="preserve">
+    <value>Колесо цветных фильтров</value>
+  </data>
+  <data name="光谱仪" xml:space="preserve">
+    <value>Спектрометр</value>
+  </data>
+  <data name="固定点" xml:space="preserve">
+    <value>Фиксированная точка</value>
+  </data>
+  <data name="Ascii" xml:space="preserve">
+    <value>Ascii</value>
+  </data>
+  <data name="单步值" xml:space="preserve">
+    <value>одношаговое значение</value>
+  </data>
+  <data name="AOI算法" xml:space="preserve">
+    <value>Алгоритм АОИ</value>
+  </data>
+  <data name="AOI总成" xml:space="preserve">
+    <value>АОИ Все</value>
+  </data>
+  <data name="当前值" xml:space="preserve">
+    <value>Текущее значение</value>
+  </data>
+  <data name="GREEN" xml:space="preserve">
+    <value>зеленый</value>
+  </data>
+  <data name="AI算法2" xml:space="preserve">
+    <value>Алгоритм ИИ 2</value>
+  </data>
+  <data name="亚像素" xml:space="preserve">
+    <value>Субпиксель</value>
+  </data>
+  <data name="二次修正文件" xml:space="preserve">
+    <value>Второй пересмотренный документ</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>закрытие</value>
+  </data>
+  <data name="CAD文件" xml:space="preserve">
+    <value>Файлы САПР</value>
+  </data>
+  <data name="LED定位" xml:space="preserve">
+    <value>позиционирование светодиодов</value>
+  </data>
+  <data name="JND算法" xml:space="preserve">
+    <value>алгоритм JND</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>ценить</value>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>Ширина</value>
+  </data>
+  <data name="Timer" xml:space="preserve">
+    <value>Таймер</value>
+  </data>
+  <data name="Topic" xml:space="preserve">
+    <value>тема</value>
+  </data>
+  <data name="Token" xml:space="preserve">
+    <value>Токен</value>
+  </data>
+  <data name="POI宽度" xml:space="preserve">
+    <value>Ширина точки интереса</value>
+  </data>
+  <data name="POI修正" xml:space="preserve">
+    <value>Коррекция POI</value>
+  </data>
+  <data name="POI类型" xml:space="preserve">
+    <value>Тип точки интереса</value>
+  </data>
+  <data name="POI模板" xml:space="preserve">
+    <value>Шаблон POI</value>
+  </data>
+  <data name="POI新增" xml:space="preserve">
+    <value>Новые точки интереса</value>
+  </data>
+  <data name="POI高度" xml:space="preserve">
+    <value>Высота точки интереса</value>
+  </data>
+  <data name="POI过滤" xml:space="preserve">
+    <value>Фильтрация POI</value>
+  </data>
+  <data name="相机ROI" xml:space="preserve">
+    <value>Зона интереса камеры</value>
+  </data>
+  <data name="相机参数模板" xml:space="preserve">
+    <value>Шаблон параметров камеры</value>
+  </data>
+  <data name="LoopNextNode" xml:space="preserve">
+    <value>LoopNextNode</value>
+  </data>
+  <data name="Extract" xml:space="preserve">
+    <value>извлекать</value>
+  </data>
+  <data name="关注点算法" xml:space="preserve">
+    <value>Алгоритм фокусировки</value>
+  </data>
+  <data name="关注点分析" xml:space="preserve">
+    <value>Анализ фокуса</value>
+  </data>
+  <data name="关注点布点" xml:space="preserve">
+    <value>Точки фокусировки и развертывание</value>
+  </data>
+  <data name="03_1 关注点" xml:space="preserve">
+    <value>031 Фокус</value>
+  </data>
+  <data name="通用相机" xml:space="preserve">
+    <value>общая камера</value>
+  </data>
+  <data name="CIE_BUZ" xml:space="preserve">
+    <value>СЬЕБУЗ</value>
+  </data>
+  <data name="自动积分" xml:space="preserve">
+    <value>Автоматические точки</value>
+  </data>
+  <data name="自动校零" xml:space="preserve">
+    <value>Автоматическое обнуление</value>
+  </data>
+  <data name="自动曝光" xml:space="preserve">
+    <value>Автоматическая экспозиция</value>
+  </data>
+  <data name="自动对焦" xml:space="preserve">
+    <value>Автофокус</value>
+  </data>
+  <data name="节点ID" xml:space="preserve">
+    <value>Идентификатор узла</value>
+  </data>
+  <data name="节点类型" xml:space="preserve">
+    <value>Тип оборудования</value>
+  </data>
+  <data name="角点顺序" xml:space="preserve">
+    <value>Угловой заказ</value>
+  </data>
+  <data name="输出类别" xml:space="preserve">
+    <value>Категория вывода</value>
+  </data>
+  <data name="输出文件" xml:space="preserve">
+    <value>Выходной файл</value>
+  </data>
+  <data name="输出模板" xml:space="preserve">
+    <value>Шаблон вывода</value>
+  </data>
+  <data name="过滤模板" xml:space="preserve">
+    <value>Шаблон фильтра</value>
+  </data>
+  <data name="色温/波长" xml:space="preserve">
+    <value>Цветовая температура/длина волны</value>
+  </data>
+  <data name="CADMapping" xml:space="preserve">
+    <value>CADMapping</value>
+  </data>
+  <data name="设备类型" xml:space="preserve">
+    <value>Тип оборудования</value>
+  </data>
+  <data name="设备代码" xml:space="preserve">
+    <value>Код устройства</value>
+  </data>
+  <data name="BlackMura算法" xml:space="preserve">
+    <value>Алгоритм BlackMura</value>
+  </data>
+  <data name="输出POI模板" xml:space="preserve">
+    <value>Выходной шаблон POI</value>
+  </data>
+  <data name="MessageText" xml:space="preserve">
+    <value>Содержание сообщения</value>
+  </data>
+  <data name="OutFile" xml:space="preserve">
+    <value>OutFile</value>
+  </data>
+  <data name="ARVR.Ghost算法" xml:space="preserve">
+    <value>Алгоритм ARVR.Ghost</value>
+  </data>
+  <data name="源表[模板]" xml:space="preserve">
+    <value>Исходная таблица - Шаблон</value>
+  </data>
+  <data name="ImageCompound" xml:space="preserve">
+    <value>Сшивание изображений</value>
+  </data>
+  <data name="Camera_FilterWheel" xml:space="preserve">
+    <value>Камера + ND</value>
+  </data>
+  <data name="FlowEngineLib" xml:space="preserve">
+    <value>FlowEngineLib</value>
+  </data>
+  <data name="MQTT发布HUB" xml:space="preserve">
+    <value>Выпуск HUB</value>
+  </data>
+  <data name="03_5 OLED" xml:space="preserve">
+    <value>035 OLED</value>
+  </data>
+  <data name="自动曝光/ND" xml:space="preserve">
+    <value>Автоматическая экспозиция/ND</value>
+  </data>
+  <data name="关注点修正标定" xml:space="preserve">
+    <value>Калибровка коррекции точки фокусировки</value>
+  </data>
+  <data name="FixedLED" xml:space="preserve">
+    <value>FixedLED</value>
+  </data>
+  <data name="GeneralSensor" xml:space="preserve">
+    <value>Общие датчики</value>
+  </data>
+  <data name="自动对焦模板" xml:space="preserve">
+    <value>Шаблон автофокуса</value>
+  </data>
+  <data name="参数模板ID" xml:space="preserve">
+    <value>Идентификатор шаблона параметра</value>
+  </data>
+  <data name="o-index" xml:space="preserve">
+    <value>o-индекс</value>
+  </data>
+  <data name="文件输出模板" xml:space="preserve">
+    <value>Шаблон вывода файла</value>
+  </data>
+  <data name="通用AOI相机2" xml:space="preserve">
+    <value>Универсальная камера AOI 2</value>
+  </data>
+  <data name="电机[相机]" xml:space="preserve">
+    <value>Мотор [Камера]</value>
+  </data>
+  <data name="POI模板(Re)" xml:space="preserve">
+    <value>Шаблон POI - Re</value>
+  </data>
+  <data name="GExpDesc" xml:space="preserve">
+    <value>Время экспозиции канала G (мс)</value>
+  </data>
+  <data name="FilterWheel" xml:space="preserve">
+    <value>Фильтр-колесо</value>
+  </data>
+  <data name="KB输出" xml:space="preserve">
+    <value>Вывод КБ</value>
+  </data>
+  <data name="KB算法" xml:space="preserve">
+    <value>Алгоритм КБ</value>
+  </data>
+  <data name="CV相机" xml:space="preserve">
+    <value>CV-камера</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>документ</value>
+  </data>
+  <data name="Data" xml:space="preserve">
+    <value>данные</value>
+  </data>
+  <data name="BLUE" xml:space="preserve">
+    <value>синий</value>
+  </data>
+  <data name="Mura" xml:space="preserve">
+    <value>Мура</value>
+  </data>
+  <data name="AI算法" xml:space="preserve">
+    <value>Алгоритмы ИИ</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>Никто</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Открыть</value>
+  </data>
+  <data name="AA布点" xml:space="preserve">
+    <value>Макет АА</value>
+  </data>
+  <data name="Rect" xml:space="preserve">
+    <value>прямоугольник</value>
+  </data>
+  <data name="Scan" xml:space="preserve">
+    <value>сканирование</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>порт</value>
+  </data>
+  <data name="LoopName" xml:space="preserve">
+    <value>LoopName</value>
+  </data>
+</root>

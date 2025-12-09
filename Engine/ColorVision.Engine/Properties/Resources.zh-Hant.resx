@@ -2484,4 +2484,10 @@
   <data name="IsFront" xml:space="preserve">
     <value>啟用前面板</value>
   </data>
+  <data name="IVScanProcessing" xml:space="preserve">
+    <value>IV掃描處理</value>
+  </data>
+  <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
+    <value>處理SMU掃描數據，保存到CSV並繪製IV曲線</value>
+  </data>
 </root>

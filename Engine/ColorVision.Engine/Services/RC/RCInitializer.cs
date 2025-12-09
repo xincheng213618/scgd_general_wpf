@@ -58,6 +58,14 @@ namespace ColorVision.Engine.Services.RC
         public string CVMainService_x64 { get; set; }
 
         public string CVArchService { get; set; }
+
+        public ServiceInfo RegistrationCenterServiceInfo { get; set; } = new ServiceInfo();
+
+        public ServiceInfo CVMainService_devInfo { get; set; } = new ServiceInfo();
+
+        public ServiceInfo CVMainService_x64Info { get; set; } = new ServiceInfo();
+
+        public ServiceInfo CVArchServiceInfo { get; set; } = new ServiceInfo();
     }
 
 
@@ -75,11 +83,18 @@ namespace ColorVision.Engine.Services.RC
 
         public async Task SetServiceConfig()
         {
-            await Task.Delay(100);
-            ServiceConfig.Instance.RegistrationCenterService = ServiceManagerUitl.GetServiceExecutablePath("RegistrationCenterService") ?? string.Empty;
-            ServiceConfig.Instance.CVMainService_dev = ServiceManagerUitl.GetServiceExecutablePath("CVMainService_dev") ?? string.Empty;
-            ServiceConfig.Instance.CVMainService_x64 = ServiceManagerUitl.GetServiceExecutablePath("CVMainService_x64") ?? string.Empty;
-            ServiceConfig.Instance.CVArchService = ServiceManagerUitl.GetServiceExecutablePath("CVArchService") ?? string.Empty;       
+            await Task.Delay(1000);
+            // 获取详细信息
+            ServiceConfig.Instance.RegistrationCenterServiceInfo = ServiceInfo.FromServiceName("RegistrationCenterService");
+            ServiceConfig.Instance.CVMainService_devInfo = ServiceInfo.FromServiceName("CVMainService_dev");
+            ServiceConfig.Instance.CVMainService_x64Info = ServiceInfo.FromServiceName("CVMainService_x64");
+            ServiceConfig.Instance.CVArchServiceInfo = ServiceInfo.FromServiceName("CVArchService");
+
+            // 保持兼容性，同时更新路径字符串
+            ServiceConfig.Instance.RegistrationCenterService = ServiceConfig.Instance.RegistrationCenterServiceInfo.ExecutablePath;
+            ServiceConfig.Instance.CVMainService_dev = ServiceConfig.Instance.CVMainService_devInfo.ExecutablePath;
+            ServiceConfig.Instance.CVMainService_x64 = ServiceConfig.Instance.CVMainService_x64Info.ExecutablePath;
+            ServiceConfig.Instance.CVArchService = ServiceConfig.Instance.CVArchServiceInfo.ExecutablePath;
         }
 
         public override async Task InitializeAsync()
@@ -94,10 +109,7 @@ namespace ColorVision.Engine.Services.RC
             bool isConnect = await MqttRCService.GetInstance().Connect();
             if (isConnect)
             {
-                if (!File.Exists(ServiceConfig.Instance.RegistrationCenterService))
-                {
-                   _= Task.Run(SetServiceConfig);
-                }
+                _ = Task.Run(SetServiceConfig);
                 return;
             }
 

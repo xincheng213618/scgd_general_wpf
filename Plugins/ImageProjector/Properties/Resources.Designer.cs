@@ -61,6 +61,15 @@ namespace ImageProjector.Properties {
         }
         
         /// <summary>
+        ///   查找类似 添加 的本地化字符串。
+        /// </summary>
+        public static string Add {
+            get {
+                return ResourceManager.GetString("Add", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 浏览... 的本地化字符串。
         /// </summary>
         public static string Browse {
@@ -115,6 +124,15 @@ namespace ImageProjector.Properties {
         }
         
         /// <summary>
+        ///   查找类似 图片列表 的本地化字符串。
+        /// </summary>
+        public static string ImageList {
+            get {
+                return ResourceManager.GetString("ImageList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 已加载图片 的本地化字符串。
         /// </summary>
         public static string ImageLoaded {
@@ -160,11 +178,47 @@ namespace ImageProjector.Properties {
         }
         
         /// <summary>
+        ///   查找类似 下移 的本地化字符串。
+        /// </summary>
+        public static string MoveDown {
+            get {
+                return ResourceManager.GetString("MoveDown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上移 的本地化字符串。
+        /// </summary>
+        public static string MoveUp {
+            get {
+                return ResourceManager.GetString("MoveUp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下一张 的本地化字符串。
+        /// </summary>
+        public static string Next {
+            get {
+                return ResourceManager.GetString("Next", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 按 ESC 键关闭 的本地化字符串。
         /// </summary>
         public static string PressEscToClose {
             get {
                 return ResourceManager.GetString("PressEscToClose", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上一张 的本地化字符串。
+        /// </summary>
+        public static string Previous {
+            get {
+                return ResourceManager.GetString("Previous", resourceCulture);
             }
         }
         
@@ -205,6 +259,15 @@ namespace ImageProjector.Properties {
         }
         
         /// <summary>
+        ///   查找类似 删除 的本地化字符串。
+        /// </summary>
+        public static string Remove {
+            get {
+                return ResourceManager.GetString("Remove", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 副显示器 的本地化字符串。
         /// </summary>
         public static string SecondaryMonitor {
@@ -237,6 +300,51 @@ namespace ImageProjector.Properties {
         public static string StopProjection {
             get {
                 return ResourceManager.GetString("StopProjection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 拉伸 的本地化字符串。
+        /// </summary>
+        public static string StretchFill {
+            get {
+                return ResourceManager.GetString("StretchFill", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示模式: 的本地化字符串。
+        /// </summary>
+        public static string StretchMode {
+            get {
+                return ResourceManager.GetString("StretchMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 居中 的本地化字符串。
+        /// </summary>
+        public static string StretchNone {
+            get {
+                return ResourceManager.GetString("StretchNone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 适应 的本地化字符串。
+        /// </summary>
+        public static string StretchUniform {
+            get {
+                return ResourceManager.GetString("StretchUniform", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 填充 的本地化字符串。
+        /// </summary>
+        public static string StretchUniformToFill {
+            get {
+                return ResourceManager.GetString("StretchUniformToFill", resourceCulture);
             }
         }
         

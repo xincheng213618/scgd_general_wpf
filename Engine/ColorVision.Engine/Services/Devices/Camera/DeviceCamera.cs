@@ -10,17 +10,21 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.LogImp;
 using cvColorVision;
 using log4net;
 using SqlSugar;
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -77,7 +81,27 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditAutoFocusCommand = new RelayCommand(a => EditAutoFocus());
             EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
+            OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
+            this.ContextMenu.Items.Add(new MenuItem() { Header ="Log",Command = FlowEngineManager.GetInstance().WindowsServiceX64.OpenLogCommand });
+            this.ContextMenu.Items.Add(new MenuItem() { Header = "CameraLog", Command = OpenCameraLogCommand });
+
         }
+
+        [CommandDisplay("CameraLog")]
+        public RelayCommand OpenCameraLogCommand { get; set; }
+
+        public void OpenCameraLog()
+        {
+            string baseDir = Directory.GetParent(ServiceConfig.Instance.CVMainService_x64).FullName;
+            string latestLogPath = LogFileHelper.GetMostRecentLogFile(Path.Combine(baseDir, "log"), "CVMainWindowsService_x64_camera");
+            if (!string.IsNullOrEmpty(latestLogPath))
+            {
+                WindowLogLocal windowLogLocal = new WindowLogLocal(latestLogPath, Encoding.GetEncoding("GB2312"));
+                windowLogLocal.Show();
+            }
+        }
+
+
         [CommandDisplay("EditCalibrationFile")]
         public RelayCommand EditCalibrationCommand { get; set; }
 

@@ -49,11 +49,11 @@ namespace ColorVision.UI
         {
             InitDateTime = DateTime.Now;
             string AssemblyCompany = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? Assembly.GetEntryAssembly()?.GetName().Name;
-            ConfigDIFileName =  $"{Assembly.GetEntryAssembly()?.GetName().Name ?? AssemblyCompany}Config.json";
+            ConfigDIFileName =  $"{Assembly.GetEntryAssembly()?.GetName().Name ?? AssemblyCompany}Config";
             string backupDirName = "Backup";
             if (Directory.Exists("Config"))
             {
-                ConfigFilePath = $"Config\\{ConfigDIFileName}";
+                ConfigFilePath = $"Config\\{ConfigDIFileName}.json";
                 BackupFolderPath = $"Config\\{backupDirName}\\";
             }
             else
@@ -61,7 +61,7 @@ namespace ColorVision.UI
                 string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\{AssemblyCompany}\\Config\\";
                 if (!Directory.Exists(DirectoryPath))
                     Directory.CreateDirectory(DirectoryPath);
-                ConfigFilePath = DirectoryPath + ConfigDIFileName;
+                ConfigFilePath = DirectoryPath + ConfigDIFileName +".json";
                 BackupFolderPath = DirectoryPath + backupDirName + "\\";
             }
 
@@ -277,7 +277,7 @@ namespace ColorVision.UI
         {
             try
             {
-                var files = Directory.GetFiles(BackupFolderPath, "ConfigBackup_*.json")
+                var files = Directory.GetFiles(BackupFolderPath, $"{ConfigDIFileName}Backup_*.json")
                     .OrderByDescending(f => f)
                     .ToList();
                 if (files.Count !=0)
@@ -320,7 +320,7 @@ namespace ColorVision.UI
         {
             try
             {
-                string backupFileName = $"ConfigBackup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+                string backupFileName = $"{ConfigDIFileName}Backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
                 string backupPath = Path.Combine(BackupFolderPath, backupFileName);
                 SaveConfigs(backupPath);
                 CleanupOldBackups();

@@ -41,6 +41,10 @@ namespace ColorVision.ImageEditor
             InitializeComponent();
         }
 
+        public void SetBackGround(SolidColorBrush color)
+        {
+            ZoomGrid.Background = color;    
+        }
 
         private void Config_ColormapTypesChanged(object? sender, EventArgs e)
         {
@@ -333,6 +337,10 @@ namespace ColorVision.ImageEditor
         {
             //如果文件已经打开，不会重复打开
             if (filePath == null || filePath.Equals(Config.FilePath, StringComparison.Ordinal)) return;
+            if (Config.Properties.Count > 0)
+            {
+                Clear();
+            }
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
             Config.FilePath = filePath;

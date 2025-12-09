@@ -2487,4 +2487,7 @@
   <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
     <value>Process SMU scan data, save to CSV and draw IV curve</value>
   </data>
+  <data name="BrightnessLvCdM2" xml:space="preserve">
+    <value>Luminance (cd/m2)</value>
+  </data>
 </root>

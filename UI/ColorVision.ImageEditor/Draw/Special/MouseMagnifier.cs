@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.ImageEditor.Utils;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -19,8 +20,6 @@ namespace ColorVision.ImageEditor.Draw.Special
         public int R { get; set; }
         public int G { get; set; }
         public int B { get; set; }
-        public string Hex { get; set; }
-        public SolidColorBrush Color { get; set; }
     }
     public enum MagnigifierType
     {
@@ -105,13 +104,13 @@ namespace ColorVision.ImageEditor.Draw.Special
                     dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11),new Rect(actPoint.X - Radius/2, actPoint.Y -Radius/2, Radius,Radius));
                 }
 
-                    var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * actPoint.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * actPoint.Y);
+                var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * actPoint.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * actPoint.Y);
                 dc.PushTransform(transform);
 
                 double x1 = actPoint.X;
                 double y1 = actPoint.Y + 25;
 
-                double width = 120;
+                double width = 130;
                 double height = 0;
 
                 x1++;
@@ -119,7 +118,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 width -= 2;
                 height -= 2;
 
-                dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 70));
+                dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 60));
 
                 Brush brush = Brushes.White;
                 FontFamily fontFamily = new("Arial");
@@ -127,16 +126,13 @@ namespace ColorVision.ImageEditor.Draw.Special
                 FormattedText formattedText = new($"R:{imageInfo.R}  G:{imageInfo.G}  B:{imageInfo.B}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedText, new Point(x1 + 5, y1 + height + 5));
                 FormattedText formattedTex1 = new($"({imageInfo.X},{imageInfo.Y})", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 31));
-
-                FormattedText formattedTex3 = new($"{imageInfo.Hex}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedTex3, new Point(x1 + 5, y1 + height + 18));
+                dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 18));
 
                 FormattedText formattedTex4 = new(text1, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedTex4, new Point(x1 + 5, y1 + height + 44));
+                dc.DrawText(formattedTex4, new Point(x1 + 5, y1 + height + 31));
 
                 FormattedText formattedTex5 = new(text2, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedTex5, new Point(x1 + 5, y1 + height + 57));
+                dc.DrawText(formattedTex5, new Point(x1 + 5, y1 + height + 44));
 
                 dc.Pop();
                 if (DrawVisualImage.Effect is not DropShadowEffect)
@@ -156,36 +152,22 @@ namespace ColorVision.ImageEditor.Draw.Special
 
             if (Image.Source is BitmapSource bitmapImage && disPoint.X > 60 && disPoint.X < bitmapImage.PixelWidth - 60 && disPoint.Y > 45 && disPoint.Y < bitmapImage.PixelHeight - 45)
             {
-
-                CroppedBitmap croppedBitmap = new(bitmapImage, new Int32Rect(disPoint.X.ToInt32() - 60, disPoint.Y.ToInt32() - 45, 120, 90));
-
                 using DrawingContext dc = DrawVisualImage.RenderOpen();
-
                 var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * actPoint.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * actPoint.Y);
                 dc.PushTransform(transform);
 
-                dc.DrawImage(croppedBitmap, new Rect(new Point(actPoint.X, actPoint.Y + 25), new Size(120, 90)));
-
-                dc.DrawLine(new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00B1FF")), 3), new Point(actPoint.X + 59, actPoint.Y + 25), new Point(actPoint.X + 59, actPoint.Y + 25 + 90));
-                dc.DrawLine(new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00B1FF")), 3), new Point(actPoint.X, actPoint.Y + 25 + 44), new Point(actPoint.X + 120, actPoint.Y + 25 + 44));
-
-
                 double x1 = actPoint.X;
-                double y1 = actPoint.Y + 25;
+                double y1 = actPoint.Y + 20;
 
-                double width = 120;
-                double height = 90;
+                double width = 130;
+                double height = 0;
 
                 x1++;
                 y1++;
                 width -= 2;
                 height -= 2;
-                dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1 - 0.75), new Point(x1, y1 + height + 0.75));
-                dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1), new Point(x1 + width, y1));
-                dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1 + width, y1 - 0.75), new Point(x1 + width, y1 + height + 0.75));
-                dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1 + height), new Point(x1 + width, y1 + height));
 
-                dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 45));
+                dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 30));
 
                 Brush brush = Brushes.White;
                 FontFamily fontFamily = new("Arial");
@@ -193,10 +175,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 FormattedText formattedText = new($"R:{imageInfo.R}  G:{imageInfo.G}  B:{imageInfo.B}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedText, new Point(x1 + 5, y1 + height + 5));
                 FormattedText formattedTex1 = new($"({imageInfo.X},{imageInfo.Y})", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 31));
-
-                FormattedText formattedTex3 = new($"{imageInfo.Hex}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedTex3, new Point(x1 + 5, y1 + height + 18));
+                dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 18));
                 dc.Pop();
                 if (DrawVisualImage.Effect is not DropShadowEffect)
                     DrawVisualImage.Effect = new DropShadowEffect() { Opacity = 0.5 };
@@ -218,18 +197,16 @@ namespace ColorVision.ImageEditor.Draw.Special
 
                 if (point.X.ToInt32() >= 0 && point.X.ToInt32() < bitmap.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmap.PixelHeight)
                 {
-                    var color = bitmap.GetPixelColor(point.X.ToInt32(), point.Y.ToInt32());
-                    ImageInfo imageInfo = new()
+                    (int R,int G,int B) = ImageEditorUtils.GetPixelColor(bitmap, point.X.ToInt32(), point.Y.ToInt32());
+                    ImageInfo imageInfo = new ImageInfo()
                     {
                         ActPoint  = actPoint,
                         BitmapPoint =bitPoint,
                         X = point.X.ToInt32(),
                         Y = point.Y.ToInt32(),
-                        R = color.R,
-                        G = color.G,
-                        B = color.B,
-                        Color = new SolidColorBrush(color),
-                        Hex = color.ToHex()
+                        R = R,
+                        G = G,
+                        B = B,
                     };
                     DrawImage(imageInfo);
                     MouseMoveColorHandler?.Invoke(this, imageInfo);

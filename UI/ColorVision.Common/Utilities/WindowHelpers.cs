@@ -28,7 +28,7 @@ namespace System.Windows
         {
             foreach (Window window in application.Windows)
                 if (window.IsActive) return window;
-            return Application.Current.MainWindow; ;
+            return null ;
         }
 
         /// <summary>

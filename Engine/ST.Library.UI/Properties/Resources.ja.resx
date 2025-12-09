@@ -1,0 +1,879 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="LoopNode" xml:space="preserve">
+    <value>ループノード</value>
+  </data>
+  <data name="电(压/流)源" xml:space="preserve">
+    <value>電圧（V）/電流（mA）</value>
+  </data>
+  <data name="灯珠检测" xml:space="preserve">
+    <value>LEDビーズテスト</value>
+  </data>
+  <data name="灯带检测" xml:space="preserve">
+    <value>LEDストリップテスト</value>
+  </data>
+  <data name="相机模板" xml:space="preserve">
+    <value>カメラテンプレート</value>
+  </data>
+  <data name="Current_I" xml:space="preserve">
+    <value>電流(I)(mA)</value>
+  </data>
+  <data name="状态触发" xml:space="preserve">
+    <value>状態トリガー</value>
+  </data>
+  <data name="积分时间" xml:space="preserve">
+    <value>ポイント時間</value>
+  </data>
+  <data name="OLED数据提取" xml:space="preserve">
+    <value>OLEDデータ抽出</value>
+  </data>
+  <data name="绝对位置" xml:space="preserve">
+    <value>絶対位置</value>
+  </data>
+  <data name="缓存大小" xml:space="preserve">
+    <value>キャッシュサイズ</value>
+  </data>
+  <data name="SolidPoint" xml:space="preserve">
+    <value>実点</value>
+  </data>
+  <data name="BExpDesc" xml:space="preserve">
+    <value>Bチャネル露光時間（ミリ秒）</value>
+  </data>
+  <data name="算子模板" xml:space="preserve">
+    <value>オペレータテンプレート</value>
+  </data>
+  <data name="曝光模板" xml:space="preserve">
+    <value>露出テンプレート</value>
+  </data>
+  <data name="曝光时间" xml:space="preserve">
+    <value>露出時間（ミリ秒）</value>
+  </data>
+  <data name="是否新增" xml:space="preserve">
+    <value>新たに追加することは可能ですか？</value>
+  </data>
+  <data name="服务名称" xml:space="preserve">
+    <value>サービス名</value>
+  </data>
+  <data name="最小超时" xml:space="preserve">
+    <value>最小タイムアウト</value>
+  </data>
+  <data name="最大超时" xml:space="preserve">
+    <value>最大タイムアウト</value>
+  </data>
+  <data name="手动确认" xml:space="preserve">
+    <value>手動確認</value>
+  </data>
+  <data name="控制命令" xml:space="preserve">
+    <value>制御コマンド</value>
+  </data>
+  <data name="指令类型" xml:space="preserve">
+    <value>命令タイプ</value>
+  </data>
+  <data name="接收指令" xml:space="preserve">
+    <value>指示を受け取る</value>
+  </data>
+  <data name="指定画面" xml:space="preserve">
+    <value>指定スクリーン</value>
+  </data>
+  <data name="模板文件" xml:space="preserve">
+    <value>テンプレートファイル</value>
+  </data>
+  <data name="模板匹配" xml:space="preserve">
+    <value>テンプレートマッチング</value>
+  </data>
+  <data name="03_2 Algorithm" xml:space="preserve">
+    <value>032 アルゴリズム</value>
+  </data>
+  <data name="自适应校零" xml:space="preserve">
+    <value>アダプティブゼロイング</value>
+  </data>
+  <data name="Spectrum_FilterWheel" xml:space="preserve">
+    <value>分光計 + ND</value>
+  </data>
+  <data name="校正模板" xml:space="preserve">
+    <value>修正テンプレート</value>
+  </data>
+  <data name="图像裁剪" xml:space="preserve">
+    <value>画像の切り抜き</value>
+  </data>
+  <data name="图像文件" xml:space="preserve">
+    <value>画像ファイル</value>
+  </data>
+  <data name="图像拼接" xml:space="preserve">
+    <value>画像のステッチ</value>
+  </data>
+  <data name="图像翻转" xml:space="preserve">
+    <value>画像反転</value>
+  </data>
+  <data name="发送指令" xml:space="preserve">
+    <value>コマンドを送信</value>
+  </data>
+  <data name="SFR_FindROI" xml:space="preserve">
+    <value>SFRFindROI</value>
+  </data>
+  <data name="启用ND" xml:space="preserve">
+    <value>NDを有効にする</value>
+  </data>
+  <data name="名称前缀" xml:space="preserve">
+    <value>名前の接頭辞</value>
+  </data>
+  <data name="十字计算" xml:space="preserve">
+    <value>十字形の計算</value>
+  </data>
+  <data name="合规算法" xml:space="preserve">
+    <value>コンプライアンスアルゴリズム</value>
+  </data>
+  <data name="发光区定位" xml:space="preserve">
+    <value>発光領域の配置</value>
+  </data>
+  <data name="发光区检测" xml:space="preserve">
+    <value>発光領域の検出</value>
+  </data>
+  <data name="ARVR算法" xml:space="preserve">
+    <value>ARVRアルゴリズム</value>
+  </data>
+  <data name="双目融合" xml:space="preserve">
+    <value>両眼融合</value>
+  </data>
+  <data name="参数模板" xml:space="preserve">
+    <value>パラメータテンプレート</value>
+  </data>
+  <data name="关闭输出" xml:space="preserve">
+    <value>出力をオフにする</value>
+  </data>
+  <data name="布点类型" xml:space="preserve">
+    <value>配布タイプ</value>
+  </data>
+  <data name="平均次数" xml:space="preserve">
+    <value>平均回数</value>
+  </data>
+  <data name="MQTT订阅HUB" xml:space="preserve">
+    <value>HUBを購読する</value>
+  </data>
+  <data name="Timer.Time" xml:space="preserve">
+    <value>時間</value>
+  </data>
+  <data name="定位输出" xml:space="preserve">
+    <value>位置決め出力</value>
+  </data>
+  <data name="自动/自适应" xml:space="preserve">
+    <value>自動/適応型</value>
+  </data>
+  <data name="发光区检测OLED" xml:space="preserve">
+    <value>OLED発光領域検出</value>
+  </data>
+  <data name="保存原图" xml:space="preserve">
+    <value>元の画像を保存</value>
+  </data>
+  <data name="修正模板" xml:space="preserve">
+    <value>テンプレートの変更</value>
+  </data>
+  <data name="修正输出" xml:space="preserve">
+    <value>正しい出力</value>
+  </data>
+  <data name="Common" xml:space="preserve">
+    <value>一般</value>
+  </data>
+  <data name="Camera" xml:space="preserve">
+    <value>カメラ</value>
+  </data>
+  <data name="Circle" xml:space="preserve">
+    <value>ラウンド</value>
+  </data>
+  <data name="03_3 第三方算法" xml:space="preserve">
+    <value>033 サードパーティのアルゴリズム</value>
+  </data>
+  <data name="Start_MQTT" xml:space="preserve">
+    <value>MQTT の開始</value>
+  </data>
+  <data name="实时关注点算法" xml:space="preserve">
+    <value>リアルタイムアテンションアルゴリズム</value>
+  </data>
+  <data name="ReMapping" xml:space="preserve">
+    <value>再マッピング</value>
+  </data>
+  <data name="L/BV相机" xml:space="preserve">
+    <value>L/BVカメラ</value>
+  </data>
+  <data name="Locate" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="OLED算法" xml:space="preserve">
+    <value>OLEDアルゴリズム</value>
+  </data>
+  <data name="布点ROI" xml:space="preserve">
+    <value>場所のROI</value>
+  </data>
+  <data name="SolidPoint_KB" xml:space="preserve">
+    <value>リアルポイント - KB</value>
+  </data>
+  <data name="通用AOI相机" xml:space="preserve">
+    <value>汎用AOIカメラ</value>
+  </data>
+  <data name="关注点布点2" xml:space="preserve">
+    <value>フォーカスポイント2</value>
+  </data>
+  <data name="Height" xml:space="preserve">
+    <value>高い</value>
+  </data>
+  <data name="OLED.AOI" xml:space="preserve">
+    <value>OLED-AOIアルゴリズム</value>
+  </data>
+  <data name="通用传感器" xml:space="preserve">
+    <value>一般的なセンサー</value>
+  </data>
+  <data name="03_4 KB" xml:space="preserve">
+    <value>034 KB</value>
+  </data>
+  <data name="Reopen" xml:space="preserve">
+    <value>再開</value>
+  </data>
+  <data name="物理设备控制" xml:space="preserve">
+    <value>物理的な機器制御</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>サーバ</value>
+  </data>
+  <data name="保存/翻转" xml:space="preserve">
+    <value>保存/反転</value>
+  </data>
+  <data name="POI点名称" xml:space="preserve">
+    <value>POI名</value>
+  </data>
+  <data name="MQTT自定义订阅" xml:space="preserve">
+    <value>カスタムサブスクリプション</value>
+  </data>
+  <data name="第三方算法2" xml:space="preserve">
+    <value>サードパーティアルゴリズム2</value>
+  </data>
+  <data name="MQTT自定义发布" xml:space="preserve">
+    <value>カスタム出版</value>
+  </data>
+  <data name="Voltage_V" xml:space="preserve">
+    <value>電圧（V）</value>
+  </data>
+  <data name="POI保存模板" xml:space="preserve">
+    <value>POI保存テンプレート</value>
+  </data>
+  <data name="POI修正模板" xml:space="preserve">
+    <value>POI修正テンプレート</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>指示</value>
+  </data>
+  <data name="05 光谱仪" xml:space="preserve">
+    <value>05 分光計</value>
+  </data>
+  <data name="07 传感器" xml:space="preserve">
+    <value>07 センサー</value>
+  </data>
+  <data name="POI算法模板" xml:space="preserve">
+    <value>POIアルゴリズムテンプレート</value>
+  </data>
+  <data name="11 ROI" xml:space="preserve">
+    <value>11 インド洋地域</value>
+  </data>
+  <data name="第三方算法" xml:space="preserve">
+    <value>サードパーティのアルゴリズム</value>
+  </data>
+  <data name="09 合规验证" xml:space="preserve">
+    <value>09 コンプライアンス検証</value>
+  </data>
+  <data name="POI过滤模板" xml:space="preserve">
+    <value>POIフィルターテンプレート</value>
+  </data>
+  <data name="EndNode" xml:space="preserve">
+    <value>エンドノード</value>
+  </data>
+  <data name="Y" xml:space="preserve">
+    <value>はい</value>
+  </data>
+  <data name="X" xml:space="preserve">
+    <value>X</value>
+  </data>
+  <data name="下" xml:space="preserve">
+    <value>下</value>
+  </data>
+  <data name="上" xml:space="preserve">
+    <value>優れた</value>
+  </data>
+  <data name="重置" xml:space="preserve">
+    <value>リセット</value>
+  </data>
+  <data name="限值" xml:space="preserve">
+    <value>制限（電流/電圧）</value>
+  </data>
+  <data name="颜色" xml:space="preserve">
+    <value>色</value>
+  </data>
+  <data name="鬼影" xml:space="preserve">
+    <value>おばけ</value>
+  </data>
+  <data name="输出" xml:space="preserve">
+    <value>出力</value>
+  </data>
+  <data name="Db" xml:space="preserve">
+    <value>データベース</value>
+  </data>
+  <data name="PG" xml:space="preserve">
+    <value>PG</value>
+  </data>
+  <data name="XY" xml:space="preserve">
+    <value>XY</value>
+  </data>
+  <data name="畸变" xml:space="preserve">
+    <value>ねじれ</value>
+  </data>
+  <data name="点数" xml:space="preserve">
+    <value>ポイント</value>
+  </data>
+  <data name="相机" xml:space="preserve">
+    <value>カメラ</value>
+  </data>
+  <data name="焦距" xml:space="preserve">
+    <value>焦点距離</value>
+  </data>
+  <data name="类别" xml:space="preserve">
+    <value>カテゴリ</value>
+  </data>
+  <data name="算子" xml:space="preserve">
+    <value>オペレーター</value>
+  </data>
+  <data name="曝光" xml:space="preserve">
+    <value>露出時間（ミリ秒）</value>
+  </data>
+  <data name="指定" xml:space="preserve">
+    <value>特定</value>
+  </data>
+  <data name="校零" xml:space="preserve">
+    <value>ゼロキャリブレーション</value>
+  </data>
+  <data name="模板" xml:space="preserve">
+    <value>テンプレート</value>
+  </data>
+  <data name="源表" xml:space="preserve">
+    <value>ソーステーブル</value>
+  </data>
+  <data name="校正" xml:space="preserve">
+    <value>修正</value>
+  </data>
+  <data name="检测" xml:space="preserve">
+    <value>検出</value>
+  </data>
+  <data name="其他" xml:space="preserve">
+    <value>他の</value>
+  </data>
+  <data name="命令" xml:space="preserve">
+    <value>注文</value>
+  </data>
+  <data name="停止" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="光圈" xml:space="preserve">
+    <value>絞り</value>
+  </data>
+  <data name="开始" xml:space="preserve">
+    <value>始める</value>
+  </data>
+  <data name="增益" xml:space="preserve">
+    <value>得</value>
+  </data>
+  <data name="位置" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="图像水平翻转" xml:space="preserve">
+    <value>画像の水平反転</value>
+  </data>
+  <data name="RExpDesc" xml:space="preserve">
+    <value>Rチャンネルの露光時間（ミリ秒）</value>
+  </data>
+  <data name="04 源表" xml:space="preserve">
+    <value>04 ソーステーブル</value>
+  </data>
+  <data name="00 全局" xml:space="preserve">
+    <value>00 グローバル</value>
+  </data>
+  <data name="01 运算" xml:space="preserve">
+    <value>01 計算</value>
+  </data>
+  <data name="02 相机" xml:space="preserve">
+    <value>02 カメラ</value>
+  </data>
+  <data name="Spectrometer" xml:space="preserve">
+    <value>分光計</value>
+  </data>
+  <data name="值显示HUB" xml:space="preserve">
+    <value>価値表示ハブ</value>
+  </data>
+  <data name="FixedLEDToFile" xml:space="preserve">
+    <value>固定LEDからファイルへ</value>
+  </data>
+  <data name="逻辑与" xml:space="preserve">
+    <value>論理積</value>
+  </data>
+  <data name="校正ROI" xml:space="preserve">
+    <value>ROIの修正</value>
+  </data>
+  <data name="起始值" xml:space="preserve">
+    <value>初期値</value>
+  </data>
+  <data name="z-index" xml:space="preserve">
+    <value>Zインデックス</value>
+  </data>
+  <data name="10 MQTT" xml:space="preserve">
+    <value>10 MQTT</value>
+  </data>
+  <data name="R曝光" xml:space="preserve">
+    <value>R露出（ミリ秒）</value>
+  </data>
+  <data name="B曝光" xml:space="preserve">
+    <value>B露出（ミリ秒）</value>
+  </data>
+  <data name="G曝光" xml:space="preserve">
+    <value>G露出（ミリ秒）</value>
+  </data>
+  <data name="FOV" xml:space="preserve">
+    <value>視野角</value>
+  </data>
+  <data name="F/R" xml:space="preserve">
+    <value>F/P</value>
+  </data>
+  <data name="Mem" xml:space="preserve">
+    <value>メム</value>
+  </data>
+  <data name="MTF" xml:space="preserve">
+    <value>機動部隊</value>
+  </data>
+  <data name="CIE" xml:space="preserve">
+    <value>CIE</value>
+  </data>
+  <data name="JND" xml:space="preserve">
+    <value>JND</value>
+  </data>
+  <data name="HDR" xml:space="preserve">
+    <value>HDR</value>
+  </data>
+  <data name="Hex" xml:space="preserve">
+    <value>ヘックス</value>
+  </data>
+  <data name="RED" xml:space="preserve">
+    <value>赤</value>
+  </data>
+  <data name="P/O" xml:space="preserve">
+    <value>発注書</value>
+  </data>
+  <data name="POI" xml:space="preserve">
+    <value>POI</value>
+  </data>
+  <data name="SFR" xml:space="preserve">
+    <value>SFR</value>
+  </data>
+  <data name="SMU" xml:space="preserve">
+    <value>ソーステーブル</value>
+  </data>
+  <data name="点类型" xml:space="preserve">
+    <value>ポイントタイプ</value>
+  </data>
+  <data name="点缺陷" xml:space="preserve">
+    <value>点欠陥</value>
+  </data>
+  <data name="线缺陷" xml:space="preserve">
+    <value>線欠陥</value>
+  </data>
+  <data name="结束值" xml:space="preserve">
+    <value>終了値</value>
+  </data>
+  <data name="滤色轮" xml:space="preserve">
+    <value>カラーフィルターホイール</value>
+  </data>
+  <data name="光谱仪" xml:space="preserve">
+    <value>分光計</value>
+  </data>
+  <data name="固定点" xml:space="preserve">
+    <value>固定小数点</value>
+  </data>
+  <data name="Ascii" xml:space="preserve">
+    <value>アスキー</value>
+  </data>
+  <data name="单步值" xml:space="preserve">
+    <value>単一ステップ値</value>
+  </data>
+  <data name="AOI算法" xml:space="preserve">
+    <value>AOIアルゴリズム</value>
+  </data>
+  <data name="AOI总成" xml:space="preserve">
+    <value>AOI すべて</value>
+  </data>
+  <data name="当前值" xml:space="preserve">
+    <value>現在の値</value>
+  </data>
+  <data name="GREEN" xml:space="preserve">
+    <value>緑</value>
+  </data>
+  <data name="AI算法2" xml:space="preserve">
+    <value>AIアルゴリズム2</value>
+  </data>
+  <data name="亚像素" xml:space="preserve">
+    <value>サブピクセル</value>
+  </data>
+  <data name="二次修正文件" xml:space="preserve">
+    <value>2回目の改訂文書</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>閉鎖</value>
+  </data>
+  <data name="CAD文件" xml:space="preserve">
+    <value>CADファイル</value>
+  </data>
+  <data name="LED定位" xml:space="preserve">
+    <value>LEDの配置</value>
+  </data>
+  <data name="JND算法" xml:space="preserve">
+    <value>JNDアルゴリズム</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>価値</value>
+  </data>
+  <data name="Width" xml:space="preserve">
+    <value>幅</value>
+  </data>
+  <data name="Timer" xml:space="preserve">
+    <value>タイマー</value>
+  </data>
+  <data name="Topic" xml:space="preserve">
+    <value>テーマ</value>
+  </data>
+  <data name="Token" xml:space="preserve">
+    <value>トークン</value>
+  </data>
+  <data name="POI宽度" xml:space="preserve">
+    <value>POI幅</value>
+  </data>
+  <data name="POI修正" xml:space="preserve">
+    <value>POI補正</value>
+  </data>
+  <data name="POI类型" xml:space="preserve">
+    <value>POIタイプ</value>
+  </data>
+  <data name="POI模板" xml:space="preserve">
+    <value>POIテンプレート</value>
+  </data>
+  <data name="POI新增" xml:space="preserve">
+    <value>新しいPOI</value>
+  </data>
+  <data name="POI高度" xml:space="preserve">
+    <value>POIの高さ</value>
+  </data>
+  <data name="POI过滤" xml:space="preserve">
+    <value>POIフィルタリング</value>
+  </data>
+  <data name="相机ROI" xml:space="preserve">
+    <value>カメラのROI</value>
+  </data>
+  <data name="相机参数模板" xml:space="preserve">
+    <value>カメラパラメータテンプレート</value>
+  </data>
+  <data name="LoopNextNode" xml:space="preserve">
+    <value>ループネクストノード</value>
+  </data>
+  <data name="Extract" xml:space="preserve">
+    <value>抽出する</value>
+  </data>
+  <data name="关注点算法" xml:space="preserve">
+    <value>フォーカスアルゴリズム</value>
+  </data>
+  <data name="关注点分析" xml:space="preserve">
+    <value>フォーカス分析</value>
+  </data>
+  <data name="关注点布点" xml:space="preserve">
+    <value>焦点と展開</value>
+  </data>
+  <data name="03_1 关注点" xml:space="preserve">
+    <value>031 フォーカス</value>
+  </data>
+  <data name="通用相机" xml:space="preserve">
+    <value>一般的なカメラ</value>
+  </data>
+  <data name="CIE_BUZ" xml:space="preserve">
+    <value>シエブズ</value>
+  </data>
+  <data name="自动积分" xml:space="preserve">
+    <value>自動ポイント</value>
+  </data>
+  <data name="自动校零" xml:space="preserve">
+    <value>自動ゼロ設定</value>
+  </data>
+  <data name="自动曝光" xml:space="preserve">
+    <value>自動露出</value>
+  </data>
+  <data name="自动对焦" xml:space="preserve">
+    <value>オートフォーカス</value>
+  </data>
+  <data name="节点ID" xml:space="preserve">
+    <value>ノードID</value>
+  </data>
+  <data name="节点类型" xml:space="preserve">
+    <value>機器の種類</value>
+  </data>
+  <data name="角点顺序" xml:space="preserve">
+    <value>コーナーオーダー</value>
+  </data>
+  <data name="输出类别" xml:space="preserve">
+    <value>出力カテゴリ</value>
+  </data>
+  <data name="输出文件" xml:space="preserve">
+    <value>出力ファイル</value>
+  </data>
+  <data name="输出模板" xml:space="preserve">
+    <value>出力テンプレート</value>
+  </data>
+  <data name="过滤模板" xml:space="preserve">
+    <value>フィルターテンプレート</value>
+  </data>
+  <data name="色温/波长" xml:space="preserve">
+    <value>色温度/波長</value>
+  </data>
+  <data name="CADMapping" xml:space="preserve">
+    <value>CADマッピング</value>
+  </data>
+  <data name="设备类型" xml:space="preserve">
+    <value>機器の種類</value>
+  </data>
+  <data name="设备代码" xml:space="preserve">
+    <value>デバイスコード</value>
+  </data>
+  <data name="BlackMura算法" xml:space="preserve">
+    <value>BlackMuraアルゴリズム</value>
+  </data>
+  <data name="输出POI模板" xml:space="preserve">
+    <value>出力POIテンプレート</value>
+  </data>
+  <data name="MessageText" xml:space="preserve">
+    <value>メッセージの内容</value>
+  </data>
+  <data name="OutFile" xml:space="preserve">
+    <value>出力ファイル</value>
+  </data>
+  <data name="ARVR.Ghost算法" xml:space="preserve">
+    <value>ARVR.Ghostアルゴリズム</value>
+  </data>
+  <data name="源表[模板]" xml:space="preserve">
+    <value>ソーステーブル - テンプレート</value>
+  </data>
+  <data name="ImageCompound" xml:space="preserve">
+    <value>画像のステッチ</value>
+  </data>
+  <data name="Camera_FilterWheel" xml:space="preserve">
+    <value>カメラ + ND</value>
+  </data>
+  <data name="FlowEngineLib" xml:space="preserve">
+    <value>フローエンジンライブラリ</value>
+  </data>
+  <data name="MQTT发布HUB" xml:space="preserve">
+    <value>リリースハブ</value>
+  </data>
+  <data name="03_5 OLED" xml:space="preserve">
+    <value>035 有機EL</value>
+  </data>
+  <data name="自动曝光/ND" xml:space="preserve">
+    <value>自動露出/ND</value>
+  </data>
+  <data name="关注点修正标定" xml:space="preserve">
+    <value>フォーカスポイント補正キャリブレーション</value>
+  </data>
+  <data name="FixedLED" xml:space="preserve">
+    <value>固定LED</value>
+  </data>
+  <data name="GeneralSensor" xml:space="preserve">
+    <value>一般的なセンサー</value>
+  </data>
+  <data name="自动对焦模板" xml:space="preserve">
+    <value>オートフォーカステンプレート</value>
+  </data>
+  <data name="参数模板ID" xml:space="preserve">
+    <value>パラメータテンプレートID</value>
+  </data>
+  <data name="o-index" xml:space="preserve">
+    <value>oインデックス</value>
+  </data>
+  <data name="文件输出模板" xml:space="preserve">
+    <value>ファイル出力テンプレート</value>
+  </data>
+  <data name="通用AOI相机2" xml:space="preserve">
+    <value>ユニバーサルAOIカメラ2</value>
+  </data>
+  <data name="电机[相机]" xml:space="preserve">
+    <value>モーター[カメラ]</value>
+  </data>
+  <data name="POI模板(Re)" xml:space="preserve">
+    <value>POIテンプレート - Re</value>
+  </data>
+  <data name="GExpDesc" xml:space="preserve">
+    <value>Gチャンネル露光時間（ミリ秒）</value>
+  </data>
+  <data name="FilterWheel" xml:space="preserve">
+    <value>フィルターホイール</value>
+  </data>
+  <data name="KB输出" xml:space="preserve">
+    <value>KB出力</value>
+  </data>
+  <data name="KB算法" xml:space="preserve">
+    <value>KBアルゴリズム</value>
+  </data>
+  <data name="CV相机" xml:space="preserve">
+    <value>CVカメラ</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>書類</value>
+  </data>
+  <data name="Data" xml:space="preserve">
+    <value>データ</value>
+  </data>
+  <data name="BLUE" xml:space="preserve">
+    <value>青</value>
+  </data>
+  <data name="Mura" xml:space="preserve">
+    <value>村</value>
+  </data>
+  <data name="AI算法" xml:space="preserve">
+    <value>AIアルゴリズム</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>なし</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>開ける</value>
+  </data>
+  <data name="AA布点" xml:space="preserve">
+    <value>AAレイアウト</value>
+  </data>
+  <data name="Rect" xml:space="preserve">
+    <value>矩形</value>
+  </data>
+  <data name="Scan" xml:space="preserve">
+    <value>走査</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>ポート</value>
+  </data>
+  <data name="LoopName" xml:space="preserve">
+    <value>ループ名</value>
+  </data>
+</root>
