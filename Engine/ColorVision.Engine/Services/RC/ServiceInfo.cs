@@ -27,7 +27,8 @@ namespace ColorVision.Engine.Services.RC
         {
             ServiceInfo = serviceInfo;
             OpenLogCommand = new RelayCommand(a => OpenLog());
-            ServiceController = new ServiceController(serviceInfo.ServiceName);
+            if(!string.IsNullOrWhiteSpace(serviceInfo.ServiceName))
+                ServiceController = new ServiceController(serviceInfo.ServiceName);
             OpenCommand = new RelayCommand(a => Open());
             CloseCommand = new RelayCommand(a => Close());
             RestartCommand = new RelayCommand(a => Restart());
