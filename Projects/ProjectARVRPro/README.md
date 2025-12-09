@@ -150,12 +150,13 @@ dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj
 - 初始化时查找第一个启用的ProcessMeta
 - 执行过程中自动跳过禁用的步骤
 - 完成判定仅考虑启用的步骤
-- 详细技术文档：[IsEnabled特性说明](Process/README_IsEnabled_Feature.md)
+- 详细技术文档：[IsEnabled特性说明（中文）](Process/README_IsEnabled_Feature_CN.md) | [IsEnabled Feature (English)](Process/README_IsEnabled_Feature.md)
 
 ## 相关文档链接
 
 ### 核心功能文档
-- [ProcessMeta IsEnabled特性详解](Process/README_IsEnabled_Feature.md)
+- [ProcessMeta IsEnabled特性详解（中文）](Process/README_IsEnabled_Feature_CN.md)
+- [ProcessMeta IsEnabled Feature (English)](Process/README_IsEnabled_Feature.md)
 - [ARVR算法模板文档](../../docs/04-api-reference/algorithms/templates/arvr-template.md)
 - [流程引擎文档](../../docs/04-api-reference/engine-components/README.md)
 
