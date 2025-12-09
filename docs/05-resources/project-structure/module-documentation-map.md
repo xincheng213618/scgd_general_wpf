@@ -30,6 +30,8 @@
 | └─ ScreenRecorder/ | 屏幕录制 | - | 录屏功能 |
 | └─ WindowsServicePlugin/ | 服务插件 | - | Windows服务 |
 | **Projects/** | 客户项目 | 各项目README.md | 定制化项目 |
+| └─ ProjectARVRPro/ | ARVR Pro | [ProjectARVRPro README](../../Projects/ProjectARVRPro/README.md) \<br> [快速入门](../../Projects/ProjectARVRPro/GETTING_STARTED.md) \<br> [性能优化](../../Projects/ProjectARVRPro/PERFORMANCE_OPTIMIZATION.md) \<br> [故障排查](../../Projects/ProjectARVRPro/TROUBLESHOOTING.md) | AR/VR专业测试系统 |
+| └─ 其他项目/ | 客户定制 | 各项目目录下README.md | 定制化解决方案 |
 | **Core/** | 底层库 | - | C++底层库 |
 | **Test/** | 测试 | - | 单元测试 |
 | **Tools/** | 工具 | - | 辅助工具 |

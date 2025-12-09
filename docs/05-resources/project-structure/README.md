@@ -218,9 +218,13 @@ ColorVision/
 **作用**：针对特定客户需求的完整解决方案
 
 **项目列表**：
-- **ProjectARVR** - AR/VR 检测项目
-- **ProjectARVRLite** - AR/VR Lite 版本
-- **ProjectARVRPro** - AR/VR Pro 版本
+- **ProjectARVR** - AR/VR 检测项目（基础版）
+- **ProjectARVRLite** - AR/VR Lite 版本（简化版）
+- **ProjectARVRPro** - AR/VR Pro 版本（专业版）
+  - 完整的AR/VR光学性能测试系统
+  - 支持多种测试模式和算法
+  - 灵活的流程配置和管理
+  - 详细文档：[ProjectARVRPro README](../../Projects/ProjectARVRPro/README.md)
 - **ProjectKB** - KB 项目
 - **ProjectLUX** - LUX 亮度测量项目
 - **ProjectBlackMura** - 黑斑检测项目
@@ -228,6 +232,21 @@ ColorVision/
 - **ProjectShiyuan** - 识远定制项目
 
 每个项目都有自己的 README.md 说明文档。
+
+#### ProjectARVRPro 详细信息
+
+**核心功能**：
+- 多种测试模式（White255, Black, Distortion, MTF, OpticCenter等）
+- ProcessMeta管理系统，支持选择性执行
+- Recipe和Fix配置管理
+- 测试结果存储和导出（CSV/PDF）
+
+**快速链接**：
+- [README](../../Projects/ProjectARVRPro/README.md) - 项目概述和功能说明
+- [快速入门](../../Projects/ProjectARVRPro/GETTING_STARTED.md) - 新手教程
+- [性能优化](../../Projects/ProjectARVRPro/PERFORMANCE_OPTIMIZATION.md) - 优化指南
+- [故障排查](../../Projects/ProjectARVRPro/TROUBLESHOOTING.md) - 问题解决
+- [IsEnabled特性](../../Projects/ProjectARVRPro/Process/README_IsEnabled_Feature_CN.md) - 功能详解
 
 ---
 
