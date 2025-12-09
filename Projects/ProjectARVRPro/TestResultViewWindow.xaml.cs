@@ -1,7 +1,12 @@
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Reflection;
+using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -151,6 +156,128 @@ namespace ProjectARVRPro
                     }
                 }
             }
+        }
+
+        private void ExportCsv_Click(object sender, RoutedEventArgs e)
+        {
+            if (TestItems.Count == 0)
+            {
+                MessageBox.Show("没有可导出的数据", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var saveFileDialog = new SaveFileDialog
+            {
+                Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                DefaultExt = "csv",
+                FileName = $"TestResult_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                RestoreDirectory = true
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    ExportToCsv(saveFileDialog.FileName);
+                    MessageBox.Show($"数据已成功导出到:\n{saveFileDialog.FileName}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"导出CSV失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void ExportToCsv(string filePath)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("Name,TestValue,Value,LowLimit,UpLimit,Unit,TestResult");
+
+            foreach (var item in TestItems)
+            {
+                string testResult = item.TestResult ? "PASS" : "FAIL";
+                sb.AppendLine($"{item.Name},{item.TestValue},{item.Value},{item.LowLimit},{item.UpLimit},{item.Unit},{testResult}");
+            }
+
+            File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
+        }
+
+        private void ExportPdf_Click(object sender, RoutedEventArgs e)
+        {
+            if (TestItems.Count == 0)
+            {
+                MessageBox.Show("没有可导出的数据", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var saveFileDialog = new SaveFileDialog
+            {
+                Filter = "PDF文件 (*.pdf)|*.pdf|所有文件 (*.*)|*.*",
+                DefaultExt = "pdf",
+                FileName = $"TestResult_{DateTime.Now:yyyyMMdd_HHmmss}.pdf",
+                RestoreDirectory = true
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    ExportToPdf(saveFileDialog.FileName);
+                    MessageBox.Show($"数据已成功导出到:\n{saveFileDialog.FileName}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"导出PDF失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void ExportToPdf(string filePath)
+        {
+            using var pdfWriter = new PdfWriter(filePath);
+            using var pdfDocument = new PdfDocument(pdfWriter);
+            using var document = new Document(pdfDocument);
+
+            // 添加标题
+            var title = new Paragraph("Test Result Report")
+                .SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER)
+                .SetFontSize(20);
+            document.Add(title);
+
+            // 添加时间
+            var dateTime = new Paragraph($"Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}")
+                .SetTextAlignment(iText.Layout.Properties.TextAlignment.RIGHT)
+                .SetFontSize(10);
+            document.Add(dateTime);
+
+            document.Add(new Paragraph("\n"));
+
+            // 创建表格 - 7列
+            var table = new Table(7, true);
+            
+            // 添加表头
+            table.AddHeaderCell("Name");
+            table.AddHeaderCell("TestValue");
+            table.AddHeaderCell("Value");
+            table.AddHeaderCell("LowLimit");
+            table.AddHeaderCell("UpLimit");
+            table.AddHeaderCell("Unit");
+            table.AddHeaderCell("Result");
+
+            // 添加数据行
+            foreach (var item in TestItems)
+            {
+                table.AddCell(item.Name ?? "");
+                table.AddCell(item.TestValue ?? "");
+                table.AddCell(item.Value.ToString("F4"));
+                table.AddCell(item.LowLimit.ToString("F4"));
+                table.AddCell(item.UpLimit.ToString("F4"));
+                table.AddCell(item.Unit ?? "");
+                table.AddCell(item.TestResult ? "PASS" : "FAIL");
+            }
+
+            document.Add(table);
+            table.Complete();
         }
     }
 }
