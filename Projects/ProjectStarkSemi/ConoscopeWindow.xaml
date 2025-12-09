@@ -16,6 +16,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <Ribbon Background="Transparent">
@@ -358,59 +359,66 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <im:ImageView x:Name="ImageView" Grid.Column="0"/>
-                <Grid Grid.Column="1">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlot"/>
-                    <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5">
-                        <StackPanel Orientation="Horizontal">
-                            <CheckBox x:Name="chkShowRed" 
-                                          Content="R" 
-                                          Foreground="Red" 
-                                          IsChecked="{Binding Config.IsShowRedChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                            <CheckBox x:Name="chkShowGreen" 
-                                          Content="G" 
-                                          Foreground="Green" 
-                                          IsChecked="{Binding Config.IsShowGreenChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                            <CheckBox x:Name="chkShowBlue" 
-                                          Content="B" 
-                                          Foreground="Blue" 
-                                          IsChecked="{Binding Config.IsShowBlueChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                            <CheckBox x:Name="chkShowXlue" 
-                                          Content="X" 
-                                          Foreground="Gold" 
-                                          IsChecked="{Binding Config.IsShowXChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                            <CheckBox x:Name="chkShowYlue" 
-                                          Content="Y" 
-                                          Foreground="Gray" 
-                                          IsChecked="{Binding Config.IsShowYChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                            <CheckBox x:Name="chkShowZlue" 
-                                          Content="Z" 
-                                          Foreground="Violet" 
-                                          IsChecked="{Binding Config.IsShowZChannel}"
-                                          Margin="5,0"
-                                          Checked="RgbChannelVisibility_Changed"
-                                          Unchecked="RgbChannelVisibility_Changed"/>
-                        </StackPanel>
+                <TabControl Grid.Column="1" Margin="5">
+                    <!-- Diameter Line Tab -->
+                    <TabItem Header="直径线 (Diameter Line)">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            
+                            <!-- Diameter Line Plot -->
+                            <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotDiameterLine"/>
+                            
+                            <!-- Diameter Line Controls -->
+                            <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5">
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox x:Name="chkShowRed" 
+                                                  Content="R" 
+                                                  Foreground="Red" 
+                                                  IsChecked="{Binding Config.IsShowRedChannel}"
+                                                  Margin="5,0"
+                                                  Checked="RgbChannelVisibility_Changed"
+                                                  Unchecked="RgbChannelVisibility_Changed"/>
+                                    <CheckBox x:Name="chkShowGreen" 
+                                                  Content="G" 
+                                                  Foreground="Green" 
+                                                  IsChecked="{Binding Config.IsShowGreenChannel}"
+                                                  Margin="5,0"
+                                                  Checked="RgbChannelVisibility_Changed"
+                                                  Unchecked="RgbChannelVisibility_Changed"/>
+                                    <CheckBox x:Name="chkShowBlue" 
+                                                  Content="B" 
+                                                  Foreground="Blue" 
+                                                  IsChecked="{Binding Config.IsShowBlueChannel}"
+                                                  Margin="5,0"
+                                                  Checked="RgbChannelVisibility_Changed"
+                                                  Unchecked="RgbChannelVisibility_Changed"/>
+                                    <CheckBox x:Name="chkShowXlue" 
+                                                  Content="X" 
+                                                  Foreground="Gold" 
+                                                  IsChecked="{Binding Config.IsShowXChannel}"
+                                                  Margin="5,0"
+                                                  Checked="RgbChannelVisibility_Changed"
+                                                  Unchecked="RgbChannelVisibility_Changed"/>
+                                    <CheckBox x:Name="chkShowYlue" 
+                                                  Content="Y" 
+                                                  Foreground="Gray" 
+                                                  IsChecked="{Binding Config.IsShowYChannel}"
+                                                  Margin="5,0"
+                                                  Checked="RgbChannelVisibility_Changed"
+                                                  Unchecked="RgbChannelVisibility_Changed"/>
+                                    <CheckBox x:Name="chkShowZlue" 
+                                                  Content="Z" 
+                                                  Foreground="Violet" 
+                                                  IsChecked="{Binding Config.IsShowZChannel}"
+                                                  Margin="5,0"
+                                                  Checked="RgbChannelVisibility_Changed"
+                                                  Unchecked="RgbChannelVisibility_Changed"/>
+                                </StackPanel>
 
-                        <GroupBox Header="直径线管理 (Diameter Line)" Margin="0,0,0,5">
+                                <GroupBox Header="直径线管理 (Diameter Line)" Margin="0,5,0,5">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                     <TextBlock Text="添加角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
@@ -476,8 +484,40 @@
 
         </Grid>
 
+        <!-- Export Settings Row -->
+        <Grid Grid.Row="2" Margin="5,5,5,0">
+            <GroupBox Header="导出设置">
+                <StackPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                        <TextBlock Text="导出模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                        <ComboBox x:Name="cbExportMode" 
+                                  MinWidth="120" 
+                                  SelectedIndex="0">
+                            <ComboBoxItem Content="按直径线导出" Tag="Angle"/>
+                            <ComboBoxItem Content="按R圆导出" Tag="Circle"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                        <TextBlock Text="导出通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                        <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="4">
+                            <ComboBoxItem Content="R通道" Tag="R"/>
+                            <ComboBoxItem Content="G通道" Tag="G"/>
+                            <ComboBoxItem Content="B通道" Tag="B"/>
+                            <ComboBoxItem Content="X通道" Tag="X"/>
+                            <ComboBoxItem Content="Y通道" Tag="Y"/>
+                            <ComboBoxItem Content="Z通道" Tag="Z"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="直径线导出"   Click="btnExportAngleMode_Click"    Padding="10,5"  Margin="5,0,5,0"/>
+                        <Button Content="R圆导出"    Click="btnExportCircleMode_Click"   Padding="10,5"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+        </Grid>
+
         <!-- Status Bar at Bottom -->
-        <StatusBar Grid.Row="2" Height="25">
+        <StatusBar Grid.Row="3" Height="25">
             <StatusBar.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Grid>

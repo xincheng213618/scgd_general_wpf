@@ -92,22 +92,31 @@ namespace ProjectStarkSemi
             LoadCameraServices();
             UpdateUIForModel(ConoscopeConfig.CurrentModel);
 
-            wpfPlot.Plot.Title($"视角分布曲线");
-            wpfPlot.Plot.XLabel("Degress");
-            wpfPlot.Plot.YLabel("Luminance (cd/m²)");
-            wpfPlot.Plot.Legend.FontName = ScottPlot.Fonts.Detect("中文");
+            // Initialize Diameter Line Plot
+            InitializePlot(wpfPlotDiameterLine, "直径线分布曲线 (Diameter Line Distribution)");
+            
+            // Initialize R Circle Plot
+            InitializePlot(wpfPlotRCircle, "R圆分布曲线 (R Circle Distribution)");
+        }
+
+        private void InitializePlot(ScottPlot.WPF.WpfPlot plot, string title)
+        {
+            plot.Plot.Title(title);
+            plot.Plot.XLabel("Degrees");
+            plot.Plot.YLabel("Luminance (cd/m²)");
+            plot.Plot.Legend.FontName = ScottPlot.Fonts.Detect("中文");
 
             string fontSample = $"中文 Luminance Voltage";
-            wpfPlot.Plot.Axes.Title.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
-            wpfPlot.Plot.Axes.Left.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
-            wpfPlot.Plot.Axes.Bottom.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
+            plot.Plot.Axes.Title.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
+            plot.Plot.Axes.Left.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
+            plot.Plot.Axes.Bottom.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
 
             // Enable grid for better readability
-            wpfPlot.Plot.Grid.MajorLineColor = ScottPlot.Color.FromColor(System.Drawing.Color.LightGray);
-            wpfPlot.Plot.Grid.MajorLineWidth = 1;
-            wpfPlot.Plot.Axes.SetLimits(-80, 80, 0, 600);
+            plot.Plot.Grid.MajorLineColor = ScottPlot.Color.FromColor(System.Drawing.Color.LightGray);
+            plot.Plot.Grid.MajorLineWidth = 1;
+            plot.Plot.Axes.SetLimits(-80, 80, 0, 600);
 
-            wpfPlot.Refresh();
+            plot.Refresh();
         }
 
         private void LoadCameraServices()
@@ -162,7 +171,8 @@ namespace ProjectStarkSemi
                         ObservationCameraSeparator.Visibility = Visibility.Visible;
                     }
                     MaxAngle = 60;
-                    wpfPlot.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
+                    wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
+                    wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
                     break;
                     
                 case ConoscopeModelType.VA80:
@@ -177,7 +187,8 @@ namespace ProjectStarkSemi
                         ObservationCameraSeparator.Visibility = Visibility.Collapsed;
                     }
                     MaxAngle = 80;
-                    wpfPlot.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
+                    wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
+                    wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
                     break;
             }
         }
@@ -1596,11 +1607,11 @@ namespace ProjectStarkSemi
         {
             try
             {
-                wpfPlot.Plot.Clear();
+                wpfPlotDiameterLine.Plot.Clear();
 
                 if (selectedPolarLine == null || selectedPolarLine.RgbData.Count == 0)
                 {
-                    wpfPlot.Refresh();
+                    wpfPlotDiameterLine.Refresh();
                     return;
                 }
 
@@ -1611,7 +1622,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowRedChannel)
                 {
                     double[] rValues = selectedPolarLine.RgbData.Select(s => s.R).ToArray();
-                    var redScatter = wpfPlot.Plot.Add.Scatter(positions, rValues);
+                    var redScatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, rValues);
                     redScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Red);
                     redScatter.LineWidth = 2;
                     redScatter.LegendText = "R";
@@ -1621,7 +1632,7 @@ namespace ProjectStarkSemi
                 {
                     double[] gValues = selectedPolarLine.RgbData.Select(s => s.G).ToArray();
 
-                    var greenScatter = wpfPlot.Plot.Add.Scatter(positions, gValues);
+                    var greenScatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, gValues);
                     greenScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Green);
                     greenScatter.LineWidth = 2;
                     greenScatter.LegendText = "G";
@@ -1630,7 +1641,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowBlueChannel)
                 {
                     double[] bValues = selectedPolarLine.RgbData.Select(s => s.B).ToArray();
-                    var blueScatter = wpfPlot.Plot.Add.Scatter(positions, bValues);
+                    var blueScatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, bValues);
                     blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Blue);
                     blueScatter.LineWidth = 2;
                     blueScatter.LegendText = "B";
@@ -1638,35 +1649,35 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowXChannel)
                 {
                     double[] XValues = selectedPolarLine.RgbData.Select(s => s.X).ToArray();
-                    var blueScatter = wpfPlot.Plot.Add.Scatter(positions, XValues);
-                    blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gold);
-                    blueScatter.LineWidth = 2;
-                    blueScatter.LegendText = "X";
+                    var xScatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, XValues);
+                    xScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gold);
+                    xScatter.LineWidth = 2;
+                    xScatter.LegendText = "X";
                 }
                 if (ConoscopeConfig.IsShowYChannel)
                 {
                     double[] YValues = selectedPolarLine.RgbData.Select(s => s.Y).ToArray();
-                    var blueScatter = wpfPlot.Plot.Add.Scatter(positions, YValues);
-                    blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gray);
-                    blueScatter.LineWidth = 2;
-                    blueScatter.LegendText = "Y";
+                    var yScatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, YValues);
+                    yScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gray);
+                    yScatter.LineWidth = 2;
+                    yScatter.LegendText = "Y";
                 }
                 if (ConoscopeConfig.IsShowZChannel)
                 {
                     double[] ZValues = selectedPolarLine.RgbData.Select(s => s.Z).ToArray();
-                    var blueScatter = wpfPlot.Plot.Add.Scatter(positions, ZValues);
-                    blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Violet);
-                    blueScatter.LineWidth = 2;
-                    blueScatter.LegendText = "Z";
+                    var zScatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, ZValues);
+                    zScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Violet);
+                    zScatter.LineWidth = 2;
+                    zScatter.LegendText = "Z";
                 }
 
-                wpfPlot.Plot.Title($"直径线 {selectedPolarLine.Angle}°分布曲线");
-                wpfPlot.Plot.XLabel("角度 (°)");
-                wpfPlot.Plot.YLabel("像素值");
-                wpfPlot.Plot.Legend.IsVisible = true;
-                wpfPlot.Plot.Axes.AutoScale();
+                wpfPlotDiameterLine.Plot.Title($"直径线 {selectedPolarLine.Angle}°分布曲线");
+                wpfPlotDiameterLine.Plot.XLabel("角度 (°)");
+                wpfPlotDiameterLine.Plot.YLabel("像素值");
+                wpfPlotDiameterLine.Plot.Legend.IsVisible = true;
+                wpfPlotDiameterLine.Plot.Axes.AutoScale();
 
-                wpfPlot.Refresh();
+                wpfPlotDiameterLine.Refresh();
 
                 log.Info($"更新图表: 直径线{selectedPolarLine.Angle}°");
             }
@@ -1683,11 +1694,11 @@ namespace ProjectStarkSemi
         {
             try
             {
-                wpfPlot.Plot.Clear();
+                wpfPlotRCircle.Plot.Clear();
 
                 if (selectedCircleLine == null || selectedCircleLine.RgbData.Count == 0)
                 {
-                    wpfPlot.Refresh();
+                    wpfPlotRCircle.Refresh();
                     return;
                 }
 
@@ -1698,7 +1709,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowRedChannel)
                 {
                     double[] rValues = selectedCircleLine.RgbData.Select(s => s.R).ToArray();
-                    var redScatter = wpfPlot.Plot.Add.Scatter(positions, rValues);
+                    var redScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, rValues);
                     redScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Red);
                     redScatter.LineWidth = 2;
                     redScatter.LegendText = "R";
@@ -1707,7 +1718,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowGreenChannel)
                 {
                     double[] gValues = selectedCircleLine.RgbData.Select(s => s.G).ToArray();
-                    var greenScatter = wpfPlot.Plot.Add.Scatter(positions, gValues);
+                    var greenScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, gValues);
                     greenScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Green);
                     greenScatter.LineWidth = 2;
                     greenScatter.LegendText = "G";
@@ -1716,7 +1727,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowBlueChannel)
                 {
                     double[] bValues = selectedCircleLine.RgbData.Select(s => s.B).ToArray();
-                    var blueScatter = wpfPlot.Plot.Add.Scatter(positions, bValues);
+                    var blueScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, bValues);
                     blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Blue);
                     blueScatter.LineWidth = 2;
                     blueScatter.LegendText = "B";
@@ -1725,7 +1736,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowXChannel)
                 {
                     double[] XValues = selectedCircleLine.RgbData.Select(s => s.X).ToArray();
-                    var xScatter = wpfPlot.Plot.Add.Scatter(positions, XValues);
+                    var xScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, XValues);
                     xScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gold);
                     xScatter.LineWidth = 2;
                     xScatter.LegendText = "X";
@@ -1734,7 +1745,7 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowYChannel)
                 {
                     double[] YValues = selectedCircleLine.RgbData.Select(s => s.Y).ToArray();
-                    var yScatter = wpfPlot.Plot.Add.Scatter(positions, YValues);
+                    var yScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, YValues);
                     yScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gray);
                     yScatter.LineWidth = 2;
                     yScatter.LegendText = "Y";
@@ -1743,19 +1754,19 @@ namespace ProjectStarkSemi
                 if (ConoscopeConfig.IsShowZChannel)
                 {
                     double[] ZValues = selectedCircleLine.RgbData.Select(s => s.Z).ToArray();
-                    var zScatter = wpfPlot.Plot.Add.Scatter(positions, ZValues);
+                    var zScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, ZValues);
                     zScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Violet);
                     zScatter.LineWidth = 2;
                     zScatter.LegendText = "Z";
                 }
 
-                wpfPlot.Plot.Title($"R圆 {selectedCircleLine.RadiusAngle}° 圆周分布曲线");
-                wpfPlot.Plot.XLabel("圆周角度 (°)");
-                wpfPlot.Plot.YLabel("像素值");
-                wpfPlot.Plot.Legend.IsVisible = true;
-                wpfPlot.Plot.Axes.AutoScale();
+                wpfPlotRCircle.Plot.Title($"R圆 {selectedCircleLine.RadiusAngle}° 圆周分布曲线");
+                wpfPlotRCircle.Plot.XLabel("圆周角度 (°)");
+                wpfPlotRCircle.Plot.YLabel("像素值");
+                wpfPlotRCircle.Plot.Legend.IsVisible = true;
+                wpfPlotRCircle.Plot.Axes.AutoScale();
 
-                wpfPlot.Refresh();
+                wpfPlotRCircle.Refresh();
 
                 log.Info($"更新图表: R圆半径角度{selectedCircleLine.RadiusAngle}°");
             }
