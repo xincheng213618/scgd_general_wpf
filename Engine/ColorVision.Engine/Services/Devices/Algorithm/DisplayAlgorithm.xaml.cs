@@ -66,8 +66,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             DataContext = Device;
 
-            this.ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
+            this.ContextMenu = Device.ContextMenu;
+
+
             List<DisplayAlgorithmMeta> algorithmMetas = new List<DisplayAlgorithmMeta>();
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())

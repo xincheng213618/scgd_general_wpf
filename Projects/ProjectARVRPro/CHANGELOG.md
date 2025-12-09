@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [1.0.4.7] 2025.12.09
+
+1. 文档更新和优化：
+   - README.md全面更新，增加详细的功能说明和架构设计
+   - 新增版本徽章和表格化功能列表
+   - 添加Process目录结构说明
+   - 完善ProcessConfig可配置Key文档
+   - 增加IProcess接口和ProcessBase基类说明
+
+2. 新增ROADMAP.md开发路线图文档
+
 ## [1.0.4.4] 2025.12.04
 
 1. 新增MTFHV058Process模块，支持058产品的MTF测试
