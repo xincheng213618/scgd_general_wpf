@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
@@ -164,7 +165,7 @@ namespace ProjectARVRPro
         {
             if (TestItems.Count == 0)
             {
-                MessageBox.Show("没有可导出的数据", "Export CSV", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("没有可导出的数据", "导出 CSV", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -185,18 +186,18 @@ namespace ProjectARVRPro
                     {
                         EscapeCsv(item.Name),
                         EscapeCsv(item.TestValue),
-                        item.Value.ToString("F4"),
-                        item.LowLimit.ToString("F4"),
-                        item.UpLimit.ToString("F4"),
+                        item.Value.ToString("F4", CultureInfo.InvariantCulture),
+                        item.LowLimit.ToString("F4", CultureInfo.InvariantCulture),
+                        item.UpLimit.ToString("F4", CultureInfo.InvariantCulture),
                         EscapeCsv(item.Unit),
                         item.TestResult ? "PASS" : "FAIL"
                     }));
                 }
-                MessageBox.Show("CSV 导出完成", "Export CSV", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("CSV 导出完成", "导出 CSV", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"导出失败: {ex.Message}", "Export CSV", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"导出失败: {ex.Message}", "导出 CSV", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -204,7 +205,7 @@ namespace ProjectARVRPro
         {
             if (TestItems.Count == 0)
             {
-                MessageBox.Show("没有可导出的数据", "Export PDF", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("没有可导出的数据", "导出 PDF", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -234,28 +235,29 @@ namespace ProjectARVRPro
                 {
                     table.AddCell(new Paragraph(item.Name ?? string.Empty));
                     table.AddCell(new Paragraph(item.TestValue ?? string.Empty));
-                    table.AddCell(new Paragraph(item.Value.ToString("F4")));
-                    table.AddCell(new Paragraph(item.LowLimit.ToString("F4")));
-                    table.AddCell(new Paragraph(item.UpLimit.ToString("F4")));
+                    table.AddCell(new Paragraph(item.Value.ToString("F4", CultureInfo.InvariantCulture)));
+                    table.AddCell(new Paragraph(item.LowLimit.ToString("F4", CultureInfo.InvariantCulture)));
+                    table.AddCell(new Paragraph(item.UpLimit.ToString("F4", CultureInfo.InvariantCulture)));
                     table.AddCell(new Paragraph(item.Unit ?? string.Empty));
                     table.AddCell(new Paragraph(item.TestResult ? "PASS" : "FAIL"));
                 }
 
                 document.Add(table);
-                MessageBox.Show("PDF 导出完成", "Export PDF", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("PDF 导出完成", "导出 PDF", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"导出失败: {ex.Message}", "Export PDF", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"导出失败: {ex.Message}", "导出 PDF", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
+        private static readonly char[] CsvSpecialCharacters = { '"', ',', '\n', '\r' };
         private static string EscapeCsv(string? input)
         {
             if (string.IsNullOrEmpty(input))
                 return string.Empty;
 
-            bool requiresQuotes = input.Contains('"') || input.Contains(',') || input.Contains('\n') || input.Contains('\r');
+            bool requiresQuotes = input.IndexOfAny(CsvSpecialCharacters) >= 0;
             if (requiresQuotes)
             {
                 return $"\"{input.Replace("\"", "\"\"")}\"";
