@@ -744,7 +744,7 @@ namespace ProjectStarkSemi
         }
 
         /// <summary>
-        /// 添加同心圆角度按钮点击事件
+        /// 添加R圆角度按钮点击事件
         /// </summary>
         private void btnAddCircleAngle_Click(object sender, RoutedEventArgs e)
         {
@@ -754,7 +754,7 @@ namespace ProjectStarkSemi
                 if (currentBitmapSource == null)
                 {
                     MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    log.Warn("未加载图像，无法添加同心圆");
+                    log.Warn("未加载图像，无法添加R圆");
                     return;
                 }
 
@@ -800,6 +800,9 @@ namespace ProjectStarkSemi
                     Circle = circle
                 };
                 
+                // Extract RGB data along the circle
+                ExtractRgbAlongCircle(newCircle, currentImageCenter, radiusAngle, currentBitmapSource);
+                
                 // Insert the circle in sorted order by radius angle
                 int insertIndex = 0;
                 for (int i = 0; i < displayedCircles.Count; i++)
@@ -826,17 +829,17 @@ namespace ProjectStarkSemi
                 // Clear text box
                 txtCircleAngle.Text = "";
                 
-                log.Info($"成功添加同心圆: 半径角度 {radiusAngle:F1}°");
+                log.Info($"成功添加R圆: 半径角度 {radiusAngle:F1}°");
             }
             catch (Exception ex)
             {
-                log.Error($"添加同心圆失败: {ex.Message}", ex);
-                MessageBox.Show($"添加同心圆失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                log.Error($"添加R圆失败: {ex.Message}", ex);
+                MessageBox.Show($"添加R圆失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         /// <summary>
-        /// 删除选中同心圆按钮点击事件
+        /// 删除选中R圆按钮点击事件
         /// </summary>
         private void btnRemoveCircleAngle_Click(object sender, RoutedEventArgs e)
         {
@@ -844,7 +847,7 @@ namespace ProjectStarkSemi
             {
                 if (selectedCircleLine == null)
                 {
-                    MessageBox.Show("请先选择要删除的同心圆", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("请先选择要删除的R圆", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -873,29 +876,30 @@ namespace ProjectStarkSemi
                     selectedCircleLine = null;
                 }
 
-                log.Info($"成功删除同心圆: 半径角度 {removedAngle:F1}°");
+                log.Info($"成功删除R圆: 半径角度 {removedAngle:F1}°");
             }
             catch (Exception ex)
             {
-                log.Error($"删除同心圆失败: {ex.Message}", ex);
-                MessageBox.Show($"删除同心圆失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                log.Error($"删除R圆失败: {ex.Message}", ex);
+                MessageBox.Show($"删除R圆失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         /// <summary>
-        /// 同心圆选择改变事件
+        /// R圆选择改变事件
         /// </summary>
         private void cbConcentricCircles_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (cbConcentricCircles.SelectedItem is ConcentricCircleLine selectedCircle)
             {
                 selectedCircleLine = selectedCircle;
-                log.Info($"选中同心圆: 半径角度 {selectedCircle.RadiusAngle:F1}°");
+                log.Info($"选中R圆: 半径角度 {selectedCircle.RadiusAngle:F1}°");
+                UpdatePlotForCircle();
             }
         }
 
         /// <summary>
-        /// 清除所有显示的同心圆
+        /// 清除所有显示的R圆
         /// </summary>
         private void ClearDisplayedCircles()
         {
@@ -931,7 +935,7 @@ namespace ProjectStarkSemi
                 {
                     Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
                     DefaultExt = "csv",
-                    FileName = $"角度模式导出_{channel}_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                    FileName = $"DiameterLine_Export_{channel}_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
                     RestoreDirectory = true
                 };
 
@@ -939,18 +943,18 @@ namespace ProjectStarkSemi
                 {
                     ExportAngleModeToCSV(saveFileDialog.FileName, channel);
                     MessageBox.Show($"数据已成功导出到:\n{saveFileDialog.FileName}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
-                    log.Info($"成功导出角度模式CSV: {saveFileDialog.FileName}");
+                    log.Info($"成功导出直径线模式CSV: {saveFileDialog.FileName}");
                 }
             }
             catch (Exception ex)
             {
-                log.Error($"角度模式导出失败: {ex.Message}", ex);
-                MessageBox.Show($"角度模式导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                log.Error($"直径线模式导出失败: {ex.Message}", ex);
+                MessageBox.Show($"直径线模式导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         /// <summary>
-        /// 按同心圆模式导出按钮点击事件
+        /// 按R圆模式导出按钮点击事件
         /// </summary>
         private void btnExportCircleMode_Click(object sender, RoutedEventArgs e)
         {
@@ -970,7 +974,7 @@ namespace ProjectStarkSemi
                 {
                     Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
                     DefaultExt = "csv",
-                    FileName = $"同心圆模式导出_{channel}_{ConoscopeConfig.CurrentModel}_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
+                    FileName = $"RCircle_Export_{channel}_{ConoscopeConfig.CurrentModel}_{DateTime.Now:yyyyMMdd_HHmmss}.csv",
                     RestoreDirectory = true
                 };
 
@@ -978,13 +982,13 @@ namespace ProjectStarkSemi
                 {
                     ExportCircleModeToCSV(saveFileDialog.FileName, channel);
                     MessageBox.Show($"数据已成功导出到:\n{saveFileDialog.FileName}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
-                    log.Info($"成功导出同心圆模式CSV: {saveFileDialog.FileName}");
+                    log.Info($"成功导出R圆模式CSV: {saveFileDialog.FileName}");
                 }
             }
             catch (Exception ex)
             {
-                log.Error($"同心圆模式导出失败: {ex.Message}", ex);
-                MessageBox.Show($"同心圆模式导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                log.Error($"R圆模式导出失败: {ex.Message}", ex);
+                MessageBox.Show($"R圆模式导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -1029,13 +1033,13 @@ namespace ProjectStarkSemi
                 }
 
                 // Write header comments
-                writer.WriteLine($"# 角度模式导出数据 (Phi \\ Theta 格式)");
-                writer.WriteLine($"# 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                writer.WriteLine($"# 导出通道: {channel}");
-                writer.WriteLine($"# 型号: {ConoscopeConfig.CurrentModel}");
-                writer.WriteLine($"# 最大视角: {MaxAngle}°");
-                writer.WriteLine($"# Phi (列): 角度线方向 (0°-180°)");
-                writer.WriteLine($"# Theta (行): 采样点位置 (0 到 MaxAngle)");
+                writer.WriteLine($"# Diameter Line Export Data (Phi \\ Theta Format)");
+                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                writer.WriteLine($"# Export Channel: {channel}");
+                writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
+                writer.WriteLine($"# Max Angle: {MaxAngle}°");
+                writer.WriteLine($"# Phi (Column): Diameter line direction (0°-180°)");
+                writer.WriteLine($"# Theta (Row): Sample point position (0 to MaxAngle)");
                 writer.WriteLine();
 
                 // Write CSV header: Phi \ Theta, followed by each Phi angle (0-180)
@@ -1076,12 +1080,12 @@ namespace ProjectStarkSemi
                     writer.WriteLine(dataLine.ToString());
                 }
 
-                log.Info($"角度模式导出了 {angleLines.Count} 个Phi角度 (0°-180°) 的数据, 通道: {channel}");
+                log.Info($"直径线模式导出了 {angleLines.Count} 个Phi角度 (0°-180°) 的数据, 通道: {channel}");
             }
         }
 
         /// <summary>
-        /// 为导出创建从0°到180°的角度线数据
+        /// 为导出创建从0°到180°的直径线数据
         /// 每条线采样从中心点(0)到边缘(MaxAngle)
         /// </summary>
         private List<PolarAngleLine> CreateAngleLinesForExport()
@@ -1137,7 +1141,7 @@ namespace ProjectStarkSemi
                     angleLines.Add(polarLine);
                 }
 
-                log.Info($"创建了 {angleLines.Count} 条角度线 (0°-180°) 用于导出");
+                log.Info($"创建了 {angleLines.Count} 条直径线 (0°-180°) 用于导出");
             }
             finally
             {
@@ -1169,14 +1173,14 @@ namespace ProjectStarkSemi
                 var sortedCircles = concentricCircleLines.OrderBy(c => c.RadiusAngle).ToList();
 
                 // Write header comments
-                writer.WriteLine($"# 同心圆模式导出数据 (Phi \\ Theta 格式)");
-                writer.WriteLine($"# 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                writer.WriteLine($"# 导出通道: {channel}");
-                writer.WriteLine($"# 型号: {ConoscopeConfig.CurrentModel}");
-                writer.WriteLine($"# 最大视角: {MaxAngle}°");
-                writer.WriteLine($"# 同心圆数量: {sortedCircles.Count} (包含0度中心点)");
-                writer.WriteLine($"# Phi (列): 半径角度 (视角, 0-{MaxAngle}°)");
-                writer.WriteLine($"# Theta (行): 圆周角度 (0-359°)");
+                writer.WriteLine($"# R Circle Export Data (Phi \\ Theta Format)");
+                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                writer.WriteLine($"# Export Channel: {channel}");
+                writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
+                writer.WriteLine($"# Max Angle: {MaxAngle}°");
+                writer.WriteLine($"# R Circle Count: {sortedCircles.Count} (including 0-degree center point)");
+                writer.WriteLine($"# Phi (Column): Radius angle (viewing angle, 0-{MaxAngle}°)");
+                writer.WriteLine($"# Theta (Row): Circumferential angle (0-359°)");
                 writer.WriteLine();
 
                 // Write CSV header: Phi \ Theta, followed by each Phi (radius angle)
@@ -1210,7 +1214,7 @@ namespace ProjectStarkSemi
                     writer.WriteLine(dataLine.ToString());
                 }
 
-                log.Info($"同心圆模式导出了 {sortedCircles.Count} 个Phi角度 x 360 Theta的数据, 通道: {channel}");
+                log.Info($"R圆模式导出了 {sortedCircles.Count} 个Phi角度 x 360 Theta的数据, 通道: {channel}");
             }
         }
 
@@ -1232,9 +1236,9 @@ namespace ProjectStarkSemi
         }
 
         /// <summary>
-        /// 创建同心圆数据
-        /// VA60: 61个同心圆 (每度一个，从0度到60度)
-        /// VA80: 81个同心圆 (每度一个，从0度到80度)
+        /// 创建R圆数据
+        /// VA60: 61个R圆 (每度一个，从0度到60度)
+        /// VA80: 81个R圆 (每度一个，从0度到80度)
         /// 0度为中心点，使用插值
         /// </summary>
         private void CreateConcentricCirclesData()
@@ -1316,7 +1320,7 @@ namespace ProjectStarkSemi
                     concentricCircleLines.Add(circleLine);
                 }
 
-                log.Info($"创建了 {concentricCircleLines.Count} 个同心圆数据 (包含0度中心点)");
+                log.Info($"创建了 {concentricCircleLines.Count} 个R圆数据 (包含0度中心点)");
             }
             finally
             {
@@ -1510,7 +1514,7 @@ namespace ProjectStarkSemi
                 }
 
                 mat.Dispose();
-                log.Info($"完成RGB采样: 角度{polarLine.Angle}°, 采样点数{polarLine.RgbData.Count}");
+                log.Info($"完成RGB采样: 直径线{polarLine.Angle}°, 采样点数{polarLine.RgbData.Count}");
             }
             catch (Exception ex)
             {
@@ -1519,7 +1523,58 @@ namespace ProjectStarkSemi
         }
 
         /// <summary>
-        /// 清除所有极角线
+        /// 沿圆周提取RGB数据
+        /// </summary>
+        private void ExtractRgbAlongCircle(ConcentricCircleLine circleLine, Point center, double radiusAngle, BitmapSource bitmapSource)
+        {
+            try
+            {
+                // Convert BitmapSource to OpenCV Mat
+                OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(bitmapSource);
+
+                // Calculate radius in pixels
+                double radiusPixels = radiusAngle / ConoscopeConfig.ConoscopeCoefficient;
+
+                // Sample 360 points around the circle (0-359 degrees)
+                for (int anglePos = 0; anglePos < 360; anglePos++)
+                {
+                    double radians = anglePos * Math.PI / 180.0;
+                    double x = center.X + radiusPixels * Math.Cos(radians);
+                    double y = center.Y + radiusPixels * Math.Sin(radians);
+
+                    // Ensure coordinates are within bounds
+                    int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
+                    int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+
+                    // Extract RGB values
+                    double r = 0, g = 0, b = 0;
+                    double X = 0, Y = 0, Z = 0;
+
+                    ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
+
+                    circleLine.RgbData.Add(new RgbSample
+                    {
+                        Position = anglePos, // 0 to 359 degrees
+                        R = r,
+                        G = g,
+                        B = b,
+                        X = X,
+                        Y = Y,
+                        Z = Z
+                    });
+                }
+
+                mat.Dispose();
+                log.Info($"完成RGB采样: R圆半径角度{circleLine.RadiusAngle}°, 采样点数{circleLine.RgbData.Count}");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"提取R圆数据失败: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// 清除所有直径线
         /// </summary>
         private void ClearPolarLines()
         {
@@ -1605,7 +1660,7 @@ namespace ProjectStarkSemi
                     blueScatter.LegendText = "Z";
                 }
 
-                wpfPlot.Plot.Title($"极角 {selectedPolarLine.Angle}°分布曲线");
+                wpfPlot.Plot.Title($"直径线 {selectedPolarLine.Angle}°分布曲线");
                 wpfPlot.Plot.XLabel("角度 (°)");
                 wpfPlot.Plot.YLabel("像素值");
                 wpfPlot.Plot.Legend.IsVisible = true;
@@ -1613,11 +1668,100 @@ namespace ProjectStarkSemi
 
                 wpfPlot.Refresh();
 
-                log.Info($"更新图表: 角度{selectedPolarLine.Angle}°");
+                log.Info($"更新图表: 直径线{selectedPolarLine.Angle}°");
             }
             catch (Exception ex)
             {
                 log.Error($"更新图表失败: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// 更新ScottPlot显示R圆数据
+        /// </summary>
+        private void UpdatePlotForCircle()
+        {
+            try
+            {
+                wpfPlot.Plot.Clear();
+
+                if (selectedCircleLine == null || selectedCircleLine.RgbData.Count == 0)
+                {
+                    wpfPlot.Refresh();
+                    return;
+                }
+
+                // Extract position (circumferential angle 0-359°) and RGB data
+                double[] positions = selectedCircleLine.RgbData.Select(s => s.Position).ToArray();
+
+                // Add scatter plots for each channel based on visibility
+                if (ConoscopeConfig.IsShowRedChannel)
+                {
+                    double[] rValues = selectedCircleLine.RgbData.Select(s => s.R).ToArray();
+                    var redScatter = wpfPlot.Plot.Add.Scatter(positions, rValues);
+                    redScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Red);
+                    redScatter.LineWidth = 2;
+                    redScatter.LegendText = "R";
+                }
+
+                if (ConoscopeConfig.IsShowGreenChannel)
+                {
+                    double[] gValues = selectedCircleLine.RgbData.Select(s => s.G).ToArray();
+                    var greenScatter = wpfPlot.Plot.Add.Scatter(positions, gValues);
+                    greenScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Green);
+                    greenScatter.LineWidth = 2;
+                    greenScatter.LegendText = "G";
+                }
+
+                if (ConoscopeConfig.IsShowBlueChannel)
+                {
+                    double[] bValues = selectedCircleLine.RgbData.Select(s => s.B).ToArray();
+                    var blueScatter = wpfPlot.Plot.Add.Scatter(positions, bValues);
+                    blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Blue);
+                    blueScatter.LineWidth = 2;
+                    blueScatter.LegendText = "B";
+                }
+
+                if (ConoscopeConfig.IsShowXChannel)
+                {
+                    double[] XValues = selectedCircleLine.RgbData.Select(s => s.X).ToArray();
+                    var xScatter = wpfPlot.Plot.Add.Scatter(positions, XValues);
+                    xScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gold);
+                    xScatter.LineWidth = 2;
+                    xScatter.LegendText = "X";
+                }
+
+                if (ConoscopeConfig.IsShowYChannel)
+                {
+                    double[] YValues = selectedCircleLine.RgbData.Select(s => s.Y).ToArray();
+                    var yScatter = wpfPlot.Plot.Add.Scatter(positions, YValues);
+                    yScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gray);
+                    yScatter.LineWidth = 2;
+                    yScatter.LegendText = "Y";
+                }
+
+                if (ConoscopeConfig.IsShowZChannel)
+                {
+                    double[] ZValues = selectedCircleLine.RgbData.Select(s => s.Z).ToArray();
+                    var zScatter = wpfPlot.Plot.Add.Scatter(positions, ZValues);
+                    zScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Violet);
+                    zScatter.LineWidth = 2;
+                    zScatter.LegendText = "Z";
+                }
+
+                wpfPlot.Plot.Title($"R圆 {selectedCircleLine.RadiusAngle}° 圆周分布曲线");
+                wpfPlot.Plot.XLabel("圆周角度 (°)");
+                wpfPlot.Plot.YLabel("像素值");
+                wpfPlot.Plot.Legend.IsVisible = true;
+                wpfPlot.Plot.Axes.AutoScale();
+
+                wpfPlot.Refresh();
+
+                log.Info($"更新图表: R圆半径角度{selectedCircleLine.RadiusAngle}°");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"更新R圆图表失败: {ex.Message}", ex);
             }
         }
 
