@@ -589,11 +589,16 @@ namespace ProjectStarkSemi
                     ImageView.AddVisual(circle);
                     
                     // Add to displayed circles collection for management
-                    displayedCircles.Add(new ConcentricCircleLine
+                    ConcentricCircleLine circleLine = new ConcentricCircleLine
                     {
                         RadiusAngle = item,
                         Circle = circle
-                    });
+                    };
+                    
+                    // Extract RGB data along the circle
+                    ExtractRgbAlongCircle(circleLine, center, item, bitmapSource);
+                    
+                    displayedCircles.Add(circleLine);
                 }
                 
                 // Set up circles ComboBox
@@ -602,6 +607,8 @@ namespace ProjectStarkSemi
                     cbConcentricCircles.ItemsSource = displayedCircles;
                     cbConcentricCircles.SelectedIndex = 0;
                     selectedCircleLine = displayedCircles[0];
+                    // Update the R circle plot with the first circle's data
+                    UpdatePlotForCircle();
                 }
 
                 // Clear existing lines
@@ -830,6 +837,9 @@ namespace ProjectStarkSemi
                 // Select the newly added circle
                 cbConcentricCircles.SelectedItem = newCircle;
                 selectedCircleLine = newCircle;
+                
+                // Update the R circle plot with the new circle's data
+                UpdatePlotForCircle();
 
                 // Add to config for persistence
                 if (!ConoscopeConfig.DefaultRAngles.Contains(radiusAngle))
