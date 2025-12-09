@@ -51,6 +51,12 @@ namespace ColorVision.FileIO
         private const int MinimumFileSize = HeaderSize + 4; // Minimum file size to contain the header and Version
         private static readonly Encoding Encoding1 = Encoding.GetEncoding("GBK");
 
+        static CVFileUtil()
+        {
+#if NETCOREAPP
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+#endif
+        }
         /// <summary>
         /// 判断文件是否为CVCIE格式。
         /// </summary>
@@ -73,6 +79,35 @@ namespace ColorVision.FileIO
                 return false;
             }
         }
+        public static bool IsCVCIEFile(string filePath)
+        {
+            if (!File.Exists(filePath)) return false;
+            try
+            {
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (BinaryReader br = new BinaryReader(fs))
+                {
+                    if (fs.Length < HeaderSize) return false;
+                    string fileHeader = new string(br.ReadChars(HeaderSize));
+                    if (fileHeader == MagicHeader)
+                    {
+                        CVCIEFile cVCIEFile = new CVCIEFile();
+                        int index = ReadCIEFileHeader(filePath ,out CVCIEFile cvcie);
+                        if (index > 0)
+                        {
+                            return cvcie.FileExtType == CVType.CIE;
+                        }
+                    }
+                    return  false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[IsCIEFile] Exception: {ex}");
+                return false;
+            }
+        }
+
 
         /// <summary>
         /// 判断字节数组是否为CVCIE格式。
@@ -83,6 +118,8 @@ namespace ColorVision.FileIO
             string fileHeader = Encoding.ASCII.GetString(fileData, 0, HeaderSize);
             return fileHeader == MagicHeader;
         }
+
+
 
         /// <summary>
         /// 读取CVCIE文件头信息（文件路径）。

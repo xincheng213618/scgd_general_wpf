@@ -59,7 +59,7 @@
                     <RibbonApplicationMenu SmallImageSource="Assets/Image/ColorVision1.ico" Background="Transparent"  KeyTip="F">
                         <RibbonApplicationMenuItem Header="Open"
                                                       ImageSource="Images/Open32.png"
-                                                      KeyTip="O" Click="Button_Click" />
+                                                      KeyTip="O" Click="OpenFile_Click" />
                         <RibbonApplicationMenuItem Header="Save"
                                                       Command="Save"
                                                       ImageSource="Images/Save32.png"
@@ -148,8 +148,8 @@
 
                 <RibbonTab Header="Home"  KeyTip="H"  GroupSizeReductionOrder="Clipboard, Insert, Insert, Paragraph, Clipboard, Editing, Font, Clipboard" >
                     <RibbonGroup Header="Files">
-                        <RibbonButton Label="Open" SmallImageSource="Images/Open32.png"  KeyTip="O" Click="Button_Click" />
-                        <RibbonButton Label="SaveAs" SmallImageSource="Images/SaveAs32.png"  KeyTip="O" Click="Button_Click" />
+                        <RibbonButton Label="Open" SmallImageSource="Images/Open32.png"  KeyTip="O" Click="OpenFile_Click" />
+                        <RibbonButton Label="SaveAs" SmallImageSource="Images/SaveAs32.png"  KeyTip="O" Click="OpenFile_Click" />
                         <RibbonButton Label="导出CSV"  Click="btnExportCSV_Click" Padding="10,5"/>
                     </RibbonGroup>
                 </RibbonTab>
@@ -394,7 +394,7 @@
                                           Unchecked="RgbChannelVisibility_Changed"/>
                             <CheckBox x:Name="chkShowYlue" 
                                           Content="Y" 
-                                          Foreground="White" 
+                                          Foreground="Gray" 
                                           IsChecked="{Binding IsShowYChannel}"
                                           Margin="5,0"
                                           Checked="RgbChannelVisibility_Changed"

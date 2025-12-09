@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
@@ -28,6 +29,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 
 namespace ProjectStarkSemi
 {
@@ -360,7 +362,7 @@ namespace ProjectStarkSemi
 
                 log.Info($"开始应用滤波: {filterType}");
 
-                // Convert WPF BitmapSource to OpenCV Mat
+                // Convert WPF BitmapSource to OpenCV XYZMat
                 BitmapSource bitmapSource = ImageView.ImageShow.Source as BitmapSource;
                 if (bitmapSource == null)
                 {
@@ -431,11 +433,7 @@ namespace ProjectStarkSemi
             }
         }
 
-        public void Dispose()
-        {
-            ImageView?.Dispose();
-            GC.SuppressFinalize(this);
-        }
+
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
@@ -452,19 +450,59 @@ namespace ProjectStarkSemi
             ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        public OpenCvSharp.Mat XYZMat { get; set; } 
+
+        private void OpenFile_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
             openFileDialog.RestoreDirectory = true;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                ImageView.OpenImage(openFileDialog.FileName);
+                string filename = openFileDialog.FileName;
+                if (CVFileUtil.IsCVCIEFile(filename))
+                {
+                    CVCIEFile fileInfo = new CVCIEFile();
+                    CVFileUtil.Read(filename, out fileInfo);
+                    // Calculate the size of a single channel in bytes
+                    int channelSize = fileInfo.Cols * fileInfo.Rows * (fileInfo.Bpp / 8);
+
+
+                    OpenCvSharp.MatType singleChannelType;
+                    switch (fileInfo.Bpp)
+                    {
+                        case 8: singleChannelType = OpenCvSharp.MatType.CV_8UC1; break;
+                        case 16: singleChannelType = OpenCvSharp.MatType.CV_16UC1; break;
+                        case 32: singleChannelType = OpenCvSharp.MatType.CV_32FC1; break; // Most likely for XYZ
+                        case 64: singleChannelType = OpenCvSharp.MatType.CV_64FC1; break;
+                        default: throw new NotSupportedException($"Bpp {fileInfo.Bpp} not supported");
+                    }
+
+                    byte[] dataX = new byte[channelSize];
+                    byte[] dataY = new byte[channelSize];
+                    byte[] dataZ = new byte[channelSize];
+
+                    Buffer.BlockCopy(fileInfo.Data, 0, dataX, 0, channelSize);
+                    Buffer.BlockCopy(fileInfo.Data, channelSize, dataY, 0, channelSize);
+                    Buffer.BlockCopy(fileInfo.Data, channelSize * 2, dataZ, 0, channelSize);
+
+                    using (var matX = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX))
+                    using (var matY = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataY))
+                    using (var matZ = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataZ))
+                    {
+                        // Merge the three single-channel Mats into one 3-channel Mat (XYZ)
+                        XYZMat = new OpenCvSharp.Mat();
+                        OpenCvSharp.Cv2.Merge(new[] { matX, matY, matZ }, XYZMat);
+                    }
+
+                }
+
+                ImageView.OpenImage(filename);
                 ImageView.ImageShow.ImageInitialized += (s, e) =>
                 {
                     CreateAndAnalyzePolarLines();
-
                 };
             }
+            
         }
 
         /// <summary>
@@ -950,14 +988,19 @@ namespace ProjectStarkSemi
                         int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
 
                         double r = 0, g = 0, b = 0;
-                        ExtractPixelValues(mat, ix, iy, out r, out g, out b);
+                        double X = 0, Y = 0, Z = 0;
+
+                        ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
 
                         polarLine.RgbData.Add(new RgbSample
                         {
                             Position = theta, // 0 to MaxAngle
                             R = r,
                             G = g,
-                            B = b
+                            B = b,
+                            X = X,
+                            Y = Y,
+                            Z = Z
                         });
                     }
 
@@ -1070,7 +1113,7 @@ namespace ProjectStarkSemi
 
             if (currentBitmapSource == null) return;
 
-            // Convert BitmapSource to OpenCV Mat
+            // Convert BitmapSource to OpenCV XYZMat
             OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
 
             try
@@ -1094,17 +1137,22 @@ namespace ProjectStarkSemi
                         int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(currentImageCenter.Y)));
 
                         double r = 0, g = 0, b = 0;
-                        ExtractPixelValues(mat, ix, iy, out r, out g, out b);
+                        double X = 0, Y = 0, Z = 0;
+
+                        ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
 
                         // Fill all 360 samples with the center point value
                         for (int anglePos = 0; anglePos < 360; anglePos++)
                         {
                             circleLine.RgbData.Add(new RgbSample
                             {
-                                Position = anglePos,
+                                Position = anglePos, // 0 to MaxAngle
                                 R = r,
                                 G = g,
-                                B = b
+                                B = b,
+                                X = X,
+                                Y = Y,
+                                Z = Z
                             });
                         }
                     }
@@ -1124,16 +1172,24 @@ namespace ProjectStarkSemi
                             int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
                             int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
 
+
                             double r = 0, g = 0, b = 0;
-                            ExtractPixelValues(mat, ix, iy, out r, out g, out b);
+                            double X = 0, Y = 0, Z = 0;
+
+                            ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
 
                             circleLine.RgbData.Add(new RgbSample
                             {
-                                Position = anglePos, // 0-359 degrees around the circle
+                                Position = anglePos, // 0 to MaxAngle
                                 R = r,
                                 G = g,
-                                B = b
+                                B = b,
+                                X = X,
+                                Y = Y,
+                                Z = Z
                             });
+
+          
                         }
                     }
 
@@ -1151,10 +1207,10 @@ namespace ProjectStarkSemi
         /// <summary>
         /// 从Mat中提取像素值
         /// </summary>
-        private void ExtractPixelValues(OpenCvSharp.Mat mat, int ix, int iy, out double r, out double g, out double b)
+        private void ExtractPixelValues(OpenCvSharp.Mat mat, int ix, int iy, out double r, out double g, out double b,out double X,out double Y,out double Z)
         {
             r = 0; g = 0; b = 0;
-
+            X = Y = Z = 0;
             if (mat.Channels() == 1)
             {
                 // Grayscale image
@@ -1186,6 +1242,18 @@ namespace ProjectStarkSemi
                     g = pixel.Item1;
                     r = pixel.Item2;
                 }
+
+                if (XYZMat != null)
+                {
+                    OpenCvSharp.Vec3w pixel = mat.At<OpenCvSharp.Vec3w>(iy, ix);
+                    Y = pixel.Item0;
+                    Z = pixel.Item1;
+                    X = pixel.Item2;
+                }
+                else
+                {
+                    X = Y = Z = 0;
+                }
             }
         }
 
@@ -1215,9 +1283,6 @@ namespace ProjectStarkSemi
             ImageView.AddVisual(line);
 
 
-
-
-
             // Create PolarAngleLine object
             PolarAngleLine polarLine = new PolarAngleLine
             {
@@ -1241,7 +1306,7 @@ namespace ProjectStarkSemi
         {
             try
             {
-                // Convert BitmapSource to OpenCV Mat
+                // Convert BitmapSource to OpenCV RGBMat
                 OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(bitmapSource);
 
                 // Calculate line length
@@ -1273,6 +1338,7 @@ namespace ProjectStarkSemi
 
                     // Extract RGB values based on image type
                     double r = 0, g = 0, b = 0;
+                    double X = 0, Y = 0, Z = 0;
 
                     if (mat.Channels() == 1)
                     {
@@ -1305,6 +1371,14 @@ namespace ProjectStarkSemi
                             g = pixel.Item1;
                             r = pixel.Item2;
                         }
+
+                        if(XYZMat != null)
+                        {
+                            OpenCvSharp.Vec3w pixel = mat.At<OpenCvSharp.Vec3w>(iy, ix);
+                            Y = pixel.Item0;
+                            Z = pixel.Item1;
+                            X = pixel.Item2;
+                        }
                     }
 
                     polarLine.RgbData.Add(new RgbSample
@@ -1312,7 +1386,10 @@ namespace ProjectStarkSemi
                         Position = position,
                         R = r,
                         G = g,
-                        B = b
+                        B = b,
+                        X = X,
+                        Y = Y,
+                        Z =Z,
                     });
                 }
 
@@ -1399,7 +1476,7 @@ namespace ProjectStarkSemi
                 {
                     double[] YValues = selectedPolarLine.RgbData.Select(s => s.Y).ToArray();
                     var blueScatter = wpfPlot.Plot.Add.Scatter(positions, YValues);
-                    blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.White);
+                    blueScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gray);
                     blueScatter.LineWidth = 2;
                     blueScatter.LegendText = "Y";
                 }
@@ -1432,6 +1509,14 @@ namespace ProjectStarkSemi
         {
             MessageBox.Show("视角测量");
         }
+        public void Dispose()
+        {
+            XYZMat?.Dispose();
+            XYZMat = null;
+            ImageView?.Dispose();
+            GC.SuppressFinalize(this);
+        }
+
 
         private void Window_Closed(object sender, EventArgs e)
         {

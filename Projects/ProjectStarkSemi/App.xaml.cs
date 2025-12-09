@@ -29,6 +29,8 @@ namespace ProjectStarkSemi
 
         private async void Application_Startup(object s, StartupEventArgs e)
         {
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
             ConfigHandler.GetInstance();
 
             Authorization.Instance = ConfigHandler.GetInstance().GetRequiredService<Authorization>();
