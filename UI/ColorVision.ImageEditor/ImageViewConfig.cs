@@ -121,7 +121,7 @@ namespace ColorVision.ImageEditor
         private bool _IsToolBarAlVisible = true;
 
         public bool IsToolBarDrawVisible { get => _IsToolBarDrawVisible; set { _IsToolBarDrawVisible = value; OnPropertyChanged(); } }
-        private bool _IsToolBarDrawVisible = true;
+        private bool _IsToolBarDrawVisible;
 
         public bool IsToolBarTopVisible { get => _IsToolBarTopVisible; set { _IsToolBarTopVisible = value; OnPropertyChanged(); } }
         private bool _IsToolBarTopVisible = true;

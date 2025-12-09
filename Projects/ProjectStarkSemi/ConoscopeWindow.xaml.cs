@@ -18,12 +18,15 @@ using log4net;
 using Microsoft.Win32;
 using OpenCvSharp.WpfExtensions;
 using ProjectStarkSemi.Conoscope;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -73,6 +76,11 @@ namespace ProjectStarkSemi
             {
                 toolReferenceLine.ReferenceLine = new ReferenceLine(ConoscopeConfig.ReferenceLineParam);
             }
+            ImageView.Config.IsToolBarAlVisible = false;
+            ImageView.Config.IsToolBarLeftVisible = false;
+            ImageView.Config.IsToolBarRightVisible = true;
+            ImageView.Config.IsToolBarTopVisible = false;
+            ImageView.Config.IsToolBarDrawVisible = false;
 
             cbModelType.ItemsSource = Enum.GetValues(typeof(ConoscopeModelType));
             this.DataContext = ConoscopeManager;
@@ -455,6 +463,9 @@ namespace ProjectStarkSemi
 
                     CVCIEFile fileInfo = new CVCIEFile();
                     CVFileUtil.Read(filename, out fileInfo);
+
+
+                    
                     // Calculate the size of a single channel in bytes
                     int channelSize = fileInfo.Cols * fileInfo.Rows * (fileInfo.Bpp / 8);
 
@@ -468,24 +479,42 @@ namespace ProjectStarkSemi
                         case 64: singleChannelType = OpenCvSharp.MatType.CV_64FC1; break;
                         default: throw new NotSupportedException($"Bpp {fileInfo.Bpp} not supported");
                     }
+                    if (fileInfo.Channels == 3)
+                    {
+                        byte[] dataX = new byte[channelSize];
+                        byte[] dataY = new byte[channelSize];
+                        byte[] dataZ = new byte[channelSize];
 
-                    byte[] dataX = new byte[channelSize];
-                    byte[] dataY = new byte[channelSize];
-                    byte[] dataZ = new byte[channelSize];
+                        Buffer.BlockCopy(fileInfo.Data, 0, dataX, 0, channelSize);
+                        Buffer.BlockCopy(fileInfo.Data, channelSize, dataY, 0, channelSize);
+                        Buffer.BlockCopy(fileInfo.Data, channelSize * 2, dataZ, 0, channelSize);
 
-                    Buffer.BlockCopy(fileInfo.Data, 0, dataX, 0, channelSize);
-                    Buffer.BlockCopy(fileInfo.Data, channelSize, dataY, 0, channelSize);
-                    Buffer.BlockCopy(fileInfo.Data, channelSize * 2, dataZ, 0, channelSize);
+                        XMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
+                        YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataY);
+                        ZMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataZ);
+                    }
+                    else
+                    {
+                        byte[] dataX = new byte[channelSize];
+                        Buffer.BlockCopy(fileInfo.Data, 0, dataX, 0, channelSize);
+                        YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
+                    }
 
-                    XMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
-                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataY);
-                    ZMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataZ);
                 }
 
                 ImageView.OpenImage(filename);
                 ImageView.ImageShow.ImageInitialized += (s, e) =>
                 {
+                    ImageView.Config.IsPseudo = true;
                     CreateAndAnalyzePolarLines();
+                    Application.Current.Dispatcher.Invoke(async () =>
+                    {
+                        await Task.Delay(500);
+                        if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
+                        {
+                            toolReferenceLine.IsChecked = true;
+                        }
+                    });
                 };
             }
             
@@ -1163,19 +1192,9 @@ namespace ProjectStarkSemi
                             double X = 0, Y = 0, Z = 0;
 
                             ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
+                            circleLine.RgbData.Add(new RgbSample{ Position = anglePos,  R = r, G = g,   B = b, X = X, Y = Y, Z = Z });
 
-                            circleLine.RgbData.Add(new RgbSample
-                            {
-                                Position = anglePos, // 0 to MaxAngle
-                                R = r,
-                                G = g,
-                                B = b,
-                                X = X,
-                                Y = Y,
-                                Z = Z
-                            });
-
-          
+       
                         }
                     }
 
@@ -1210,6 +1229,8 @@ namespace ProjectStarkSemi
                     ushort value = mat.At<ushort>(iy, ix);
                     r = g = b = value;
                 }
+                if (YMat != null)
+                    Y = YMat.At<float>(iy, ix);
             }
             else if (mat.Channels() >= 3)
             {

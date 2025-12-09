@@ -10,7 +10,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance  Conoscope:ConoscopeManager}"
-        Title="Conoscope" Height="750" Width="1500" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
+        Title="Conoscope" Height="750" Width="1280" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
     <Grid Margin="5,5,5,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -325,7 +325,7 @@
 
                 </RibbonTab>
             </Ribbon>
-            <Button  VerticalAlignment="Top" Margin="5,0,5,0" HorizontalAlignment="Right" Command="{Binding EditConoscopeConfigCommand}" Padding="2" Height="20" Width="20" >
+            <Button  VerticalAlignment="Top" HorizontalAlignment="Right" Command="{Binding EditConoscopeConfigCommand}" Padding="2" Height="40" Width="40" >
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
                         <BeginStoryboard>
@@ -335,7 +335,7 @@
                         </BeginStoryboard>
                     </EventTrigger>
                 </Button.Triggers>
-                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
+                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="25" Foreground="{DynamicResource GlobalTextBrush}">
                     <TextBlock.RenderTransform>
                         <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
                     </TextBlock.RenderTransform>
@@ -352,7 +352,7 @@
             <!-- Left Side: Image Display -->
             <Grid Grid.Column="0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="640"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <im:ImageView x:Name="ImageView" Grid.Column="0"/>
@@ -437,7 +437,7 @@
 
                         <!-- Export Settings -->
                         <GroupBox Header="导出设置" Margin="0,0,0,5">
-                            <StackPanel>
+                            <StackPanel Orientation="Horizontal">
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                     <TextBlock Text="导出模式:" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                     <ComboBox x:Name="cbExportMode" 
@@ -449,9 +449,7 @@
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                     <TextBlock Text="导出通道:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                    <ComboBox x:Name="cbExportChannel" 
-                                              MinWidth="120" 
-                                              SelectedIndex="0">
+                                    <ComboBox x:Name="cbExportChannel" MinWidth="120" SelectedIndex="4">
                                         <ComboBoxItem Content="R通道" Tag="R"/>
                                         <ComboBoxItem Content="G通道" Tag="G"/>
                                         <ComboBoxItem Content="B通道" Tag="B"/>
@@ -461,13 +459,8 @@
                                     </ComboBox>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Content="角度模式导出"  
-                                            Click="btnExportAngleMode_Click" 
-                                            Padding="10,5"
-                                            Margin="5,0,5,0"/>
-                                    <Button Content="同心圆模式导出"  
-                                            Click="btnExportCircleMode_Click" 
-                                            Padding="10,5"/>
+                                    <Button Content="角度模式导出"   Click="btnExportAngleMode_Click"    Padding="10,5"  Margin="5,0,5,0"/>
+                                    <Button Content="同心圆模式导出"    Click="btnExportCircleMode_Click"   Padding="10,5"/>
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>
