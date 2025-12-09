@@ -196,10 +196,23 @@ namespace ProjectARVRPro
             foreach (var item in TestItems)
             {
                 string testResult = item.TestResult ? "PASS" : "FAIL";
-                sb.AppendLine($"{item.Name},{item.TestValue},{item.Value},{item.LowLimit},{item.UpLimit},{item.Unit},{testResult}");
+                sb.AppendLine($"{EscapeCsvField(item.Name)},{EscapeCsvField(item.TestValue)},{item.Value:F4},{item.LowLimit:F4},{item.UpLimit:F4},{EscapeCsvField(item.Unit)},{testResult}");
             }
 
             File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
+        }
+
+        private static string EscapeCsvField(string? field)
+        {
+            if (string.IsNullOrEmpty(field))
+                return "";
+
+            // If field contains special characters, wrap in quotes and escape existing quotes
+            if (field.Contains(',') || field.Contains('"') || field.Contains('\n') || field.Contains('\r'))
+            {
+                return $"\"{field.Replace("\"", "\"\"")}\"";
+            }
+            return field;
         }
 
         private void ExportPdf_Click(object sender, RoutedEventArgs e)
