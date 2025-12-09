@@ -536,9 +536,6 @@
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{x:Static properties:Resources.ObservationCameraStatus}" Margin="0,0,5,0"/>
                     <TextBlock x:Name="tbObservationCameraStatus" Text="{x:Static properties:Resources.NotOpened}" Foreground="Gray"/>
-                    <TextBlock Text=" | " Margin="10,0,5,0"/>
-                    <TextBlock Text="{x:Static properties:Resources.CalibrationStatus}" Margin="0,0,5,0"/>
-                    <TextBlock x:Name="tbCalibrationStatus" Text="{x:Static properties:Resources.NotCalibrated}" Foreground="Orange"/>
                 </StackPanel>
             </StatusBarItem>
         </StatusBar>

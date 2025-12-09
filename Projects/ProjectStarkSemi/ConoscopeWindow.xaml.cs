@@ -12,6 +12,7 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.LogImp;
 using FlowEngineLib;
 using log4net;
@@ -25,6 +26,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -35,6 +37,10 @@ using System.Windows.Shapes;
 
 namespace ProjectStarkSemi
 {
+    public class ConoscopeWindowConfig : WindowConfig
+    {
+        public static ConoscopeWindowConfig Instance => ConfigService.Instance.GetRequiredService<ConoscopeWindowConfig>();
+    }
 
     /// <summary>
     /// ConoscopeWindow.xaml 的交互逻辑
@@ -68,6 +74,8 @@ namespace ProjectStarkSemi
         {
             InitializeComponent();
             this.ApplyCaption();
+            ConoscopeWindowConfig.Instance.SetWindow(this);
+            this.Title += Assembly.GetAssembly(typeof(ConoscopeWindow))?.GetName().Version?.ToString() ?? "";
         }
 
         public ConoscopeManager ConoscopeManager => ConoscopeManager.GetInstance();
@@ -79,6 +87,10 @@ namespace ProjectStarkSemi
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
             {
                 toolReferenceLine.ReferenceLine = new ReferenceLine(ConoscopeConfig.ReferenceLineParam);
+            }
+            if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>() is MouseMagnifierManager  mouseMagnifierManager)
+            {
+                mouseMagnifierManager.IsChecked = true;
             }
             ImageView.Config.IsToolBarAlVisible = false;
             ImageView.Config.IsToolBarLeftVisible = false;
@@ -654,6 +666,7 @@ namespace ProjectStarkSemi
         private void RgbChannelVisibility_Changed(object sender, RoutedEventArgs e)
         {
             UpdatePlot();
+            UpdatePlotForCircle();
         }
 
         /// <summary>
@@ -1558,7 +1571,7 @@ namespace ProjectStarkSemi
 
                 // Sample 720 points around the circle for smoother visualization (0.5 degree intervals)
                 // Export still uses original data, but display benefits from higher resolution
-                int numSamples = 720;
+                int numSamples = 3600;
                 for (int i = 0; i < numSamples; i++)
                 {
                     double anglePos = i * 360.0 / numSamples; // 0.5 degree intervals
