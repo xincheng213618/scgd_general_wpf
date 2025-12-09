@@ -907,44 +907,6 @@ namespace ProjectStarkSemi
         }
 
         /// <summary>
-        /// 导出数据到CSV文件
-        /// </summary>
-        private void ExportToCSV(string filePath)
-        {
-            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
-            {
-                // Sort polar lines by angle for organized output
-                var sortedLines = polarAngleLines.OrderBy(line => line.Angle).ToList();
-
-                // Write header
-                writer.WriteLine("# 极角RGB分布数据");
-                writer.WriteLine($"# 导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                writer.WriteLine($"# 角度数量: {sortedLines.Count}");
-                writer.WriteLine();
-
-                // Export each angle's data
-                foreach (var polarLine in sortedLines)
-                {
-                    writer.WriteLine($"# 角度: {polarLine.Angle}°");
-                    writer.WriteLine("Position(°),R,G,B,Luminance");
-
-                    foreach (var sample in polarLine.RgbData)
-                    {
-                        // Calculate luminance (brightness) using standard formula
-                        // Y = 0.299R + 0.587G + 0.114B
-                        double luminance = 0.299 * sample.R + 0.587 * sample.G + 0.114 * sample.B;
-
-                        writer.WriteLine($"{sample.Position:F2},{sample.R:F2},{sample.G:F2},{sample.B:F2},{luminance:F2}");
-                    }
-
-                    writer.WriteLine(); // Empty line between angles
-                }
-
-                log.Info($"导出了 {sortedLines.Count} 个角度的数据");
-            }
-        }
-
-        /// <summary>
         /// 按角度模式导出按钮点击事件
         /// </summary>
         private void btnExportAngleMode_Click(object sender, RoutedEventArgs e)
@@ -1223,7 +1185,7 @@ namespace ProjectStarkSemi
                 writer.WriteLine(headerLine.ToString());
 
                 // Export each row (Theta = 0-359)
-                for (int theta = 0; theta < 360; theta++)
+                for (int theta = 0; theta <= 360; theta++)
                 {
                     StringBuilder dataLine = new StringBuilder();
                     dataLine.Append($"{theta}");
