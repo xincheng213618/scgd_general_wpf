@@ -8,6 +8,11 @@ ARVR Pro 专业版测试系统 - 针对AR/VR显示设备的全面光学性能测
 
 专为AR/VR显示设备提供专业级光学测试，涵盖显示质量、光学性能、缺陷检测等全方位测试需求。
 
+## 运行环境
+
+- 目标框架：.NET 8.0-windows（x64）
+- 插件输出：PostBuild 会将生成物复制到 `ColorVision/bin/x64/{Configuration}/net8.0-windows/Plugins/ProjectARVRPro/`
+
 ## 主要功能点
 
 - **初始化管理** - 通过ProjectARVRProInit进行完整的测试参数初始化
@@ -47,6 +52,10 @@ ARVR Pro 专业版测试系统 - 针对AR/VR显示设备的全面光学性能测
 ### 在主程序中的启用
 - 插件自动加载和注册
 - 支持模板编辑器和流程工具集成
+
+### 打包与部署
+- 构建命令：`dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj -p:Platform=x64`
+- 构建后会自动复制 DLL、manifest 以及 README/CHANGELOG 到 ColorVision 插件目录，便于直接运行主程序验证
 
 ### 初始化流程
 传入`ProjectARVRProInit`参数，系统会自动初始化整个测试参数信息，包括：
@@ -105,11 +114,24 @@ dotnet build Projects/ProjectARVRPro/ProjectARVRPro.csproj
 - **完成检测**：仅基于启用的步骤判断测试是否完成
 - **示例**：如果配置了8个步骤(0-7)，仅启用第0和第7步，执行流程将是：0→7（跳过1-6）
 
+## 数据与结果输出
+
+- 客观测试数据支持自动 CSV 导出（`ObjectiveTestResultCsvExporter`），包含测试项、上下限、单位与判定结果
+- 结果视图由 `ViewResultManager` 汇总展示，可结合模板/流程的启用状态生成同步的产出
+- 配套日志窗口与配置窗口可从主界面打开，便于调试与问题追踪
+
+## 优化计划概览
+
+- 持续压缩单次流程的处理耗时，减少 UI 线程阻塞
+- 提升 ProcessMeta/Recipe 的复用能力，完善禁用步骤的动态校验
+- 强化结果导出链路（CSV/PDF 命名规范、异常重试），细节见 [优化计划](OPTIMIZATION.md)
+
 ## 相关文档链接
 
 - [ARVR测试规范](../../docs/testing/ARVR-testing.md)
 - [光学测试算法](../../docs/algorithms/optical-testing.md)
 - [流程引擎文档](../../docs/04-api-reference/engine-components/README.md)
+- [优化计划](OPTIMIZATION.md)
 
 ## 维护者
 

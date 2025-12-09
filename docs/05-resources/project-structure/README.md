@@ -220,7 +220,7 @@ ColorVision/
 **项目列表**：
 - **ProjectARVR** - AR/VR 检测项目
 - **ProjectARVRLite** - AR/VR Lite 版本
-- **ProjectARVRPro** - AR/VR Pro 版本
+- **ProjectARVRPro** - AR/VR Pro 版本（[README](../../../Projects/ProjectARVRPro/README.md)，[优化计划](../../../Projects/ProjectARVRPro/OPTIMIZATION.md)）
 - **ProjectKB** - KB 项目
 - **ProjectLUX** - LUX 亮度测量项目
 - **ProjectBlackMura** - 黑斑检测项目
