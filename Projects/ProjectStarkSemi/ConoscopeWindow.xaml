@@ -359,13 +359,13 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <im:ImageView x:Name="ImageView" Grid.Column="0"/>
-                <Grid Grid.Column="1">
+                <Grid Grid.Column="1" Margin="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <StackPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" Margin="5">
                         <CheckBox x:Name="chkShowRed" 
                                                   Content="R" 
                                                   Foreground="Red" 
