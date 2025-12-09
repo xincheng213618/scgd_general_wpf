@@ -11,7 +11,6 @@ using System.Windows.Media;
 using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
-using iText.Layout.Properties;
 using Microsoft.Win32;
 
 namespace ProjectARVRPro
@@ -222,13 +221,13 @@ namespace ProjectARVRPro
                 using var pdf = new PdfDocument(writer);
                 using var document = new Document(pdf);
 
-                document.Add(new Paragraph("ObjectiveTestItem List").SetBold().SetFontSize(14));
+                document.Add(new Paragraph("ObjectiveTestItem List").SetFontSize(14));
 
                 var table = new Table(new float[] { 2, 2, 1, 1, 1, 1, 1 }).UseAllAvailableWidth();
                 string[] headers = { "Name", "TestValue", "Value", "LowLimit", "UpLimit", "Unit", "Result" };
                 foreach (var header in headers)
                 {
-                    table.AddHeaderCell(new Cell().Add(new Paragraph(header).SetBold()).SetTextAlignment(TextAlignment.CENTER));
+                    table.AddHeaderCell(new Cell().Add(new Paragraph(header)).SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER));
                 }
 
                 foreach (var item in TestItems)
