@@ -2,6 +2,7 @@ using ColorVision.FileIO;
 using Microsoft.Win32;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
+using OpenTK.Windowing.Common.Input;
 using ScottPlot;
 using System;
 using System.Collections.Generic;
@@ -128,10 +129,9 @@ namespace ConoscopeDemo
 
                 // 获取图像中心和半径
                 center = new System.Windows.Point(YMat.Width / 2.0, YMat.Height / 2.0);
-                imageRadius = Math.Min(YMat.Width, YMat.Height) / 2;
-                
-                // 计算conoscopeCoefficient
-                ConoscopeCoefficient = imageRadius / MaxAngle;
+                imageRadius =(int)(MaxAngle / ConoscopeCoefficient);
+
+
 
                 // 更新显示
                 UpdateDisplay();
@@ -257,13 +257,6 @@ namespace ConoscopeDemo
             // Extract position (circumferential angle 0-359°)
             double[] positions = circleLine.RgbData.Select(s => s.Position).ToArray();
 
-            // Add scatter plots for X, Y, Z channels (like original code)
-            // X channel - Gold color
-            double[] xValues = circleLine.RgbData.Select(s => s.X).ToArray();
-            var xScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, xValues);
-            xScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gold);
-            xScatter.LineWidth = 2;
-            xScatter.LegendText = "X";
 
             // Y channel - Gray color
             double[] yValues = circleLine.RgbData.Select(s => s.Y).ToArray();
@@ -272,12 +265,6 @@ namespace ConoscopeDemo
             yScatter.LineWidth = 2;
             yScatter.LegendText = "Y";
 
-            // Z channel - Violet color
-            double[] zValues = circleLine.RgbData.Select(s => s.Z).ToArray();
-            var zScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, zValues);
-            zScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Violet);
-            zScatter.LineWidth = 2;
-            zScatter.LegendText = "Z";
 
             wpfPlotRCircle.Plot.Title($"R圆 {displayRadius}° 圆周分布曲线");
             wpfPlotRCircle.Plot.XLabel("圆周角度 (°)");
@@ -325,21 +312,26 @@ namespace ConoscopeDemo
                 double radiusPixels = radiusAngle / ConoscopeCoefficient;
 
                 // Sample 360 points around the circle (same as original)
-                for (int anglePos = 0; anglePos < 360; anglePos++)
+                int numSamples = 720;
+                for (int i = 0; i < numSamples; i++)
                 {
+                    double anglePos = i * 360.0 / numSamples; // 0.5 degree intervals
                     double radians = anglePos * Math.PI / 180.0;
                     double x = center.X + radiusPixels * Math.Cos(radians);
                     double y = center.Y + radiusPixels * Math.Sin(radians);
 
+                    // Ensure coordinates are within bounds
                     int ix = Math.Max(0, Math.Min(YMat.Width - 1, (int)Math.Round(x)));
                     int iy = Math.Max(0, Math.Min(YMat.Height - 1, (int)Math.Round(y)));
 
+                    // Extract RGB values
                     double X = 0, Y = 0, Z = 0;
+
                     ExtractPixelValues(ix, iy, out X, out Y, out Z);
 
                     circleLine.RgbData.Add(new RgbSample
                     {
-                        Position = anglePos, // 0 to 359
+                        Position = anglePos, // 0 to 360 with 0.5 degree intervals
                         X = X,
                         Y = Y,
                         Z = Z
@@ -355,6 +347,7 @@ namespace ConoscopeDemo
         /// </summary>
         private PolarAngleLine CreateDiameterLine(double angle, Mat mat)
         {
+
             PolarAngleLine polarLine = new PolarAngleLine
             {
                 Angle = angle
@@ -394,7 +387,7 @@ namespace ConoscopeDemo
                 double position = -MaxAngle + (i / (double)(numSamples - 1)) * (2 * MaxAngle);
 
                 double X = 0, Y = 0, Z = 0;
-                ExtractPixelValues(mat, ix, iy, out X, out Y, out Z);
+                ExtractPixelValues(ix, iy, out X, out Y, out Z);
 
                 polarLine.RgbData.Add(new RgbSample
                 {
@@ -409,34 +402,17 @@ namespace ConoscopeDemo
         }
 
         /// <summary>
-        /// 从Mat中提取像素值
-        /// </summary>
-        private void ExtractPixelValues(Mat mat, int ix, int iy, out double X, out double Y, out double Z)
-        {
-            X = Y = Z = 0;
-
-            // Get XYZ values
-            if (XMat != null)
-                X = XMat.At<float>(iy, ix);
-            if (YMat != null)
-                Y = YMat.At<float>(iy, ix);
-            if (ZMat != null)
-                Z = ZMat.At<float>(iy, ix);
-        }
-
-        /// <summary>
         /// 从XYZ Mats中提取像素值（不需要mat参数）
         /// </summary>
         private void ExtractPixelValues(int ix, int iy, out double X, out double Y, out double Z)
         {
             X = Y = Z = 0;
 
-            // Get XYZ values from the channel Mats
-            if (XMat != null && ix < XMat.Width && iy < XMat.Height)
+            if (XMat != null)
                 X = XMat.At<float>(iy, ix);
-            if (YMat != null && ix < YMat.Width && iy < YMat.Height)
+            if (YMat != null)
                 Y = YMat.At<float>(iy, ix);
-            if (ZMat != null && ix < ZMat.Width && iy < ZMat.Height)
+            if (ZMat != null)
                 Z = ZMat.At<float>(iy, ix);
         }
 
