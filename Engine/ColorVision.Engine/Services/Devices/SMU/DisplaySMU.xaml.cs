@@ -17,12 +17,12 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services.Devices.SMU
 {
     /// <summary>
-    /// DisplaySMUControl.xaml 的交互逻辑
+    /// DisplaySMU.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplaySMUControl : UserControl, IDisPlayControl
+    public partial class DisplaySMU : UserControl, IDisPlayControl
     {
 
-        private static readonly ILog log = LogManager.GetLogger(typeof(DisplaySMUControl));
+        private static readonly ILog log = LogManager.GetLogger(typeof(DisplaySMU));
 
         public DeviceSMU Device { get; set; }
         private MQTTSMU DService { get => Device.DService;  }
@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         public string DisPlayName => Device.Config.Name;
 
-        public DisplaySMUControl(DeviceSMU deviceSMU)
+        public DisplaySMU(DeviceSMU deviceSMU)
         {
             Device = deviceSMU;
             InitializeComponent();
@@ -125,6 +125,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             };
             ComboxVITemplate.SelectedIndex = 0;
 
+            CbChannel.ItemsSource = Enum.GetValues(typeof(SMUChannelType));
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
@@ -204,7 +205,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
         private void VIScan_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.Scan(Config.IsSourceV, Config.StartMeasureVal, Config.StopMeasureVal, Config.LimitVal, Config.Number);
+            MsgRecord msgRecord = DService.Scan(Config.IsSourceV, Config.StartMeasureVal, Config.StopMeasureVal, Config.LimitVal, Config.Number, Config.Channel);
             msgRecord.MsgSucessed += async (e) =>
             {
                 log.Info("DelyaClose1000");

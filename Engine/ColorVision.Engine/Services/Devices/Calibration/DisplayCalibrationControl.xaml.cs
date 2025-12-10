@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     }
 
     /// <summary>
-    /// DisplaySMUControl.xaml 的交互逻辑
+    /// DisplayCalibrationControl.xaml 的交互逻辑
     /// </summary>
     public partial class DisplayCalibrationControl : UserControl, IDisPlayControl
     {

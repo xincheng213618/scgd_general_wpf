@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
 
         public override UserControl GetDeviceInfo() => new InfoSMU(this);
-        public override UserControl GetDisplayControl() => new DisplaySMUControl(this);
+        public override UserControl GetDisplayControl() => new DisplaySMU(this);
 
         public override MQTTServiceBase? GetMQTTService()
         {
