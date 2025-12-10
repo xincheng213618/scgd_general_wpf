@@ -1571,7 +1571,7 @@ namespace ProjectStarkSemi
 
                 // Sample 720 points around the circle for smoother visualization (0.5 degree intervals)
                 // Export still uses original data, but display benefits from higher resolution
-                int numSamples = 3600;
+                int numSamples = 360;
                 for (int i = 0; i < numSamples; i++)
                 {
                     double anglePos = i * 360.0 / numSamples; // 0.5 degree intervals
