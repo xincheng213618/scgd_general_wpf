@@ -17,7 +17,7 @@ namespace ProjectStarkSemi
     /// DemoWindow.xaml 的交互逻辑
     /// Demo窗口：打开CVCIE文件，提取Y通道，应用Jet伪彩色，绘制120度直径线，导出CSV
     /// </summary>
-    public partial class DemoWindow : Window
+    public partial class DemoWindow : System.Windows.Window
     {
         private Mat? yChannelMat;
         private Mat? pseudoColorMat;
@@ -270,19 +270,18 @@ namespace ProjectStarkSemi
             if (x < 0 || x >= mat.Width || y < 0 || y >= mat.Height)
                 return 0;
 
-            switch (mat.Type())
-            {
-                case MatType.CV_8UC1:
-                    return mat.At<byte>(y, x);
-                case MatType.CV_16UC1:
-                    return mat.At<ushort>(y, x);
-                case MatType.CV_32FC1:
-                    return mat.At<float>(y, x);
-                case MatType.CV_64FC1:
-                    return mat.At<double>(y, x);
-                default:
-                    return 0;
-            }
+            MatType matType = mat.Type();
+            
+            if (matType == MatType.CV_8UC1)
+                return mat.At<byte>(y, x);
+            else if (matType == MatType.CV_16UC1)
+                return mat.At<ushort>(y, x);
+            else if (matType == MatType.CV_32FC1)
+                return mat.At<float>(y, x);
+            else if (matType == MatType.CV_64FC1)
+                return mat.At<double>(y, x);
+            else
+                return 0;
         }
 
         /// <summary>
@@ -412,7 +411,7 @@ namespace ProjectStarkSemi
 
                 if (points.Count > 0)
                 {
-                    circlePoints.Add((ratio * imageRadius, points));
+                    circlePoints.Add((radius, points));
                 }
             }
         }
