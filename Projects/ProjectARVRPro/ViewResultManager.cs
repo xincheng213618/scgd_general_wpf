@@ -31,6 +31,15 @@ namespace ProjectARVRPro
         public bool IsSaveCsv { get => _IsSaveCsv; set { _IsSaveCsv = value; OnPropertyChanged(); } }
         private bool _IsSaveCsv = true;
 
+        public bool IsSaveLink { get => _IsSaveLink; set { _IsSaveLink = value; OnPropertyChanged(); } }
+        private bool _IsSaveLink = true;
+
+        public bool IsSaveImageReuslt { get => _IsSaveImageReuslt; set { _IsSaveImageReuslt = value; OnPropertyChanged(); } }
+        private bool _IsSaveImageReuslt;
+
+        public int SaveImageReusltDelay { get => _SaveImageReusltDelay; set {  if (value>=0) _SaveImageReusltDelay = value; OnPropertyChanged(); } }
+        private int _SaveImageReusltDelay = 1000;
+
         [DisplayName("Csv保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("ARVR")]
         public string CsvSavePath { get => _CsvSavePath; set { _CsvSavePath = value; OnPropertyChanged(); } }
         private string _CsvSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");

@@ -129,11 +129,22 @@ namespace ColorVision.Engine.Services.Devices.SMU
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number)
+        public class SMUScanParam
+        {
+            public bool IsSourceV { set; get; }
+            public double BeginValue { set; get; }
+            public double EndValue { set; get; }
+            public double LimitValue { set; get; }
+            public int Points { set; get; }
+
+            public SMUChannelType Channel { get; set; }
+
+        }
+        public MsgRecord Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number, SMUChannelType channel)
         {
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Params = new Dictionary<string, object>();
-            Params.Add("DeviceParam", new SMUScanParam() { IsSourceV = isSourceV, BeginValue = startMeasureVal, EndValue = stopMeasureVal, LimitValue = lmtVal, Points = number });
+            Params.Add("DeviceParam", new SMUScanParam() { IsSourceV = isSourceV, BeginValue = startMeasureVal, EndValue = stopMeasureVal, LimitValue = lmtVal, Points = number, Channel = channel });
             MsgSend msg = new()
             {
                 EventName = MQTTSMUEventEnum.Event_Scan,

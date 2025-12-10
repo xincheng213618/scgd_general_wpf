@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.1.0</VersionPrefix>
+		<VersionPrefix>1.1.1.11</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -14,6 +14,7 @@
 	  <None Remove="README.md" />
 	  <None Remove="ROADMAP.md" />
 	</ItemGroup>
+	
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
 		<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
