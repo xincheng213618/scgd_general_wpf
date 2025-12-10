@@ -155,7 +155,7 @@ namespace ProjectARVRPro
         [DisplayName("B255")]
         public BlueTestResult BlueTestResult { get; set; }
 
-        [DisplayName("Chessborad_7x7")]
+        [DisplayName("Chessborad")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
 
         [DisplayName("MTF")]
