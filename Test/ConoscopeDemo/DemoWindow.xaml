@@ -122,13 +122,13 @@
                     Height="35"
                     Margin="0,0,10,0"
                     Click="BtnExportDiameter_Click"
-                    IsEnabled="False"/>
+                   />
             <Button x:Name="btnExportCircle" 
                     Content="导出R圆CSV" 
                     Width="150" 
                     Height="35"
                     Click="BtnExportCircle_Click"
-                    IsEnabled="False"/>
+                    />
         </StackPanel>
     </Grid>
 </Window>
