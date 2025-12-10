@@ -6,7 +6,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="Conoscope Demo Window - Y通道伪彩色分析" Height="850" Width="1300" Background="#FF2D2D30">
+        Title="Conoscope Demo Window" Height="850" Width="1300" Background="#FF2D2D30" Initialized="Window_Initialized">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -96,24 +96,16 @@
                 BorderThickness="1" 
                 Margin="5,0,0,0">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="44*"/>
-                    <ColumnDefinition Width="167*"/>
-                </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock x:Name="tbChartTitle"
-                           Text="直径线分析" 
-                           Grid.Row="0"
-                           Foreground="White" 
-                           FontSize="14" 
-                           Margin="150,5,0,5"
-                           HorizontalAlignment="Left" Grid.Column="1"/>
-                <ScottPlot:WpfPlot x:Name="plotChart" 
-                                   Grid.Row="1" 
+                <ScottPlot:WpfPlot x:Name="wpfPlotDiameterLine" 
+                                   Grid.Row="0" 
                                    Margin="5,5,5,5" Grid.ColumnSpan="2"/>
+                <ScottPlot:WpfPlot x:Name="wpfPlotRCircle" 
+                                Grid.Row="1" 
+                                Margin="5,5,5,5" Grid.ColumnSpan="2"/>
             </Grid>
         </Border>
 

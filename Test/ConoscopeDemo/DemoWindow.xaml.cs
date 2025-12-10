@@ -20,15 +20,15 @@ namespace ConoscopeDemo
     /// </summary>
     public partial class DemoWindow : System.Windows.Window
     {
-        private Mat? xChannelMat;
-        private Mat? yChannelMat;
-        private Mat? zChannelMat;
+        private Mat? XMat;
+        private Mat? YMat;
+        private Mat? ZMat;
         private Mat? pseudoColorMat;
         
-        private System.Windows.Point imageCenter;
+        private System.Windows.Point center;
         private int imageRadius;
-        private double maxAngle = 80; // Default max angle
-        private double conoscopeCoefficient = 0.02645; // Pixels per degree
+        private double MaxAngle = 80; // Default max angle
+        private double ConoscopeCoefficient = 0.02645; // Pixels per degree
 
         private int displayAngle = 120; // Default display angle
         private ExportChannel displayChannel = ExportChannel.Y; // Default display channel
@@ -37,6 +37,32 @@ namespace ConoscopeDemo
         {
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
             InitializeComponent();
+        }
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            InitializePlot(wpfPlotDiameterLine, "直径线分布曲线 (Diameter Line Distribution)");
+
+            // Initialize R Circle Plot
+            InitializePlot(wpfPlotRCircle, "R圆分布曲线 (R Circle Distribution)");
+        }
+        private void InitializePlot(ScottPlot.WPF.WpfPlot plot, string title)
+        {
+            plot.Plot.Title(title);
+            plot.Plot.XLabel("Degrees");
+            plot.Plot.YLabel("Luminance (cd/m²)");
+            plot.Plot.Legend.FontName = ScottPlot.Fonts.Detect("中文");
+
+            string fontSample = $"中文 Luminance Voltage";
+            plot.Plot.Axes.Title.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
+            plot.Plot.Axes.Left.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
+            plot.Plot.Axes.Bottom.Label.FontName = ScottPlot.Fonts.Detect(fontSample);
+
+            // Enable grid for better readability
+            plot.Plot.Grid.MajorLineColor = ScottPlot.Color.FromColor(System.Drawing.Color.LightGray);
+            plot.Plot.Grid.MajorLineWidth = 1;
+            plot.Plot.Axes.SetLimits(-80, 80, 0, 600);
+
+            plot.Refresh();
         }
 
         /// <summary>
@@ -49,7 +75,6 @@ namespace ConoscopeDemo
                 Filter = "CVCIE Files (*.cvcie)|*.cvcie|All Files (*.*)|*.*",
                 Title = "选择CVCIE文件"
             };
-
             if (openFileDialog.ShowDialog() == true)
             {
                 ProcessCVCIEFile(openFileDialog.FileName);
@@ -59,39 +84,56 @@ namespace ConoscopeDemo
         /// <summary>
         /// 处理CVCIE文件
         /// </summary>
-        private void ProcessCVCIEFile(string filePath)
+        private void ProcessCVCIEFile(string filename)
         {
             try
             {
-                // 读取CVCIE文件
-                if (!CVFileUtil.Read(filePath, out CVCIEFile fileInfo))
+                XMat?.Dispose();
+                YMat?.Dispose();
+                ZMat?.Dispose();
+
+                CVCIEFile fileInfo = new CVCIEFile();
+                CVFileUtil.Read(filename, out fileInfo);
+
+
+
+                // Calculate the size of a single channel in bytes
+                int channelSize = fileInfo.Cols * fileInfo.Rows * (fileInfo.Bpp / 8);
+
+
+                OpenCvSharp.MatType singleChannelType;
+                switch (fileInfo.Bpp)
                 {
-                    MessageBox.Show("无法读取CVCIE文件", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
+                    case 8: singleChannelType = OpenCvSharp.MatType.CV_8UC1; break;
+                    case 16: singleChannelType = OpenCvSharp.MatType.CV_16UC1; break;
+                    case 32: singleChannelType = OpenCvSharp.MatType.CV_32FC1; break; // Most likely for XYZ
+                    case 64: singleChannelType = OpenCvSharp.MatType.CV_64FC1; break;
+                    default: throw new NotSupportedException($"Bpp {fileInfo.Bpp} not supported");
                 }
-
-                // 提取XYZ通道
-                ExtractChannels(fileInfo);
-
-                if (yChannelMat == null || yChannelMat.Empty())
+                if (fileInfo.Channels == 3)
                 {
-                    MessageBox.Show("无法提取通道数据", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
+                    byte[] dataX = new byte[channelSize];
+                    byte[] dataY = new byte[channelSize];
+                    byte[] dataZ = new byte[channelSize];
+
+                    Buffer.BlockCopy(fileInfo.Data, 0, dataX, 0, channelSize);
+                    Buffer.BlockCopy(fileInfo.Data, channelSize, dataY, 0, channelSize);
+                    Buffer.BlockCopy(fileInfo.Data, channelSize * 2, dataZ, 0, channelSize);
+
+                    XMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
+                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataY);
+                    ZMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataZ);
                 }
 
                 // 获取图像中心和半径
-                imageCenter = new System.Windows.Point(yChannelMat.Width / 2.0, yChannelMat.Height / 2.0);
-                imageRadius = Math.Min(yChannelMat.Width, yChannelMat.Height) / 2;
+                center = new System.Windows.Point(YMat.Width / 2.0, YMat.Height / 2.0);
+                imageRadius = Math.Min(YMat.Width, YMat.Height) / 2;
                 
                 // 计算conoscopeCoefficient
-                conoscopeCoefficient = imageRadius / maxAngle;
+                ConoscopeCoefficient = imageRadius / MaxAngle;
 
                 // 更新显示
                 UpdateDisplay();
-
-                // 启用导出按钮
-                btnExportDiameter.IsEnabled = true;
-                btnExportCircle.IsEnabled = true;
 
                 fileInfo.Dispose();
             }
@@ -99,65 +141,6 @@ namespace ConoscopeDemo
             {
                 MessageBox.Show($"处理文件时出错: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        /// <summary>
-        /// 提取XYZ通道
-        /// </summary>
-        private void ExtractChannels(CVCIEFile fileInfo)
-        {
-            if (fileInfo.Channels < 3)
-            {
-                // 如果只有一个通道，假设它是Y通道
-                if (fileInfo.Channels == 1)
-                {
-                    yChannelMat = CreateMatFromData(fileInfo.Data, fileInfo.Rows, fileInfo.Cols, fileInfo.Bpp);
-                }
-                return;
-            }
-
-            // 计算单个通道的大小
-            int channelSize = fileInfo.Rows * fileInfo.Cols * fileInfo.Bpp / 8;
-
-            // 提取X, Y, Z通道
-            byte[] xData = new byte[channelSize];
-            byte[] yData = new byte[channelSize];
-            byte[] zData = new byte[channelSize];
-
-            Buffer.BlockCopy(fileInfo.Data, 0, xData, 0, channelSize);
-            Buffer.BlockCopy(fileInfo.Data, channelSize, yData, 0, channelSize);
-            Buffer.BlockCopy(fileInfo.Data, channelSize * 2, zData, 0, channelSize);
-
-            xChannelMat = CreateMatFromData(xData, fileInfo.Rows, fileInfo.Cols, fileInfo.Bpp);
-            yChannelMat = CreateMatFromData(yData, fileInfo.Rows, fileInfo.Cols, fileInfo.Bpp);
-            zChannelMat = CreateMatFromData(zData, fileInfo.Rows, fileInfo.Cols, fileInfo.Bpp);
-        }
-
-        /// <summary>
-        /// 从字节数组创建Mat
-        /// </summary>
-        private Mat CreateMatFromData(byte[] data, int rows, int cols, int bpp)
-        {
-            MatType matType;
-            switch (bpp)
-            {
-                case 8:
-                    matType = MatType.CV_8UC1;
-                    break;
-                case 16:
-                    matType = MatType.CV_16UC1;
-                    break;
-                case 32:
-                    matType = MatType.CV_32FC1;
-                    break;
-                case 64:
-                    matType = MatType.CV_64FC1;
-                    break;
-                default:
-                    throw new NotSupportedException($"不支持的位深度: {bpp}");
-            }
-
-            return Mat.FromPixelData(rows, cols, matType, data);
         }
 
         /// <summary>
@@ -173,18 +156,11 @@ namespace ConoscopeDemo
             // 应用Jet伪彩色
             pseudoColorMat?.Dispose();
             pseudoColorMat = ApplyJetColormap(selectedMat);
-
-            // 显示图像
-            DisplayPseudoColorImage(pseudoColorMat);
-
-            // 更新标题
-            tbImageTitle.Text = $"{displayChannel}通道伪彩色图像 (Jet)";
+            WriteableBitmap writeableBitmap = pseudoColorMat.ToWriteableBitmap();
+            imgDisplay.Source = writeableBitmap;
 
             // 绘制并显示直径线图表
             PlotDiameterLineChart();
-
-            // 更新图表标题
-            tbChartTitle.Text = $"直径线分析 ({displayAngle}° - {displayChannel}通道)";
         }
 
         /// <summary>
@@ -194,10 +170,10 @@ namespace ConoscopeDemo
         {
             return channel switch
             {
-                ExportChannel.X => xChannelMat,
-                ExportChannel.Y => yChannelMat,
-                ExportChannel.Z => zChannelMat,
-                _ => yChannelMat
+                ExportChannel.X => XMat,
+                ExportChannel.Y => YMat,
+                ExportChannel.Z => ZMat,
+                _ => YMat
             };
         }
 
@@ -225,15 +201,6 @@ namespace ConoscopeDemo
             return colorMat;
         }
 
-        /// <summary>
-        /// 显示伪彩色图像
-        /// </summary>
-        private void DisplayPseudoColorImage(Mat colorMat)
-        {
-            // 转换为WriteableBitmap显示
-            WriteableBitmap writeableBitmap = colorMat.ToWriteableBitmap();
-            imgDisplay.Source = writeableBitmap;
-        }
 
         /// <summary>
         /// 使用ScottPlot绘制直径线图表
@@ -247,7 +214,7 @@ namespace ConoscopeDemo
             // Create diameter line data for the selected angle
             var diameterLine = CreateDiameterLine(displayAngle, selectedMat);
 
-            plotChart.Plot.Clear();
+            wpfPlotDiameterLine.Plot.Clear();
 
             if (diameterLine.RgbData.Count == 0)
                 return;
@@ -257,16 +224,13 @@ namespace ConoscopeDemo
             double[] values = diameterLine.RgbData.Select(s => GetChannelValue(s, displayChannel)).ToArray();
 
             // 绘制线图
-            var scatter = plotChart.Plot.Add.Scatter(positions, values);
+            var scatter = wpfPlotDiameterLine.Plot.Add.Scatter(positions, values);
             scatter.LineWidth = 2;
             scatter.Color = ScottPlot.Color.FromHex("#1f77b4");
 
-            plotChart.Plot.Title($"{displayAngle}度直径线 - {displayChannel}通道");
-            plotChart.Plot.XLabel("位置 (角度)");
-            plotChart.Plot.YLabel("像素值");
-            plotChart.Plot.Axes.AutoScale();
+            wpfPlotDiameterLine.Plot.Axes.AutoScale();
 
-            plotChart.Refresh();
+            wpfPlotDiameterLine.Refresh();
         }
 
         /// <summary>
@@ -279,21 +243,21 @@ namespace ConoscopeDemo
                 Angle = angle
             };
 
-            double radians = angle * Math.PI / 180.0;
+            int numSamples = (int)MaxAngle + 1; // 0 to MaxAngle inclusive
+            int radius = (int)(MaxAngle / ConoscopeCoefficient);
+
 
             // Sample from center (theta=0) to edge (theta=MaxAngle)
-            for (int theta = 0; theta <= (int)maxAngle; theta++)
+            for (int theta = 0; theta <= (int)MaxAngle; theta++)
             {
-                double radiusPixels = theta / conoscopeCoefficient;
-                double x = imageCenter.X + radiusPixels * Math.Cos(radians);
-                double y = imageCenter.Y + radiusPixels * Math.Sin(radians);
+                double radians = theta / ConoscopeCoefficient;
+                double x = center.X + radians * Math.Cos(radians);
+                double y = center.Y + radians * Math.Sin(radians);
 
                 int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
                 int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
 
-                double r = 0, g = 0, b = 0;
                 double X = 0, Y = 0, Z = 0;
-
                 ExtractPixelValues(mat, ix, iy, out X, out Y, out Z);
 
                 polarLine.RgbData.Add(new RgbSample
@@ -316,35 +280,14 @@ namespace ConoscopeDemo
             X = Y = Z = 0;
 
             // Get XYZ values
-            if (xChannelMat != null)
-                X = GetPixelValue(xChannelMat, ix, iy);
-            if (yChannelMat != null)
-                Y = GetPixelValue(yChannelMat, ix, iy);
-            if (zChannelMat != null)
-                Z = GetPixelValue(zChannelMat, ix, iy);
+            if (XMat != null)
+                X = XMat.At<float>(iy, ix);
+            if (YMat != null)
+                Y = YMat.At<float>(iy, ix);
+            if (ZMat != null)
+                Z = ZMat.At<float>(iy, ix);
         }
 
-        /// <summary>
-        /// 获取Mat中指定位置的像素值
-        /// </summary>
-        private double GetPixelValue(Mat mat, int x, int y)
-        {
-            if (x < 0 || x >= mat.Width || y < 0 || y >= mat.Height)
-                return 0;
-
-            MatType matType = mat.Type();
-
-            if (matType == MatType.CV_8UC1)
-                return mat.At<byte>(y, x);
-            else if (matType == MatType.CV_16UC1)
-                return mat.At<ushort>(y, x);
-            else if (matType == MatType.CV_32FC1)
-                return mat.At<float>(y, x);
-            else if (matType == MatType.CV_64FC1)
-                return mat.At<double>(y, x);
-            else
-                return 0;
-        }
 
         /// <summary>
         /// 获取指定通道的值
@@ -367,7 +310,7 @@ namespace ConoscopeDemo
         {
             try
             {
-                if (yChannelMat == null || yChannelMat.Empty())
+                if (YMat == null || YMat.Empty())
                 {
                     MessageBox.Show("没有可导出的数据", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
@@ -411,15 +354,6 @@ namespace ConoscopeDemo
             {
                 if (angleLines.Count == 0)
                     return;
-
-                // Write header comments
-                writer.WriteLine($"# Diameter Line Export Data (Phi \\ Theta Format)");
-                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                writer.WriteLine($"# Export Channel: {channel}");
-                writer.WriteLine($"# Max Angle: {maxAngle}°");
-                writer.WriteLine($"# Phi (Column): Diameter line direction (0°-180°)");
-                writer.WriteLine($"# Theta (Row): Sample point position (0 to MaxAngle)");
-                writer.WriteLine();
 
                 // Write CSV header: Phi \ Theta, followed by each Phi angle (0-180)
                 StringBuilder headerLine = new StringBuilder();
@@ -484,7 +418,7 @@ namespace ConoscopeDemo
         {
             try
             {
-                if (yChannelMat == null || yChannelMat.Empty())
+                if (YMat == null || YMat.Empty())
                 {
                     MessageBox.Show("没有可导出的数据", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
@@ -529,15 +463,6 @@ namespace ConoscopeDemo
                 if (concentricCircles.Count == 0)
                     return;
 
-                // Write header comments
-                writer.WriteLine($"# Concentric Circle Export Data (Phi \\ Theta Format)");
-                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                writer.WriteLine($"# Export Channel: {channel}");
-                writer.WriteLine($"# Max Angle: {maxAngle}°");
-                writer.WriteLine($"# Phi (Column): Radius angle (0° to {maxAngle}°)");
-                writer.WriteLine($"# Theta (Row): Circle position (0-359°)");
-                writer.WriteLine();
-
                 // Write CSV header
                 StringBuilder headerLine = new StringBuilder();
                 headerLine.Append("Phi \\ Theta");
@@ -579,7 +504,7 @@ namespace ConoscopeDemo
             var concentricCircles = new List<ConcentricCircleLine>();
 
             // Create circles from 0 to MaxAngle
-            for (int degree = 0; degree <= (int)maxAngle; degree++)
+            for (int degree = 0; degree <= (int)MaxAngle; degree++)
             {
                 ConcentricCircleLine circleLine = new ConcentricCircleLine
                 {
@@ -589,10 +514,9 @@ namespace ConoscopeDemo
                 if (degree == 0)
                 {
                     // Center point: Use the center pixel value for all 360 samples
-                    int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(imageCenter.X)));
-                    int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(imageCenter.Y)));
+                    int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(center.X)));
+                    int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(center.Y)));
 
-                    double r = 0, g = 0, b = 0;
                     double X = 0, Y = 0, Z = 0;
 
                     ExtractPixelValues(mat, ix, iy,out X, out Y, out Z);
@@ -612,14 +536,14 @@ namespace ConoscopeDemo
                 else
                 {
                     // Calculate radius in pixels for this degree angle
-                    double radiusPixels = degree / conoscopeCoefficient;
+                    double radiusPixels = degree / ConoscopeCoefficient;
 
                     // Sample points along the circle (360 samples)
                     for (int anglePos = 0; anglePos < 360; anglePos++)
                     {
                         double radians = anglePos * Math.PI / 180.0;
-                        double x = imageCenter.X + radiusPixels * Math.Cos(radians);
-                        double y = imageCenter.Y + radiusPixels * Math.Sin(radians);
+                        double x = center.X + radiusPixels * Math.Cos(radians);
+                        double y = center.Y + radiusPixels * Math.Sin(radians);
 
                         int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
                         int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
@@ -654,7 +578,7 @@ namespace ConoscopeDemo
                 if (int.TryParse(angleStr, out int angle))
                 {
                     displayAngle = angle;
-                    if (yChannelMat != null && !yChannelMat.Empty())
+                    if (YMat != null && !YMat.Empty())
                     {
                         UpdateDisplay();
                     }
@@ -672,7 +596,7 @@ namespace ConoscopeDemo
                 if (Enum.TryParse<ExportChannel>(channelStr, out var channel))
                 {
                     displayChannel = channel;
-                    if (yChannelMat != null && !yChannelMat.Empty())
+                    if (YMat != null && !YMat.Empty())
                     {
                         UpdateDisplay();
                     }
@@ -687,10 +611,12 @@ namespace ConoscopeDemo
         {
             base.OnClosed(e);
 
-            xChannelMat?.Dispose();
-            yChannelMat?.Dispose();
-            zChannelMat?.Dispose();
+            XMat?.Dispose();
+            YMat?.Dispose();
+            ZMat?.Dispose();
             pseudoColorMat?.Dispose();
         }
+
+
     }
 }
