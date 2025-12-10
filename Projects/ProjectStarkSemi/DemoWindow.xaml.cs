@@ -1,5 +1,6 @@
 using ColorVision.FileIO;
 using Microsoft.Win32;
+using NPOI.HPSF;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
 using ScottPlot;
@@ -57,8 +58,14 @@ namespace ProjectStarkSemi
         {
             try
             {
+                if (!CVFileUtil.IsCVCIEFile(filePath))
+                {
+                    MessageBox.Show("不是读取CVCIE文件", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
                 // 读取CVCIE文件
-                if (!CVFileUtil.ReadCVCIE(filePath, out CVCIEFile fileInfo))
+                if (!CVFileUtil.Read(filePath, out CVCIEFile fileInfo))
                 {
                     MessageBox.Show("无法读取CVCIE文件", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;

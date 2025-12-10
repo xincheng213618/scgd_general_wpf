@@ -45,14 +45,8 @@
                            FontSize="14" 
                            Margin="5"
                            HorizontalAlignment="Center"/>
-                <ScrollViewer Grid.Row="1" 
-                              HorizontalScrollBarVisibility="Auto" 
-                              VerticalScrollBarVisibility="Auto">
-                    <Image x:Name="imgDisplay" 
-                           Stretch="Uniform"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"/>
-                </ScrollViewer>
+                <Image x:Name="imgDisplay" 
+                           Stretch="Uniform" Grid.Row="1"/>
             </Grid>
         </Border>
 
