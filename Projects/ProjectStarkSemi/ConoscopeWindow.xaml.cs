@@ -1928,8 +1928,7 @@ README.md 文件未找到，显示默认内容。";
 - WPF
 - ScottPlot 5.x
 - OpenCvSharp4
-
-CHANGELOG.md 文件未找到，显示默认内容。";
+";
                 }
 
                 scrollViewer.Content = textBlock;
