@@ -1951,6 +1951,24 @@ CHANGELOG.md 文件未找到，显示默认内容。";
         {
             MessageBox.Show("视角测量");
         }
+
+        /// <summary>
+        /// 打开Demo窗口
+        /// </summary>
+        private void btnOpenDemoWindow_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                DemoWindow demoWindow = new DemoWindow();
+                demoWindow.Show();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"打开Demo窗口失败: {ex.Message}", ex);
+                MessageBox.Show($"打开Demo窗口失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         public void Dispose()
         {
             XMat?.Dispose();
