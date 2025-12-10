@@ -266,7 +266,7 @@ namespace ConoscopeDemo
 
                 // Sample 360 points around the circle (same as original)
                 int numSamples = 360;
-                for (int i = 0; i < numSamples; i++)
+                for (int i = 0; i <= numSamples; i++)
                 {
                     double anglePos = i * 360.0 / numSamples; // 0.5 degree intervals
                     double radians = anglePos * Math.PI / 180.0;

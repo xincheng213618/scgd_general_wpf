@@ -1306,7 +1306,7 @@ namespace ProjectStarkSemi
                         ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
 
                         // Fill all 360 samples with the center point value
-                        for (int anglePos = 0; anglePos < 360; anglePos++)
+                        for (int anglePos = 0; anglePos <= 360; anglePos++)
                         {
                             circleLine.RgbData.Add(new RgbSample
                             {
