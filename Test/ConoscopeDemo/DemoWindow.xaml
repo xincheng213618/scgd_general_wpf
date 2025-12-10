@@ -60,11 +60,26 @@
                        Margin="20,0,10,0"/>
             <ComboBox x:Name="cbDisplayChannel"
                       Width="100"
-                      SelectedIndex="4"
+                      SelectedIndex="1"
                       SelectionChanged="CbDisplayChannel_SelectionChanged">
                 <ComboBoxItem Content="X通道" Tag="X"/>
                 <ComboBoxItem Content="Y通道" Tag="Y"/>
                 <ComboBoxItem Content="Z通道" Tag="Z"/>
+            </ComboBox>
+            
+            <TextBlock Text="R圆半径:" 
+                       Foreground="White" 
+                       VerticalAlignment="Center"
+                       Margin="20,0,10,0"/>
+            <ComboBox x:Name="cbDisplayRadius"
+                      Width="100"
+                      SelectedIndex="2"
+                      SelectionChanged="CbDisplayRadius_SelectionChanged">
+                <ComboBoxItem Content="0°" Tag="0"/>
+                <ComboBoxItem Content="20°" Tag="20"/>
+                <ComboBoxItem Content="40°" Tag="40"/>
+                <ComboBoxItem Content="60°" Tag="60"/>
+                <ComboBoxItem Content="80°" Tag="80"/>
             </ComboBox>
         </StackPanel>
 

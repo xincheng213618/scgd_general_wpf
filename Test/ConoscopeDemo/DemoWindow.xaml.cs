@@ -32,6 +32,7 @@ namespace ConoscopeDemo
 
         private int displayAngle = 120; // Default display angle
         private ExportChannel displayChannel = ExportChannel.Y; // Default display channel
+        private int displayRadius = 40; // Default display radius angle
 
         public DemoWindow()
         {
@@ -161,6 +162,9 @@ namespace ConoscopeDemo
 
             // 绘制并显示直径线图表
             PlotDiameterLineChart();
+            
+            // 绘制并显示R圆图表
+            PlotRCircleChart();
         }
 
         /// <summary>
@@ -231,6 +235,105 @@ namespace ConoscopeDemo
             wpfPlotDiameterLine.Plot.Axes.AutoScale();
 
             wpfPlotDiameterLine.Refresh();
+        }
+
+        /// <summary>
+        /// 使用ScottPlot绘制R圆图表（按原代码模式）
+        /// </summary>
+        private void PlotRCircleChart()
+        {
+            Mat? selectedMat = GetSelectedChannelMat(displayChannel);
+            if (selectedMat == null || selectedMat.Empty())
+                return;
+
+            // Create R circle data for the selected radius angle
+            var circleLine = CreateRCircleLine(displayRadius, selectedMat);
+
+            wpfPlotRCircle.Plot.Clear();
+
+            if (circleLine.RgbData.Count == 0)
+            {
+                wpfPlotRCircle.Refresh();
+                return;
+            }
+
+            // Extract position (circumferential angle 0-359°) and data
+            double[] positions = circleLine.RgbData.Select(s => s.Position).ToArray();
+            double[] values = circleLine.RgbData.Select(s => GetChannelValue(s, displayChannel)).ToArray();
+
+            // 绘制线图
+            var scatter = wpfPlotRCircle.Plot.Add.Scatter(positions, values);
+            scatter.LineWidth = 2;
+            scatter.Color = ScottPlot.Color.FromHex("#1f77b4");
+
+            wpfPlotRCircle.Plot.Title($"R圆 {displayRadius}° 圆周分布曲线 - {displayChannel}通道");
+            wpfPlotRCircle.Plot.XLabel("圆周角度 (°)");
+            wpfPlotRCircle.Plot.YLabel("像素值");
+            wpfPlotRCircle.Plot.Axes.AutoScale();
+
+            wpfPlotRCircle.Refresh();
+        }
+
+        /// <summary>
+        /// 创建指定半径角度的R圆数据（按原代码采样模式）
+        /// </summary>
+        private ConcentricCircleLine CreateRCircleLine(double radiusAngle, Mat mat)
+        {
+            ConcentricCircleLine circleLine = new ConcentricCircleLine
+            {
+                RadiusAngle = radiusAngle
+            };
+
+            if (radiusAngle == 0)
+            {
+                // Center point: Use the center pixel value for all 360 samples
+                int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(center.X)));
+                int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(center.Y)));
+
+                double X = 0, Y = 0, Z = 0;
+                ExtractPixelValues(mat, ix, iy, out X, out Y, out Z);
+
+                // Fill all 360 samples with the center point value
+                for (int anglePos = 0; anglePos < 360; anglePos++)
+                {
+                    circleLine.RgbData.Add(new RgbSample
+                    {
+                        Position = anglePos,
+                        X = X,
+                        Y = Y,
+                        Z = Z
+                    });
+                }
+            }
+            else
+            {
+                // Calculate radius in pixels for this degree angle
+                double radiusPixels = radiusAngle / ConoscopeCoefficient;
+
+                // Sample 360 points around the circle (same as original)
+                for (int anglePos = 0; anglePos < 360; anglePos++)
+                {
+                    double radians = anglePos * Math.PI / 180.0;
+                    double x = center.X + radiusPixels * Math.Cos(radians);
+                    double y = center.Y + radiusPixels * Math.Sin(radians);
+
+                    int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
+                    int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+
+                    double X = 0, Y = 0, Z = 0;
+                    ExtractPixelValues(mat, ix, iy, out X, out Y, out Z);
+
+                    circleLine.RgbData.Add(new RgbSample
+                    {
+                        Position = anglePos, // 0 to 359
+                        X = X,
+                        Y = Y,
+                        Z = Z
+                    });
+                }
+            }
+
+            return circleLine;
         }
 
         /// <summary>
@@ -615,6 +718,24 @@ namespace ConoscopeDemo
                 if (Enum.TryParse<ExportChannel>(channelStr, out var channel))
                 {
                     displayChannel = channel;
+                    if (YMat != null && !YMat.Empty())
+                    {
+                        UpdateDisplay();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 显示半径选择改变
+        /// </summary>
+        private void CbDisplayRadius_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (cbDisplayRadius.SelectedItem is ComboBoxItem item && item.Tag is string radiusStr)
+            {
+                if (int.TryParse(radiusStr, out int radius))
+                {
+                    displayRadius = radius;
                     if (YMat != null && !YMat.Empty())
                     {
                         UpdateDisplay();
