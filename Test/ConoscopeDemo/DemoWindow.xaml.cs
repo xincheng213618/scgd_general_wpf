@@ -27,8 +27,8 @@ namespace ConoscopeDemo
         
         private System.Windows.Point imageCenter;
         private int imageRadius;
-        private double maxAngle = 60; // Default max angle
-        private double conoscopeCoefficient = 1.0; // Pixels per degree
+        private double maxAngle = 80; // Default max angle
+        private double conoscopeCoefficient = 0.02645; // Pixels per degree
 
         private int displayAngle = 120; // Default display angle
         private ExportChannel displayChannel = ExportChannel.Y; // Default display channel
@@ -64,7 +64,7 @@ namespace ConoscopeDemo
             try
             {
                 // 读取CVCIE文件
-                if (!CVFileUtil.ReadCVCIE(filePath, out CVCIEFile fileInfo))
+                if (!CVFileUtil.Read(filePath, out CVCIEFile fileInfo))
                 {
                     MessageBox.Show("无法读取CVCIE文件", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
@@ -294,14 +294,11 @@ namespace ConoscopeDemo
                 double r = 0, g = 0, b = 0;
                 double X = 0, Y = 0, Z = 0;
 
-                ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
+                ExtractPixelValues(mat, ix, iy, out X, out Y, out Z);
 
                 polarLine.RgbData.Add(new RgbSample
                 {
                     Position = theta,
-                    R = r,
-                    G = g,
-                    B = b,
                     X = X,
                     Y = Y,
                     Z = Z
@@ -314,13 +311,9 @@ namespace ConoscopeDemo
         /// <summary>
         /// 从Mat中提取像素值
         /// </summary>
-        private void ExtractPixelValues(Mat mat, int ix, int iy, out double r, out double g, out double b, out double X, out double Y, out double Z)
+        private void ExtractPixelValues(Mat mat, int ix, int iy, out double X, out double Y, out double Z)
         {
-            r = 0; g = 0; b = 0;
             X = Y = Z = 0;
-
-            double pixelValue = GetPixelValue(mat, ix, iy);
-            r = g = b = pixelValue;
 
             // Get XYZ values
             if (xChannelMat != null)
@@ -360,9 +353,6 @@ namespace ConoscopeDemo
         {
             return channel switch
             {
-                ExportChannel.R => sample.R,
-                ExportChannel.G => sample.G,
-                ExportChannel.B => sample.B,
                 ExportChannel.X => sample.X,
                 ExportChannel.Y => sample.Y,
                 ExportChannel.Z => sample.Z,
@@ -605,7 +595,7 @@ namespace ConoscopeDemo
                     double r = 0, g = 0, b = 0;
                     double X = 0, Y = 0, Z = 0;
 
-                    ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
+                    ExtractPixelValues(mat, ix, iy,out X, out Y, out Z);
 
                     // Fill all 360 samples with the center point value
                     for (int anglePos = 0; anglePos < 360; anglePos++)
@@ -613,9 +603,6 @@ namespace ConoscopeDemo
                         circleLine.RgbData.Add(new RgbSample
                         {
                             Position = anglePos,
-                            R = r,
-                            G = g,
-                            B = b,
                             X = X,
                             Y = Y,
                             Z = Z
@@ -637,17 +624,13 @@ namespace ConoscopeDemo
                         int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
                         int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
 
-                        double r = 0, g = 0, b = 0;
                         double X = 0, Y = 0, Z = 0;
 
-                        ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
+                        ExtractPixelValues(mat, ix, iy, out X, out Y, out Z);
 
                         circleLine.RgbData.Add(new RgbSample
                         {
                             Position = anglePos,
-                            R = r,
-                            G = g,
-                            B = b,
                             X = X,
                             Y = Y,
                             Z = Z

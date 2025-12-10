@@ -6,21 +6,6 @@ namespace ConoscopeDemo
     public enum ExportChannel
     {
         /// <summary>
-        /// 红色通道
-        /// </summary>
-        R,
-
-        /// <summary>
-        /// 绿色通道
-        /// </summary>
-        G,
-
-        /// <summary>
-        /// 蓝色通道
-        /// </summary>
-        B,
-
-        /// <summary>
         /// X通道
         /// </summary>
         X,
