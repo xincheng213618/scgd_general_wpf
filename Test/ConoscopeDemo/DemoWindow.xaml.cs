@@ -238,16 +238,13 @@ namespace ConoscopeDemo
         }
 
         /// <summary>
-        /// 使用ScottPlot绘制R圆图表（按原代码模式）
+        /// 使用ScottPlot绘制R圆图表（按原代码模式 - 显示所有通道）
         /// </summary>
         private void PlotRCircleChart()
         {
-            Mat? selectedMat = GetSelectedChannelMat(displayChannel);
-            if (selectedMat == null || selectedMat.Empty())
-                return;
-
             // Create R circle data for the selected radius angle
-            var circleLine = CreateRCircleLine(displayRadius, selectedMat);
+            // Note: We extract from all XYZ mats, not just the selected channel
+            var circleLine = CreateRCircleLine(displayRadius);
 
             wpfPlotRCircle.Plot.Clear();
 
@@ -257,18 +254,35 @@ namespace ConoscopeDemo
                 return;
             }
 
-            // Extract position (circumferential angle 0-359°) and data
+            // Extract position (circumferential angle 0-359°)
             double[] positions = circleLine.RgbData.Select(s => s.Position).ToArray();
-            double[] values = circleLine.RgbData.Select(s => GetChannelValue(s, displayChannel)).ToArray();
 
-            // 绘制线图
-            var scatter = wpfPlotRCircle.Plot.Add.Scatter(positions, values);
-            scatter.LineWidth = 2;
-            scatter.Color = ScottPlot.Color.FromHex("#1f77b4");
+            // Add scatter plots for X, Y, Z channels (like original code)
+            // X channel - Gold color
+            double[] xValues = circleLine.RgbData.Select(s => s.X).ToArray();
+            var xScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, xValues);
+            xScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gold);
+            xScatter.LineWidth = 2;
+            xScatter.LegendText = "X";
 
-            wpfPlotRCircle.Plot.Title($"R圆 {displayRadius}° 圆周分布曲线 - {displayChannel}通道");
+            // Y channel - Gray color
+            double[] yValues = circleLine.RgbData.Select(s => s.Y).ToArray();
+            var yScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, yValues);
+            yScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Gray);
+            yScatter.LineWidth = 2;
+            yScatter.LegendText = "Y";
+
+            // Z channel - Violet color
+            double[] zValues = circleLine.RgbData.Select(s => s.Z).ToArray();
+            var zScatter = wpfPlotRCircle.Plot.Add.Scatter(positions, zValues);
+            zScatter.Color = ScottPlot.Color.FromColor(System.Drawing.Color.Violet);
+            zScatter.LineWidth = 2;
+            zScatter.LegendText = "Z";
+
+            wpfPlotRCircle.Plot.Title($"R圆 {displayRadius}° 圆周分布曲线");
             wpfPlotRCircle.Plot.XLabel("圆周角度 (°)");
             wpfPlotRCircle.Plot.YLabel("像素值");
+            wpfPlotRCircle.Plot.Legend.IsVisible = true;
             wpfPlotRCircle.Plot.Axes.AutoScale();
 
             wpfPlotRCircle.Refresh();
@@ -277,7 +291,7 @@ namespace ConoscopeDemo
         /// <summary>
         /// 创建指定半径角度的R圆数据（按原代码采样模式）
         /// </summary>
-        private ConcentricCircleLine CreateRCircleLine(double radiusAngle, Mat mat)
+        private ConcentricCircleLine CreateRCircleLine(double radiusAngle)
         {
             ConcentricCircleLine circleLine = new ConcentricCircleLine
             {
@@ -287,11 +301,11 @@ namespace ConoscopeDemo
             if (radiusAngle == 0)
             {
                 // Center point: Use the center pixel value for all 360 samples
-                int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(center.X)));
-                int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(center.Y)));
+                int ix = Math.Max(0, Math.Min(YMat.Width - 1, (int)Math.Round(center.X)));
+                int iy = Math.Max(0, Math.Min(YMat.Height - 1, (int)Math.Round(center.Y)));
 
                 double X = 0, Y = 0, Z = 0;
-                ExtractPixelValues(mat, ix, iy, out X, out Y, out Z);
+                ExtractPixelValues(ix, iy, out X, out Y, out Z);
 
                 // Fill all 360 samples with the center point value
                 for (int anglePos = 0; anglePos < 360; anglePos++)
@@ -317,11 +331,11 @@ namespace ConoscopeDemo
                     double x = center.X + radiusPixels * Math.Cos(radians);
                     double y = center.Y + radiusPixels * Math.Sin(radians);
 
-                    int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
-                    int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+                    int ix = Math.Max(0, Math.Min(YMat.Width - 1, (int)Math.Round(x)));
+                    int iy = Math.Max(0, Math.Min(YMat.Height - 1, (int)Math.Round(y)));
 
                     double X = 0, Y = 0, Z = 0;
-                    ExtractPixelValues(mat, ix, iy, out X, out Y, out Z);
+                    ExtractPixelValues(ix, iy, out X, out Y, out Z);
 
                     circleLine.RgbData.Add(new RgbSample
                     {
@@ -407,6 +421,22 @@ namespace ConoscopeDemo
             if (YMat != null)
                 Y = YMat.At<float>(iy, ix);
             if (ZMat != null)
+                Z = ZMat.At<float>(iy, ix);
+        }
+
+        /// <summary>
+        /// 从XYZ Mats中提取像素值（不需要mat参数）
+        /// </summary>
+        private void ExtractPixelValues(int ix, int iy, out double X, out double Y, out double Z)
+        {
+            X = Y = Z = 0;
+
+            // Get XYZ values from the channel Mats
+            if (XMat != null && ix < XMat.Width && iy < XMat.Height)
+                X = XMat.At<float>(iy, ix);
+            if (YMat != null && ix < YMat.Width && iy < YMat.Height)
+                Y = YMat.At<float>(iy, ix);
+            if (ZMat != null && ix < ZMat.Width && iy < ZMat.Height)
                 Z = ZMat.At<float>(iy, ix);
         }
 
@@ -625,66 +655,10 @@ namespace ConoscopeDemo
         {
             var concentricCircles = new List<ConcentricCircleLine>();
 
-            // Create circles from 0 to MaxAngle
+            // Create circles from 0 to MaxAngle using the same method as plotting
             for (int degree = 0; degree <= (int)MaxAngle; degree++)
             {
-                ConcentricCircleLine circleLine = new ConcentricCircleLine
-                {
-                    RadiusAngle = degree
-                };
-
-                if (degree == 0)
-                {
-                    // Center point: Use the center pixel value for all 360 samples
-                    int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(center.X)));
-                    int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(center.Y)));
-
-                    double X = 0, Y = 0, Z = 0;
-
-                    ExtractPixelValues(mat, ix, iy,out X, out Y, out Z);
-
-                    // Fill all 360 samples with the center point value
-                    for (int anglePos = 0; anglePos < 360; anglePos++)
-                    {
-                        circleLine.RgbData.Add(new RgbSample
-                        {
-                            Position = anglePos,
-                            X = X,
-                            Y = Y,
-                            Z = Z
-                        });
-                    }
-                }
-                else
-                {
-                    // Calculate radius in pixels for this degree angle
-                    double radiusPixels = degree / ConoscopeCoefficient;
-
-                    // Sample points along the circle (360 samples)
-                    for (int anglePos = 0; anglePos < 360; anglePos++)
-                    {
-                        double radians = anglePos * Math.PI / 180.0;
-                        double x = center.X + radiusPixels * Math.Cos(radians);
-                        double y = center.Y + radiusPixels * Math.Sin(radians);
-
-                        int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
-                        int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
-
-                        double X = 0, Y = 0, Z = 0;
-
-                        ExtractPixelValues(mat, ix, iy, out X, out Y, out Z);
-
-                        circleLine.RgbData.Add(new RgbSample
-                        {
-                            Position = anglePos,
-                            X = X,
-                            Y = Y,
-                            Z = Z
-                        });
-                    }
-                }
-
-                concentricCircles.Add(circleLine);
+                concentricCircles.Add(CreateRCircleLine(degree));
             }
 
             return concentricCircles;
