@@ -15,6 +15,7 @@ using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates.ARVR.AOI;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FindLightArea;
@@ -327,6 +328,14 @@ namespace ColorVision.Engine.Templates.Flow
 
                 AddStackPanel(name => olednode.DeviceCode = name, olednode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => olednode.TempName = name, olednode.TempName, "亚像素", new TemplateLedCheck2());
+            }
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmOLED_AOINode  oledaoi)
+            {
+                AddImagePath(name => oledaoi.ImgFileName = name, oledaoi.ImgFileName);
+
+                AddStackPanel(name => oledaoi.DeviceCode = name, oledaoi.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddStackPanel(name => oledaoi.TempName = name, oledaoi.TempName, "AOI", new TemplateAOIParam());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.AlgorithmARVRNode algorithmNode1)
