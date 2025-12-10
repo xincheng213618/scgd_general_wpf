@@ -153,7 +153,6 @@
                         <RibbonButton Label="SaveAs" SmallImageSource="Images/SaveAs32.png"  KeyTip="O" Click="OpenFile_Click" />
                         <RibbonButton Label="直径线导出"  Click="btnExportAngleMode_Click" Padding="10,5"/>
                         <RibbonButton Label="R圆导出"  Click="btnExportCircleMode_Click" Padding="10,5"/>
-                        <RibbonButton Label="Demo窗口"  Click="btnOpenDemoWindow_Click" Padding="10,5"/>
    
                     </RibbonGroup>
                 </RibbonTab>
