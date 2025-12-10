@@ -13,8 +13,6 @@ using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.LogImp;
-using FlowEngineLib;
 using log4net;
 using Microsoft.Win32;
 using OpenCvSharp.WpfExtensions;
@@ -23,7 +21,6 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -33,7 +30,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace ProjectStarkSemi
 {
@@ -1330,7 +1326,7 @@ namespace ProjectStarkSemi
                         double radiusPixels = degree / ConoscopeConfig.ConoscopeCoefficient;
 
                         // Sample points along the circle (360 samples for full circle, one per degree)
-                        for (int anglePos = 0; anglePos < 360; anglePos++)
+                        for (int anglePos = 0; anglePos <= 360; anglePos++)
                         {
                             double radians = anglePos * Math.PI / 180.0;
                             double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
@@ -1347,7 +1343,7 @@ namespace ProjectStarkSemi
                             ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
                             circleLine.RgbData.Add(new RgbSample{ Position = anglePos,  R = r, G = g,   B = b, X = X, Y = Y, Z = Z });
 
-       
+     
                         }
                     }
 
