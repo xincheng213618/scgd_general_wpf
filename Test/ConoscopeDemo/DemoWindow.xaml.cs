@@ -234,7 +234,7 @@ namespace ConoscopeDemo
         }
 
         /// <summary>
-        /// 创建指定角度的直径线数据
+        /// 创建指定角度的直径线数据（按原代码采样模式）
         /// </summary>
         private PolarAngleLine CreateDiameterLine(double angle, Mat mat)
         {
@@ -243,26 +243,45 @@ namespace ConoscopeDemo
                 Angle = angle
             };
 
-            int numSamples = (int)MaxAngle + 1; // 0 to MaxAngle inclusive
-            int radius = (int)(MaxAngle / ConoscopeCoefficient);
+            // Calculate start and end points of diameter line
+            double angleRadians = angle * Math.PI / 180.0;
+            System.Windows.Point start = new System.Windows.Point(
+                center.X - imageRadius * Math.Cos(angleRadians),
+                center.Y - imageRadius * Math.Sin(angleRadians)
+            );
+            System.Windows.Point end = new System.Windows.Point(
+                center.X + imageRadius * Math.Cos(angleRadians),
+                center.Y + imageRadius * Math.Sin(angleRadians)
+            );
 
+            // Calculate line length in pixels (same as original)
+            double lineLength = Math.Sqrt(Math.Pow(end.X - start.X, 2) + Math.Pow(end.Y - start.Y, 2));
+            int numSamples = (int)lineLength;
 
-            // Sample from center (theta=0) to edge (theta=MaxAngle)
-            for (int theta = 0; theta <= (int)MaxAngle; theta++)
+            if (numSamples <= 1)
+                return polarLine;
+
+            // Sample points along the line (same as original)
+            for (int i = 0; i < numSamples; i++)
             {
-                double radians = theta / ConoscopeCoefficient;
-                double x = center.X + radians * Math.Cos(radians);
-                double y = center.Y + radians * Math.Sin(radians);
+                double t = i / (double)(numSamples - 1);
+                double x = start.X + t * (end.X - start.X);
+                double y = start.Y + t * (end.Y - start.Y);
 
+                // Ensure coordinates are within bounds
                 int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
                 int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+
+                // Map position from pixel index to -MaxAngle to MaxAngle range (same as original)
+                // Linear mapping: position = -MaxAngle + (i / (numSamples - 1)) * (2 * MaxAngle)
+                double position = -MaxAngle + (i / (double)(numSamples - 1)) * (2 * MaxAngle);
 
                 double X = 0, Y = 0, Z = 0;
                 ExtractPixelValues(mat, ix, iy, out X, out Y, out Z);
 
                 polarLine.RgbData.Add(new RgbSample
                 {
-                    Position = theta,
+                    Position = position,
                     X = X,
                     Y = Y,
                     Z = Z
