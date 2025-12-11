@@ -249,6 +249,12 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => sMUModelNode.DeviceCode = name, sMUModelNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
                 AddStackPanel(name => sMUModelNode.ModelName = name, sMUModelNode.ModelName, "SMUParam设置", new TemplateSMUParam());
             }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.SMUFromCSVNode SMUFromCSVNode)
+            {
+                AddStackPanel(name => SMUFromCSVNode.DeviceCode = name, SMUFromCSVNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
+                AddImagePath(name => SMUFromCSVNode.CsvFileName = name, SMUFromCSVNode.CsvFileName);
+            }
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.SMUNode sMUNode)
             {
                 AddStackPanel(name => sMUNode.DeviceCode = name, sMUNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());

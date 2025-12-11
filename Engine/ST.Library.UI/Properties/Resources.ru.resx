@@ -876,4 +876,43 @@
   <data name="LoopName" xml:space="preserve">
     <value>LoopName</value>
   </data>
+  <data name="OLED数据提取2" xml:space="preserve">
+    <value>Извлечение данных из OLED-дисплея 2</value>
+  </data>
+  <data name="点缺陷_Grade" xml:space="preserve">
+    <value>Степень точечного дефекта</value>
+  </data>
+  <data name="OLED图像4In1合并" xml:space="preserve">
+    <value>Объединение 4 изображений OLED-дисплея</value>
+  </data>
+  <data name="CalcEQE" xml:space="preserve">
+    <value>Расчет EQE</value>
+  </data>
+  <data name="A" xml:space="preserve">
+    <value>А</value>
+  </data>
+  <data name="B" xml:space="preserve">
+    <value>Б</value>
+  </data>
+  <data name="通道" xml:space="preserve">
+    <value>ряд</value>
+  </data>
+  <data name="CsvFileName" xml:space="preserve">
+    <value>имя CSV-файла</value>
+  </data>
+  <data name="图像文件4" xml:space="preserve">
+    <value>Файл изображения 4</value>
+  </data>
+  <data name="图像文件1" xml:space="preserve">
+    <value>Файл изображения 1</value>
+  </data>
+  <data name="图像文件3" xml:space="preserve">
+    <value>Файл изображения 3</value>
+  </data>
+  <data name="图像文件2" xml:space="preserve">
+    <value>Файл изображения 2</value>
+  </data>
+  <data name="源表[CSV]" xml:space="preserve">
+    <value>Исходная таблица - CSV</value>
+  </data>
 </root>

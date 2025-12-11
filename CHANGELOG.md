@@ -1,6 +1,6 @@
 #   CHANGELOAG
 
-## [1.3.15.36] 2025.12.11
+## [1.3.15.37] 2025.12.11
 
 1.EnableResetND
 
@@ -53,6 +53,8 @@
 25.AOI模板，SMU增加类型，其他的优化
 
 26.OlEDAOI模板,OLEDRebuildPixelsNode
+
+27.更新流程到最新1211,增加SMUcsv,等节点
 
 ## [1.3.15.1] 2025.11.25
 

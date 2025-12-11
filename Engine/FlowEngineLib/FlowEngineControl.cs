@@ -157,15 +157,15 @@ public class FlowEngineControl : FlowEngineAPI
 	{
 		if (rawData != null)
 		{
-			string text = BitConverter.ToString(MD5.Create().ComputeHash(rawData));
-			logger.DebugFormat("Load flow data={0}", (object)text);
-			if (loadedCanvas.ContainsKey(text))
+			string key = BitConverter.ToString(MD5.Create().ComputeHash(rawData));
+			logger.DebugFormat("Load flow data={0}", key);
+			if (loadedCanvas.ContainsKey(key))
 			{
 				return;
 			}
 			clear();
 			NodeEditor.LoadCanvas(rawData);
-			loadedCanvas.Add(text, rawData);
+			loadedCanvas.Add(key, rawData);
 			if (!waitReady)
 			{
 				return;
@@ -222,7 +222,7 @@ public class FlowEngineControl : FlowEngineAPI
 		{
 			BaseStartNode baseStartNode = startNodeNames[name];
 			_IsRunning = true;
-			logger.DebugFormat("Starting flow serialNumber={0}", (object)serialNumber);
+			logger.DebugFormat("Starting flow serialNumber={0}", serialNumber);
 			baseStartNode.Start(serialNumber);
 		}
 	}

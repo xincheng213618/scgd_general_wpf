@@ -112,7 +112,7 @@ internal class CommonSimulator : STNodeInHub
 			CVMQTTRequest responseEvent = GetResponseEvent(mQActionEvent);
 			if (_MQTTHelper != null && _MQTTHelper.IsClientConnect())
 			{
-				_MQTTHelper.PublishAsync_Client(mQActionEvent.Topic, JsonConvert.SerializeObject((object)responseEvent), retained: false);
+				_MQTTHelper.PublishAsync_Client(mQActionEvent.Topic, JsonConvert.SerializeObject(responseEvent), retained: false);
 			}
 		}
 	}

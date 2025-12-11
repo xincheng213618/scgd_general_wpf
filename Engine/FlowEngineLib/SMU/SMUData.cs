@@ -2,15 +2,18 @@ namespace FlowEngineLib.SMU;
 
 public class SMUData
 {
-	public bool IsSourceV;
+	public SMUChannelType Channel { get; set; }
 
-	public double MeasureValue;
+	public bool IsSourceV { get; set; }
 
-	public double LimitValue;
+	public double MeasureValue { get; set; }
 
-	public SMUData(bool isSourceV, double measureValue, double limitValue)
+	public double LimitValue { get; set; }
+
+	public SMUData(bool isSourceV, SMUChannelType channel, double measureValue, double limitValue)
 	{
 		IsSourceV = isSourceV;
+		Channel = channel;
 		MeasureValue = measureValue;
 		LimitValue = limitValue;
 	}

@@ -113,7 +113,7 @@ public class POIReviseNode : CVBaseServerNodeIn2Hub
 		}
 		if (logger.IsDebugEnabled)
 		{
-			logger.DebugFormat("PreStepParams => {0}", (object)JsonConvert.SerializeObject((object)array));
+			logger.DebugFormat("PreStepParams => {0}", JsonConvert.SerializeObject(array));
 		}
 		return new POIReviseData(array[1].MasterId, array[0].MasterId, _TemplateName, _Output, _POIPointName, _IsSelfResultRevise);
 	}

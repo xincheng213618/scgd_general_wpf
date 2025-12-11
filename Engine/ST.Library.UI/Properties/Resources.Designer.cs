@@ -187,6 +187,15 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 A 的本地化字符串。
+        /// </summary>
+        internal static string A {
+            get {
+                return ResourceManager.GetString("A", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 AA布点 的本地化字符串。
         /// </summary>
         internal static string AA布点 {
@@ -259,6 +268,15 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 B 的本地化字符串。
+        /// </summary>
+        internal static string B {
+            get {
+                return ResourceManager.GetString("B", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 B 通道曝光时间(ms) 的本地化字符串。
         /// </summary>
         internal static string BExpDesc {
@@ -309,6 +327,15 @@ namespace ST.Library.UI.Properties {
         internal static string CAD文件 {
             get {
                 return ResourceManager.GetString("CAD文件", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 EQE计算 的本地化字符串。
+        /// </summary>
+        internal static string CalcEQE {
+            get {
+                return ResourceManager.GetString("CalcEQE", resourceCulture);
             }
         }
         
@@ -385,7 +412,16 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 电流(I)(mA) 的本地化字符串。
+        ///   查找类似 Csv文件名 的本地化字符串。
+        /// </summary>
+        internal static string CsvFileName {
+            get {
+                return ResourceManager.GetString("CsvFileName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 电流/I(mA) 的本地化字符串。
         /// </summary>
         internal static string Current_I {
             get {
@@ -763,11 +799,29 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 OLED图像4In1合并 的本地化字符串。
+        /// </summary>
+        internal static string OLED图像4In1合并 {
+            get {
+                return ResourceManager.GetString("OLED图像4In1合并", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 OLED数据提取 的本地化字符串。
         /// </summary>
         internal static string OLED数据提取 {
             get {
                 return ResourceManager.GetString("OLED数据提取", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 OLED数据提取2 的本地化字符串。
+        /// </summary>
+        internal static string OLED数据提取2 {
+            get {
+                return ResourceManager.GetString("OLED数据提取2", resourceCulture);
             }
         }
         
@@ -1141,7 +1195,7 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 电压(V) 的本地化字符串。
+        ///   查找类似 电压/V(V) 的本地化字符串。
         /// </summary>
         internal static string Voltage_V {
             get {
@@ -1519,6 +1573,42 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 图像文件1 的本地化字符串。
+        /// </summary>
+        internal static string 图像文件1 {
+            get {
+                return ResourceManager.GetString("图像文件1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图像文件2 的本地化字符串。
+        /// </summary>
+        internal static string 图像文件2 {
+            get {
+                return ResourceManager.GetString("图像文件2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图像文件3 的本地化字符串。
+        /// </summary>
+        internal static string 图像文件3 {
+            get {
+                return ResourceManager.GetString("图像文件3", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图像文件4 的本地化字符串。
+        /// </summary>
+        internal static string 图像文件4 {
+            get {
+                return ResourceManager.GetString("图像文件4", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 图像水平翻转 的本地化字符串。
         /// </summary>
         internal static string 图像水平翻转 {
@@ -1825,6 +1915,15 @@ namespace ST.Library.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 源表-CSV 的本地化字符串。
+        /// </summary>
+        internal static string 源表_CSV_ {
+            get {
+                return ResourceManager.GetString("源表[CSV]", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 源表-模板 的本地化字符串。
         /// </summary>
         internal static string 源表_模板_ {
@@ -1884,6 +1983,15 @@ namespace ST.Library.UI.Properties {
         internal static string 点缺陷 {
             get {
                 return ResourceManager.GetString("点缺陷", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 点缺陷_Grade 的本地化字符串。
+        /// </summary>
+        internal static string 点缺陷_Grade {
+            get {
+                return ResourceManager.GetString("点缺陷_Grade", resourceCulture);
             }
         }
         
@@ -2289,6 +2397,15 @@ namespace ST.Library.UI.Properties {
         internal static string 通用相机 {
             get {
                 return ResourceManager.GetString("通用相机", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 通道 的本地化字符串。
+        /// </summary>
+        internal static string 通道 {
+            get {
+                return ResourceManager.GetString("通道", resourceCulture);
             }
         }
         

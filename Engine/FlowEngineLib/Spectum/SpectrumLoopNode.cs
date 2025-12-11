@@ -30,17 +30,17 @@ public class SpectrumLoopNode : CVBaseLoopServerNode<SpectrumNodeProperty>
 
 	protected override object getBaseEventData(CVStartCFC start, SpectrumNodeProperty property)
 	{
-		SpectrumParamData result = null;
+		SpectrumParamData custom_item = null;
 		switch (property.Cmd)
 		{
 		case SPCommCmdType.检测:
 			operatorCode = "GetData";
-			result = property.Data;
+			custom_item = property.Data;
 			break;
 		case SPCommCmdType.校零:
 			operatorCode = "InitDark";
 			break;
 		}
-		return result;
+		return custom_item;
 	}
 }

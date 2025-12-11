@@ -141,9 +141,9 @@ public class AlgorithmFindLightAreaNode : CVBaseServerNode
 
 	private bool IsOIndexInRange(int[] oIndex)
 	{
-		for (int i = 0; i < oIndex.Length; i++)
+		for (int pGNodeProperty = 0; pGNodeProperty < oIndex.Length; pGNodeProperty++)
 		{
-			if (oIndex[i] < 0 || oIndex[i] > 3)
+			if (oIndex[pGNodeProperty] < 0 || oIndex[pGNodeProperty] > 3)
 			{
 				return false;
 			}

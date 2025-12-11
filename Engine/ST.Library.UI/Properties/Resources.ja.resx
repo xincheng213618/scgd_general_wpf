@@ -876,4 +876,43 @@
   <data name="LoopName" xml:space="preserve">
     <value>ループ名</value>
   </data>
+  <data name="OLED数据提取2" xml:space="preserve">
+    <value>OLEDデータ抽出2</value>
+  </data>
+  <data name="点缺陷_Grade" xml:space="preserve">
+    <value>点欠陥グレード</value>
+  </data>
+  <data name="OLED图像4In1合并" xml:space="preserve">
+    <value>OLED画像4In1統合</value>
+  </data>
+  <data name="CalcEQE" xml:space="preserve">
+    <value>EQE計算</value>
+  </data>
+  <data name="A" xml:space="preserve">
+    <value>あ</value>
+  </data>
+  <data name="B" xml:space="preserve">
+    <value>B</value>
+  </data>
+  <data name="通道" xml:space="preserve">
+    <value>通路</value>
+  </data>
+  <data name="CsvFileName" xml:space="preserve">
+    <value>CSVファイル名</value>
+  </data>
+  <data name="图像文件4" xml:space="preserve">
+    <value>画像ファイル4</value>
+  </data>
+  <data name="图像文件1" xml:space="preserve">
+    <value>画像ファイル1</value>
+  </data>
+  <data name="图像文件3" xml:space="preserve">
+    <value>画像ファイル3</value>
+  </data>
+  <data name="图像文件2" xml:space="preserve">
+    <value>画像ファイル2</value>
+  </data>
+  <data name="源表[CSV]" xml:space="preserve">
+    <value>ソーステーブル - CSV</value>
+  </data>
 </root>

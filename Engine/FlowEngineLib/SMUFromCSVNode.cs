@@ -1,4 +1,9 @@
+using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using CsvHelper;
 using FlowEngineLib.Base;
 using FlowEngineLib.MQTT;
 using FlowEngineLib.SMU;
@@ -9,11 +14,13 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/04 源表")]
-public class SMUNode : CVBaseServerNode, ICVLoopNextNode
+public class SMUFromCSVNode : CVBaseServerNode, ICVLoopNextNode
 {
-	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUNode));
+	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUFromCSVNode));
 
 	private SMUChannelType _channel;
+
+	private string _csvFileName;
 
 	private string loopName;
 
@@ -27,17 +34,15 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 
 	private STNodeEditText<SMUChannelType> m_ctrl_channel;
 
-	private float m_begin_val;
-
-	private float m_end_val;
+	private float m_limit_val;
 
 	private int m_point_num;
 
+	private List<SMUCsvSrcData> srcValues;
+
 	private double m_cur_val;
 
-	private double m_step_val;
-
-	private int m_step_count;
+	private int m_step_idx;
 
 	[STNodeProperty("电(压/流)源", "电(压/流)源", true)]
 	public SourceType Source { get; set; }
@@ -56,47 +61,17 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 		}
 	}
 
-	[STNodeProperty("起始值", "起始值", true)]
-	public float BeginVal
+	[STNodeProperty("CsvFileName", "CsvFileName", false, true)]
+	public string CsvFileName
 	{
 		get
 		{
-			return m_begin_val;
+			return _csvFileName;
 		}
 		set
 		{
-			m_begin_val = value;
-			updateUI();
-		}
-	}
-
-	[STNodeProperty("结束值", "结束值", true)]
-	public float EndVal
-	{
-		get
-		{
-			return m_end_val;
-		}
-		set
-		{
-			m_end_val = value;
-			updateUI();
-		}
-	}
-
-	[STNodeProperty("限值", "限值", true)]
-	public float LimitVal { get; set; }
-
-	[STNodeProperty("点数", "点数", true)]
-	public int PointNum
-	{
-		get
-		{
-			return m_point_num;
-		}
-		set
-		{
-			m_point_num = value;
+			_csvFileName = value;
+			LoadFromCsv(_csvFileName);
 			updateUI();
 		}
 	}
@@ -128,17 +103,15 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 		}
 	}
 
-	public SMUNode()
-		: base("源表", "SMU", "SVR.SMU.Default", "DEV.SMU.Default")
+	public SMUFromCSVNode()
+		: base("源表[CSV]", "SMU", "SVR.SMU.Default", "DEV.SMU.Default")
 	{
 		m_is_out_release = false;
 		m_has_svr_item = false;
 		m_IsCloseOutput = false;
 		operatorCode = "GetData";
-		m_begin_val = 0f;
-		m_end_val = 5f;
-		m_point_num = 5;
-		m_step_count = 0;
+		m_point_num = 0;
+		m_step_idx = 0;
 		loopName = "SMULoop";
 		base.Height += 70;
 	}
@@ -162,19 +135,45 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 
 	private void updateUI()
 	{
-		if (m_step_count == 0)
-		{
-			m_ctrl_editText.Value = $"{m_begin_val}-{m_end_val}/{m_point_num}";
-		}
-		else
-		{
-			m_ctrl_editText.Value = string.Format("{2:F4}:{0}/{1}", m_step_count, m_point_num, m_cur_val);
-		}
+		m_ctrl_editText.Value = string.Format("{2:F4}:{0}/{1}", m_step_idx, m_point_num, m_cur_val);
 	}
 
-	private string GetCurValText()
+	private void LoadFromCsv(string csvFileName)
 	{
-		return $"{m_begin_val}-{m_end_val}/{m_point_num}";
+		if (!string.IsNullOrEmpty(csvFileName) && File.Exists(csvFileName))
+		{
+			using (StreamReader streamReader = new StreamReader(csvFileName))
+			{
+				using CsvReader csvReader = new CsvReader(streamReader, CultureInfo.InvariantCulture);
+				srcValues = csvReader.GetRecords<SMUCsvSrcData>().ToList();
+				if (srcValues != null && srcValues.Count > 0)
+				{
+					m_point_num = srcValues.Count;
+					m_step_idx = 0;
+					m_cur_val = srcValues[m_step_idx].SrcValue;
+					m_limit_val = srcValues[m_step_idx].LimitValue;
+				}
+				else
+				{
+					if (logger.IsErrorEnabled)
+					{
+						logger.ErrorFormat("CsvFileName content is empty or has an invalid format.");
+					}
+					m_point_num = 0;
+					m_cur_val = 0.0;
+					m_limit_val = 0f;
+				}
+				streamReader.Close();
+				return;
+			}
+		}
+		if (logger.IsErrorEnabled)
+		{
+			logger.ErrorFormat("CsvFileName is null or not exist.");
+		}
+		m_point_num = 0;
+		m_cur_val = 0.0;
+		m_limit_val = 0f;
 	}
 
 	private void end(CVTransAction trans)
@@ -196,17 +195,17 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 		{
 			logger.Debug("Send To Server CloseOutput");
 		}
-		CVStartCFC trans_action = trans.trans_action;
-		string token = GetToken();
-		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, "CloseOutput", trans_action.SerialNumber, null, token, base.ZIndex);
+		CVStartCFC array = trans.trans_action;
+		string i = GetToken();
+		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, "CloseOutput", array.SerialNumber, null, i, base.ZIndex);
 		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
-		MQActionEvent act = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
+		MQActionEvent act = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, i);
 		trans.trans_action.GetStartNode().DoPublish(act);
 	}
 
 	private void m_in_next_DataTransfer(object sender, STNodeOptionEventArgs e)
 	{
-		if (e.TargetOption.Data == null)
+		if (e.TargetOption.Data == null || srcValues == null || srcValues.Count <= m_step_idx)
 		{
 			return;
 		}
@@ -216,9 +215,9 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 		{
 			if (HasNext())
 			{
-				m_cur_val += m_step_val;
+				m_cur_val = srcValues[m_step_idx].SrcValue;
 				DoNextActionEvent(trans);
-				m_step_count++;
+				m_step_idx++;
 				updateUI();
 				AddCFCData(trans.trans_action);
 			}
@@ -254,19 +253,19 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 			loopDataInfo = new LoopDataInfo();
 			start.Data.Add(key, loopDataInfo);
 		}
-		loopDataInfo.Step = m_step_count;
+		loopDataInfo.Step = m_step_idx;
 		loopDataInfo.HasNext = HasNext();
 	}
 
 	private MQActionEvent DoNextActionEvent(CVTransAction trans)
 	{
-		CVStartCFC trans_action = trans.trans_action;
-		string token = GetToken();
-		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(Source == SourceType.Voltage_V, _channel, m_cur_val, LimitVal), token, base.ZIndex);
-		CVBaseEventCmd cmd = AddActionCmd(trans, cVMQTTRequest);
-		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
-		MQActionEvent mQActionEvent = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
-		DoTransferToServer(trans, mQActionEvent, cmd);
+		CVStartCFC channelCount = trans.trans_action;
+		string num = GetToken();
+		CVMQTTRequest i = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, channelCount.SerialNumber, new SMUData(Source == SourceType.Voltage_V, _channel, m_cur_val, m_limit_val), num, base.ZIndex);
+		CVBaseEventCmd channel = AddActionCmd(trans, i);
+		string message = JsonConvert.SerializeObject(i, Formatting.None);
+		MQActionEvent mQActionEvent = new MQActionEvent(i.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), i.EventName, message, num);
+		DoTransferToServer(trans, mQActionEvent, channel);
 		if (logger.IsDebugEnabled)
 		{
 			logger.DebugFormat("[{0}] Next Step Source value = {1}", ToShortString(), m_cur_val);
@@ -284,9 +283,9 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 	{
 		if (logger.IsDebugEnabled)
 		{
-			logger.DebugFormat("[{0}] HasNext Step = {1}/{2}", ToShortString(), m_step_count, PointNum);
+			logger.DebugFormat("[{0}] HasNext Step = {1}/{2}", ToShortString(), m_step_idx, m_point_num);
 		}
-		return m_step_count < PointNum;
+		return m_step_idx < m_point_num;
 	}
 
 	protected override void OnServerResponse(CVServerResponse resp, CVStartCFC startCFC)
@@ -300,32 +299,31 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 
 	protected override CVMQTTRequest getActionEvent(STNodeOptionEventArgs e)
 	{
-		CVMQTTRequest cFC = null;
-		CVStartCFC op_loop = (CVStartCFC)e.TargetOption.Data;
-		if (op_loop.IsRunning)
+		CVMQTTRequest channelCount = null;
+		CVStartCFC i = (CVStartCFC)e.TargetOption.Data;
+		if (i.IsRunning)
 		{
-			double num = EndVal - BeginVal;
-			if (PointNum > 1)
+			if (m_point_num > 0)
 			{
-				m_step_val = num / (double)(PointNum - 1);
+				m_point_num = srcValues.Count;
+				m_step_idx = 0;
+				m_cur_val = srcValues[m_step_idx].SrcValue;
+				m_limit_val = srcValues[m_step_idx].LimitValue;
+				m_op_end.TransferData(null);
+				channelCount = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, i.SerialNumber, new SMUData(Source == SourceType.Voltage_V, _channel, m_cur_val, m_limit_val), GetToken(), base.ZIndex);
+				m_step_idx++;
+				updateUI();
+				AddCFCData(i);
 			}
-			else
+			else if (logger.IsErrorEnabled)
 			{
-				m_step_val = num;
+				logger.ErrorFormat("CsvFileName content is empty or has an invalid format.");
 			}
-			m_cur_val = BeginVal;
-			m_step_count = 0;
-			m_op_end.TransferData(null);
-			cFC = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, op_loop.SerialNumber, new SMUData(Source == SourceType.Voltage_V, _channel, m_cur_val, LimitVal), GetToken(), base.ZIndex);
-			m_step_count++;
-			updateUI();
-			AddCFCData(op_loop);
 		}
 		else
 		{
 			m_cur_val = 0.0;
-			m_step_val = 0.0;
 		}
-		return cFC;
+		return channelCount;
 	}
 }

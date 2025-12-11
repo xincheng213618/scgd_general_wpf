@@ -28,7 +28,9 @@
     <ProjectReference Include="..\ST.Library.UI\ST.Library.UI.csproj" />
   </ItemGroup>
 
-	
+	<ItemGroup>
+		<PackageReference Include="CsvHelper" Version="33.1.0" />
+	</ItemGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\ST.Library.UI\ST.Library.UI.csproj" />
 	</ItemGroup>
