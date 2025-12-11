@@ -39,6 +39,7 @@ using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2;
 using ColorVision.Engine.Templates.Jsons.MTF2;
+using ColorVision.Engine.Templates.Jsons.OLEDAOI;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using ColorVision.Engine.Templates.LedCheck;
@@ -224,7 +225,6 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => oled.DeviceCode = name, oled.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddImagePath(name => oled.ImgFileName = name, oled.ImgFileName);
                 AddStackPanel(name => oled.TempName = name, oled.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
-                AddStackPanel(name => oled.TempName = name, oled.TempName, "像素级灯珠检测", new TemplateLedCheck());
             }
 
 
@@ -350,7 +350,7 @@ namespace ColorVision.Engine.Templates.Flow
                 AddImagePath(name => oledaoi.ImgFileName = name, oledaoi.ImgFileName);
 
                 AddStackPanel(name => oledaoi.DeviceCode = name, oledaoi.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-                AddStackPanel(name => oledaoi.TempName = name, oledaoi.TempName, "AOI", new TemplateAOIParam());
+                AddStackPanel(name => oledaoi.TempName = name, oledaoi.TempName, "AOI", new TemplateOLEDAOI());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.AlgorithmARVRNode algorithmNode1)

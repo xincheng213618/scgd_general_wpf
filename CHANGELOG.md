@@ -1,6 +1,6 @@
 #   CHANGELOAG
 
-## [1.3.15.37] 2025.12.11
+## [1.3.15.39] 2025.12.11
 
 1.EnableResetND
 
@@ -55,6 +55,8 @@
 26.OlEDAOI模板,OLEDRebuildPixelsNode
 
 27.更新流程到最新1211,增加SMUcsv,等节点
+
+28.修复源表取图需要Channel
 
 ## [1.3.15.1] 2025.11.25
 

@@ -108,12 +108,22 @@ namespace ColorVision.Engine.Services.Devices.SMU
             return PublishAsyncClient(msg);
         }
 
-        public bool GetData(bool isSourceV, double measureVal, double lmtVal)
+        public class SMUGetDataParam
+        {
+            public bool IsSourceV { set; get; }
+            public double MeasureValue { set; get; }
+
+            public SMUChannelType Channel { get; set; }
+
+            public double LimitValue { set; get; }
+        }
+
+        public bool GetData(bool isSourceV, double measureVal, double lmtVal, SMUChannelType channel)
         {
             MsgSend msg = new()
             {
                 EventName = MQTTSMUEventEnum.Event_GetData,
-                Params = new SMUGetDataParam() { IsSourceV = isSourceV, MeasureValue = measureVal, LimitValue = lmtVal }
+                Params = new SMUGetDataParam() { IsSourceV = isSourceV, MeasureValue = measureVal, LimitValue = lmtVal,Channel =channel }
             };
             MsgRecord msgRecord = PublishAsyncClient(msg);
             return true;
