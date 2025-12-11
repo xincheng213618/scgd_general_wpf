@@ -217,8 +217,17 @@ namespace ColorVision.Engine.Templates.Flow
                 AddImagePath(name => algorithmFindLEDNode.ImgFileName = name, algorithmFindLEDNode.ImgFileName);
                 AddStackPanel(name => algorithmFindLEDNode.TempName = name, algorithmFindLEDNode.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
                 AddStackPanel(name => algorithmFindLEDNode.TempName = name, algorithmFindLEDNode.TempName, "像素级灯珠检测", new TemplateLedCheck());
-
             }
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.OLED.OLEDRebuildPixelsNode oled)
+            {
+                AddStackPanel(name => oled.DeviceCode = name, oled.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddImagePath(name => oled.ImgFileName = name, oled.ImgFileName);
+                AddStackPanel(name => oled.TempName = name, oled.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
+                AddStackPanel(name => oled.TempName = name, oled.TempName, "像素级灯珠检测", new TemplateLedCheck());
+            }
+
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.POIReviseNode poiReviseNode)
             {
                 AddStackPanel(name => poiReviseNode.DeviceCode = name, poiReviseNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
