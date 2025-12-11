@@ -28,6 +28,10 @@ namespace ProjectARVRPro
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
+        [DisplayName("按日期保存")]
+        public bool SaveByDate { get => _SaveByDate; set { _SaveByDate = value; OnPropertyChanged(); } }
+        private bool _SaveByDate;
+
         public bool IsSaveCsv { get => _IsSaveCsv; set { _IsSaveCsv = value; OnPropertyChanged(); } }
         private bool _IsSaveCsv = true;
 
