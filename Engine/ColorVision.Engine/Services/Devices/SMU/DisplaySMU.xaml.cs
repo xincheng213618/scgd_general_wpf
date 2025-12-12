@@ -191,11 +191,11 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         private void MeasureData_Click(object sender, RoutedEventArgs e)
         {
-            DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal);
+            DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal, Config.Channel);
         }
         private void StepMeasureData_Click(object sender, RoutedEventArgs e)
         {
-            DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal);
+            DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal, Config.Channel);
         }
         private void MeasureDataClose_Click(object sender, RoutedEventArgs e)
         {

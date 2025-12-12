@@ -102,10 +102,10 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeIn2Hub
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
+		AlgorithmPreStepParam algorithmOLEDAOIParam = new AlgorithmPreStepParam();
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-		AlgorithmPreStepParam algorithmPreStepParam2 = new AlgorithmPreStepParam();
-		getPreStepParam(0, algorithmPreStepParam);
-		getPreStepParam(1, algorithmPreStepParam2);
-		return new AlgorithmCompoundImgParam(_TempName, algorithmPreStepParam, algorithmPreStepParam2, _OrderIndex, _BufferLen, _OutputFileName);
+		getPreStepParam(0, algorithmOLEDAOIParam);
+		getPreStepParam(1, algorithmPreStepParam);
+		return new AlgorithmCompoundImgParam(_TempName, algorithmOLEDAOIParam, algorithmPreStepParam, _OrderIndex, _BufferLen, _OutputFileName);
 	}
 }

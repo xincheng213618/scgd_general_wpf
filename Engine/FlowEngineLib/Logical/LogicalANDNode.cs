@@ -67,14 +67,7 @@ public class LogicalANDNode : STNodeInHub
 							}
 						}
 					}
-					logger.DebugFormat("{0}[{1}/{2}] - {3}/MasterId={4}", new object[5]
-					{
-						base.Title,
-						num,
-						base.InputOptionsCount - 1,
-						JsonConvert.SerializeObject((object)cVStartCFC),
-						masterId
-					});
+					logger.DebugFormat("{0}[{1}/{2}] - {3}/MasterId={4}", base.Title, num, base.InputOptionsCount - 1, JsonConvert.SerializeObject(cVStartCFC), masterId);
 					if (num == base.InputOptionsCount - 1)
 					{
 						clearData();
@@ -99,7 +92,7 @@ public class LogicalANDNode : STNodeInHub
 		if (data != null && data.IsRunning)
 		{
 			data.Data["MasterId"] = masterId;
-			logger.DebugFormat("ResultOut => MasterId={0}", (object)masterId);
+			logger.DebugFormat("ResultOut => MasterId={0}", masterId);
 		}
 		m_op_result.TransferData(data);
 	}

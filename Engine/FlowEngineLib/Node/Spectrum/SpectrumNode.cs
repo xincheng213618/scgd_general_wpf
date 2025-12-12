@@ -24,6 +24,8 @@ public class SpectrumNode : CVBaseServerNode
 
 	private bool _AutoInitDark;
 
+	private string _OutputDataFilename;
+
 	private STNodeEditText<SPCommCmdType> m_ctrl_cmd;
 
 	private STNodeEditText<float> m_ctrl_editText;
@@ -128,6 +130,19 @@ public class SpectrumNode : CVBaseServerNode
 		}
 	}
 
+	[STNodeProperty("输出文件", "输出文件", true)]
+	public string OutputDataFilename
+	{
+		get
+		{
+			return _OutputDataFilename;
+		}
+		set
+		{
+			_OutputDataFilename = value;
+		}
+	}
+
 	public SpectrumNode()
 		: base("光谱仪", "Spectrum", "SVR.Spectrum.Default", "DEV.Spectrum.Default")
 	{
@@ -135,6 +150,7 @@ public class SpectrumNode : CVBaseServerNode
 		_Cmd = SPCommCmdType.检测;
 		_Temp = 100f;
 		_AveNum = 1;
+		_OutputDataFilename = "SPData.csv";
 		_AutoIntTime = false;
 		_SelfDark = false;
 		base.Height += 75;
@@ -179,7 +195,7 @@ public class SpectrumNode : CVBaseServerNode
 
 	private string GetDarkDis()
 	{
-		return $"{_AutoInitDark}/{_SelfDark}";
+		return string.Format("{0}/{1}", _AutoInitDark ? "T" : "F", _SelfDark ? "T" : "F");
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
@@ -192,6 +208,7 @@ public class SpectrumNode : CVBaseServerNode
 			AutoIntegration = _AutoIntTime,
 			SelfAdaptionInitDark = _SelfDark,
 			AutoInitDark = _AutoInitDark,
+			OutputDataFilename = _OutputDataFilename,
 			IsWithND = _IsWithND,
 			SMUData = sMUResult
 		};

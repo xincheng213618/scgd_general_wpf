@@ -5,6 +5,9 @@ namespace ProjectARVRPro.Process.MTFHV
 {
     public class MTFHVProcessConfig : ProcessConfigBase
     {
+        public string ShowConfig { get => _ShowConfig; set { _ShowConfig = value; OnPropertyChanged(); } }
+        private string _ShowConfig = "F1";
+
         [Category("解析配置")]
         [DisplayName("Center_0F解析Key")]
         [Description("用于解析Center_0F数据的Key")]

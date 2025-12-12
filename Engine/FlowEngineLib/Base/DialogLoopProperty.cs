@@ -86,17 +86,13 @@ public class DialogLoopProperty<T> where T : ILoopNodeProperty, new()
 
 	public string Save()
 	{
-		//IL_0000: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0006: Expected O, but got Unknown
-		//IL_000f: Unknown result type (might be due to invalid IL or missing references)
-		//IL_0015: Expected O, but got Unknown
-		JsonSerializerSettings val = new JsonSerializerSettings();
-		val.Converters = (IList<JsonConverter>)(object)new StringEnumConverter[1]
+		JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings();
+		jsonSerializerSettings.Converters = new StringEnumConverter[1]
 		{
 			new StringEnumConverter()
 		};
-		JsonSerializerSettings val2 = val;
-		return JsonConvert.SerializeObject((object)properties, val2);
+		JsonSerializerSettings settings = jsonSerializerSettings;
+		return JsonConvert.SerializeObject(properties, settings);
 	}
 
 	private void ResetNo()

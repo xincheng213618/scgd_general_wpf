@@ -14,5 +14,7 @@ public class SpectrumParamData
 
 	public bool IsWithND { get; set; }
 
+	public string OutputDataFilename { get; set; }
+
 	public SMUResultData SMUData { get; set; }
 }

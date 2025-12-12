@@ -569,6 +569,12 @@ namespace ProjectARVRPro
                             string linkPath = ViewResultManager.Config.CsvSavePath;
                             string sn = result.SN;
 
+                            if (ViewResultManager.Config.SaveByDate)
+                            {
+                                string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                                linkPath = Path.Combine(linkPath, dateFolder);
+                            }
+
                             // 处理 SN 不为空的情况
                             if (!string.IsNullOrWhiteSpace(sn))
                             {
@@ -691,8 +697,17 @@ namespace ProjectARVRPro
 
             if (ViewResultManager.Config.IsSaveCsv)
             {
+
+                string linkPath = ViewResultManager.Config.CsvSavePath;
+                if (ViewResultManager.Config.SaveByDate)
+                {
+                    string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                    linkPath = Path.Combine(linkPath, dateFolder);
+                }
+
+
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"TestResults_{SNtextBox.Text}_{timeStr}_.csv");
+                string filePath = Path.Combine(linkPath, $"TestResults_{SNtextBox.Text}_{timeStr}_.csv");
                 ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
             }
 
@@ -790,6 +805,13 @@ namespace ProjectARVRPro
                                     await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
                                     string linkPath = ViewResultManager.Config.CsvSavePath;
                                     string sn = result.SN;
+
+                                    if (ViewResultManager.Config.SaveByDate)
+                                    {
+                                        string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                                        linkPath = Path.Combine(linkPath, dateFolder);
+                                    }
+
                                     // 处理 SN 不为空的情况
                                     if (!string.IsNullOrWhiteSpace(sn))
                                     {

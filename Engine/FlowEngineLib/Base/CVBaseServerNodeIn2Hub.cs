@@ -81,20 +81,12 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 					}
 					else
 					{
-						logger.WarnFormat("TargetData Type is not flow common type => {0}", (object)sTNodeOption.DataType.AssemblyQualifiedName);
+						logger.WarnFormat("TargetData Type is not flow common type => {0}", sTNodeOption.DataType.AssemblyQualifiedName);
 					}
 				}
 				if (logger.IsDebugEnabled)
 				{
-					logger.DebugFormat("[{0}][{1}/{2}] DoServerTransfer => {3} [{4}/{5}]", new object[6]
-					{
-						ToShortString(),
-						num,
-						base.InputOptionsCount,
-						cVStartCFC.ToShortString(),
-						sender.Text,
-						JsonConvert.SerializeObject((object)cVStartCFC.Data)
-					});
+					logger.DebugFormat("[{0}][{1}/{2}] DoServerTransfer => {3} [{4}/{5}]", ToShortString(), num, base.InputOptionsCount, cVStartCFC.ToShortString(), sender.Text, JsonConvert.SerializeObject(cVStartCFC.Data));
 				}
 				if (num == base.InputOptionsCount)
 				{
@@ -113,7 +105,7 @@ public class CVBaseServerNodeIn2Hub : CVBaseServerNode
 			}
 			else
 			{
-				logger.WarnFormat("TargetData Type is not flow common type => {0}", (object)e.TargetOption.DataType.AssemblyQualifiedName);
+				logger.WarnFormat("TargetData Type is not flow common type => {0}", e.TargetOption.DataType.AssemblyQualifiedName);
 			}
 		}
 		else

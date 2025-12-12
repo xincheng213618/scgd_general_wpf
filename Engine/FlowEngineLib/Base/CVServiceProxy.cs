@@ -67,13 +67,13 @@ public class CVServiceProxy
 
 	public string GetSendTopic()
 	{
-		string result = DefaultPublishTopic;
+		string rectangleR = DefaultPublishTopic;
 		MQTTServiceInfo service = FlowServiceManager.Instance.GetService(m_nodeType, m_nodeName);
 		if (service != null)
 		{
-			result = service.PublishTopic;
+			rectangleR = service.PublishTopic;
 		}
-		return result;
+		return rectangleR;
 	}
 
 	public string GetRecvTopic()
@@ -104,7 +104,7 @@ public class CVServiceProxy
 		{
 			cVTransAction = new CVTransAction(action);
 			m_trans_action.Add(action.SerialNumber, cVTransAction);
-			logger.DebugFormat("{0} DoServerTransfer => {1}", (object)Title, (object)action.SerialNumber);
+			logger.DebugFormat("{0} DoServerTransfer => {1}", Title, action.SerialNumber);
 		}
 		if (cVTransAction != null)
 		{
@@ -112,7 +112,7 @@ public class CVServiceProxy
 			if (actionEvent != null)
 			{
 				CVBaseEventCmd cmd = AddActionCmd(cVTransAction, actionEvent);
-				string message = JsonConvert.SerializeObject((object)actionEvent, (Formatting)0);
+				string message = JsonConvert.SerializeObject(actionEvent, Formatting.None);
 				string token = GetToken();
 				MQActionEvent act = new MQActionEvent(actionEvent.MsgID, m_nodeName, GetDeviceCode(), GetSendTopic(), actionEvent.EventName, message, token);
 				DoServerTransfer(cVTransAction, act, cmd);
@@ -122,7 +122,7 @@ public class CVServiceProxy
 
 	protected void DoServerTransfer(CVTransAction trans, MQActionEvent act, CVBaseEventCmd cmd)
 	{
-		logger.DebugFormat("DoServerTransfer => {0}", (object)JsonConvert.SerializeObject((object)act));
+		logger.DebugFormat("DoServerTransfer => {0}", JsonConvert.SerializeObject(act));
 		if (m_in_act_status == null || m_in_act_status.ConnectionCount == 0)
 		{
 			trans.trans_action.GetStartNode().DoSubscribe(GetRecvTopic(), this);
@@ -154,7 +154,7 @@ public class CVServiceProxy
 			{
 				return;
 			}
-			logger.DebugFormat("{0} DoServerStatusDataTransfer => {1}/{2}", (object)Title, (object)cVBaseDataFlowResp.SerialNumber, (object)cVBaseDataFlowResp.EventName);
+			logger.DebugFormat("{0} DoServerStatusDataTransfer => {1}/{2}", Title, cVBaseDataFlowResp.SerialNumber, cVBaseDataFlowResp.EventName);
 			cVTransAction = GetCVTransByEvent(cVBaseDataFlowResp.SerialNumber, cVBaseDataFlowResp.EventName);
 			cVServerResponse = GetServerResponse(cVTransAction, cVBaseDataFlowResp);
 		}
@@ -170,7 +170,7 @@ public class CVServiceProxy
 		}
 		if (cVServerResponse != null && cVTransAction != null && cVTransAction.trans_action.FlowStatus == StatusTypeEnum.Runing && cVTransAction.m_sever_actionEvent.ContainsKey(cVServerResponse.Id))
 		{
-			logger.DebugFormat("DoServerStatusDataTransfer => {0}", (object)JsonConvert.SerializeObject((object)cVTransAction.trans_action));
+			logger.DebugFormat("DoServerStatusDataTransfer => {0}", JsonConvert.SerializeObject(cVTransAction.trans_action));
 			CVBaseEventCmd cVBaseEventCmd = cVTransAction.m_sever_actionEvent[cVServerResponse.Id];
 			cVBaseEventCmd.resp = cVServerResponse;
 			OnServerResponse(cVServerResponse);
@@ -227,7 +227,7 @@ public class CVServiceProxy
 		CVServerResponse resp = cmd.resp;
 		if (m_is_out_release)
 		{
-			logger.DebugFormat("{0} DoOutAction => {1}/{2}", (object)Title, (object)trans.trans_action.SerialNumber, (object)cmd.cmd.MsgID);
+			logger.DebugFormat("{0} DoOutAction => {1}/{2}", Title, trans.trans_action.SerialNumber, cmd.cmd.MsgID);
 			m_trans_action.Remove(trans.trans_action.SerialNumber);
 		}
 		else
@@ -320,7 +320,7 @@ public class CVServiceProxy
 		Task<bool> task = cmd.waiter.WaitForMessage(maxDelay);
 		if (logger.IsInfoEnabled)
 		{
-			logger.InfoFormat("{0}/{1}/{2}/{3} => Task.WaitOverTime={4}[{5} ms]", new object[6] { Title, DeviceCode, ZIndex, NodeID, task.Result, maxDelay });
+			logger.InfoFormat("{0}/{1}/{2}/{3} => Task.WaitOverTime={4}[{5} ms]", Title, DeviceCode, ZIndex, NodeID, task.Result, maxDelay);
 		}
 		if (task.Result)
 		{
@@ -332,7 +332,7 @@ public class CVServiceProxy
 			cVTransAction.NodeOverTime(GetFullNodeName());
 			if (logger.IsInfoEnabled)
 			{
-				logger.InfoFormat("{0}/{1}/{2}/{3} => OverTime", new object[4] { Title, DeviceCode, ZIndex, NodeID });
+				logger.InfoFormat("{0}/{1}/{2}/{3} => OverTime", Title, DeviceCode, ZIndex, NodeID);
 			}
 			Reset();
 			m_op_end.TransferData(cVTransAction.trans_action);
@@ -346,7 +346,7 @@ public class CVServiceProxy
 			CVTransAction cVTransAction = m_trans_action[serialNumber];
 			if (cVTransAction.m_sever_actionEvent.ContainsKey(svrEventId))
 			{
-				logger.DebugFormat("{0} RemoveTrans => {1}/{2}", (object)Title, (object)serialNumber, (object)svrEventId);
+				logger.DebugFormat("{0} RemoveTrans => {1}/{2}", Title, serialNumber, svrEventId);
 				m_trans_action.Remove(serialNumber);
 				return cVTransAction;
 			}

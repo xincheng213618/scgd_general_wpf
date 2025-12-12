@@ -63,19 +63,19 @@ public class CVEndNode : CVCommonNode
 		{
 			if (logger.IsDebugEnabled)
 			{
-				logger.DebugFormat("===============Flow Do Finishing => {0}/{1}", (object)startAction.SerialNumber, (object)startAction.FlowStatus.ToString());
+				logger.DebugFormat("===============Flow Do Finishing => {0}/{1}", startAction.SerialNumber, startAction.FlowStatus.ToString());
 			}
 			startAction.DoFinishing();
 			SetOptionText(m_in_start, startAction.ToShortString());
 			if (logger.IsInfoEnabled)
 			{
-				logger.InfoFormat("===============Flow Finished[{0}/{1}/{2}]============", (object)startAction.SerialNumber, (object)startAction.FlowStatus.ToString(), (object)startAction.GetTotalTime().ToString());
+				logger.InfoFormat("===============Flow Finished[{0}/{1}/{2}]============", startAction.SerialNumber, startAction.FlowStatus.ToString(), startAction.GetTotalTime().ToString());
 			}
 			startAction.FireFinished();
 		}
 		else if (logger.IsDebugEnabled)
 		{
-			logger.DebugFormat("Flow has Finished. => {0}/{1}", (object)startAction.SerialNumber, (object)startAction.FlowStatus.ToString());
+			logger.DebugFormat("Flow has Finished. => {0}/{1}", startAction.SerialNumber, startAction.FlowStatus.ToString());
 		}
 	}
 
