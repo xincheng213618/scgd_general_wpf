@@ -15,7 +15,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services.Devices.Sensor
 {
     /// <summary>
-    /// DisplaySMUControl.xaml 的交互逻辑
+    /// DisplaySensor.xaml 的交互逻辑
     /// </summary>
     public partial class DisplaySensor : UserControl, IDisPlayControl
     {

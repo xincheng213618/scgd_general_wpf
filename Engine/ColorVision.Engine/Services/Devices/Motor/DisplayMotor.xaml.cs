@@ -8,7 +8,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services.Devices.Motor
 {
     /// <summary>
-    /// DisplaySMUControl.xaml 的交互逻辑
+    /// DisplayMotor.xaml 的交互逻辑
     /// </summary>
     public partial class DisplayMotor : UserControl, IDisPlayControl
     {

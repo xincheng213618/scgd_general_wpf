@@ -46,8 +46,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Configs
         public double LmtVal { get => _lmtVal; set { _lmtVal = value; OnPropertyChanged(); } }
         private double _lmtVal;
 
-
-
+        public SMUChannelType Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); } }
+        private SMUChannelType _Channel = SMUChannelType.A;
 
         public double? V { get => _V; set { _V = value; OnPropertyChanged(); } }
         private double? _V;

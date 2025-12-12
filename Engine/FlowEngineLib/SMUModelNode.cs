@@ -9,7 +9,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib;
 
 [STNode("/04 源表")]
-public class SMUModelNode : CVBaseServerNode
+public class SMUModelNode : CVBaseServerNode, ICVLoopNextNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUModelNode));
 
@@ -24,6 +24,8 @@ public class SMUModelNode : CVBaseServerNode
 	private STNodeEditText<string> m_ctrl_lpName;
 
 	private SourceType m_source;
+
+	private SMUChannelType _channel;
 
 	private float m_begin_val;
 
@@ -146,7 +148,7 @@ public class SMUModelNode : CVBaseServerNode
 		updateUI();
 		if (logger.IsDebugEnabled)
 		{
-			logger.DebugFormat("[{0}]Device is end,IsCloseOutput={1}", (object)ToShortString(), (object)m_IsCloseOutput);
+			logger.DebugFormat("[{0}]Device is end,IsCloseOutput={1}", ToShortString(), m_IsCloseOutput);
 		}
 		if (m_IsCloseOutput && trans != null)
 		{
@@ -158,14 +160,14 @@ public class SMUModelNode : CVBaseServerNode
 	{
 		if (logger.IsDebugEnabled)
 		{
-			logger.Debug((object)"Send To Server CloseOutput");
+			logger.Debug("Send To Server CloseOutput");
 		}
 		CVStartCFC trans_action = trans.trans_action;
-		string token = GetToken();
-		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, "CloseOutput", trans_action.SerialNumber, null, token, base.ZIndex);
-		string message = JsonConvert.SerializeObject((object)cVMQTTRequest, (Formatting)0);
-		MQActionEvent act = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
-		trans.trans_action.GetStartNode().DoPublish(act);
+		string cVStartCFC = GetToken();
+		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, "CloseOutput", trans_action.SerialNumber, null, cVStartCFC, base.ZIndex);
+		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
+		MQActionEvent loopDataInfo = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, cVStartCFC);
+		trans.trans_action.GetStartNode().DoPublish(loopDataInfo);
 	}
 
 	private void m_in_next_DataTransfer(object sender, STNodeOptionEventArgs e)
@@ -215,9 +217,9 @@ public class SMUModelNode : CVBaseServerNode
 		CVStartCFC trans_action = trans.trans_action;
 		operatorCode = "GetData";
 		string token = GetToken();
-		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(m_nodeName, m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(m_source == SourceType.Voltage_V, m_cur_val, m_limit_val), token, base.ZIndex);
+		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(m_nodeName, m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(m_source == SourceType.Voltage_V, _channel, m_cur_val, m_limit_val), token, base.ZIndex);
 		CVBaseEventCmd cmd = AddActionCmd(trans, cVMQTTRequest);
-		string message = JsonConvert.SerializeObject((object)cVMQTTRequest, (Formatting)0);
+		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
 		MQActionEvent mQActionEvent = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
 		DoTransferToServer(trans, mQActionEvent, cmd);
 		return mQActionEvent;
@@ -236,13 +238,14 @@ public class SMUModelNode : CVBaseServerNode
 
 	private void AddIVData(CVServerResponse resp, CVStartCFC start)
 	{
+		SMUChannelType channel = SMUChannelType.A;
 		if (resp.EventName == "ModelGetData")
 		{
 			double v = resp.Data.ResultData.V;
 			double i = resp.Data.ResultData.I;
 			int masterId = resp.Data.MasterId;
 			int masterResultType = resp.Data.MasterResultType;
-			SMUResultData value = new SMUResultData(v, i, masterId, masterResultType);
+			SMUResultData value = new SMUResultData(channel, v, i, masterId, masterResultType);
 			string key = "SMUResult";
 			start.Data[key] = value;
 		}
@@ -252,7 +255,7 @@ public class SMUModelNode : CVBaseServerNode
 			double i2 = resp.Data.I;
 			int masterId2 = resp.Data.MasterId;
 			int masterResultType2 = resp.Data.MasterResultType;
-			SMUResultData value2 = new SMUResultData(v2, i2, masterId2, masterResultType2);
+			SMUResultData value2 = new SMUResultData(channel, v2, i2, masterId2, masterResultType2);
 			string key2 = "SMUResult";
 			start.Data[key2] = value2;
 		}
@@ -269,6 +272,7 @@ public class SMUModelNode : CVBaseServerNode
 		if (resp.EventName == "ModelGetData" && resp.Data != null && resp.Data.ScanRequestParam != null)
 		{
 			IsStarted = true;
+			_channel = ((!(bool)resp.Data.ScanRequestParam.IsSrcA) ? SMUChannelType.B : SMUChannelType.A);
 			m_source = ((!(bool)resp.Data.ScanRequestParam.IsSourceV) ? SourceType.Current_I : SourceType.Voltage_V);
 			m_begin_val = (float)resp.Data.ScanRequestParam.BeginValue;
 			m_end_val = (float)resp.Data.ScanRequestParam.EndValue;

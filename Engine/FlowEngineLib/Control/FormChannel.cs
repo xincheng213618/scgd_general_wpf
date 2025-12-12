@@ -146,7 +146,7 @@ public class FormChannel : Form
 			ChannelData item = new ChannelData(szTypeCode[i], int.Parse(boxes[i].Text), int.Parse(exp_boxes[i].Text));
 			list.Add(item);
 		}
-		ChannnelJson = JsonConvert.SerializeObject((object)list);
+		ChannnelJson = JsonConvert.SerializeObject(list);
 		base.DialogResult = DialogResult.OK;
 	}
 

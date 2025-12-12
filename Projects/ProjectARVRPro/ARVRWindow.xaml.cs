@@ -29,6 +29,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using static Azure.Core.HttpHeader;
 
 namespace ProjectARVRPro
 {
@@ -114,7 +115,7 @@ namespace ProjectARVRPro
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ProjectARVRProConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
+                    ProjectARVRProConfig.Instance.SN = SN;
                 });
             }
         }
@@ -348,7 +349,7 @@ namespace ProjectARVRPro
             }
 
             FlowName = FlowTemplate.Text;
-            CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff" + ProjectARVRProConfig.Instance.SN);
+            CurrentFlowResult.Code = ProjectARVRProConfig.Instance.SN + DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
 
             await Refresh();
 
@@ -563,6 +564,47 @@ namespace ProjectARVRPro
                         ViewResultManager.Save(result);
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
 
+                        if (ViewResultManager.Config.IsSaveLink)
+                        {
+                            string linkPath = ViewResultManager.Config.CsvSavePath;
+                            string sn = result.SN;
+
+                            if (ViewResultManager.Config.SaveByDate)
+                            {
+                                string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                                linkPath = Path.Combine(linkPath, dateFolder);
+                            }
+
+                            // 处理 SN 不为空的情况
+                            if (!string.IsNullOrWhiteSpace(sn))
+                            {
+                                // 移除 SN 中的非法文件名字符
+                                foreach (char c in Path.GetInvalidFileNameChars())
+                                {
+                                    sn = sn.Replace(c.ToString(), "");
+                                }
+
+                                // 再次检查移除特殊字符后是否为空，如果不为空则组合路径
+                                if (!string.IsNullOrWhiteSpace(sn))
+                                {
+                                    linkPath = Path.Combine(linkPath, sn);
+                                }
+                            }
+                            // 如果 sn 原本为空或清理后为空，linkPath 保持为 ViewResultManager.Config.CsvSavePath
+
+                            // 注意：原始代码中是 if (Directory.Exists) Create... 
+                            // 这里修正为如果目录不存在(!Exists)则创建，确保路径有效
+                            if (!Directory.Exists(linkPath))
+                                Directory.CreateDirectory(linkPath);
+
+                            string shortcutName = Path.GetFileNameWithoutExtension(result.FileName) + $"_{result.Model}";
+                            string shortcutPath = linkPath;
+
+                            if (shortcutName != null)
+                                ColorVision.Common.NativeMethods.ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, result.FileName, "");
+                        }
+                        IsSaveImageReuslt = ViewResultManager.Config.IsSaveImageReuslt;
+
                         if (IsTestTypeCompleted())
                         {
                             TestCompleted();
@@ -585,6 +627,8 @@ namespace ProjectARVRPro
             }
             ViewResultManager.Save(result);
         }
+
+        public bool IsSaveImageReuslt { get;set; }
 
         private bool IsTestTypeCompleted()
         {
@@ -653,8 +697,17 @@ namespace ProjectARVRPro
 
             if (ViewResultManager.Config.IsSaveCsv)
             {
+
+                string linkPath = ViewResultManager.Config.CsvSavePath;
+                if (ViewResultManager.Config.SaveByDate)
+                {
+                    string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                    linkPath = Path.Combine(linkPath, dateFolder);
+                }
+
+
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults_{timeStr}.csv");
+                string filePath = Path.Combine(linkPath, $"TestResults_{SNtextBox.Text}_{timeStr}_.csv");
                 ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
             }
 
@@ -743,6 +796,56 @@ namespace ProjectARVRPro
                                     log.Error("自定义 IProcess 执行异常", ex);
                                 }
                             }
+
+                            if (IsSaveImageReuslt)
+                            {
+                                log.Info("IsSaveImageReuslt");
+                                Task.Run(async () =>
+                                {
+                                    await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
+                                    string linkPath = ViewResultManager.Config.CsvSavePath;
+                                    string sn = result.SN;
+
+                                    if (ViewResultManager.Config.SaveByDate)
+                                    {
+                                        string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                                        linkPath = Path.Combine(linkPath, dateFolder);
+                                    }
+
+                                    // 处理 SN 不为空的情况
+                                    if (!string.IsNullOrWhiteSpace(sn))
+                                    {
+                                        // 移除 SN 中的非法文件名字符
+                                        foreach (char c in Path.GetInvalidFileNameChars())
+                                        {
+                                            sn = sn.Replace(c.ToString(), "");
+                                        }
+
+                                        // 再次检查移除特殊字符后是否为空，如果不为空则组合路径
+                                        if (!string.IsNullOrWhiteSpace(sn))
+                                        {
+                                            linkPath = Path.Combine(linkPath, sn);
+                                        }
+                                    }
+
+                                    // 如果 sn 原本为空或清理后为空，linkPath 保持为 ViewResultManager.Config.CsvSavePath
+
+                                    // 注意：原始代码中是 if (Directory.Exists) Create... 
+                                    // 这里修正为如果目录不存在(!Exists)则创建，确保路径有效
+                                    if (!Directory.Exists(linkPath))
+                                        Directory.CreateDirectory(linkPath);
+
+                                    string FileName = Path.GetFileNameWithoutExtension(result.FileName);
+
+                                    string FilePath = Path.Combine(linkPath, $"{FileName}_{result.Model}result.png");
+                                    log.Info(FilePath);
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        ImageView.Save(FilePath);
+                                    });
+                                });
+                            }
+
 
                         });
                     }

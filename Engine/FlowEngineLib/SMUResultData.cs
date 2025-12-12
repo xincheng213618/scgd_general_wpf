@@ -2,6 +2,8 @@ namespace FlowEngineLib;
 
 public class SMUResultData
 {
+	public SMUChannelType Channel { get; set; }
+
 	public double V { get; set; }
 
 	public double I { get; set; }
@@ -10,8 +12,9 @@ public class SMUResultData
 
 	public int MasterResultType { get; set; }
 
-	public SMUResultData(double v, double i, int masterId, int masterResultType)
+	public SMUResultData(SMUChannelType channel, double v, double i, int masterId, int masterResultType)
 	{
+		Channel = channel;
 		V = v;
 		I = i;
 		MasterId = masterId;

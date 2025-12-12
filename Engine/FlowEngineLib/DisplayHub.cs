@@ -19,7 +19,7 @@ public class DisplayHub : STNodeInHub
 			SetOptionText(sender, "--");
 			return;
 		}
-		string text = ((!(e.TargetOption.Data.GetType() == typeof(MQActionEvent))) ? JsonConvert.SerializeObject(e.TargetOption.Data, (Formatting)0) : ((MQActionEvent)e.TargetOption.Data).Message);
+		string text = ((!(e.TargetOption.Data.GetType() == typeof(MQActionEvent))) ? JsonConvert.SerializeObject(e.TargetOption.Data, Formatting.None) : ((MQActionEvent)e.TargetOption.Data).Message);
 		SetOptionText(sender, text ?? "");
 	}
 }

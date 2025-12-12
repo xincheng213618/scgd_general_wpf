@@ -104,9 +104,18 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(
 	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
 	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
 	mat = use_roi ? mat(mroi) : mat;
+	cv::Mat mat8;
+	if (mat.depth() != CV_8U) {
+		cv::Mat tmp;
+		cv::normalize(mat, tmp, 0, 255, cv::NORM_MINMAX); // tmp 通常是 float/与输入相关
+		tmp.convertTo(mat8, CV_8U);                       // 再转成 8U
+	}
+	else {
+		mat8 = mat;
+	}
 
 	// Determine if this is a 3-channel (RGB) or single-channel image
-	bool isRGB = (mat.channels() == 3 || mat.channels() == 4);
+	bool isRGB = (mat8.channels() == 3 || mat8.channels() == 4);
 	
 	if (isRGB) {
 		// For RGB images: calculate SFR for R, G, B, and L channels
@@ -125,12 +134,12 @@ COLORVISIONCORE_API int M_CalSFRMultiChannel(
 		// Split into channels
 
 		std::vector<cv::Mat> channels;
-		cv::split(mat, channels);
+		cv::split(mat8, channels);
 
 		// Helper function to convert BGR to L using custom weights: Y = 0.213*R + 0.715*G + 0.072*B
-		cv::Mat luminance(mat.size(), CV_64FC1);
-		for (int y = 0; y < mat.rows; ++y) {
-			const cv::Vec3b* bgr_row = mat.ptr<cv::Vec3b>(y);
+		cv::Mat luminance(mat8.size(), CV_64FC1);
+		for (int y = 0; y < mat8.rows; ++y) {
+			const cv::Vec3b* bgr_row = mat8.ptr<cv::Vec3b>(y);
 
 			uchar* r_row = channels[2].ptr<uchar>(y);
 			uchar* g_row = channels[1].ptr<uchar>(y);

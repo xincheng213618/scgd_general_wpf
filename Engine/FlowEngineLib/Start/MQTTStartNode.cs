@@ -80,7 +80,7 @@ public class MQTTStartNode : BaseStartNode
 			string password = "";
 			MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref userName, ref password);
 			_MQTTHelper.CreateMQTTClientAndStart(_Server, _Port, userName, password, onMsgSub);
-			logger.Info((object)"Begin Connect MQTT");
+			logger.Info("Begin Connect MQTT");
 		}
 	}
 
@@ -95,7 +95,7 @@ public class MQTTStartNode : BaseStartNode
 		{
 			_MQTTHelper.DisconnectAsync_Client();
 			_MQTTHelper = null;
-			logger.Info((object)"Begin Disconnect MQTT");
+			logger.Info("Begin Disconnect MQTT");
 		}
 	}
 
@@ -116,30 +116,30 @@ public class MQTTStartNode : BaseStartNode
 
 	private void onMsgSub(ResultData_MQTT resultData_MQTT)
 	{
-		string text = (string)resultData_MQTT.ResultObject2;
-		string text2 = (string)resultData_MQTT.ResultObject1;
+		string value = (string)resultData_MQTT.ResultObject2;
+		string text = (string)resultData_MQTT.ResultObject1;
 		if (resultData_MQTT.EventType == EventTypeEnum.MsgRecv)
 		{
 			CVMQTTRequest cVMQTTRequest = null;
-			if (!string.IsNullOrEmpty(text))
+			if (!string.IsNullOrEmpty(value))
 			{
-				cVMQTTRequest = JsonConvert.DeserializeObject<CVMQTTRequest>(text);
+				cVMQTTRequest = JsonConvert.DeserializeObject<CVMQTTRequest>(value);
 			}
-			if (string.IsNullOrEmpty(text2) || cVMQTTRequest == null)
+			if (string.IsNullOrEmpty(text) || cVMQTTRequest == null)
 			{
 				return;
 			}
-			if (topicServer.ContainsKey(text2))
+			if (topicServer.ContainsKey(text))
 			{
-				List<CVBaseServerNode> list = new List<CVBaseServerNode>(topicServer[text2]);
-				CVBaseDataFlowResp statusEvent = JsonConvert.DeserializeObject<CVBaseDataFlowResp>(text);
+				List<CVBaseServerNode> list = new List<CVBaseServerNode>(topicServer[text]);
+				CVBaseDataFlowResp statusEvent = JsonConvert.DeserializeObject<CVBaseDataFlowResp>(value);
 				using List<CVBaseServerNode>.Enumerator enumerator = list.GetEnumerator();
 				while (enumerator.MoveNext() && !enumerator.Current.DoServerStatusRecv(statusEvent))
 				{
 				}
 				return;
 			}
-			if (text2.Equals(GetStartTopic()))
+			if (text.Equals(GetStartTopic()))
 			{
 				CVStartCFC action = GetAction(cVMQTTRequest);
 				if (action != null)
@@ -154,13 +154,13 @@ public class MQTTStartNode : BaseStartNode
 			{
 				_MQTTHelper.SubscribeAsync_Client(GetStartTopic());
 				base.Ready = true;
-				logger.Info((object)"MQTT Connected");
+				logger.Info("MQTT Connected");
 			}
 		}
 		else if (resultData_MQTT.EventType == EventTypeEnum.ClientDisconnected)
 		{
 			base.Ready = false;
-			logger.Info((object)"MQTT DisConnected");
+			logger.Info("MQTT DisConnected");
 		}
 	}
 

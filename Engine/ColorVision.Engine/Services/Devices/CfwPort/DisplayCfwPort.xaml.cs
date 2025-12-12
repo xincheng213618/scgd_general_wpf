@@ -10,7 +10,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     /// <summary>
-    /// DisplaySMUControl.xaml 的交互逻辑
+    /// DisplayCfwPort.xaml 的交互逻辑
     /// </summary>
     public partial class DisplayCfwPort : UserControl,IDisPlayControl
     {

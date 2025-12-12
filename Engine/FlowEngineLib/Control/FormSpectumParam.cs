@@ -65,18 +65,18 @@ public class FormSpectumParam : Form, ILoopFormProperty
 
 	private void button_add_Click(object sender, EventArgs e)
 	{
-		SpectrumNodeProperty spectrumNodeProperty = new SpectrumNodeProperty();
-		spectrumNodeProperty.Cmd = (SPCommCmdType)Enum.Parse(typeof(SPCommCmdType), comboBox_cmd.Text);
+		SpectrumNodeProperty array = new SpectrumNodeProperty();
+		array.Cmd = (SPCommCmdType)Enum.Parse(typeof(SPCommCmdType), comboBox_cmd.Text);
 		if (comboBox_cmd.SelectedIndex == 0)
 		{
-			spectrumNodeProperty.Data = new SpectrumParamData();
-			spectrumNodeProperty.Data.IntegralTime = int.Parse(textBox_integral_time.Text);
-			spectrumNodeProperty.Data.NumberOfAverage = int.Parse(textBox_number_of_average.Text);
-			spectrumNodeProperty.Data.AutoIntegration = checkBox_auto_integration.Checked;
-			spectrumNodeProperty.Data.SelfAdaptionInitDark = checkBox_self_adaption.Checked;
-			spectrumNodeProperty.Data.AutoInitDark = checkBox_AutoInitDark.Checked;
+			array.Data = new SpectrumParamData();
+			array.Data.IntegralTime = int.Parse(textBox_integral_time.Text);
+			array.Data.NumberOfAverage = int.Parse(textBox_number_of_average.Text);
+			array.Data.AutoIntegration = checkBox_auto_integration.Checked;
+			array.Data.SelfAdaptionInitDark = checkBox_self_adaption.Checked;
+			array.Data.AutoInitDark = checkBox_AutoInitDark.Checked;
 		}
-		dialog.Add(spectrumNodeProperty);
+		dialog.Add(array);
 	}
 
 	private void button_save_Click(object sender, EventArgs e)
@@ -97,10 +97,10 @@ public class FormSpectumParam : Form, ILoopFormProperty
 			return;
 		}
 		comboBox_cmd.Text = dataGridView1.SelectedRows[0].Cells[1].Value.ToString();
-		string text = dataGridView1.SelectedRows[0].Cells[2].Value?.ToString();
-		if (!string.IsNullOrEmpty(text))
+		string value = dataGridView1.SelectedRows[0].Cells[2].Value?.ToString();
+		if (!string.IsNullOrEmpty(value))
 		{
-			SpectrumParamData spectrumParamData = JsonConvert.DeserializeObject<SpectrumParamData>(text);
+			SpectrumParamData spectrumParamData = JsonConvert.DeserializeObject<SpectrumParamData>(value);
 			if (spectrumParamData != null)
 			{
 				textBox_integral_time.Text = spectrumParamData.IntegralTime.ToString();
