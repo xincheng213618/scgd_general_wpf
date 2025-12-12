@@ -4,7 +4,6 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
-using MQTTMessageLib.SMU;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using SqlSugar;
@@ -100,31 +99,33 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         public MsgRecord Open(bool isNet, string devName)
         {
+            var Params = new Dictionary<string, object>();
+
             MsgSend msg = new()
             {
-                EventName = MQTTSMUEventEnum.Event_Open,
-                Params = new SMUOpenParam() { DevName = devName, IsNet = isNet, }
+                EventName = "Open",
+                Params = Params
             };
+            Params.Add("DevName",devName);
+            Params.Add("IsNet", isNet);
+            Params.Add("Channel", Config.Channel);
             return PublishAsyncClient(msg);
         }
 
-        public class SMUGetDataParam
-        {
-            public bool IsSourceV { set; get; }
-            public double MeasureValue { set; get; }
-
-            public SMUChannelType Channel { get; set; }
-
-            public double LimitValue { set; get; }
-        }
 
         public bool GetData(bool isSourceV, double measureVal, double lmtVal, SMUChannelType channel)
         {
+            var Params = new Dictionary<string, object>();
             MsgSend msg = new()
             {
-                EventName = MQTTSMUEventEnum.Event_GetData,
-                Params = new SMUGetDataParam() { IsSourceV = isSourceV, MeasureValue = measureVal, LimitValue = lmtVal,Channel =channel }
+                EventName = "GetData",
+                Params = Params
             };
+
+            Params.Add("IsSourceV", isSourceV);
+            Params.Add("MeasureValue", measureVal);
+            Params.Add("LimitValue", lmtVal);
+            Params.Add("Channel", channel);
             MsgRecord msgRecord = PublishAsyncClient(msg);
             return true;
         }
@@ -134,7 +135,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             MsgSend msg = new()
             {
-                EventName = MQTTSMUEventEnum.Event_Close,
+                EventName = "Close",
             };
             return PublishAsyncClient(msg);
         }
@@ -157,7 +158,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             Params.Add("DeviceParam", new SMUScanParam() { IsSourceV = isSourceV, BeginValue = startMeasureVal, EndValue = stopMeasureVal, LimitValue = lmtVal, Points = number, Channel = channel });
             MsgSend msg = new()
             {
-                EventName = MQTTSMUEventEnum.Event_Scan,
+                EventName = "Scan",
                 SerialNumber = sn,
                 Params = Params,
             };
@@ -166,10 +167,13 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         public bool CloseOutput()
         {
+            var Params = new Dictionary<string, object>();
             MsgSend msg = new()
             {
-                EventName = MQTTSMUEventEnum.Event_CloseOutput,
+                EventName = "CloseOutput",
+                Params = Params,
             };
+            Params.Add("Channel",Config.Channel);
             PublishAsyncClient(msg);
             return true;
         }
