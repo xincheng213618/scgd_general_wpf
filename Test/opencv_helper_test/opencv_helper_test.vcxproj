@@ -153,11 +153,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CVFileUtil.cpp" />
-    <ClCompile Include="opencv_helper_test.cpp" />
-    <ClCompile Include="test_find_luminous_area.cpp">
+    <ClCompile Include="opencv_helper_test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="test_find_luminous_area.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CVCIEFile.hpp" />
