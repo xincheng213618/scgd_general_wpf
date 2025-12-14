@@ -217,11 +217,11 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
     GaussianBlur(gray, gray, Size(5, 5), 0);
     Mat thresh;
     if (threshold < 0) {
-        // Use Otsu's method for automatic threshold detection (when threshold is -1 or negative)
+        // Use Otsu's method for automatic threshold detection (triggered by any negative threshold value)
         cv::threshold(gray, thresh, 0, 255, THRESH_BINARY | THRESH_OTSU);
     }
     else {
-        // Use fixed threshold
+        // Use fixed threshold (threshold >= 0)
         cv::threshold(gray, thresh, threshold, 255, THRESH_BINARY);
     }
 
@@ -300,11 +300,11 @@ int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold)
     // ��ֵ�ָ�
     Mat thresh;
     if (threshold < 0) {
-        // Use Otsu's method for automatic threshold detection (when threshold is -1 or negative)
+        // Use Otsu's method for automatic threshold detection (triggered by any negative threshold value)
         cv::threshold(gray, thresh, 0, 255, THRESH_BINARY | THRESH_OTSU);
     }
     else {
-        // Use fixed threshold
+        // Use fixed threshold (threshold >= 0)
         cv::threshold(gray, thresh, threshold, 255, THRESH_BINARY);
     }
 
