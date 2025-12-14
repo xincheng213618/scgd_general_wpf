@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "调试 M_FindLuminousArea 测试 (合成图像)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/x64/Debug/opencv_helper_test.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/x64/Debug",
+      "environment": [],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "调试 M_FindLuminousArea 测试 (真实图像)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/x64/Debug/opencv_helper_test.exe",
+      "args": ["C:/test/sample.tif"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/x64/Debug",
+      "environment": [],
+      "console": "integratedTerminal"
+    }
+  ]
+}
