@@ -80,10 +80,7 @@ extern "C" COLORVISIONCORE_API int M_ApplyHistogramEqualization(HImage img, HIma
 
 extern "C" COLORVISIONCORE_API int M_FindLightBeads(HImage img, RoiRect roi, const char* config, char** result);
 
-extern "C" COLORVISIONCORE_API int FreeResult(char* result) {
-    delete[] result;
-    return 0;
-}
+extern "C" COLORVISIONCORE_API int FreeResult(char* result);
 
 extern "C" COLORVISIONCORE_API int M_CalSFR(
     HImage img,
