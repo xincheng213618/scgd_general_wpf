@@ -216,7 +216,14 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
 
     GaussianBlur(gray, gray, Size(5, 5), 0);
     Mat thresh;
-    cv::threshold(gray, thresh, threshold, 255, THRESH_BINARY);
+    if (threshold < 0) {
+        // Use Otsu's method for automatic threshold detection
+        cv::threshold(gray, thresh, 0, 255, THRESH_BINARY | THRESH_OTSU);
+    }
+    else {
+        // Use fixed threshold
+        cv::threshold(gray, thresh, threshold, 255, THRESH_BINARY);
+    }
 
     Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
     dilate(thresh, thresh, kernel);
@@ -292,7 +299,14 @@ int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold)
 
     // ��ֵ�ָ�
     Mat thresh;
-    cv::threshold(gray, thresh, threshold, 255, THRESH_BINARY);
+    if (threshold < 0) {
+        // Use Otsu's method for automatic threshold detection
+        cv::threshold(gray, thresh, 0, 255, THRESH_BINARY | THRESH_OTSU);
+    }
+    else {
+        // Use fixed threshold
+        cv::threshold(gray, thresh, threshold, 255, THRESH_BINARY);
+    }
 
     // ��̬ѧ����������
     Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));

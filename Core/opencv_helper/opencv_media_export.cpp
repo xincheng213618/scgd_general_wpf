@@ -639,7 +639,10 @@ COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi, const char* 
 
 
 	json j = json::parse(config);
-	int threshold = j.at("Threshold").get<int>();
+	int threshold = -1;
+	if (j.contains("Threshold")) {
+		threshold = j.at("Threshold").get<int>();
+	}
 	bool useRotatedRect = false;
 	if (j.contains("UseRotatedRect")) {
 		useRotatedRect = j.at("UseRotatedRect").get<bool>();
