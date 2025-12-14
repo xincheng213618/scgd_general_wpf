@@ -10,18 +10,25 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Remove="CHANGELOG.md" />
-	  <None Remove="README.md" />
+		<None Remove="CHANGELOG.md" />
+		<None Remove="README.md" />
 	</ItemGroup>
 
-	<ItemGroup>  
+	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-		<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+		<Reference Include="FlowEngineLib" Condition="!Exists('..\..\FlowEngineLib\FlowEngineLib.csproj')">
+			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="ST.Library.UI" Condition="!Exists('..\..\ST.Library.UI\ST.Library.UI.csproj')">
+			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>
 		<Reference Include="CVCommCore">
-		  <HintPath>..\..\DLL\CVCommCore.dll</HintPath>
+			<HintPath>..\..\DLL\CVCommCore.dll</HintPath>
 		</Reference>
 	</ItemGroup>
 
@@ -31,39 +38,39 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Include="CHANGELOG.md">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </EmbeddedResource>
-	  <EmbeddedResource Include="README.md">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </EmbeddedResource>
+		<EmbeddedResource Include="CHANGELOG.md">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Include="README.md">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="EditRecipeWindow.xaml.cs">
-	    <SubType>Code</SubType>
-	  </Compile>
-	  <Compile Update="Properties\Resources.Designer.cs">
-	    <DesignTime>True</DesignTime>
-	    <AutoGen>True</AutoGen>
-	    <DependentUpon>Resources.resx</DependentUpon>
-	  </Compile>
-	  <Compile Update="Recipe\EditRecipeWindow.xaml.cs">
-	    <SubType>Code</SubType>
-	  </Compile>
+		<Compile Update="EditRecipeWindow.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Properties\Resources.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+		<Compile Update="Recipe\EditRecipeWindow.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Update="Properties\Resources.resx">
-	    <Generator>PublicResXFileCodeGenerator</Generator>
-	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-	  </EmbeddedResource>
+		<EmbeddedResource Update="Properties\Resources.resx">
+			<Generator>PublicResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="manifest.json">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update="manifest.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">

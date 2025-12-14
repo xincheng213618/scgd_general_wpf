@@ -25,6 +25,14 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
+		<Reference Include="FlowEngineLib" Condition="!Exists('..\..\FlowEngineLib\FlowEngineLib.csproj')">
+			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="ST.Library.UI" Condition="!Exists('..\..\ST.Library.UI\ST.Library.UI.csproj')">
+			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>
