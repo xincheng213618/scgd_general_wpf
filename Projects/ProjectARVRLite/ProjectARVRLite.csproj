@@ -15,7 +15,6 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-		<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
