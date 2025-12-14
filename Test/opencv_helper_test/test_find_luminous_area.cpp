@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <nlohmann/json.hpp>
 #include "../../include/opencv_media_export.h"
+#include <string>
 
 using json = nlohmann::json;
 
@@ -41,12 +42,12 @@ HImage createHImageFromMat(const cv::Mat& mat)
 }
 
 // 测试1：使用固定阈值
-void testFixedThreshold()
+void testFixedThreshold(cv::Mat testImg)
 {
     std::cout << "\n=== 测试1: 固定阈值 (Threshold=100) ===" << std::endl;
     
     // 创建测试图像
-    cv::Mat testImg = createTestImage(640, 480, 200, 150);
+//    cv::Mat testImg = createTestImage(640, 480, 200, 150);
     HImage himg = createHImageFromMat(testImg);
     
     // 设置ROI为空（使用整个图像）
@@ -83,12 +84,12 @@ void testFixedThreshold()
 }
 
 // 测试2：使用自动阈值（OTSU方法，Threshold=-1）
-void testAutoThresholdExplicit()
+void testAutoThresholdExplicit(cv::Mat testImg)
 {
     std::cout << "\n=== 测试2: 自动阈值 (Threshold=-1, OTSU) ===" << std::endl;
     
     // 创建测试图像
-    cv::Mat testImg = createTestImage(640, 480, 200, 150);
+//    cv::Mat testImg = createTestImage(640, 480, 200, 150);
     HImage himg = createHImageFromMat(testImg);
     
     // 设置ROI为空（使用整个图像）
@@ -234,15 +235,13 @@ void testWithROIAndAutoThreshold()
             resultJson.contains("Width") && resultJson.contains("Height")) {
             std::cout << "发光区域（相对于ROI）: X=" << resultJson["X"] 
                       << ", Y=" << resultJson["Y"]
-                      << ", Width=" << resultJson["Width"]
-                      << ", Height=" << resultJson["Height"] << std::endl;
-        }
-        
-        FreeResult(result);
-    } else {
-        std::cout << "失败! 错误码: " << ret << std::endl;
-    }
-}
+                                            << ", Width=" << resultJson["Width"]
+                                            << ", Height=" << resultJson["Height"] << std::endl;
+                              }
+                          } else {
+                              std::cout << "失败! 错误码: " << ret << std::endl;
+                          }
+                      }
 
 // 测试6：从真实图像文件测试
 void testWithRealImage(const std::string& imagePath)
@@ -277,7 +276,6 @@ void testWithRealImage(const std::string& imagePath)
     int ret1 = M_FindLuminousArea(himg, roi, configStr1.c_str(), &result1);
     if (ret1 > 0 && result1 != nullptr) {
         std::cout << "结果: " << result1 << std::endl;
-        FreeResult(result1);
     }
     
     // 测试自动阈值
@@ -290,7 +288,6 @@ void testWithRealImage(const std::string& imagePath)
     int ret2 = M_FindLuminousArea(himg, roi, configStr2.c_str(), &result2);
     if (ret2 > 0 && result2 != nullptr) {
         std::cout << "结果: " << result2 << std::endl;
-        FreeResult(result2);
     }
 }
 
@@ -299,10 +296,16 @@ int main(int argc, char* argv[])
     std::cout << "========================================" << std::endl;
     std::cout << "M_FindLuminousArea 自适应阈值测试程序" << std::endl;
     std::cout << "========================================" << std::endl;
-    
+    cv::Mat image = cv::imread("C:\\Users\\17917\\Desktop\\2025 - 12\\20251125T142736.7608573_WhiteSrc.tiff", cv::ImreadModes::IMREAD_UNCHANGED);
+
+    if (image.empty()) {
+        std::cout << "警告: 无法读取默认测试图像，将使用生成图像进行测试" << std::endl;
+        image = createTestImage(640, 480, 200, 150);
+    }
+
     // 运行所有测试
-    testFixedThreshold();
-    testAutoThresholdExplicit();
+    testFixedThreshold(image);
+    testAutoThresholdExplicit(image);
     testAutoThresholdOmitted();
     testRotatedRectWithAutoThreshold();
     testWithROIAndAutoThreshold();
@@ -321,3 +324,4 @@ int main(int argc, char* argv[])
     
     return 0;
 }
+

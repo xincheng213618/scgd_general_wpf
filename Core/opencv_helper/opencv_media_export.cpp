@@ -355,8 +355,13 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 		break;
 	}
 
-	return value;
-}
+		return value;
+	}
+
+	COLORVISIONCORE_API int FreeResult(char* result) {
+		delete[] result;
+		return 0;
+	}
 
 
 
