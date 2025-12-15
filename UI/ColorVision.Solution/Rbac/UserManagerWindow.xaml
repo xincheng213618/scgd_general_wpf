@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Rbac"
         mc:Ignorable="d"
-        Title="用户管理 - RBAC" Height="780" Width="1320" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
+        Title="用户管理 - RBAC" Height="1080" Width="1920" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Window.Resources>
         <!-- Modern Button Style -->
         <Style x:Key="ModernButton" TargetType="Button">

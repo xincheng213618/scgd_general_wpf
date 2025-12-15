@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        Title="注册新用户" Height="520" Width="500"
+        Title="注册新用户" Height="650" Width="500"
         Background="{DynamicResource GlobalBackground}" 
         WindowStartupLocation="CenterOwner" 
         ResizeMode="NoResize"

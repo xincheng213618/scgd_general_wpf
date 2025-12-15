@@ -130,14 +130,24 @@
                                  BorderThickness="0"
                                  Padding="4"/>
                     </Border>
-                    
+
                     <Button Grid.Row="2" 
-                            Content="&#xE72C; 刷新角色" 
-                            HorizontalAlignment="Stretch" 
-                            Margin="0,10,0,0" 
-                            Click="RefreshRoles_Click"
-                            Style="{StaticResource SecondaryButton}"
-                            FontFamily="Segoe MDL2 Assets, Microsoft YaHei UI"/>
+        HorizontalAlignment="Stretch" 
+        Margin="0,10,0,0" 
+        Click="RefreshRoles_Click"
+        Style="{StaticResource SecondaryButton}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <!-- 图标部分 -->
+                            <TextBlock Text="&#xE72C;" 
+                   FontFamily="Segoe MDL2 Assets" 
+                   Margin="0,0,8,0" 
+                   VerticalAlignment="Center"/>
+                            <!-- 文字部分 -->
+                            <TextBlock Text="刷新角色" 
+                   FontFamily="Microsoft YaHei UI" 
+                   VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </Border>
             
@@ -275,16 +285,17 @@
                     </Border>
                     
                     <!-- 保存按钮 -->
+                    
                     <Button x:Name="SaveButton" 
                             Grid.Row="3"
-                            Content="&#xE74E; 保存权限分配" 
+                            Content="保存权限分配" 
                             HorizontalAlignment="Right" 
                             Margin="0,12,0,0"
                             Width="140"
                             IsEnabled="False"
                             Click="SavePermissions_Click"
                             Style="{StaticResource ModernButton}"
-                            FontFamily="Segoe MDL2 Assets, Microsoft YaHei UI"
+                            FontFamily="Microsoft YaHei UI"
                             FontSize="14"/>
                 </Grid>
             </Border>
