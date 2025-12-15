@@ -1,6 +1,6 @@
 ﻿using SqlSugar;
 
-namespace ColorVision.Rbac
+namespace ColorVision.Rbac.Entity
 {
     [SugarTable("sys_user_role")]
     public class UserRoleEntity

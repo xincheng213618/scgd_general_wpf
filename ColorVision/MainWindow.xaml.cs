@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Solution;
-using ColorVision.Solution.Searches;
+using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
@@ -105,13 +105,8 @@ namespace ColorVision
 
             this.DataContext = Config;
 
-            ViewGridManager SolutionViewGridManager = new();
-            SolutionViewGridManager.MainView = SolutionGrid;
-            SolutionView solutionView = new();
-            SolutionViewGridManager.AddView(0, solutionView);
-            solutionView.View.ViewIndex = 0;
-
-            SolutionViewGridManager.SetViewNum(-1);
+            WorkspaceMainView solutionView = new WorkspaceMainView();
+            SolutionGrid.Children.Add(solutionView);
 
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;

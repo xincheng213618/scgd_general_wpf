@@ -8,6 +8,7 @@
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	  <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 	  <PackageReadmeFile>README.md</PackageReadmeFile>
+	  <Platforms>x64;ARM64;x86;AnyCPU</Platforms>
   </PropertyGroup>
 
 	<ItemGroup>

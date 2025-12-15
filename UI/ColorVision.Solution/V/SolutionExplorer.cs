@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8602,CS8604,CS4014
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.Properties;
-using ColorVision.Solution.Searches;
+using ColorVision.Solution.Workspace;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;

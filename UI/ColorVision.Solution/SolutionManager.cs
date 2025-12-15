@@ -1,7 +1,8 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.MVVM;
+using ColorVision.Solution.Editor;
 using ColorVision.Solution.RecentFile;
-using ColorVision.Solution.Searches;
+using ColorVision.Solution.Workspace;
 using ColorVision.Solution.V;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
@@ -78,12 +79,19 @@ namespace ColorVision.Solution
                         Directory.CreateDirectory(DefaultSolution);
                     var SolutionPath = CreateSolution(DefaultSolution);
                 }
-                SolutionViewExtensions.DealyLoad.Add(()=> SolutionExplorers[0].Open());
+                //WorkspaceManager.DealyLoad.Add(()=> SolutionExplorers[0].Open());
+                WorkspaceManager.DealyLoad.Add(() =>
+                {
+                    WebView2Editor webView2Editor = new WebView2Editor();
+                    //webView2Editor.Open(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "README.md"));
+                    webView2Editor.Open(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CHANGELOG.md"));
+                }
+                );
             });
 
             SettingCommand = SolutionSetting.Instance.EditCommand;
 
-            SolutionViewExtensions.ContentIdSelected += (s, e) => SolutionExplorers[0].SetSelected(e);
+            WorkspaceManager.ContentIdSelected += (s, e) => SolutionExplorers[0].SetSelected(e);
         }
 
         public SolutionEnvironments SolutionEnvironments { get; set; } = new SolutionEnvironments();

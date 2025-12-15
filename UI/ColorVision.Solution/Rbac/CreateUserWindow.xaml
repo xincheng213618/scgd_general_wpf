@@ -1,0 +1,154 @@
+﻿<Window x:Class="ColorVision.Rbac.CreateUserWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="创建新用户 - RBAC" Height="520" Width="520" 
+        WindowStartupLocation="CenterOwner" 
+        Background="Transparent" 
+        AllowsTransparency="True" 
+        WindowStyle="None"
+        Initialized="Window_Initialized">
+    <Window.Resources>
+        <!-- Modern Button Style -->
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="4" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#106EBE"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#005A9E"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#CCCCCC"/>
+                                <Setter Property="Foreground" Value="#666666"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Background" Value="#757575"/>
+        </Style>
+    </Window.Resources>
+
+    <Border CornerRadius="8" Background="White">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" Direction="270" ShadowDepth="3" Opacity="0.3" BlurRadius="15"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border Grid.Row="0" Background="#0078D4" CornerRadius="8,8,0,0" Padding="20,15">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="28" 
+                               Foreground="White" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <StackPanel>
+                        <TextBlock Text="创建新用户" FontSize="20" FontWeight="SemiBold" Foreground="White"/>
+                        <TextBlock Text="填写用户信息并分配角色" FontSize="12" Foreground="#E0E0E0" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Form Content -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="30,25">
+                <StackPanel>
+                    <!-- Username -->
+                    <StackPanel Margin="0,0,0,20">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="16" 
+                                       Foreground="#0078D4" Margin="0,0,8,0"/>
+                            <TextBlock Text="用户名" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Text="*" Foreground="Red" Margin="4,0,0,0"/>
+                        </StackPanel>
+                        <TextBox x:Name="TxtUsername" Padding="12,10" FontSize="14"
+                                 BorderBrush="#E0E0E0" BorderThickness="1"/>
+                        <TextBlock Text="用户登录名，必须唯一" FontSize="11" Foreground="#666666" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <!-- Password -->
+                    <StackPanel Margin="0,0,0,20">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="16" 
+                                       Foreground="#0078D4" Margin="0,0,8,0"/>
+                            <TextBlock Text="密码" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Text="*" Foreground="Red" Margin="4,0,0,0"/>
+                        </StackPanel>
+                        <PasswordBox x:Name="TxtPassword" Padding="12,10" FontSize="14"
+                                     BorderBrush="#E0E0E0" BorderThickness="1"/>
+                        <TextBlock Text="至少6个字符" FontSize="11" Foreground="#666666" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <!-- Role -->
+                    <StackPanel Margin="0,0,0,20">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="16" 
+                                       Foreground="#0078D4" Margin="0,0,8,0"/>
+                            <TextBlock Text="角色" FontSize="14" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <ComboBox x:Name="CmbRole" Padding="12,10" FontSize="14"
+                                  BorderBrush="#E0E0E0" BorderThickness="1"/>
+                        <TextBlock Text="选择用户的初始角色" FontSize="11" Foreground="#666666" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <!-- Remark -->
+                    <StackPanel Margin="0,0,0,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="&#xE70B;" FontFamily="Segoe MDL2 Assets" FontSize="16" 
+                                       Foreground="#0078D4" Margin="0,0,8,0"/>
+                            <TextBlock Text="备注" FontSize="14" FontWeight="SemiBold"/>
+                        </StackPanel>
+                        <TextBox x:Name="TxtRemark" Padding="12,10" FontSize="14" Height="80"
+                                 TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                                 BorderBrush="#E0E0E0" BorderThickness="1"/>
+                        <TextBlock Text="用户的描述信息（可选）" FontSize="11" Foreground="#666666" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <!-- Status Message -->
+                    <Border x:Name="BdrStatus" Background="#FFF4E5" BorderBrush="#FFA726" BorderThickness="1"
+                            CornerRadius="4" Padding="12,8" Margin="0,20,0,0" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="16" 
+                                       Foreground="#F57C00" Margin="0,0,8,0"/>
+                            <TextBlock x:Name="TxtStatus" FontSize="12" Foreground="#F57C00" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Footer Buttons -->
+            <Border Grid.Row="2" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Padding="30,20" Background="#F8F8F8">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="BtnCancel" Content="取消" Width="100" Margin="0,0,10,0"
+                            Style="{StaticResource SecondaryButton}" Click="BtnCancel_Click"/>
+                    <Button x:Name="BtnCreate" Content="创建用户" Width="120"
+                            Style="{StaticResource PrimaryButton}" Click="BtnCreate_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
