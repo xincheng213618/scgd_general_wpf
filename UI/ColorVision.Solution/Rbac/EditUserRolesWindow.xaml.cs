@@ -19,8 +19,8 @@ namespace ColorVision.Rbac
 
         public EditUserRolesWindow(UserViewModel user)
         {
-            InitializeComponent();
             _user = user;
+            InitializeComponent();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -48,7 +48,7 @@ namespace ColorVision.Rbac
                     BorderBrush = new SolidColorBrush(Color.FromRgb(224, 224, 224)),
                     BorderThickness = new Thickness(1),
                     CornerRadius = new CornerRadius(4),
-                    Padding = new Thickness(12, 10),
+                    Padding = new Thickness(12, 10,12,10),
                     Margin = new Thickness(0, 0, 0, 10)
                 };
 
@@ -93,7 +93,7 @@ namespace ColorVision.Rbac
                     {
                         Background = new SolidColorBrush(Color.FromRgb(76, 175, 80)),
                         CornerRadius = new CornerRadius(3),
-                        Padding = new Thickness(6, 2),
+                        Padding = new Thickness(6, 2,6,2),
                         VerticalAlignment = VerticalAlignment.Top
                     };
                     var badgeText = new TextBlock
