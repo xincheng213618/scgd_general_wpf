@@ -54,6 +54,7 @@
                 </Viewbox>
             </Grid>
             
+            
             <!-- Column count selector in the middle -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,5,0">
                 <TextBlock Text="列数:" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="{DynamicResource PrimaryTextBrush}"/>
