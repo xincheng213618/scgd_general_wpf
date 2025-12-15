@@ -355,8 +355,13 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 		break;
 	}
 
-	return value;
-}
+		return value;
+	}
+
+	COLORVISIONCORE_API int FreeResult(char* result) {
+		delete[] result;
+		return 0;
+	}
 
 
 
@@ -637,9 +642,11 @@ COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi, const char* 
 	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
 	mat = use_roi ? mat(mroi) : mat;
 
-
 	json j = json::parse(config);
-	int threshold = j.at("Threshold").get<int>();
+	int threshold = -1;
+	if (j.contains("Threshold")) {
+		threshold = j.at("Threshold").get<int>();
+	}
 	bool useRotatedRect = false;
 	if (j.contains("UseRotatedRect")) {
 		useRotatedRect = j.at("UseRotatedRect").get<bool>();

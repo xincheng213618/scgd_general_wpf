@@ -110,7 +110,7 @@ namespace ColorVision.FileIO
             {
                 if (disposing)
                 {
-                    // Clear large Data arrays to help GC
+                    // Clear large Data arrays to help GCco
                     Data = null;
                     Exp = null;
                 }
