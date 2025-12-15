@@ -2,8 +2,8 @@
 
 ## 📊 总体进度
 
-**当前阶段**: Phase 2 - 紧急修复 + 持续优化 (Day 6-10)  
-**完成度**: 70% (第二周 40% 完成)
+**当前阶段**: Phase 2 - 性能优化和后台服务 (Day 11-13)  
+**完成度**: 75% (第二周 45% 完成)
 
 ---
 
@@ -118,15 +118,27 @@
 
 ## 🚧 进行中 (In Progress)
 
-### 当前任务：集成细粒度权限检查
-- [ ] 在UserManagerWindow中使用PermissionChecker.HasPermissionAsync
-- [ ] 替换UserManagerWindow中的PermissionMode检查
-- [ ] 在RbacManagerWindow中集成权限检查
-- [ ] 测试权限缓存性能
+### 当前任务：性能优化和后台服务 ✅ DONE
+- [x] 优化PermissionChecker缓存策略
+  - [x] 实现LRU驱逐策略（最大1000项）
+  - [x] 添加缓存统计（命中率、命中数、未命中数）
+  - [x] 自动清理过期缓存项
+- [x] 实现会话后台清理服务
+  - [x] SessionCleanupService定时清理（每小时）
+  - [x] 集成到RbacManager
+  - [x] 支持手动触发清理
+
+**成果**: 权限缓存增加LRU策略防止内存泄漏，会话自动清理，提升性能和稳定性
 
 ---
 
 ## 📋 待办事项 (To Do)
+
+### 待办：集成细粒度权限检查
+- [ ] 在UserManagerWindow中使用PermissionChecker.HasPermissionAsync
+- [ ] 替换UserManagerWindow中的PermissionMode检查
+- [ ] 在RbacManagerWindow中集成权限检查
+- [ ] 测试权限缓存性能
 
 ### 第三周：完善和测试 (Day 11-15)
 - [ ] Day 11-12: 权限检查实践

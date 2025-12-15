@@ -40,6 +40,9 @@ namespace ColorVision.Rbac
         public ISessionService SessionService { get; set; }
         public IPermissionChecker PermissionChecker { get; set; }
 
+        // 后台服务
+        private SessionCleanupService? _sessionCleanupService;
+
         public EditUserDetailAction EditUserDetailAction { get; set; }
         public RbacManager()
         {  
@@ -71,6 +74,9 @@ namespace ColorVision.Rbac
             TenantService = new TenantService(db, AuditLogService);
             SessionService = new SessionService(db);
             PermissionChecker = new PermissionChecker(db);
+            
+            // 启动会话清理后台服务
+            _sessionCleanupService = new SessionCleanupService(SessionService, TimeSpan.FromHours(1));
             
             EditUserDetailAction = new EditUserDetailAction(UserService);
 
@@ -126,6 +132,25 @@ namespace ColorVision.Rbac
             }
             
             new PermissionManagerWindow() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
+        }
+
+        /// <summary>
+        /// 获取权限缓存统计信息
+        /// </summary>
+        public CacheStatistics GetPermissionCacheStatistics()
+        {
+            return ((PermissionChecker)PermissionChecker).GetCacheStatistics();
+        }
+
+        /// <summary>
+        /// 立即清理过期会话
+        /// </summary>
+        public async Task CleanupExpiredSessionsNowAsync()
+        {
+            if (_sessionCleanupService != null)
+            {
+                await _sessionCleanupService.CleanupNowAsync();
+            }
         }
 
         public List<UserEntity> GetUsers()
@@ -280,6 +305,7 @@ namespace ColorVision.Rbac
 
         public void Dispose()
         {
+            _sessionCleanupService?.Dispose();
             db.Dispose();
             GC.SuppressFinalize(this);
         }
