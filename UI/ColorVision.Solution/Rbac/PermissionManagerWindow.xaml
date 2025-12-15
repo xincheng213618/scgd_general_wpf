@@ -1,0 +1,326 @@
+<Window x:Class="ColorVision.Rbac.PermissionManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Rbac"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
+        Title="权限管理" Height="650" Width="950" 
+        Background="{DynamicResource GlobalBackground}"
+        WindowStartupLocation="CenterOwner"
+        Initialized="Window_Initialized">
+    <Window.Resources>
+        <!-- 现代化按钮样式 -->
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="4"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"
+                                            Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#106EBE"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#005A9E"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#CCCCCC"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background" Value="#F3F3F3"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E8E8E8"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#D0D0D0"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- 标题区域 -->
+        <Border Grid.Row="0" 
+                Background="#0078D4" 
+                CornerRadius="6" 
+                Padding="15,12"
+                Margin="0,0,0,15">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE72E;" 
+                           FontFamily="Segoe MDL2 Assets" 
+                           FontSize="24" 
+                           Foreground="White"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0"/>
+                <TextBlock Text="角色权限管理" 
+                           FontSize="20" 
+                           FontWeight="Bold" 
+                           Foreground="White"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="分配和管理角色的系统权限" 
+                           FontSize="12" 
+                           Foreground="#E0FFFFFF"
+                           VerticalAlignment="Center"
+                           Margin="15,0,0,0"/>
+            </StackPanel>
+        </Border>
+        
+        <!-- 主内容区 -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="15"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- 左侧：角色列表 -->
+            <Border Grid.Column="0" 
+                    Background="White" 
+                    CornerRadius="6" 
+                    Padding="12"
+                    Effect="{DynamicResource EffectShadow1}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" 
+                               Text="角色列表" 
+                               FontSize="15" 
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,10"/>
+                    
+                    <Border Grid.Row="1" 
+                            BorderBrush="#E0E0E0" 
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <ListBox x:Name="RolesListBox" 
+                                 SelectionChanged="RolesListBox_SelectionChanged"
+                                 DisplayMemberPath="Name"
+                                 BorderThickness="0"
+                                 Padding="4"/>
+                    </Border>
+
+                    <Button Grid.Row="2" 
+        HorizontalAlignment="Stretch" 
+        Margin="0,10,0,0" 
+        Click="RefreshRoles_Click"
+        Style="{StaticResource SecondaryButton}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <!-- 图标部分 -->
+                            <TextBlock Text="&#xE72C;" 
+                   FontFamily="Segoe MDL2 Assets" 
+                   Margin="0,0,8,0" 
+                   VerticalAlignment="Center"/>
+                            <!-- 文字部分 -->
+                            <TextBlock Text="刷新角色" 
+                   FontFamily="Microsoft YaHei UI" 
+                   VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+            
+            <!-- 右侧：权限树 -->
+            <Border Grid.Column="2" 
+                    Background="White" 
+                    CornerRadius="6" 
+                    Padding="12"
+                    Effect="{DynamicResource EffectShadow1}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- 标题 -->
+                    <TextBlock Grid.Row="0" 
+                               Text="可用权限" 
+                               FontSize="15" 
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,10"/>
+                    
+                    <!-- 操作栏 -->
+                    <Border Grid.Row="1" 
+                            Background="#F8F9FA" 
+                            BorderBrush="#E0E0E0"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="10"
+                            Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                <Button Content="✓ 全选" 
+                                        Width="70" 
+                                        Margin="0,0,8,0" 
+                                        Click="SelectAll_Click"
+                                        Style="{StaticResource SecondaryButton}"/>
+                                <Button Content="✗ 全不选" 
+                                        Width="80" 
+                                        Click="DeselectAll_Click"
+                                        Style="{StaticResource SecondaryButton}"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="1" 
+                                        Orientation="Horizontal" 
+                                        HorizontalAlignment="Right">
+                                <TextBlock Text="当前角色：" 
+                                           VerticalAlignment="Center"
+                                           FontSize="13"
+                                           Foreground="#666666"/>
+                                <TextBlock x:Name="CurrentRoleText" 
+                                           Text="未选择" 
+                                           FontWeight="Bold" 
+                                           VerticalAlignment="Center" 
+                                           Margin="5,0,0,0"
+                                           FontSize="13"
+                                           Foreground="#0078D4"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    
+                    <!-- 权限树形视图 -->
+                    <Border Grid.Row="2" 
+                            BorderBrush="#E0E0E0" 
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TreeView x:Name="PermissionsTreeView" 
+                                      BorderThickness="0"
+                                      Padding="8">
+                                <TreeView.Resources>
+                                    <!-- 组级别样式 -->
+                                    <HierarchicalDataTemplate DataType="{x:Type local:PermissionGroup}" ItemsSource="{Binding Permissions}">
+                                        <Border Background="#F0F7FF" 
+                                                CornerRadius="4" 
+                                                Padding="8,6"
+                                                Margin="0,2">
+                                            <StackPanel Orientation="Horizontal">
+                                                <CheckBox x:Name="GroupCheckBox" 
+                                                          IsChecked="{Binding IsAllSelected}" 
+                                                          Content="{Binding GroupName}"
+                                                          FontWeight="Bold"
+                                                          FontSize="14"
+                                                          Foreground="#0078D4"
+                                                          Checked="GroupCheckBox_Checked"
+                                                          Unchecked="GroupCheckBox_Unchecked"/>
+                                                <Border Background="#0078D4"
+                                                        CornerRadius="10"
+                                                        Padding="6,2"
+                                                        Margin="8,0,0,0">
+                                                    <TextBlock Text="{Binding Permissions.Count}" 
+                                                               Foreground="White" 
+                                                               FontSize="11"
+                                                               FontWeight="Medium"/>
+                                                </Border>
+                                            </StackPanel>
+                                        </Border>
+                                    </HierarchicalDataTemplate>
+                                    
+                                    <!-- 权限级别样式 -->
+                                    <DataTemplate DataType="{x:Type local:PermissionItem}">
+                                        <Border Background="White"
+                                                CornerRadius="4"
+                                                Padding="8,6"
+                                                Margin="20,2,0,2">
+                                            <CheckBox IsChecked="{Binding IsSelected}">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Name}" 
+                                                               FontWeight="Medium"
+                                                               FontSize="13"/>
+                                                    <TextBlock Text="{Binding Code}" 
+                                                               FontSize="11" 
+                                                               Foreground="#666666"
+                                                               Margin="0,2,0,0"/>
+                                                    <TextBlock Text="{Binding Remark}" 
+                                                               FontSize="11" 
+                                                               Foreground="#999999"
+                                                               TextWrapping="Wrap"
+                                                               Margin="0,2,0,0"
+                                                               Visibility="{Binding HasRemarkVisibility}"/>
+                                                </StackPanel>
+                                            </CheckBox>
+                                        </Border>
+                                    </DataTemplate>
+                                </TreeView.Resources>
+                            </TreeView>
+                        </ScrollViewer>
+                    </Border>
+                    
+                    <!-- 保存按钮 -->
+                    
+                    <Button x:Name="SaveButton" 
+                            Grid.Row="3"
+                            Content="保存权限分配" 
+                            HorizontalAlignment="Right" 
+                            Margin="0,12,0,0"
+                            Width="140"
+                            IsEnabled="False"
+                            Click="SavePermissions_Click"
+                            Style="{StaticResource ModernButton}"
+                            FontFamily="Microsoft YaHei UI"
+                            FontSize="14"/>
+                </Grid>
+            </Border>
+        </Grid>
+        
+        <!-- 底部状态栏 -->
+        <Border Grid.Row="2" 
+                Background="#F8F9FA" 
+                BorderBrush="#E0E0E0"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="12,8"
+                Margin="0,15,0,0">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE9D9;" 
+                           FontFamily="Segoe MDL2 Assets" 
+                           FontSize="14" 
+                           Foreground="#0078D4"
+                           VerticalAlignment="Center"
+                           Margin="0,0,6,0"/>
+                <TextBlock x:Name="StatusText" 
+                           Text="就绪" 
+                           FontSize="12"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

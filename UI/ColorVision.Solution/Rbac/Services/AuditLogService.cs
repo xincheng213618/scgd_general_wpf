@@ -1,8 +1,9 @@
+using ColorVision.Rbac.Entity;
 using SqlSugar;
 
 namespace ColorVision.Rbac.Services
 {
-    public class AuditLogService
+    public class AuditLogService : IAuditLogService
     {
         private readonly ISqlSugarClient _db;
         public AuditLogService(ISqlSugarClient db) { _db = db; }

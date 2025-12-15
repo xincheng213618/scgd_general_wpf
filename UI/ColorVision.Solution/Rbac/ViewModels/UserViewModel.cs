@@ -1,3 +1,5 @@
+using ColorVision.Rbac.Entity;
+
 namespace ColorVision.Rbac.ViewModels
 {
     public class UserViewModel

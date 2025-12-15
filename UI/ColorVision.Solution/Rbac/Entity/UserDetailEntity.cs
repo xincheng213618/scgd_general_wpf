@@ -2,7 +2,7 @@
 using ColorVision.UI.Authorizations;
 using SqlSugar;
 
-namespace ColorVision.Rbac
+namespace ColorVision.Rbac.Entity
 {
 
 
