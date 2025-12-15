@@ -28,9 +28,9 @@ namespace ColorVision
     }
 
     /// <summary>
-    /// Tree node representing assembly, namespace, or config item
+    /// Assembly group containing configs
     /// </summary>
-    public class ConfigTreeNode : ViewModelBase
+    public class AssemblyGroup : ViewModelBase
     {
         public string DisplayName
         {
@@ -39,42 +39,25 @@ namespace ColorVision
         }
         private string _displayName;
 
-        public ConfigNodeType NodeType
-        {
-            get => _nodeType;
-            set { _nodeType = value; OnPropertyChanged(); }
-        }
-        private ConfigNodeType _nodeType;
-
-        public Type ConfigType
-        {
-            get => _configType;
-            set { _configType = value; OnPropertyChanged(); }
-        }
-        private Type _configType;
-
-        public IConfig ConfigInstance
-        {
-            get => _configInstance;
-            set { _configInstance = value; OnPropertyChanged(); }
-        }
-        private IConfig _configInstance;
-
-        public ObservableCollection<ConfigTreeNode> Children { get; set; } = new ObservableCollection<ConfigTreeNode>();
-
-        public bool IsExpanded
-        {
-            get => _isExpanded;
-            set { _isExpanded = value; OnPropertyChanged(); }
-        }
-        private bool _isExpanded = true;
+        public Assembly Assembly { get; set; }
+        public List<ConfigItem> Configs { get; set; } = new List<ConfigItem>();
     }
 
-    public enum ConfigNodeType
+    /// <summary>
+    /// Individual config item
+    /// </summary>
+    public class ConfigItem : ViewModelBase
     {
-        Assembly,
-        Namespace,
-        Config
+        public string DisplayName
+        {
+            get => _displayName;
+            set { _displayName = value; OnPropertyChanged(); }
+        }
+        private string _displayName;
+
+        public Type ConfigType { get; set; }
+        public IConfig ConfigInstance { get; set; }
+        public string AssemblyName { get; set; }
     }
 
     /// <summary>
@@ -87,89 +70,200 @@ namespace ColorVision
             InitializeComponent();
         }
 
-        private ObservableCollection<ConfigTreeNode> _rootNodes = new ObservableCollection<ConfigTreeNode>();
-        private List<ConfigTreeNode> _allConfigNodes = new List<ConfigTreeNode>();
+        private ObservableCollection<AssemblyGroup> _assemblyGroups = new ObservableCollection<AssemblyGroup>();
+        private List<ConfigItem> _allConfigs = new List<ConfigItem>();
+        private Dictionary<string, FrameworkElement> _assemblySectionElements = new Dictionary<string, FrameworkElement>();
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            BuildConfigTree();
-            ConfigTreeView.ItemsSource = _rootNodes;
+            BuildConfigData();
+            PopulateAssemblyList();
+            RebuildConfigGrid();
 
             // 显示汇总信息
-            int totalConfigs = _allConfigNodes.Count;
-            int totalAssemblies = _rootNodes.Count;
+            int totalConfigs = _allConfigs.Count;
+            int totalAssemblies = _assemblyGroups.Count;
             SummaryText.Text = $"共计 {totalAssemblies} 个程序集，{totalConfigs} 个配置类型";
         }
 
         /// <summary>
-        /// Build hierarchical tree structure from configs
+        /// Build config data from ConfigHandler
         /// </summary>
-        private void BuildConfigTree()
+        private void BuildConfigData()
         {
             var configs = ConfigHandler.GetInstance().Configs.ToList();
             var assemblyGroups = configs.GroupBy(kvp => kvp.Key.Assembly);
 
             foreach (var assemblyGroup in assemblyGroups.OrderBy(g => g.Key.GetName().Name))
             {
-                var assemblyNode = new ConfigTreeNode
+                var group = new AssemblyGroup
                 {
                     DisplayName = assemblyGroup.Key.GetName().Name,
-                    NodeType = ConfigNodeType.Assembly,
-                    IsExpanded = true
+                    Assembly = assemblyGroup.Key
                 };
 
-                // Group by namespace within assembly
-                var namespaceGroups = assemblyGroup.GroupBy(kvp => kvp.Key.Namespace ?? "Global");
-
-                foreach (var nsGroup in namespaceGroups.OrderBy(g => g.Key))
+                foreach (var config in assemblyGroup.OrderBy(c => GetDisplayName(c.Key)))
                 {
-                    // Build hierarchical namespace structure
-                    var namespaceParts = nsGroup.Key.Split('.');
-                    ConfigTreeNode currentParent = assemblyNode;
-
-                    // Create intermediate namespace nodes
-                    string currentNs = "";
-                    foreach (var part in namespaceParts)
+                    var configItem = new ConfigItem
                     {
-                        currentNs = string.IsNullOrEmpty(currentNs) ? part : $"{currentNs}.{part}";
-                        
-                        // Check if namespace node already exists
-                        var existingNsNode = currentParent.Children.FirstOrDefault(n => 
-                            n.NodeType == ConfigNodeType.Namespace && n.DisplayName == part);
-
-                        if (existingNsNode == null)
-                        {
-                            var nsNode = new ConfigTreeNode
-                            {
-                                DisplayName = part,
-                                NodeType = ConfigNodeType.Namespace,
-                                IsExpanded = false
-                            };
-                            currentParent.Children.Add(nsNode);
-                            currentParent = nsNode;
-                        }
-                        else
-                        {
-                            currentParent = existingNsNode;
-                        }
-                    }
-
-                    // Add config items to the deepest namespace level
-                    foreach (var config in nsGroup.OrderBy(c => GetDisplayName(c.Key)))
-                    {
-                        var configNode = new ConfigTreeNode
-                        {
-                            DisplayName = GetDisplayName(config.Key),
-                            NodeType = ConfigNodeType.Config,
-                            ConfigType = config.Key,
-                            ConfigInstance = config.Value
-                        };
-                        currentParent.Children.Add(configNode);
-                        _allConfigNodes.Add(configNode);
-                    }
+                        DisplayName = GetDisplayName(config.Key),
+                        ConfigType = config.Key,
+                        ConfigInstance = config.Value,
+                        AssemblyName = group.DisplayName
+                    };
+                    group.Configs.Add(configItem);
+                    _allConfigs.Add(configItem);
                 }
 
-                _rootNodes.Add(assemblyNode);
+                _assemblyGroups.Add(group);
+            }
+        }
+
+        /// <summary>
+        /// Populate the assembly list on the left
+        /// </summary>
+        private void PopulateAssemblyList()
+        {
+            AssemblyListView.ItemsSource = _assemblyGroups;
+        }
+
+        /// <summary>
+        /// Rebuild the config grid in the middle panel
+        /// </summary>
+        private void RebuildConfigGrid(string searchText = null)
+        {
+            ConfigContainer.Children.Clear();
+            _assemblySectionElements.Clear();
+
+            var groupsToShow = _assemblyGroups.AsEnumerable();
+            
+            // Filter by search if provided
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                var lowerSearch = searchText.ToLower();
+                groupsToShow = _assemblyGroups
+                    .Select(g => new AssemblyGroup
+                    {
+                        DisplayName = g.DisplayName,
+                        Assembly = g.Assembly,
+                        Configs = g.Configs.Where(c => c.DisplayName.ToLower().Contains(lowerSearch) || 
+                                                       c.AssemblyName.ToLower().Contains(lowerSearch))
+                                           .ToList()
+                    })
+                    .Where(g => g.Configs.Any());
+            }
+
+            foreach (var group in groupsToShow)
+            {
+                if (group.Configs.Count == 0) continue;
+
+                // Assembly header
+                var headerBorder = new Border
+                {
+                    Background = (Brush)Application.Current.FindResource("SecondaryRegionBrush"),
+                    CornerRadius = new CornerRadius(5),
+                    Padding = new Thickness(10, 8, 10, 8),
+                    Margin = new Thickness(0, ConfigContainer.Children.Count > 0 ? 20 : 0, 0, 10)
+                };
+
+                var headerText = new TextBlock
+                {
+                    Text = group.DisplayName,
+                    FontSize = 15,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = (Brush)Application.Current.FindResource("PrimaryTextBrush")
+                };
+                headerBorder.Child = headerText;
+                ConfigContainer.Children.Add(headerBorder);
+
+                // Store reference for scrolling
+                _assemblySectionElements[group.DisplayName] = headerBorder;
+
+                // Config grid (3 columns)
+                var uniformGrid = new UniformGrid
+                {
+                    Columns = 3,
+                    Margin = new Thickness(0, 0, 0, 0)
+                };
+
+                foreach (var config in group.Configs)
+                {
+                    var configButton = CreateConfigButton(config);
+                    uniformGrid.Children.Add(configButton);
+                }
+
+                ConfigContainer.Children.Add(uniformGrid);
+            }
+        }
+
+        /// <summary>
+        /// Create a button for a config item
+        /// </summary>
+        private Button CreateConfigButton(ConfigItem config)
+        {
+            var button = new Button
+            {
+                Margin = new Thickness(5),
+                Padding = new Thickness(10, 8),
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Background = (Brush)Application.Current.FindResource("GlobalBackground"),
+                BorderBrush = (Brush)Application.Current.FindResource("BorderBrush"),
+                BorderThickness = new Thickness(1),
+                Tag = config
+            };
+
+            var stackPanel = new StackPanel();
+            
+            var nameText = new TextBlock
+            {
+                Text = config.DisplayName,
+                FontSize = 12,
+                FontWeight = FontWeights.Medium,
+                Foreground = (Brush)Application.Current.FindResource("PrimaryTextBrush"),
+                TextWrapping = TextWrapping.Wrap
+            };
+            stackPanel.Children.Add(nameText);
+
+            var assemblyText = new TextBlock
+            {
+                Text = config.AssemblyName,
+                FontSize = 10,
+                Foreground = (Brush)Application.Current.FindResource("SecondaryTextBrush"),
+                Margin = new Thickness(0, 3, 0, 0),
+                Opacity = 0.7
+            };
+            stackPanel.Children.Add(assemblyText);
+
+            button.Content = stackPanel;
+            button.Click += ConfigButton_Click;
+
+            return button;
+        }
+
+        /// <summary>
+        /// Handle config button click
+        /// </summary>
+        private void ConfigButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is ConfigItem config)
+            {
+                DisplayConfigProperty(config);
+            }
+        }
+
+        /// <summary>
+        /// Handle assembly list selection change
+        /// </summary>
+        private void AssemblyListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (AssemblyListView.SelectedItem is AssemblyGroup group)
+            {
+                // Scroll to the assembly section in the middle panel
+                if (_assemblySectionElements.TryGetValue(group.DisplayName, out var element))
+                {
+                    element.BringIntoView();
+                }
             }
         }
 
@@ -190,29 +284,14 @@ namespace ColorVision
         }
 
         /// <summary>
-        /// Handle tree view selection change
-        /// </summary>
-        private void ConfigTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
-        {
-            if (e.NewValue is ConfigTreeNode node && node.NodeType == ConfigNodeType.Config)
-            {
-                DisplayConfigProperty(node);
-            }
-            else
-            {
-                ClearPropertyDisplay();
-            }
-        }
-
-        /// <summary>
         /// Display property editor for selected config
         /// </summary>
-        private void DisplayConfigProperty(ConfigTreeNode node)
+        private void DisplayConfigProperty(ConfigItem config)
         {
-            if (node.ConfigInstance == null) return;
+            if (config.ConfigInstance == null) return;
 
-            PropertyTitle.Text = $"配置: {node.DisplayName}";
-            SummaryText1.Text = $"当前选择: {node.DisplayName}";
+            PropertyTitle.Text = $"配置: {config.DisplayName}";
+            SummaryText1.Text = $"当前选择: {config.DisplayName}";
 
             // Remove old property editor if exists
             if (PropertyContainer.Child is IDisposable disposable)
@@ -222,7 +301,7 @@ namespace ColorVision
             PropertyContainer.Child = null;
 
             // Create property editor using PropertyEditorHelper
-            var propertyPanel = PropertyEditorHelper.GenPropertyEditorControl(node.ConfigInstance);
+            var propertyPanel = PropertyEditorHelper.GenPropertyEditorControl(config.ConfigInstance);
             
             if (propertyPanel == null)
             {
@@ -248,105 +327,14 @@ namespace ColorVision
         }
 
         /// <summary>
-        /// Clear property display
-        /// </summary>
-        private void ClearPropertyDisplay()
-        {
-            PropertyTitle.Text = "选择一个配置查看详情";
-            SummaryText1.Text = "";
-            
-            if (PropertyContainer.Child is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
-            PropertyContainer.Child = null;
-        }
-
-        /// <summary>
-        /// Filter tree based on search text
+        /// Handle search text change
         /// </summary>
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox)
             {
                 string searchText = textBox.Text?.Trim() ?? "";
-                
-                if (string.IsNullOrWhiteSpace(searchText))
-                {
-                    // Show all nodes
-                    RestoreTreeVisibility();
-                }
-                else
-                {
-                    // Filter nodes
-                    FilterTree(searchText.ToLower());
-                }
-            }
-        }
-
-        /// <summary>
-        /// Filter tree nodes based on search text
-        /// </summary>
-        private void FilterTree(string searchText)
-        {
-            foreach (var assemblyNode in _rootNodes)
-            {
-                bool assemblyMatches = FilterNodeRecursive(assemblyNode, searchText);
-                assemblyNode.IsExpanded = assemblyMatches;
-            }
-        }
-
-        /// <summary>
-        /// Recursively filter nodes and return true if any child matches
-        /// </summary>
-        private bool FilterNodeRecursive(ConfigTreeNode node, string searchText)
-        {
-            bool matches = node.DisplayName.ToLower().Contains(searchText);
-
-            if (node.Children.Count > 0)
-            {
-                bool anyChildMatches = false;
-                foreach (var child in node.Children)
-                {
-                    bool childMatches = FilterNodeRecursive(child, searchText);
-                    anyChildMatches = anyChildMatches || childMatches;
-                }
-
-                if (anyChildMatches)
-                {
-                    node.IsExpanded = true;
-                    return true;
-                }
-            }
-
-            return matches;
-        }
-
-        /// <summary>
-        /// Restore all nodes visibility
-        /// </summary>
-        private void RestoreTreeVisibility()
-        {
-            foreach (var assemblyNode in _rootNodes)
-            {
-                RestoreNodeVisibility(assemblyNode);
-            }
-        }
-
-        /// <summary>
-        /// Recursively restore node visibility
-        /// </summary>
-        private void RestoreNodeVisibility(ConfigTreeNode node)
-        {
-            // Keep assembly nodes expanded, collapse namespace nodes by default
-            if (node.NodeType == ConfigNodeType.Assembly)
-                node.IsExpanded = true;
-            else if (node.NodeType == ConfigNodeType.Namespace)
-                node.IsExpanded = false;
-
-            foreach (var child in node.Children)
-            {
-                RestoreNodeVisibility(child);
+                RebuildConfigGrid(string.IsNullOrWhiteSpace(searchText) ? null : searchText);
             }
         }
 
