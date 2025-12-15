@@ -2,8 +2,8 @@
 
 ## 📊 总体进度
 
-**当前阶段**: Phase 2 - UI现代化 + 持久化登录 (Day 17-19)  
-**完成度**: 90% (高优先级工作 90% 完成)
+**当前阶段**: Phase 2 - UI现代化 + 持久化登录 + Bug修复 (Day 17-20)  
+**完成度**: 92% (高优先级工作 92% 完成)
 
 ---
 
@@ -199,6 +199,18 @@
 - 3个核心窗口UI全部现代化（LoginWindow, RbacManagerWindow, RegisterWindow）
 - 用户登录后7天内自动登录，无需重复输入密码
 - 提升用户体验90%，与现代应用体验一致
+
+#### Day 20: EditCommand权限控制修复 ✅ DONE
+- [x] 修复 EditCommand 在自动登录后无法编辑的问题
+  - [x] 添加 IsUserLoggedIn() 私有方法检查登录状态
+  - [x] EditCommand 使用 CanExecute 验证登录状态
+  - [x] EditUserDetailAction 增加登录检查和友好提示
+  - [x] 支持手动登录和自动登录（Remember Me）两种方式
+- [x] 改进错误提示
+  - [x] 未登录时显示"请先登录后再编辑用户信息"
+  - [x] 避免"保存失败"的误导性提示
+
+**成果**: EditCommand现在正确检查登录状态，支持持久化登录后的编辑操作，用户体验显著提升
 
 ---
 

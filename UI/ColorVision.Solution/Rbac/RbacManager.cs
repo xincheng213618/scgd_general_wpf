@@ -86,7 +86,7 @@ namespace ColorVision.Rbac
             SeedRolePermissions();
 
             LoginCommand = new RelayCommand(a => new LoginWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-            EditCommand = new RelayCommand(a=> EditUserDetailAction.EditAsync());
+            EditCommand = new RelayCommand(a=> EditUserDetailAction.EditAsync(), a => IsUserLoggedIn());
             OpenUserManagerCommand = new RelayCommand(a => OpenUserManager());
             OpenPermissionManagerCommand = new RelayCommand(a => OpenPermissionManager());
 
@@ -309,6 +309,16 @@ namespace ColorVision.Rbac
                 MessageBox.Show($"更新用户角色失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// 检查用户是否已登录（包括通过记住我功能自动登录的情况）
+        /// </summary>
+        private bool IsUserLoggedIn()
+        {
+            return Config.LoginResult != null && 
+                   Config.LoginResult.User != null && 
+                   Config.LoginResult.UserDetail != null;
         }
 
         public void Dispose()
