@@ -641,7 +641,6 @@ COLORVISIONCORE_API int M_FindLuminousArea(HImage img, RoiRect roi, const char* 
 	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
 	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
 	mat = use_roi ? mat(mroi) : mat;
-	0
 
 	json j = json::parse(config);
 	int threshold = -1;
