@@ -120,7 +120,7 @@
                     </DockPanel>
                     
                     <!-- 密码输入 -->
-                    <DockPanel Margin="0,0,0,25">
+                    <DockPanel Margin="0,0,0,15">
                         <StackPanel>
                             <TextBlock Text="密码" 
                                        FontSize="13" 
@@ -141,6 +141,14 @@
                             </Border>
                         </StackPanel>
                     </DockPanel>
+                    
+                    <!-- 记住我 -->
+                    <CheckBox x:Name="ChkRememberMe"
+                              Content="记住登录状态（7天内自动登录）"
+                              Foreground="#666666"
+                              FontSize="12"
+                              Margin="0,0,0,25"
+                              ToolTip="勾选后，下次启动软件将自动登录"/>
                     
                     <!-- 登录按钮 -->
                     <Button x:Name="BtnLogin"

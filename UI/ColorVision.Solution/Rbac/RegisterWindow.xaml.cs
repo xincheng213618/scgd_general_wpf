@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using ColorVision.Themes;
+using System.Windows;
 
 namespace ColorVision.Rbac
 {
@@ -11,6 +12,13 @@ namespace ColorVision.Rbac
         public RegisterWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
+        }
+
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            // 自动聚焦到用户名输入框
+            TxtUsername.Focus();
         }
 
         private async void BtnRegister_Click(object sender, RoutedEventArgs e)
@@ -42,14 +50,15 @@ namespace ColorVision.Rbac
             {
                 _isSubmitting = true;
                 BtnRegister.IsEnabled = false;
-                TxtStatus.Text = "正在创建...";
+                BtnRegister.Content = "正在创建...";
+                TxtStatus.Text = "正在创建新用户，请稍候...";
                 bool created = await RbacManager.GetInstance().UserService.CreateUserAsync(username, pwd1);
                 if (!created)
                 {
                     TxtStatus.Text = "用户名已存在或创建失败";
                     return;
                 }
-                MessageBox.Show(this, "注册成功，请使用新账户登录", "注册", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(this, "注册成功，请使用新账户登录", "注册成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 DialogResult = true;
             }
             catch (Exception ex)
@@ -60,6 +69,7 @@ namespace ColorVision.Rbac
             {
                 _isSubmitting = false;
                 BtnRegister.IsEnabled = true;
+                BtnRegister.Content = "注册";
             }
         }
 
