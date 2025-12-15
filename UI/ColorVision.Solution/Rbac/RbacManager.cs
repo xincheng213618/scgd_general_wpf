@@ -321,6 +321,161 @@ namespace ColorVision.Rbac
                    Config.LoginResult.UserDetail != null;
         }
 
+        /// <summary>
+        /// 删除用户（逻辑删除）
+        /// </summary>
+        public bool DeleteUser(int userId, string username)
+        {
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
+            {
+                MessageBox.Show("当前用户无权删除用户。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            try
+            {
+                db.Updateable<UserEntity>()
+                    .SetColumns(u => u.IsDelete == true)
+                    .Where(u => u.Id == userId)
+                    .ExecuteCommand();
+
+                // 审计日志
+                try
+                {
+                    if (Config.LoginResult?.UserDetail?.UserId != null && Config.LoginResult?.User?.Username != null)
+                    {
+                        AuditLogService.AddAsync(Config.LoginResult.UserDetail.UserId, Config.LoginResult.User.Username, "user.delete", $"删除用户:{username}(ID:{userId})");
+                    }
+                }
+                catch { }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"删除用户失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 启用用户
+        /// </summary>
+        public bool EnableUser(int userId, string username)
+        {
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
+            {
+                MessageBox.Show("当前用户无权启用/禁用用户。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            try
+            {
+                db.Updateable<UserEntity>()
+                    .SetColumns(u => u.IsEnable == true)
+                    .Where(u => u.Id == userId)
+                    .ExecuteCommand();
+
+                // 审计日志
+                try
+                {
+                    if (Config.LoginResult?.UserDetail?.UserId != null && Config.LoginResult?.User?.Username != null)
+                    {
+                        AuditLogService.AddAsync(Config.LoginResult.UserDetail.UserId, Config.LoginResult.User.Username, "user.enable", $"启用用户:{username}(ID:{userId})");
+                    }
+                }
+                catch { }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"启用用户失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 禁用用户
+        /// </summary>
+        public bool DisableUser(int userId, string username)
+        {
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
+            {
+                MessageBox.Show("当前用户无权启用/禁用用户。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            try
+            {
+                db.Updateable<UserEntity>()
+                    .SetColumns(u => u.IsEnable == false)
+                    .Where(u => u.Id == userId)
+                    .ExecuteCommand();
+
+                // 审计日志
+                try
+                {
+                    if (Config.LoginResult?.UserDetail?.UserId != null && Config.LoginResult?.User?.Username != null)
+                    {
+                        AuditLogService.AddAsync(Config.LoginResult.UserDetail.UserId, Config.LoginResult.User.Username, "user.disable", $"禁用用户:{username}(ID:{userId})");
+                    }
+                }
+                catch { }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"禁用用户失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 重置用户密码
+        /// </summary>
+        public string ResetUserPassword(int userId, string username)
+        {
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
+            {
+                MessageBox.Show("当前用户无权重置密码。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return null;
+            }
+            try
+            {
+                // 生成随机密码
+                string newPassword = GenerateRandomPassword();
+                string hashedPassword = Security.PasswordHasher.Hash(newPassword);
+
+                db.Updateable<UserEntity>()
+                    .SetColumns(u => u.Password == hashedPassword)
+                    .Where(u => u.Id == userId)
+                    .ExecuteCommand();
+
+                // 审计日志
+                try
+                {
+                    if (Config.LoginResult?.UserDetail?.UserId != null && Config.LoginResult?.User?.Username != null)
+                    {
+                        AuditLogService.AddAsync(Config.LoginResult.UserDetail.UserId, Config.LoginResult.User.Username, "user.password.reset", $"重置用户密码:{username}(ID:{userId})");
+                    }
+                }
+                catch { }
+                return newPassword;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"重置密码失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 生成随机密码
+        /// </summary>
+        private string GenerateRandomPassword()
+        {
+            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+            var random = new Random();
+            return new string(Enumerable.Repeat(chars, 8)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
         public void Dispose()
         {
             _sessionCleanupService?.Dispose();

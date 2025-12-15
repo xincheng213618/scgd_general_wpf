@@ -113,57 +113,18 @@ namespace ColorVision.Rbac
         private void LoadRoles()
         {
             var roles = RbacManager.GetRoles();
-            RolesComboBox.ItemsSource = roles;
-            RolesComboBox.DisplayMemberPath = "Name";
-            RolesComboBox.SelectedValuePath = "Id";
-            
             RolesListView.ItemsSource = roles;
         }
 
-        private async void BtnCreateUser_Click(object sender, RoutedEventArgs e)
+        private void BtnCreateUser_Click(object sender, RoutedEventArgs e)
         {
-            // UI 层二次校验，防止普通用户通过窗口创建
-            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
+            var window = new CreateUserWindow
             {
-                MessageBox.Show("权限不足：只有管理员可以创建用户", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            string username = TxtUsername.Text.Trim();
-            string password = TxtPassword.Password.Trim();
-            string remark = TxtRemark.Text.Trim();
-            int? roleId = RolesComboBox.SelectedValue as int?;
-
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+                Owner = this
+            };
+            if (window.ShowDialog() == true)
             {
-                MessageBox.Show("用户名和密码不能为空。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var roleIds = roleId.HasValue ? new List<int> { roleId.Value } : null;
-
-            bool result = await RbacManager.UserService.CreateUserAsync(username, password, remark, roleIds);
-            if (result)
-            {
-                // 安全地记录审计日志，避免未登录时出错
-                try 
-                { 
-                    if (RbacManager.Config.LoginResult?.UserDetail?.UserId != null && RbacManager.Config.LoginResult?.User?.Username != null)
-                    {
-                        RbacManager.AuditLogService.AddAsync(RbacManager.Config.LoginResult.UserDetail.UserId, RbacManager.Config.LoginResult.User.Username, "user.create", $"UI创建用户:{username}"); 
-                    }
-                } 
-                catch { }
-                MessageBox.Show("用户创建成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
-                TxtUsername.Text = string.Empty;
-                TxtPassword.Password = string.Empty;
-                TxtRemark.Text = string.Empty;
-                RolesComboBox.SelectedIndex = -1;
                 LoadUsers();
-            }
-            else
-            {
-                MessageBox.Show("用户名已存在或创建失败！", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -211,61 +172,92 @@ namespace ColorVision.Rbac
             }
             if (sender is FrameworkElement fe && fe.Tag is UserViewModel vm)
             {
-                var allRoles = RbacManager.GetRoles();
-                var currentRoleIds = vm.Roles.Select(r => r.Id).ToHashSet();
-
-                var win = new Window
+                var window = new EditUserRolesWindow(vm)
                 {
-                    Title = $"编辑用户角色 - {vm.Username}",
-                    Owner = this,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                    Width = 400,
-                    Height = 500
+                    Owner = this
                 };
-                var grid = new System.Windows.Controls.Grid();
-                grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-                grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = GridLength.Auto });
-                var sv = new System.Windows.Controls.ScrollViewer();
-                var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(10) };
-                foreach (var role in allRoles)
+                if (window.ShowDialog() == true)
                 {
-                    var cb = new System.Windows.Controls.CheckBox
-                    {
-                        Content = role.Name,
-                        Tag = role.Id,
-                        IsChecked = currentRoleIds.Contains(role.Id),
-                        Margin = new Thickness(2)
-                    };
-                    panel.Children.Add(cb);
+                    LoadUsers();
                 }
-                sv.Content = panel;
-                System.Windows.Controls.Grid.SetRow(sv, 0);
-                grid.Children.Add(sv);
+            }
+        }
 
-                var btnPanel = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(10) };
-                var btnOk = new System.Windows.Controls.Button { Content = "确定", Width = 70, Margin = new Thickness(5) };
-                var btnCancel = new System.Windows.Controls.Button { Content = "取消", Width = 70, Margin = new Thickness(5) };
-                btnPanel.Children.Add(btnOk);
-                btnPanel.Children.Add(btnCancel);
-                System.Windows.Controls.Grid.SetRow(btnPanel, 1);
-                grid.Children.Add(btnPanel);
-                win.Content = grid;
+        // 新增：删除用户
+        private void BtnDeleteUser_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is UserViewModel vm)
+            {
+                var result = MessageBox.Show(
+                    $"确定要删除用户 '{vm.Username}' 吗？\n\n此操作将进行逻辑删除，用户数据将被保留但标记为已删除状态。",
+                    "确认删除",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
 
-                btnOk.Click += (s, args) =>
+                if (result == MessageBoxResult.Yes)
                 {
-                    var selectedIds = panel.Children.OfType<System.Windows.Controls.CheckBox>()
-                        .Where(c => c.IsChecked == true)
-                        .Select(c => (int)c.Tag)
-                        .ToList();
-                    if (RbacManager.UpdateUserRoles(vm.Id, selectedIds))
+                    if (RbacManager.DeleteUser(vm.Id, vm.Username))
                     {
-                        MessageBox.Show("更新成功", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                        MessageBox.Show("用户删除成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                         LoadUsers();
-                        win.DialogResult = true;
                     }
-                };
-                btnCancel.Click += (s, args) => win.DialogResult = false;
-                win.ShowDialog();
+                }
+            }
+        }
+
+        // 新增：启用/禁用用户
+        private void BtnToggleUser_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is UserViewModel vm)
+            {
+                bool success;
+                if (vm.IsEnable)
+                {
+                    success = RbacManager.DisableUser(vm.Id, vm.Username);
+                    if (success)
+                    {
+                        MessageBox.Show($"用户 '{vm.Username}' 已禁用", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+                else
+                {
+                    success = RbacManager.EnableUser(vm.Id, vm.Username);
+                    if (success)
+                    {
+                        MessageBox.Show($"用户 '{vm.Username}' 已启用", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+
+                if (success)
+                {
+                    LoadUsers();
+                }
+            }
+        }
+
+        // 新增：重置密码
+        private void BtnResetPassword_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is UserViewModel vm)
+            {
+                var result = MessageBox.Show(
+                    $"确定要重置用户 '{vm.Username}' 的密码吗？\n\n将生成一个新的随机密码。",
+                    "确认重置",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    string newPassword = RbacManager.ResetUserPassword(vm.Id, vm.Username);
+                    if (!string.IsNullOrEmpty(newPassword))
+                    {
+                        MessageBox.Show(
+                            $"密码重置成功！\n\n用户: {vm.Username}\n新密码: {newPassword}\n\n请妥善保管此密码。",
+                            "密码已重置",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+                    }
+                }
             }
         }
 
@@ -350,6 +342,57 @@ namespace ColorVision.Rbac
                 return boolValue ? new SolidColorBrush(Colors.Red) : new SolidColorBrush(Colors.Green);
             }
             return new SolidColorBrush(Colors.Black);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class BoolToToggleIconConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool boolValue)
+            {
+                return boolValue ? "\uE8FB" : "\uE7BA"; // Enabled: Checkmark, Disabled: BlockContact
+            }
+            return "\uE7BA";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class BoolToToggleColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool boolValue)
+            {
+                return boolValue ? new SolidColorBrush(Color.FromRgb(117, 117, 117)) : new SolidColorBrush(Color.FromRgb(76, 175, 80));
+            }
+            return new SolidColorBrush(Colors.Gray);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class BoolToToggleTooltipConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool boolValue)
+            {
+                return boolValue ? "禁用用户" : "启用用户";
+            }
+            return "切换状态";
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

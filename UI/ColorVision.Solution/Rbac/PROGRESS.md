@@ -2,8 +2,8 @@
 
 ## 📊 总体进度
 
-**当前阶段**: Phase 2 - UI现代化 + 持久化登录 + Bug修复 (Day 17-20)  
-**完成度**: 92% (高优先级工作 92% 完成)
+**当前阶段**: Phase 2 - UI现代化 + 持久化登录 + Bug修复 + 用户管理增强 (Day 17-21)  
+**完成度**: 95% (高优先级工作 95% 完成)
 
 ---
 
@@ -211,6 +211,44 @@
   - [x] 避免"保存失败"的误导性提示
 
 **成果**: EditCommand现在正确检查登录状态，支持持久化登录后的编辑操作，用户体验显著提升
+
+#### Day 21: UserManagerWindow全面增强 ✅ DONE
+- [x] 创建 CreateUserWindow.xaml(.cs) - 独立用户创建窗口
+  - [x] Material Design卡片式布局
+  - [x] 图标增强的表单字段
+  - [x] 实时验证和状态反馈
+  - [x] 现代化按钮样式
+- [x] 创建 EditUserRolesWindow.xaml(.cs) - 现代化角色编辑窗口
+  - [x] 替代原有的inline对话框
+  - [x] 卡片化角色列表展示
+  - [x] 搜索功能快速定位角色
+  - [x] 已选角色数量实时显示
+  - [x] 彩色状态徽章
+- [x] RbacManager 新增用户管理方法
+  - [x] DeleteUser() - 逻辑删除用户
+  - [x] EnableUser() - 启用用户
+  - [x] DisableUser() - 禁用用户
+  - [x] ResetUserPassword() - 重置密码（自动生成）
+  - [x] GenerateRandomPassword() - 随机密码生成器
+  - [x] 所有方法包含审计日志记录
+- [x] UserManagerWindow 重大升级
+  - [x] 移除inline用户创建表单
+  - [x] 添加"创建用户"按钮打开CreateUserWindow
+  - [x] 4个操作按钮替代单一"编辑角色"
+    - [x] 编辑角色（蓝色，图标&#xE70F;）
+    - [x] 删除用户（红色，图标&#xE74D;）
+    - [x] 启用/禁用切换（灰色/绿色，图标&#xE8FB;/&#xE7BA;）
+    - [x] 重置密码（橙色，图标&#xE72E;）
+  - [x] Icon增强的彩色按钮
+  - [x] 智能tooltip提示
+- [x] 新增值转换器
+  - [x] BoolToToggleIconConverter - 启用/禁用图标
+  - [x] BoolToToggleColorConverter - 切换按钮颜色
+  - [x] BoolToToggleTooltipConverter - 动态提示文本
+- [x] 所有操作包含确认对话框
+- [x] 重置密码后显示新密码（仅一次）
+
+**成果**: UserManagerWindow完全现代化，完整的用户CRUD+启用禁用+密码重置功能，美观且易用的管理界面
 
 ---
 

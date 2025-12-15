@@ -42,6 +42,9 @@
         <local:BoolToDeleteColorConverter x:Key="BoolToDeleteColorConverter"/>
         <local:BoolToStatusTextConverter x:Key="BoolToStatusTextConverter"/>
         <local:BoolToYesNoConverter x:Key="BoolToYesNoConverter"/>
+        <local:BoolToToggleIconConverter x:Key="BoolToToggleIconConverter"/>
+        <local:BoolToToggleColorConverter x:Key="BoolToToggleColorConverter"/>
+        <local:BoolToToggleTooltipConverter x:Key="BoolToToggleTooltipConverter"/>
         <!-- Secondary Button Style -->
         <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
             <Setter Property="Background" Value="#F3F3F3"/>
@@ -86,20 +89,22 @@
         </Border>
         
         <!-- Create User Section -->
-        <GroupBox Header="快速创建用户" Grid.Row="1" Margin="0,0,0,12">
-            <StackPanel Orientation="Horizontal" Margin="12,10">
-                <Label Content="用户名:" VerticalAlignment="Center" Width="60"/>
-                <TextBox x:Name="TxtUsername" Width="130" Margin="5,0" Padding="6,4" ToolTip="输入用户登录名"/>
-                <Label Content="密码:" VerticalAlignment="Center" Width="50" Margin="15,0,0,0"/>
-                <PasswordBox x:Name="TxtPassword" Width="130" Margin="5,0" Padding="6,4" ToolTip="输入用户密码"/>
-                <Label Content="角色:" VerticalAlignment="Center" Width="50" Margin="15,0,0,0"/>
-                <ComboBox x:Name="RolesComboBox" Width="120" Margin="5,0" Padding="6,4" ToolTip="选择用户角色"/>
-                <Label Content="备注:" VerticalAlignment="Center" Width="50" Margin="15,0,0,0"/>
-                <TextBox x:Name="TxtRemark" Width="150" Margin="5,0" Padding="6,4" ToolTip="用户描述信息"/>
-                <Button Content="创建用户" Width="90" Margin="20,0,0,0" Click="BtnCreateUser_Click"
-                        Style="{StaticResource ModernButton}" ToolTip="创建新的系统用户"/>
-            </StackPanel>
-        </GroupBox>
+        <Border Grid.Row="1" Background="#F8F8F8" Padding="15,12" Margin="0,0,0,12" CornerRadius="4" BorderBrush="#E0E0E0" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE7EF;" FontFamily="Segoe MDL2 Assets" FontSize="20" 
+                               VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#0078D4"/>
+                    <TextBlock Text="用户管理操作" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="&#xE710;  创建用户" FontFamily="Segoe MDL2 Assets,Segoe UI" 
+                        Width="120" Click="BtnCreateUser_Click"
+                        Style="{StaticResource ModernButton}" ToolTip="打开创建用户窗口"/>
+            </Grid>
+        </Border>
         
         <!-- Role Management Section -->
         <GroupBox Header="角色管理" Grid.Row="2" Margin="0,0,0,12">
@@ -229,12 +234,26 @@
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn Header="创建时间" Width="160" DisplayMemberBinding="{Binding CreatedAt, StringFormat='yyyy-MM-dd HH:mm:ss'}" />
-                        <GridViewColumn Header="操作" Width="140">
+                        <GridViewColumn Header="操作" Width="280">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
-                                        <Button Content="编辑角色" Padding="6,3" Tag="{Binding}" Click="BtnEditRoles_Click"
-                                                Style="{StaticResource SecondaryButton}" FontSize="11" Margin="0,0,4,0"/>
+                                        <Button Content="&#xE70F;" FontFamily="Segoe MDL2 Assets" Padding="6,3" Tag="{Binding}" Click="BtnEditRoles_Click"
+                                                Style="{StaticResource ModernButton}" FontSize="11" Margin="0,0,4,0" Width="32" Height="26"
+                                                ToolTip="编辑角色" Background="#0078D4"/>
+                                        <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" Padding="6,3" Tag="{Binding}" Click="BtnDeleteUser_Click"
+                                                Style="{StaticResource ModernButton}" FontSize="11" Margin="0,0,4,0" Width="32" Height="26"
+                                                ToolTip="删除用户" Background="#D32F2F"/>
+                                        <Button Content="{Binding IsEnable, Converter={StaticResource BoolToToggleIconConverter}}" FontFamily="Segoe MDL2 Assets" Padding="6,3" Tag="{Binding}" Click="BtnToggleUser_Click"
+                                                Style="{StaticResource ModernButton}" FontSize="11" Margin="0,0,4,0" Width="32" Height="26"
+                                                Background="{Binding IsEnable, Converter={StaticResource BoolToToggleColorConverter}}">
+                                            <Button.ToolTip>
+                                                <TextBlock Text="{Binding IsEnable, Converter={StaticResource BoolToToggleTooltipConverter}}"/>
+                                            </Button.ToolTip>
+                                        </Button>
+                                        <Button Content="&#xE72E;" FontFamily="Segoe MDL2 Assets" Padding="6,3" Tag="{Binding}" Click="BtnResetPassword_Click"
+                                                Style="{StaticResource ModernButton}" FontSize="11" Margin="0,0,0,0" Width="32" Height="26"
+                                                ToolTip="重置密码" Background="#F57C00"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
