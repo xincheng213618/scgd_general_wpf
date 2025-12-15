@@ -235,7 +235,7 @@ namespace ColorVision
             var button = new Button
             {
                 Margin = new Thickness(5),
-                Padding = new Thickness(10, 8),
+                Padding = new Thickness(10, 8,10,8),
                 HorizontalContentAlignment = HorizontalAlignment.Left,
                 VerticalContentAlignment = VerticalAlignment.Center,
                 Tag = config

@@ -209,19 +209,20 @@ namespace ColorVision.UI
 
                 string displayName = GetDisplayName(rm, item.Prop, item.Attr!.DisplayName);
 
-
-
                 var button = new Button
                 {
                     Margin = new Thickness(5),
                     Padding = new Thickness(10, 8, 10, 8),
-                    HorizontalContentAlignment = HorizontalAlignment.Left,
+                    HorizontalContentAlignment = HorizontalAlignment.Center,
                     VerticalContentAlignment = VerticalAlignment.Center,
                     Background = (Brush)Application.Current.FindResource("GlobalBackground"),
                     BorderBrush = (Brush)Application.Current.FindResource("BorderBrush"),
                     BorderThickness = new Thickness(1),
                     Command = command,
-                    ToolTip = displayName
+                    ToolTip = displayName,
+                    Height = 70,
+                    VerticalAlignment = VerticalAlignment.Stretch,
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
                 };
 
                 var stackPanel = new StackPanel();
