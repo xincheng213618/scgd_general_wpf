@@ -208,13 +208,50 @@ namespace ColorVision.UI
                 if (item.Prop.GetValue(obj) is not ICommand command) continue;
 
                 string displayName = GetDisplayName(rm, item.Prop, item.Attr!.DisplayName);
+
+
+
                 var button = new Button
                 {
-                    Style = ButtonCommandStyle,
-                    Content = displayName,
+                    Margin = new Thickness(5),
+                    Padding = new Thickness(10, 8, 10, 8),
+                    HorizontalContentAlignment = HorizontalAlignment.Left,
+                    VerticalContentAlignment = VerticalAlignment.Center,
+                    Background = (Brush)Application.Current.FindResource("GlobalBackground"),
+                    BorderBrush = (Brush)Application.Current.FindResource("BorderBrush"),
+                    BorderThickness = new Thickness(1),
                     Command = command,
                     ToolTip = displayName
                 };
+
+                var stackPanel = new StackPanel();
+
+                var nameText = new TextBlock
+                {
+                    Text = displayName,
+                    FontSize = 12,
+                    FontWeight = FontWeights.Medium,
+                    Foreground = (Brush)Application.Current.FindResource("PrimaryTextBrush"),
+                    TextWrapping = TextWrapping.Wrap
+                };
+                stackPanel.Children.Add(nameText);
+
+                var descriptionAttr = item.Prop.GetCustomAttribute<DescriptionAttribute>();
+                var description = descriptionAttr?.Description ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    var assemblyText = new TextBlock
+                    {
+                        Text = description,
+                        FontSize = 10,
+                        Foreground = (Brush)Application.Current.FindResource("SecondaryTextBrush"),
+                        Margin = new Thickness(0, 3, 0, 0),
+                        Opacity = 0.7
+                    };
+                    stackPanel.Children.Add(assemblyText);
+                }
+                button.Content = stackPanel;
+
                 if (item.Attr!.CommandType == CommandType.Highlighted)
                 {
                     button.Foreground = Brushes.Red;
