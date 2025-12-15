@@ -1,9 +1,12 @@
 using ColorVision.Rbac.Entity;
 using SqlSugar;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ColorVision.Rbac.Services
 {
-    public class PermissionService
+    public class PermissionService : IPermissionService
     {
         private readonly ISqlSugarClient _db;
         public PermissionService(ISqlSugarClient db) { _db = db; }
@@ -56,6 +59,15 @@ namespace ColorVision.Rbac.Services
                 .Select((rp,p)=> p.Code)
                 .Distinct()
                 .ToListAsync();
+        }
+
+        public async Task<Dictionary<string, List<PermissionEntity>>> GetPermissionsByGroupAsync()
+        {
+            var permissions = await GetAllAsync();
+            return permissions
+                .GroupBy(p => p.Group ?? "其他")
+                .OrderBy(g => g.Key)
+                .ToDictionary(g => g.Key, g => g.OrderBy(p => p.Code).ToList());
         }
     }
 }

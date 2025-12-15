@@ -297,6 +297,8 @@ namespace ColorVision.Rbac
         public string? Remark { get; set; }
 
         public bool HasRemark => !string.IsNullOrWhiteSpace(Remark);
+        
+        public Visibility HasRemarkVisibility => HasRemark ? Visibility.Visible : Visibility.Collapsed;
 
         private bool _isSelected;
         public bool IsSelected

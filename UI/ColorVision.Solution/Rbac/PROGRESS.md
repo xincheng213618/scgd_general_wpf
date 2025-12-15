@@ -2,8 +2,8 @@
 
 ## 📊 总体进度
 
-**当前阶段**: Phase 2 - 权限检查器实践 + UI开发 (Day 6-10)  
-**完成度**: 65% (第二周 30% 完成)
+**当前阶段**: Phase 2 - 紧急修复 + 持续优化 (Day 6-10)  
+**完成度**: 70% (第二周 40% 完成)
 
 ---
 
@@ -65,6 +65,26 @@
   - [x] tenant.* (create/edit/view) - 租户管理
 
 **成果**: 从5个权限扩展到17个权限，覆盖主要功能
+
+---
+
+### 紧急修复：接口完善 ✅ DONE
+
+#### 接口一致性修复 ✅ DONE
+- [x] 创建 `IPermissionService.cs` - 权限服务接口
+- [x] 更新 `PermissionService.cs` - 实现IPermissionService接口
+- [x] 添加 `GetPermissionsByGroupAsync()` - 按组获取权限
+- [x] 修复 `RbacManager` - 使用IPermissionService接口类型
+
+**成果**: 服务层接口化完整，符合依赖倒置原则
+
+#### UI修复 ✅ DONE
+- [x] 修复 `PermissionManagerWindow.xaml` - 添加local命名空间
+- [x] 移除不存在的转换器引用
+- [x] 添加 `HasRemarkVisibility` 属性到PermissionItem
+- [x] 使用Visibility类型替代bool+转换器
+
+**成果**: XAML编译错误已修复，窗口可正常显示
 
 ---
 

@@ -31,7 +31,7 @@ namespace ColorVision.Rbac
         // 核心服务
         public IAuthService AuthService { get; set; }
         public IUserService UserService { get; set; }
-        public PermissionService PermissionService { get; set; }
+        public IPermissionService PermissionService { get; set; }
         public IAuditLogService AuditLogService { get; set; }
         
         // 新增服务

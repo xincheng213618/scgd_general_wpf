@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Rbac"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         Title="权限管理" Height="600" Width="900" 
@@ -96,7 +97,7 @@
                                                        FontSize="10" 
                                                        Foreground="DarkGray"
                                                        TextWrapping="Wrap"
-                                                       Visibility="{Binding HasRemark, Converter={StaticResource Boolean2VisibilityConverter}}"/>
+                                                       Visibility="{Binding HasRemarkVisibility}"/>
                                         </StackPanel>
                                     </CheckBox>
                                 </DataTemplate>
