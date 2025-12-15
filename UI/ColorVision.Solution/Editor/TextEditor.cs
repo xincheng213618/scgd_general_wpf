@@ -2,7 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Editor.AvalonEditor;
-using ColorVision.Solution.Searches;
+using ColorVision.Solution.Workspace;
 using System.IO;
 using System.Windows;
 
@@ -17,7 +17,7 @@ namespace ColorVision.Solution
             if (File.Exists(filePath))
             {
                 string GuidId = Tool.GetMD5(filePath);
-                var existingDocument = SolutionViewExtensions.FindDocumentById(SolutionViewExtensions.layoutRoot, GuidId.ToString());
+                var existingDocument = WorkspaceManager.FindDocumentById(WorkspaceManager.layoutRoot, GuidId.ToString());
 
                 if (existingDocument != null)
                 {
@@ -40,13 +40,13 @@ namespace ColorVision.Solution
     
                     LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(filePath) };
                     layoutDocument.Content = control;
-                    SolutionViewExtensions.LayoutDocumentPane.Children.Add(layoutDocument);
-                    SolutionViewExtensions.LayoutDocumentPane.SelectedContentIndex = SolutionViewExtensions.LayoutDocumentPane.IndexOf(layoutDocument);
+                    WorkspaceManager.LayoutDocumentPane.Children.Add(layoutDocument);
+                    WorkspaceManager.LayoutDocumentPane.SelectedContentIndex = WorkspaceManager.LayoutDocumentPane.IndexOf(layoutDocument);
                     layoutDocument.IsActiveChanged += (s, e) =>
                     {
                         if (layoutDocument.IsActive)
                         {
-                            SolutionViewExtensions.OnContentIdSelected(filePath);
+                            WorkspaceManager.OnContentIdSelected(filePath);
                         }
                     };
                     layoutDocument.Closing += (s, e) =>

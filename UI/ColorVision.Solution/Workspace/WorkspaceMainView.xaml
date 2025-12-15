@@ -2,10 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Solution.Searches"
+             xmlns:local="clr-namespace:ColorVision.Solution.Workspace"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" 
              xmlns:hc ="https://handyorg.github.io/handycontrol"
-             x:Class="ColorVision.Solution.Searches.SolutionView"
+             x:Class="ColorVision.Solution.Workspace.WorkspaceMainView"
              xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}" Initialized="UserControl_Initialized" >
