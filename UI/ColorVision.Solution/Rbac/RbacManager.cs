@@ -25,10 +25,18 @@ namespace ColorVision.Rbac
         public RelayCommand OpenUserManagerCommand { get; set; }
 
         public RbacManagerConfig Config => RbacManagerConfig.Instance;
-        public AuthService AuthService { get; set; }
-        public UserService UserService { get; set; }
+        
+        // 核心服务
+        public IAuthService AuthService { get; set; }
+        public IUserService UserService { get; set; }
         public PermissionService PermissionService { get; set; }
-        public AuditLogService AuditLogService { get; set; }
+        public IAuditLogService AuditLogService { get; set; }
+        
+        // 新增服务
+        public IRoleService RoleService { get; set; }
+        public ITenantService TenantService { get; set; }
+        public ISessionService SessionService { get; set; }
+        public IPermissionChecker PermissionChecker { get; set; }
 
         public EditUserDetailAction EditUserDetailAction { get; set; }
         public RbacManager()
@@ -48,11 +56,20 @@ namespace ColorVision.Rbac
             db.CodeFirst.InitTables<RoleEntity, UserRoleEntity>();
             db.CodeFirst.InitTables<PermissionEntity, RolePermissionEntity>();
             db.CodeFirst.InitTables<AuditLogEntity>();
+            db.CodeFirst.InitTables<SessionEntity>(); // 新增会话表
 
+            // 初始化服务
+            AuditLogService = new AuditLogService(db);
             AuthService = new AuthService(db);
             UserService = new UserService(db);
             PermissionService = new PermissionService(db);
-            AuditLogService = new AuditLogService(db);
+            
+            // 初始化新增服务
+            RoleService = new RoleService(db, AuditLogService);
+            TenantService = new TenantService(db, AuditLogService);
+            SessionService = new SessionService(db);
+            PermissionChecker = new PermissionChecker(db);
+            
             EditUserDetailAction = new EditUserDetailAction(UserService);
 
             InitAdmin();
@@ -126,35 +143,22 @@ namespace ColorVision.Rbac
 
             try
             {
-                // Check if role with same code already exists
-                if (db.Queryable<RoleEntity>().Any(r => r.Code == code))
-                {
-                    return false;
-                }
-
-                var role = new RoleEntity
-                {
-                    Name = name,
-                    Code = code,
-                    Remark = remark,
-                    IsEnable = true,
-                    IsDelete = false,
-                    CreatedAt = DateTimeOffset.Now,
-                    UpdatedAt = DateTimeOffset.Now
-                };
-
-                db.Insertable(role).ExecuteCommand();
-                
-                try 
-                { 
-                    AuditLogService.AddAsync(Config.LoginResult?.UserDetail?.UserId, Config.LoginResult?.User?.Username, "role.create", $"创建角色:{name}({code})"); 
-                } 
-                catch { }
-                
-                return true;
+                var result = RoleService.CreateRoleAsync(name, code, remark).GetAwaiter().GetResult();
+                return result;
             }
-            catch
+            catch (Exceptions.PermissionDeniedException ex)
             {
+                MessageBox.Show(ex.Message, "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            catch (Exceptions.RbacException ex)
+            {
+                MessageBox.Show($"创建角色失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"创建角色失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
         }
