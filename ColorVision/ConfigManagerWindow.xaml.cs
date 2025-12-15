@@ -71,7 +71,7 @@ namespace ColorVision
             InitializeComponent();
         }
 
-        private ObservableCollection<AssemblyGroup> _assemblyGroups = new ObservableCollection<AssemblyGroup>();
+        public ObservableCollection<AssemblyGroup> AssemblyGroups { get; set; } = new ObservableCollection<AssemblyGroup>();
         private List<ConfigItem> _allConfigs = new List<ConfigItem>();
         private Dictionary<string, FrameworkElement> _assemblySectionElements = new Dictionary<string, FrameworkElement>();
 
@@ -83,7 +83,7 @@ namespace ColorVision
 
             // 显示汇总信息
             int totalConfigs = _allConfigs.Count;
-            int totalAssemblies = _assemblyGroups.Count;
+            int totalAssemblies = AssemblyGroups.Count;
             SummaryText.Text = $"共计 {totalAssemblies} 个程序集，{totalConfigs} 个配置类型";
         }
 
@@ -116,7 +116,7 @@ namespace ColorVision
                     _allConfigs.Add(configItem);
                 }
 
-                _assemblyGroups.Add(group);
+                AssemblyGroups.Add(group);
             }
         }
 
@@ -125,8 +125,7 @@ namespace ColorVision
         /// </summary>
         private void PopulateAssemblyList()
         {
-            AssemblyListView.ItemsSource = _assemblyGroups;
-            AssemblyListView.SelectedIndex =0;
+            AssemblyListView.ItemsSource = AssemblyGroups;
         }
 
         /// <summary>
@@ -137,13 +136,13 @@ namespace ColorVision
             ConfigContainer.Children.Clear();
             _assemblySectionElements.Clear();
 
-            var groupsToShow = _assemblyGroups.AsEnumerable();
+            var groupsToShow = AssemblyGroups.AsEnumerable();
             
             // Filter by search if provided
             if (!string.IsNullOrWhiteSpace(searchText))
             {
                 var lowerSearch = searchText.ToLower();
-                groupsToShow = _assemblyGroups
+                groupsToShow = AssemblyGroups
                     .Select(g => new AssemblyGroup
                     {
                         DisplayName = g.DisplayName,
