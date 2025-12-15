@@ -23,8 +23,8 @@ namespace ColorVision.Rbac
         private SqlSugarClient db;
         public RelayCommand LoginCommand { get; set; } 
         public RelayCommand EditCommand { get; set; }
-
         public RelayCommand OpenUserManagerCommand { get; set; }
+        public RelayCommand OpenPermissionManagerCommand { get; set; }
 
         public RbacManagerConfig Config => RbacManagerConfig.Instance;
         
@@ -82,6 +82,7 @@ namespace ColorVision.Rbac
             LoginCommand = new RelayCommand(a => new LoginWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             EditCommand = new RelayCommand(a=> EditUserDetailAction.EditAsync());
             OpenUserManagerCommand = new RelayCommand(a => OpenUserManager());
+            OpenPermissionManagerCommand = new RelayCommand(a => OpenPermissionManager());
 
             // 若已有登录缓存则同步权限
             if (Config.LoginResult?.UserDetail != null)
@@ -113,6 +114,18 @@ namespace ColorVision.Rbac
             }
             
             new UserManagerWindow() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
+        }
+
+        public void OpenPermissionManager()
+        {
+            // Check if user has admin permissions
+            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
+            {
+                MessageBox.Show("只有管理员才能访问权限管理功能。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            new PermissionManagerWindow() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
         public List<UserEntity> GetUsers()

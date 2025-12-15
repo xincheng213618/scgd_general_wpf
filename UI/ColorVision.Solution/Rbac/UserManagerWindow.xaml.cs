@@ -188,5 +188,10 @@ namespace ColorVision.Rbac
             }
         }
 
+        private void BtnOpenPermissionManager_Click(object sender, RoutedEventArgs e)
+        {
+            RbacManager.OpenPermissionManager();
+        }
+
     }
 }
