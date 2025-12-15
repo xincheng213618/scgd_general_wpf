@@ -22,7 +22,7 @@
                 <Button Content="{x:Static properties:Resources.OpenConfigFolder}" Click="OpenFolder_Click" Padding="10,5"/>
             </StackPanel>
             <Grid x:Name="SearchGrid" Margin="0,0,0,5" HorizontalAlignment="Stretch" VerticalAlignment="Center">
-                <hc:TextBox x:Name="Searchbox" Style="{DynamicResource TextBoxPlus.Small}" Padding="25,5,5,5" BorderThickness="1" 
+                <hc:TextBox x:Name="Searchbox" Style="{DynamicResource TextBoxPlusBaseStyle}" Padding="25,5,5,5" BorderThickness="1" 
                            hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" 
                            VerticalContentAlignment="Center" TextChanged="Searchbox_TextChanged"/>
                 <Viewbox Width="14" Height="14" HorizontalAlignment="Left" Margin="5,0,0,0">

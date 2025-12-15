@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 
 namespace ColorVision
@@ -125,6 +126,7 @@ namespace ColorVision
         private void PopulateAssemblyList()
         {
             AssemblyListView.ItemsSource = _assemblyGroups;
+            AssemblyListView.SelectedIndex =0;
         }
 
         /// <summary>
@@ -204,7 +206,7 @@ namespace ColorVision
             var button = new Button
             {
                 Margin = new Thickness(5),
-                Padding = new Thickness(10, 8),
+                Padding = new Thickness(10, 8,10,8),
                 HorizontalContentAlignment = HorizontalAlignment.Left,
                 VerticalContentAlignment = VerticalAlignment.Center,
                 Background = (Brush)Application.Current.FindResource("GlobalBackground"),
