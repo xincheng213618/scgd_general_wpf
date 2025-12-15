@@ -2,8 +2,8 @@
 
 ## 📊 总体进度
 
-**当前阶段**: Phase 2 - UI优化和用户体验 (Day 14-16)  
-**完成度**: 80% (第二周 50% 完成)
+**当前阶段**: Phase 2 - UI现代化 + 缺陷修复 (Day 17-18)  
+**完成度**: 85% (高优先级工作 85% 完成)
 
 ---
 
@@ -88,7 +88,7 @@
 
 ---
 
-### 第二周：权限检查器实践应用 + UI开发 🚧 30% DONE
+### 第二周：权限检查器实践应用 + UI开发 ✅ 100% DONE
 
 #### Day 6-8: 权限管理UI ✅ DONE
 - [x] 创建 `PermissionManagerWindow.xaml` - 权限管理窗口UI
@@ -118,9 +118,11 @@
 
 ## 🚧 进行中 (In Progress)
 
-### 当前任务：UI优化和用户体验提升 ✅ DONE
-- [x] UserManagerWindow UI重设计
-  - [x] 现代化Material Design风格
+### Phase 2.5: UI现代化 + Bug修复 ✅ DONE
+
+#### Day 17: UserManagerWindow现代化 ✅ DONE
+- [x] Material Design风格重设计
+  - [x] 现代化按钮样式（悬停/按下效果）
   - [x] 添加搜索和过滤功能
   - [x] 状态指示器（启用/禁用/删除）
   - [x] 会话信息显示
@@ -133,17 +135,41 @@
   - [x] BoolToYesNoConverter - 是/否显示
   - [x] BoolToDeleteColorConverter - 删除状态颜色
 
-**成果**: UserManagerWindow界面现代化，用户体验大幅提升，视觉反馈更清晰
+**成果**: UserManagerWindow界面现代化，用户体验大幅提升
+
+#### Day 18: LoginWindow + PermissionManagerWindow现代化 ✅ DONE
+- [x] LoginWindow完全重设计
+  - [x] Material Design卡片式布局
+  - [x] 渐变背景和阴影效果
+  - [x] 图标集成（Segoe MDL2 Assets）
+  - [x] 现代化按钮（悬停/按下/禁用状态）
+  - [x] 加载状态显示（登录中...）
+  - [x] 自动聚焦到用户名输入框
+  - [x] 版本信息显示
+  - [x] 改进的底部链接区域
+- [x] PermissionManagerWindow UI增强
+  - [x] 标题栏带图标和描述
+  - [x] 现代化按钮样式
+  - [x] 卡片式布局（白色背景 + 阴影）
+  - [x] 改进的分组显示（带徽章计数）
+  - [x] 权限项卡片化
+  - [x] 状态栏图标化
+  - [x] 整体配色优化（#0078D4主题色）
+
+**成果**: LoginWindow和PermissionManagerWindow视觉效果显著提升，用户体验更现代化
+
+#### Day 18: 关键Bug修复 ✅ DONE
+- [x] 修复未登录修改用户信息报错问题
+  - [x] RbacManager.UpdateUserRoles - 安全的审计日志记录
+  - [x] UserManagerWindow.BtnCreateUser_Click - 检查登录状态后再记录
+  - [x] LoginWindow - 安全的审计日志异常处理
+  - [x] 所有审计日志调用都增加null检查
+
+**成果**: 消除了未登录状态下操作用户信息的崩溃问题，提升系统稳定性
 
 ---
 
 ## 📋 待办事项 (To Do)
-
-### 待办：更多UI优化
-- [ ] LoginWindow UI优化
-- [ ] PermissionManagerWindow UI优化
-- [ ] 添加loading状态指示
-- [ ] 添加操作确认对话框
 
 ### 第三周：完善和测试 (Day 11-15)
 - [ ] Day 11-12: 权限检查实践

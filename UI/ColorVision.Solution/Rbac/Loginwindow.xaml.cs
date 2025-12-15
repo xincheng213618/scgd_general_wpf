@@ -19,7 +19,11 @@ namespace ColorVision.Rbac
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-
+            // 自动聚焦到用户名输入框
+            Account1.Focus();
+            
+            // 设置版本信息
+            TxtVersion.Text = $"ColorVision RBAC v2.0 - {DateTime.Now.Year}";
         }
 
         private async void Button_Click(object sender, RoutedEventArgs e)
@@ -32,6 +36,10 @@ namespace ColorVision.Rbac
                 MessageBox.Show("请输入用户名和密码", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
+            // 显示加载状态
+            BtnLogin.IsEnabled = false;
+            BtnLogin.Content = "登录中...";
 
             try
             {
@@ -56,19 +64,30 @@ namespace ColorVision.Rbac
                 RbacManagerConfig.Instance.SessionToken = sessionToken;
                 Authorization.Instance.PermissionMode = userLoginResult.UserDetail.PermissionMode;
 
-                // 记录审计日志
-                await rbacManager.AuditLogService.AddAsync(
-                    userLoginResult.User.Id,
-                    userLoginResult.User.Username,
-                    "user.login",
-                    $"用户登录成功，会话ID: {sessionToken.Substring(0, 8)}..."
-                );
+                // 安全地记录审计日志
+                try
+                {
+                    await rbacManager.AuditLogService.AddAsync(
+                        userLoginResult.User.Id,
+                        userLoginResult.User.Username,
+                        "user.login",
+                        $"用户登录成功，会话ID: {sessionToken.Substring(0, 8)}..., 设备: {Environment.MachineName}"
+                    );
+                }
+                catch { }
 
+                this.DialogResult = true;
                 this.Close();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"登录失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                // 恢复按钮状态
+                BtnLogin.IsEnabled = true;
+                BtnLogin.Content = "登  录";
             }
         }
 

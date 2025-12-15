@@ -293,7 +293,15 @@ namespace ColorVision.Rbac
                     if (list.Count > 0)
                         db.Insertable(list).ExecuteCommand();
                 }
-                try { AuditLogService.AddAsync(Config.LoginResult?.UserDetail?.UserId, Config.LoginResult?.User?.Username, "user.role.update", $"设置用户{userId}角色:{string.Join(',', roleIds ?? Array.Empty<int>())}"); } catch { }
+                // 安全地记录审计日志，避免未登录时出错
+                try 
+                { 
+                    if (Config.LoginResult?.UserDetail?.UserId != null && Config.LoginResult?.User?.Username != null)
+                    {
+                        AuditLogService.AddAsync(Config.LoginResult.UserDetail.UserId, Config.LoginResult.User.Username, "user.role.update", $"设置用户{userId}角色:{string.Join(',', roleIds ?? Array.Empty<int>())}"); 
+                    }
+                } 
+                catch { }
                 return true;
             }
             catch (Exception ex)

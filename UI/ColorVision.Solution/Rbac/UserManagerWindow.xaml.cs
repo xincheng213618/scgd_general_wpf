@@ -145,7 +145,15 @@ namespace ColorVision.Rbac
             bool result = await RbacManager.UserService.CreateUserAsync(username, password, remark, roleIds);
             if (result)
             {
-                try { RbacManager.AuditLogService.AddAsync(RbacManager.Config.LoginResult?.UserDetail?.UserId, RbacManager.Config.LoginResult?.User?.Username, "user.create", $"UI创建用户:{username}"); } catch { }
+                // 安全地记录审计日志，避免未登录时出错
+                try 
+                { 
+                    if (RbacManager.Config.LoginResult?.UserDetail?.UserId != null && RbacManager.Config.LoginResult?.User?.Username != null)
+                    {
+                        RbacManager.AuditLogService.AddAsync(RbacManager.Config.LoginResult.UserDetail.UserId, RbacManager.Config.LoginResult.User.Username, "user.create", $"UI创建用户:{username}"); 
+                    }
+                } 
+                catch { }
                 MessageBox.Show("用户创建成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 TxtUsername.Text = string.Empty;
                 TxtPassword.Password = string.Empty;
