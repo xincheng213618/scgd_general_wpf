@@ -1,5 +1,6 @@
 ﻿#pragma warning disable 
 using ColorVision.Rbac.Dtos;
+using ColorVision.Rbac.Entity;
 using ColorVision.Rbac.Security;
 using SqlSugar;
 using System;

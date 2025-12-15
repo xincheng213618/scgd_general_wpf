@@ -139,5 +139,35 @@ namespace ColorVision.Rbac
         {
             this.Close();
         }
+
+        private void BtnLogout_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show("确定要退出登录吗？", "退出登录", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                var rbacManager = RbacManager.GetInstance();
+                
+                // 清除登录信息
+                rbacManager.Config.LoginResult = new Dtos.LoginResultDto();
+                rbacManager.Config.SessionToken = string.Empty;
+                
+                // 清除持久化的凭据
+                rbacManager.Config.RememberMe = false;
+                rbacManager.Config.SavedUsername = string.Empty;
+                rbacManager.Config.SavedPasswordHash = string.Empty;
+                
+                // 重置权限
+                Authorization.Instance.PermissionMode = UI.Authorizations.PermissionMode.Guest;
+                
+                // 更新UI
+                OnPropertyChanged(nameof(CurrentUserDisplay));
+                OnPropertyChanged(nameof(UserRoleDisplay));
+                OnPropertyChanged(nameof(StatusDisplay));
+                OnPropertyChanged(nameof(IsAdminUser));
+                OnPropertyChanged(nameof(AdminButtonVisibility));
+                
+                MessageBox.Show("已成功退出登录", "退出", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
     }
 }

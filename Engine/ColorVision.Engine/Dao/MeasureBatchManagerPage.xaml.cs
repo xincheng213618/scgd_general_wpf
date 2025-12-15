@@ -3,7 +3,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Batch;
 using ColorVision.Engine.Batch.IVL;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Solution.Searches;
+using ColorVision.Solution.Workspace;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;

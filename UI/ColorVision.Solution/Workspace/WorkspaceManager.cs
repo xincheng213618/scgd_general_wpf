@@ -1,13 +1,9 @@
 ﻿using AvalonDock.Layout;
-using ColorVision.Themes;
-using ColorVision.UI.Views;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
 
-namespace ColorVision.Solution.Searches
+namespace ColorVision.Solution.Workspace
 {
-    public static class SolutionViewExtensions
+    public static class WorkspaceManager
     {
         public static LayoutDocument? FindDocumentById(object parent, string contentId)
         {
@@ -81,7 +77,7 @@ namespace ColorVision.Solution.Searches
             return null;
         }
 
-        public static SolutionView SolutionView { get; set; }
+        public static WorkspaceMainView SolutionView { get; set; }
 
         public static LayoutRoot layoutRoot { get; set; }
 
@@ -89,7 +85,7 @@ namespace ColorVision.Solution.Searches
 
         public static void SelectContentId(string ContentId)
         {
-            var existingDocument = SolutionViewExtensions.FindDocumentById(layoutRoot, ContentId);
+            var existingDocument = WorkspaceManager.FindDocumentById(layoutRoot, ContentId);
 
             if (existingDocument != null)
             {
@@ -116,58 +112,5 @@ namespace ColorVision.Solution.Searches
         }
 
         public static List <Action> DealyLoad { get; set; } = new List<Action>();
-    }
-
-
-
-    /// <summary>
-    /// SolutionView.xaml 的交互逻辑
-    /// </summary>
-    public partial class SolutionView : UserControl, IView
-    {
-        public SolutionView()
-        {
-            InitializeComponent();
-            SolutionViewExtensions.SolutionView = this;
-            SolutionViewExtensions.layoutRoot = _layoutRoot;
-            SolutionViewExtensions.LayoutDocumentPane = LayoutDocumentPane;
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (sender, e) => Colsed()));
-            InputBindings.Add(new KeyBinding(ApplicationCommands.Close, new KeyGesture(Key.W, ModifierKeys.Control)));
-
-            foreach (var action in SolutionViewExtensions.DealyLoad)
-            {
-                action();
-            }
-            SolutionViewExtensions.DealyLoad.Clear();
-        }
-
-        public void Colsed()
-        {
-            var pannel = SolutionViewExtensions.FindDocumentActive(LayoutDocumentPane);
-            pannel.Close();
-        }
-
-
-        public View View { get; set; }
-        private void UserControl_Initialized(object sender, System.EventArgs e)
-        {
-            View = new View();
-
-            void ThemeChange(Theme theme)
-            {
-                if (theme == Theme.Dark)
-                {
-                    DockingManager1.Theme = new AvalonDock.Themes.Vs2013DarkTheme();
-                }
-                else
-                {
-                    DockingManager1.Theme = new AvalonDock.Themes.Vs2013LightTheme();
-                }
-            };
-
-            ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
-            ThemeChange(ThemeManager.Current.CurrentUITheme);
-
-        }  
     }
 }

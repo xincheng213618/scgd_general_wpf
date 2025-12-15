@@ -1,7 +1,7 @@
 ﻿using ColorVision.Database;
 using SqlSugar;
 
-namespace ColorVision.Rbac
+namespace ColorVision.Rbac.Entity
 {
     [SugarTable("sys_user")]
     [SugarIndex("uidx_sys_user_username", nameof(Username), OrderByType.Asc, true)] // 唯一用户名索引

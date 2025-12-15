@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace ColorVision.Solution.Searches
+namespace ColorVision.Solution.Workspace
 {
 
     [FolderEditor("SolutionEditor")]
@@ -14,7 +14,7 @@ namespace ColorVision.Solution.Searches
         public override void Open(string filePath)
         {
             string GuidId = Tool.GetMD5(filePath);
-            var existingDocument = SolutionViewExtensions.FindDocumentById(SolutionViewExtensions.layoutRoot, GuidId.ToString());
+            var existingDocument = WorkspaceManager.FindDocumentById(WorkspaceManager.layoutRoot, GuidId.ToString());
 
             if (existingDocument != null)
             {
@@ -35,13 +35,13 @@ namespace ColorVision.Solution.Searches
             {
                 LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title ="  主页 " };
                 layoutDocument.Content = new SoloutionEditorControl();
-                SolutionViewExtensions.LayoutDocumentPane.Children.Add(layoutDocument);
-                SolutionViewExtensions.LayoutDocumentPane.SelectedContentIndex = SolutionViewExtensions.LayoutDocumentPane.IndexOf(layoutDocument);
+                WorkspaceManager.LayoutDocumentPane.Children.Add(layoutDocument);
+                WorkspaceManager.LayoutDocumentPane.SelectedContentIndex = WorkspaceManager.LayoutDocumentPane.IndexOf(layoutDocument);
                 layoutDocument.IsActiveChanged += (s, e) =>
                 {
                     if (layoutDocument.IsActive)
                     {
-                        SolutionViewExtensions.OnContentIdSelected(filePath);
+                        WorkspaceManager.OnContentIdSelected(filePath);
                     }
                 };
             }

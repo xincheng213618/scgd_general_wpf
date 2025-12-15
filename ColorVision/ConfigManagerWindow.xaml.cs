@@ -55,7 +55,7 @@ namespace ColorVision
         private readonly char[] Chars = new[] { ' ' };
         private void Searchbox_GotFocus(object sender, RoutedEventArgs e)
         {
-            //Searches = new ObservableCollection<ISearch>(new SearchProvider().GetSearchItems());
+            //Workspace = new ObservableCollection<ISearch>(new SearchProvider().GetSearchItems());
         }
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {

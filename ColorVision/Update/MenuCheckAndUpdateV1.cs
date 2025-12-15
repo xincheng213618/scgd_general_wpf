@@ -6,8 +6,6 @@ using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Update
 {
-
-
     public class MenuCheckAndUpdateV1: MenuItemBase, IHotKey
     {
         public HotKeys HotKeys => new HotKeys(Properties.Resources.Update, new Hotkey(Key.U, ModifierKeys.Control), Execute);
