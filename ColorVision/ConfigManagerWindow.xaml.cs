@@ -56,9 +56,23 @@ namespace ColorVision
         }
         private string _displayName;
 
+        public string Description
+        {
+            get => _description;
+            set { _description = value; OnPropertyChanged(); }
+        }
+        private string _description;
+
         public Type ConfigType { get; set; }
         public IConfig ConfigInstance { get; set; }
         public string AssemblyName { get; set; }
+        
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set { _isSelected = value; OnPropertyChanged(); }
+        }
+        private bool _isSelected;
     }
 
     /// <summary>
@@ -74,6 +88,21 @@ namespace ColorVision
         public ObservableCollection<AssemblyGroup> AssemblyGroups { get; set; } = new ObservableCollection<AssemblyGroup>();
         private List<ConfigItem> _allConfigs = new List<ConfigItem>();
         private Dictionary<string, FrameworkElement> _assemblySectionElements = new Dictionary<string, FrameworkElement>();
+        private ConfigItem _selectedConfig = null;
+        private int _configColumns = 3;
+
+        public int ConfigColumns
+        {
+            get => _configColumns;
+            set
+            {
+                if (_configColumns != value && value > 0 && value <= 6)
+                {
+                    _configColumns = value;
+                    RebuildConfigGrid();
+                }
+            }
+        }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -108,6 +137,7 @@ namespace ColorVision
                     var configItem = new ConfigItem
                     {
                         DisplayName = GetDisplayName(config.Key),
+                        Description = GetDescription(config.Key),
                         ConfigType = config.Key,
                         ConfigInstance = config.Value,
                         AssemblyName = group.DisplayName
@@ -180,10 +210,10 @@ namespace ColorVision
                 // Store reference for scrolling
                 _assemblySectionElements[group.DisplayName] = headerBorder;
 
-                // Config grid (3 columns)
+                // Config grid (dynamic columns)
                 var uniformGrid = new UniformGrid
                 {
-                    Columns = 3,
+                    Columns = _configColumns,
                     Margin = new Thickness(0, 0, 0, 0)
                 };
 
@@ -205,41 +235,83 @@ namespace ColorVision
             var button = new Button
             {
                 Margin = new Thickness(5),
-                Padding = new Thickness(10, 8,10,8),
+                Padding = new Thickness(10, 8),
                 HorizontalContentAlignment = HorizontalAlignment.Left,
                 VerticalContentAlignment = VerticalAlignment.Center,
-                Background = (Brush)Application.Current.FindResource("GlobalBackground"),
-                BorderBrush = (Brush)Application.Current.FindResource("BorderBrush"),
-                BorderThickness = new Thickness(1),
                 Tag = config
             };
+
+            // Try to use ButtonCommand style
+            try
+            {
+                button.Style = (Style)Application.Current.FindResource("ButtonCommand");
+            }
+            catch
+            {
+                // Fallback to basic style
+                button.Background = (Brush)Application.Current.FindResource("GlobalBackground");
+                button.BorderBrush = (Brush)Application.Current.FindResource("BorderBrush");
+                button.BorderThickness = new Thickness(1);
+            }
 
             var stackPanel = new StackPanel();
             
             var nameText = new TextBlock
             {
                 Text = config.DisplayName,
-                FontSize = 12,
+                FontSize = 13,
                 FontWeight = FontWeights.Medium,
                 Foreground = (Brush)Application.Current.FindResource("PrimaryTextBrush"),
                 TextWrapping = TextWrapping.Wrap
             };
             stackPanel.Children.Add(nameText);
 
-            var assemblyText = new TextBlock
+            // Only add description if it exists
+            if (!string.IsNullOrWhiteSpace(config.Description))
             {
-                Text = config.AssemblyName,
-                FontSize = 10,
-                Foreground = (Brush)Application.Current.FindResource("SecondaryTextBrush"),
-                Margin = new Thickness(0, 3, 0, 0),
-                Opacity = 0.7
-            };
-            stackPanel.Children.Add(assemblyText);
+                var descText = new TextBlock
+                {
+                    Text = config.Description,
+                    FontSize = 10,
+                    Foreground = (Brush)Application.Current.FindResource("SecondaryTextBrush"),
+                    Margin = new Thickness(0, 3, 0, 0),
+                    Opacity = 0.7,
+                    TextWrapping = TextWrapping.Wrap
+                };
+                stackPanel.Children.Add(descText);
+            }
 
             button.Content = stackPanel;
             button.Click += ConfigButton_Click;
 
+            // Update selection visual state
+            UpdateButtonSelectionState(button, config.IsSelected);
+
             return button;
+        }
+
+        /// <summary>
+        /// Update button visual state based on selection
+        /// </summary>
+        private void UpdateButtonSelectionState(Button button, bool isSelected)
+        {
+            if (isSelected)
+            {
+                button.BorderBrush = (Brush)Application.Current.FindResource("PrimaryBrush");
+                button.BorderThickness = new Thickness(2);
+            }
+            else
+            {
+                try
+                {
+                    button.BorderBrush = (Brush)Application.Current.FindResource("BorderBrush");
+                }
+                catch
+                {
+                    button.BorderBrush = Brushes.Gray;
+                }
+                button.BorderThickness = new Thickness(1);
+            }
         }
 
         /// <summary>
@@ -249,7 +321,40 @@ namespace ColorVision
         {
             if (sender is Button button && button.Tag is ConfigItem config)
             {
+                // Deselect previous config
+                if (_selectedConfig != null && _selectedConfig != config)
+                {
+                    _selectedConfig.IsSelected = false;
+                }
+
+                // Select current config
+                config.IsSelected = true;
+                _selectedConfig = config;
+
+                // Update all button visual states
+                UpdateAllButtonStates();
+
                 DisplayConfigProperty(config);
+            }
+        }
+
+        /// <summary>
+        /// Update all button selection states
+        /// </summary>
+        private void UpdateAllButtonStates()
+        {
+            foreach (var child in ConfigContainer.Children)
+            {
+                if (child is UniformGrid grid)
+                {
+                    foreach (var gridChild in grid.Children)
+                    {
+                        if (gridChild is Button btn && btn.Tag is ConfigItem cfg)
+                        {
+                            UpdateButtonSelectionState(btn, cfg.IsSelected);
+                        }
+                    }
+                }
             }
         }
 
@@ -282,6 +387,15 @@ namespace ColorVision
 
             // Fallback to type name
             return type.Name;
+        }
+
+        /// <summary>
+        /// Get description for a type from DescriptionAttribute
+        /// </summary>
+        private string GetDescription(Type type)
+        {
+            var descAttr = type.GetCustomAttribute<DescriptionAttribute>();
+            return descAttr?.Description ?? string.Empty;
         }
 
         /// <summary>
@@ -335,8 +449,39 @@ namespace ColorVision
             if (sender is TextBox textBox)
             {
                 string searchText = textBox.Text?.Trim() ?? "";
+                
+                // Check if selected config will be filtered out
+                if (!string.IsNullOrWhiteSpace(searchText) && _selectedConfig != null)
+                {
+                    var lowerSearch = searchText.ToLower();
+                    bool selectedConfigMatches = _selectedConfig.DisplayName.ToLower().Contains(lowerSearch) || 
+                                                 _selectedConfig.AssemblyName.ToLower().Contains(lowerSearch);
+                    
+                    if (!selectedConfigMatches)
+                    {
+                        // Clear selection and right panel
+                        _selectedConfig.IsSelected = false;
+                        _selectedConfig = null;
+                        ClearPropertyDisplay();
+                    }
+                }
+                
                 RebuildConfigGrid(string.IsNullOrWhiteSpace(searchText) ? null : searchText);
             }
+        }
+
+        /// <summary>
+        /// Clear property display
+        /// </summary>
+        private void ClearPropertyDisplay()
+        {
+            PropertyTitle.Text = "选择一个配置查看详情";
+            
+            if (PropertyContainer.Child is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+            PropertyContainer.Child = null;
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
@@ -348,6 +493,14 @@ namespace ColorVision
         private void OpenFolder_Click(object sender, RoutedEventArgs e)
         {
             PlatformHelper.OpenFolderAndSelectFile(ConfigHandler.GetInstance().ConfigFilePath);
+        }
+
+        private void ColumnCountComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && comboBox.SelectedIndex >= 0)
+            {
+                ConfigColumns = comboBox.SelectedIndex + 1; // Index 0 = 1 column, etc.
+            }
         }
     }
 }
