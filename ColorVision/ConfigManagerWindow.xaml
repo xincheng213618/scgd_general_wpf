@@ -55,7 +55,7 @@
         <!-- Main content area: Left Assembly List + Middle Config Grid + Right PropertyGrid -->
         <Grid Grid.Row="1" Margin="5,0,5,5">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="180" MinWidth="150"/>
+                <ColumnDefinition Width="200" MinWidth="150"/>
                 <ColumnDefinition Width="5"/>
                 <ColumnDefinition Width="*" MinWidth="350"/>
                 <ColumnDefinition Width="5"/>
@@ -70,25 +70,33 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <TextBlock Grid.Row="0" Text="程序集" FontSize="14" FontWeight="Bold" Margin="5,0,0,5" Foreground="{DynamicResource PrimaryTextBrush}"/>
-                    <ListView x:Name="AssemblyListView" Grid.Row="1" Background="Transparent" BorderThickness="0" 
-                             SelectionChanged="AssemblyListView_SelectionChanged"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <ListView x:Name="AssemblyListView" Grid.Row="1" Background="Transparent" BorderThickness="0"  SelectionChanged="AssemblyListView_SelectionChanged"
+                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                                 <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="Padding" Value="5"/>
+                                <Setter Property="Padding" Value="0"/>
                                 <Setter Property="Margin" Value="0,2"/>
                             </Style>
                         </ListView.ItemContainerStyle>
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding DisplayName}" 
-                                          FontSize="12" 
-                                          TextWrapping="Wrap"
-                                          Foreground="{DynamicResource PrimaryTextBrush}"/>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
+                        <ListView.View>
+                            <GridView>
+                                <GridView.ColumnHeaderContainerStyle>
+                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </Style>
+                                </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate  DataType="{x:Type local:AssemblyGroup}">
+                                            <TextBlock Text="{Binding DisplayName}"  FontSize="12"  TextWrapping="Wrap" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+       
+                        </ListView.View>
                     </ListView>
                 </Grid>
             </Border>
