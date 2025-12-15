@@ -16,13 +16,16 @@
         </Grid.RowDefinitions>
 
         <!-- Top toolbar -->
-        <StackPanel Grid.Row="0" Margin="5,5,5,0">
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                <Button Content="{x:Static properties:Resources.SaveConfiguration}" Click="Save_Click" Margin="0,0,5,0" Padding="10,5"/>
-                <Button Content="{x:Static properties:Resources.OpenConfigFolder}" Click="OpenFolder_Click" Padding="10,5"/>
-            </StackPanel>
-            <Grid x:Name="SearchGrid" Margin="0,0,0,5" HorizontalAlignment="Stretch" VerticalAlignment="Center">
-                <hc:TextBox x:Name="Searchbox" Style="{DynamicResource TextBoxPlusBaseStyle}" Padding="25,5,5,5" BorderThickness="1" 
+        <Grid Grid.Row="0" Margin="5,5,5,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Search box on the left -->
+            <Grid x:Name="SearchGrid" Grid.Column="0" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <hc:TextBox x:Name="Searchbox" Style="{DynamicResource TextBoxPlus.Small}" Padding="25,5,5,5" BorderThickness="1" 
                            hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" 
                            VerticalContentAlignment="Center" TextChanged="Searchbox_TextChanged"/>
                 <Viewbox Width="14" Height="14" HorizontalAlignment="Left" Margin="5,0,0,0">
@@ -50,7 +53,27 @@
                     </Rectangle>
                 </Viewbox>
             </Grid>
-        </StackPanel>
+            
+            <!-- Column count selector in the middle -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,5,0">
+                <TextBlock Text="列数:" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <ComboBox x:Name="ColumnCountComboBox" Width="60" SelectedIndex="2" SelectionChanged="ColumnCountComboBox_SelectionChanged"
+                         Style="{DynamicResource ComboBox.Small}">
+                    <ComboBoxItem Content="1"/>
+                    <ComboBoxItem Content="2"/>
+                    <ComboBoxItem Content="3"/>
+                    <ComboBoxItem Content="4"/>
+                    <ComboBoxItem Content="5"/>
+                    <ComboBoxItem Content="6"/>
+                </ComboBox>
+            </StackPanel>
+            
+            <!-- Action buttons on the right -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button Content="{x:Static properties:Resources.SaveConfiguration}" Click="Save_Click" Margin="0,0,5,0" Padding="8,5"/>
+                <Button Content="{x:Static properties:Resources.OpenConfigFolder}" Click="OpenFolder_Click" Padding="8,5"/>
+            </StackPanel>
+        </Grid>
 
         <!-- Main content area: Left Assembly List + Middle Config Grid + Right PropertyGrid -->
         <Grid Grid.Row="1" Margin="5,0,5,5">
