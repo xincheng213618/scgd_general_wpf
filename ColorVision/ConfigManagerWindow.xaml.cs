@@ -56,13 +56,6 @@ namespace ColorVision
         }
         private string _displayName;
 
-        public string Description
-        {
-            get => _description;
-            set { _description = value; OnPropertyChanged(); }
-        }
-        private string _description;
-
         public Type ConfigType { get; set; }
         public IConfig ConfigInstance { get; set; }
         public string AssemblyName { get; set; }
@@ -137,7 +130,6 @@ namespace ColorVision
                     var configItem = new ConfigItem
                     {
                         DisplayName = GetDisplayName(config.Key),
-                        Description = GetDescription(config.Key),
                         ConfigType = config.Key,
                         ConfigInstance = config.Value,
                         AssemblyName = group.DisplayName
@@ -235,51 +227,36 @@ namespace ColorVision
             var button = new Button
             {
                 Margin = new Thickness(5),
-                Padding = new Thickness(10, 8,10,8),
+                Padding = new Thickness(10, 8),
                 HorizontalContentAlignment = HorizontalAlignment.Left,
                 VerticalContentAlignment = VerticalAlignment.Center,
+                Background = (Brush)Application.Current.FindResource("GlobalBackground"),
+                BorderBrush = (Brush)Application.Current.FindResource("BorderBrush"),
+                BorderThickness = new Thickness(1),
                 Tag = config
             };
-
-            // Try to use ButtonCommand style
-            try
-            {
-                button.Style = (Style)Application.Current.FindResource("ButtonCommand");
-            }
-            catch
-            {
-                // Fallback to basic style
-                button.Background = (Brush)Application.Current.FindResource("GlobalBackground");
-                button.BorderBrush = (Brush)Application.Current.FindResource("BorderBrush");
-                button.BorderThickness = new Thickness(1);
-            }
 
             var stackPanel = new StackPanel();
             
             var nameText = new TextBlock
             {
                 Text = config.DisplayName,
-                FontSize = 13,
+                FontSize = 12,
                 FontWeight = FontWeights.Medium,
                 Foreground = (Brush)Application.Current.FindResource("PrimaryTextBrush"),
                 TextWrapping = TextWrapping.Wrap
             };
             stackPanel.Children.Add(nameText);
 
-            // Only add description if it exists
-            if (!string.IsNullOrWhiteSpace(config.Description))
+            var assemblyText = new TextBlock
             {
-                var descText = new TextBlock
-                {
-                    Text = config.Description,
-                    FontSize = 10,
-                    Foreground = (Brush)Application.Current.FindResource("SecondaryTextBrush"),
-                    Margin = new Thickness(0, 3, 0, 0),
-                    Opacity = 0.7,
-                    TextWrapping = TextWrapping.Wrap
-                };
-                stackPanel.Children.Add(descText);
-            }
+                Text = config.AssemblyName,
+                FontSize = 10,
+                Foreground = (Brush)Application.Current.FindResource("SecondaryTextBrush"),
+                Margin = new Thickness(0, 3, 0, 0),
+                Opacity = 0.7
+            };
+            stackPanel.Children.Add(assemblyText);
 
             button.Content = stackPanel;
             button.Click += ConfigButton_Click;
@@ -302,14 +279,7 @@ namespace ColorVision
             }
             else
             {
-                try
-                {
-                    button.BorderBrush = (Brush)Application.Current.FindResource("BorderBrush");
-                }
-                catch
-                {
-                    button.BorderBrush = Brushes.Gray;
-                }
+                button.BorderBrush = (Brush)Application.Current.FindResource("BorderBrush");
                 button.BorderThickness = new Thickness(1);
             }
         }
@@ -387,15 +357,6 @@ namespace ColorVision
 
             // Fallback to type name
             return type.Name;
-        }
-
-        /// <summary>
-        /// Get description for a type from DescriptionAttribute
-        /// </summary>
-        private string GetDescription(Type type)
-        {
-            var descAttr = type.GetCustomAttribute<DescriptionAttribute>();
-            return descAttr?.Description ?? string.Empty;
         }
 
         /// <summary>
