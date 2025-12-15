@@ -235,7 +235,7 @@
                                                         CornerRadius="10"
                                                         Padding="6,2"
                                                         Margin="8,0,0,0">
-                                                    <TextBlock Text="{Binding Permissions.Count, StringFormat='{0} 项'}" 
+                                                    <TextBlock Text="{Binding Permissions.Count}" 
                                                                Foreground="White" 
                                                                FontSize="11"
                                                                FontWeight="Medium"/>

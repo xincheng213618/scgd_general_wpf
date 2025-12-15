@@ -25,9 +25,9 @@ namespace ColorVision.Rbac
 
         public PermissionManagerWindow()
         {
+            _rbacManager = RbacManager.GetInstance();
             InitializeComponent();
             this.ApplyCaption();
-            _rbacManager = RbacManager.GetInstance();
         }
 
         private async void Window_Initialized(object sender, EventArgs e)
