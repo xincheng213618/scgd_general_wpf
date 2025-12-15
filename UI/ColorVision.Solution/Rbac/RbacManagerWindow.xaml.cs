@@ -157,7 +157,7 @@ namespace ColorVision.Rbac
                 rbacManager.Config.SavedPasswordHash = string.Empty;
                 
                 // 重置权限
-                Authorization.Instance.PermissionMode = UI.Authorizations.PermissionMode.Visitor;
+                Authorization.Instance.PermissionMode = UI.Authorizations.PermissionMode.Guest;
                 
                 // 更新UI
                 OnPropertyChanged(nameof(CurrentUserDisplay));

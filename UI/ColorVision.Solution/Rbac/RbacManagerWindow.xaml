@@ -185,7 +185,7 @@
                                     <hc:Gravatar Id="{Binding Config.LoginResult.User.Username}" 
                                                  Width="96" 
                                                  Height="96"
-                                                 CornerRadius="48"/>
+                                                 />
                                     <TextBlock Text="{Binding CurrentUserDisplay}" 
                                                HorizontalAlignment="Center"
                                                FontWeight="SemiBold"

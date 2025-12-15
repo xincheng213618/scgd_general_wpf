@@ -53,7 +53,7 @@ namespace ColorVision.Rbac
                 var rbacManager = RbacManager.GetInstance();
                 
                 // 使用保存的凭据尝试登录
-                LoginResultDto userLoginResult = await rbacManager.AuthService.LoginWithHashAsync(
+                LoginResultDto userLoginResult = await rbacManager.AuthService.LoginAndGetDetailAsync(
                     config.SavedUsername, 
                     config.SavedPasswordHash);
                 
