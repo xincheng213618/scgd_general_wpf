@@ -1,17 +1,18 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision
 {
-
     public class MenuConfigManagerWindow : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Help;
@@ -26,6 +27,32 @@ namespace ColorVision
     }
 
     /// <summary>
+    /// Tree node representing assembly, namespace, or config item
+    /// </summary>
+    public class ConfigTreeNode : ViewModelBase
+    {
+        public string DisplayName { get; set; }
+        public ConfigNodeType NodeType { get; set; }
+        public Type ConfigType { get; set; }
+        public IConfig ConfigInstance { get; set; }
+        public ObservableCollection<ConfigTreeNode> Children { get; set; } = new ObservableCollection<ConfigTreeNode>();
+
+        public bool IsExpanded
+        {
+            get => _isExpanded;
+            set { _isExpanded = value; OnPropertyChanged(); }
+        }
+        private bool _isExpanded = true;
+    }
+
+    public enum ConfigNodeType
+    {
+        Assembly,
+        Namespace,
+        Config
+    }
+
+    /// <summary>
     /// ConfigManagerWindow.xaml 的交互逻辑
     /// </summary>
     public partial class ConfigManagerWindow : Window
@@ -34,130 +61,254 @@ namespace ColorVision
         {
             InitializeComponent();
         }
-        List<KeyValuePair<Type, IConfig>> Templates  = new List<KeyValuePair<Type, IConfig>>();
+
+        private ObservableCollection<ConfigTreeNode> _rootNodes = new ObservableCollection<ConfigTreeNode>();
+        private List<ConfigTreeNode> _allConfigNodes = new List<ConfigTreeNode>();
+
         private void Window_Initialized(object sender, EventArgs e)
         {
-            Templates  = ConfigHandler.GetInstance().Configs.ToList();
-
-            // 统计模板总数
-            int totalTemplateCount = Templates.Count;
-
-            // 绑定到 ListView
-            ListView2.ItemsSource = Templates;
+            BuildConfigTree();
+            ConfigTreeView.ItemsSource = _rootNodes;
 
             // 显示汇总信息
-            SummaryText.Text = $"共计{Templates.Count}类模板，{totalTemplateCount}个模板";
+            int totalConfigs = _allConfigNodes.Count;
+            int totalAssemblies = _rootNodes.Count;
+            SummaryText.Text = $"共计 {totalAssemblies} 个程序集，{totalConfigs} 个配置类型";
         }
 
-        public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();
-        public List<ISearch> filteredResults { get; set; } = new List<ISearch>();
-
-        private readonly char[] Chars = new[] { ' ' };
-        private void Searchbox_GotFocus(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Build hierarchical tree structure from configs
+        /// </summary>
+        private void BuildConfigTree()
         {
-            //Searches = new ObservableCollection<ISearch>(new SearchProvider().GetSearchItems());
+            var configs = ConfigHandler.GetInstance().Configs.ToList();
+            var assemblyGroups = configs.GroupBy(kvp => kvp.Key.Assembly);
+
+            foreach (var assemblyGroup in assemblyGroups.OrderBy(g => g.Key.GetName().Name))
+            {
+                var assemblyNode = new ConfigTreeNode
+                {
+                    DisplayName = assemblyGroup.Key.GetName().Name,
+                    NodeType = ConfigNodeType.Assembly,
+                    IsExpanded = true
+                };
+
+                // Group by namespace within assembly
+                var namespaceGroups = assemblyGroup.GroupBy(kvp => kvp.Key.Namespace ?? "Global");
+
+                foreach (var nsGroup in namespaceGroups.OrderBy(g => g.Key))
+                {
+                    // Build hierarchical namespace structure
+                    var namespaceParts = nsGroup.Key.Split('.');
+                    ConfigTreeNode currentParent = assemblyNode;
+
+                    // Create intermediate namespace nodes
+                    string currentNs = "";
+                    foreach (var part in namespaceParts)
+                    {
+                        currentNs = string.IsNullOrEmpty(currentNs) ? part : $"{currentNs}.{part}";
+                        
+                        // Check if namespace node already exists
+                        var existingNsNode = currentParent.Children.FirstOrDefault(n => 
+                            n.NodeType == ConfigNodeType.Namespace && n.DisplayName == part);
+
+                        if (existingNsNode == null)
+                        {
+                            var nsNode = new ConfigTreeNode
+                            {
+                                DisplayName = part,
+                                NodeType = ConfigNodeType.Namespace,
+                                IsExpanded = false
+                            };
+                            currentParent.Children.Add(nsNode);
+                            currentParent = nsNode;
+                        }
+                        else
+                        {
+                            currentParent = existingNsNode;
+                        }
+                    }
+
+                    // Add config items to the deepest namespace level
+                    foreach (var config in nsGroup.OrderBy(c => GetDisplayName(c.Key)))
+                    {
+                        var configNode = new ConfigTreeNode
+                        {
+                            DisplayName = GetDisplayName(config.Key),
+                            NodeType = ConfigNodeType.Config,
+                            ConfigType = config.Key,
+                            ConfigInstance = config.Value
+                        };
+                        currentParent.Children.Add(configNode);
+                        _allConfigNodes.Add(configNode);
+                    }
+                }
+
+                _rootNodes.Add(assemblyNode);
+            }
         }
+
+        /// <summary>
+        /// Get display name for a type, preferring DisplayNameAttribute
+        /// </summary>
+        private string GetDisplayName(Type type)
+        {
+            // Try to get DisplayName attribute
+            var displayNameAttr = type.GetCustomAttribute<DisplayNameAttribute>();
+            if (displayNameAttr != null && !string.IsNullOrWhiteSpace(displayNameAttr.DisplayName))
+            {
+                return displayNameAttr.DisplayName;
+            }
+
+            // Fallback to type name
+            return type.Name;
+        }
+
+        /// <summary>
+        /// Handle tree view selection change
+        /// </summary>
+        private void ConfigTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (e.NewValue is ConfigTreeNode node && node.NodeType == ConfigNodeType.Config)
+            {
+                DisplayConfigProperty(node);
+            }
+            else
+            {
+                ClearPropertyDisplay();
+            }
+        }
+
+        /// <summary>
+        /// Display property editor for selected config
+        /// </summary>
+        private void DisplayConfigProperty(ConfigTreeNode node)
+        {
+            if (node.ConfigInstance == null) return;
+
+            PropertyTitle.Text = $"配置: {node.DisplayName}";
+            SummaryText1.Text = $"当前选择: {node.DisplayName}";
+
+            // Remove old property editor if exists
+            PropertyContainer.Child = null;
+
+            // Create property editor using PropertyEditorHelper
+            var propertyPanel = PropertyEditorHelper.GenPropertyEditorControl(node.ConfigInstance);
+
+            // Wrap in ScrollViewer for better UX
+            var scrollViewer = new ScrollViewer
+            {
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                Margin = new Thickness(5)
+            };
+            scrollViewer.Content = propertyPanel;
+
+            PropertyContainer.Child = scrollViewer;
+        }
+
+        /// <summary>
+        /// Clear property display
+        /// </summary>
+        private void ClearPropertyDisplay()
+        {
+            PropertyTitle.Text = "选择一个配置查看详情";
+            SummaryText1.Text = "";
+            PropertyContainer.Child = null;
+        }
+
+        /// <summary>
+        /// Filter tree based on search text
+        /// </summary>
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox)
             {
-                string searchtext = textBox.Text;
-                if (string.IsNullOrWhiteSpace(searchtext))
+                string searchText = textBox.Text?.Trim() ?? "";
+                
+                if (string.IsNullOrWhiteSpace(searchText))
                 {
-                    SearchPopup.IsOpen = false;
+                    // Show all nodes
+                    RestoreTreeVisibility();
                 }
                 else
                 {
-                    SearchPopup.IsOpen = true;
-                    var keywords = searchtext.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
-
-                    filteredResults = Searches
-                        .OfType<ISearch>()
-                        .Where(template => keywords.All(keyword =>
-                            template.Header.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                            template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                            ))
-                        .ToList();
-                    ListView1.ItemsSource = filteredResults;
-                    if (filteredResults.Count > 0)
-                    {
-                        ListView1.SelectedIndex = 0;
-                    }
+                    // Filter nodes
+                    FilterTree(searchText.ToLower());
                 }
             }
         }
 
-        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        /// <summary>
+        /// Filter tree nodes based on search text
+        /// </summary>
+        private void FilterTree(string searchText)
         {
-
+            foreach (var assemblyNode in _rootNodes)
+            {
+                bool assemblyMatches = FilterNodeRecursive(assemblyNode, searchText);
+                assemblyNode.IsExpanded = assemblyMatches;
+            }
         }
 
-        private void Searchbox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        /// <summary>
+        /// Recursively filter nodes and return true if any child matches
+        /// </summary>
+        private bool FilterNodeRecursive(ConfigTreeNode node, string searchText)
         {
-            if (e.Key == System.Windows.Input.Key.Enter)
+            bool matches = node.DisplayName.ToLower().Contains(searchText);
+
+            if (node.Children.Count > 0)
             {
-                if (ListView1.SelectedIndex > -1)
+                bool anyChildMatches = false;
+                foreach (var child in node.Children)
                 {
-                    Searchbox.Text = string.Empty;
-                    filteredResults[ListView1.SelectedIndex].Command?.Execute(this);
+                    bool childMatches = FilterNodeRecursive(child, searchText);
+                    anyChildMatches = anyChildMatches || childMatches;
+                }
+
+                if (anyChildMatches)
+                {
+                    node.IsExpanded = true;
+                    return true;
                 }
             }
-            if (e.Key == System.Windows.Input.Key.Up)
-            {
-                if (ListView1.SelectedIndex > 0)
-                    ListView1.SelectedIndex -= 1;
-            }
-            if (e.Key == System.Windows.Input.Key.Down)
-            {
-                if (ListView1.SelectedIndex < filteredResults.Count - 1)
-                    ListView1.SelectedIndex += 1;
 
+            return matches;
+        }
+
+        /// <summary>
+        /// Restore all nodes visibility
+        /// </summary>
+        private void RestoreTreeVisibility()
+        {
+            foreach (var assemblyNode in _rootNodes)
+            {
+                RestoreNodeVisibility(assemblyNode);
             }
         }
 
-        private void ListView1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        /// <summary>
+        /// Recursively restore node visibility
+        /// </summary>
+        private void RestoreNodeVisibility(ConfigTreeNode node)
         {
-            if (ListView1.SelectedIndex > -1)
-            {
-                Searchbox.Text = string.Empty;
-                filteredResults[ListView1.SelectedIndex].Command?.Execute(this);
-            }
-        }
+            // Keep assembly nodes expanded, collapse namespace nodes by default
+            if (node.NodeType == ConfigNodeType.Assembly)
+                node.IsExpanded = true;
+            else if (node.NodeType == ConfigNodeType.Namespace)
+                node.IsExpanded = false;
 
-        private void ListView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (ListView2.SelectedIndex > -1)
+            foreach (var child in node.Children)
             {
-                if (Templates[ListView2.SelectedIndex].Value is IConfig template)
-                {
-                    SummaryText1.Text = $"当前选择：{template}";
-                }
-                else
-                {
-                    SummaryText1.Text = string.Empty;
-                }
-            }
-            else
-            {
-                SummaryText1.Text = string.Empty;
-            }
-        }
-
-        private void ListView2_MouseDoubleCick(object sender, MouseButtonEventArgs e)
-        {
-            if (ListView2.SelectedIndex > -1)
-            {
-                if (Templates[ListView2.SelectedIndex].Value is IConfig template)
-                {
-                    new PropertyEditorWindow(template).Show();
-                }
+                RestoreNodeVisibility(child);
             }
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             ConfigHandler.GetInstance().SaveConfigs();
-            MessageBox.Show("保存成功");
+            MessageBox.Show("保存成功", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void OpenFolder_Click(object sender, RoutedEventArgs e)

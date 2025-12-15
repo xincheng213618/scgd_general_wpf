@@ -6,31 +6,37 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision"
         xmlns:properties ="clr-namespace:ColorVision.Properties"
+        xmlns:ui="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.ConfigurationManagement}" Height="450" Width="800" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.ConfigurationManagement}" Height="600" Width="1000" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <Window.Resources>
+        <HierarchicalDataTemplate x:Key="ConfigTreeTemplate" ItemsSource="{Binding Children}">
+            <TextBlock Text="{Binding DisplayName}" FontSize="13" Margin="2"/>
+        </HierarchicalDataTemplate>
+        <ui:TreeViewItemMarginConverter x:Key="TreeViewItemMarginConverter" />
+    </Window.Resources>
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="11*"/>
-            <ColumnDefinition Width="149*"/>
-        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" Margin="0,2,0,2" Grid.ColumnSpan="2">
-            <StackPanel Orientation="Horizontal" Margin="5">
-                <Button Content="{x:Static properties:Resources.SaveConfiguration}" Click="Save_Click" Margin="0,0,5,0"/>
-                <Button Content="{x:Static properties:Resources.OpenConfigFolder}" Click="OpenFolder_Click"/>
 
+        <!-- Top toolbar -->
+        <StackPanel Grid.Row="0" Margin="5,5,5,0">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <Button Content="{x:Static properties:Resources.SaveConfiguration}" Click="Save_Click" Margin="0,0,5,0" Padding="10,5"/>
+                <Button Content="{x:Static properties:Resources.OpenConfigFolder}" Click="OpenFolder_Click" Padding="10,5"/>
             </StackPanel>
-            <Grid x:Name="SearchGrid" Margin="5,1" HorizontalAlignment="Stretch" VerticalAlignment="Center" >
-                <hc:TextBox x:Name="Searchbox"  Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1"  BorderThickness="1" GotFocus="Searchbox_GotFocus" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
-                <Viewbox Width="12 " Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
-                    <Rectangle Width="16 " Height="16" >
+            <Grid x:Name="SearchGrid" Margin="0,0,0,5" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <hc:TextBox x:Name="Searchbox" Style="{DynamicResource TextBoxPlus.Small}" Padding="25,5,5,5" BorderThickness="1" 
+                           hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" 
+                           VerticalContentAlignment="Center" TextChanged="Searchbox_TextChanged"/>
+                <Viewbox Width="14" Height="14" HorizontalAlignment="Left" Margin="5,0,0,0">
+                    <Rectangle Width="16" Height="16">
                         <Rectangle.Resources>
                             <SolidColorBrush x:Key="canvas" Opacity="0" />
-                            <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity=" 0.1" />
+                            <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity="0.1" />
                             <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
                         </Rectangle.Resources>
                         <Rectangle.Fill>
@@ -51,72 +57,144 @@
                     </Rectangle>
                 </Viewbox>
             </Grid>
-            <Popup x:Name="SearchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Searchbox}">
-                <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="{Binding ElementName=Searchbox,Path=ActualWidth}" Height="500">
-                    <ListView  x:Name="ListView1" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListView1_SelectionChanged" MouseDoubleClick="ListView1_MouseDoubleClick">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                                <Setter Property="Background" Value="Transparent"/>
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.View>
-                            <GridView>
-                                <GridView.ColumnHeaderContainerStyle>
-                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <Setter Property="BorderThickness" Value="0"/>
-                                    </Style>
-                                </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn Width="240">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Header}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
-                </Border>
-            </Popup>
         </StackPanel>
-        <Border Grid.Row="1" Margin="5,5,5,5" Style="{StaticResource BorderModuleArea}" Grid.ColumnSpan="2">
-            <ListView  x:Name="ListView2" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListView2_SelectionChanged" MouseDoubleClick ="ListView2_MouseDoubleCick">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView>
-                        <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
+
+        <!-- Main content area with TreeView and PropertyGrid -->
+        <Grid Grid.Row="1" Margin="5,0,5,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" MinWidth="200"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*" MinWidth="300"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left TreeView -->
+            <Border Grid.Column="0" Style="{StaticResource BorderModuleArea}" Padding="5">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="配置分类" FontSize="14" FontWeight="Bold" Margin="5,0,0,5" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                    <TreeView x:Name="ConfigTreeView" Grid.Row="1" Background="Transparent" BorderThickness="0" 
+                             ItemTemplate="{StaticResource ConfigTreeTemplate}" 
+                             SelectedItemChanged="ConfigTreeView_SelectedItemChanged"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <TreeView.Resources>
+                            <Style x:Key="ExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">
+                                <Setter Property="Focusable" Value="False" />
+                                <Setter Property="Width" Value="16" />
+                                <Setter Property="Height" Value="16" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                            <Viewbox x:Name="ExpandViewbox" Height="12" Width="12" VerticalAlignment="Center">
+                                                <Rectangle Height="12" Width="12" x:Name="ExpandPath" Fill="{DynamicResource DIScrollbarArrowCollapsed}"/>
+                                            </Viewbox>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="ToggleButton.IsChecked" Value="True">
+                                                    <Setter TargetName="ExpandPath" Property="Fill" Value="{DynamicResource DIScrollbarArrowDownRight}" />
+                                                    <Setter TargetName="ExpandViewbox" Property="Margin" Value="0,2,0,0" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
                             </Style>
-                        </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn >
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Key}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-        </Border>
-        <DockPanel Grid.Row="2" Margin="10,0,10,5" Grid.ColumnSpan="2" >
-            <TextBlock x:Name="SummaryText"  Text="" />
-            <TextBlock x:Name="SummaryText1"  Text=""  HorizontalAlignment="Right"/>
+                        </TreeView.Resources>
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource TreeViewItemBaseStyle}">
+                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0"/>
+                                <Setter Property="MinHeight" Value="24"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type TreeViewItem}">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition MinHeight="{TemplateBinding MinHeight}" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <Border Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" 
+                                                       BorderThickness="{TemplateBinding BorderThickness}" 
+                                                       Background="{TemplateBinding Background}" 
+                                                       Padding="{TemplateBinding Padding}" 
+                                                       SnapsToDevicePixels="true" 
+                                                       CornerRadius="3">
+                                                    <DockPanel LastChildFill="True" 
+                                                              Margin="{Binding Converter={StaticResource TreeViewItemMarginConverter}, RelativeSource={RelativeSource TemplatedParent}}">
+                                                        <ToggleButton Name="Expander" ClickMode="Press" Margin="0,0,3,0" 
+                                                                     Style="{StaticResource ExpandCollapseToggleStyle}" 
+                                                                     IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" />
+                                                        <ContentPresenter Name="PART_Header" VerticalAlignment="Center" 
+                                                                         ContentSource="Header" 
+                                                                         SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                                    </DockPanel>
+                                                </Border>
+                                                <ItemsPresenter Name="ItemsHost" Grid.Row="1"/>
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger SourceName="Bd" Property="UIElement.IsMouseOver" Value="true">
+                                                    <Setter TargetName="Bd" Value="{DynamicResource SecondaryRegionBrush}" Property="Background" />
+                                                </Trigger>
+                                                <Trigger Property="TreeViewItem.IsExpanded" Value="false">
+                                                    <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
+                                                </Trigger>
+                                                <Trigger Property="ItemsControl.HasItems" Value="false">
+                                                    <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
+                                                </Trigger>
+                                                <Trigger Property="TreeViewItem.IsSelected" Value="true">
+                                                    <Setter TargetName="Bd" Value="{DynamicResource PrimaryBrush}" Property="Background" />
+                                                    <Setter Value="{DynamicResource TextIconBrush}" Property="Foreground" />
+                                                </Trigger>
+                                                <MultiTrigger>
+                                                    <MultiTrigger.Conditions>
+                                                        <Condition Property="TreeViewItem.IsSelected" Value="true" />
+                                                        <Condition Property="TreeViewItem.IsSelectionActive" Value="false" />
+                                                    </MultiTrigger.Conditions>
+                                                    <Setter TargetName="Bd" Value="{DynamicResource DarkDefaultBrush}" Property="Background" />
+                                                    <Setter Value="{DynamicResource PrimaryTextBrush}" Property="Foreground" />
+                                                </MultiTrigger>
+                                                <Trigger Property="IsEnabled" Value="false">
+                                                    <Setter Property="UIElement.Opacity" Value=".4" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                    </TreeView>
+                </Grid>
+            </Border>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}" 
+                         ResizeBehavior="PreviousAndNext" ResizeDirection="Columns"/>
+
+            <!-- Right PropertyGrid -->
+            <Border Grid.Column="2" Style="{StaticResource BorderModuleArea}" Padding="5">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" x:Name="PropertyTitle" Text="选择一个配置查看详情" 
+                              FontSize="14" FontWeight="Bold" Margin="5,0,0,5" 
+                              Foreground="{DynamicResource PrimaryTextBrush}"/>
+                    <Border Grid.Row="1" x:Name="PropertyContainer" Background="{DynamicResource GlobalBackground}" 
+                           BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3">
+                        <!-- PropertyGrid will be loaded here dynamically -->
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Bottom status bar -->
+        <DockPanel Grid.Row="2" Margin="10,0,10,5">
+            <TextBlock x:Name="SummaryText" Text="" Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <TextBlock x:Name="SummaryText1" Text="" HorizontalAlignment="Right" Foreground="{DynamicResource PrimaryTextBrush}"/>
         </DockPanel>
-
-
     </Grid>
 </Window>
