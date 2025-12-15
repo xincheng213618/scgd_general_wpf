@@ -1,7 +1,7 @@
 using SqlSugar;
 using System;
 
-namespace ColorVision.Rbac
+namespace ColorVision.Rbac.Entity
 {
     /// <summary>
     /// 会话实体 - 用于管理用户登录会话

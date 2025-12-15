@@ -1,3 +1,4 @@
+using ColorVision.Rbac.Entity;
 using SqlSugar;
 
 namespace ColorVision.Rbac.Services

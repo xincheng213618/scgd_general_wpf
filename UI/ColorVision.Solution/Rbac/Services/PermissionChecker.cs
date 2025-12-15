@@ -1,3 +1,4 @@
+using ColorVision.Rbac.Entity;
 using SqlSugar;
 using System;
 using System.Collections.Concurrent;

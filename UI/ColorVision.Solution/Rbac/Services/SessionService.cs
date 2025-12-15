@@ -1,3 +1,4 @@
+using ColorVision.Rbac.Entity;
 using ColorVision.Rbac.Exceptions;
 using SqlSugar;
 using System;

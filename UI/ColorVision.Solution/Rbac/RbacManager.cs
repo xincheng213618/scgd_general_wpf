@@ -6,6 +6,8 @@ using ColorVision.UI.Authorizations;
 using SqlSugar;
 using System.IO;
 using System.Windows;
+using ColorVision.Rbac.Entity;
+
 
 namespace ColorVision.Rbac
 {

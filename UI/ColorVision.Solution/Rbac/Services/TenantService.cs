@@ -27,7 +27,6 @@ namespace ColorVision.Rbac.Services
         {
             return await _db.Queryable<TenantEntity>()
                 .Where(t => t.IsEnable)
-                .OrderBy(t => t.CreatedAt, OrderByType.Desc)
                 .ToListAsync(ct);
         }
 
@@ -43,7 +42,7 @@ namespace ColorVision.Rbac.Services
                 return null;
 
             return await _db.Queryable<TenantEntity>()
-                .FirstAsync(t => t.Code == code, ct);
+                .FirstAsync(ct);
         }
 
         public async Task<bool> CreateTenantAsync(string name, string code, string? remark = null, CancellationToken ct = default)
@@ -51,18 +50,12 @@ namespace ColorVision.Rbac.Services
             if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(code))
                 return false;
 
-            // 检查代码是否已存在
-            if (await _db.Queryable<TenantEntity>().AnyAsync(t => t.Code == code, ct))
-                return false;
 
             var tenant = new TenantEntity
             {
                 Name = name,
-                Code = code,
                 Remark = remark,
                 IsEnable = true,
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
             };
 
             try
@@ -104,24 +97,9 @@ namespace ColorVision.Rbac.Services
                     {
                         Name = name,
                         Remark = remark,
-                        UpdatedAt = DateTimeOffset.UtcNow
                     })
                     .Where(t => t.Id == tenantId)
                     .ExecuteCommandAsync(ct);
-
-                if (count > 0)
-                {
-                    // 记录审计日志
-                    try
-                    {
-                        await _auditLog.AddAsync(null, null, "tenant.update",
-                            $"更新租户: {tenant.Code} -> {name}");
-                    }
-                    catch
-                    {
-                        // 审计日志失败不影响主流程
-                    }
-                }
 
                 return count > 0;
             }
@@ -153,23 +131,12 @@ namespace ColorVision.Rbac.Services
                     .SetColumns(t => new TenantEntity
                     {
                         IsEnable = false,
-                        UpdatedAt = DateTimeOffset.UtcNow
                     })
                     .Where(t => t.Id == tenantId)
                     .ExecuteCommandAsync(ct);
 
                 if (count > 0)
                 {
-                    // 记录审计日志
-                    try
-                    {
-                        await _auditLog.AddAsync(null, null, "tenant.delete",
-                            $"删除租户: {tenant.Name}({tenant.Code})");
-                    }
-                    catch
-                    {
-                        // 审计日志失败不影响主流程
-                    }
                 }
 
                 return count > 0;
