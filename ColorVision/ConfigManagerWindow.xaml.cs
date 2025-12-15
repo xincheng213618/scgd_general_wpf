@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision
 {
@@ -31,10 +32,34 @@ namespace ColorVision
     /// </summary>
     public class ConfigTreeNode : ViewModelBase
     {
-        public string DisplayName { get; set; }
-        public ConfigNodeType NodeType { get; set; }
-        public Type ConfigType { get; set; }
-        public IConfig ConfigInstance { get; set; }
+        public string DisplayName
+        {
+            get => _displayName;
+            set { _displayName = value; OnPropertyChanged(); }
+        }
+        private string _displayName;
+
+        public ConfigNodeType NodeType
+        {
+            get => _nodeType;
+            set { _nodeType = value; OnPropertyChanged(); }
+        }
+        private ConfigNodeType _nodeType;
+
+        public Type ConfigType
+        {
+            get => _configType;
+            set { _configType = value; OnPropertyChanged(); }
+        }
+        private Type _configType;
+
+        public IConfig ConfigInstance
+        {
+            get => _configInstance;
+            set { _configInstance = value; OnPropertyChanged(); }
+        }
+        private IConfig _configInstance;
+
         public ObservableCollection<ConfigTreeNode> Children { get; set; } = new ObservableCollection<ConfigTreeNode>();
 
         public bool IsExpanded
@@ -190,10 +215,25 @@ namespace ColorVision
             SummaryText1.Text = $"当前选择: {node.DisplayName}";
 
             // Remove old property editor if exists
+            if (PropertyContainer.Child is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
             PropertyContainer.Child = null;
 
             // Create property editor using PropertyEditorHelper
             var propertyPanel = PropertyEditorHelper.GenPropertyEditorControl(node.ConfigInstance);
+            
+            if (propertyPanel == null)
+            {
+                PropertyContainer.Child = new TextBlock
+                {
+                    Text = "无法加载配置属性",
+                    Margin = new Thickness(10),
+                    Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
+                };
+                return;
+            }
 
             // Wrap in ScrollViewer for better UX
             var scrollViewer = new ScrollViewer
@@ -214,6 +254,11 @@ namespace ColorVision
         {
             PropertyTitle.Text = "选择一个配置查看详情";
             SummaryText1.Text = "";
+            
+            if (PropertyContainer.Child is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
             PropertyContainer.Child = null;
         }
 
