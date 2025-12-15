@@ -23,11 +23,6 @@ namespace ColorVision.Rbac
         {
             InitializeComponent();
             
-            // Register value converters
-            Resources.Add("BoolToColorConverter", new BoolToColorConverter());
-            Resources.Add("BoolToStatusTextConverter", new BoolToStatusTextConverter());
-            Resources.Add("BoolToYesNoConverter", new BoolToYesNoConverter());
-            Resources.Add("BoolToDeleteColorConverter", new BoolToDeleteColorConverter());
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -73,7 +68,7 @@ namespace ColorVision.Rbac
             return mode switch
             {
                 PermissionMode.Administrator => "系统管理员",
-                PermissionMode.Advanced => "高级用户",
+                PermissionMode.PowerUser => "高级用户",
                 PermissionMode.User => "普通用户",
                 PermissionMode.Guest => "访客",
                 _ => "未知"

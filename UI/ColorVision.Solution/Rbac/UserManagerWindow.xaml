@@ -38,7 +38,10 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        
+        <local:BoolToColorConverter x:Key="BoolToColorConverter"/>
+        <local:BoolToDeleteColorConverter x:Key="BoolToDeleteColorConverter"/>
+        <local:BoolToStatusTextConverter x:Key="BoolToStatusTextConverter"/>
+        <local:BoolToYesNoConverter x:Key="BoolToYesNoConverter"/>
         <!-- Secondary Button Style -->
         <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
             <Setter Property="Background" Value="#F3F3F3"/>
