@@ -7,21 +7,31 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Templates"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="模板管理窗口" Height="450" Width="800" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="模板管理窗口" Height="600" Width="1200" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0" Margin="0,2">
-            <Grid x:Name="SearchGrid" Margin="10,1" HorizontalAlignment="Stretch" VerticalAlignment="Center" >
-                <hc:TextBox x:Name="Searchbox"  Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1"  BorderThickness="1" GotFocus="Searchbox_GotFocus" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
-                <Viewbox Width="12 " Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
-                    <Rectangle Width="16 " Height="16" >
+
+        <!-- Top toolbar -->
+        <Grid Grid.Row="0" Margin="5,5,5,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Search box on the left -->
+            <Grid x:Name="SearchGrid" Grid.Column="0" Margin="0,0,5,0" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <hc:TextBox x:Name="Searchbox" Style="{DynamicResource TextBoxPlusBaseStyle}" Padding="25,5,5,5" BorderThickness="1" 
+                           hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="{DynamicResource BorderBrush}" 
+                           VerticalContentAlignment="Center" TextChanged="Searchbox_TextChanged"/>
+                <Viewbox Width="14" Height="14" HorizontalAlignment="Left" Margin="5,0,0,0">
+                    <Rectangle Width="16" Height="16">
                         <Rectangle.Resources>
                             <SolidColorBrush x:Key="canvas" Opacity="0" />
-                            <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity=" 0.1" />
+                            <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity="0.1" />
                             <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
                         </Rectangle.Resources>
                         <Rectangle.Fill>
@@ -42,73 +52,73 @@
                     </Rectangle>
                 </Viewbox>
             </Grid>
-            <Popup x:Name="SearchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Searchbox}">
-                <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="{Binding ElementName=Searchbox,Path=ActualWidth}" Height="500">
-                    <ListView  x:Name="ListView1" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListView1_SelectionChanged" MouseDoubleClick="ListView1_MouseDoubleClick">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                                <Setter Property="Background" Value="Transparent"/>
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.View>
-                            <GridView>
-                                <GridView.ColumnHeaderContainerStyle>
-                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <Setter Property="BorderThickness" Value="0"/>
-                                    </Style>
-                                </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn Width="240">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Header}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
-                </Border>
-            </Popup>
-
+            
+            <!-- Column count selector on the right -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBlock Text="列数:" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <ComboBox x:Name="ColumnCountComboBox" Width="60" SelectedIndex="2" SelectionChanged="ColumnCountComboBox_SelectionChanged"
+                         Style="{DynamicResource ComboBox.Small}">
+                    <ComboBoxItem Content="1"/>
+                    <ComboBoxItem Content="2"/>
+                    <ComboBoxItem Content="3"/>
+                    <ComboBoxItem Content="4"/>
+                    <ComboBoxItem Content="5"/>
+                    <ComboBoxItem Content="6"/>
+                </ComboBox>
+            </StackPanel>
         </Grid>
-        <Border Grid.Row="1" Margin="5" Style="{StaticResource BorderModuleArea}">
-            <ListView  x:Name="ListView2" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListView2_SelectionChanged" MouseDoubleClick ="ListView2_MouseDoubleCick">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView>
-                        <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                            </Style>
-                        </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn >
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Key}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-        </Border>
-        <DockPanel Grid.Row="2" Margin="10,0,10,5" >
-            <TextBlock x:Name="SummaryText"  Text="" />
-            <TextBlock x:Name="SummaryText1"  Text=""  HorizontalAlignment="Right"/>
+
+        <!-- Main content area: Middle Template Grid + Right Editor Panel -->
+        <Grid Grid.Row="1" Margin="5,0,5,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="350"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="400" MinWidth="350"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Middle: Template Grid (ScrollViewer with dynamic content) -->
+            <Border Grid.Column="0" Style="{StaticResource BorderModuleArea}" Padding="5">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="模板列表" FontSize="14" FontWeight="Bold" Margin="5,0,0,5" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                    <ScrollViewer x:Name="TemplateScrollViewer" Grid.Row="1" 
+                                 VerticalScrollBarVisibility="Auto" 
+                                 HorizontalScrollBarVisibility="Disabled"
+                                 Background="Transparent">
+                        <StackPanel x:Name="TemplateContainer" Margin="5"/>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}" 
+                         ResizeBehavior="PreviousAndNext" ResizeDirection="Columns"/>
+
+            <!-- Right: Embedded Template Editor Panel -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" x:Name="EditorTitle" Text="选择一个模板查看详情" 
+                          FontSize="14" FontWeight="Bold" Margin="5,5,5,5" 
+                          Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <Grid Grid.Row="1" x:Name="EditorContainer">
+                    <!-- Template editor content will be loaded here dynamically -->
+                    <TextBlock x:Name="PlaceholderText" Text="请选择一个模板以查看和编辑" 
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- Bottom status bar -->
+        <DockPanel Grid.Row="2" Margin="10,0,10,5">
+            <TextBlock x:Name="SummaryText" Text="" Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <TextBlock x:Name="SummaryText1" Text="" HorizontalAlignment="Right" Foreground="{DynamicResource PrimaryTextBrush}"/>
         </DockPanel>
-
-
     </Grid>
 </Window>
