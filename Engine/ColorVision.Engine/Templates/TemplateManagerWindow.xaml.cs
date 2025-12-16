@@ -418,46 +418,18 @@ namespace ColorVision.Engine.Templates
         }
 
         /// <summary>
-        /// Create embedded editor content similar to TemplateEditorWindow but simplified
+        /// Create embedded editor content using EmbeddedTemplateEditor UserControl
         /// </summary>
         private FrameworkElement CreateEmbeddedEditor(ITemplate template)
         {
-            // Create a new TemplateEditorWindow but extract its content
-            // We'll create a similar layout but embedded
-            var editor = new TemplateEditorWindow(template, -1);
-            
-            // Show the window off-screen to initialize it, then extract content
-            editor.Left = -10000;
-            editor.Top = -10000;
-            editor.Show();
-            
-            // Close after initialization is complete
-            editor.Close();
-            
-            // For now, return a message to open in separate window
-            // A better implementation would embed the actual editor content
-            var container = new Grid();
-            
-            var openButton = new Button
+            var embeddedEditor = new EmbeddedTemplateEditor
             {
-                Content = "打开模板编辑器",
-                Padding = new Thickness(15, 8, 15, 8),
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(10)
+                OwnerWindow = this
             };
             
-            openButton.Click += (s, e) =>
-            {
-                new TemplateEditorWindow(template) { Owner = this }.ShowDialog();
-                // Refresh after editing
-                template.Load();
-                SummaryText1.Text = $"当前选择: {_selectedTemplate.Title} (共 {template.Count} 个模板)";
-            };
+            embeddedEditor.SetTemplate(template);
             
-            container.Children.Add(openButton);
-            
-            return container;
+            return embeddedEditor;
         }
 
         /// <summary>
