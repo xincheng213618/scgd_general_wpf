@@ -99,6 +99,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.CameraParameterLimit));
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.MotorConfig));
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig));
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
