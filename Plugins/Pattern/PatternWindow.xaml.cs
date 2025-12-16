@@ -250,6 +250,14 @@ namespace Pattern
             imgDisplay?.Dispose();
         }
 
+        private void Reset_Click(object sender, RoutedEventArgs e)
+        {
+            Type type = PatternMeta.Pattern.GetType();
+            IPattern pattern = (IPattern)Activator.CreateInstance(type);
+            PatternMeta.Pattern.SetConfig(pattern.GetConfig().ToJsonN());
+            PatternEditorGrid.Child = PatternMeta.Pattern.GetPatternEditor();
+        }
+
         public void SetTemplatePattern(string templatePath)
         {
             try
@@ -294,10 +302,15 @@ namespace Pattern
             if (File.Exists(json))
             {
                if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否替换模板", "Pattern", MessageBoxButton.YesNo) == MessageBoxResult.No)
-                    return;
-                if (PatternManager.GetInstance().TemplatePatternFiles.FirstOrDefault(a => a.FilePath == json) is TemplatePatternFile templatePatternFile)
                 {
-                    PatternManager.GetInstance().TemplatePatternFiles.Remove(templatePatternFile);
+                    json = Path.Combine(PatternManager.GetInstance().PatternPath, Config.Width + "x" + Config.Height + "_" + PatternMeta.Pattern.GetTemplateName() + $"{DateTime.UtcNow.Ticks}"+ ".json");
+                }
+                else
+                {
+                    if (PatternManager.GetInstance().TemplatePatternFiles.FirstOrDefault(a => a.FilePath == json) is TemplatePatternFile templatePatternFile)
+                    {
+                        PatternManager.GetInstance().TemplatePatternFiles.Remove(templatePatternFile);
+                    }
                 }
             }
           
@@ -374,5 +387,7 @@ namespace Pattern
             // E708 = Moon (show when in light mode - click to switch to dark)
             ThemeIconText.Text = ThemeManager.Current.CurrentUITheme == Theme.Dark ? "\uE706" : "\uE708";
         }
+
+
     }
 }
