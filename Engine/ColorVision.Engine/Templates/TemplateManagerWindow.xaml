@@ -98,24 +98,21 @@
                          ResizeBehavior="PreviousAndNext" ResizeDirection="Columns"/>
 
             <!-- Right: Embedded Template Editor Panel -->
-            <Border Grid.Column="2" Style="{StaticResource BorderModuleArea}" Padding="5">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" x:Name="EditorTitle" Text="选择一个模板查看详情" 
-                              FontSize="14" FontWeight="Bold" Margin="5,0,0,5" 
-                              Foreground="{DynamicResource PrimaryTextBrush}"/>
-                    <Border Grid.Row="1" x:Name="EditorContainer" Background="{DynamicResource GlobalBackground}" 
-                           BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="3">
-                        <!-- Template editor content will be loaded here dynamically -->
-                        <TextBlock x:Name="PlaceholderText" Text="请选择一个模板以查看和编辑" 
-                                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                                  Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
-                    </Border>
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" x:Name="EditorTitle" Text="选择一个模板查看详情" 
+                          FontSize="14" FontWeight="Bold" Margin="5,5,5,5" 
+                          Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <Grid Grid.Row="1" x:Name="EditorContainer">
+                    <!-- Template editor content will be loaded here dynamically -->
+                    <TextBlock x:Name="PlaceholderText" Text="请选择一个模板以查看和编辑" 
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
                 </Grid>
-            </Border>
+            </Grid>
         </Grid>
 
         <!-- Bottom status bar -->

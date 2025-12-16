@@ -7,7 +7,8 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Templates"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="450" d:DesignWidth="800"
+             Background="{DynamicResource GlobalBackground}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -16,67 +17,61 @@
         </Grid.RowDefinitions>
 
         <!-- Top toolbar with Open Full Editor button -->
-        <Grid Grid.Row="0" Margin="5">
-            <Button x:Name="OpenFullEditorButton" Content="打开完整编辑器" 
-                    HorizontalAlignment="Right" Padding="10,5" Click="OpenFullEditor_Click"/>
+        <Grid Grid.Row="0" Margin="5,5,5,5">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock x:Name="TemplateCountText" Text="模板数量: 0" 
+                          FontSize="12" Margin="0,0,10,0" VerticalAlignment="Center"
+                          Foreground="{DynamicResource PrimaryTextBrush}"/>
+                <Button x:Name="OpenFullEditorButton" Content="打开完整编辑器" 
+                        Padding="10,5" Click="OpenFullEditor_Click"/>
+            </StackPanel>
         </Grid>
 
-        <!-- Main content: Template list showing count -->
-        <Border Grid.Row="1" Margin="5" Style="{StaticResource BorderModuleArea}" Padding="5">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                
-                <TextBlock Grid.Row="0" x:Name="TemplateCountText" Text="模板数量: 0" 
-                          FontSize="12" FontWeight="Bold" Margin="5" 
-                          Foreground="{DynamicResource PrimaryTextBrush}"/>
-                
-                <!-- Simple list view showing template items -->
-                <ListView Grid.Row="1" x:Name="TemplateListView" 
-                         Background="Transparent" BorderThickness="0" 
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto">
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                            <Setter Property="Background" Value="Transparent"/>
-                            <Setter Property="Padding" Value="5"/>
-                            <Setter Property="Margin" Value="2"/>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="{DynamicResource GlobalBackground}" 
-                                   BorderBrush="{DynamicResource BorderBrush}" 
-                                   BorderThickness="1" 
-                                   CornerRadius="3" 
-                                   Padding="8,5">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    
-                                    <TextBlock Grid.Column="0" Text="{Binding Id}" 
-                                              FontWeight="Bold" 
-                                              Foreground="{DynamicResource PrimaryBrush}"
-                                              Margin="0,0,10,0"/>
-                                    
-                                    <TextBlock Grid.Column="1" Text="{Binding Key}" 
-                                              Foreground="{DynamicResource PrimaryTextBrush}"/>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-            </Grid>
-        </Border>
+        <!-- Main content: Template list -->
+        <ListView Grid.Row="1" x:Name="TemplateListView" 
+                 Margin="5,0,5,5"
+                 Background="Transparent" 
+                 BorderBrush="{DynamicResource BorderBrush}"
+                 BorderThickness="1" 
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Padding" Value="5"/>
+                    <Setter Property="Margin" Value="2"/>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{DynamicResource GlobalBackground}" 
+                           BorderBrush="{DynamicResource BorderBrush}" 
+                           BorderThickness="1" 
+                           CornerRadius="3" 
+                           Padding="8,5">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <TextBlock Grid.Column="0" Text="{Binding Id}" 
+                                      FontWeight="Bold" 
+                                      Foreground="{DynamicResource PrimaryBrush}"
+                                      Margin="0,0,10,0"/>
+                            
+                            <TextBlock Grid.Column="1" Text="{Binding Key}" 
+                                      Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
 
         <!-- Bottom info text -->
         <TextBlock Grid.Row="2" x:Name="InfoText" 
                   Text="点击上方按钮打开完整编辑器以编辑模板" 
-                  FontSize="11" Margin="10,5" 
+                  FontSize="11" Margin="10,5,10,10" 
                   Foreground="{DynamicResource SecondaryTextBrush}"/>
     </Grid>
 </UserControl>

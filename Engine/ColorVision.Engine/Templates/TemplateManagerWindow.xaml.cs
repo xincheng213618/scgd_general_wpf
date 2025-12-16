@@ -234,9 +234,17 @@ namespace ColorVision.Engine.Templates
                     Margin = new Thickness(0, TemplateContainer.Children.Count > 0 ? 20 : 0, 0, 10)
                 };
 
+                // Display only the last segment of the namespace for cleaner look
+                var displayName = group.Namespace;
+                if (displayName.Contains('.'))
+                {
+                    var parts = displayName.Split('.');
+                    displayName = parts[parts.Length - 1]; // Get last segment
+                }
+
                 var headerText = new TextBlock
                 {
-                    Text = group.Namespace,
+                    Text = displayName,
                     FontSize = 15,
                     FontWeight = FontWeights.Bold,
                     Foreground = (Brush)Application.Current.FindResource("PrimaryTextBrush")
