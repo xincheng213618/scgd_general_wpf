@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Templates
     public class MenuTemplateManagerWindow : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuTemplate);
-        public override string Header => ColorVision.Engine.Properties.Resources.Settings;
+        public override string Header => ColorVision.Engine.Properties.Resources.TemplateManagementWindow;
 
         public override int Order => 999999;
         public override object? Icon
@@ -396,7 +396,7 @@ namespace ColorVision.Engine.Templates
             // Remove old editor if exists
             if (_currentEditorContent != null)
             {
-                EditorContainer.Child = null;
+                EditorContainer.Children.Clear();
                 _currentEditorContent = null;
             }
 
@@ -411,17 +411,17 @@ namespace ColorVision.Engine.Templates
             
             if (editorControl == null)
             {
-                EditorContainer.Child = new TextBlock
+                EditorContainer.Children.Add(new TextBlock
                 {
                     Text = "无法加载模板编辑器",
                     Margin = new Thickness(10),
                     Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
-                };
+                });
                 return;
             }
 
             _currentEditorContent = editorControl;
-            EditorContainer.Child = editorControl;
+            EditorContainer.Children.Add(editorControl);
         }
 
         /// <summary>
@@ -448,7 +448,7 @@ namespace ColorVision.Engine.Templates
             
             if (_currentEditorContent != null)
             {
-                EditorContainer.Child = null;
+                EditorContainer.Children.Clear();
                 _currentEditorContent = null;
             }
             

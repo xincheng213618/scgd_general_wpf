@@ -42,30 +42,41 @@
                     <Setter Property="Margin" Value="2"/>
                 </Style>
             </ListView.ItemContainerStyle>
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <Border Background="{DynamicResource GlobalBackground}" 
+            <ListView.View>
+                <GridView>
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
+                    <GridViewColumn>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="{DynamicResource GlobalBackground}" 
                            BorderBrush="{DynamicResource BorderBrush}" 
                            BorderThickness="1" 
                            CornerRadius="3" 
                            Padding="8,5">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            
-                            <TextBlock Grid.Column="0" Text="{Binding Id}" 
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" Text="{Binding Id}" 
                                       FontWeight="Bold" 
                                       Foreground="{DynamicResource PrimaryBrush}"
                                       Margin="0,0,10,0"/>
-                            
-                            <TextBlock Grid.Column="1" Text="{Binding Key}" 
+
+                                        <TextBlock Grid.Column="1" Text="{Binding Key}" 
                                       Foreground="{DynamicResource PrimaryTextBrush}"/>
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </ListView.ItemTemplate>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
         </ListView>
 
         <!-- Bottom info text -->
