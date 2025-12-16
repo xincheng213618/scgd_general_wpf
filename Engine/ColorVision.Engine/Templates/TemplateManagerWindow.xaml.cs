@@ -208,15 +208,14 @@ namespace ColorVision.Engine.Templates
             // Filter by search if provided
             if (!string.IsNullOrWhiteSpace(searchText))
             {
-                var lowerSearch = searchText.ToLower();
                 groupsToShow = _templateGroups
                     .Select(g => new TemplateGroup
                     {
                         Namespace = g.Namespace,
                         Templates = g.Templates.Where(t => 
-                            t.Title.ToLower().Contains(lowerSearch) || 
-                            t.Code.ToLower().Contains(lowerSearch) ||
-                            t.TemplateDicId.ToString().Contains(lowerSearch))
+                            t.Title.Contains(searchText, StringComparison.OrdinalIgnoreCase) || 
+                            t.Code.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                            t.TemplateDicId.ToString().Contains(searchText, StringComparison.Ordinal))
                             .ToList()
                     })
                     .Where(g => g.Templates.Any());
@@ -460,11 +459,10 @@ namespace ColorVision.Engine.Templates
                 // Check if selected template will be filtered out
                 if (!string.IsNullOrWhiteSpace(searchText) && _selectedTemplate != null)
                 {
-                    var lowerSearch = searchText.ToLower();
                     bool selectedTemplateMatches = 
-                        _selectedTemplate.Title.ToLower().Contains(lowerSearch) || 
-                        _selectedTemplate.Code.ToLower().Contains(lowerSearch) ||
-                        _selectedTemplate.TemplateDicId.ToString().Contains(lowerSearch);
+                        _selectedTemplate.Title.Contains(searchText, StringComparison.OrdinalIgnoreCase) || 
+                        _selectedTemplate.Code.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                        _selectedTemplate.TemplateDicId.ToString().Contains(searchText, StringComparison.Ordinal);
                     
                     if (!selectedTemplateMatches)
                     {

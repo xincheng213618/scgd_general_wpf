@@ -5,7 +5,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates
 {
     /// <summary>
-    /// EmbeddedTemplateEditor.xaml 的交互逻辑
+    /// Interaction logic for EmbeddedTemplateEditor.xaml
     /// Simplified embedded version of TemplateEditorWindow for use in TemplateManagerWindow
     /// </summary>
     public partial class EmbeddedTemplateEditor : UserControl
@@ -52,9 +52,10 @@ namespace ColorVision.Engine.Templates
         {
             if (Template != null)
             {
+                var owner = OwnerWindow ?? Application.Current.GetActiveWindow() ?? Application.Current.MainWindow;
                 var editorWindow = new TemplateEditorWindow(Template) 
                 { 
-                    Owner = OwnerWindow ?? Application.Current.GetActiveWindow() 
+                    Owner = owner
                 };
                 editorWindow.ShowDialog();
                 
