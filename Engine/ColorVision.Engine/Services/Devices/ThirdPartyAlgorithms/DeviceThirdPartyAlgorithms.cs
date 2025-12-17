@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
     {
         public MQTTThirdPartyAlgorithms DService { get; set; }
         public ThirdPartyAlgorithmsView View { get; set; }
-        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisPlayConfigBase>(Config.Code);
+        public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
 
 
         [CommandDisplay("UploadThridPartPlusIn")]

@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 {
 
 
-    public class DisplayCameraConfig: IDisPlayConfigBase
+    public class DisplayCameraConfig: IDisplayConfigBase
     {
         public double TakePictureDelay { get; set; }
         public int CalibrationTemplateIndex { get; set; }
