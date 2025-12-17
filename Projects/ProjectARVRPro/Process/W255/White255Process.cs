@@ -51,7 +51,7 @@ namespace ProjectARVRPro.Process.W255
                             testResult.ViewPoixyuvDatas.Add(poi);
                             testResult.PoixyuvDatas.Add(new PoixyuvData() { Id =poi.Id,Name =poi.Name,X =poi.X,Y=poi.Y,Z=poi.Z,x =poi.x,y =poi.y,u =poi.u,v =poi.v,CCT =poi.CCT,Wave =poi.Wave});
                             
-                            if (item.PoiName == "P_9")
+                            if (item.PoiName == Config.Key_Center)
                             {
                                 testResult.CenterLunimance = new ObjectiveTestItem
                                 {

@@ -52,7 +52,7 @@ namespace ProjectARVRPro.Process.Red
 
                             redTestResult.PoixyuvDatas.Add(poi);
 
-                            if (item.PoiName == "P_9")
+                            if (item.PoiName == Config.Key_Center)
                             {
                                 redTestResult.CenterLunimance = new ObjectiveTestItem
                                 {
