@@ -138,21 +138,48 @@ namespace ColorVision.FileIO
                     if (fileHeader != MagicHeader) return -1;
                     cvcie.FileExtType = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
                     uint ver = (cvcie.Version = br.ReadUInt32());
-                    if (ver != 1 && ver != 2) return -1;
-                    int fileNameLen = br.ReadInt32();
-                    if (fileNameLen > 0 && fs.Position + fileNameLen <= fs.Length)
-                        cvcie.SrcFileName = Encoding1.GetString(br.ReadBytes(fileNameLen));
-                    cvcie.Gain = br.ReadSingle();
-                    cvcie.Channels = (int)br.ReadUInt32();
-                    if (fs.Position + cvcie.Channels * 4 > fs.Length) return -1;
-                    cvcie.Exp = new float[cvcie.Channels];
-                    for (int i = 0; i < cvcie.Channels; i++)
-                        cvcie.Exp[i] = br.ReadSingle();
-                    cvcie.Rows = (int)br.ReadUInt32();
-                    cvcie.Cols = (int)br.ReadUInt32();
-                    cvcie.Bpp = (int)br.ReadUInt32();
-                    cvcie.FilePath = filePath;
-                    return (int)fs.Position;
+                    if (ver ==1 ||ver == 2)
+                    {
+                        int fileNameLen = br.ReadInt32();
+                        if (fileNameLen > 0 && fs.Position + fileNameLen <= fs.Length)
+                            cvcie.SrcFileName = Encoding1.GetString(br.ReadBytes(fileNameLen));
+                        cvcie.Gain = br.ReadSingle();
+                        cvcie.Channels = (int)br.ReadUInt32();
+                        if (fs.Position + cvcie.Channels * 4 > fs.Length) return -1;
+                        cvcie.Exp = new float[cvcie.Channels];
+                        for (int i = 0; i < cvcie.Channels; i++)
+                            cvcie.Exp[i] = br.ReadSingle();
+                        cvcie.Rows = (int)br.ReadUInt32();
+                        cvcie.Cols = (int)br.ReadUInt32();
+                        cvcie.Bpp = (int)br.ReadUInt32();
+                        cvcie.FilePath = filePath;
+                        return (int)fs.Position;
+                    }
+                    else if (ver == 3)
+                    {
+                        int fileNameLen = br.ReadInt32();
+                        if (fileNameLen > 0 && fs.Position + fileNameLen <= fs.Length)
+                            cvcie.SrcFileName = Encoding1.GetString(br.ReadBytes(fileNameLen));
+                        cvcie.NDPort = br.ReadInt32();
+                        cvcie.Gain = br.ReadSingle();
+                        cvcie.Channels = br.ReadInt32();
+                        if (fs.Position + cvcie.Channels * 4 > fs.Length) return -1;
+                        cvcie.Exp = new float[cvcie.Channels];
+                        for (int i = 0; i < cvcie.Channels; i++)
+                            cvcie.Exp[i] = br.ReadSingle();
+                        cvcie.Rows = br.ReadInt32();
+                        cvcie.Cols = br.ReadInt32();
+                        cvcie.Bpp = br.ReadInt32();
+                        cvcie.FilePath = filePath;
+                        return (int)fs.Position;
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"unknowVersion");
+                        return -1;
+                    }
+
+
                 }
             }
             catch (Exception ex)
