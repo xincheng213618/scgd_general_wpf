@@ -23,7 +23,6 @@
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
 		<PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
-		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.11.0.20250507" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.11.0.20250507" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.7.0" />
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
