@@ -18,7 +18,7 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
-    public class DisplayCalibrationConfig : IDisPlayConfigBase
+    public class DisplayCalibrationConfig : IDisplayConfigBase
     {
         public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; OnPropertyChanged(); } }
         private double _ExpTimeR = 10;
