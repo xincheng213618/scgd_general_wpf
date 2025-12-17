@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Templates
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = Config;
+            this.DataContext = Config; 
         }
 
         private void Mysql_Reset_Click(object sender, RoutedEventArgs e)
