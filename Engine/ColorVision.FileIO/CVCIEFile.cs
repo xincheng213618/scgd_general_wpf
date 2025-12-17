@@ -69,7 +69,9 @@ namespace ColorVision.FileIO
                 }
             }
         }
-        
+
+        public int NDPort { get; set; }
+
         /// <summary>Number of color Channels in the image.</summary>
         public int Channels { get; set; }
         
