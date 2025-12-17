@@ -6,10 +6,8 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates
 {
-    public class SearchProvider: ISearchProvider
+    public class TemplateSearchProvider: ISearchProvider
     {
-        public SearchProvider() { }
-
         public IEnumerable<ISearch> GetSearchItems()
         {
             var templateNames = TemplateControl.ITemplateNames.Values.SelectMany(item => item.GetTemplateNames()).Distinct().ToList();
