@@ -144,6 +144,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public List<int> NDRate { get; set; } = new List<int>();
 
         public List<string> NDCaliNameGroups { get; set; } = new List<string>();
+
+
+        [PropertyEditorType(typeof(TextCFWPropertiesEditor))]
+        public string NDBindDeviceCode { get => _NDBindDeviceCode; set { _NDBindDeviceCode = value; OnPropertyChanged(); } }
+        private string _NDBindDeviceCode;
     }
 
 

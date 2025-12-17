@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Properties;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Utilities;
@@ -34,11 +35,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         VoltageSource = 0,
         CurrentSource = 1
     }
-    public enum SMUChannelType
-    {
-        A = 0,
-        B,
-    }
+
 
     public class SMUParam : ParamModBase
     {

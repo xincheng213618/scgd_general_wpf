@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Services.Devices;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -77,5 +78,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public List<int> NDRate { get; set; } = new List<int>();
 
         public List<string> NDCaliNameGroups { get; set; } = new List<string>();
+
+        [PropertyEditorType(typeof(TextCFWPropertiesEditor))]
+        public string NDBindDeviceCode { get => _NDBindDeviceCode; set { _NDBindDeviceCode = value; OnPropertyChanged(); } }
+        private string _NDBindDeviceCode;
     }
 }
