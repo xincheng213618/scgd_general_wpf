@@ -2191,7 +2191,7 @@
     <value>amplitude de mouvement</value>
   </data>
   <data name="StepSwingRangeDiscription" xml:space="preserve">
-    <value>Le chemin de la deuxième étape. Le chemin réel de la deuxième étape est forwardparam </value>
+    <value>Le chemin de la deuxième étape</value>
   </data>
   <data name="StepReductionFactor" xml:space="preserve">
     <value>facteur de réduction de la taille du pas</value>

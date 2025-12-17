@@ -2122,7 +2122,7 @@
     <value>點集</value>
   </data>
   <data name="EditDefaultComplianceDictionary" xml:space="preserve">
-    <value>"編輯預設合規字典</value>
+    <value>編輯預設合規字典</value>
   </data>
   <data name="CalibrationToolNotFound_DownloadPrompt" xml:space="preserve">
     <value>找不到校正產生工具，是否在線上下載</value>
@@ -2191,7 +2191,7 @@
     <value>步徑擺盪範圍</value>
   </data>
   <data name="StepSwingRangeDiscription" xml:space="preserve">
-    <value>第二次的步徑 實際第二次步徑為 forwardparam *</value>
+    <value>第二次的步徑</value>
   </data>
   <data name="StepReductionFactor" xml:space="preserve">
     <value>步徑每次縮減係數</value>

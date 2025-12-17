@@ -2191,7 +2191,7 @@
     <value>диапазон колебаний шага</value>
   </data>
   <data name="StepSwingRangeDiscription" xml:space="preserve">
-    <value>Путь второго шага. Фактический путь второго шага — forwardparam</value>
+    <value>Путь второго шага. Фактический путь второго шага forwardparam</value>
   </data>
   <data name="StepReductionFactor" xml:space="preserve">
     <value>Коэффициент уменьшения размера шага</value>

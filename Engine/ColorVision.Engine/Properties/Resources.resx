@@ -2044,7 +2044,7 @@
     <value>默认模板</value>
   </data>
   <data name="UseSystemDefaultTemplate" xml:space="preserve">
-    <value> "使用系统默认模板</value>
+    <value>使用系统默认模板</value>
   </data>
   <data name="LoadingTempate" xml:space="preserve">
     <value>正在加载模板</value>
@@ -2056,13 +2056,13 @@
     <value>已经存在改模板，请修改模板名称</value>
   </data>
   <data name="PoiFileOutputTemplateSetting" xml:space="preserve">
-    <value> "Poi文件输出模板设置</value>
+    <value>Poi文件输出模板设置</value>
   </data>
   <data name="POIFilterTemplateSetting" xml:space="preserve">
-    <value> "POI过滤模板设置</value>
+    <value>POI过滤模板设置</value>
   </data>
   <data name="LedBandDetectorManagement" xml:space="preserve">
-    <value> "灯条检测模板管理"</value>
+    <value>灯条检测模板管理"</value>
   </data>
   <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
     <value>SFR寻边模板管理</value>
@@ -2092,7 +2092,7 @@
     <value>十字计算模板管理</value>
   </data>
   <data name="Distortion20TemplateManagement" xml:space="preserve">
-    <value> "畸变2.0模板管理</value>
+    <value>畸变2.0模板管理</value>
   </data>
   <data name="ImageStitchingTemplateManagement" xml:space="preserve">
     <value>图像拼接模板管理</value>
@@ -2122,7 +2122,7 @@
     <value>点集</value>
   </data>
   <data name="EditDefaultComplianceDictionary" xml:space="preserve">
-    <value> "编辑默认合规字典</value>
+    <value>编辑默认合规字典</value>
   </data>
   <data name="CalibrationToolNotFound_DownloadPrompt" xml:space="preserve">
     <value>找不到校正生成工具，是否在线下载</value>
@@ -2191,7 +2191,7 @@
     <value>步径摆动范围</value>
   </data>
   <data name="StepSwingRangeDiscription" xml:space="preserve">
-    <value>第二次的步径 实际第二次步径为 forwardparam * </value>
+    <value>第二次的步径 实际第二次步径为 forwardparam</value>
   </data>
   <data name="StepReductionFactor" xml:space="preserve">
     <value>步径每次缩减系数</value>
@@ -2248,7 +2248,7 @@
     <value>删除选中</value>
   </data>
   <data name="DoubleClickToRename_CurrentlySavedInMemoryOnly" xml:space="preserve">
-    <value>  (双击可重命名, 当前仅内存保存)</value>
+    <value>双击可重命名, 当前仅内存保存)</value>
   </data>
   <data name="HandleClass" xml:space="preserve">
     <value>处理类</value>

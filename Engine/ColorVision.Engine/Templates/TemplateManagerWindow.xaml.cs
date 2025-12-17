@@ -93,7 +93,7 @@ namespace ColorVision.Engine.Templates
         private List<TemplateItem> _allTemplates = new List<TemplateItem>();
         private Dictionary<string, FrameworkElement> _groupSectionElements = new Dictionary<string, FrameworkElement>();
         private TemplateItem _selectedTemplate = null;
-        private int _templateColumns = 3;
+        private int _templateColumns = 2;
         private FrameworkElement _currentEditorContent = null;
 
         public int TemplateColumns
@@ -200,6 +200,7 @@ namespace ColorVision.Engine.Templates
         /// </summary>
         private void RebuildTemplateGrid(string searchText = null)
         {
+            if (TemplateContainer == null) return;
             TemplateContainer.Children.Clear();
             _groupSectionElements.Clear();
 
@@ -429,14 +430,13 @@ namespace ColorVision.Engine.Templates
         /// </summary>
         private FrameworkElement CreateEmbeddedEditor(ITemplate template)
         {
-            var embeddedEditor = new EmbeddedTemplateEditor
-            {
-                OwnerWindow = this
-            };
-            
-            embeddedEditor.SetTemplate(template);
-            
-            return embeddedEditor;
+            var temp = new TemplateEditorWindow(template);
+            var content = temp.Content;
+
+            temp.Content = null;
+
+
+            return (FrameworkElement)content;
         }
 
         /// <summary>
@@ -490,6 +490,15 @@ namespace ColorVision.Engine.Templates
             if (sender is ComboBox comboBox && comboBox.SelectedIndex >= 0)
             {
                 TemplateColumns = comboBox.SelectedIndex + 1; // Index 0 = 1 column, etc.
+            }
+        }
+
+        private void OpenFullEditor_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedTemplate?.Template !=null)
+            {
+                new TemplateEditorWindow(_selectedTemplate?.Template) { Owner =Application.Current.GetActiveWindow(),WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+
             }
         }
     }

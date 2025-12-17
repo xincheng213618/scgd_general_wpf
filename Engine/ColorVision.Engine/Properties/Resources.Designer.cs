@@ -2158,7 +2158,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;畸变2.0模板管理 的本地化字符串。
+        ///   查找类似 畸变2.0模板管理 的本地化字符串。
         /// </summary>
         public static string Distortion20TemplateManagement {
             get {
@@ -2194,7 +2194,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似   (双击可重命名, 当前仅内存保存) 的本地化字符串。
+        ///   查找类似 双击可重命名, 当前仅内存保存) 的本地化字符串。
         /// </summary>
         public static string DoubleClickToRename_CurrentlySavedInMemoryOnly {
             get {
@@ -2311,7 +2311,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;编辑默认合规字典 的本地化字符串。
+        ///   查找类似 编辑默认合规字典 的本地化字符串。
         /// </summary>
         public static string EditDefaultComplianceDictionary {
             get {
@@ -3580,7 +3580,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;灯条检测模板管理&quot; 的本地化字符串。
+        ///   查找类似 灯条检测模板管理&quot; 的本地化字符串。
         /// </summary>
         public static string LedBandDetectorManagement {
             get {
@@ -4912,7 +4912,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;Poi文件输出模板设置 的本地化字符串。
+        ///   查找类似 Poi文件输出模板设置 的本地化字符串。
         /// </summary>
         public static string PoiFileOutputTemplateSetting {
             get {
@@ -4930,7 +4930,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;POI过滤模板设置 的本地化字符串。
+        ///   查找类似 POI过滤模板设置 的本地化字符串。
         /// </summary>
         public static string POIFilterTemplateSetting {
             get {
@@ -6334,7 +6334,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 第二次的步径 实际第二次步径为 forwardparam *  的本地化字符串。
+        ///   查找类似 第二次的步径 实际第二次步径为 forwardparam 的本地化字符串。
         /// </summary>
         public static string StepSwingRangeDiscription {
             get {
@@ -6946,7 +6946,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;使用系统默认模板 的本地化字符串。
+        ///   查找类似 使用系统默认模板 的本地化字符串。
         /// </summary>
         public static string UseSystemDefaultTemplate {
             get {
