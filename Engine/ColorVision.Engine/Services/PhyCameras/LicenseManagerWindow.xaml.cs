@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Media;
+using ColorVision.Database;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -155,7 +156,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public int Id => Model.Id;
         public string? MacAddress => Model.MacAddress;
         public string LiceTypeString => Model.LiceType == 0 ? "相机" : Model.LiceType == 1 ? "光谱仪" : "未知";
-        public string? Model => this.Model.Model;
+        public string? Model1 => this.Model.Model;
         public string? CusTomerName => this.Model.CusTomerName;
         public DateTime? ExpiryDate => this.Model.ExpiryDate;
         public DateTime? CreateDate => this.Model.CreateDate;

@@ -1726,6 +1726,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 客户 的本地化字符串。
+        /// </summary>
+        public static string Customer {
+            get {
+                return ResourceManager.GetString("Customer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 CVCIE文件保存: 的本地化字符串。
         /// </summary>
         public static string CVCIEFileSave {
@@ -4381,6 +4390,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 型号 的本地化字符串。
+        /// </summary>
+        public static string Model {
+            get {
+                return ResourceManager.GetString("Model", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 修改配置 的本地化字符串。
         /// </summary>
         public static string ModifyConfiguration {
@@ -6847,6 +6865,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 类型 的本地化字符串。
+        /// </summary>
+        public static string Type {
+            get {
+                return ResourceManager.GetString("Type", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 无法实例化进程类型 的本地化字符串。
         /// </summary>
         public static string UnableToInstantiateProcessType {
@@ -7275,33 +7302,6 @@ namespace ColorVision.Engine.Properties {
         public static string WorkflowTemplate {
             get {
                 return ResourceManager.GetString("WorkflowTemplate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 客户 的本地化字符串。
-        /// </summary>
-        public static string Customer {
-            get {
-                return ResourceManager.GetString("Customer", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 类型 的本地化字符串。
-        /// </summary>
-        public static string Type {
-            get {
-                return ResourceManager.GetString("Type", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 型号 的本地化字符串。
-        /// </summary>
-        public static string Model {
-            get {
-                return ResourceManager.GetString("Model", resourceCulture);
             }
         }
     }

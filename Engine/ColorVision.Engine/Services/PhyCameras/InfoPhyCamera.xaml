@@ -64,17 +64,6 @@
                                         <TextBlock VerticalAlignment="Bottom" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.ExpiryDate,StringFormat=yyyy/MM//dd}"/>
                                     </StackPanel>
                                 </Button>
-                                <Button Style="{StaticResource ButtonCommand}" Margin="10" Command="{Binding CopyLicenseCommand}">
-                                    <StackPanel HorizontalAlignment="Center">
-                                        <TextBlock Text="{x:Static properties:Resources.CopyLicense}" HorizontalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button Style="{StaticResource ButtonCommand}" Margin="10" Command="{Binding ExportLicenseCommand}">
-                                    <StackPanel HorizontalAlignment="Center">
-                                        <TextBlock Text="{x:Static properties:Resources.ExportLicense}" HorizontalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>
