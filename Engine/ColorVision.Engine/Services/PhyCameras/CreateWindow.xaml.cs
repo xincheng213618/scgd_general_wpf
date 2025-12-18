@@ -53,7 +53,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 {
                     if (CameraCode.SelectedIndex >= 0)
                     {
-                        var model = CameraLicenseDao.Instance.GetByMAC(list[CameraCode.SelectedIndex].Code ?? string.Empty)?.Model;
+                        var model = PhyLicenseDao.Instance.GetByMAC(list[CameraCode.SelectedIndex].Code ?? string.Empty)?.Model;
                         if (model != null)
                         {
                             DeviceName.Text = model;

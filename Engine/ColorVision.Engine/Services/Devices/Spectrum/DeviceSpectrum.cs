@@ -227,7 +227,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     foreach (var item in licFiles)
                     {
                         string Code = Path.GetFileNameWithoutExtension(item.FullName);
-                        CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(Code);
+                        CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(Code);
                         if (CameraLicenseModel == null)
                             CameraLicenseModel = new LicenseModel();
                         CameraLicenseModel.DevCameraId = SysResourceModel.Id;
@@ -239,7 +239,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
                         CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
                         CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
-                        int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                        int ret = PhyLicenseDao.Instance.Save(CameraLicenseModel);
                         MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? ColorVision.Engine.Properties.Resources.AddFailed : ColorVision.Engine.Properties.Resources.AddSuccess)}", "ColorVision");
                     }
                 }
@@ -251,7 +251,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             else if (Path.GetExtension(filepath) == ".lic")
             {
                 string Code = Path.GetFileNameWithoutExtension(filepath);
-                CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(Code);
+                CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(Code);
                 if (CameraLicenseModel == null)
                     CameraLicenseModel = new LicenseModel();
                 CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(filepath);
@@ -261,7 +261,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
                 CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
 
-                int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                int ret = PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? ColorVision.Engine.Properties.Resources.AddFailed : ColorVision.Engine.Properties.Resources.UpdataSucess)}", "ColorVision");
             }
             else

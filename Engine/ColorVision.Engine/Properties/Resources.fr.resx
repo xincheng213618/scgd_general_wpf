@@ -2490,4 +2490,37 @@
   <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
     <value>Traiter les données de numérisation SMU, les enregistrer au format CSV et tracer les courbes IV.</value>
   </data>
+  <data name="OpenDeviceManager" xml:space="preserve">
+    <value>Ouvrir le Gestionnaire de périphériques</value>
+  </data>
+  <data name="LicenseManager" xml:space="preserve">
+    <value>Gestion des licences</value>
+  </data>
+  <data name="CopyLicense" xml:space="preserve">
+    <value>Licence de copie</value>
+  </data>
+  <data name="ExportLicense" xml:space="preserve">
+    <value>Licence d'exportation</value>
+  </data>
+  <data name="ExportLicenseToFile" xml:space="preserve">
+    <value>Licence d'exportation vers un fichier</value>
+  </data>
+  <data name="LicenseCopiedToClipboard" xml:space="preserve">
+    <value>La licence a été copiée dans le presse-papiers.</value>
+  </data>
+  <data name="NoLicenseAvailable" xml:space="preserve">
+    <value>Aucune licence disponible</value>
+  </data>
+  <data name="LicenseExportedSuccessfully" xml:space="preserve">
+    <value>Licence exportée avec succès</value>
+  </data>
+  <data name="FailedToOpenDeviceManager" xml:space="preserve">
+    <value>Impossible d'ouvrir le Gestionnaire de périphériques</value>
+  </data>
+  <data name="CopyLicenseFailed" xml:space="preserve">
+    <value>La copie de la licence a échoué</value>
+  </data>
+  <data name="ExportLicenseFailed" xml:space="preserve">
+    <value>L'exportation de la licence a échoué.</value>
+  </data>
 </root>

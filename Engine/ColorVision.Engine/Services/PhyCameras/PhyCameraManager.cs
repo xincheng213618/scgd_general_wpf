@@ -42,6 +42,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand EditCofigCommand { get; set; }
+        public RelayCommand OpenDeviceManagerCommand { get; set; }
+        public RelayCommand OpenLicenseManagerCommand { get; set; }
 
         public PhyCameraManagerConfig Config { get; set; } = ConfigService.Instance.GetRequiredService<PhyCameraManagerConfig>();
 
@@ -51,6 +53,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             ImportCommand = new RelayCommand(a => Import());
 
             EditCofigCommand = new RelayCommand(a => EditCofig());
+            OpenDeviceManagerCommand = new RelayCommand(a => OpenDeviceManager());
+            OpenLicenseManagerCommand = new RelayCommand(a => OpenLicenseManager());
 
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Application.Current.Dispatcher.Invoke(() => LoadPhyCamera());
             if (MySqlControl.GetInstance().IsConnect)
@@ -67,6 +71,28 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             propertyEditorWindow.ShowDialog();
+        }
+
+        public void OpenDeviceManager()
+        {
+            try
+            {
+                var startInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "devmgmt.msc",
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(startInfo);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.FailedToOpenDeviceManager}: {ex.Message}", "ColorVision");
+            }
+        }
+
+        public void OpenLicenseManager()
+        {
+            new LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
 
@@ -117,7 +143,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string[] selectedFiles = openFileDialog.FileNames;
-                var licenses = CameraLicenseDao.Instance.GetAll();
+                var licenses = PhyLicenseDao.Instance.GetAll();
 
                 foreach (string file in selectedFiles)
                 {
@@ -181,7 +207,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             licenseModel.Model = licenseModel.ColorVisionLicense.DeviceMode;
             licenseModel.ExpiryDate = licenseModel.ColorVisionLicense.ExpiryDateTime;
 
-            int ret = CameraLicenseDao.Instance.Save(licenseModel);
+            int ret = PhyLicenseDao.Instance.Save(licenseModel);
 
             UpdateSysResource(licenseModel);
         }
@@ -222,12 +248,12 @@ namespace ColorVision.Engine.Services.PhyCameras
             LoadPhyCamera();
             if (PhyCameras.Count == 1)
             {
-                LicenseModel license = CameraLicenseDao.Instance.GetByMAC(cameraID);
+                LicenseModel license = PhyLicenseDao.Instance.GetByMAC(cameraID);
                 if (license == null)
                     license = new LicenseModel();
                 license.LiceType = 0;
                 license.MacAddress = cameraID;
-                CameraLicenseDao.Instance.Save(license);
+                PhyLicenseDao.Instance.Save(license);
 
                 GetPhyCamera(cameraID).CameraLicenseModel = license;
 

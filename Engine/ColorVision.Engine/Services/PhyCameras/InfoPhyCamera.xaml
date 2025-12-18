@@ -64,7 +64,6 @@
                                         <TextBlock VerticalAlignment="Bottom" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.ExpiryDate,StringFormat=yyyy/MM//dd}"/>
                                     </StackPanel>
                                 </Button>
-
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>

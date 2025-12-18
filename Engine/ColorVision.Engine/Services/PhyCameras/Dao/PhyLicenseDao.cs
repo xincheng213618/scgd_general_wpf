@@ -64,9 +64,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         public DateTime? CreateDate { get; set; } = DateTime.Now;
     }
 
-    public class CameraLicenseDao : BaseTableDao<LicenseModel>
+    public class PhyLicenseDao : BaseTableDao<LicenseModel>
     {
-        public static CameraLicenseDao Instance { get; set; } = new CameraLicenseDao();
+        public static PhyLicenseDao Instance { get; set; } = new PhyLicenseDao();
 
         public LicenseModel? GetByMAC(string Code) => Db.Queryable<LicenseModel>().Where(x => x.MacAddress == Code).First();
 
