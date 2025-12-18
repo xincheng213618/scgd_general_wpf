@@ -59,6 +59,7 @@
                                     <TextBlock Text="{Binding SysResourceModel.Remark}"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding Code}"/>
+                                <TextBlock Text="{Binding CameraLicenseModel.ColorVisionLicense.DeviceMode}"/>
                                 <TextBlock Text="{Binding LicenseExpiryText}" 
                                            Foreground="{Binding LicenseExpiryColor}" 
                                            FontSize="11" 
