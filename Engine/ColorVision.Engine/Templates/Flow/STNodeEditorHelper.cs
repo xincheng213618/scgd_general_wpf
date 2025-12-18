@@ -15,7 +15,6 @@ using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates.ARVR.AOI;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FindLightArea;
@@ -60,6 +59,7 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -615,6 +615,17 @@ namespace ColorVision.Engine.Templates.Flow
                 algComplianceMathNode.nodeEvent += (s, e) => Refesh();
                 Refesh();
             }
+
+            if (STNodeEditor.ActiveNode is CVBaseServerNode baseServerNode)
+            {
+                Type type = typeof(CVBaseServerNode);
+                TextboxPropertiesEditor textboxPropertiesEditor = new TextboxPropertiesEditor();
+
+                SignStackPanel.Children.Add(textboxPropertiesEditor.GenProperties(type.GetProperty("MaxTime"), baseServerNode));
+                SignStackPanel.Children.Insert(0,new TextBlock() { Text = baseServerNode.Token ,Margin = new Thickness(0,0,0,5)});
+            }
+
+
 
             SignStackPanel.Visibility = SignStackPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
