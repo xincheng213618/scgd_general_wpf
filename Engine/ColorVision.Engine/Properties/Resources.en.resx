@@ -2523,4 +2523,13 @@
   <data name="ExportLicenseFailed" xml:space="preserve">
     <value>Failed to export license</value>
   </data>
+  <data name="Customer" xml:space="preserve">
+    <value>Customer</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>Model</value>
+  </data>
 </root>

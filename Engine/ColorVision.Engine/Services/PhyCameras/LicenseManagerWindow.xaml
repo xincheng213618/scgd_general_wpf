@@ -1,0 +1,64 @@
+﻿<Window x:Class="ColorVision.Engine.Services.PhyCameras.LicenseManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras"
+        xmlns:dao="clr-namespace:ColorVision.Engine.Services.PhyCameras.Dao"
+        mc:Ignorable="d"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        Title="{x:Static properties:Resources.LicenseManager}" Height="600" Width="1000" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterScreen">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Toolbar -->
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}" Margin="0,0,5,0"/>
+                <Button Content="{x:Static properties:Resources.ExportLicense}" Command="{Binding ExportSelectedCommand}" Margin="0,0,5,0"/>
+                <Button Content="{x:Static properties:Resources.Delete}" Command="{Binding DeleteSelectedCommand}" Margin="0,0,5,0"/>
+                <Button Content="{x:Static properties:Resources.Refresh}" Command="{Binding RefreshCommand}"/>
+            </StackPanel>
+        </Grid>
+        
+        <!-- License List -->
+        <DataGrid Grid.Row="1" 
+                  ItemsSource="{Binding Licenses}" 
+                  SelectedItem="{Binding SelectedLicense}"
+                  AutoGenerateColumns="False" 
+                  CanUserAddRows="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  GridLinesVisibility="All"
+                  HeadersVisibility="All">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
+                <DataGridTextColumn Header="MAC/SN" Binding="{Binding MacAddress}" Width="180"/>
+                <DataGridTextColumn Header="{x:Static properties:Resources.Type}" Binding="{Binding LiceTypeString}" Width="100"/>
+                <DataGridTextColumn Header="{x:Static properties:Resources.Model}" Binding="{Binding Model}" Width="120"/>
+                <DataGridTextColumn Header="{x:Static properties:Resources.Customer}" Binding="{Binding CusTomerName}" Width="150"/>
+                <DataGridTextColumn Header="{x:Static properties:Resources.ExpiryDate}" Binding="{Binding ExpiryDate, StringFormat=yyyy-MM-dd}" Width="120"/>
+                <DataGridTemplateColumn Header="{x:Static properties:Resources.Status}" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Ellipse Width="12" Height="12" Fill="{Binding StatusColor}" ToolTip="{Binding StatusText}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="{x:Static properties:Resources.CreateDate}" Binding="{Binding CreateDate, StringFormat=yyyy-MM-dd HH:mm}" Width="*"/>
+            </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="{x:Static properties:Resources.CopyLicense}" Command="{Binding CopyLicenseCommand}"/>
+                    <MenuItem Header="{x:Static properties:Resources.ExportLicense}" Command="{Binding ExportSelectedCommand}"/>
+                    <Separator/>
+                    <MenuItem Header="{x:Static properties:Resources.Delete}" Command="{Binding DeleteSelectedCommand}"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+    </Grid>
+</Window>

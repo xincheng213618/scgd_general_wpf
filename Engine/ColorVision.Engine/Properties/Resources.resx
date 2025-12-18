@@ -2523,4 +2523,13 @@
   <data name="ExportLicenseFailed" xml:space="preserve">
     <value>导出许可证失败</value>
   </data>
+  <data name="Customer" xml:space="preserve">
+    <value>客户</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>类型</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>型号</value>
+  </data>
 </root>

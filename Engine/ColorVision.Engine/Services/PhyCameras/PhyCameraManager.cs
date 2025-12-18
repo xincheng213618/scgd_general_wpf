@@ -43,6 +43,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand EditCofigCommand { get; set; }
         public RelayCommand OpenDeviceManagerCommand { get; set; }
+        public RelayCommand OpenLicenseManagerCommand { get; set; }
 
         public PhyCameraManagerConfig Config { get; set; } = ConfigService.Instance.GetRequiredService<PhyCameraManagerConfig>();
 
@@ -53,6 +54,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             EditCofigCommand = new RelayCommand(a => EditCofig());
             OpenDeviceManagerCommand = new RelayCommand(a => OpenDeviceManager());
+            OpenLicenseManagerCommand = new RelayCommand(a => OpenLicenseManager());
 
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Application.Current.Dispatcher.Invoke(() => LoadPhyCamera());
             if (MySqlControl.GetInstance().IsConnect)
@@ -86,6 +88,11 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.FailedToOpenDeviceManager}: {ex.Message}", "ColorVision");
             }
+        }
+
+        public void OpenLicenseManager()
+        {
+            new LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
 

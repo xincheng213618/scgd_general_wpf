@@ -7277,5 +7277,32 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("WorkflowTemplate", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 客户 的本地化字符串。
+        /// </summary>
+        public static string Customer {
+            get {
+                return ResourceManager.GetString("Customer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 类型 的本地化字符串。
+        /// </summary>
+        public static string Type {
+            get {
+                return ResourceManager.GetString("Type", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 型号 的本地化字符串。
+        /// </summary>
+        public static string Model {
+            get {
+                return ResourceManager.GetString("Model", resourceCulture);
+            }
+        }
     }
 }
