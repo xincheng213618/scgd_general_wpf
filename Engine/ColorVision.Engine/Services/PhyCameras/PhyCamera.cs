@@ -477,7 +477,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         #region License
 
-        public LicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsLicensed)); OnPropertyChanged(nameof(LicenseSolidColorBrush)); } }
+        public LicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsLicensed)); OnPropertyChanged(nameof(LicenseSolidColorBrush)); OnPropertyChanged(nameof(LicenseExpiryText)); OnPropertyChanged(nameof(LicenseExpiryColor)); } }
         private LicenseModel? _CameraLicenseModel;
 
         public LicenseState LicenseState { get 
@@ -512,6 +512,44 @@ namespace ColorVision.Engine.Services.PhyCameras
 
 
         public bool IsLicensed { get => CameraLicenseModel != null;  }
+
+        public string LicenseExpiryText
+        {
+            get
+            {
+                if (CameraLicenseModel == null || CameraLicenseModel.ExpiryDate == null)
+                    return "无许可证";
+                
+                var expiryDate = CameraLicenseModel.ExpiryDate.Value;
+                if (expiryDate < DateTime.Now)
+                    return $"已过期 ({expiryDate:yyyy-MM-dd})";
+                
+                var daysRemaining = (expiryDate - DateTime.Now).Days;
+                if (daysRemaining <= 30)
+                    return $"剩余 {daysRemaining} 天 ({expiryDate:yyyy-MM-dd})";
+                
+                return $"有效期至 {expiryDate:yyyy-MM-dd}";
+            }
+        }
+
+        public SolidColorBrush LicenseExpiryColor
+        {
+            get
+            {
+                if (CameraLicenseModel == null || CameraLicenseModel.ExpiryDate == null)
+                    return new SolidColorBrush(Colors.Red);
+                
+                var expiryDate = CameraLicenseModel.ExpiryDate.Value;
+                if (expiryDate < DateTime.Now)
+                    return new SolidColorBrush(Colors.Red);
+                
+                var daysRemaining = (expiryDate - DateTime.Now).Days;
+                if (daysRemaining <= 30)
+                    return new SolidColorBrush(Colors.Orange);
+                
+                return new SolidColorBrush(Colors.Green);
+            }
+        }
 
         public void RefreshLicense()
         {
