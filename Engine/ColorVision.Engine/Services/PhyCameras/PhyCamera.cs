@@ -581,10 +581,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                             MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
                             if (ret == -1)
                             {
-                                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(MysqlCameraLicense)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                                {
-                                    MySqlControl.GetInstance().BatchExecuteNonQuery(new MysqlCameraLicense().GetRecover());
-                                }
                                 return false;
                             }
                             return true;
@@ -622,10 +618,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
                     if (ret == -1)
                     {
-                        if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(MysqlCameraLicense)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                        {
-                            MySqlControl.GetInstance().BatchExecuteNonQuery(new MysqlCameraLicense().GetRecover());
-                        }
                         return false;
                     }
                     return true;
