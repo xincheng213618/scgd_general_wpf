@@ -7,7 +7,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
 {
     public class ToolBarScaleRuler: IEditorToggleToolBase
     {
-        public override ToolBarLocal ToolBarLocal => ToolBarLocal.None;
+        public override ToolBarLocal ToolBarLocal => ToolBarLocal.ScaleRuler;
 
         private FrameworkElement Parent { get; set; }
         private Grid GridEx { get; set; }
@@ -30,7 +30,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
                     Render();
                 };
             }
-            IsChecked = true;
+            IsChecked = false;
         }
 
         private void GridEx_SizeChanged(object sender, SizeChangedEventArgs e)

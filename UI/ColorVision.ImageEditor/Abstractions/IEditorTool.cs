@@ -19,6 +19,7 @@ namespace ColorVision.ImageEditor
         Right,
         RightBottom,
         LeftTop,
+        ScaleRuler,
         None
     }
 

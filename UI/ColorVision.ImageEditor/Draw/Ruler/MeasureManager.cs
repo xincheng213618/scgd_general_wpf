@@ -7,7 +7,6 @@ namespace ColorVision.ImageEditor.Draw.Ruler
     {
         private Zoombox Zoombox1 => EditorContext.Zoombox;
         private DrawCanvas DrawCanvas => EditorContext.DrawCanvas;
-        private ImageViewModel ImageViewModel => EditorContext.ImageViewModel;
 
         public EditorContext EditorContext { get; set; }
 
