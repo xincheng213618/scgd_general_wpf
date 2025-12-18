@@ -267,7 +267,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 string LicPath = Path.Combine(ResotrePath, $"{Code}.lic");
                 if (File.Exists(LicPath))
                 {
-                    CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(Code);
+                    CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(Code);
                     if (CameraLicenseModel == null)
                         CameraLicenseModel = new LicenseModel();
                     CameraLicenseModel.LiceType = 0;
@@ -276,7 +276,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
                     CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
                     CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
-                    int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                    int ret = PhyLicenseDao.Instance.Save(CameraLicenseModel);
                     if (ret == 1)
                     {
                         RefreshLicense();
@@ -411,7 +411,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (CameraLicenseModel != null)
             {
                 CameraLicenseModel.DevCameraId = null;
-                CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
             }
         }
@@ -423,7 +423,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
 
                 CameraLicenseModel.DevCameraId = deviceCamera.SysResourceModel.Id;
-                CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
 
                 if (CameraLicenseModel.DevCaliId != null)
@@ -447,7 +447,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (CameraLicenseModel != null)
             {
                 CameraLicenseModel.DevCaliId = null;
-                CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
             }
         }
@@ -460,7 +460,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (CameraLicenseModel != null)
             {
                 CameraLicenseModel.DevCaliId = deviceCalibration.SysResourceModel.Id;
-                CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
                 if (CameraLicenseModel.DevCameraId != null)
                 {
@@ -519,7 +519,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 return;
             }
-            CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
+            CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
         }
 
         private void UploadLicense()
@@ -557,7 +557,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         string Code = Path.GetFileNameWithoutExtension(item.FullName);
                         if (Code == SysResourceModel.Code)
                         {
-                            CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
+                            CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
                             if (CameraLicenseModel == null)
                                 CameraLicenseModel = new LicenseModel();
                             CameraLicenseModel.LiceType = 0;
@@ -570,7 +570,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                             CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
                             CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
 
-                            int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                            int ret = PhyLicenseDao.Instance.Save(CameraLicenseModel);
                             if(ret == 1)
                             {
                                 RefreshLicense();
@@ -602,7 +602,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 string Code = Path.GetFileNameWithoutExtension(filepath);
                 if (Code == SysResourceModel.Code)
                 {
-                    CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
+                    CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
                     if (CameraLicenseModel == null)
                         CameraLicenseModel = new LicenseModel();
                     CameraLicenseModel.LiceType = 0;
@@ -612,7 +612,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
                     CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
 
-                    int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                    int ret = PhyLicenseDao.Instance.Save(CameraLicenseModel);
                     if (ret == 1)
                     {
                         RefreshLicense();

@@ -143,7 +143,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string[] selectedFiles = openFileDialog.FileNames;
-                var licenses = CameraLicenseDao.Instance.GetAll();
+                var licenses = PhyLicenseDao.Instance.GetAll();
 
                 foreach (string file in selectedFiles)
                 {
@@ -207,7 +207,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             licenseModel.Model = licenseModel.ColorVisionLicense.DeviceMode;
             licenseModel.ExpiryDate = licenseModel.ColorVisionLicense.ExpiryDateTime;
 
-            int ret = CameraLicenseDao.Instance.Save(licenseModel);
+            int ret = PhyLicenseDao.Instance.Save(licenseModel);
 
             UpdateSysResource(licenseModel);
         }
@@ -248,12 +248,12 @@ namespace ColorVision.Engine.Services.PhyCameras
             LoadPhyCamera();
             if (PhyCameras.Count == 1)
             {
-                LicenseModel license = CameraLicenseDao.Instance.GetByMAC(cameraID);
+                LicenseModel license = PhyLicenseDao.Instance.GetByMAC(cameraID);
                 if (license == null)
                     license = new LicenseModel();
                 license.LiceType = 0;
                 license.MacAddress = cameraID;
-                CameraLicenseDao.Instance.Save(license);
+                PhyLicenseDao.Instance.Save(license);
 
                 GetPhyCamera(cameraID).CameraLicenseModel = license;
 

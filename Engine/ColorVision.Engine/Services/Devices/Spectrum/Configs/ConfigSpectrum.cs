@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
             combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
 
-            combo.ItemsSource = CameraLicenseDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "lic_type", 1 } });
+            combo.ItemsSource = PhyLicenseDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "lic_type", 1 } });
             combo.DisplayMemberPath = "MacAddress";
             dockPanel.Children.Add(combo);
             return dockPanel;

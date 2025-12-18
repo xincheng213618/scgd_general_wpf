@@ -132,7 +132,7 @@ namespace ColorVision.Engine.ToolPlugins
             }
             try
             {
-                var cameraLicenseModels = CameraLicenseDao.Instance.GetAll(); 
+                var cameraLicenseModels = PhyLicenseDao.Instance.GetAll(); 
                 string DirectoryPath = Path.Combine(Directory.GetParent(CalibrationConfig.Instance.CalibToolsPath).FullName, "license");
 
                 if (!Directory.Exists(DirectoryPath))

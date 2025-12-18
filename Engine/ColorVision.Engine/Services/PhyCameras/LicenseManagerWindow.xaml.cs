@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public void LoadLicenses()
         {
             Licenses.Clear();
-            var licenses = CameraLicenseDao.Instance.GetAll();
+            var licenses = PhyLicenseDao.Instance.GetAll();
             foreach (var license in licenses)
             {
                 Licenses.Add(new LicenseViewModel(license));
@@ -119,7 +119,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 "ColorVision", 
                 MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
-                CameraLicenseDao.Instance.DeleteById(SelectedLicense.Model.Id);
+                PhyLicenseDao.Instance.DeleteById(SelectedLicense.Model.Id);
                 LoadLicenses();
             }
         }
