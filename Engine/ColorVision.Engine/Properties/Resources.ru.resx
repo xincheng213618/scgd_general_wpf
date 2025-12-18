@@ -2490,4 +2490,37 @@
   <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
     <value>Обработать данные сканирования SMU, сохранить в CSV и построить кривые IV</value>
   </data>
+  <data name="OpenDeviceManager" xml:space="preserve">
+    <value>Откройте Диспетчер устройств</value>
+  </data>
+  <data name="LicenseManager" xml:space="preserve">
+    <value>Управление лицензиями</value>
+  </data>
+  <data name="CopyLicense" xml:space="preserve">
+    <value>Копирование лицензии</value>
+  </data>
+  <data name="ExportLicense" xml:space="preserve">
+    <value>Экспортная лицензия</value>
+  </data>
+  <data name="ExportLicenseToFile" xml:space="preserve">
+    <value>Экспорт лицензии в файл</value>
+  </data>
+  <data name="LicenseCopiedToClipboard" xml:space="preserve">
+    <value>Лицензионное соглашение скопировано в буфер обмена.</value>
+  </data>
+  <data name="NoLicenseAvailable" xml:space="preserve">
+    <value>Лицензии отсутствуют</value>
+  </data>
+  <data name="LicenseExportedSuccessfully" xml:space="preserve">
+    <value>Лицензия успешно экспортирована.</value>
+  </data>
+  <data name="FailedToOpenDeviceManager" xml:space="preserve">
+    <value>Не удаётся открыть Диспетчер устройств.</value>
+  </data>
+  <data name="CopyLicenseFailed" xml:space="preserve">
+    <value>Копирование лицензии не удалось.</value>
+  </data>
+  <data name="ExportLicenseFailed" xml:space="preserve">
+    <value>Экспорт лицензии не удался</value>
+  </data>
 </root>

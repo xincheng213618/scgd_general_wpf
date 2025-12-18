@@ -2490,4 +2490,37 @@
   <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
     <value>SMUスキャンデータを処理し、CSVに保存してIV曲線をプロットする</value>
   </data>
+  <data name="OpenDeviceManager" xml:space="preserve">
+    <value>デバイスマネージャーを開く</value>
+  </data>
+  <data name="LicenseManager" xml:space="preserve">
+    <value>ライセンス管理</value>
+  </data>
+  <data name="CopyLicense" xml:space="preserve">
+    <value>コピーライセンス</value>
+  </data>
+  <data name="ExportLicense" xml:space="preserve">
+    <value>輸出許可</value>
+  </data>
+  <data name="ExportLicenseToFile" xml:space="preserve">
+    <value>ライセンスをファイルにエクスポート</value>
+  </data>
+  <data name="LicenseCopiedToClipboard" xml:space="preserve">
+    <value>ライセンスがクリップボードにコピーされました。</value>
+  </data>
+  <data name="NoLicenseAvailable" xml:space="preserve">
+    <value>利用可能なライセンスがありません</value>
+  </data>
+  <data name="LicenseExportedSuccessfully" xml:space="preserve">
+    <value>ライセンスが正常にエクスポートされました</value>
+  </data>
+  <data name="FailedToOpenDeviceManager" xml:space="preserve">
+    <value>デバイスマネージャーを開けません</value>
+  </data>
+  <data name="CopyLicenseFailed" xml:space="preserve">
+    <value>ライセンスのコピーに失敗しました</value>
+  </data>
+  <data name="ExportLicenseFailed" xml:space="preserve">
+    <value>ライセンスのエクスポートに失敗しました</value>
+  </data>
 </root>
