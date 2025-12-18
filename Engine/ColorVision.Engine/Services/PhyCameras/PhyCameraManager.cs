@@ -8,6 +8,7 @@ using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
+using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -24,7 +25,10 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
+    public class PhyCameraManagerConfig : ViewModelBase, IConfig
+    {
 
+    }
 
 
     public class PhyCameraManager:ViewModelBase
@@ -37,11 +41,17 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand CreateCommand { get; set; }
 
         public RelayCommand ImportCommand { get; set; }
+        public RelayCommand EditCofigCommand { get; set; }
+
+        public PhyCameraManagerConfig Config { get; set; } = ConfigService.Instance.GetRequiredService<PhyCameraManagerConfig>();
 
         public PhyCameraManager()
         {
             CreateCommand = new RelayCommand(a => Create());
             ImportCommand = new RelayCommand(a => Import());
+
+            EditCofigCommand = new RelayCommand(a => EditCofig());
+
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Application.Current.Dispatcher.Invoke(() => LoadPhyCamera());
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
@@ -53,6 +63,11 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
         }
 
+        public void EditCofig()
+        {
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            propertyEditorWindow.ShowDialog();
+        }
 
 
         public void RefreshEmptyCamera()

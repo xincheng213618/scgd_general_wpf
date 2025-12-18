@@ -1,7 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using ColorVision.UI.Authorizations;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Engine.Services.Devices.FlowDevice
 {
@@ -16,10 +17,9 @@ namespace ColorVision.Engine.Services.Devices.FlowDevice
             DService = new MQTTFlowDevice(Config);
             EditCommand = new RelayCommand(a =>
             {
-                EditFlowDevice window = new(this);
-                window.Owner = Application.Current.GetActiveWindow();
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowDialog();
+                var propertyEditorWindow = new PropertyEditorWindow(Config, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                propertyEditorWindow.Submited += (s, e) => Save();
+                propertyEditorWindow.ShowDialog();
             }, a => AccessControl.Check(PermissionMode.Administrator));
         }
 
