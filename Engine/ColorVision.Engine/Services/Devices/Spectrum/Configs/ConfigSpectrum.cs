@@ -127,6 +127,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public bool IsNDPort { get => _IsNDPort; set { _IsNDPort = value; OnPropertyChanged(); } }
         private bool _IsNDPort;
 
+        [PropertyEditorType(typeof(TextCFWPropertiesEditor))]
+        public string NDBindDeviceCode { get => _NDBindDeviceCode; set { _NDBindDeviceCode = value; OnPropertyChanged(); } }
+        private string _NDBindDeviceCode;
+
         [PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
         public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
         private string _szComName = "COM1";
@@ -146,9 +150,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public List<string> NDCaliNameGroups { get; set; } = new List<string>();
 
 
-        [PropertyEditorType(typeof(TextCFWPropertiesEditor))]
-        public string NDBindDeviceCode { get => _NDBindDeviceCode; set { _NDBindDeviceCode = value; OnPropertyChanged(); } }
-        private string _NDBindDeviceCode;
+
     }
 
 
