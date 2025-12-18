@@ -65,6 +65,10 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand UploadLicenseNetCommand { get; set; }
 
         public RelayCommand RefreshLicenseCommand { get; set; }
+        [CommandDisplay("CopyLicense")]
+        public RelayCommand CopyLicenseCommand { get; set; }
+        [CommandDisplay("ExportLicense")]
+        public RelayCommand ExportLicenseCommand { get; set; }
 
         [CommandDisplay("Reset", CommandType = CommandType.Highlighted,Order = 9999)]
         public RelayCommand ResetCommand { get; set; }
@@ -128,6 +132,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             UploadLicenseCommand = new RelayCommand(a => UploadLicense());
             RefreshLicenseCommand = new RelayCommand(a => RefreshLicense());
+            CopyLicenseCommand = new RelayCommand(a => CopyLicense(), a => CameraLicenseModel != null && !string.IsNullOrEmpty(CameraLicenseModel.LicenseValue));
+            ExportLicenseCommand = new RelayCommand(a => ExportLicense(), a => CameraLicenseModel != null && !string.IsNullOrEmpty(CameraLicenseModel.LicenseValue));
             RefreshLicense();
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
 
@@ -634,6 +640,55 @@ namespace ColorVision.Engine.Services.PhyCameras
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
             }
             return false;
+        }
+
+        public void CopyLicense()
+        {
+            if (CameraLicenseModel == null || string.IsNullOrEmpty(CameraLicenseModel.LicenseValue))
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, "ColorVision");
+                return;
+            }
+
+            try
+            {
+                Common.NativeMethods.Clipboard.SetText(CameraLicenseModel.LicenseValue);
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, "ColorVision");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"复制许可证失败: {ex.Message}", "ColorVision");
+            }
+        }
+
+        public void ExportLicense()
+        {
+            if (CameraLicenseModel == null || string.IsNullOrEmpty(CameraLicenseModel.LicenseValue))
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, "ColorVision");
+                return;
+            }
+
+            try
+            {
+                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog
+                {
+                    Filter = "License files (*.lic)|*.lic|All files (*.*)|*.*",
+                    Title = Properties.Resources.ExportLicenseToFile,
+                    FileName = $"{Code}.lic",
+                    RestoreDirectory = true
+                };
+
+                if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    File.WriteAllText(saveFileDialog.FileName, CameraLicenseModel.LicenseValue);
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseExportedSuccessfully, "ColorVision");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"导出许可证失败: {ex.Message}", "ColorVision");
+            }
         }
 
 

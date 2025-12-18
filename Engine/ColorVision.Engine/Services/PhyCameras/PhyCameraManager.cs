@@ -42,6 +42,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand EditCofigCommand { get; set; }
+        public RelayCommand OpenDeviceManagerCommand { get; set; }
 
         public PhyCameraManagerConfig Config { get; set; } = ConfigService.Instance.GetRequiredService<PhyCameraManagerConfig>();
 
@@ -51,6 +52,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             ImportCommand = new RelayCommand(a => Import());
 
             EditCofigCommand = new RelayCommand(a => EditCofig());
+            OpenDeviceManagerCommand = new RelayCommand(a => OpenDeviceManager());
 
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Application.Current.Dispatcher.Invoke(() => LoadPhyCamera());
             if (MySqlControl.GetInstance().IsConnect)
@@ -67,6 +69,18 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             propertyEditorWindow.ShowDialog();
+        }
+
+        public void OpenDeviceManager()
+        {
+            try
+            {
+                System.Diagnostics.Process.Start("devmgmt.msc");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"无法打开设备管理器: {ex.Message}", "ColorVision");
+            }
         }
 
 

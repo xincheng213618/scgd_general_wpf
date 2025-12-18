@@ -2490,4 +2490,28 @@
   <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
     <value>处理SMU扫描数据，保存到CSV并绘制IV曲线</value>
   </data>
+  <data name="OpenDeviceManager" xml:space="preserve">
+    <value>打开设备管理器</value>
+  </data>
+  <data name="LicenseManager" xml:space="preserve">
+    <value>许可证管理</value>
+  </data>
+  <data name="CopyLicense" xml:space="preserve">
+    <value>复制许可证</value>
+  </data>
+  <data name="ExportLicense" xml:space="preserve">
+    <value>导出许可证</value>
+  </data>
+  <data name="ExportLicenseToFile" xml:space="preserve">
+    <value>导出许可证到文件</value>
+  </data>
+  <data name="LicenseCopiedToClipboard" xml:space="preserve">
+    <value>许可证已复制到剪贴板</value>
+  </data>
+  <data name="NoLicenseAvailable" xml:space="preserve">
+    <value>没有可用的许可证</value>
+  </data>
+  <data name="LicenseExportedSuccessfully" xml:space="preserve">
+    <value>许可证导出成功</value>
+  </data>
 </root>
