@@ -79,7 +79,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"无法打开设备管理器: {ex.Message}", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.FailedToOpenDeviceManager}: {ex.Message}", "ColorVision");
             }
         }
 

@@ -657,7 +657,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             catch (Exception ex)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"复制许可证失败: {ex.Message}", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.CopyLicenseFailed}: {ex.Message}", "ColorVision");
             }
         }
 
@@ -687,7 +687,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             catch (Exception ex)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"导出许可证失败: {ex.Message}", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.ExportLicenseFailed}: {ex.Message}", "ColorVision");
             }
         }
 

@@ -7250,5 +7250,32 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("LicenseExportedSuccessfully", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 无法打开设备管理器 的本地化字符串。
+        /// </summary>
+        public static string FailedToOpenDeviceManager {
+            get {
+                return ResourceManager.GetString("FailedToOpenDeviceManager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 复制许可证失败 的本地化字符串。
+        /// </summary>
+        public static string CopyLicenseFailed {
+            get {
+                return ResourceManager.GetString("CopyLicenseFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出许可证失败 的本地化字符串。
+        /// </summary>
+        public static string ExportLicenseFailed {
+            get {
+                return ResourceManager.GetString("ExportLicenseFailed", resourceCulture);
+            }
+        }
     }
 }

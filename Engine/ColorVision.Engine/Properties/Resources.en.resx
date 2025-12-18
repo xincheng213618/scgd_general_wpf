@@ -2514,4 +2514,13 @@
   <data name="LicenseExportedSuccessfully" xml:space="preserve">
     <value>License exported successfully</value>
   </data>
+  <data name="FailedToOpenDeviceManager" xml:space="preserve">
+    <value>Failed to open Device Manager</value>
+  </data>
+  <data name="CopyLicenseFailed" xml:space="preserve">
+    <value>Failed to copy license</value>
+  </data>
+  <data name="ExportLicenseFailed" xml:space="preserve">
+    <value>Failed to export license</value>
+  </data>
 </root>
