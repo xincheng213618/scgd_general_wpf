@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         [CommandDisplay("UploadCalibrationFiles", Order =100)]
         public RelayCommand UploadCalibrationCommand { get; set; }
-        [CommandDisplay("aliTemplateManagerment",Order =102)]
+        [CommandDisplay("CalibrationEditCommand", Order =102)]
         public RelayCommand CalibrationEditCommand { get; set; }
         [CommandDisplay("CaliTemplateSet",Order =101)]
         public RelayCommand CalibrationTemplateOpenCommand { get; set; }
