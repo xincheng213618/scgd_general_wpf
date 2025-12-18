@@ -21,7 +21,7 @@ namespace ProjectStarkSemi.Conoscope
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public ObservableCollection<double> DefaultRAngles { get => _DefaultRAngles; set { _DefaultRAngles = value; OnPropertyChanged(); } }
-        private ObservableCollection<double> _DefaultRAngles = new ObservableCollection<double>() {10 };
+        private ObservableCollection<double> _DefaultRAngles = new ObservableCollection<double>() {10 ,20,30,40,50,60,70,80};
 
         public ReferenceLineParam ReferenceLineParam { get => _ReferenceLineParam; set { _ReferenceLineParam = value; OnPropertyChanged(); } }
         private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();

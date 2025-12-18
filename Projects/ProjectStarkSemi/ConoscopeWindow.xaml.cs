@@ -1963,5 +1963,10 @@ README.md 文件未找到，显示默认内容。";
         {
             this.Dispose();
         }
+
+        private void RibbonButton_Click_1(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
     }
 }
