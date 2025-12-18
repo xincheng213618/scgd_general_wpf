@@ -681,7 +681,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                 if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
-                    File.WriteAllText(saveFileDialog.FileName, CameraLicenseModel.LicenseValue);
+                    File.WriteAllText(saveFileDialog.FileName, CameraLicenseModel.LicenseValue, Encoding.UTF8);
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseExportedSuccessfully, "ColorVision");
                 }
             }

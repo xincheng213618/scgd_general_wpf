@@ -75,7 +75,12 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             try
             {
-                System.Diagnostics.Process.Start("devmgmt.msc");
+                var startInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "devmgmt.msc",
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(startInfo);
             }
             catch (Exception ex)
             {
