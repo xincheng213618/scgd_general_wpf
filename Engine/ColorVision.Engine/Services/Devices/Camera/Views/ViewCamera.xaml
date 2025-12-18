@@ -111,6 +111,13 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+                        <GridViewColumn  Header="{x:Static properties:Resources.CreateTime}" Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type se:ViewResultImage}">
+                                    <TextBlock Text="{ Binding  CreateTime,StringFormat=yyyy/MM/dd/HH:mm:ss}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resources.Info}" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type se:ViewResultImage}">
@@ -125,7 +132,13 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-
+                        <GridViewColumn  Header="{x:Static properties:Resources.Duration}" Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type se:ViewResultImage}">
+                                    <TextBlock Text="{ Binding  TotalTime}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resources.Result}" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type se:ViewResultImage}">
@@ -140,10 +153,10 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="{x:Static properties:Resources.Duration}" Width="100">
+                        <GridViewColumn  Header="DeviceCode" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type se:ViewResultImage}">
-                                    <TextBlock Text="{ Binding  TotalTime}" />
+                                    <TextBlock Text="{Binding DeviceCode}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -154,13 +167,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="DeviceCode" Width="50">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type se:ViewResultImage}">
-                                    <TextBlock Text="{Binding DeviceCode}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
+    
 
                     </GridView>
                 </ListView.View>
