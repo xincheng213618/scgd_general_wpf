@@ -85,17 +85,17 @@ namespace ColorVision.Engine.Batch
                     return true;
                 }
 
-                // Calculate total size
+                // Calculate total size using File.GetLength() for better performance
                 long totalSize = 0;
-                var fileInfos = new List<FileInfo>();
+                var fileSizes = new Dictionary<string, long>();
                 
                 foreach (var file in files)
                 {
                     try
                     {
-                        var fi = new FileInfo(file);
-                        totalSize += fi.Length;
-                        fileInfos.Add(fi);
+                        long fileSize = new FileInfo(file).Length;
+                        totalSize += fileSize;
+                        fileSizes[file] = fileSize;
                     }
                     catch
                     {
@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Batch
                     }
                 }
 
-                if (fileInfos.Count == 0)
+                if (fileSizes.Count == 0)
                 {
                     log.Info($"FolderSizePreProcess: 没有可访问的文件 {Config.FolderPath}");
                     return true;
@@ -120,28 +120,31 @@ namespace ColorVision.Engine.Batch
                     return true;
                 }
 
-                // Need to cleanup - delete oldest files until size is under limit
-                fileInfos.Sort((a, b) => a.LastWriteTime.CompareTo(b.LastWriteTime));
+                // Need to cleanup - create FileInfo only for files we're going to process
+                // Sort by last write time to delete oldest first
+                var filesByDate = fileSizes.Keys
+                    .Select(f => new { Path = f, LastWriteTime = File.GetLastWriteTime(f), Size = fileSizes[f] })
+                    .OrderBy(f => f.LastWriteTime)
+                    .ToList();
 
                 int deletedCount = 0;
                 long deletedSize = 0;
 
-                foreach (var fileInfo in fileInfos)
+                foreach (var file in filesByDate)
                 {
                     if (totalSize - deletedSize <= maxSizeBytes)
                         break;
 
                     try
                     {
-                        long fileSize = fileInfo.Length;
-                        File.Delete(fileInfo.FullName);
-                        deletedSize += fileSize;
+                        File.Delete(file.Path);
+                        deletedSize += file.Size;
                         deletedCount++;
-                        log.Info($"删除文件: {fileInfo.Name} ({fileSize / 1024}KB)");
+                        log.Info($"删除文件: {Path.GetFileName(file.Path)} ({file.Size / 1024}KB)");
                     }
                     catch (Exception ex)
                     {
-                        log.Warn($"删除文件失败: {fileInfo.Name}", ex);
+                        log.Warn($"删除文件失败: {Path.GetFileName(file.Path)}", ex);
                     }
                 }
 
