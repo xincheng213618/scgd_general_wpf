@@ -10,7 +10,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance  Conoscope:ConoscopeManager}"
-        Title="Conoscope" Height="750" Width="1280" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
+        Title="" Height="750" Width="1280" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
     <Grid >
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
