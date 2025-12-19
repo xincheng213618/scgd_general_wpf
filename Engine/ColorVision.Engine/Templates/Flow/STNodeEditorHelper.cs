@@ -252,7 +252,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (STNodeEditor.ActiveNode is FlowEngineLib.SMUFromCSVNode SMUFromCSVNode)
             {
                 AddStackPanel(name => SMUFromCSVNode.DeviceCode = name, SMUFromCSVNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
-                AddImagePath(name => SMUFromCSVNode.CsvFileName = name, SMUFromCSVNode.CsvFileName);
+                AddImagePath(name => SMUFromCSVNode.CsvFileName = name, SMUFromCSVNode.CsvFileName,"CSV");
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.SMUNode sMUNode)
@@ -630,12 +630,12 @@ namespace ColorVision.Engine.Templates.Flow
             SignStackPanel.Visibility = SignStackPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        void AddImagePath(Action<string> updateStorageAction, string filename)
+        void AddImagePath(Action<string> updateStorageAction, string filename,string Tag = "图像")
         {
             var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
             dockPanel.Children.Add(new TextBlock
             {
-                Text = "图像",
+                Text = Tag,
                 Width = 50,
                 Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
             });
