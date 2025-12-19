@@ -142,30 +142,34 @@ public class SMUFromCSVNode : CVBaseServerNode, ICVLoopNextNode
 	{
 		if (!string.IsNullOrEmpty(csvFileName) && File.Exists(csvFileName))
 		{
-			using (StreamReader streamReader = new StreamReader(csvFileName))
+            using (FileStream fileStream = new FileStream(csvFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 			{
-				using CsvReader csvReader = new CsvReader(streamReader, CultureInfo.InvariantCulture);
-				srcValues = csvReader.GetRecords<SMUCsvSrcData>().ToList();
-				if (srcValues != null && srcValues.Count > 0)
-				{
-					m_point_num = srcValues.Count;
-					m_step_idx = 0;
-					m_cur_val = srcValues[m_step_idx].SrcValue;
-					m_limit_val = srcValues[m_step_idx].LimitValue;
-				}
-				else
-				{
-					if (logger.IsErrorEnabled)
-					{
-						logger.ErrorFormat("CsvFileName content is empty or has an invalid format.");
-					}
-					m_point_num = 0;
-					m_cur_val = 0.0;
-					m_limit_val = 0f;
-				}
-				streamReader.Close();
-				return;
-			}
+                using (StreamReader streamReader = new StreamReader(fileStream))
+                {
+                    using CsvReader csvReader = new CsvReader(streamReader, CultureInfo.InvariantCulture);
+                    srcValues = csvReader.GetRecords<SMUCsvSrcData>().ToList();
+                    if (srcValues != null && srcValues.Count > 0)
+                    {
+                        m_point_num = srcValues.Count;
+                        m_step_idx = 0;
+                        m_cur_val = srcValues[m_step_idx].SrcValue;
+                        m_limit_val = srcValues[m_step_idx].LimitValue;
+                    }
+                    else
+                    {
+                        if (logger.IsErrorEnabled)
+                        {
+                            logger.ErrorFormat("CsvFileName content is empty or has an invalid format.");
+                        }
+                        m_point_num = 0;
+                        m_cur_val = 0.0;
+                        m_limit_val = 0f;
+                    }
+                    streamReader.Close();
+                    return;
+                }
+            }
+
 		}
 		if (logger.IsErrorEnabled)
 		{
