@@ -11,7 +11,7 @@
     <Window.Resources>
         <local:PreTypeNameConverter x:Key="TypeNameConverter"/>
         <local:PreProcessTooltipConverter x:Key="ProcessTooltipConverter"/>
-        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <local:PreBoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
     </Window.Resources>
     <Grid Margin="8">
         <Grid.ColumnDefinitions>

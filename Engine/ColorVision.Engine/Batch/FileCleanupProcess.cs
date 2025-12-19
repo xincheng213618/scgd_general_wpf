@@ -106,7 +106,24 @@ namespace ColorVision.Engine.Batch
                 if (Config.DeleteOlderThanDays > 0)
                 {
                     var cutoffDate = DateTime.Now.AddDays(-Config.DeleteOlderThanDays);
-                    files = files.Where(f => new FileInfo(f).LastWriteTime < cutoffDate).ToList();
+                    var filteredFiles = new List<string>();
+                    
+                    foreach (var file in files)
+                    {
+                        try
+                        {
+                            if (File.GetLastWriteTime(file) < cutoffDate)
+                            {
+                                filteredFiles.Add(file);
+                            }
+                        }
+                        catch
+                        {
+                            // Skip files we can't access
+                        }
+                    }
+                    
+                    files = filteredFiles;
                     
                     if (files.Count == 0)
                     {
@@ -115,10 +132,22 @@ namespace ColorVision.Engine.Batch
                     }
                 }
 
-                // Sort by last write time and keep recent files if specified
-                var fileInfos = files.Select(f => new FileInfo(f))
-                    .OrderByDescending(fi => fi.LastWriteTime)
-                    .ToList();
+                // Create FileInfo objects only for files that passed the filters
+                var fileInfos = new List<FileInfo>();
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        fileInfos.Add(new FileInfo(file));
+                    }
+                    catch
+                    {
+                        // Skip files we can't access
+                    }
+                }
+                
+                // Sort by last write time
+                fileInfos.Sort((a, b) => b.LastWriteTime.CompareTo(a.LastWriteTime));
 
                 if (Config.KeepRecentFiles > 0 && fileInfos.Count > Config.KeepRecentFiles)
                 {

@@ -86,7 +86,29 @@ namespace ColorVision.Engine.Batch
                 }
 
                 // Calculate total size
-                long totalSize = files.Sum(f => new FileInfo(f).Length);
+                long totalSize = 0;
+                var fileInfos = new List<FileInfo>();
+                
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        var fi = new FileInfo(file);
+                        totalSize += fi.Length;
+                        fileInfos.Add(fi);
+                    }
+                    catch
+                    {
+                        // Skip files we can't access
+                    }
+                }
+
+                if (fileInfos.Count == 0)
+                {
+                    log.Info($"FolderSizePreProcess: 没有可访问的文件 {Config.FolderPath}");
+                    return true;
+                }
+
                 long totalSizeMB = totalSize / (1024 * 1024);
                 long maxSizeBytes = Config.MaxSizeMB * 1024 * 1024;
 
@@ -99,9 +121,7 @@ namespace ColorVision.Engine.Batch
                 }
 
                 // Need to cleanup - delete oldest files until size is under limit
-                var fileInfos = files.Select(f => new FileInfo(f))
-                    .OrderBy(fi => fi.LastWriteTime)
-                    .ToList();
+                fileInfos.Sort((a, b) => a.LastWriteTime.CompareTo(b.LastWriteTime));
 
                 int deletedCount = 0;
                 long deletedSize = 0;

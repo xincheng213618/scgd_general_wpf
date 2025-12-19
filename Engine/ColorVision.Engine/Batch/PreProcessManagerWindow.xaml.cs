@@ -45,6 +45,23 @@ namespace ColorVision.Engine.Batch
         }
     }
 
+    public class PreBoolToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool boolValue)
+            {
+                return boolValue ? Visibility.Visible : Visibility.Collapsed;
+            }
+            return Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return Binding.DoNothing;
+        }
+    }
+
     /// <summary>
     /// PreProcessManagerWindow.xaml 的交互逻辑
     /// </summary>

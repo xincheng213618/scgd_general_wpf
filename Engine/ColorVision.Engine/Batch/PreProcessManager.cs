@@ -209,7 +209,8 @@ namespace ColorVision.Engine.Batch
             
             // Update the selected PreProcessMeta with new values
             SelectedProcessMeta.TemplateName = UpdateTemplate.Key;
-            SelectedProcessMeta.PreProcess = UpdateProcess;
+            // Create a new instance to avoid sharing between multiple metas
+            SelectedProcessMeta.PreProcess = UpdateProcess.CreateInstance();
         }
 
         private bool CanMoveUp()
