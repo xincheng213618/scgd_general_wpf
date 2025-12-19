@@ -17,22 +17,22 @@ namespace ColorVision.Engine.Batch
         [Description("要监控的文件夹路径")]
         [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string FolderPath { get => _FolderPath; set { _FolderPath = value; OnPropertyChanged(); } }
-        private string _FolderPath = string.Empty;
+        private string _FolderPath = "D:\\CVTest\\DEV.Camera.Default";
 
         [DisplayName("大小限制(MB)")]
         [Description("文件夹大小限制，单位为MB。超过此大小将删除最旧的文件")]
         public long MaxSizeMB { get => _MaxSizeMB; set { _MaxSizeMB = value; OnPropertyChanged(); } }
-        private long _MaxSizeMB = 1024; // Default 1GB
+        private long _MaxSizeMB = 102400; // Default 1GB
 
         [DisplayName("文件扩展名")]
         [Description("要监控的文件扩展名（逗号分隔，例如: .jpg,.png,.tiff）。留空表示监控所有文件")]
         public string FileExtensions { get => _FileExtensions; set { _FileExtensions = value; OnPropertyChanged(); } }
-        private string _FileExtensions = ".jpg,.png,.tiff,.bmp";
+        private string _FileExtensions = ".jpg,.png,.tiff,.bmp,.cvraw,.cvcie";
 
         [DisplayName("包含子文件夹")]
         [Description("是否包含子文件夹中的文件")]
         public bool IncludeSubfolders { get => _IncludeSubfolders; set { _IncludeSubfolders = value; OnPropertyChanged(); } }
-        private bool _IncludeSubfolders = false;
+        private bool _IncludeSubfolders = true;
 
         [DisplayName("启用")]
         [Description("是否启用此预处理")]
