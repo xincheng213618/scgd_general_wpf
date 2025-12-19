@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Batch
     {
         [DisplayName("清理文件夹")]
         [Description("要清理的文件夹路径")]
-        [PropertyEditorType(typeof(ColorVision.UI.TextSelectFolderPropertiesEditor))]
+        [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string FolderPath { get => _FolderPath; set { _FolderPath = value; OnPropertyChanged(); } }
         private string _FolderPath = string.Empty;
 

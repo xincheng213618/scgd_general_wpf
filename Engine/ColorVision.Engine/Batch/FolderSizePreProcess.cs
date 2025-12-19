@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Batch
     {
         [DisplayName("监控文件夹")]
         [Description("要监控的文件夹路径")]
-        [PropertyEditorType(typeof(ColorVision.UI.TextSelectFolderPropertiesEditor))]
+        [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string FolderPath { get => _FolderPath; set { _FolderPath = value; OnPropertyChanged(); } }
         private string _FolderPath = string.Empty;
 
