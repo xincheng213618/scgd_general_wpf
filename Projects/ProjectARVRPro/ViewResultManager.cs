@@ -28,6 +28,12 @@ namespace ProjectARVRPro
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
+        public bool CodeUseSN { get => _CodeUseSN; set { _CodeUseSN = value; OnPropertyChanged(); } }
+        private bool _CodeUseSN =true;
+
+        public string CodeDateFormat { get => _CodeDateFormat; set { _CodeDateFormat = value; OnPropertyChanged(); } }
+        private string _CodeDateFormat = "yyyyMMdd'T'HHmmss.fffffff";
+
         [DisplayName("按日期保存")]
         public bool SaveByDate { get => _SaveByDate; set { _SaveByDate = value; OnPropertyChanged(); } }
         private bool _SaveByDate;

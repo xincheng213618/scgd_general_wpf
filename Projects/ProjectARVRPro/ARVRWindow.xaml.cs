@@ -9,6 +9,7 @@ using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
+using Dm.util;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -18,6 +19,7 @@ using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Services;
 using Quartz;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -349,7 +351,9 @@ namespace ProjectARVRPro
             }
 
             FlowName = FlowTemplate.Text;
-            CurrentFlowResult.Code = ProjectARVRProConfig.Instance.SN + DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+
+            string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
+            CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
 
             await Refresh();
 
