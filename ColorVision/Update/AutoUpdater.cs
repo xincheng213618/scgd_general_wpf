@@ -19,7 +19,6 @@ using System.Windows;
 
 namespace ColorVision.Update
 {
-
     public class AutoUpdateConfig:ViewModelBase, IConfig
     {
         public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();    
