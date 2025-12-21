@@ -10,6 +10,45 @@ using System.Text.RegularExpressions;
 
 namespace ColorVision.Update
 {
+    [FileExtension(".cvx")]
+    public class CVXFileProcess : IFileProcessor
+    {
+        public int Order => 1;
+
+        public void Export(string filePath)
+        {
+
+        }
+        public void Process(string filePath)
+        {
+            if (!File.Exists(filePath)) return;
+
+            string fileName = Path.GetFileName(filePath);
+
+            AutoUpdater.RestartIsIncrementApplication(filePath);
+        }
+    }
+
+    [FileExtension(".cvxp")]
+
+    public class CVXPProcessUpdte : IFileProcessor
+    {
+        public int Order => 1;
+
+        public void Export(string filePath)
+        {
+
+        }
+
+        public void Process(string filePath)
+        {
+            if (!File.Exists(filePath)) return;
+            string fileName = Path.GetFileName(filePath);
+            PluginUpdater.UpdatePlugin(filePath);
+        }
+    }
+
+
     [FileExtension(".zip")]
 
     public class FileProcessUpdte : IFileProcessor
