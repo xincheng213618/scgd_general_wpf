@@ -350,8 +350,8 @@ namespace ColorVision.Update
 
             if (isIncrement)
             {
-                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{latestVersion}].zip";
-                filePath = Path.Combine(downloadPath, $"ColorVision-Update-[{latestVersion}].zip");
+                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{latestVersion}].cvx";
+                filePath = Path.Combine(downloadPath, $"ColorVision-Update-[{latestVersion}].cvx");
             }
             else
             {

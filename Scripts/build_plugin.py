@@ -200,7 +200,7 @@ def build_project(project_name, type_name):
     print(f'dll_path: {dll_path} ，verison:{version}')
 
     # 设置输出 zip 文件名
-    output_zip = f'{project_name}-{version}.zip'
+    output_zip = f'{project_name}-{version}.cvxp'
 
     # 执行比较和打包
     compare_and_zip(src_dir, ref_dir, output_zip, project_name, base_path, type_name)

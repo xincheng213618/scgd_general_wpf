@@ -131,8 +131,8 @@ namespace ColorVision.UI.Plugins
             {
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.FoundProjectDownloadConfirm, SearchName, $"{ColorVision.UI.Properties.Resources.Version}{version}"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
-                    string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.zip";
-                    string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{SearchName}/{SearchName}-{version}.zip";
+                    string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.cvxp";
+                    string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{SearchName}/{SearchName}-{version}.cvxp";
                     WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
@@ -179,8 +179,8 @@ namespace ColorVision.UI.Plugins
             // 打开文件选择对话框
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
-                Filter = "ZIP Files (*.zip)|*.zip",
-                Title = "Select a ZIP file"
+                Filter = "Files (*.zip)|*.zip;plugin(*.cvxp)|*.cvxp",
+                Title = "Select a Update file"
             };
 
             if (openFileDialog.ShowDialog() == true)
