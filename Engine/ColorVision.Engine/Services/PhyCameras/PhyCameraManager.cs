@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
@@ -10,21 +11,51 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.Plugins;
 using cvColorVision;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
+    [FileExtension(".lic")]
+
+    public class LicFileProcess : IFileProcessor
+    {
+        public int Order => 1;
+
+        public void Export(string filePath)
+        {
+
+        }
+
+        public void Process(string filePath)
+        {
+            if (!File.Exists(filePath)) return;
+            string content = File.ReadAllText(filePath);
+            if (string.IsNullOrWhiteSpace(content)) return;
+            string LicenseValue = Tool.Base64Decode(content);
+            ColorVisionLicense colorVisionLicense =  JsonConvert.DeserializeObject<ColorVisionLicense>(LicenseValue);
+            if (colorVisionLicense == null) return;
+
+            if (MessageBox.Show("是否导入许可证" + colorVisionLicense.DeviceMode, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+            LicenseModel licenseModel = PhyLicenseDao.Instance.GetByMAC(Path.GetFileNameWithoutExtension(filePath)) ?? new LicenseModel();
+            licenseModel.LicenseValue = content;
+            PhyLicenseDao.Instance.Save(licenseModel);
+        }
+    }
+
     public class PhyCameraManagerConfig : ViewModelBase, IConfig
     {
 
