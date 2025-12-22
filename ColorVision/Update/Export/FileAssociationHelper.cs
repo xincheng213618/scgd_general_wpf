@@ -5,19 +5,19 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Windows;
 
 namespace ColorVision.Update.Export
 {
     public class MenuFileAssociation : MenuItemBase
     {
-        public override string OwnerGuid => "Help";
+        public override string OwnerGuid => nameof(MenuUpdate);
         public override int Order => 1000;
         public override string Header => "FileAssociation";
-
-        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
             FileAssociationHelper.RegisterAssociations();
+            MessageBox.Show(Application.Current.GetActiveWindow(),"注册表应用成功","ColorVision");
         }
     }
 
@@ -26,7 +26,7 @@ namespace ColorVision.Update.Export
         /// <summary>
         /// 生成注册表文件并请求管理员权限导入
         /// </summary>
-        public static void RegisterAssociations()
+        public static bool RegisterAssociations()
         {
             try
             {
@@ -99,19 +99,15 @@ namespace ColorVision.Update.Export
                 psi.UseShellExecute = true;
                 psi.Verb = "runas"; // 关键：这会触发 UAC 提权提示
 
-                Process.Start(psi);
+                Process process = Process.Start(psi);
+                process?.WaitForExit();
+                return true;
 
                 // 可选：稍后删除临时文件（由于 regedit 是异步的，立即删除可能导致未读取，实际中可以不删或延迟删除）
             }
-            catch (System.ComponentModel.Win32Exception)
-            {
-                // 用户点击了 UAC 的“取消”按钮，或者提权失败
-                // 可以在这里记录日志： "User cancelled registry update."
-            }
             catch (Exception ex)
             {
-                // 其他错误处理
-                System.Diagnostics.Debug.WriteLine($"Error registering file types: {ex.Message}");
+                return false;
             }
         }
     }
