@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Batch;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
@@ -375,11 +376,61 @@ namespace ProjectARVRPro
             MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
             int id = MySqlControl.GetInstance().DB.Insertable(measureBatchModel).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = id;
-
+            if (!PreProcessing(FlowName, sn))
+            {
+                log.Error("PreProcessing Fail" );
+            }
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
         }
 
+        private bool PreProcessing(string flowName, string serialNumber)
+        {
+            try
+            {
+                // Find all matching PreProcessMeta entries for this flow template name
+                var matchingMetas = PreProcessManager.GetInstance().ProcessMetas
+                    .Where(m => string.Equals(m.TemplateName, flowName, StringComparison.OrdinalIgnoreCase) && m.PreProcess != null)
+                    .ToList();
+
+                if (matchingMetas.Count > 0)
+                {
+                    log.Info($"匹配到 {matchingMetas.Count} 个预处理 {flowName}");
+
+                    var ctx = new IPreProcessContext
+                    {
+                        FlowName = flowName,
+                        SerialNumber = serialNumber,
+                    };
+
+                    // Execute all matching pre-processors sequentially
+                    foreach (var meta in matchingMetas)
+                    {
+                        log.Info($"执行预处理 {meta.Name} -> {meta.ProcessTypeName}");
+                        try
+                        {
+                            bool success = meta.PreProcess.PreProcess(ctx);
+                            if (!success)
+                            {
+                                log.Warn($"预处理 {meta.Name} 执行返回失败");
+                                return false; // Abort flow if any pre-processor fails
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error($"预处理 {meta.Name} 执行异常", ex);
+                            return false; // Abort flow on exception
+                        }
+                    }
+                }
+                return true; // All pre-processors succeeded or none configured
+            }
+            catch (Exception ex)
+            {
+                log.Error("匹配/执行预处理出错", ex);
+                return false;
+            }
+        }
 
 
         private FlowControl flowControl;
