@@ -105,33 +105,34 @@
                             <Button Content="Camera" Command="{Binding FlowEngineManager.OpenCameraLogCommand}"/>
                         </StackPanel>
                     </StackPanel>
+                    <ListView x:Name="NodeListView"  Background="Transparent" BorderThickness="0" Padding="0" SelectionChanged="NodeListView_SelectionChanged" ItemsSource="{Binding FlowEngineManager.CVBaseServerNodes}">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.View>
+                            <GridView >
+                                <GridView.ColumnHeaderContainerStyle>
+                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </Style>
+                                </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn   Width="230">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Title,Mode=OneWay}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
                     <ProgressBar x:Name="ProgressBar1" Maximum="100"/>
                     <TextBox x:FieldModifier="public"  x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="105" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" Margin="0,0,0,5" />
                 </StackPanel>
             </Border>
 
-            <ListView x:Name="NodeListView" Grid.Row="1"  Background="Transparent" BorderThickness="0" Padding="0" SelectionChanged="NodeListView_SelectionChanged" ItemsSource="{Binding FlowEngineManager.CVBaseServerNodes}">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView >
-                        <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </Style>
-                        </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn   Width="230">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Title,Mode=OneWay}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
 
             <Border x:Name="SignStackBorder" Grid.Row="2" Visibility="Visible" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="5">
                 <StackPanel>

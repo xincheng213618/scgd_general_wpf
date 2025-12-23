@@ -200,7 +200,7 @@ namespace ColorVision.Engine.Templates.Flow
 
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
-                    CVBaseServerNodes.Add(item);
+                    CVBaseServerNodes.Insert(0,item);
                     item.nodeRunEvent += UpdateMsg;
                     item.nodeEndEvent += nodeEndEvent;
                 }

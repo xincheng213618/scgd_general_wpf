@@ -622,7 +622,6 @@ namespace ColorVision.Engine.Templates.Flow
                 TextboxPropertiesEditor textboxPropertiesEditor = new TextboxPropertiesEditor();
 
                 SignStackPanel.Children.Add(textboxPropertiesEditor.GenProperties(type.GetProperty("MaxTime"), baseServerNode));
-                SignStackPanel.Children.Insert(0,new TextBlock() { Text = baseServerNode.Token ,Margin = new Thickness(0,0,0,5)});
             }
 
 

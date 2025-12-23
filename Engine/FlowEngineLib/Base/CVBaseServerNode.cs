@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -72,7 +73,7 @@ public class CVBaseServerNode : CVCommonNode
 		}
 	}
 
-	[STNodeProperty("最大超时", "最大超时", false, false)]
+	[STNodeProperty("最大超时", "最大超时", false, false),DisplayName("超时时间")]
 	public int MaxTime
 	{
 		get
