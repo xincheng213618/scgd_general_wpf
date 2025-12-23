@@ -334,7 +334,6 @@ namespace ProjectARVRPro
                 log.Info("当前flowControl存在流程执行");
                 return;
             }
-            flowControl.IsFlowRun = true;
             TryCount++;
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
 
