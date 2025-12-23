@@ -1,16 +1,21 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
+using cvColorVision;
+using log4net;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
-using ColorVision.Database;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -31,6 +36,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
     public class LicenseManagerViewModel : ViewModelBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(LicenseManagerViewModel));
+
         public ObservableCollection<LicenseViewModel> Licenses { get; set; } = new ObservableCollection<LicenseViewModel>();
 
         public LicenseViewModel? SelectedLicense { get => _SelectedLicense; set { _SelectedLicense = value; OnPropertyChanged(); } }
@@ -41,6 +48,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand ExportSelectedCommand { get; set; }
         public RelayCommand DeleteSelectedCommand { get; set; }
         public RelayCommand CopyLicenseCommand { get; set; }
+        public RelayCommand GetCameraLicenseCommand { get; set; }
+        public RelayCommand GetSpectrumLicenseCommand { get; set; }
 
         public LicenseManagerViewModel()
         {
@@ -52,6 +61,65 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             LoadLicenses();
         }
+        private bool _isRefreshing = false;
+        public void GetCameraLicense()
+        {
+            if (_isRefreshing)
+            {
+                return;
+            }
+            _isRefreshing = true;
+            Task.Run(() =>
+            {
+                int bufferLength = 1024;
+                StringBuilder snBuilder = new StringBuilder(bufferLength);
+
+                int ret = cvCameraCSLib.GetAllCameraIDMD5(snBuilder, bufferLength);
+                _isRefreshing = true;
+                // 回到UI线程
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    log.Info($"GetAllCameraIDMD5 返回值: {ret}");
+                    if (ret == 1)
+                    {
+                        string cameraIdsMd5 = snBuilder.ToString();
+                        MessageBox1.Show(cameraIdsMd5, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox1.Show("获取相机ID MD5失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                });
+            });
+        }
+        public int MyCallback(IntPtr strText, int nLen)
+        {
+            string text = Marshal.PtrToStringAnsi(strText, nLen);
+            return 0;
+        }
+
+        public void GetSpectrumLicense()
+        {
+            IntPtr Handle = Spectrometer.CM_CreateEmission(0, MyCallback);
+            int i = 0;
+
+            int iR = Spectrometer.CM_Emission_Init(Handle, 0,9600 );
+            int bufferLength = 1024;
+            StringBuilder stringBuilder = new StringBuilder(bufferLength);
+            cvColorVision.Spectrometer.CM_GetSpectrSerialNumber(Handle, stringBuilder);
+            Spectrometer.CM_Emission_Close(Handle);
+            Spectrometer.CM_ReleaseEmission(Handle);
+            string sn = stringBuilder.ToString();
+            if (string.IsNullOrWhiteSpace(sn))
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "No Device", "Sprectrum");
+            }
+            else
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), stringBuilder.ToString(), "Sprectrum");
+            }
+        }
+
 
         public void LoadLicenses()
         {

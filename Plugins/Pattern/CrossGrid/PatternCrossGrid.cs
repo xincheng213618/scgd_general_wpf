@@ -53,7 +53,7 @@ namespace Pattern.CrossGrid
         private bool _DuplicateHorizontally = true;
     }
 
-    [DisplayName("十字网格")]
+    [DisplayName("十字网格"),Browsable(false)]
     public class PatternCrossGrid : IPatternBase<PatternCrossGridConfig>
     {
         public override UserControl GetPatternEditor() => new CrossGridEditor(Config); // 可自定义编辑器

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.UI;
 using SqlSugar;
@@ -80,6 +81,7 @@ namespace ProjectARVRPro
         public RelayCommand ViewReslutsClearCommand { get; set; }
         public RelayCommand QueryCommand { get; set; }
         public RelayCommand GenericQueryCommand { get; set; }
+        public RelayCommand SlectSqlLiteDbCommand { get; set; }
 
         public RelayCommand SaveCommand { get; set; }
 
@@ -93,6 +95,10 @@ namespace ProjectARVRPro
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
             SaveCommand = new RelayCommand(a => Save());
+            SlectSqlLiteDbCommand = new RelayCommand(a => SlectSqlLiteDb());
+
+
+
             _db = new SqlSugarClient(new ConnectionConfig
             {
                 ConnectionString = $"Data Source={SqliteDbPath}",
@@ -107,6 +113,10 @@ namespace ProjectARVRPro
                 Directory.CreateDirectory(Config.TextSavePath);
             if (!Directory.Exists(Config.CsvSavePath))
                 Directory.CreateDirectory(Config.CsvSavePath);
+        }
+        public void SlectSqlLiteDb()
+        {
+            PlatformHelper.OpenFolderAndSelectFile(SqliteDbPath);
         }
 
 

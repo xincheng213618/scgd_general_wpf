@@ -8,6 +8,7 @@
         mc:Ignorable="d"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         xmlns:hc="https://handyorg.github.io/handycontrol"
+        d:DataContext="{d:DesignInstance local:LicenseManagerViewModel}"
         Title="{x:Static properties:Resources.LicenseManager}" Height="600" Width="1000" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterScreen">
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -17,7 +18,9 @@
         
         <!-- Toolbar -->
         <Grid Grid.Row="0" Margin="0,0,0,10">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="GetCameraLicense" Command="{Binding GetCameraLicenseCommand}" Margin="0,0,5,0"/>
+                <Button Content="GetSpectrumLicense" Command="{Binding GetSpectrumLicenseCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.ExportLicense}" Command="{Binding ExportSelectedCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.Delete}" Command="{Binding DeleteSelectedCommand}" Margin="0,0,5,0"/>

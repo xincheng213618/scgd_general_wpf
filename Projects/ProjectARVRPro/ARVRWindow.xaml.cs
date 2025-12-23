@@ -333,7 +333,7 @@ namespace ProjectARVRPro
                 log.Info("当前flowControl存在流程执行");
                 return;
             }
-            flowControl.IsFlowRun = true;
+
             TryCount++;
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
 
@@ -375,7 +375,6 @@ namespace ProjectARVRPro
             MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
             int id = MySqlControl.GetInstance().DB.Insertable(measureBatchModel).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = id;
-
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
         }
@@ -801,9 +800,10 @@ namespace ProjectARVRPro
                                 }
                             }
 
+                            log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
                             if (IsSaveImageReuslt)
                             {
-                                log.Info("IsSaveImageReuslt");
+                                IsSaveImageReuslt = false;
                                 Task.Run(async () =>
                                 {
                                     await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);

@@ -5,11 +5,13 @@ namespace ProjectARVRPro.Process.Green
 {
     public class GreenViewTestResult : GreenTestResult
     {
-        public List<PoiResultCIExyuvData> PoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
+        public List<PoiResultCIExyuvData> ViewPoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
     }
 
     public class GreenTestResult : ViewModelBase
     {
+        public List<PoixyuvData> PoixyuvDatas { get; set; } = new List<PoixyuvData>();
+
         /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>

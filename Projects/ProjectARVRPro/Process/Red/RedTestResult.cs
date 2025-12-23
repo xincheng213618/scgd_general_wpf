@@ -6,11 +6,13 @@ namespace ProjectARVRPro.Process.Red
 
     public class RedViewTestResult: RedTestResult
     {
-        public List<PoiResultCIExyuvData> PoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
+        public List<PoiResultCIExyuvData> ViewPoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
     }
 
     public class RedTestResult : ViewModelBase
     {
+        public List<PoixyuvData> PoixyuvDatas { get; set; } = new List<PoixyuvData>();
+
         /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>

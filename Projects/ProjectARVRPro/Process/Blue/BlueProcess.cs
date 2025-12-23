@@ -37,9 +37,11 @@ namespace ProjectARVRPro.Process.Blue
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
+                        ctx.Result.FileName = master.ImgFile;
+
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
-                        testResult.PoixyuvDatas.Clear();
+                        testResult.ViewPoixyuvDatas.Clear();
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
@@ -50,7 +52,8 @@ namespace ProjectARVRPro.Process.Blue
                             poi.u *= fixConfig.CenterCIE1976ChromaticCoordinatesu;
                             poi.v *= fixConfig.CenterCIE1976ChromaticCoordinatesv;
 
-                            testResult.PoixyuvDatas.Add(poi);
+                            testResult.ViewPoixyuvDatas.Add(poi);
+                            testResult.PoixyuvDatas.Add(new PoixyuvData() { Id = poi.Id, Name = poi.Name, X = poi.X, Y = poi.Y, Z = poi.Z, x = poi.x, y = poi.y, u = poi.u, v = poi.v, CCT = poi.CCT, Wave = poi.Wave });
 
                             if (item.PoiName == Config.Key_Center)
                             {
@@ -163,7 +166,7 @@ namespace ProjectARVRPro.Process.Blue
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             BlueViewTestResult BlueTestResult = JsonConvert.DeserializeObject<BlueViewTestResult>(ctx.Result.ViewResultJson);
             if (BlueTestResult == null) return;
-            foreach (var poiResultCIExyuvData in BlueTestResult.PoixyuvDatas)
+            foreach (var poiResultCIExyuvData in BlueTestResult.ViewPoixyuvDatas)
             {
                 var item = poiResultCIExyuvData.Point;
                 switch (item.PointType)
@@ -202,13 +205,13 @@ namespace ProjectARVRPro.Process.Blue
         {
 
             string outtext = string.Empty;
-            outtext += $"Blue ������" + Environment.NewLine;
+            outtext += $"Blue" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             BlueViewTestResult BlueTestResult = JsonConvert.DeserializeObject<BlueViewTestResult>(ctx.Result.ViewResultJson);
             if (BlueTestResult == null) return outtext;
 
-            foreach (var item in BlueTestResult.PoixyuvDatas)
+            foreach (var item in BlueTestResult.ViewPoixyuvDatas)
             {
                 outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
             }

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Process.Blue;
 using ProjectARVRPro.Process.Chessboard;
@@ -29,6 +30,27 @@ namespace ProjectARVRPro
                     if (testItem != null)
                     {
                         rows.Add(FormatCsvRow(testScreenName, property.Name, testItem));
+                    }
+                }
+                else if (property.PropertyType == typeof(List<PoixyuvData>))
+                {
+                    try
+                    {
+                        var list = (List<PoixyuvData>)property.GetValue(obj);
+                        if (list != null)
+                        {
+                            foreach (var item in list) 
+                            {
+                                rows.Add($"{testScreenName},{item.Name}(Lv),{item.Y},cd/m2,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(Cx),{item.Y},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(Cy),{item.Y},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(u'),{item.Y},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(v'),{item.Y},None,0,0,None");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
                     }
                 }
                 else if (!property.PropertyType.IsValueType && property.PropertyType != typeof(string))

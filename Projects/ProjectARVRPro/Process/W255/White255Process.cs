@@ -9,6 +9,7 @@ using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
+using ScottPlot.Colormaps;
 using System.Windows;
 using System.Windows.Media;
 using static HelixToolkit.Wpf.Viewport3DHelper;
@@ -36,6 +37,8 @@ namespace ProjectARVRPro.Process.W255
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
+                        ctx.Result.FileName = master.ImgFile;
+
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
                         testResult.ViewPoixyuvDatas.Clear();

@@ -44,6 +44,7 @@
                             <ToolBar Padding="3,2">
                                 <Button  Content="查询" Command="{Binding ViewResultManager.QueryCommand}" Margin="2,0,0,0"/>
                                 <Button  Content="通用查询" Command="{Binding ViewResultManager.GenericQueryCommand}" Margin="2,0,0,0"/>
+                                <Button  Content="SlectSqlLiteDb" Command="{Binding ViewResultManager.SlectSqlLiteDbCommand}" Margin="2,0,0,0"/>
                             </ToolBar>
                         </ToolBarTray>
                         <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
