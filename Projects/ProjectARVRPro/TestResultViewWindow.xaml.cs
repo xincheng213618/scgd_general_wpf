@@ -3,6 +3,7 @@ using iText.Layout;
 using iText.Layout.Element;
 using Microsoft.Win32;
 using Newtonsoft.Json;
+using ProjectARVRPro.Process;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
@@ -90,6 +91,70 @@ namespace ProjectARVRPro
                 {
                     if (property.Value is Newtonsoft.Json.Linq.JObject childObj)
                     {
+                        // Check if this looks like a PoixyuvData object
+                        if (childObj.ContainsKey("Name") && childObj.ContainsKey("Y") && 
+                            childObj.ContainsKey("x") && childObj.ContainsKey("y"))
+                        {
+                            try
+                            {
+                                var poiData = childObj.ToObject<PoixyuvData>();
+                                if (poiData != null)
+                                {
+                                    // Convert PoixyuvData to multiple ObjectiveTestItem entries
+                                    items.Add(new ObjectiveTestItem
+                                    {
+                                        Name = $"{poiData.Name}(Lv)",
+                                        Value = poiData.Y,
+                                        TestValue = poiData.Y.ToString("F4"),
+                                        Unit = "cd/m2",
+                                        LowLimit = 0,
+                                        UpLimit = 0
+                                    });
+                                    items.Add(new ObjectiveTestItem
+                                    {
+                                        Name = $"{poiData.Name}(Cx)",
+                                        Value = poiData.x,
+                                        TestValue = poiData.x.ToString("F4"),
+                                        Unit = "None",
+                                        LowLimit = 0,
+                                        UpLimit = 0
+                                    });
+                                    items.Add(new ObjectiveTestItem
+                                    {
+                                        Name = $"{poiData.Name}(Cy)",
+                                        Value = poiData.y,
+                                        TestValue = poiData.y.ToString("F4"),
+                                        Unit = "None",
+                                        LowLimit = 0,
+                                        UpLimit = 0
+                                    });
+                                    items.Add(new ObjectiveTestItem
+                                    {
+                                        Name = $"{poiData.Name}(u')",
+                                        Value = poiData.u,
+                                        TestValue = poiData.u.ToString("F4"),
+                                        Unit = "None",
+                                        LowLimit = 0,
+                                        UpLimit = 0
+                                    });
+                                    items.Add(new ObjectiveTestItem
+                                    {
+                                        Name = $"{poiData.Name}(v')",
+                                        Value = poiData.v,
+                                        TestValue = poiData.v.ToString("F4"),
+                                        Unit = "None",
+                                        LowLimit = 0,
+                                        UpLimit = 0
+                                    });
+                                    continue;
+                                }
+                            }
+                            catch
+                            {
+                                // Not a PoixyuvData, continue processing
+                            }
+                        }
+                        
                         // Check if this looks like an ObjectiveTestItem
                         if (childObj.ContainsKey("Name") && childObj.ContainsKey("Value"))
                         {
@@ -137,6 +202,72 @@ namespace ProjectARVRPro
                         if (testItem != null)
                         {
                             items.Add(testItem);
+                        }
+                    }
+                    else if (property.PropertyType.IsGenericType && 
+                             property.PropertyType.GetGenericTypeDefinition() == typeof(List<>) &&
+                             property.PropertyType.GetGenericArguments()[0] == typeof(PoixyuvData))
+                    {
+                        // Handle List<PoixyuvData>
+                        try
+                        {
+                            var list = property.GetValue(obj) as List<PoixyuvData>;
+                            if (list != null)
+                            {
+                                foreach (var poiData in list)
+                                {
+                                    // Convert each PoixyuvData to multiple ObjectiveTestItem entries
+                                    items.Add(new ObjectiveTestItem
+                                    {
+                                        Name = $"{poiData.Name}(Lv)",
+                                        Value = poiData.Y,
+                                        TestValue = poiData.Y.ToString("F4"),
+                                        Unit = "cd/m2",
+                                        LowLimit = 0,
+                                        UpLimit = 0
+                                    });
+                                    items.Add(new ObjectiveTestItem
+                                    {
+                                        Name = $"{poiData.Name}(Cx)",
+                                        Value = poiData.x,
+                                        TestValue = poiData.x.ToString("F4"),
+                                        Unit = "None",
+                                        LowLimit = 0,
+                                        UpLimit = 0
+                                    });
+                                    items.Add(new ObjectiveTestItem
+                                    {
+                                        Name = $"{poiData.Name}(Cy)",
+                                        Value = poiData.y,
+                                        TestValue = poiData.y.ToString("F4"),
+                                        Unit = "None",
+                                        LowLimit = 0,
+                                        UpLimit = 0
+                                    });
+                                    items.Add(new ObjectiveTestItem
+                                    {
+                                        Name = $"{poiData.Name}(u')",
+                                        Value = poiData.u,
+                                        TestValue = poiData.u.ToString("F4"),
+                                        Unit = "None",
+                                        LowLimit = 0,
+                                        UpLimit = 0
+                                    });
+                                    items.Add(new ObjectiveTestItem
+                                    {
+                                        Name = $"{poiData.Name}(v')",
+                                        Value = poiData.v,
+                                        TestValue = poiData.v.ToString("F4"),
+                                        Unit = "None",
+                                        LowLimit = 0,
+                                        UpLimit = 0
+                                    });
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // Ignore errors
                         }
                     }
                     else if (!property.PropertyType.IsValueType && property.PropertyType != typeof(string))
