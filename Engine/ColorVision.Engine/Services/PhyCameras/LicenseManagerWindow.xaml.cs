@@ -58,7 +58,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             ExportSelectedCommand = new RelayCommand(a => ExportSelected(), a => SelectedLicense != null);
             DeleteSelectedCommand = new RelayCommand(a => DeleteSelected(), a => SelectedLicense != null);
             CopyLicenseCommand = new RelayCommand(a => CopyLicense(), a => SelectedLicense != null);
-
+            GetCameraLicenseCommand = new RelayCommand(a=> GetCameraLicense());
+            GetSpectrumLicenseCommand = new RelayCommand(a => GetSpectrumLicense());
             LoadLicenses();
         }
         private bool _isRefreshing = false;
