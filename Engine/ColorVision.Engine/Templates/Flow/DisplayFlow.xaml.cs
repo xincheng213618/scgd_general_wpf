@@ -164,11 +164,12 @@ namespace ColorVision.Engine.Templates.Flow
             this.Loaded -= FlowDisplayControl_Loaded;
         }
 
+        bool IsRefresh;
         public async Task Refresh()
         {
-            if (ComboBoxFlow.SelectedIndex  <0 || ComboBoxFlow.SelectedIndex >= TemplateFlow.Params.Count) return;
+            if (IsRefresh) return;
+            IsRefresh = true;
             MqttRCService.GetInstance().QueryServices();
-
             FlowParam flowParam = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Value;
 
             if (View == null) return;
@@ -182,6 +183,8 @@ namespace ColorVision.Engine.Templates.Flow
 
             try
             {
+                var CVBaseServerNodes = FlowEngineManager.CVBaseServerNodes;
+                CVBaseServerNodes.Clear();
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
                     item.nodeRunEvent -= UpdateMsg;
@@ -190,17 +193,14 @@ namespace ColorVision.Engine.Templates.Flow
                 View.FlowEngineControl.FlowClear();
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
-                for (int i = 0; i < 20; i++)
-                {
-                    Config.IsReady = View.FlowEngineControl.IsReady;
-                    if (View.FlowEngineControl.IsReady)
-                        break;
-                     await Task.Delay(10);
-                }
+
 
                 View.FlowParam = flowParam;
+
+
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
+                    CVBaseServerNodes.Add(item);
                     item.nodeRunEvent += UpdateMsg;
                     item.nodeEndEvent += nodeEndEvent;
                 }
@@ -208,6 +208,14 @@ namespace ColorVision.Engine.Templates.Flow
 
                 if (Config.IsAutoSize)
                     View.AutoSize();
+
+                for (int i = 0; i < 20; i++)
+                {
+                    Config.IsReady = View.FlowEngineControl.IsReady;
+                    if (View.FlowEngineControl.IsReady)
+                        break;
+                    await Task.Delay(10);
+                }
             }
             catch (Exception ex)
             {
@@ -218,7 +226,7 @@ namespace ColorVision.Engine.Templates.Flow
                 });
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
             }
-            return;
+            IsRefresh = false;
         }
 
         public event RoutedEventHandler Selected;
@@ -475,6 +483,7 @@ namespace ColorVision.Engine.Templates.Flow
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
                 return;
             }
+
 
             foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
             {

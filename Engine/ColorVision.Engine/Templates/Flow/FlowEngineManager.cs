@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
 using FlowEngineLib;
+using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
 using System;
@@ -77,8 +78,6 @@ namespace ColorVision.Engine.Templates.Flow
     }
 
 
-
-
     public class FlowEngineManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowEngineManager));
@@ -91,6 +90,8 @@ namespace ColorVision.Engine.Templates.Flow
         public ObservableCollection<TemplateModel<FlowParam>> FlowParams { get; set; } = TemplateFlow.Params;
 
         public int TemplateFlowParamsIndex { get => Config.TemplateFlowParamsIndex; set { Config.TemplateFlowParamsIndex = value; OnPropertyChanged(); } }
+
+       
 
         public ContextMenu ContextMenu { get; set; }
 
@@ -105,6 +106,8 @@ namespace ColorVision.Engine.Templates.Flow
         private MeasureBatchModel _Batch;
 
         public ServiceConfig ServiceConfig { get; set; }
+
+        public ObservableCollection<CVBaseServerNode> CVBaseServerNodes { get; set; } = new ObservableCollection<CVBaseServerNode>();
 
         [DisplayName("OpenService")]
         public RelayCommand OpenServiceCommand { get; set; }

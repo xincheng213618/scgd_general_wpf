@@ -20,31 +20,38 @@ namespace ProjectARVRPro.Services
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
             SocketControl.Current.Stream = stream;
-            if (ProjectWindowInstance.WindowInstance != null)
+            if (ProjectWindowInstance.WindowInstance == null)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
-                });
-                // Find first enabled ProcessMeta index
-                int firstEnabledIndex = -1;
-                var processMetas = Process.ProcessManager.GetInstance().ProcessMetas;
-                for (int i = 0; i < processMetas.Count; i++)
-                {
-                    if (processMetas[i].IsEnabled)
+                    ProjectWindowInstance.WindowInstance = new ARVRWindow
                     {
-                        firstEnabledIndex = i;
-                        break;
-                    }
-                }
-                
-                //现在先切换PG
-                return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = firstEnabledIndex } };
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner
+                    };
+                    ProjectWindowInstance.WindowInstance.Closed += (s, e) => ProjectWindowInstance.WindowInstance = null;
+                    ProjectWindowInstance.WindowInstance.Show();
+                });
+
             }
-            else
+
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                return new SocketResponse { Code = -3,MsgID = request.MsgID, Msg = $"ProjectARVR Wont Open", EventName = EventName };
+                ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
+            });
+            // Find first enabled ProcessMeta index
+            int firstEnabledIndex = -1;
+            var processMetas = Process.ProcessManager.GetInstance().ProcessMetas;
+            for (int i = 0; i < processMetas.Count; i++)
+            {
+                if (processMetas[i].IsEnabled)
+                {
+                    firstEnabledIndex = i;
+                    break;
+                }
             }
+
+            //现在先切换PG
+            return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = firstEnabledIndex } };
         }
     }
 
