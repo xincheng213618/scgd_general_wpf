@@ -58,6 +58,7 @@ namespace ProjectLUX.Process
         public ProcessManager()
         {
             LoadProcesses();
+            ProcessMetas.CollectionChanged -= ProcessMetas_CollectionChanged;
             ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged;
             EditCommand = new RelayCommand(a => Edit());
             AddMetaCommand = new RelayCommand(a => AddMeta(), a => CanAddMeta());

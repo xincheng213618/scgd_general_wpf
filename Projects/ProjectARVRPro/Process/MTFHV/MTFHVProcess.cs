@@ -271,7 +271,8 @@ namespace ProjectARVRPro.Process.MTFHV
             if (testResult == null) return;
 
             int id = 0;
-            if (testResult.MTFDetailViewReslut.MTFResult.result.Count != 0)
+
+            if (testResult.MTFDetailViewReslut != null && testResult.MTFDetailViewReslut.MTFResult !=null && testResult.MTFDetailViewReslut.MTFResult.result.Count != 0)
             {
                 foreach (var item in testResult.MTFDetailViewReslut.MTFResult.result)
                 {
