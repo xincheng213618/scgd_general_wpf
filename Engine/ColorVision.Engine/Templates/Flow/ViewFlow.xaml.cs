@@ -436,6 +436,11 @@ namespace ColorVision.Engine.Services.Flow
         {
             BatchManager.GetInstance().Edit();
         }
+
+        private void Button_Click_PreProcess(object sender, RoutedEventArgs e)
+        {
+            PreProcessManager.GetInstance().Edit();
+        }
     }
 
     public class LogFileHelper

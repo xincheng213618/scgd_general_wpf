@@ -207,7 +207,7 @@ create_directory_if_not_exists(update_dir)
 # 查找最新的全量包
 old_zip = find_latest_zip(history_dir,version)
 print(f"baseline Version{old_zip}")
-incremental_zip = os.path.join(update_dir, f'ColorVision-Update-[{version}].zip')
+incremental_zip = os.path.join(update_dir, f'ColorVision-Update-[{version}].cvx')
 
 if old_zip:
     print(f"创建增量包: {incremental_zip}")

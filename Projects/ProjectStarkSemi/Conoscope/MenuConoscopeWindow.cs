@@ -6,7 +6,7 @@ namespace ProjectStarkSemi.Conoscope
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override int Order => 50;
-        public override string Header => "Conoscope";
+        public override string Header => "VAM";
 
         public override void Execute()
         {

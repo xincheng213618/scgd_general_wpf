@@ -36,9 +36,11 @@ namespace ProjectARVRPro.Process.Green
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
+                        ctx.Result.FileName = master.ImgFile;
+
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
-                        testResult.PoixyuvDatas.Clear();
+                        testResult.ViewPoixyuvDatas.Clear();
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
@@ -49,9 +51,10 @@ namespace ProjectARVRPro.Process.Green
                             poi.u *= fixConfig.CenterCIE1976ChromaticCoordinatesu;
                             poi.v *= fixConfig.CenterCIE1976ChromaticCoordinatesv;
 
-                            testResult.PoixyuvDatas.Add(poi);
+                            testResult.ViewPoixyuvDatas.Add(poi);
+                            testResult.PoixyuvDatas.Add(new PoixyuvData() { Id = poi.Id, Name = poi.Name, X = poi.X, Y = poi.Y, Z = poi.Z, x = poi.x, y = poi.y, u = poi.u, v = poi.v, CCT = poi.CCT, Wave = poi.Wave });
 
-                            if (item.PoiName == "P_9")
+                            if (item.PoiName == Config.Key_Center)
                             {
                                 testResult.CenterLunimance = new ObjectiveTestItem
                                 {
@@ -161,7 +164,7 @@ namespace ProjectARVRPro.Process.Green
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             GreenViewTestResult GreenTestResult = JsonConvert.DeserializeObject<GreenViewTestResult>(ctx.Result.ViewResultJson);
             if (GreenTestResult == null) return;
-            foreach (var poiResultCIExyuvData in GreenTestResult.PoixyuvDatas)
+            foreach (var poiResultCIExyuvData in GreenTestResult.ViewPoixyuvDatas)
             {
                 var item = poiResultCIExyuvData.Point;
                 switch (item.PointType)
@@ -200,13 +203,13 @@ namespace ProjectARVRPro.Process.Green
         {
 
             string outtext = string.Empty;
-            outtext += $"Green ������" + Environment.NewLine;
+            outtext += $"Green" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             GreenViewTestResult GreenTestResult = JsonConvert.DeserializeObject<GreenViewTestResult>(ctx.Result.ViewResultJson);
             if (GreenTestResult == null) return outtext;
 
-            foreach (var item in GreenTestResult.PoixyuvDatas)
+            foreach (var item in GreenTestResult.ViewPoixyuvDatas)
             {
                 outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
             }

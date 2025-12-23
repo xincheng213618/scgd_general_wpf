@@ -17,7 +17,7 @@
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}"/>
     </Window.Resources>
-    <Grid Margin="0">
+    <Grid Margin="0" x:Name="MainGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
@@ -64,19 +64,7 @@
                 </Viewbox>
 
                 <Button Grid.Column="1" Margin="5,0,0,0" HorizontalAlignment="Left" Click="Setting_Click" Padding="2" Height="20" Width="20" >
-                    <Button.Triggers>
-                        <EventTrigger RoutedEvent="Button.Click">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </Button.Triggers>
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
-                        <TextBlock.RenderTransform>
-                            <RotateTransform x:Name="rotateTransform2" CenterX="6" CenterY="6"/>
-                        </TextBlock.RenderTransform>
                     </TextBlock>
                 </Button>
 

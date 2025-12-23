@@ -20,10 +20,10 @@ namespace ColorVision.Engine.Templates
                 foreach (var item in templateModels)
                     templateModels1.Add(item);
 
-                templateModels.CollectionChanged -= CalibrationParams_CollectionChanged;
-                templateModels.CollectionChanged += CalibrationParams_CollectionChanged;
+                templateModels.CollectionChanged -= Params_CollectionChanged;
+                templateModels.CollectionChanged += Params_CollectionChanged;
             }
-            void CalibrationParams_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+            void Params_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
             {
                 switch (e.Action)
                 {

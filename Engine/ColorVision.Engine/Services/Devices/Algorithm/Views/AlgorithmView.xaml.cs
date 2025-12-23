@@ -64,11 +64,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
-            listView1.ItemsSource = ViewResults;
 
+            listView1.ItemsSource = ViewResults;
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
-
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
         }
 
@@ -145,7 +144,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public void AlgResultMasterModelDataDraw(AlgResultMasterModel result)
+        public void AddAlgResultMasterModel(AlgResultMasterModel result)
         {
             if (result != null)
             {

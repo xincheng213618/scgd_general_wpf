@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Services.Devices;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -19,12 +20,15 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public bool IsCOM { get => _IsCOM; set { _IsCOM = value; OnPropertyChanged(); } }
         private bool _IsCOM;
+        [PropertyEditorType(typeof(TextCFWPropertiesEditor))]
+        public string NDBindDeviceCode { get => _NDBindDeviceCode; set { _NDBindDeviceCode = value; OnPropertyChanged(); } }
+        private string _NDBindDeviceCode = "";
 
-        [DisplayName("Serial"), PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
+        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
         public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
         private string _szComName = "COM1";
 
-        [DisplayName("BaudRate"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
+        [PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 115200;
 
@@ -77,5 +81,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public List<int> NDRate { get; set; } = new List<int>();
 
         public List<string> NDCaliNameGroups { get; set; } = new List<string>();
+
     }
 }

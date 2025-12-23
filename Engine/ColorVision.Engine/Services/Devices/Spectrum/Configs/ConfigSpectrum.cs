@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
             combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
 
-            combo.ItemsSource = CameraLicenseDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "lic_type", 1 } });
+            combo.ItemsSource = PhyLicenseDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "lic_type", 1 } });
             combo.DisplayMemberPath = "MacAddress";
             dockPanel.Children.Add(combo);
             return dockPanel;
@@ -127,6 +127,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public bool IsNDPort { get => _IsNDPort; set { _IsNDPort = value; OnPropertyChanged(); } }
         private bool _IsNDPort;
 
+        [PropertyEditorType(typeof(TextCFWPropertiesEditor))]
+        public string NDBindDeviceCode { get => _NDBindDeviceCode; set { _NDBindDeviceCode = value; OnPropertyChanged(); } }
+        private string _NDBindDeviceCode;
+
         [PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
         public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
         private string _szComName = "COM1";
@@ -144,6 +148,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public List<int> NDRate { get; set; } = new List<int>();
 
         public List<string> NDCaliNameGroups { get; set; } = new List<string>();
+
+
+
     }
 
 

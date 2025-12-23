@@ -10,8 +10,8 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance  Conoscope:ConoscopeManager}"
-        Title="Conoscope" Height="750" Width="1280" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
-    <Grid Margin="5,5,5,0">
+        Title="" Height="750" Width="1280" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
+    <Grid >
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -19,7 +19,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            <Ribbon Background="Transparent">
+            <Ribbon >
                 <Ribbon.Resources>
                     <RibbonGroupSizeDefinitionBaseCollection x:Key="4ControlLSC">
                         <RibbonGroupSizeDefinition>
@@ -57,7 +57,7 @@
                 </Ribbon.Resources>
                 <!-- <snippetAppMenuItems> -->
                 <Ribbon.ApplicationMenu>
-                    <RibbonApplicationMenu SmallImageSource="Assets/Image/ColorVision1.ico" Background="Transparent"  KeyTip="F">
+                    <RibbonApplicationMenu SmallImageSource="Assets/Image/ColorVision1.ico"  KeyTip="F">
                         <RibbonApplicationMenuItem Header="Open"
                                                       ImageSource="Images/Open32.png"
                                                       KeyTip="O" Click="OpenFile_Click" />
@@ -103,7 +103,7 @@
                         <!-- <snippetAppMenuFooter> -->
                         <RibbonApplicationMenu.FooterPaneContent>
                             <DockPanel LastChildFill="False">
-                                <RibbonButton Command="ApplicationCommands.Close"
+                                <RibbonButton Click="RibbonButton_Click_1"
                                                  Label="Exit"
                                                  ToolTipTitle="Exit" 
                                                  SmallImageSource="Images\Exit16.png"
@@ -132,28 +132,13 @@
                         <!-- </snippetAppMenuAuxPane> -->
                     </RibbonApplicationMenu>
                 </Ribbon.ApplicationMenu>
-                <Ribbon.QuickAccessToolBar>
-                    <RibbonQuickAccessToolBar >
-                        <RibbonButton Command="Save"   
-                                         SmallImageSource="Images/Save16.png"
-                                         KeyTip="1"/>
-                        <RibbonButton Command="Undo"   
-                                         SmallImageSource="Images/ArrowUndo16.png"
-                                         KeyTip="2" />
-                        <RibbonButton Command="Redo"  
-                                         SmallImageSource="Images/ArrowRedo16.png"
-                                         KeyTip="3"/>
-                        
-                    </RibbonQuickAccessToolBar>
-                </Ribbon.QuickAccessToolBar>
-
                 <RibbonTab Header="Home"  KeyTip="H"  GroupSizeReductionOrder="Clipboard, Insert, Insert, Paragraph, Clipboard, Editing, Font, Clipboard" >
                     <RibbonGroup Header="Files">
                         <RibbonButton Label="Open" SmallImageSource="Images/Open32.png"  KeyTip="O" Click="OpenFile_Click" />
                         <RibbonButton Label="SaveAs" SmallImageSource="Images/SaveAs32.png"  KeyTip="O" Click="OpenFile_Click" />
                         <RibbonButton Label="直径线导出"  Click="btnExportAngleMode_Click" Padding="10,5"/>
                         <RibbonButton Label="R圆导出"  Click="btnExportCircleMode_Click" Padding="10,5"/>
-   
+
                     </RibbonGroup>
                 </RibbonTab>
                 <RibbonTab Header="Camera"  Padding="10">
@@ -330,7 +315,7 @@
 
                 </RibbonTab>
             </Ribbon>
-            <Button  VerticalAlignment="Top" HorizontalAlignment="Right" Command="{Binding EditConoscopeConfigCommand}" Padding="2" Height="40" Width="40" >
+            <Button  VerticalAlignment="Top" HorizontalAlignment="Right" Command="{Binding EditConoscopeConfigCommand}" Padding="2" Height="40" Width="40" Margin="0,69,25,0" >
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
                         <BeginStoryboard>
@@ -493,7 +478,7 @@
                         </TabItem>
                     </TabControl>
                 </Grid>
- 
+
             </Grid>
 
         </Grid>
@@ -513,25 +498,25 @@
                     </Grid>
                 </ItemsPanelTemplate>
             </StatusBar.ItemsPanel>
-            
+
             <StatusBarItem Grid.Column="0">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{x:Static properties:Resources.CurrentModel}" Margin="0,0,5,0"/>
                     <TextBlock x:Name="tbCurrentModel" Text="VA60" FontWeight="Bold"/>
                 </StackPanel>
             </StatusBarItem>
-            
+
             <Separator Grid.Column="1" />
-            
+
             <StatusBarItem Grid.Column="2">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{x:Static properties:Resources.MeasurementCameraStatus}" Margin="0,0,5,0"/>
                     <TextBlock x:Name="tbMeasurementCameraStatus" Text="{x:Static properties:Resources.NotOpened}" Foreground="Gray"/>
                 </StackPanel>
             </StatusBarItem>
-            
+
             <Separator Grid.Column="3" x:Name="ObservationCameraSeparator"/>
-            
+
             <StatusBarItem Grid.Column="4" x:Name="ObservationCameraStatusItem">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="{x:Static properties:Resources.ObservationCameraStatus}" Margin="0,0,5,0"/>

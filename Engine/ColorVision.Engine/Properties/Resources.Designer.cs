@@ -1483,6 +1483,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 复制许可证 的本地化字符串。
+        /// </summary>
+        public static string CopyLicense {
+            get {
+                return ResourceManager.GetString("CopyLicense", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 复制许可证失败 的本地化字符串。
+        /// </summary>
+        public static string CopyLicenseFailed {
+            get {
+                return ResourceManager.GetString("CopyLicenseFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 复制序列号 的本地化字符串。
         /// </summary>
         public static string CopySerialNumber {
@@ -1704,6 +1722,15 @@ namespace ColorVision.Engine.Properties {
         public static string CurrentVersionIsUpToDate {
             get {
                 return ResourceManager.GetString("CurrentVersionIsUpToDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 客户 的本地化字符串。
+        /// </summary>
+        public static string Customer {
+            get {
+                return ResourceManager.GetString("Customer", resourceCulture);
             }
         }
         
@@ -2158,7 +2185,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;畸变2.0模板管理 的本地化字符串。
+        ///   查找类似 畸变2.0模板管理 的本地化字符串。
         /// </summary>
         public static string Distortion20TemplateManagement {
             get {
@@ -2194,7 +2221,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似   (双击可重命名, 当前仅内存保存) 的本地化字符串。
+        ///   查找类似 双击可重命名, 当前仅内存保存) 的本地化字符串。
         /// </summary>
         public static string DoubleClickToRename_CurrentlySavedInMemoryOnly {
             get {
@@ -2311,7 +2338,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;编辑默认合规字典 的本地化字符串。
+        ///   查找类似 编辑默认合规字典 的本地化字符串。
         /// </summary>
         public static string EditDefaultComplianceDictionary {
             get {
@@ -2554,6 +2581,33 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 导出许可证 的本地化字符串。
+        /// </summary>
+        public static string ExportLicense {
+            get {
+                return ResourceManager.GetString("ExportLicense", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出许可证失败 的本地化字符串。
+        /// </summary>
+        public static string ExportLicenseFailed {
+            get {
+                return ResourceManager.GetString("ExportLicenseFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 导出许可证到文件 的本地化字符串。
+        /// </summary>
+        public static string ExportLicenseToFile {
+            get {
+                return ResourceManager.GetString("ExportLicenseToFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 导出仅支持CIE文件 的本地化字符串。
         /// </summary>
         public static string ExportSupportsCieFilesOnly {
@@ -2631,6 +2685,15 @@ namespace ColorVision.Engine.Properties {
         public static string ExtractionFailed {
             get {
                 return ResourceManager.GetString("ExtractionFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 无法打开设备管理器 的本地化字符串。
+        /// </summary>
+        public static string FailedToOpenDeviceManager {
+            get {
+                return ResourceManager.GetString("FailedToOpenDeviceManager", resourceCulture);
             }
         }
         
@@ -3580,7 +3643,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;灯条检测模板管理&quot; 的本地化字符串。
+        ///   查找类似 灯条检测模板管理&quot; 的本地化字符串。
         /// </summary>
         public static string LedBandDetectorManagement {
             get {
@@ -3634,6 +3697,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 许可证已复制到剪贴板 的本地化字符串。
+        /// </summary>
+        public static string LicenseCopiedToClipboard {
+            get {
+                return ResourceManager.GetString("LicenseCopiedToClipboard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 许可证导出成功 的本地化字符串。
+        /// </summary>
+        public static string LicenseExportedSuccessfully {
+            get {
+                return ResourceManager.GetString("LicenseExportedSuccessfully", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 许可证导入 的本地化字符串。
         /// </summary>
         public static string LicenseImport {
@@ -3648,6 +3729,15 @@ namespace ColorVision.Engine.Properties {
         public static string LicenseManagement {
             get {
                 return ResourceManager.GetString("LicenseManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 许可证管理 的本地化字符串。
+        /// </summary>
+        public static string LicenseManager {
+            get {
+                return ResourceManager.GetString("LicenseManager", resourceCulture);
             }
         }
         
@@ -4300,6 +4390,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 型号 的本地化字符串。
+        /// </summary>
+        public static string Model {
+            get {
+                return ResourceManager.GetString("Model", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 修改配置 的本地化字符串。
         /// </summary>
         public static string ModifyConfiguration {
@@ -4543,6 +4642,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 没有可用的许可证 的本地化字符串。
+        /// </summary>
+        public static string NoLicenseAvailable {
+            get {
+                return ResourceManager.GetString("NoLicenseAvailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 未找到相关项目 的本地化字符串。
         /// </summary>
         public static string NoRelatedItemsFound {
@@ -4629,6 +4737,15 @@ namespace ColorVision.Engine.Properties {
         public static string OpenConfigFolder {
             get {
                 return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开设备管理器 的本地化字符串。
+        /// </summary>
+        public static string OpenDeviceManager {
+            get {
+                return ResourceManager.GetString("OpenDeviceManager", resourceCulture);
             }
         }
         
@@ -4912,7 +5029,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;Poi文件输出模板设置 的本地化字符串。
+        ///   查找类似 Poi文件输出模板设置 的本地化字符串。
         /// </summary>
         public static string PoiFileOutputTemplateSetting {
             get {
@@ -4930,7 +5047,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;POI过滤模板设置 的本地化字符串。
+        ///   查找类似 POI过滤模板设置 的本地化字符串。
         /// </summary>
         public static string POIFilterTemplateSetting {
             get {
@@ -6334,7 +6451,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 第二次的步径 实际第二次步径为 forwardparam *  的本地化字符串。
+        ///   查找类似 第二次的步径 实际第二次步径为 forwardparam 的本地化字符串。
         /// </summary>
         public static string StepSwingRangeDiscription {
             get {
@@ -6748,6 +6865,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 类型 的本地化字符串。
+        /// </summary>
+        public static string Type {
+            get {
+                return ResourceManager.GetString("Type", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 无法实例化进程类型 的本地化字符串。
         /// </summary>
         public static string UnableToInstantiateProcessType {
@@ -6946,7 +7072,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似  &quot;使用系统默认模板 的本地化字符串。
+        ///   查找类似 使用系统默认模板 的本地化字符串。
         /// </summary>
         public static string UseSystemDefaultTemplate {
             get {

@@ -1,3 +1,4 @@
+using ColorVision.Solution.Editor.AvalonEditor;
 using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
@@ -53,13 +54,27 @@ namespace ProjectARVRPro
     {
         public ObservableCollection<ObjectiveTestItem> TestItems { get; set; } = new ObservableCollection<ObjectiveTestItem>();
 
+        public string ViewResultJson { get; set; } = string.Empty;
         public TestResultViewWindow(string viewResultJson)
         {
+            ViewResultJson = viewResultJson;
             InitializeComponent();
             ParseAndDisplayTestResult(viewResultJson);
             dataGrid.ItemsSource = TestItems;
         }
-
+        private void OpenJson_Click(object sender, RoutedEventArgs e)
+        {
+            var control = new AvalonEditControll();
+            control.SetJsonText(ViewResultJson);
+            Window window = new Window
+            {
+                Title = "ViewResultJson",
+                Content = control,
+                Width = 800,
+                Height = 600
+            };
+            window.Show();
+        }
         private void ParseAndDisplayTestResult(string viewResultJson)
         {
             if (string.IsNullOrWhiteSpace(viewResultJson))
@@ -385,5 +400,7 @@ namespace ProjectARVRPro
             document.Add(table);
             table.Complete();
         }
+
+
     }
 }

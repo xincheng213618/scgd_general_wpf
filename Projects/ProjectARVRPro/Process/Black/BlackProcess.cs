@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
+using Dm.util;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
 using ProjectARVRPro.Process.W255;
@@ -36,17 +37,20 @@ namespace ProjectARVRPro.Process.Black
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
+                        ctx.Result.FileName = master.ImgFile;
+
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
-                            testResult.PoixyuvDatas.Add(poi);
+                            testResult.ViewPoixyuvDatas.Add(poi);
+                            testResult.PoixyuvDatas.Add(new PoixyuvData() { Id = poi.Id, Name = poi.Name, X = poi.X, Y = poi.Y, Z = poi.Z, x = poi.x, y = poi.y, u = poi.u, v = poi.v, CCT = poi.CCT, Wave = poi.Wave });
                         }
                         // 需要白画面亮度才能计算对比度
                         if (ctx.ObjectiveTestResult.W255TestResult != null && ctx.ObjectiveTestResult.W255TestResult.CenterLunimance != null)
                         {
-                            double contrast = ctx.ObjectiveTestResult.W255TestResult.CenterLunimance.Value / testResult.PoixyuvDatas[0].Y;
+                            double contrast = ctx.ObjectiveTestResult.W255TestResult.CenterLunimance.Value / testResult.ViewPoixyuvDatas[0].Y;
                             contrast *= fixConfig.FOFOContrast;
                             testResult.FOFOContrast.LowLimit = recipeConfig.FOFOContrast.Min;
                             testResult.FOFOContrast.UpLimit = recipeConfig.FOFOContrast.Max;
@@ -81,7 +85,7 @@ namespace ProjectARVRPro.Process.Black
             if (testResult == null) return;
 
 
-            foreach (var poiResultCIExyuvData in testResult.PoixyuvDatas)
+            foreach (var poiResultCIExyuvData in testResult.ViewPoixyuvDatas)
             {
                 var item = poiResultCIExyuvData.Point;
                 switch (item.PointType)
@@ -120,7 +124,7 @@ namespace ProjectARVRPro.Process.Black
             var result = ctx.Result;
             string outtext = string.Empty;
 
-            outtext += $"黑画面 ：（测试项)" + Environment.NewLine;
+            outtext += $"黑画面" + Environment.NewLine;
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return string.Empty;
             BlackViewTestResult testResult = JsonConvert.DeserializeObject<BlackViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return string.Empty;

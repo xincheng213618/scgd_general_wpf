@@ -76,7 +76,7 @@ namespace ColorVision.UI
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        MessageBox.Show($"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}");
+                        MessageBox.Show(Application.Current.GetActiveWindow(),$"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}","ColorVision");
                         // Delete partial file on HTTP error
                         if (File.Exists(DownloadPath))
                         {

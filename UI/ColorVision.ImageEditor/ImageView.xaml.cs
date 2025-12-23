@@ -20,44 +20,8 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor
 {
-
-    /// <summary>
-    /// ImageShow.xaml 的交互逻辑
-    /// </summary>
-    public partial class ImageView : UserControl, IDisposable
+    public static class ColormapExtension
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
-        public ImageViewModel ImageViewModel { get; set; }
-        public ImageViewConfig Config => ImageViewModel.EditorContext.Config;
-
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.EditorContext.DrawingVisualLists;
-
-        public event EventHandler ClearImageEventHandler;
-
-        public EditorContext EditorContext { get; set; }
-
-        public ImageView()
-        {
-            InitializeComponent();
-        }
-
-        public void SetBackGround(SolidColorBrush color)
-        {
-            ZoomGrid.Background = color;    
-        }
-
-        private void Config_ColormapTypesChanged(object? sender, EventArgs e)
-        {
-            var ColormapTypes = GetColormapHDictionary().First(x => x.Key == Config.ColormapTypes);
-            string valuepath = ColormapTypes.Value;
-            if (ColormapTypesImage.Dispatcher.CheckAccess())
-                ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
-            else
-                ColormapTypesImage.Source = ColormapTypesImage.Dispatcher.Invoke(() => new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative)));
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e => RenderPseudo(), 0);
-        }
-
-
         public static Dictionary<ColormapTypes, string> GetColormapHDictionary()
         {
             var colormapDictionary = new Dictionary<ColormapTypes, string>
@@ -87,13 +51,38 @@ namespace ColorVision.ImageEditor
         };
             return colormapDictionary;
         }
+    }
+
+    /// <summary>
+    /// ImageShow.xaml 的交互逻辑
+    /// </summary>
+    public partial class ImageView : UserControl, IDisposable
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
+        public ImageViewModel ImageViewModel { get; set; }
+        public ImageViewConfig Config => ImageViewModel.EditorContext.Config;
+
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.EditorContext.DrawingVisualLists;
+
+        public event EventHandler ClearImageEventHandler;
+
+        public EditorContext EditorContext { get; set; }
+        public bool IsShowScaleRuler { get; set; }
+
+
+        public ImageView()
+        {
+            InitializeComponent();
+        }
+
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             ImageViewModel = new ImageViewModel(this);
-
             EditorContext = ImageViewModel.EditorContext;
-
             DataContext = ImageViewModel;
+            this.Focusable = true;
+            this.Focus();
 
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
 
@@ -134,7 +123,7 @@ namespace ColorVision.ImageEditor
             };
 
 
-            ComColormapTypes.ItemsSource = GetColormapHDictionary();
+            ComColormapTypes.ItemsSource = ColormapExtension.GetColormapHDictionary();
 
             ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
                                       select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
@@ -164,13 +153,28 @@ namespace ColorVision.ImageEditor
                 EditorTools.Add(toolViewModel);
             }
         }
+
+        public void SetBackGround(SolidColorBrush color)
+        {
+            ZoomGrid.Background = color;
+        }
+
+        private void Config_ColormapTypesChanged(object? sender, EventArgs e)
+        {
+            var ColormapTypes = ColormapExtension.GetColormapHDictionary().First(x => x.Key == Config.ColormapTypes);
+            string valuepath = ColormapTypes.Value;
+            if (ColormapTypesImage.Dispatcher.CheckAccess())
+                ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
+            else
+                ColormapTypesImage.Source = ColormapTypesImage.Dispatcher.Invoke(() => new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative)));
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e => RenderPseudo(), 0);
+        }
         /// <summary>
         /// 
         /// </summary>
         private void SetupToolbarToggleCommands()
         {
-            this.Focusable = true;
-            this.Focus();
+
 
             // Show All Toolbars (Ctrl+Shift+A)
             var showAllToolbarsCommand = new RoutedCommand();
@@ -337,9 +341,11 @@ namespace ColorVision.ImageEditor
         {
             //如果文件已经打开，不会重复打开
             if (filePath == null || filePath.Equals(Config.FilePath, StringComparison.Ordinal)) return;
+
             if (Config.Properties.Count > 0)
             {
-                Clear();
+                ClearImageEventHandler?.Invoke(this, new EventArgs());
+                Config.Properties.Clear();
             }
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();

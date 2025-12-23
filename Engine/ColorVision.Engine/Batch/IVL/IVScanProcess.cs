@@ -28,6 +28,10 @@ namespace ColorVision.Engine.Batch.IVL
         [Description("是否显示IV曲线图表窗口")]
         public bool ShowPlot { get => _ShowPlot; set { _ShowPlot = value; OnPropertyChanged(); } }
         private bool _ShowPlot = true;
+
+
+        public int ZIndex { get => _ZIndex; set { _ZIndex = value; OnPropertyChanged(); } }
+        private int _ZIndex = -1;
     }
 
     /// <summary>
@@ -55,7 +59,7 @@ namespace ColorVision.Engine.Batch.IVL
                 {
                     // Query SMU scan data by batch ID
                     smuScanResults = db.Queryable<SMUResultModel>()
-                        .Where(x => x.BatchId == ctx.Batch.Id)
+                        .Where(x => x.BatchId == ctx.Batch.Id && x.ZIndex == Config.ZIndex)
                         .OrderBy(x => x.CreateDate)
                         .ToList();
                 }

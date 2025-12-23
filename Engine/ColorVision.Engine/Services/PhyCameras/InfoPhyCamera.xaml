@@ -21,7 +21,7 @@
         <Style x:Key="ButtonCommand" TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonDefault}">
             <Setter Property="VerticalAlignment" Value="Stretch"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="Height" Value="80"/>
+            <Setter Property="Height" Value="70"/>
             <Setter Property="Margin" Value="10"/>
         </Style>
     </UserControl.Resources>
@@ -64,7 +64,6 @@
                                         <TextBlock VerticalAlignment="Bottom" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.ExpiryDate,StringFormat=yyyy/MM//dd}"/>
                                     </StackPanel>
                                 </Button>
-
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>

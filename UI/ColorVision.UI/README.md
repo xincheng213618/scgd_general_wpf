@@ -1,7 +1,5 @@
 # ColorVision.UI
 
-ColorVision.UI 是 ColorVision 系统de
-
 ## 🎨 核心功能
 
 ### 菜单管理系统

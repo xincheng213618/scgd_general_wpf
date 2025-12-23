@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using ColorVision.Engine.Services.Devices.SMU.Dao;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Configs
 {

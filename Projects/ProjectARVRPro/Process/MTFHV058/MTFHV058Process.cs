@@ -218,8 +218,7 @@ namespace ProjectARVRPro.Process.MTFHV058
                     Rectangle.Attribute.Brush = Brushes.Transparent;
                     Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                     Rectangle.Attribute.Id = id;
-                    Rectangle.Attribute.Text = item.name + "_" + item.id;
-                    Rectangle.Attribute.Msg = item.mtfValue.ToString();
+                    Rectangle.Attribute.Msg = item.mtfValue?.ToString(Config.ShowConfig);
                     Rectangle.Render();
                     ctx.ImageView.AddVisual(Rectangle);
                 }

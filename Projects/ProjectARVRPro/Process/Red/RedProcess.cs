@@ -24,7 +24,7 @@ namespace ProjectARVRPro.Process.Red
             var log = ctx.Logger;
             RedRecipeConfig recipeConfig = ctx.RecipeConfig.GetRequiredService<RedRecipeConfig>();
             RedFixConfig fixConfig = ctx.FixConfig.GetRequiredService<RedFixConfig>();
-            RedViewTestResult redTestResult = new RedViewTestResult();
+            RedViewTestResult testResult = new RedViewTestResult();
 
             try
             {
@@ -37,9 +37,11 @@ namespace ProjectARVRPro.Process.Red
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
+                        ctx.Result.FileName = master.ImgFile;
+
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
-                        redTestResult.PoixyuvDatas.Clear();
+                        testResult.ViewPoixyuvDatas.Clear();
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };
@@ -50,11 +52,12 @@ namespace ProjectARVRPro.Process.Red
                             poi.u *= fixConfig.CenterCIE1976ChromaticCoordinatesu;
                             poi.v *= fixConfig.CenterCIE1976ChromaticCoordinatesv;
 
-                            redTestResult.PoixyuvDatas.Add(poi);
+                            testResult.ViewPoixyuvDatas.Add(poi);
+                            testResult.PoixyuvDatas.Add(new PoixyuvData() { Id = poi.Id, Name = poi.Name, X = poi.X, Y = poi.Y, Z = poi.Z, x = poi.x, y = poi.y, u = poi.u, v = poi.v, CCT = poi.CCT, Wave = poi.Wave });
 
-                            if (item.PoiName == "P_9")
+                            if (item.PoiName == Config.Key_Center)
                             {
-                                redTestResult.CenterLunimance = new ObjectiveTestItem
+                                testResult.CenterLunimance = new ObjectiveTestItem
                                 {
                                     Name = "CenterLunimance",
                                     LowLimit = recipeConfig.CenterLunimance.Min,
@@ -62,7 +65,7 @@ namespace ProjectARVRPro.Process.Red
                                     Value = poi.Y,
                                     TestValue = poi.Y.ToString("F4") + " nit"
                                 };
-                                redTestResult.CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem
+                                testResult.CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem
                                 {
                                     Name = "CenterCIE1931ChromaticCoordinatesx",
                                     LowLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesx.Min,
@@ -70,7 +73,7 @@ namespace ProjectARVRPro.Process.Red
                                     Value = poi.x,
                                     TestValue = poi.x.ToString("F4")
                                 };
-                                redTestResult.CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem
+                                testResult.CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem
                                 {
                                     Name = "CenterCIE1931ChromaticCoordinatesy",
                                     LowLimit = recipeConfig.CenterCIE1931ChromaticCoordinatesy.Min,
@@ -78,7 +81,7 @@ namespace ProjectARVRPro.Process.Red
                                     Value = poi.y,
                                     TestValue = poi.y.ToString("F4")
                                 };
-                                redTestResult.CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem
+                                testResult.CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem
                                 {
                                     Name = "CenterCIE1976ChromaticCoordinatesu",
                                     LowLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesu.Min,
@@ -86,7 +89,7 @@ namespace ProjectARVRPro.Process.Red
                                     Value = poi.u,
                                     TestValue = poi.u.ToString("F4")
                                 };
-                                redTestResult.CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem
+                                testResult.CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem
                                 {
                                     Name = "CenterCIE1976ChromaticCoordinatesv",
                                     LowLimit = recipeConfig.CenterCIE1976ChromaticCoordinatesv.Min,
@@ -95,11 +98,11 @@ namespace ProjectARVRPro.Process.Red
                                     TestValue = poi.v.ToString("F4")
                                 };
 
-                                ctx.Result.Result &= redTestResult.CenterLunimance.TestResult;
-                                ctx.Result.Result &= redTestResult.CenterCIE1931ChromaticCoordinatesx.TestResult;
-                                ctx.Result.Result &= redTestResult.CenterCIE1931ChromaticCoordinatesy.TestResult;
-                                ctx.Result.Result &= redTestResult.CenterCIE1976ChromaticCoordinatesu.TestResult;
-                                ctx.Result.Result &= redTestResult.CenterCIE1976ChromaticCoordinatesv.TestResult;
+                                ctx.Result.Result &= testResult.CenterLunimance.TestResult;
+                                ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesx.TestResult;
+                                ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesy.TestResult;
+                                ctx.Result.Result &= testResult.CenterCIE1976ChromaticCoordinatesu.TestResult;
+                                ctx.Result.Result &= testResult.CenterCIE1976ChromaticCoordinatesv.TestResult;
                             }
                         }
                     }
@@ -120,7 +123,7 @@ namespace ProjectARVRPro.Process.Red
                                     LowLimit = recipeConfig.LuminanceUniformity.Min,
                                     UpLimit = recipeConfig.LuminanceUniformity.Max
                                 };
-                                redTestResult.LuminanceUniformity = uniform;
+                                testResult.LuminanceUniformity = uniform;
                                 ctx.Result.Result &= uniform.TestResult;
                             }
                         }
@@ -139,14 +142,14 @@ namespace ProjectARVRPro.Process.Red
                                     LowLimit = recipeConfig.ColorUniformity.Min,
                                     UpLimit = recipeConfig.ColorUniformity.Max
                                 };
-                                redTestResult.ColorUniformity = colorUniform;
+                                testResult.ColorUniformity = colorUniform;
                                 ctx.Result.Result &= colorUniform.TestResult;
                             }
                         }
                     }
                 }
 
-                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(redTestResult);
+                ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
                 ctx.ObjectiveTestResult.RedTestResult = JsonConvert.DeserializeObject<RedTestResult>(ctx.Result.ViewResultJson) ?? new RedTestResult();
                 return true;
             }
@@ -162,7 +165,7 @@ namespace ProjectARVRPro.Process.Red
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             RedViewTestResult redTestResult = JsonConvert.DeserializeObject<RedViewTestResult>(ctx.Result.ViewResultJson);
             if (redTestResult == null) return;
-            foreach (var poiResultCIExyuvData in redTestResult.PoixyuvDatas)
+            foreach (var poiResultCIExyuvData in redTestResult.ViewPoixyuvDatas)
             {
                 var item = poiResultCIExyuvData.Point;
                 switch (item.PointType)
@@ -201,13 +204,13 @@ namespace ProjectARVRPro.Process.Red
         {
 
             string outtext = string.Empty;
-            outtext += $"Red ������" + Environment.NewLine;
+            outtext += $"Red" + Environment.NewLine;
 
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             RedViewTestResult redTestResult = JsonConvert.DeserializeObject<RedViewTestResult>(ctx.Result.ViewResultJson);
             if (redTestResult == null) return outtext;
 
-            foreach (var item in redTestResult.PoixyuvDatas)
+            foreach (var item in redTestResult.ViewPoixyuvDatas)
             {
                 outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
             }

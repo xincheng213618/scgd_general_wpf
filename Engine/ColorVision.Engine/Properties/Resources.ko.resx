@@ -2490,4 +2490,37 @@
   <data name="ProcessIVScanDataAndExportToCSV" xml:space="preserve">
     <value>SMU 스캔 데이터를 처리하고 CSV로 저장하고 IV 곡선을 그립니다.</value>
   </data>
+  <data name="OpenDeviceManager" xml:space="preserve">
+    <value>장치 관리자 열기</value>
+  </data>
+  <data name="LicenseManager" xml:space="preserve">
+    <value>라이선스 관리</value>
+  </data>
+  <data name="CopyLicense" xml:space="preserve">
+    <value>저작권 라이선스</value>
+  </data>
+  <data name="ExportLicense" xml:space="preserve">
+    <value>수출 허가</value>
+  </data>
+  <data name="ExportLicenseToFile" xml:space="preserve">
+    <value>내보내기 라이선스 파일</value>
+  </data>
+  <data name="LicenseCopiedToClipboard" xml:space="preserve">
+    <value>라이선스가 클립보드에 복사되었습니다.</value>
+  </data>
+  <data name="NoLicenseAvailable" xml:space="preserve">
+    <value>사용 가능한 라이선스가 없습니다</value>
+  </data>
+  <data name="LicenseExportedSuccessfully" xml:space="preserve">
+    <value>라이선스 내보내기가 성공적으로 완료되었습니다.</value>
+  </data>
+  <data name="FailedToOpenDeviceManager" xml:space="preserve">
+    <value>장치 관리자를 열 수 없습니다</value>
+  </data>
+  <data name="CopyLicenseFailed" xml:space="preserve">
+    <value>라이선스 복사 실패</value>
+  </data>
+  <data name="ExportLicenseFailed" xml:space="preserve">
+    <value>라이선스 내보내기 실패</value>
+  </data>
 </root>

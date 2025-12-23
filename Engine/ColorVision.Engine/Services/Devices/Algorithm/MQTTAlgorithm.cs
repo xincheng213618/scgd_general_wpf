@@ -89,7 +89,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                             log.Debug($"FileUrl：{model.ImgFile}");
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                Device.View.AlgResultMasterModelDataDraw(model);
+                                Device.View.AddAlgResultMasterModel(model);
                             });
                         }
                         else

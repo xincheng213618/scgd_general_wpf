@@ -266,6 +266,54 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
         
+        private bool PreProcessing(string flowName, string serialNumber)
+        {
+            try
+            {
+                // Find all matching PreProcessMeta entries for this flow template name
+                var matchingMetas = PreProcessManager.GetInstance().ProcessMetas
+                    .Where(m => string.Equals(m.TemplateName, flowName, StringComparison.OrdinalIgnoreCase) && m.PreProcess != null)
+                    .ToList();
+
+                if (matchingMetas.Count > 0)
+                {
+                    log.Info($"匹配到 {matchingMetas.Count} 个预处理 {flowName}");
+                    
+                    var ctx = new IPreProcessContext
+                    {
+                        FlowName = flowName,
+                        SerialNumber = serialNumber,
+                    };
+
+                    // Execute all matching pre-processors sequentially
+                    foreach (var meta in matchingMetas)
+                    {
+                        log.Info($"执行预处理 {meta.Name} -> {meta.ProcessTypeName}");
+                        try
+                        {
+                            bool success = meta.PreProcess.PreProcess(ctx);
+                            if (!success)
+                            {
+                                log.Warn($"预处理 {meta.Name} 执行返回失败");
+                                return false; // Abort flow if any pre-processor fails
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error($"预处理 {meta.Name} 执行异常", ex);
+                            return false; // Abort flow on exception
+                        }
+                    }
+                }
+                return true; // All pre-processors succeeded or none configured
+            }
+            catch (Exception ex)
+            {
+                log.Error("匹配/执行预处理出错", ex);
+                return false;
+            }
+        }
+        
         private void Processing(MeasureBatchModel batch)
         {
             try
@@ -455,6 +503,19 @@ namespace ColorVision.Engine.Templates.Flow
             timer.Change(0, 100); // 启动定时器
             FlowEngineManager.Batch = new MeasureBatchModel() { TId = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Id, Name = sn, Code = sn };
             FlowEngineManager.Batch.Id = MySqlControl.GetInstance().DB.Insertable(FlowEngineManager.Batch).ExecuteReturnIdentity();
+
+            // Execute pre-processors before flow starts
+            if (!PreProcessing(FlowName, sn))
+            {
+                // Pre-processing failed, abort flow execution
+                ButtonRun.Visibility = Visibility.Visible;
+                ButtonStop.Visibility = Visibility.Collapsed;
+                stopwatch.Stop();
+                timer.Change(Timeout.Infinite, 500);
+                View.logTextBox.Text = "预处理失败，流程取消执行";
+                log.Warn("预处理失败，流程取消执行");
+                return;
+            }
 
             flowControl.Start(sn);
         }

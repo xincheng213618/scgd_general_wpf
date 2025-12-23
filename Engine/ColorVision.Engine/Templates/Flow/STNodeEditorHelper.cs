@@ -15,7 +15,6 @@ using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates.ARVR.AOI;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FindLightArea;
@@ -60,6 +59,7 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -252,7 +252,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (STNodeEditor.ActiveNode is FlowEngineLib.SMUFromCSVNode SMUFromCSVNode)
             {
                 AddStackPanel(name => SMUFromCSVNode.DeviceCode = name, SMUFromCSVNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
-                AddImagePath(name => SMUFromCSVNode.CsvFileName = name, SMUFromCSVNode.CsvFileName);
+                AddImagePath(name => SMUFromCSVNode.CsvFileName = name, SMUFromCSVNode.CsvFileName,"CSV");
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.SMUNode sMUNode)
@@ -616,15 +616,26 @@ namespace ColorVision.Engine.Templates.Flow
                 Refesh();
             }
 
+            if (STNodeEditor.ActiveNode is CVBaseServerNode baseServerNode)
+            {
+                Type type = typeof(CVBaseServerNode);
+                TextboxPropertiesEditor textboxPropertiesEditor = new TextboxPropertiesEditor();
+
+                SignStackPanel.Children.Add(textboxPropertiesEditor.GenProperties(type.GetProperty("MaxTime"), baseServerNode));
+                SignStackPanel.Children.Insert(0,new TextBlock() { Text = baseServerNode.Token ,Margin = new Thickness(0,0,0,5)});
+            }
+
+
+
             SignStackPanel.Visibility = SignStackPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        void AddImagePath(Action<string> updateStorageAction, string filename)
+        void AddImagePath(Action<string> updateStorageAction, string filename,string Tag = "图像")
         {
             var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
             dockPanel.Children.Add(new TextBlock
             {
-                Text = "图像",
+                Text = Tag,
                 Width = 50,
                 Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
             });

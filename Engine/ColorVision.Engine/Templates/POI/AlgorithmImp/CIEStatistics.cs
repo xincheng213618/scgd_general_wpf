@@ -97,6 +97,8 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         public double UniformityMinDivMax { get; set; }
         public double UniformityDiffDivAvg { get; set; }
         public double UniformityDiffDivMax { get; set; }
+        public double Uniformity { get; set; }
+
         public double StandardDeviation { get; set; }
         public double StandardDeviationPercent { get; set; }
         public double ColorUniformityDeltaUv { get; set; }
@@ -149,6 +151,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             stats.UniformityMinDivMax = stats.MaxLuminance != 0 ? stats.MinLuminance / stats.MaxLuminance * 100.0 : 0;
             stats.UniformityDiffDivAvg = stats.AverageLuminance != 0 ? (stats.MaxLuminance - stats.MinLuminance) / stats.AverageLuminance * 100.0 : 0;
             stats.UniformityDiffDivMax = stats.MaxLuminance != 0 ? (stats.MaxLuminance - stats.MinLuminance) / stats.MaxLuminance * 100.0 : 0;
+            stats.Uniformity = stats.AverageLuminance!=0?( 1- ((stats.MaxLuminance - stats.AverageLuminance) / stats.AverageLuminance) )* 100.0 : 0;
             stats.StandardDeviationPercent = (stats.AverageLuminance != 0 && !double.IsNaN(stats.StandardDeviation)) ? stats.StandardDeviation / stats.AverageLuminance * 100.0 : double.NaN;
 
             return stats;

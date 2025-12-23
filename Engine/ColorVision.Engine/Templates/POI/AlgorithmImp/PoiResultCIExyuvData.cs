@@ -138,6 +138,9 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
             double uniformityMinDivMax = maxL != 0 ? minL / maxL * 100.0 : 0;
             double uniformityMaxMinDivAvg = avgL != 0 ? (maxL - minL) / avgL * 100.0 : 0;
+
+            double uniformity = avgL != 0 ? (1- (maxL - avgL) / avgL )* 100.0 : 0;
+
             double uniformityMaxMinDivMax = maxL != 0 ? (maxL - minL) / maxL * 100.0 : 0;
 
             double stdPercent = (avgL != 0 && !double.IsNaN(stdL)) ? stdL / avgL * 100.0 : double.NaN;
@@ -164,6 +167,8 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             Row("Luminance uniformity(Min/Max*100%)", FormatDouble(uniformityMinDivMax), "%");
             Row("Luminance uniformity((Max-Min)/Avg*100%)", FormatDouble(uniformityMaxMinDivAvg), "%");
             Row("Luminance uniformity((Max-Min)/Max*100%)", FormatDouble(uniformityMaxMinDivMax), "%");
+            Row("Luminance uniformity((1-(Max-Avg)/Avg)*100%)", FormatDouble(uniformity), "%");
+
             Row("Standard Deviation Lv", FormatDouble(stdL), "");
             Row("Standard Deviation Lv (%)", FormatDouble(stdPercent), "%");
             Row("Color Uniformity(Δuv)", FormatDouble(deltaUv),"");
