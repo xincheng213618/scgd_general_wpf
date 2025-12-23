@@ -142,7 +142,8 @@ namespace ProjectARVRPro
                     {
                         // Check if this looks like a PoixyuvData object
                         if (childObj.ContainsKey("Name") && childObj.ContainsKey("Y") && 
-                            childObj.ContainsKey("x") && childObj.ContainsKey("y"))
+                            childObj.ContainsKey("x") && childObj.ContainsKey("y") &&
+                            childObj.ContainsKey("u") && childObj.ContainsKey("v"))
                         {
                             try
                             {
