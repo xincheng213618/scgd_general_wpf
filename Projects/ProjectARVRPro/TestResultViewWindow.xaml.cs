@@ -80,6 +80,55 @@ namespace ProjectARVRPro
             }
         }
 
+        private void AddPoixyuvDataAsTestItems(PoixyuvData poiData, ObservableCollection<ObjectiveTestItem> items)
+        {
+            items.Add(new ObjectiveTestItem
+            {
+                Name = $"{poiData.Name}(Lv)",
+                Value = poiData.Y,
+                TestValue = poiData.Y.ToString("F4"),
+                Unit = "cd/m2",
+                LowLimit = 0,
+                UpLimit = 0
+            });
+            items.Add(new ObjectiveTestItem
+            {
+                Name = $"{poiData.Name}(Cx)",
+                Value = poiData.x,
+                TestValue = poiData.x.ToString("F4"),
+                Unit = "None",
+                LowLimit = 0,
+                UpLimit = 0
+            });
+            items.Add(new ObjectiveTestItem
+            {
+                Name = $"{poiData.Name}(Cy)",
+                Value = poiData.y,
+                TestValue = poiData.y.ToString("F4"),
+                Unit = "None",
+                LowLimit = 0,
+                UpLimit = 0
+            });
+            items.Add(new ObjectiveTestItem
+            {
+                Name = $"{poiData.Name}(u')",
+                Value = poiData.u,
+                TestValue = poiData.u.ToString("F4"),
+                Unit = "None",
+                LowLimit = 0,
+                UpLimit = 0
+            });
+            items.Add(new ObjectiveTestItem
+            {
+                Name = $"{poiData.Name}(v')",
+                Value = poiData.v,
+                TestValue = poiData.v.ToString("F4"),
+                Unit = "None",
+                LowLimit = 0,
+                UpLimit = 0
+            });
+        }
+
         private void CollectTestItems(object obj, ObservableCollection<ObjectiveTestItem> items)
         {
             if (obj == null) return;
@@ -101,51 +150,7 @@ namespace ProjectARVRPro
                                 if (poiData != null)
                                 {
                                     // Convert PoixyuvData to multiple ObjectiveTestItem entries
-                                    items.Add(new ObjectiveTestItem
-                                    {
-                                        Name = $"{poiData.Name}(Lv)",
-                                        Value = poiData.Y,
-                                        TestValue = poiData.Y.ToString("F4"),
-                                        Unit = "cd/m2",
-                                        LowLimit = 0,
-                                        UpLimit = 0
-                                    });
-                                    items.Add(new ObjectiveTestItem
-                                    {
-                                        Name = $"{poiData.Name}(Cx)",
-                                        Value = poiData.x,
-                                        TestValue = poiData.x.ToString("F4"),
-                                        Unit = "None",
-                                        LowLimit = 0,
-                                        UpLimit = 0
-                                    });
-                                    items.Add(new ObjectiveTestItem
-                                    {
-                                        Name = $"{poiData.Name}(Cy)",
-                                        Value = poiData.y,
-                                        TestValue = poiData.y.ToString("F4"),
-                                        Unit = "None",
-                                        LowLimit = 0,
-                                        UpLimit = 0
-                                    });
-                                    items.Add(new ObjectiveTestItem
-                                    {
-                                        Name = $"{poiData.Name}(u')",
-                                        Value = poiData.u,
-                                        TestValue = poiData.u.ToString("F4"),
-                                        Unit = "None",
-                                        LowLimit = 0,
-                                        UpLimit = 0
-                                    });
-                                    items.Add(new ObjectiveTestItem
-                                    {
-                                        Name = $"{poiData.Name}(v')",
-                                        Value = poiData.v,
-                                        TestValue = poiData.v.ToString("F4"),
-                                        Unit = "None",
-                                        LowLimit = 0,
-                                        UpLimit = 0
-                                    });
+                                    AddPoixyuvDataAsTestItems(poiData, items);
                                     continue;
                                 }
                             }
@@ -217,51 +222,7 @@ namespace ProjectARVRPro
                                 foreach (var poiData in list)
                                 {
                                     // Convert each PoixyuvData to multiple ObjectiveTestItem entries
-                                    items.Add(new ObjectiveTestItem
-                                    {
-                                        Name = $"{poiData.Name}(Lv)",
-                                        Value = poiData.Y,
-                                        TestValue = poiData.Y.ToString("F4"),
-                                        Unit = "cd/m2",
-                                        LowLimit = 0,
-                                        UpLimit = 0
-                                    });
-                                    items.Add(new ObjectiveTestItem
-                                    {
-                                        Name = $"{poiData.Name}(Cx)",
-                                        Value = poiData.x,
-                                        TestValue = poiData.x.ToString("F4"),
-                                        Unit = "None",
-                                        LowLimit = 0,
-                                        UpLimit = 0
-                                    });
-                                    items.Add(new ObjectiveTestItem
-                                    {
-                                        Name = $"{poiData.Name}(Cy)",
-                                        Value = poiData.y,
-                                        TestValue = poiData.y.ToString("F4"),
-                                        Unit = "None",
-                                        LowLimit = 0,
-                                        UpLimit = 0
-                                    });
-                                    items.Add(new ObjectiveTestItem
-                                    {
-                                        Name = $"{poiData.Name}(u')",
-                                        Value = poiData.u,
-                                        TestValue = poiData.u.ToString("F4"),
-                                        Unit = "None",
-                                        LowLimit = 0,
-                                        UpLimit = 0
-                                    });
-                                    items.Add(new ObjectiveTestItem
-                                    {
-                                        Name = $"{poiData.Name}(v')",
-                                        Value = poiData.v,
-                                        TestValue = poiData.v.ToString("F4"),
-                                        Unit = "None",
-                                        LowLimit = 0,
-                                        UpLimit = 0
-                                    });
+                                    AddPoixyuvDataAsTestItems(poiData, items);
                                 }
                             }
                         }
