@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Templates.Distortion
         }
 
 
-        public override void Load(IViewImageA view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -76,10 +76,10 @@ namespace ColorVision.Engine.Templates.Distortion
             }
         }
 
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
             int id = 0;
             foreach (var item in result.ViewResults.ToSpecificViewResults<ViewResultDistortion>())
@@ -89,14 +89,14 @@ namespace ColorVision.Engine.Templates.Distortion
                     id++;
                     CircleProperties circleProperties = new CircleProperties();
                     circleProperties.Center = new Point(point.X, point.Y);
-                    circleProperties.Radius = 20 / view.ImageView.Zoombox1.ContentMatrix.M11;
+                    circleProperties.Radius = 20 / ctx.ImageView.Zoombox1.ContentMatrix.M11;
                     circleProperties.Brush = Brushes.Transparent;
-                    circleProperties.Pen = new Pen(Brushes.Red, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
+                    circleProperties.Pen = new Pen(Brushes.Red, 1 / ctx.ImageView.Zoombox1.ContentMatrix.M11);
                     circleProperties.Id = -1;
 
                     DVCircle Circle = new DVCircle(circleProperties);
                     Circle.Render();
-                    view.ImageView.AddVisual(Circle);
+                    ctx.ImageView.AddVisual(Circle);
 
                 }
             }
@@ -104,14 +104,14 @@ namespace ColorVision.Engine.Templates.Distortion
             List<string> header = new() { "Type", "Slope", "Layout", "Corner", "DistortionRatio" };
             List<string> bdHeader = new() { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.ListView.ItemsSource = null;
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.ListView.ItemsSource = null;
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

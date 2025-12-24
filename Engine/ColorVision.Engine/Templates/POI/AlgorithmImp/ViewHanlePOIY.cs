@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
         }
 
-        public override void Load(IViewImageA view, ViewResultAlg result)
+        public override void Load(ViewResultContext view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                 result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmPoi), ImageFilePath = result.FilePath })) });
             }
         }
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                         DrawPoiPoint.Add(poiResultData.Point);
                     }
                 }
-                view.AddPOIPoint(DrawPoiPoint);
+                AddPOIPoint(view.ImageView, DrawPoiPoint);
             }
             else
             {

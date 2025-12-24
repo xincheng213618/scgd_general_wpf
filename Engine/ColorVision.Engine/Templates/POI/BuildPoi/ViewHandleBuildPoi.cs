@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
     {
         public override List<ViewResultAlgType> CanHandle { get;  } = new List<ViewResultAlgType>() { ViewResultAlgType.BuildPOI};
 
-        public override void Load(IViewImageA view, ViewResultAlg result)
+        public override void Load(ViewResultContext view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
         }
 
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 if (item is PoiResultData poiResultData)
                     DrawPoiPoint.Add(poiResultData.Point);
             }
-            view.AddPOIPoint(DrawPoiPoint);
+            AddPOIPoint(view.ImageView, DrawPoiPoint);
 
             List<string> header;
             List<string> bdHeader;

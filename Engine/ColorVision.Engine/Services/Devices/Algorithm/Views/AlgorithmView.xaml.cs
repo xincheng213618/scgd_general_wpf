@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class AlgorithmView : UserControl,IView,IDisposable, IViewImageA
+    public partial class AlgorithmView : UserControl,IView,IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmView));
         public View View { get; set; }
@@ -49,6 +49,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
 
+
+        public ViewResultContext ViewResultContext { get; set; }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
@@ -69,6 +71,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+
+            ViewResultContext = new ViewResultContext();
+            ViewResultContext.SideTextBox = SideTextBox;
+            ViewResultContext.ImageView = ImageView;
+            ViewResultContext.LeftGridViewColumnVisibilitys = LeftGridViewColumnVisibilitys;
+            ViewResultContext.ListView = ListView;
+
         }
 
         private void Delete()
@@ -151,7 +160,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 ViewResultAlg ViewResultAlg = new ViewResultAlg(result);
 
                 var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(ViewResultAlg));
-                    ResultHandle?.Load(this,ViewResultAlg);
+                    ResultHandle?.Load(ViewResultContext, ViewResultAlg);
 
                 if (Config.InsertAtBeginning)
                     ViewResults.Insert(0, ViewResultAlg);
@@ -177,13 +186,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (listView1.SelectedIndex < 0) return;
             if (ViewResults[listView1.SelectedIndex] is not ViewResultAlg result) return;
             var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
+
+            ViewResultContext viewResultContext = new ViewResultContext();
             if (ResultHandle != null)
             {
                 ImageView.ImageShow.Clear();
                 SideTextBox.Visibility = Visibility.Collapsed;
                 SideTextBox.Clear();
-                ResultHandle.Load(this, result);
-                ResultHandle.Handle(this, result);
+                ResultHandle.Load(ViewResultContext, result);
+                ResultHandle.Handle(ViewResultContext, result);
                 return;
             }
 

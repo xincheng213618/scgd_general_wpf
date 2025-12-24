@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
         }
 
 
-        public override void Load(IViewImageA view, ViewResultAlg result)
+        public override void Load(ViewResultContext view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -54,7 +54,7 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
             }
         }
 
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
             var values = result.ViewResults.ToSpecificViewResults<AlgResultImageModel>();
             if (values.Count == 1)

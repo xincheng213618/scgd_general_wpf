@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             return value;
         }
 
-        public override void Load(IViewImageA view, ViewResultAlg result)
+        public override void Load(ViewResultContext view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -107,7 +107,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             }
         }
 
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
             void OpenSource()
             {

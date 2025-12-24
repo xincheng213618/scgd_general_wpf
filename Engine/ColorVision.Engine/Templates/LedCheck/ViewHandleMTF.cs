@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Templates.LedCheck
 
 
 
-        public override void Load(IViewImageA view, ViewResultAlg result)
+        public override void Load(ViewResultContext view, ViewResultAlg result)
         {
             base.Load(view, result);
             if (result.ViewResults == null)
@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Templates.LedCheck
         }
 
 
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
 
             if (File.Exists(result.FilePath))

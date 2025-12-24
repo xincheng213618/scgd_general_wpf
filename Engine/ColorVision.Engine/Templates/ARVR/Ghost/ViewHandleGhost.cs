@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Templates.Ghost
             }
             return field;
         }
-        public override void Load(IViewImageA view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -69,10 +69,10 @@ namespace ColorVision.Engine.Templates.Ghost
             }
         }
 
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
 
 
@@ -95,8 +95,8 @@ namespace ColorVision.Engine.Templates.Ghost
                     void Draw(List<Point1> generatedPoints)
                     {
                         // 2. 获取全局画布尺寸（假设 DrawCanvas.ActualWidth/ActualHeight）
-                        int canvasWidth = (int)Math.Ceiling(view.ImageView.ActualWidth);
-                        int canvasHeight = (int)Math.Ceiling(view.ImageView.ActualHeight);
+                        int canvasWidth = (int)Math.Ceiling(ctx.ImageView.ActualWidth);
+                        int canvasHeight = (int)Math.Ceiling(ctx.ImageView.ActualHeight);
                         if (canvasWidth == 0 || canvasHeight == 0) return;
                         var fullRect = new Rect(0, 0, canvasWidth, canvasHeight);
                         // 3. 新建全局大图
@@ -124,7 +124,7 @@ namespace ColorVision.Engine.Templates.Ghost
                         rtb.Render(dv);
                         var rasterVisual = new RasterizedSelectVisual(rtb, fullRect);
                         rasterVisual.Attribute.Tag = generatedPoints;
-                        view.ImageView.ImageShow.AddVisualCommand(rasterVisual);
+                        ctx.ImageView.ImageShow.AddVisualCommand(rasterVisual);
                     }
                 }
                 catch (Exception ex)
@@ -136,13 +136,13 @@ namespace ColorVision.Engine.Templates.Ghost
             List<string> header = new() { "质心坐标", "光斑灰度", "鬼影灰度" };
             List<string> bdHeader = new() { "LEDCenters", "LEDBlobGray", "GhostAverageGray" };
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
 
