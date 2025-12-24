@@ -196,7 +196,7 @@ namespace ProjectARVRPro
         /// 总体测试结果（true表示通过，false表示不通过）
         /// </summary>
         public bool TotalResult { get => _TotalResult; set { _TotalResult = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalResultString)); } } 
-        private bool _TotalResult = false;
+        private bool _TotalResult = true;
 
         /// <summary>
         /// 总体测试结果字符串（如“pass”或“fail”）
