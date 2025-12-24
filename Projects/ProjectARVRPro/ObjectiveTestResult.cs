@@ -42,10 +42,10 @@ namespace ProjectARVRPro
                             foreach (var item in list) 
                             {
                                 rows.Add($"{testScreenName},{item.Name}(Lv),{item.Y},cd/m2,0,0,None");
-                                rows.Add($"{testScreenName},{item.Name}(Cx),{item.Y},None,0,0,None");
-                                rows.Add($"{testScreenName},{item.Name}(Cy),{item.Y},None,0,0,None");
-                                rows.Add($"{testScreenName},{item.Name}(u'),{item.Y},None,0,0,None");
-                                rows.Add($"{testScreenName},{item.Name}(v'),{item.Y},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(Cx),{item.x},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(Cy),{item.y},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(u'),{item.u},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(v'),{item.v},None,0,0,None");
                             }
                         }
                     }

@@ -743,8 +743,6 @@ namespace ProjectARVRPro
                 log.Info("找不到连接的Socket");
                 return;
             }
-            ObjectiveTestResult.TotalResult = true;
-
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
             if (ViewResultManager.Config.IsSaveCsv)
