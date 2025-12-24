@@ -5,6 +5,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine
@@ -141,10 +142,10 @@ namespace ColorVision.Engine
 
         private void NotifyAllOrders()
         {
-            int order = 1;
             foreach (var meta in AlgorithmMetas)
             {
-                meta.OnPropertyChanged(nameof(DisplayAlgorithmMeta.Order));
+                // Trigger property change notification for Order property
+                meta.RaisePropertyChanged(nameof(DisplayAlgorithmMeta.Order));
             }
         }
 
@@ -157,8 +158,8 @@ namespace ColorVision.Engine
         {
             DisplayAlgorithmManagerWindow managerWindow = new DisplayAlgorithmManagerWindow() 
             { 
-                Owner = System.Windows.Application.Current.GetActiveWindow(), 
-                WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner 
+                Owner = Application.Current.GetActiveWindow(), 
+                WindowStartupLocation = WindowStartupLocation.CenterOwner 
             };
             managerWindow.DataContext = this;
             managerWindow.ShowDialog();

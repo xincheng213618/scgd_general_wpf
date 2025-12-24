@@ -64,6 +64,14 @@ namespace ColorVision.Engine
                 return index >= 0 ? (index + 1).ToString() : string.Empty;
             }
         }
+        
+        /// <summary>
+        /// Public method to raise property changed event for Order property.
+        /// </summary>
+        public void RaisePropertyChanged(string propertyName)
+        {
+            OnPropertyChanged(propertyName);
+        }
 
         /// <summary>
         /// Gets a value indicating whether this display algorithm has a configurable config.
