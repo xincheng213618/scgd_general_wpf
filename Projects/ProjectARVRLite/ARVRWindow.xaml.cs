@@ -116,7 +116,7 @@ namespace ProjectARVRLite
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
+                    ProjectARVRLiteConfig.Instance.SN = SN;
                 });
             }
         }
@@ -1573,6 +1573,8 @@ namespace ProjectARVRLite
                         List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
                         int id = 0;
                         List<double> points = new List<double>();
+                        result.ViewResultWhite.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+
                         foreach (var item in POIPointResultModels)
                         {
                             PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item) { Id = id++ };
@@ -1970,7 +1972,45 @@ namespace ProjectARVRLite
                         }
                     }
                 }
-    
+                if (result.TestType == ARVR1TestType.Ghost)
+                {
+                    if (result.ViewResultWhite == null || result.ViewResultWhite.PoiResultCIExyuvDatas == null) return;
+
+                    foreach (var poiResultCIExyuvData in result.ViewResultWhite.PoiResultCIExyuvDatas)
+                    {
+                        var item = poiResultCIExyuvData.Point;
+                        switch (item.PointType)
+                        {
+                            case POIPointTypes.Circle:
+                                DVCircleText Circle = new DVCircleText();
+                                Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                                Circle.Attribute.Radius = item.Radius;
+                                Circle.Attribute.Brush = Brushes.Transparent;
+                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Circle.Attribute.Id = item.Id ?? -1;
+                                Circle.Attribute.Text = item.Name;
+                                Circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Circle.Render();
+                                ImageView.AddVisual(Circle);
+                                break;
+                            case POIPointTypes.Rect:
+                                DVRectangleText Rectangle = new DVRectangleText();
+                                Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                                Rectangle.Attribute.Brush = Brushes.Transparent;
+                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Rectangle.Attribute.Id = item.Id ?? -1;
+                                Rectangle.Attribute.Text = item.Name;
+                                Rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Rectangle.Render();
+                                ImageView.AddVisual(Rectangle);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+
+
             });
 
         }
@@ -2010,7 +2050,7 @@ namespace ProjectARVRLite
                     outtext += $"VerticalFieldOfViewAngle:{result.ViewReslutW51.VerticalFieldOfViewAngle.TestValue} LowLimit:{result.ViewReslutW51.VerticalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewReslutW51.VerticalFieldOfViewAngle.UpLimit},Rsult{(result.ViewReslutW51.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
                 case ARVR1TestType.White:
-                    outtext += $"白画面九点Ghost 测试项：关注点算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
+                    outtext += $"白画面九点Ghost" + Environment.NewLine;
 
                     if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
                     {

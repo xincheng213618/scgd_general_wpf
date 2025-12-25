@@ -20,16 +20,28 @@ namespace ProjectARVRLite.Services
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
             SocketControl.Current.Stream = stream;
-            if (ProjectWindowInstance.WindowInstance != null)
+            if (ProjectWindowInstance.WindowInstance == null)
             {
-                ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
-                //现在先切换PG
-                return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVR1TestType.W51 } };
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProjectWindowInstance.WindowInstance = new ARVRWindow
+                    {
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner
+                    };
+                    ProjectWindowInstance.WindowInstance.Closed += (s, e) => ProjectWindowInstance.WindowInstance = null;
+                    ProjectWindowInstance.WindowInstance.Show();
+                });
+
             }
-            else
+
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                return new SocketResponse { Code = -3,MsgID = request.MsgID, Msg = $"ProjectARVR Wont Open", EventName = EventName };
-            }
+                if (ProjectWindowInstance.WindowInstance != null)
+                {
+                    ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
+                }
+            });
+            return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVR1TestType.W51 } };
         }
     }
 

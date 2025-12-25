@@ -57,7 +57,7 @@ namespace ProjectARVRLite
         }
 
         public int StepIndex { get => _StepIndex; set { _StepIndex = value; OnPropertyChanged(); } }
-        private int _StepIndex;
+        private int _StepIndex = 5;
 
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
