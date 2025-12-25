@@ -64,6 +64,8 @@ IDI_ICON5               ICON                    "cvx.ico"
 
 IDI_ICON6               ICON                    "cvxp.ico"
 
+IDI_ICON7               ICON                    "Paomedia-Small-N-Flat-Key.ico"
+
 #endif    // 中文(简体，中国) resources
 /////////////////////////////////////////////////////////////////////////////
 
