@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         [CommandDisplay("UploadCalibrationFiles", Order =100)]
         public RelayCommand UploadCalibrationCommand { get; set; }
-        [CommandDisplay("aliTemplateManagerment",Order =102)]
+        [CommandDisplay("CalibrationEditCommand", Order =102)]
         public RelayCommand CalibrationEditCommand { get; set; }
         [CommandDisplay("CaliTemplateSet",Order =101)]
         public RelayCommand CalibrationTemplateOpenCommand { get; set; }
@@ -65,6 +65,10 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand UploadLicenseNetCommand { get; set; }
 
         public RelayCommand RefreshLicenseCommand { get; set; }
+        [CommandDisplay("CopyLicense")]
+        public RelayCommand CopyLicenseCommand { get; set; }
+        [CommandDisplay("ExportLicense")]
+        public RelayCommand ExportLicenseCommand { get; set; }
 
         [CommandDisplay("Reset", CommandType = CommandType.Highlighted,Order = 9999)]
         public RelayCommand ResetCommand { get; set; }
@@ -128,6 +132,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             UploadLicenseCommand = new RelayCommand(a => UploadLicense());
             RefreshLicenseCommand = new RelayCommand(a => RefreshLicense());
+            CopyLicenseCommand = new RelayCommand(a => CopyLicense(), a => CameraLicenseModel != null && !string.IsNullOrEmpty(CameraLicenseModel.LicenseValue));
+            ExportLicenseCommand = new RelayCommand(a => ExportLicense(), a => CameraLicenseModel != null && !string.IsNullOrEmpty(CameraLicenseModel.LicenseValue));
             RefreshLicense();
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
 
@@ -261,7 +267,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 string LicPath = Path.Combine(ResotrePath, $"{Code}.lic");
                 if (File.Exists(LicPath))
                 {
-                    CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(Code);
+                    CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(Code);
                     if (CameraLicenseModel == null)
                         CameraLicenseModel = new LicenseModel();
                     CameraLicenseModel.LiceType = 0;
@@ -270,7 +276,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
                     CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
                     CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
-                    int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                    int ret = PhyLicenseDao.Instance.Save(CameraLicenseModel);
                     if (ret == 1)
                     {
                         RefreshLicense();
@@ -405,7 +411,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (CameraLicenseModel != null)
             {
                 CameraLicenseModel.DevCameraId = null;
-                CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
             }
         }
@@ -417,7 +423,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
 
                 CameraLicenseModel.DevCameraId = deviceCamera.SysResourceModel.Id;
-                CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
 
                 if (CameraLicenseModel.DevCaliId != null)
@@ -441,7 +447,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (CameraLicenseModel != null)
             {
                 CameraLicenseModel.DevCaliId = null;
-                CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
             }
         }
@@ -454,7 +460,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (CameraLicenseModel != null)
             {
                 CameraLicenseModel.DevCaliId = deviceCalibration.SysResourceModel.Id;
-                CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                PhyLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
                 if (CameraLicenseModel.DevCameraId != null)
                 {
@@ -471,7 +477,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         #region License
 
-        public LicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsLicensed)); OnPropertyChanged(nameof(LicenseSolidColorBrush)); } }
+        public LicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsLicensed)); OnPropertyChanged(nameof(LicenseSolidColorBrush)); OnPropertyChanged(nameof(LicenseExpiryText)); OnPropertyChanged(nameof(LicenseExpiryColor)); } }
         private LicenseModel? _CameraLicenseModel;
 
         public LicenseState LicenseState { get 
@@ -507,13 +513,51 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public bool IsLicensed { get => CameraLicenseModel != null;  }
 
+        public string LicenseExpiryText
+        {
+            get
+            {
+                if (CameraLicenseModel == null || CameraLicenseModel.ExpiryDate == null)
+                    return "无许可证";
+                
+                var expiryDate = CameraLicenseModel.ExpiryDate.Value;
+                if (expiryDate < DateTime.Now)
+                    return $"已过期 ({expiryDate:yyyy-MM-dd})";
+                
+                var daysRemaining = (expiryDate - DateTime.Now).Days;
+                if (daysRemaining <= 30)
+                    return $"剩余 {daysRemaining} 天 ({expiryDate:yyyy-MM-dd})";
+                
+                return $"有效期至 {expiryDate:yyyy-MM-dd}";
+            }
+        }
+
+        public SolidColorBrush LicenseExpiryColor
+        {
+            get
+            {
+                if (CameraLicenseModel == null || CameraLicenseModel.ExpiryDate == null)
+                    return new SolidColorBrush(Colors.Red);
+                
+                var expiryDate = CameraLicenseModel.ExpiryDate.Value;
+                if (expiryDate < DateTime.Now)
+                    return new SolidColorBrush(Colors.Red);
+                
+                var daysRemaining = (expiryDate - DateTime.Now).Days;
+                if (daysRemaining <= 30)
+                    return new SolidColorBrush(Colors.Orange);
+                
+                return new SolidColorBrush(Colors.Green);
+            }
+        }
+
         public void RefreshLicense()
         {
             if (SysResourceModel.Code == null)
             {
                 return;
             }
-            CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
+            CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
         }
 
         private void UploadLicense()
@@ -551,7 +595,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         string Code = Path.GetFileNameWithoutExtension(item.FullName);
                         if (Code == SysResourceModel.Code)
                         {
-                            CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
+                            CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
                             if (CameraLicenseModel == null)
                                 CameraLicenseModel = new LicenseModel();
                             CameraLicenseModel.LiceType = 0;
@@ -564,7 +608,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                             CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
                             CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
 
-                            int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                            int ret = PhyLicenseDao.Instance.Save(CameraLicenseModel);
                             if(ret == 1)
                             {
                                 RefreshLicense();
@@ -575,10 +619,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                             MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
                             if (ret == -1)
                             {
-                                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(MysqlCameraLicense)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                                {
-                                    MySqlControl.GetInstance().BatchExecuteNonQuery(new MysqlCameraLicense().GetRecover());
-                                }
                                 return false;
                             }
                             return true;
@@ -596,7 +636,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 string Code = Path.GetFileNameWithoutExtension(filepath);
                 if (Code == SysResourceModel.Code)
                 {
-                    CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
+                    CameraLicenseModel = PhyLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
                     if (CameraLicenseModel == null)
                         CameraLicenseModel = new LicenseModel();
                     CameraLicenseModel.LiceType = 0;
@@ -606,7 +646,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
                     CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
 
-                    int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                    int ret = PhyLicenseDao.Instance.Save(CameraLicenseModel);
                     if (ret == 1)
                     {
                         RefreshLicense();
@@ -616,10 +656,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
                     if (ret == -1)
                     {
-                        if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(MysqlCameraLicense)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                        {
-                            MySqlControl.GetInstance().BatchExecuteNonQuery(new MysqlCameraLicense().GetRecover());
-                        }
                         return false;
                     }
                     return true;
@@ -634,6 +670,55 @@ namespace ColorVision.Engine.Services.PhyCameras
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
             }
             return false;
+        }
+
+        public void CopyLicense()
+        {
+            if (CameraLicenseModel == null || string.IsNullOrEmpty(CameraLicenseModel.LicenseValue))
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, "ColorVision");
+                return;
+            }
+
+            try
+            {
+                Common.NativeMethods.Clipboard.SetText(CameraLicenseModel.LicenseValue);
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseCopiedToClipboard, "ColorVision");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.CopyLicenseFailed}: {ex.Message}", "ColorVision");
+            }
+        }
+
+        public void ExportLicense()
+        {
+            if (CameraLicenseModel == null || string.IsNullOrEmpty(CameraLicenseModel.LicenseValue))
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.NoLicenseAvailable, "ColorVision");
+                return;
+            }
+
+            try
+            {
+                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog
+                {
+                    Filter = "License files (*.lic)|*.lic|All files (*.*)|*.*",
+                    Title = Properties.Resources.ExportLicenseToFile,
+                    FileName = $"{Code}.lic",
+                    RestoreDirectory = true
+                };
+
+                if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    File.WriteAllText(saveFileDialog.FileName, CameraLicenseModel.LicenseValue, Encoding.UTF8);
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Properties.Resources.LicenseExportedSuccessfully, "ColorVision");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Properties.Resources.ExportLicenseFailed}: {ex.Message}", "ColorVision");
+            }
         }
 
 

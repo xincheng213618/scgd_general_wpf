@@ -33,7 +33,7 @@ namespace Pattern.Cross
         public int VerticalLength { get => _VerticalLength; set { _VerticalLength = value; OnPropertyChanged(); } }
         private int _VerticalLength = 10;
 
-
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public List<double> FieldX
         {
             get => _FieldX;
@@ -45,7 +45,7 @@ namespace Pattern.Cross
         }
         private List<double> _FieldX = new List<double>();
 
-        [JsonIgnore]
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public List<double> FieldY
         {
             get => _FieldY;

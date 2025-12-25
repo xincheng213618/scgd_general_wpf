@@ -1,14 +1,94 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Flow;
+using ColorVision.UI.LogImp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.ServiceProcess;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.RC
 {
+    public class WindowsServiceBase : ViewModelBase
+    {
+        public RelayCommand OpenLogCommand { get; set; }
+        public ServiceInfo ServiceInfo { get; set; }
+        public RelayCommand OpenCommand { get; set; }
+        public RelayCommand CloseCommand { get; set; }
+        public RelayCommand RestartCommand { get; set; }
+
+        ServiceController ServiceController { get; set; }
+
+        public WindowsServiceBase(ServiceInfo serviceInfo)
+        {
+            ServiceInfo = serviceInfo;
+            OpenLogCommand = new RelayCommand(a => OpenLog());
+            if(!string.IsNullOrWhiteSpace(serviceInfo.ServiceName))
+                ServiceController = new ServiceController(serviceInfo.ServiceName);
+            OpenCommand = new RelayCommand(a => Open());
+            CloseCommand = new RelayCommand(a => Close());
+            RestartCommand = new RelayCommand(a => Restart());
+        }
+
+        public ServiceControllerStatus Status { get => ServiceController.Status; }
+
+        public void Open()
+        {
+            if (Tool.IsAdministrator())
+            {
+                ServiceController.Start();
+            }
+            else
+            {
+                Tool.ExecuteCommandAsAdmin($"net start {ServiceInfo.ServiceName}");
+            }
+            OnPropertyChanged(nameof(Status));
+        }
+
+        public void Restart()
+        {
+            if (Tool.IsAdministrator())
+            {
+                ServiceController.Stop();
+                ServiceController.Start();
+            }
+            else
+            {
+                Tool.ExecuteCommandAsAdmin($"net stop {ServiceInfo.ServiceName}&&net start {ServiceInfo.ServiceName}");
+            }
+            OnPropertyChanged(nameof(Status));
+        }
+
+        public void Close()
+        {
+            if (Tool.IsAdministrator())
+            {
+                ServiceController.Stop();
+            }
+            else
+            {
+                Tool.ExecuteCommandAsAdmin($"net stop {ServiceInfo.ServiceName}");
+            }
+            OnPropertyChanged(nameof(Status));
+        }
+
+        public void OpenLog()
+        {
+            string baseDir = Directory.GetParent(ServiceInfo.ExecutablePath).FullName;
+            string latestLogPath = LogFileHelper.GetLatestMainLogPath(baseDir);
+            if (!string.IsNullOrEmpty(latestLogPath))
+            {
+                WindowLogLocal windowLogLocal = new WindowLogLocal(latestLogPath, Encoding.GetEncoding("GB2312"));
+                windowLogLocal.Show();
+            }
+        }
+    }
+
+
     /// <summary>
     /// 服务详细信息
     /// </summary>

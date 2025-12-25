@@ -19,7 +19,6 @@ using System.Windows;
 
 namespace ColorVision.Update
 {
-
     public class AutoUpdateConfig:ViewModelBase, IConfig
     {
         public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();    
@@ -351,8 +350,8 @@ namespace ColorVision.Update
 
             if (isIncrement)
             {
-                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{latestVersion}].zip";
-                filePath = Path.Combine(downloadPath, $"ColorVision-Update-[{latestVersion}].zip");
+                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{latestVersion}].cvx";
+                filePath = Path.Combine(downloadPath, $"ColorVision-Update-[{latestVersion}].cvx");
             }
             else
             {
@@ -468,7 +467,7 @@ namespace ColorVision.Update
                 string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 0
+timeout /t 3
 xcopy /y /e ""{tempDirectory}\*"" ""{programDirectory}""
 start """" ""{Path.Combine(programDirectory, executableName)}""
 rd /s /q ""{tempDirectory}""

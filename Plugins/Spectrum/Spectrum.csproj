@@ -8,7 +8,7 @@
     <Company>Spectromer</Company>
     <TargetFrameworks>net8.0-windows</TargetFrameworks>
 	<ApplicationIcon>pic.ico</ApplicationIcon>
-	<VersionPrefix>1.1.4.10</VersionPrefix>
+	<VersionPrefix>1.1.5.1</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>

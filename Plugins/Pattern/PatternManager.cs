@@ -88,10 +88,12 @@ namespace Pattern
                 {
                     try
                     {
+                        var browsable = type.GetCustomAttribute<BrowsableAttribute>()?.Browsable ?? true;
+                        if (!browsable) continue;
+
                         var displayName = type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name;
                         var description = type.GetCustomAttribute<DescriptionAttribute>()?.Description ?? "";
                         var category = type.GetCustomAttribute<CategoryAttribute>()?.Category ?? "";
-
                         IPattern pattern = (IPattern)Activator.CreateInstance(type);
                         if (pattern != null)
                         {

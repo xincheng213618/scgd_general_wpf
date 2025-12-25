@@ -38,6 +38,7 @@ using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2;
 using ColorVision.Engine.Templates.Jsons.MTF2;
+using ColorVision.Engine.Templates.Jsons.OLEDAOI;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using ColorVision.Engine.Templates.LedCheck;
@@ -58,6 +59,7 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -216,8 +218,16 @@ namespace ColorVision.Engine.Templates.Flow
                 AddImagePath(name => algorithmFindLEDNode.ImgFileName = name, algorithmFindLEDNode.ImgFileName);
                 AddStackPanel(name => algorithmFindLEDNode.TempName = name, algorithmFindLEDNode.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
                 AddStackPanel(name => algorithmFindLEDNode.TempName = name, algorithmFindLEDNode.TempName, "像素级灯珠检测", new TemplateLedCheck());
-
             }
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.OLED.OLEDRebuildPixelsNode oled)
+            {
+                AddStackPanel(name => oled.DeviceCode = name, oled.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddImagePath(name => oled.ImgFileName = name, oled.ImgFileName);
+                AddStackPanel(name => oled.TempName = name, oled.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
+            }
+
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.POIReviseNode poiReviseNode)
             {
                 AddStackPanel(name => poiReviseNode.DeviceCode = name, poiReviseNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
@@ -239,6 +249,12 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => sMUModelNode.DeviceCode = name, sMUModelNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
                 AddStackPanel(name => sMUModelNode.ModelName = name, sMUModelNode.ModelName, "SMUParam设置", new TemplateSMUParam());
             }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.SMUFromCSVNode SMUFromCSVNode)
+            {
+                AddStackPanel(name => SMUFromCSVNode.DeviceCode = name, SMUFromCSVNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
+                AddImagePath(name => SMUFromCSVNode.CsvFileName = name, SMUFromCSVNode.CsvFileName,"CSV");
+            }
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.SMUNode sMUNode)
             {
                 AddStackPanel(name => sMUNode.DeviceCode = name, sMUNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
@@ -327,6 +343,14 @@ namespace ColorVision.Engine.Templates.Flow
 
                 AddStackPanel(name => olednode.DeviceCode = name, olednode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => olednode.TempName = name, olednode.TempName, "亚像素", new TemplateLedCheck2());
+            }
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmOLED_AOINode  oledaoi)
+            {
+                AddImagePath(name => oledaoi.ImgFileName = name, oledaoi.ImgFileName);
+
+                AddStackPanel(name => oledaoi.DeviceCode = name, oledaoi.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddStackPanel(name => oledaoi.TempName = name, oledaoi.TempName, "AOI", new TemplateOLEDAOI());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.AlgorithmARVRNode algorithmNode1)
@@ -592,15 +616,25 @@ namespace ColorVision.Engine.Templates.Flow
                 Refesh();
             }
 
+            if (STNodeEditor.ActiveNode is CVBaseServerNode baseServerNode)
+            {
+                Type type = typeof(CVBaseServerNode);
+                TextboxPropertiesEditor textboxPropertiesEditor = new TextboxPropertiesEditor();
+
+                SignStackPanel.Children.Add(textboxPropertiesEditor.GenProperties(type.GetProperty("MaxTime"), baseServerNode));
+            }
+
+
+
             SignStackPanel.Visibility = SignStackPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        void AddImagePath(Action<string> updateStorageAction, string filename)
+        void AddImagePath(Action<string> updateStorageAction, string filename,string Tag = "图像")
         {
             var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
             dockPanel.Children.Add(new TextBlock
             {
-                Text = "图像",
+                Text = Tag,
                 Width = 50,
                 Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
             });

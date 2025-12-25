@@ -109,6 +109,13 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+                        <GridViewColumn  Header="{x:Static properties:Resources.CreateTime}" Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type se:ViewResultImage}">
+                                    <TextBlock Text="{ Binding  CreateTime,StringFormat=yyyy/MM/dd/HH:mm:ss}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resources.Info}" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type se:ViewResultImage}">

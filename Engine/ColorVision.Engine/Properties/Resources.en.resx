@@ -2188,7 +2188,7 @@
     <value>stride swing range</value>
   </data>
   <data name="StepSwingRangeDiscription" xml:space="preserve">
-    <value>The second step path. The actual second step path is forwardparam </value>
+    <value>The second step path.</value>
   </data>
   <data name="StepReductionFactor" xml:space="preserve">
     <value>Step size reduction factor</value>
@@ -2489,5 +2489,47 @@
   </data>
   <data name="BrightnessLvCdM2" xml:space="preserve">
     <value>Luminance (cd/m2)</value>
+  </data>
+  <data name="OpenDeviceManager" xml:space="preserve">
+    <value>Open Device Manager</value>
+  </data>
+  <data name="LicenseManager" xml:space="preserve">
+    <value>License Manager</value>
+  </data>
+  <data name="CopyLicense" xml:space="preserve">
+    <value>Copy License</value>
+  </data>
+  <data name="ExportLicense" xml:space="preserve">
+    <value>Export License</value>
+  </data>
+  <data name="ExportLicenseToFile" xml:space="preserve">
+    <value>Export License to File</value>
+  </data>
+  <data name="LicenseCopiedToClipboard" xml:space="preserve">
+    <value>License copied to clipboard</value>
+  </data>
+  <data name="NoLicenseAvailable" xml:space="preserve">
+    <value>No license available</value>
+  </data>
+  <data name="LicenseExportedSuccessfully" xml:space="preserve">
+    <value>License exported successfully</value>
+  </data>
+  <data name="FailedToOpenDeviceManager" xml:space="preserve">
+    <value>Failed to open Device Manager</value>
+  </data>
+  <data name="CopyLicenseFailed" xml:space="preserve">
+    <value>Failed to copy license</value>
+  </data>
+  <data name="ExportLicenseFailed" xml:space="preserve">
+    <value>Failed to export license</value>
+  </data>
+  <data name="Customer" xml:space="preserve">
+    <value>Customer</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>Model</value>
   </data>
 </root>

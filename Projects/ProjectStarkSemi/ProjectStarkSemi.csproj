@@ -6,15 +6,15 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.1.13</VersionPrefix>
+		<VersionPrefix>1.2.2.1</VersionPrefix>
 		<UseWindowsForms>True</UseWindowsForms>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Remove="Assets\Image\ColorVision1.ico" />
-	  <None Remove="CHANGELOG.md" />
-	  <None Remove="Images\smallicon.png" />
+		<None Remove="Assets\Image\ColorVision1.ico" />
+		<None Remove="CHANGELOG.md" />
+		<None Remove="Images\smallicon.png" />
 		<None Include="Images\AlignCenter16.png" />
 		<None Include="Images\AlignJustify16.png" />
 		<None Include="Images\AlignLeft16.PNG" />
@@ -79,53 +79,59 @@
 		<None Include="Images\ZoomIn32.png" />
 		<None Include="Images\ZoomOut16.png" />
 		<None Include="Images\ZoomOut32.png" />
-	  <None Remove="README.md" />
+		<None Remove="README.md" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-		<ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
-		<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Reference Include="CVCommCore">
-		  <HintPath>..\..\DLL\CVCommCore.dll</HintPath>
+		<Reference Include="FlowEngineLib" Condition="!Exists('..\..\Engine\FlowEngineLib\FlowEngineLib.csproj')">
+			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="ST.Library.UI" Condition="!Exists('..\..\Engine\ST.Library.UI\ST.Library.UI.csproj')">
+			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
+			<Private>True</Private>
 		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Include="CHANGELOG.md">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </EmbeddedResource>
-	  <EmbeddedResource Include="README.md">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </EmbeddedResource>
+		<Reference Include="CVCommCore">
+			<HintPath>..\..\DLL\CVCommCore.dll</HintPath>
+		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Properties\Resources.Designer.cs">
-	    <DesignTime>True</DesignTime>
-	    <AutoGen>True</AutoGen>
-	    <DependentUpon>Resources.resx</DependentUpon>
-	  </Compile>
+		<EmbeddedResource Include="CHANGELOG.md">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Include="README.md">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Update="Properties\Resources.resx">
-	    <Generator>PublicResXFileCodeGenerator</Generator>
-	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-	  </EmbeddedResource>
+		<Compile Update="Properties\Resources.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="manifest.json">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<EmbeddedResource Update="Properties\Resources.resx">
+			<Generator>PublicResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="manifest.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>
 		<Resource Include="Assets\Image\ColorVision1.ico">
-		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</Resource>
 		<Resource Include="Images\AlignCenter16.png" />
 		<Resource Include="Images\AlignJustify16.png" />
@@ -181,7 +187,7 @@
 		<Resource Include="Images\SaveAsTxt32.png" />
 		<Resource Include="Images\SelectAll16.png" />
 		<Resource Include="Images\smallicon.png">
-		  <CopyToOutputDirectory></CopyToOutputDirectory>
+			<CopyToOutputDirectory></CopyToOutputDirectory>
 		</Resource>
 		<Resource Include="Images\Strikethrough16.png" />
 		<Resource Include="Images\Subscript16.png" />

@@ -41,14 +41,15 @@ namespace ColorVision.Engine.Templates
             template.Load();
             InitializeComponent();
             this.ApplyCaption();
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => New(), (s, e) => e.CanExecute = true));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => CreateCopy(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => {
+            MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => New(), (s, e) => e.CanExecute = true));
+            MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => CreateCopy(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
+            MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => {
                 ITemplate.Save();
-                HandyControl.Controls.Growl.SuccessGlobal( Title +"保存成功");
+                HandyControl.Controls.Growl.SuccessGlobal(Title + "保存成功");
             }, (s, e) => e.CanExecute = true));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
-            this.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
+            MainGrid.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
+            MainGrid.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
+
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         public static TemplateSetting Config => TemplateSetting.Instance;
@@ -361,7 +362,7 @@ namespace ColorVision.Engine.Templates
 
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
-            new TemplateSettingEdit(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateSettingEdit(ITemplate) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         private void CreateCopy()

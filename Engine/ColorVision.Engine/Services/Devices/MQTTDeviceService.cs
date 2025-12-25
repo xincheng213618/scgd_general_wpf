@@ -1,11 +1,11 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.RC;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices
 {
     public class MQTTDeviceService<T> : MQTTServiceBase where T : BaseConfig
     {
+
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
         public override DeviceStatusType DeviceStatus

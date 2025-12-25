@@ -5,77 +5,256 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Rbac"
         mc:Ignorable="d"
-        Title="用户管理" Height="720" Width="1280" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
-    <Grid Margin="10">
+        Title="用户管理 - RBAC" Height="1080" Width="1920" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
+    <Window.Resources>
+        <!-- Modern Button Style -->
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="3" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#106EBE"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#005A9E"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#CCCCCC"/>
+                                <Setter Property="Foreground" Value="#666666"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <local:BoolToColorConverter x:Key="BoolToColorConverter"/>
+        <local:BoolToDeleteColorConverter x:Key="BoolToDeleteColorConverter"/>
+        <local:BoolToStatusTextConverter x:Key="BoolToStatusTextConverter"/>
+        <local:BoolToYesNoConverter x:Key="BoolToYesNoConverter"/>
+        <local:BoolToToggleIconConverter x:Key="BoolToToggleIconConverter"/>
+        <local:BoolToToggleColorConverter x:Key="BoolToToggleColorConverter"/>
+        <local:BoolToToggleTooltipConverter x:Key="BoolToToggleTooltipConverter"/>
+        <!-- Secondary Button Style -->
+        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
+            <Setter Property="Background" Value="#F3F3F3"/>
+            <Setter Property="Foreground" Value="#333333"/>
+        </Style>
+    </Window.Resources>
+    
+    <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <GroupBox Header="创建用户" Margin="0,0,0,10">
-                <StackPanel Orientation="Horizontal" Margin="10">
-                <Label Content="用户名:" VerticalAlignment="Center"/>
-                <TextBox x:Name="TxtUsername" Width="120" Margin="5,0" ToolTip="输入用户登录名"/>
-                <Label Content="密码:" VerticalAlignment="Center"/>
-                <PasswordBox x:Name="TxtPassword" Width="120" Margin="5,0" ToolTip="输入用户密码"/>
-                <Label Content="角色:" VerticalAlignment="Center"/>
-                <ComboBox x:Name="RolesComboBox" Width="100" Margin="5,0" ToolTip="选择用户角色"/>
-                <Label Content="备注:" VerticalAlignment="Center"/>
-                <TextBox x:Name="TxtRemark" Width="120" Margin="5,0" ToolTip="用户描述信息"/>
-                <Button Content="创建用户" Width="90" Margin="10,0" Click="BtnCreateUser_Click"
-                        ToolTip="创建新的系统用户"/>
-            </StackPanel>
-        </GroupBox>
-        <GroupBox Header="角色管理" Grid.Row="1" Margin="0,0,0,10">
-            <Grid Margin="10">
+        
+        <!-- Header with Status -->
+        <Border Grid.Row="0" Background="#F8F8F8" Padding="12,8" Margin="0,0,0,15" CornerRadius="4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="24" 
+                               VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#0078D4"/>
+                    <StackPanel>
+                        <TextBlock Text="用户和角色管理" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="TxtStatusInfo" Text="系统管理员模式" FontSize="11" 
+                                   Foreground="#666666" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <TextBlock x:Name="TxtSessionInfo" Text="" FontSize="11" 
+                               Foreground="#666666" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <Button Content="&#xE72C;" FontFamily="Segoe MDL2 Assets" 
+                            Style="{StaticResource SecondaryButton}" Width="36" Height="32"
+                            ToolTip="刷新数据" Click="BtnRefresh_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- Create User Section -->
+        <Border Grid.Row="1" Background="#F8F8F8" Padding="15,12" Margin="0,0,0,12" CornerRadius="4" BorderBrush="#E0E0E0" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE7EF;" FontFamily="Segoe MDL2 Assets" FontSize="20" 
+                               VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#0078D4"/>
+                    <TextBlock Text="用户管理操作" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="&#xE710;  创建用户" FontFamily="Segoe MDL2 Assets,Segoe UI" 
+                        Width="120" Click="BtnCreateUser_Click"
+                        Style="{StaticResource ModernButton}" ToolTip="打开创建用户窗口"/>
+            </Grid>
+        </Border>
+        
+        <!-- Role Management Section -->
+        <GroupBox Header="角色管理" Grid.Row="2" Margin="0,0,0,12">
+            <Grid Margin="12,10">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                    <Label Content="角色名称:" VerticalAlignment="Center"/>
-                    <TextBox x:Name="TxtRoleName" Width="120" Margin="5,0" ToolTip="输入角色显示名称"/>
-                    <Label Content="角色代码:" VerticalAlignment="Center"/>
-                    <TextBox x:Name="TxtRoleCode" Width="120" Margin="5,0" ToolTip="输入角色的唯一标识代码"/>
-                    <Label Content="备注:" VerticalAlignment="Center"/>
-                    <TextBox x:Name="TxtRoleRemark" Width="120" Margin="5,0" ToolTip="角色描述信息"/>
-                    <Button Content="创建角色" Width="90" Margin="10,0" Click="BtnCreateRole_Click"
-                            ToolTip="创建新的用户角色"/>
+                    <Label Content="角色名称:" VerticalAlignment="Center" Width="70"/>
+                    <TextBox x:Name="TxtRoleName" Width="130" Margin="5,0" Padding="6,4" ToolTip="输入角色显示名称"/>
+                    <Label Content="角色代码:" VerticalAlignment="Center" Width="70" Margin="15,0,0,0"/>
+                    <TextBox x:Name="TxtRoleCode" Width="130" Margin="5,0" Padding="6,4" ToolTip="输入角色的唯一标识代码"/>
+                    <Label Content="备注:" VerticalAlignment="Center" Width="50" Margin="15,0,0,0"/>
+                    <TextBox x:Name="TxtRoleRemark" Width="150" Margin="5,0" Padding="6,4" ToolTip="角色描述信息"/>
+                    <Button Content="创建角色" Width="90" Margin="20,0,5,0" Click="BtnCreateRole_Click"
+                            Style="{StaticResource ModernButton}" ToolTip="创建新的用户角色"/>
+                    <Button Content="权限管理" Width="90" Margin="5,0" Click="BtnOpenPermissionManager_Click"
+                            Style="{StaticResource SecondaryButton}" ToolTip="管理角色权限分配"/>
                 </StackPanel>
-                <ListView x:Name="RolesListView" Grid.Row="1" Height="120" Margin="0,5,0,0">
+                <ListView x:Name="RolesListView" Grid.Row="1" Height="130" Margin="0,5,0,0"
+                          BorderBrush="#E0E0E0" BorderThickness="1">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="角色名称" Width="120" DisplayMemberBinding="{Binding Name}" />
-                            <GridViewColumn Header="角色代码" Width="120" DisplayMemberBinding="{Binding Code}" />
-                            <GridViewColumn Header="备注" Width="180" DisplayMemberBinding="{Binding Remark}" />
-                            <GridViewColumn Header="启用" Width="60" DisplayMemberBinding="{Binding IsEnable}" />
-                            <GridViewColumn Header="创建时间" Width="140" DisplayMemberBinding="{Binding CreatedAt}" />
+                            <GridViewColumn Header="角色名称" Width="140">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="角色代码" Width="140" DisplayMemberBinding="{Binding Code}" />
+                            <GridViewColumn Header="备注" Width="220" DisplayMemberBinding="{Binding Remark}" />
+                            <GridViewColumn Header="状态" Width="80">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding IsEnable, Converter={StaticResource BoolToColorConverter}}"
+                                                CornerRadius="3" Padding="6,2">
+                                            <TextBlock Text="{Binding IsEnable, Converter={StaticResource BoolToStatusTextConverter}}"
+                                                       Foreground="White" FontSize="10" FontWeight="SemiBold"
+                                                       HorizontalAlignment="Center"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="创建时间" Width="160" DisplayMemberBinding="{Binding CreatedAt, StringFormat='yyyy-MM-dd HH:mm:ss'}" />
                         </GridView>
                     </ListView.View>
                 </ListView>
             </Grid>
         </GroupBox>
-        <GroupBox Header="用户列表" Grid.Row="3">
-            <ListView x:Name="UsersListView" Margin="10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        
+        <!-- Search/Filter Section -->
+        <Border Grid.Row="3" Background="#F8F8F8" Padding="10,8" Margin="0,0,0,10" CornerRadius="4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="16" 
+                           VerticalAlignment="Center" Margin="0,0,8,0" Foreground="#666666"/>
+                <TextBox x:Name="TxtSearch" Grid.Column="1" Padding="8,6" 
+                         MaxWidth="400" HorizontalAlignment="Left"
+                         TextChanged="TxtSearch_TextChanged"
+                         ToolTip="搜索用户名、备注或角色"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <TextBlock Text="共 " FontSize="11" Foreground="#666666" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TxtTotalCount" Text="0" FontSize="11" Foreground="#0078D4" 
+                               FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Text=" 个用户" FontSize="11" Foreground="#666666" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- User List -->
+        <GroupBox Header="用户列表" Grid.Row="4">
+            <ListView x:Name="UsersListView" Margin="12,10" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      BorderBrush="#E0E0E0" BorderThickness="1">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="用户名" Width="120" DisplayMemberBinding="{Binding Username}" />
-                        <GridViewColumn Header="角色" Width="150">
+                        <GridViewColumn Header="用户名" Width="140">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding RolesDisplay}" ToolTip="{Binding RolesDisplay}"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" 
+                                                   FontSize="14" Foreground="#0078D4" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Username}" FontWeight="SemiBold"/>
+                                    </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="备注" Width="120" DisplayMemberBinding="{Binding Remark}" />
-                        <GridViewColumn Header="启用" Width="60" DisplayMemberBinding="{Binding IsEnable}" />
-                        <GridViewColumn Header="删除" Width="60" DisplayMemberBinding="{Binding IsDelete}" />
-                        <GridViewColumn Header="创建时间" Width="140" DisplayMemberBinding="{Binding CreatedAt}" />
-                        <GridViewColumn Header="操作" Width="100">
+                        <GridViewColumn Header="角色" Width="180">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Content="编辑角色" Padding="4,2" Tag="{Binding}" Click="BtnEditRoles_Click"/>
+                                    <TextBlock Text="{Binding RolesDisplay}" ToolTip="{Binding RolesDisplay}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="备注" Width="200">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Remark}" TextTrimming="CharacterEllipsis" 
+                                               ToolTip="{Binding Remark}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="状态" Width="80">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="{Binding IsEnable, Converter={StaticResource BoolToColorConverter}}"
+                                            CornerRadius="3" Padding="6,2">
+                                        <TextBlock Text="{Binding IsEnable, Converter={StaticResource BoolToStatusTextConverter}}"
+                                                   Foreground="White" FontSize="10" FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center"/>
+                                    </Border>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="删除" Width="60">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding IsDelete, Converter={StaticResource BoolToYesNoConverter}}"
+                                               Foreground="{Binding IsDelete, Converter={StaticResource BoolToDeleteColorConverter}}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="创建时间" Width="160" DisplayMemberBinding="{Binding CreatedAt, StringFormat='yyyy-MM-dd HH:mm:ss'}" />
+                        <GridViewColumn Header="操作" Width="280">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="&#xE70F;" FontFamily="Segoe MDL2 Assets" Padding="6,3" Tag="{Binding}" Click="BtnEditRoles_Click"
+                                                Style="{StaticResource ModernButton}" FontSize="11" Margin="0,0,4,0" Width="32" Height="26"
+                                                ToolTip="编辑角色" Background="#0078D4"/>
+                                        <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" Padding="6,3" Tag="{Binding}" Click="BtnDeleteUser_Click"
+                                                Style="{StaticResource ModernButton}" FontSize="11" Margin="0,0,4,0" Width="32" Height="26"
+                                                ToolTip="删除用户" Background="#D32F2F"/>
+                                        <Button Content="{Binding IsEnable, Converter={StaticResource BoolToToggleIconConverter}}" FontFamily="Segoe MDL2 Assets" Padding="6,3" Tag="{Binding}" Click="BtnToggleUser_Click"
+                                                Style="{StaticResource ModernButton}" FontSize="11" Margin="0,0,4,0" Width="32" Height="26"
+                                                Background="{Binding IsEnable, Converter={StaticResource BoolToToggleColorConverter}}">
+                                            <Button.ToolTip>
+                                                <TextBlock Text="{Binding IsEnable, Converter={StaticResource BoolToToggleTooltipConverter}}"/>
+                                            </Button.ToolTip>
+                                        </Button>
+                                        <Button Content="&#xE72E;" FontFamily="Segoe MDL2 Assets" Padding="6,3" Tag="{Binding}" Click="BtnResetPassword_Click"
+                                                Style="{StaticResource ModernButton}" FontSize="11" Margin="0,0,0,0" Width="32" Height="26"
+                                                ToolTip="重置密码" Background="#F57C00"/>
+                                    </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -83,5 +262,15 @@
                 </ListView.View>
             </ListView>
         </GroupBox>
+        
+        <!-- Footer with Statistics -->
+        <Border Grid.Row="5" Background="#F8F8F8" Padding="12,8" Margin="0,10,0,0" CornerRadius="4">
+            <Grid>
+                <TextBlock x:Name="TxtCacheStats" Text="权限缓存统计: 加载中..." 
+                           FontSize="11" Foreground="#666666" VerticalAlignment="Center"/>
+                <TextBlock Text="提示: 双击用户可查看详细信息" 
+                           FontSize="11" Foreground="#999999" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

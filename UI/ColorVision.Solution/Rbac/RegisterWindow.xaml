@@ -3,36 +3,241 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        Title="注册新用户" Height="300" Width="420"
-        Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="90"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-
-        <TextBlock Text="用户名:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,5"/>
-        <TextBox x:Name="TxtUsername" Grid.Row="0" Grid.Column="1" Margin="0,5" Width="220"/>
-
-        <TextBlock Text="密码:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,5"/>
-        <PasswordBox x:Name="Pwd1" Grid.Row="1" Grid.Column="1" Margin="0,5" Width="220"/>
-
-        <TextBlock Text="确认密码:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,5"/>
-        <PasswordBox x:Name="Pwd2" Grid.Row="2" Grid.Column="1" Margin="0,5" Width="220"/>
-
-        <TextBlock x:Name="TxtStatus" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Foreground="OrangeRed" TextWrapping="Wrap" Margin="0,10,0,0"/>
-
-        <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,0">
-            <Button x:Name="BtnRegister" Content="注册" Width="110" Margin="10,0" Click="BtnRegister_Click"/>
-            <Button Content="取消" Width="110" Margin="10,0" Click="BtnCancel_Click"/>
-        </StackPanel>
+        Title="注册新用户" Height="650" Width="500"
+        Background="{DynamicResource GlobalBackground}" 
+        WindowStartupLocation="CenterOwner" 
+        ResizeMode="NoResize"
+        Initialized="Window_Initialized">
+    <Window.Resources>
+        <!-- 现代按钮样式 -->
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="15,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="6"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"
+                                            Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#106EBE"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#005A9E"/>
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#CCCCCC"/>
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
+        <!-- 次要按钮样式 -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#F3F3F3"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#DDDDDD"/>
+            <Setter Property="Padding" Value="15,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="6"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"
+                                            Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E6E6E6"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#DADADA"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    
+    <Grid>
+        <!-- 背景渐变 -->
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#E8F0FE" Offset="0"/>
+                <GradientStop Color="#F8FBFF" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Background>
+        
+        <Border Background="White" 
+                CornerRadius="12" 
+                Margin="30"
+                Padding="0"
+                Effect="{DynamicResource EffectShadow2}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                
+                <!-- 顶部区域 -->
+                <Border Grid.Row="0" Background="#0078D4" CornerRadius="12,12,0,0" Padding="20">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE8FA;" 
+                                   FontFamily="Segoe MDL2 Assets" 
+                                   FontSize="48" 
+                                   Foreground="White"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,10,0,10"/>
+                        <TextBlock Text="创建新账户" 
+                                   FontSize="24" 
+                                   FontWeight="Bold"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,0,0,10"/>
+                        <TextBlock Text="加入 ColorVision 系统" 
+                                   FontSize="12" 
+                                   Foreground="#E0FFFFFF"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                
+                <!-- 表单区域 -->
+                <StackPanel Grid.Row="1" Margin="35,25,35,15" VerticalAlignment="Center">
+                    <!-- 用户名输入 -->
+                    <DockPanel Margin="0,0,0,18">
+                        <StackPanel>
+                            <TextBlock Text="用户名" 
+                                       FontSize="13" 
+                                       Foreground="#666666"
+                                       Margin="0,0,0,8"/>
+                            <Border BorderBrush="#DDDDDD" 
+                                    BorderThickness="1" 
+                                    CornerRadius="6"
+                                    Background="White">
+                                <hc:TextBox x:Name="TxtUsername"   
+                                            VerticalAlignment="Center" 
+                                            hc:InfoElement.Placeholder="请输入用户名"  
+                                            BorderThickness="0"
+                                            Padding="12,10"
+                                            FontSize="14"/>
+                            </Border>
+                        </StackPanel>
+                    </DockPanel>
+                    
+                    <!-- 密码输入 -->
+                    <DockPanel Margin="0,0,0,18">
+                        <StackPanel>
+                            <TextBlock Text="密码" 
+                                       FontSize="13" 
+                                       Foreground="#666666"
+                                       Margin="0,0,0,8"/>
+                            <Border BorderBrush="#DDDDDD" 
+                                    BorderThickness="1" 
+                                    CornerRadius="6"
+                                    Background="White">
+                                <hc:PasswordBox x:Name="Pwd1"  
+                                                VerticalAlignment="Center"  
+                                                hc:InfoElement.Placeholder="请输入密码（至少3位）"  
+                                                BorderThickness="0"
+                                                Padding="12,10"
+                                                FontSize="14"
+                                                hc:ShowEyeButton="True"/>
+                            </Border>
+                        </StackPanel>
+                    </DockPanel>
+                    
+                    <!-- 确认密码输入 -->
+                    <DockPanel Margin="0,0,0,15">
+                        <StackPanel>
+                            <TextBlock Text="确认密码" 
+                                       FontSize="13" 
+                                       Foreground="#666666"
+                                       Margin="0,0,0,8"/>
+                            <Border BorderBrush="#DDDDDD" 
+                                    BorderThickness="1" 
+                                    CornerRadius="6"
+                                    Background="White">
+                                <hc:PasswordBox x:Name="Pwd2"  
+                                                VerticalAlignment="Center"  
+                                                hc:InfoElement.Placeholder="再次输入密码"  
+                                                BorderThickness="0"
+                                                Padding="12,10"
+                                                FontSize="14"
+                                                hc:ShowEyeButton="True"/>
+                            </Border>
+                        </StackPanel>
+                    </DockPanel>
+                    
+                    <!-- 状态提示 -->
+                    <Border Background="#FFF3E0" 
+                            CornerRadius="6" 
+                            Padding="12,8"
+                            Margin="0,0,0,15"
+                            Visibility="{Binding ElementName=TxtStatus, Path=Text, Converter={StaticResource String2VisibilityConverter}}">
+                        <TextBlock x:Name="TxtStatus" 
+                                   Foreground="#E65100" 
+                                   TextWrapping="Wrap"
+                                   FontSize="12"/>
+                    </Border>
+                    
+                    <!-- 按钮组 -->
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="BtnRegister" 
+                                Grid.Column="0"
+                                Content="注册" 
+                                Height="44"
+                                Click="BtnRegister_Click"
+                                Style="{StaticResource ModernButton}"/>
+                        <Button Grid.Column="2" 
+                                Content="取消" 
+                                Height="44"
+                                Click="BtnCancel_Click"
+                                Style="{StaticResource SecondaryButton}"/>
+                    </Grid>
+                </StackPanel>
+                
+                <!-- 底部信息 -->
+                <Border Grid.Row="2" 
+                        BorderBrush="#EEEEEE" 
+                        BorderThickness="0,1,0,0"
+                        Padding="20,12"
+                        Background="#FAFAFA"
+                        CornerRadius="0,0,12,12">
+                    <TextBlock HorizontalAlignment="Center" 
+                               Foreground="#999999" 
+                               FontSize="11"
+                               Text="注册即表示您同意 ColorVision 使用条款"/>
+                </Border>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

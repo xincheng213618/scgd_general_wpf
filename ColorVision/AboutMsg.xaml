@@ -29,7 +29,7 @@
                 <Button  x:Name="CloseButton" Background="Transparent"  BorderThickness="0"  MouseLeave="CloseButton_MouseLeave"  MouseEnter="CloseButton_MouseEnter" Click="Button_Click_1"  HorizontalAlignment="Center" >
                     <Button.Content>
                         <Viewbox Width="200">
-                            <Border Background="Transparent"   BorderThickness="4" Height="80" Width="400"   CornerRadius="10">
+                            <Border Background="Transparent"  BorderThickness="4" Height="80" Width="400"   CornerRadius="10">
                                 <Border.BorderBrush>
                                     <LinearGradientBrush EndPoint="0.0,0" StartPoint="1,1" Opacity="0.8">
                                         <LinearGradientBrush.RelativeTransform>
@@ -65,7 +65,7 @@
                                     </EventTrigger>
                                 </Border.Triggers>
                                 <StackPanel Orientation="Horizontal"  HorizontalAlignment="Center" >
-                                    <graphics:TextShape Text="COLOR"  FontSize="50" VerticalAlignment="Center" Fill="{StaticResource GlobalTextBrush}" StrokeThickness="2">
+                                    <graphics:TextShape x:Name="TextSharp1" Text="确定"  FontSize="50" VerticalAlignment="Center" Fill="{StaticResource GlobalTextBrush}" StrokeThickness="2">
                                         <graphics:TextShape.Stroke>
                                             <LinearGradientBrush EndPoint="0.0,0" StartPoint="1,1" Opacity="0.8">
                                                 <LinearGradientBrush.RelativeTransform>
@@ -81,7 +81,6 @@
                                             </LinearGradientBrush>
                                         </graphics:TextShape.Stroke>
                                     </graphics:TextShape>
-                                    <TextBlock Text=" VISION" FontSize="50" VerticalAlignment="Center" />
 
                                 </StackPanel>
                             </Border>

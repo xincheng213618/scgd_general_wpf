@@ -18,7 +18,7 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
-    public class DisplayCalibrationConfig : IDisPlayConfigBase
+    public class DisplayCalibrationConfig : IDisplayConfigBase
     {
         public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; OnPropertyChanged(); } }
         private double _ExpTimeR = 10;
@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     }
 
     /// <summary>
-    /// DisplaySMUControl.xaml 的交互逻辑
+    /// DisplayCalibrationControl.xaml 的交互逻辑
     /// </summary>
     public partial class DisplayCalibrationControl : UserControl, IDisPlayControl
     {
@@ -52,9 +52,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+            this.ContextMenu = Device.ContextMenu;
 
-            this.ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
 
             ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;

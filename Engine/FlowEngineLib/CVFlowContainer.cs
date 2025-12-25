@@ -130,7 +130,7 @@ public class CVFlowContainer : CVNodeContainer
 	{
 		if (startNodesFlowMap.ContainsKey(flowKey))
 		{
-			logger.ErrorFormat("Flow is existed and is running => {0}", (object)flowKey);
+			logger.ErrorFormat("Flow is existed and is running => {0}", flowKey);
 			return false;
 		}
 		startNodesFlowMap.Add(flowKey, string.Empty);
@@ -138,13 +138,13 @@ public class CVFlowContainer : CVNodeContainer
 		if (!WaitFlowLoaded(flowKey))
 		{
 			startNodesFlowMap.Remove(flowKey);
-			logger.ErrorFormat("Flow is not ready => {0}", (object)flowKey);
+			logger.ErrorFormat("Flow is not ready => {0}", flowKey);
 			return false;
 		}
 		FlowNodeManager.Instance.UpdateDevice(services);
 		if (logger.IsInfoEnabled)
 		{
-			logger.InfoFormat("Flow begin running => {0}/{1}", (object)flowKey, (object)serialNumber);
+			logger.InfoFormat("Flow begin running => {0}/{1}", flowKey, serialNumber);
 		}
 		StartNode(startNodesFlowMap[flowKey], serialNumber, services);
 		return true;
@@ -203,7 +203,7 @@ public class CVFlowContainer : CVNodeContainer
 		if (rawData != null)
 		{
 			string text = BitConverter.ToString(MD5.Create().ComputeHash(rawData));
-			logger.DebugFormat("Load flow data={0}", (object)text);
+			logger.DebugFormat("Load flow data={0}", text);
 			if (loadedCanvas.ContainsKey(text))
 			{
 				return;
@@ -285,7 +285,7 @@ public class CVFlowContainer : CVNodeContainer
 		{
 			if (logger.IsDebugEnabled)
 			{
-				logger.DebugFormat("Starting flow serialNumber={0}", (object)serialNumber);
+				logger.DebugFormat("Starting flow serialNumber={0}", serialNumber);
 			}
 			baseStartNode.Start(serialNumber);
 		}

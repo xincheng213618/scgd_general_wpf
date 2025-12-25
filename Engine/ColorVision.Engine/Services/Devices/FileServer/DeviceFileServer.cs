@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
         public MQTTFileServer DService { get; set; }
 
         public ImageView View { get; set; }
-        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisPlayConfigBase>(Config.Code);
+        public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
 
 
         public DeviceFileServer(SysResourceModel sysResourceModel) : base(sysResourceModel)

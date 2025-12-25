@@ -32,6 +32,7 @@ namespace ColorVision.ImageEditor
         /// </summary>
         public Dictionary<string, FrameworkElement> ToolUIElements { get; set; } = new Dictionary<string, FrameworkElement>();
 
+
         public IEditorToolFactory(ImageView imageView, EditorContext context)
         {
 

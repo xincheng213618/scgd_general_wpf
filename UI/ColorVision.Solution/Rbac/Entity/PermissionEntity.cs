@@ -1,6 +1,6 @@
 using SqlSugar;
 
-namespace ColorVision.Rbac
+namespace ColorVision.Rbac.Entity
 {
     [SugarTable("sys_permission")]    
     [SugarIndex("uidx_sys_permission_code", nameof(Code), OrderByType.Asc, true)]

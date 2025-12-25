@@ -51,6 +51,12 @@ namespace ColorVision.FileIO
         private const int MinimumFileSize = HeaderSize + 4; // Minimum file size to contain the header and Version
         private static readonly Encoding Encoding1 = Encoding.GetEncoding("GBK");
 
+        static CVFileUtil()
+        {
+#if NETCOREAPP
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+#endif
+        }
         /// <summary>
         /// 判断文件是否为CVCIE格式。
         /// </summary>
@@ -73,6 +79,35 @@ namespace ColorVision.FileIO
                 return false;
             }
         }
+        public static bool IsCVCIEFile(string filePath)
+        {
+            if (!File.Exists(filePath)) return false;
+            try
+            {
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (BinaryReader br = new BinaryReader(fs))
+                {
+                    if (fs.Length < HeaderSize) return false;
+                    string fileHeader = new string(br.ReadChars(HeaderSize));
+                    if (fileHeader == MagicHeader)
+                    {
+                        CVCIEFile cVCIEFile = new CVCIEFile();
+                        int index = ReadCIEFileHeader(filePath ,out CVCIEFile cvcie);
+                        if (index > 0)
+                        {
+                            return cvcie.FileExtType == CVType.CIE;
+                        }
+                    }
+                    return  false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[IsCIEFile] Exception: {ex}");
+                return false;
+            }
+        }
+
 
         /// <summary>
         /// 判断字节数组是否为CVCIE格式。
@@ -83,6 +118,8 @@ namespace ColorVision.FileIO
             string fileHeader = Encoding.ASCII.GetString(fileData, 0, HeaderSize);
             return fileHeader == MagicHeader;
         }
+
+
 
         /// <summary>
         /// 读取CVCIE文件头信息（文件路径）。
@@ -101,21 +138,48 @@ namespace ColorVision.FileIO
                     if (fileHeader != MagicHeader) return -1;
                     cvcie.FileExtType = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
                     uint ver = (cvcie.Version = br.ReadUInt32());
-                    if (ver != 1 && ver != 2) return -1;
-                    int fileNameLen = br.ReadInt32();
-                    if (fileNameLen > 0 && fs.Position + fileNameLen <= fs.Length)
-                        cvcie.SrcFileName = Encoding1.GetString(br.ReadBytes(fileNameLen));
-                    cvcie.Gain = br.ReadSingle();
-                    cvcie.Channels = (int)br.ReadUInt32();
-                    if (fs.Position + cvcie.Channels * 4 > fs.Length) return -1;
-                    cvcie.Exp = new float[cvcie.Channels];
-                    for (int i = 0; i < cvcie.Channels; i++)
-                        cvcie.Exp[i] = br.ReadSingle();
-                    cvcie.Rows = (int)br.ReadUInt32();
-                    cvcie.Cols = (int)br.ReadUInt32();
-                    cvcie.Bpp = (int)br.ReadUInt32();
-                    cvcie.FilePath = filePath;
-                    return (int)fs.Position;
+                    if (ver ==1 ||ver == 2)
+                    {
+                        int fileNameLen = br.ReadInt32();
+                        if (fileNameLen > 0 && fs.Position + fileNameLen <= fs.Length)
+                            cvcie.SrcFileName = Encoding1.GetString(br.ReadBytes(fileNameLen));
+                        cvcie.Gain = br.ReadSingle();
+                        cvcie.Channels = (int)br.ReadUInt32();
+                        if (fs.Position + cvcie.Channels * 4 > fs.Length) return -1;
+                        cvcie.Exp = new float[cvcie.Channels];
+                        for (int i = 0; i < cvcie.Channels; i++)
+                            cvcie.Exp[i] = br.ReadSingle();
+                        cvcie.Rows = (int)br.ReadUInt32();
+                        cvcie.Cols = (int)br.ReadUInt32();
+                        cvcie.Bpp = (int)br.ReadUInt32();
+                        cvcie.FilePath = filePath;
+                        return (int)fs.Position;
+                    }
+                    else if (ver == 3)
+                    {
+                        int fileNameLen = br.ReadInt32();
+                        if (fileNameLen > 0 && fs.Position + fileNameLen <= fs.Length)
+                            cvcie.SrcFileName = Encoding1.GetString(br.ReadBytes(fileNameLen));
+                        cvcie.NDPort = br.ReadInt32();
+                        cvcie.Gain = br.ReadSingle();
+                        cvcie.Channels = br.ReadInt32();
+                        if (fs.Position + cvcie.Channels * 4 > fs.Length) return -1;
+                        cvcie.Exp = new float[cvcie.Channels];
+                        for (int i = 0; i < cvcie.Channels; i++)
+                            cvcie.Exp[i] = br.ReadSingle();
+                        cvcie.Rows = br.ReadInt32();
+                        cvcie.Cols = br.ReadInt32();
+                        cvcie.Bpp = br.ReadInt32();
+                        cvcie.FilePath = filePath;
+                        return (int)fs.Position;
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"unknowVersion");
+                        return -1;
+                    }
+
+
                 }
             }
             catch (Exception ex)
@@ -797,121 +861,6 @@ namespace ColorVision.FileIO
 
         #endregion
 
-        #region Async Methods
-
-        /// <summary>
-        /// Asynchronously reads a CVCIE file from the specified path.
-        /// </summary>
-        /// <param name="filePath">The path to the file to read.</param>
-        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile Data.</returns>
-        public static async System.Threading.Tasks.Task<(bool success, CVCIEFile fileInfo)> ReadAsync(string filePath)
-        {
-            return await System.Threading.Tasks.Task.Run(() =>
-            {
-                bool success = Read(filePath, out CVCIEFile fileInfo);
-                return (success, fileInfo);
-            });
-        }
-
-        /// <summary>
-        /// Asynchronously reads a CVCIE file from a byte array.
-        /// </summary>
-        /// <param name="fileData">The byte array containing the file Data.</param>
-        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile Data.</returns>
-        public static async System.Threading.Tasks.Task<(bool success, CVCIEFile fileInfo)> ReadAsync(byte[] fileData)
-        {
-            return await System.Threading.Tasks.Task.Run(() =>
-            {
-                bool success = Read(fileData, out CVCIEFile fileInfo);
-                return (success, fileInfo);
-            });
-        }
-
-        /// <summary>
-        /// Asynchronously writes a CVCIE file to the specified path.
-        /// </summary>
-        /// <param name="filePath">The path where the file should be written.</param>
-        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
-        /// <returns>A task that represents the asynchronous write operation. The task result indicates whether the write was successful.</returns>
-        public static async System.Threading.Tasks.Task<bool> WriteAsync(string filePath, CVCIEFile fileInfo)
-        {
-            return await System.Threading.Tasks.Task.Run(() => WriteCIEFile(filePath, fileInfo));
-        }
-
-        /// <summary>
-        /// Asynchronously writes a CVCIE file to a byte array.
-        /// </summary>
-        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
-        /// <returns>A task that represents the asynchronous write operation. The task result contains a tuple with success status and the byte array.</returns>
-        public static async System.Threading.Tasks.Task<(bool success, byte[] fileData)> WriteAsync(CVCIEFile fileInfo)
-        {
-            return await System.Threading.Tasks.Task.Run(() =>
-            {
-                bool success = WriteCIEFile(fileInfo, out byte[] fileData);
-                return (success, fileData);
-            });
-        }
-
-        /// <summary>
-        /// Asynchronously reads the file header from a CVCIE file.
-        /// </summary>
-        /// <param name="filePath">The path to the file.</param>
-        /// <returns>A task that represents the asynchronous operation. The task result contains a tuple with the header offset and CVCIEFile Data.</returns>
-        public static async System.Threading.Tasks.Task<(int offset, CVCIEFile fileInfo)> ReadHeaderAsync(string filePath)
-        {
-            return await System.Threading.Tasks.Task.Run(() =>
-            {
-                int offset = ReadCIEFileHeader(filePath, out CVCIEFile fileInfo);
-                return (offset, fileInfo);
-            });
-        }
-
-        /// <summary>
-        /// Asynchronously reads a CVRAW file.
-        /// </summary>
-        /// <param name="filePath">The path to the file to read.</param>
-        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile Data.</returns>
-        public static async System.Threading.Tasks.Task<(bool success, CVCIEFile fileInfo)> ReadCVRawAsync(string filePath)
-        {
-            return await ReadAsync(filePath);
-        }
-
-        /// <summary>
-        /// Asynchronously reads a CVCIE file.
-        /// </summary>
-        /// <param name="filePath">The path to the file to read.</param>
-        /// <returns>A task that represents the asynchronous read operation. The task result contains a tuple with success status and the CVCIEFile Data.</returns>
-        public static async System.Threading.Tasks.Task<(bool success, CVCIEFile fileInfo)> ReadCVCIEAsync(string filePath)
-        {
-            return await System.Threading.Tasks.Task.Run(() =>
-            {
-                bool success = ReadCVCIE(filePath, out CVCIEFile fileInfo);
-                return (success, fileInfo);
-            });
-        }
-
-        /// <summary>
-        /// Asynchronously writes a CVRAW file.
-        /// </summary>
-        /// <param name="filePath">The path where the file should be written.</param>
-        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
-        /// <returns>A task that represents the asynchronous write operation. The task result indicates whether the write was successful.</returns>
-        public static async System.Threading.Tasks.Task<bool> WriteCVRawAsync(string filePath, CVCIEFile fileInfo)
-        {
-            return await WriteAsync(filePath, fileInfo);
-        }
-
-        /// <summary>
-        /// Asynchronously writes a CVCIE file.
-        /// </summary>
-        /// <param name="filePath">The path where the file should be written.</param>
-        /// <param name="fileInfo">The CVCIEFile structure containing the Data to write.</param>
-        /// <returns>A task that represents the asynchronous write operation. The task result indicates whether the write was successful.</returns>
-        public static async System.Threading.Tasks.Task<bool> WriteCVCIEAsync(string filePath, CVCIEFile fileInfo)
-        {
-            return await WriteAsync(filePath, fileInfo);
-        }
-
-        #endregion
+ 
     }
 }

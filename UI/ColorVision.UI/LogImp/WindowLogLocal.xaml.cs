@@ -429,5 +429,10 @@ namespace ColorVision.UI.LogImp
                 logTextBox.Visibility = Visibility.Visible;
             }
         }
+
+        private void Open_Click(object sender, RoutedEventArgs e)
+        {
+            Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(LogFilePath);
+        }
     }
 }

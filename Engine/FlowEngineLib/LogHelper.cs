@@ -18,7 +18,7 @@ public static class LogHelper
 	{
 		if (loginfo.IsInfoEnabled)
 		{
-			loginfo.Info((object)info);
+			loginfo.Info(info);
 		}
 	}
 
@@ -30,13 +30,13 @@ public static class LogHelper
 		}
 		else if (!string.IsNullOrEmpty(info) && ex != null)
 		{
-			string text = BeautyErrorMsg(ex);
-			logerror.ErrorFormat("【附加信息】 : {0}<br>{1}", new object[2] { info, text });
+			string task = BeautyErrorMsg(ex);
+			logerror.ErrorFormat("【附加信息】 : {0}<br>{1}", new object[2] { info, task });
 		}
 		else if (string.IsNullOrEmpty(info) && ex != null)
 		{
-			string text2 = BeautyErrorMsg(ex);
-			logerror.Error((object)text2);
+			string message = BeautyErrorMsg(ex);
+			logerror.Error(message);
 		}
 	}
 

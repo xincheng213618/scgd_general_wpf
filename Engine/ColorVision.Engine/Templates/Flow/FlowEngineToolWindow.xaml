@@ -39,9 +39,6 @@
                 <Button x:Name="ButtonSave"  Content="{x:Static properties:Resources.Save}" Click="Button_Click_Save" Width="70"  Margin="0,0,10,0"/>
                 <Button  Content="{x:Static properties:Resources.AutoAlign}" Click="AutoAlignment_Click" Width="100"/>
             </StackPanel>
-            <Grid Grid.Column="2">
-                <Slider x:Name="ZoomSlider"  Width="200" Value="{Binding STNodeEditorHelper.CanvasScale}" Maximum="5" Minimum="0.2"  HorizontalAlignment="Right"/>
-            </Grid>
         </Grid>
 
 

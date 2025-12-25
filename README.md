@@ -157,8 +157,3 @@ ColorVision/
 - [OpenCvSharp](https://github.com/shimat/opencvsharp) - OpenCV .NET封装
 
 感谢所有为 ColorVision 项目贡献代码、文档和建议的开发者和用户！
-
----
-
-**ColorVision Development Team**  
-**视彩（上海）光电技术有限公司**

@@ -7,12 +7,14 @@ namespace ProjectARVRPro.Process.Blue
     public class BlueViewTestResult : BlueTestResult
     {
 
-        public List<PoiResultCIExyuvData> PoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
+        public List<PoiResultCIExyuvData> ViewPoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
     }
 
 
     public class BlueTestResult : ViewModelBase
     {
+        public List<PoixyuvData> PoixyuvDatas { get; set; } = new List<PoixyuvData>();
+
         /// <summary>
         /// 亮度均匀性(%) 测试项
         /// </summary>

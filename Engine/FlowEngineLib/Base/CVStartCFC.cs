@@ -73,7 +73,7 @@ public class CVStartCFC : CVBaseCFC
 		{
 			dictionary.Add(datum.Key, datum.Value);
 		}
-		return JsonConvert.SerializeObject((object)new CVMQTTRequest(serverCode, deviceCode, FlowStatus.ToString(), SerialNumber, dictionary, string.Empty, zIdx), (Formatting)0);
+		return JsonConvert.SerializeObject(new CVMQTTRequest(serverCode, deviceCode, FlowStatus.ToString(), SerialNumber, dictionary, string.Empty, zIdx), Formatting.None);
 	}
 
 	public TimeSpan GetTotalTime()

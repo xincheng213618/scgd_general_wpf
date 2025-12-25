@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.UI;
 using SqlSugar;
@@ -28,8 +29,27 @@ namespace ProjectARVRPro
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
+        public bool CodeUseSN { get => _CodeUseSN; set { _CodeUseSN = value; OnPropertyChanged(); } }
+        private bool _CodeUseSN =true;
+
+        public string CodeDateFormat { get => _CodeDateFormat; set { _CodeDateFormat = value; OnPropertyChanged(); } }
+        private string _CodeDateFormat = "yyyyMMdd'T'HHmmss.fffffff";
+
+        [DisplayName("按日期保存")]
+        public bool SaveByDate { get => _SaveByDate; set { _SaveByDate = value; OnPropertyChanged(); } }
+        private bool _SaveByDate;
+
         public bool IsSaveCsv { get => _IsSaveCsv; set { _IsSaveCsv = value; OnPropertyChanged(); } }
         private bool _IsSaveCsv = true;
+
+        public bool IsSaveLink { get => _IsSaveLink; set { _IsSaveLink = value; OnPropertyChanged(); } }
+        private bool _IsSaveLink = true;
+
+        public bool IsSaveImageReuslt { get => _IsSaveImageReuslt; set { _IsSaveImageReuslt = value; OnPropertyChanged(); } }
+        private bool _IsSaveImageReuslt;
+
+        public int SaveImageReusltDelay { get => _SaveImageReusltDelay; set {  if (value>=0) _SaveImageReusltDelay = value; OnPropertyChanged(); } }
+        private int _SaveImageReusltDelay = 1000;
 
         [DisplayName("Csv保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("ARVR")]
         public string CsvSavePath { get => _CsvSavePath; set { _CsvSavePath = value; OnPropertyChanged(); } }
@@ -61,6 +81,7 @@ namespace ProjectARVRPro
         public RelayCommand ViewReslutsClearCommand { get; set; }
         public RelayCommand QueryCommand { get; set; }
         public RelayCommand GenericQueryCommand { get; set; }
+        public RelayCommand SlectSqlLiteDbCommand { get; set; }
 
         public RelayCommand SaveCommand { get; set; }
 
@@ -74,6 +95,10 @@ namespace ProjectARVRPro
             QueryCommand = new RelayCommand(a => Query());
             GenericQueryCommand = new RelayCommand(a => GenericQuery());
             SaveCommand = new RelayCommand(a => Save());
+            SlectSqlLiteDbCommand = new RelayCommand(a => SlectSqlLiteDb());
+
+
+
             _db = new SqlSugarClient(new ConnectionConfig
             {
                 ConnectionString = $"Data Source={SqliteDbPath}",
@@ -88,6 +113,10 @@ namespace ProjectARVRPro
                 Directory.CreateDirectory(Config.TextSavePath);
             if (!Directory.Exists(Config.CsvSavePath))
                 Directory.CreateDirectory(Config.CsvSavePath);
+        }
+        public void SlectSqlLiteDb()
+        {
+            PlatformHelper.OpenFolderAndSelectFile(SqliteDbPath);
         }
 
 

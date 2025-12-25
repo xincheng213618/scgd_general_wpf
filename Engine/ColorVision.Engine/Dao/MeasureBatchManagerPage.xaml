@@ -91,10 +91,10 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resources.BatchNumber}">
+                            <GridViewColumn  Header="BatchCode">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
-                                        <TextBlock Text="{Binding MeasureBatchModel.Name}"/>
+                                        <TextBlock Text="{Binding MeasureBatchModel.Code}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -126,27 +126,11 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="BatchCode">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
-                                        <TextBlock Text="{Binding MeasureBatchModel.Code}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
+
                             <GridViewColumn  Header="{x:Static properties:Resources.CreateTime}" Width="150">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
                                         <TextBlock Text="{Binding MeasureBatchModel.CreateDate, StringFormat=yyyy/MM/dd hh:mm:ss}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resources.Archive}" Width="100">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewBatchResult}">
-                                        <Grid>
-                                            <TextBlock Text="{Binding MeasureBatchModel.ArchiveStatus}"/>
-                                            <Button Content="{x:Static properties:Resources.Archive}" Click="Arch_Click"  Tag="{Binding .}"/>
-                                        </Grid>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

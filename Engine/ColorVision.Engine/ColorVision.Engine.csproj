@@ -1,15 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>disable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-    <UseWindowsForms>True</UseWindowsForms>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <GenerateDocumentationFile>False</GenerateDocumentationFile>
-    <PackageReadmeFile></PackageReadmeFile>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<UseWindowsForms>True</UseWindowsForms>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<GenerateDocumentationFile>False</GenerateDocumentationFile>
+		<PackageReadmeFile></PackageReadmeFile>
+		<UIProjectPackageVersion>*</UIProjectPackageVersion>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="CsvHelper" Version="33.1.0" />
@@ -22,7 +23,6 @@
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
 		<PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
-		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.11.0.20250507" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.11.0.20250507" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.7.0" />
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
@@ -42,178 +42,201 @@
 			<Private>True</Private>
 		</Reference>
 	</ItemGroup>
-	
 
-  <ItemGroup>
-    <None Remove="Assets\Image\background0.png" />
-    <None Remove="Assets\Image\ColorVision.ico" />
-    <None Remove="Assets\Image\ColorVision.png" />
-    <None Remove="Assets\Image\ColorVision1.ico" />
-    <None Remove="Assets\Image\connect.png" />
-    <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
-    <None Remove="Assets\Image\pictureBox1.Image.png" />
-    <None Remove="Assets\Image\归档查询.png" />
-    <None Remove="Assets\Image\综合查询.png" />
-    <None Remove="Assets\png\PowerToy.png" />
-    <None Remove="Assets\Sounds\error.wav" />
-    <None Remove="Assets\Sounds\success.wav" />
-    <None Remove="ToolPlugins\UsbTreeView.exe" />
-  </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\UI\ColorVision.Database\ColorVision.Database.csproj" />
-    <ProjectReference Include="..\..\UI\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj" />
-    <ProjectReference Include="..\ColorVision.FileIO\ColorVision.FileIO.csproj" />
-    <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
-    <ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
-    <ProjectReference Include="..\..\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
-    <ProjectReference Include="..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />
-    <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
-    <ProjectReference Include="..\FlowEngineLib\FlowEngineLib.csproj" />
-    <ProjectReference Include="..\ST.Library.UI\ST.Library.UI.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="Assets\Image\background0.png" />
+		<None Remove="Assets\Image\ColorVision.ico" />
+		<None Remove="Assets\Image\ColorVision.png" />
+		<None Remove="Assets\Image\ColorVision1.ico" />
+		<None Remove="Assets\Image\connect.png" />
+		<None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
+		<None Remove="Assets\Image\pictureBox1.Image.png" />
+		<None Remove="Assets\Image\归档查询.png" />
+		<None Remove="Assets\Image\综合查询.png" />
+		<None Remove="Assets\png\PowerToy.png" />
+		<None Remove="Assets\Sounds\error.wav" />
+		<None Remove="Assets\Sounds\success.wav" />
+		<None Remove="ToolPlugins\UsbTreeView.exe" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Resource Include="Assets\Image\background0.png">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Resource>
-    <Resource Include="Assets\Image\ColorVision.ico" />
-    <Resource Include="Assets\Image\ColorVision.png" />
-    <Resource Include="Assets\Image\ColorVision1.ico" />
-    <Resource Include="Assets\Image\connect.png" />
-    <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
-    <Resource Include="Assets\Image\pictureBox1.Image.png" />
-    <Resource Include="Assets\Image\归档查询.png" />
-    <Resource Include="Assets\Image\综合查询.png" />
-    <Resource Include="Assets\png\PowerToy.png" />
-    <Resource Include="Assets\Sounds\error.wav" />
-    <Resource Include="Assets\Sounds\success.wav" />
-  </ItemGroup>
+	<ItemGroup>
+		<!-- UI 项目引用：如果项目路径存在则使用项目引用，否则使用 NuGet 包 -->
+		<ProjectReference Include="..\..\UI\ColorVision.Database\ColorVision.Database.csproj" Condition="Exists('..\..\UI\ColorVision.Database\ColorVision.Database.csproj')" />
+		<PackageReference Include="ColorVision.Database" Version="$(UIProjectPackageVersion)" Condition="!Exists('..\..\UI\ColorVision.Database\ColorVision.Database.csproj')" />
 
-  <ItemGroup>
-    <Compile Update="Properties\Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Update="Properties\Settings.Designer.cs">
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-    </Compile>
-    <Compile Update="Templates\ImageCropping\DisplayImageCropping.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Templates\Jsons\KB\EditTemplateJson.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Templates\LEDStripDetection\EditLEDStripDetection.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Templates\Matching\DisplayMatching.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Templates\ARVR\MTF\DisplayMTF.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Templates\POI\AlgorithmImp\DisplayPOI.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Templates\POI\POIGenCali\EditPoiGenCali.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Templates\POI\POIOutput\EditPoiOutput.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Templates\ARVR\SFR\DisplaySFR.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Templates\ARVR\SFR\EditSFR.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Services\Devices\ThirdPartyAlgorithms\Templates\Manager\EditTemplateThird.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Templates\POI\POIFilters\EditPOIFilters.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Templates\TemplateSettingEdit.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-  </ItemGroup>
+		<ProjectReference Include="..\..\UI\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj" Condition="Exists('..\..\UI\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj')" />
+		<PackageReference Include="ColorVision.SocketProtocol" Version="$(UIProjectPackageVersion)" Condition="!Exists('..\..\UI\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj')" />
 
-  <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
+		<ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" Condition="Exists('..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj')" />
+		<PackageReference Include="ColorVision.ImageEditor" Version="$(UIProjectPackageVersion)" Condition="!Exists('..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj')" />
 
-  <ItemGroup>
-    <None Update="Assets\Tool\EditJson\Editjson.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\Tool\EditJson\Editjson_files\1.1e5f7c84.chunk.css">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\Tool\EditJson\Editjson_files\1.3f513c69.chunk.js.下载">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\Tool\EditJson\Editjson_files\hm.js.下载">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\Tool\EditJson\Editjson_files\jEditor.4237ac39.js.下载">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\Tool\EditJson\Editjson_files\jEditor.dcca8ce4.css">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\Tool\EditJson\Editjson_files\translateSandbox%281%29.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\Tool\EditJson\Editjson_files\translateSandbox.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\Tool\EditJson\Editjson_files\UrlChangeTracker.js.下载">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\Tool\SpectrAdj.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\Tool\sscom5.13.1.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\Tool\static\media\jsoneditor-icons.15f2789d.svg">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Assets\Tool\UsbTreeView.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Properties\Settings.settings">
-      <Generator>PublicSettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
-  </ItemGroup>
+		<ProjectReference Include="..\..\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj" Condition="Exists('..\..\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj')" />
+		<PackageReference Include="ColorVision.Scheduler" Version="$(UIProjectPackageVersion)" Condition="!Exists('..\..\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj')" />
 
-  <ItemGroup>
-    <Page Update="MQTT\MQTTConnect.xaml">
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Update="Services\PhyCameras\CreateWindow.xaml">
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Update="Services\PhyCameras\EditPhyCamera.xaml">
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Update="Services\PhyCameras\InfoPhyCamera.xaml">
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Update="Services\PhyCameras\PhyCameraManagerWindow.xaml">
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Update="Templates\Jsons\BinocularFusion\DisplayBinocularFusion.xaml">
-      <SubType>Designer</SubType>
-    </Page>
-  </ItemGroup>
+		<ProjectReference Include="..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj" Condition="Exists('..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj')" />
+		<PackageReference Include="ColorVision.Solution" Version="$(UIProjectPackageVersion)" Condition="!Exists('..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj')" />
+
+		<ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" Condition="Exists('..\..\UI\ColorVision.UI\ColorVision.UI.csproj')" />
+		<PackageReference Include="ColorVision.UI" Version="$(UIProjectPackageVersion)" Condition="!Exists('..\..\UI\ColorVision.UI\ColorVision.UI.csproj')" />
+
+		<!-- Engine 项目引用（不在 UI 目录下，保持不变） -->
+		<ProjectReference Include="..\ColorVision.FileIO\ColorVision.FileIO.csproj" />
+		<ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
+		<ProjectReference Include="..\FlowEngineLib\FlowEngineLib.csproj" Condition="Exists('..\FlowEngineLib\FlowEngineLib.csproj')" />
+		<Reference Include="FlowEngineLib" Condition="!Exists('..\FlowEngineLib\FlowEngineLib.csproj')">
+			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+
+		<ProjectReference Include="..\ST.Library.UI\ST.Library.UI.csproj" Condition="Exists('..\ST.Library.UI\ST.Library.UI.csproj')" />
+		<Reference Include="ST.Library.UI" Condition="!Exists('..\ST.Library.UI\ST.Library.UI.csproj')">
+			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Resource Include="Assets\Image\background0.png">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Assets\Image\ColorVision.ico" />
+		<Resource Include="Assets\Image\ColorVision.png" />
+		<Resource Include="Assets\Image\ColorVision1.ico" />
+		<Resource Include="Assets\Image\connect.png" />
+		<Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
+		<Resource Include="Assets\Image\pictureBox1.Image.png" />
+		<Resource Include="Assets\Image\归档查询.png" />
+		<Resource Include="Assets\Image\综合查询.png" />
+		<Resource Include="Assets\png\PowerToy.png" />
+		<Resource Include="Assets\Sounds\error.wav" />
+		<Resource Include="Assets\Sounds\success.wav" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Properties\Resources.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+		<Compile Update="Properties\Settings.Designer.cs">
+			<DesignTimeSharedInput>True</DesignTimeSharedInput>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Settings.settings</DependentUpon>
+		</Compile>
+		<Compile Update="Templates\ImageCropping\DisplayImageCropping.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Templates\Jsons\KB\EditTemplateJson.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Templates\LEDStripDetection\EditLEDStripDetection.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Templates\Matching\DisplayMatching.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Templates\ARVR\MTF\DisplayMTF.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Templates\POI\AlgorithmImp\DisplayPOI.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Templates\POI\POIGenCali\EditPoiGenCali.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Templates\POI\POIOutput\EditPoiOutput.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Templates\ARVR\SFR\DisplaySFR.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Templates\ARVR\SFR\EditSFR.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Services\Devices\ThirdPartyAlgorithms\Templates\Manager\EditTemplateThird.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Templates\POI\POIFilters\EditPOIFilters.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Templates\TemplateSettingEdit.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Update="Properties\Resources.resx">
+			<Generator>PublicResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="Assets\Tool\EditJson\Editjson.html">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\Tool\EditJson\Editjson_files\1.1e5f7c84.chunk.css">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\Tool\EditJson\Editjson_files\1.3f513c69.chunk.js.下载">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\Tool\EditJson\Editjson_files\hm.js.下载">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\Tool\EditJson\Editjson_files\jEditor.4237ac39.js.下载">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\Tool\EditJson\Editjson_files\jEditor.dcca8ce4.css">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\Tool\EditJson\Editjson_files\translateSandbox%281%29.html">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\Tool\EditJson\Editjson_files\translateSandbox.html">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\Tool\EditJson\Editjson_files\UrlChangeTracker.js.下载">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\Tool\SpectrAdj.exe">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\Tool\sscom5.13.1.exe">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\Tool\static\media\jsoneditor-icons.15f2789d.svg">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\Tool\UsbTreeView.exe">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Properties\Settings.settings">
+			<Generator>PublicSettingsSingleFileGenerator</Generator>
+			<LastGenOutput>Settings.Designer.cs</LastGenOutput>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Page Update="MQTT\MQTTConnect.xaml">
+			<SubType>Designer</SubType>
+		</Page>
+		<Page Update="Services\PhyCameras\CreateWindow.xaml">
+			<SubType>Designer</SubType>
+		</Page>
+		<Page Update="Services\PhyCameras\EditPhyCamera.xaml">
+			<SubType>Designer</SubType>
+		</Page>
+		<Page Update="Services\PhyCameras\InfoPhyCamera.xaml">
+			<SubType>Designer</SubType>
+		</Page>
+		<Page Update="Services\PhyCameras\PhyCameraManagerWindow.xaml">
+			<SubType>Designer</SubType>
+		</Page>
+		<Page Update="Templates\Jsons\BinocularFusion\DisplayBinocularFusion.xaml">
+			<SubType>Designer</SubType>
+		</Page>
+	</ItemGroup>
 
 </Project>

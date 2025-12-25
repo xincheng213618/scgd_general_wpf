@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -72,7 +73,7 @@ public class CVBaseServerNode : CVCommonNode
 		}
 	}
 
-	[STNodeProperty("最大超时", "最大超时", false, false)]
+	[STNodeProperty("最大超时", "最大超时", false, false),DisplayName("超时时间")]
 	public int MaxTime
 	{
 		get
@@ -152,41 +153,41 @@ public class CVBaseServerNode : CVCommonNode
 	}
 
     private async void WaitingOverTime(CVBaseEventCmd cmd)
-    {
-        CVMQTTRequest cmd2 = cmd.cmd;
-        int maxDelay = GetMaxDelay();
+	{
+		CVMQTTRequest cmd2 = cmd.cmd;
+		int maxDelay = GetMaxDelay();
 
         // 使用异步等待，避免线程池阻塞
         bool result = await cmd.waiter.WaitForMessageAsync(maxDelay);
-        if (logger.IsInfoEnabled)
-        {
+		if (logger.IsInfoEnabled)
+		{
             if (result)
                 logger.InfoFormat("[{0}]Task.Completed successfully", ToShortString());
             else
                 logger.InfoFormat("[{0}]Task.Timed out after {1}ms", ToShortString(), maxDelay);
-        }
+		}
         if (result)
-        {
-            return;
-        }
-        CVTransAction cVTransAction = RemoveTrans(cmd2.SerialNumber, cmd2.MsgID);
-        if (cVTransAction != null)
-        {
-            if (logger.IsInfoEnabled)
-            {
-                logger.InfoFormat("[{0}]OverTime => {1} ms", ToShortString(), maxDelay);
-            }
-            cVTransAction.NodeOverTime(GetFullNodeName());
-            Reset();
-            m_op_end.TransferData(cVTransAction.trans_action);
-        }
-        else
-        {
-            logger.WarnFormat("[{0}]MQTTRequest not exist => {1}", ToShortString(), cmd2.SerialNumber);
-        }
-    }
+		{
+			return;
+		}
+		CVTransAction cVTransAction = RemoveTrans(cmd2.SerialNumber, cmd2.MsgID);
+		if (cVTransAction != null)
+		{
+			if (logger.IsInfoEnabled)
+			{
+				logger.InfoFormat("[{0}]OverTime => {1} ms", ToShortString(), maxDelay);
+			}
+			cVTransAction.NodeOverTime(GetFullNodeName());
+			Reset();
+			m_op_end.TransferData(cVTransAction.trans_action);
+		}
+		else
+		{
+			logger.WarnFormat("[{0}]MQTTRequest not exist => {1}", ToShortString(), cmd2.SerialNumber);
+		}
+	}
 
-    protected virtual int GetMaxDelay()
+	protected virtual int GetMaxDelay()
 	{
 		return _MaxTime;
 	}
@@ -207,7 +208,7 @@ public class CVBaseServerNode : CVCommonNode
 			CVTransAction cVTransAction = m_trans_action[serialNumber];
 			if (cVTransAction.m_sever_actionEvent.ContainsKey(svrEventId))
 			{
-				logger.DebugFormat("[{0}]RemoveTrans => {1}/{2}", (object)ToShortString(), (object)serialNumber, (object)svrEventId);
+				logger.DebugFormat("[{0}]RemoveTrans => {1}/{2}", ToShortString(), serialNumber, svrEventId);
 				m_trans_action.Remove(serialNumber);
 				return cVTransAction;
 			}
@@ -289,7 +290,7 @@ public class CVBaseServerNode : CVCommonNode
 			if (actionEvent != null)
 			{
 				CVBaseEventCmd cmd = AddActionCmd(cVTransAction, actionEvent);
-				string message = JsonConvert.SerializeObject((object)actionEvent, (Formatting)0);
+				string message = JsonConvert.SerializeObject(actionEvent, Formatting.None);
 				string token = GetToken();
 				MQActionEvent act = new MQActionEvent(actionEvent.MsgID, m_nodeName, GetDeviceCode(), GetSendTopic(), actionEvent.EventName, message, token);
 				DoTransferToServer(cVTransAction, act, cmd);
@@ -330,12 +331,12 @@ public class CVBaseServerNode : CVCommonNode
 		string serialNumber = statusEvent.SerialNumber;
 		if (string.IsNullOrEmpty(eventName) || eventName.Equals("Heartbeat"))
 		{
-			logger.WarnFormat("[{0}]EventName is Heartbeat or empty => {1}", (object)ToShortString(), (object)eventName);
+			logger.WarnFormat("[{0}]EventName is Heartbeat or empty => {1}", ToShortString(), eventName);
 			return false;
 		}
 		if (logger.IsDebugEnabled)
 		{
-			logger.DebugFormat("[{0}] {1} => {2}", (object)ToShortString(), (object)eventName, (object)serialNumber);
+			logger.DebugFormat("[{0}] {1} => {2}", ToShortString(), eventName, serialNumber);
 		}
 		CVTransAction cVTransByEvent = GetCVTransByEvent(serialNumber, eventName);
 		if (cVTransByEvent != null)
@@ -356,7 +357,7 @@ public class CVBaseServerNode : CVCommonNode
 		}
 		else
 		{
-			logger.WarnFormat("[{0}] not find request => {1}", (object)ToShortString(), (object)JsonConvert.SerializeObject((object)statusEvent));
+			logger.WarnFormat("[{0}] not find request => {1}", ToShortString(), JsonConvert.SerializeObject(statusEvent));
 		}
 		return false;
 	}
@@ -381,7 +382,7 @@ public class CVBaseServerNode : CVCommonNode
 		{
 			if (logger.IsDebugEnabled)
 			{
-				logger.DebugFormat("[{0}] recv status => {1}", (object)ToShortString(), (object)JsonConvert.SerializeObject(e.TargetOption.Data));
+				logger.DebugFormat("[{0}] recv status => {1}", ToShortString(), JsonConvert.SerializeObject(e.TargetOption.Data));
 			}
 			DoServerStatusRecv(e.TargetOption.Data as CVBaseDataFlowResp);
 		}
@@ -431,7 +432,7 @@ public class CVBaseServerNode : CVCommonNode
 				CVTransAction cVTransByEvent = GetCVTransByEvent(cVStartCFC.SerialNumber, string.Empty);
 				if (logger.IsDebugEnabled)
 				{
-					logger.DebugFormat("[{0}]DoServerTransfer => {1}", (object)ToShortString(), (object)cVStartCFC.ToShortString());
+					logger.DebugFormat("[{0}]DoServerTransfer => {1}", ToShortString(), cVStartCFC.ToShortString());
 				}
 				if (cVStartCFC.FlowStatus == StatusTypeEnum.Runing)
 				{
@@ -470,7 +471,7 @@ public class CVBaseServerNode : CVCommonNode
 				{
 					if (logger.IsDebugEnabled)
 					{
-						logger.DebugFormat("[{0}]DoServerTransfer Cancel.", (object)ToShortString());
+						logger.DebugFormat("[{0}]DoServerTransfer Cancel.", ToShortString());
 					}
 					cVTransByEvent.Cancel();
 				}
@@ -479,7 +480,7 @@ public class CVBaseServerNode : CVCommonNode
 			}
 			else
 			{
-				logger.WarnFormat("TargetData Type is not flow common type => {0}", (object)e.TargetOption.DataType.AssemblyQualifiedName);
+				logger.WarnFormat("TargetData Type is not flow common type => {0}", e.TargetOption.DataType.AssemblyQualifiedName);
 			}
 		}
 		else
@@ -496,7 +497,7 @@ public class CVBaseServerNode : CVCommonNode
 	{
 		if (logger.IsDebugEnabled)
 		{
-			logger.DebugFormat("Add To Server request => {0}", (object)JsonConvert.SerializeObject((object)sendEvent));
+			logger.DebugFormat("Add To Server request => {0}", JsonConvert.SerializeObject(sendEvent));
 		}
 		CVBaseEventCmd cVBaseEventCmd;
 		if (trans.m_sever_actionEvent.ContainsKey(sendEvent.MsgID))
@@ -523,7 +524,7 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected virtual void DoTransCompleted(CVTransAction trans, CVStartCFC action)
 	{
-		logger.InfoFormat("[{0}]DoTransCompleted => {1}", (object)ToShortString(), (object)action.SerialNumber);
+		logger.InfoFormat("[{0}]DoTransCompleted => {1}", ToShortString(), action.SerialNumber);
 		release(action.SerialNumber);
 		m_op_end.TransferData(action);
 	}
@@ -542,7 +543,7 @@ public class CVBaseServerNode : CVCommonNode
 		else if (resp.Status == ActionStatusEnum.Failed)
 		{
 			trans.NodeFailed(cmd.resp.Message, base.DeviceCode);
-			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", (object)ToShortString(), (object)JsonConvert.SerializeObject((object)trans.trans_action));
+			logger.InfoFormat("[{0}]CVTransAction Failed => {1}", ToShortString(), JsonConvert.SerializeObject(trans.trans_action));
 		}
 		if (_IsPublishStatus)
 		{
@@ -555,7 +556,7 @@ public class CVBaseServerNode : CVCommonNode
 		TimeSpan timeSpan = DateTime.Now - trans.startTime;
 		if (logger.IsInfoEnabled)
 		{
-			logger.InfoFormat("[{0}]Node completed. Transfer to the next node. TotalTime={1}/{2}", (object)ToShortString(), (object)timeSpan.ToString(), (object)trans.startTime.ToString("O"));
+			logger.InfoFormat("[{0}]Node completed. Transfer to the next node. TotalTime={1}/{2}", ToShortString(), timeSpan.ToString(), trans.startTime.ToString("O"));
 		}
 		m_op_end.TransferData(trans.trans_action);
 		base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs());
@@ -568,7 +569,7 @@ public class CVBaseServerNode : CVCommonNode
 			CVTransAction cVTransAction = m_trans_action[serialNumber];
 			if (logger.IsDebugEnabled)
 			{
-				logger.DebugFormat("{0} release => {1}", (object)ToShortString(), (object)cVTransAction.trans_action.SerialNumber);
+				logger.DebugFormat("{0} release => {1}", ToShortString(), cVTransAction.trans_action.SerialNumber);
 			}
 			m_trans_action.Remove(serialNumber);
 		}
@@ -595,7 +596,7 @@ public class CVBaseServerNode : CVCommonNode
 	{
 		if (idx < 0 || idx >= base.InputOptions.Count)
 		{
-			logger.ErrorFormat("[{0}]Input count less input index => {1} < {2}", (object)ToShortString(), (object)base.InputOptions.Count, (object)idx);
+			logger.ErrorFormat("[{0}]Input count less input index => {1} < {2}", ToShortString(), base.InputOptions.Count, idx);
 			return null;
 		}
 		STNodeOption sTNodeOption = base.InputOptions[idx];
@@ -610,7 +611,7 @@ public class CVBaseServerNode : CVCommonNode
 		}
 		else
 		{
-			logger.ErrorFormat("[{0}]Input[{1}] is disconnected", (object)ToShortString(), (object)idx);
+			logger.ErrorFormat("[{0}]Input[{1}] is disconnected", ToShortString(), idx);
 		}
 		return result;
 	}
@@ -650,7 +651,7 @@ public class CVBaseServerNode : CVCommonNode
 		CVServerResponse resp = cmd.resp;
 		if (m_is_out_release)
 		{
-			logger.DebugFormat("[{0}]Remove request => {1}/{2}", (object)ToShortString(), (object)trans.trans_action.SerialNumber, (object)cmd.cmd.MsgID);
+			logger.DebugFormat("[{0}]Remove request => {1}/{2}", ToShortString(), trans.trans_action.SerialNumber, cmd.cmd.MsgID);
 			m_trans_action.Remove(trans.trans_action.SerialNumber);
 		}
 		else
@@ -772,7 +773,7 @@ public class CVBaseServerNode : CVCommonNode
 			string text = JsonConvert.SerializeObject(start.Data["SMUResult"]);
 			if (logger.IsDebugEnabled)
 			{
-				logger.DebugFormat("{0}", (object)text);
+				logger.DebugFormat("{0}", text);
 			}
 			return JsonConvert.DeserializeObject<SMUResultData>(text);
 		}

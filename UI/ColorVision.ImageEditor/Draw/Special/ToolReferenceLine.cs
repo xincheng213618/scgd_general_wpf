@@ -306,9 +306,10 @@ namespace ColorVision.ImageEditor.Draw.Special
                 
                 // 1. 绘制边缘遮罩，保留中间透明区域
                 double maskSize = Attribute.MaskSize;
-                
+
                 // 创建外部矩形（整个画布区域）
-                RectangleGeometry outerRect = new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight));
+                // 修改：将矩形范围向外扩展（例如各方向扩展 2 像素），防止因抗锯齿或精度问题导致边缘出现未遮盖的细线
+                RectangleGeometry outerRect = new RectangleGeometry(new Rect(-5, -5, ActualWidth +10, ActualHeight +10));
                 
                 // 根据遮罩形状创建中心透明区域
                 Geometry innerGeometry;

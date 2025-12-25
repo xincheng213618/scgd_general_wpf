@@ -46,6 +46,10 @@
                                 <TextBlock Text="{x:Static properties:Resources.DefaultImageBits}" Width="120"/>
                                 <ComboBox  x:Name="ComboxCameraImageBpp"    SelectedValue="{Binding ImageBpp}"  SelectedValuePath="Key"  DisplayMemberPath="Value" />
                             </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="FileVersion" Width="120"/>
+                                <TextBox Text="{Binding Fileversion}"/>
+                            </DockPanel>
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="{x:Static properties:Resources.FilterWheel}" Margin="0,5">

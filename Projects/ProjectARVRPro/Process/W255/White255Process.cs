@@ -9,6 +9,7 @@ using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
+using ScottPlot.Colormaps;
 using System.Windows;
 using System.Windows.Media;
 using static HelixToolkit.Wpf.Viewport3DHelper;
@@ -36,6 +37,8 @@ namespace ProjectARVRPro.Process.W255
                 {
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
+                        ctx.Result.FileName = master.ImgFile;
+
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
                         int id = 0;
                         testResult.ViewPoixyuvDatas.Clear();
@@ -51,7 +54,7 @@ namespace ProjectARVRPro.Process.W255
                             testResult.ViewPoixyuvDatas.Add(poi);
                             testResult.PoixyuvDatas.Add(new PoixyuvData() { Id =poi.Id,Name =poi.Name,X =poi.X,Y=poi.Y,Z=poi.Z,x =poi.x,y =poi.y,u =poi.u,v =poi.v,CCT =poi.CCT,Wave =poi.Wave});
                             
-                            if (item.PoiName == "P_9")
+                            if (item.PoiName == Config.Key_Center)
                             {
                                 testResult.CenterLunimance = new ObjectiveTestItem
                                 {

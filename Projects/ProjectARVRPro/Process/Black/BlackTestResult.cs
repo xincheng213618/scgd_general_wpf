@@ -8,11 +8,13 @@ namespace ProjectARVRPro.Process.Black
 
     public class BlackViewTestResult : BlackTestResult
     {
-        public List<PoiResultCIExyuvData> PoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
+        public List<PoiResultCIExyuvData> ViewPoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
     }
 
     public class BlackTestResult : ViewModelBase
     {
+        public List<PoixyuvData> PoixyuvDatas { get; set; } = new List<PoixyuvData>();
+
         /// <summary>
         /// FOFO对比度 测试项
         /// </summary>

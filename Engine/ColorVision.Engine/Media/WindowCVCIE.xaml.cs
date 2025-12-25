@@ -120,7 +120,8 @@ namespace ColorVision.Engine.Media
                 AddStatisticItem(wrapPanel, "Uniformity (Min/Max):", $"{CIExyuvStats.UniformityMinDivMax:F2}%");
                 AddStatisticItem(wrapPanel, "Uniformity ((Max-Min)/Avg):", $"{CIExyuvStats.UniformityDiffDivAvg:F2}%");
                 AddStatisticItem(wrapPanel, "Uniformity ((Max-Min)/Max):", $"{CIExyuvStats.UniformityDiffDivMax:F2}%");
-                
+                AddStatisticItem(wrapPanel, "Uniformity 1-((Max-Avg)/Avg):", $"{CIExyuvStats.Uniformity:F2}%");
+
                 // Standard Deviation
                 if (!double.IsNaN(CIExyuvStats.StandardDeviation))
                 {

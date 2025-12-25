@@ -86,7 +86,7 @@ public abstract class BaseStartNode : CVCommonNode
 		for (int i = 0; i < opst.ConnectionCount; i++)
 		{
 			STNodeOption sTNodeOption = opst.ConnectedOption.ElementAt(i);
-			if (sTNodeOption.Owner.GetType().IsAssignableFrom(typeof(LoopNode)))
+			if (typeof(LoopNode).IsAssignableFrom(sTNodeOption.Owner.GetType()))
 			{
 				LoopNode loopNode = sTNodeOption.Owner as LoopNode;
 				if (nodeName.Equals(loopNode.NodeName))
@@ -94,18 +94,10 @@ public abstract class BaseStartNode : CVCommonNode
 					return true;
 				}
 			}
-			else if (sTNodeOption.Owner.GetType().IsAssignableFrom(typeof(SMUNode)))
+			else if (typeof(ICVLoopNextNode).IsAssignableFrom(sTNodeOption.Owner.GetType()))
 			{
-				SMUNode sMUNode = sTNodeOption.Owner as SMUNode;
-				if (nodeName.Equals(sMUNode.LoopName))
-				{
-					return true;
-				}
-			}
-			else if (sTNodeOption.Owner.GetType().IsAssignableFrom(typeof(SMUModelNode)))
-			{
-				SMUModelNode sMUModelNode = sTNodeOption.Owner as SMUModelNode;
-				if (nodeName.Equals(sMUModelNode.LoopName))
+				ICVLoopNextNode iCVLoopNextNode = sTNodeOption.Owner as ICVLoopNextNode;
+				if (nodeName.Equals(iCVLoopNextNode.LoopName))
 				{
 					return true;
 				}
@@ -157,9 +149,9 @@ public abstract class BaseStartNode : CVCommonNode
 
 	private void m_op_start_Connected(object sender, STNodeOptionEventArgs e)
 	{
-		STNodeOption sTNodeOption = sender as STNodeOption;
-		SetOptionText(sTNodeOption, "--");
-		DoStartConnected(sTNodeOption, e);
+		STNodeOption obj = sender as STNodeOption;
+		SetOptionText(obj, "--");
+		DoStartConnected(obj, e);
 	}
 
 	public virtual void DoLoopTransferData(STNodeOption sender, CVLoopCFC next)
@@ -173,11 +165,11 @@ public abstract class BaseStartNode : CVCommonNode
 
 	private void DoLoopNextTask(object obj)
 	{
-		KeyValuePair<STNodeOption, CVLoopCFC> keyValuePair = (KeyValuePair<STNodeOption, CVLoopCFC>)obj;
-		STNodeOption key = keyValuePair.Key;
-		CVLoopCFC value = keyValuePair.Value;
-		key.TransferData(value);
-		DoLoopNextAction(value, value.NodeName);
+		KeyValuePair<STNodeOption, CVLoopCFC> cVMQTTRequest = (KeyValuePair<STNodeOption, CVLoopCFC>)obj;
+		STNodeOption key = cVMQTTRequest.Key;
+		CVLoopCFC data = cVMQTTRequest.Value;
+		key.TransferData(data);
+		DoLoopNextAction(data, data.NodeName);
 	}
 
 	protected virtual void DoLoopNextAction(CVLoopCFC next, string nodeName)
@@ -258,13 +250,13 @@ public abstract class BaseStartNode : CVCommonNode
 			}
 			if (logger.IsInfoEnabled)
 			{
-				logger.InfoFormat("Remove Flow Mapping => {0}", (object)serialNumber);
+				logger.InfoFormat("Remove Flow Mapping => {0}", serialNumber);
 			}
 			m_op_start.TransferData(action);
 		}
 		else
 		{
-			logger.WarnFormat("Flow does not exist and has been removed. => {0}", (object)action.ToShortString());
+			logger.WarnFormat("Flow does not exist and has been removed. => {0}", action.ToShortString());
 		}
 	}
 
@@ -339,15 +331,15 @@ public abstract class BaseStartNode : CVCommonNode
 		if (start.GetActionType() == ActionTypeEnum.Start)
 		{
 			start.SetStartNode(this);
-			logger.InfoFormat("===============开始运行流程文件[{0}/{1}]", (object)m_nodeName, (object)start.SerialNumber);
+			logger.InfoFormat("===============开始运行流程文件[{0}/{1}]", m_nodeName, start.SerialNumber);
 		}
 		DoStartTransferData(start);
 	}
 
 	public void Stop(string serialNumber)
 	{
-		CVStartCFC action = new CVStartCFC(ActionTypeEnum.Stop, serialNumber);
-		DoStartTransferData(action);
+		CVStartCFC timer = new CVStartCFC(ActionTypeEnum.Stop, serialNumber);
+		DoStartTransferData(timer);
 	}
 
 	public void StopAll()
@@ -367,11 +359,13 @@ public abstract class BaseStartNode : CVCommonNode
 	public void FireFinished(CVStartCFC startAction)
 	{
 		StatusTypeEnum flowStatus = startAction.FlowStatus;
-		string message = string.Empty;
+		string userName = string.Empty;
 		if (flowStatus == StatusTypeEnum.Failed && startAction.Data.ContainsKey("Msg"))
 		{
-			message = startAction.Data["Msg"].ToString();
+			userName = startAction.Data["Msg"].ToString();
 		}
-		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message));
+		logger.InfoFormat("Fire Flow Finished Before");
+		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, userName));
+		logger.InfoFormat("Fire Flow Finished End");
 	}
 }

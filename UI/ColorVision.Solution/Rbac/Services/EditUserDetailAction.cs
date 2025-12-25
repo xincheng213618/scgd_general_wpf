@@ -16,9 +16,16 @@ namespace ColorVision.Rbac.Services
         // 将你的 Edit 改成异步。若在命令里可用 async void，但建议上层继续 Task 化
         public async Task EditAsync()
         {
+            // 检查是否已登录
+            var config = RbacManagerConfig.Instance;
+            if (config.LoginResult == null || config.LoginResult.UserDetail == null)
+            {
+                MessageBox.Show("请先登录后再编辑用户信息。", "未登录", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             // 原始对象（登录后的缓存）
-            var original = RbacManagerConfig.Instance.LoginResult.UserDetail;
-            if (original == null) return;
+            var original = config.LoginResult.UserDetail;
 
             // 做一个可编辑副本，防止取消时污染原对象
             var editable = new UserDetailDto

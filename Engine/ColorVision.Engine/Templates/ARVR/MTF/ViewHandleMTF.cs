@@ -122,7 +122,7 @@ namespace ColorVision.Engine.Templates.MTF
 
 
 
-        public override void Load(IViewImageA view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -139,10 +139,10 @@ namespace ColorVision.Engine.Templates.MTF
         }
 
 
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
             foreach (var item in result.ViewResults)
             {
@@ -160,7 +160,7 @@ namespace ColorVision.Engine.Templates.MTF
                             Circle.Attribute.Text = poiResultData.Name;
                             Circle.Attribute.Msg = poiResultData.Articulation.ToString();
                             Circle.Render();
-                            view.ImageView.AddVisual(Circle);
+                            ctx.ImageView.AddVisual(Circle);
                             break;
                         case POIPointTypes.Rect:
                             DVRectangleText Rectangle = new();
@@ -171,7 +171,7 @@ namespace ColorVision.Engine.Templates.MTF
                             Rectangle.Attribute.Text = poiResultData.Name;
                             Rectangle.Attribute.Msg = poiResultData.Articulation.ToString();
                             Rectangle.Render();
-                            view.ImageView.AddVisual(Rectangle);
+                            ctx.ImageView.AddVisual(Rectangle);
                             break;
                         default:
                             break;
@@ -186,13 +186,13 @@ namespace ColorVision.Engine.Templates.MTF
             bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Articulation" };
 
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
 

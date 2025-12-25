@@ -67,7 +67,7 @@ public class FormOLEDNodeProperty : Form
 
 	private void button_ok_Click(object sender, EventArgs e)
 	{
-		JsonValue = JsonConvert.SerializeObject((object)new PointFloat[4]
+		JsonValue = JsonConvert.SerializeObject(new PointFloat[4]
 		{
 			new PointFloat
 			{

@@ -42,10 +42,14 @@ namespace Pattern.LinePairMTF
         public double Angle { get => _Angle; set { _Angle = value; OnPropertyChanged(); } }
         private double _Angle = 45.0; // 默认45度
 
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public List<double> FieldX { get => _FieldX; set{ _FieldX = value; OnPropertyChanged(); } }
+        private List<double> _FieldX = new List<double> { 0, 0.5, 0.8 };
 
 
-        public List<double> FieldX { get; set; } = new List<double> { 0,  0.5, 0.8};
-        public List<double> FieldY { get; set; } = new List<double> { 0,0.5, 0.8 };
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public List<double> FieldY { get => _FieldY; set { _FieldY = value; OnPropertyChanged(); } }
+        private List<double> _FieldY = new List<double> { 0, 0.5, 0.8 };
 
 
         public string LineBrushTag { get => _LineBrushTag; set { _LineBrushTag = value; OnPropertyChanged(); } }

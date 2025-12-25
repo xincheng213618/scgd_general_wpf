@@ -19,7 +19,7 @@
 
 **3. 所有权**
 
-本软件由视彩拥有和运营。您仅被授予使用本软件的有限许可，而非对本软件的所有权。本软件及其所有副本的所有权利、所有权和利益均归视彩所有。
+本软件由ColorVision拥有和运营。您仅被授予使用本软件的有限许可，而非对本软件的所有权。本软件及其所有副本的所有权利、所有权和利益均归视彩所有。
 
 **4. 终止**
 
@@ -48,8 +48,6 @@
 **10. 可分割性**
 
 如果本协议的任何条款被视为无效或不可执行，其余条款仍应保持完全效力和作用。
-
-**视彩（上海）光电技术有限公司**
 
 **ColrVision Inc**
 
@@ -105,8 +103,6 @@
 **10. 可分割性**
 
 如果本協議的任何條款被視為無效或不可執行，其餘條款仍應保持完全效力和作用。
-
-**視彩（上海）光電技術有限公司**
 
 **ColrVision Inc**
 
@@ -165,10 +161,6 @@ If any provision of this Agreement is held to be invalid or unenforceable, the r
 
 **ColrVision Inc**
 
-**视彩（上海）光电技术有限公司**
-
-
-
 ---
 
 **ソフトウェア使用許諾契約**
@@ -221,8 +213,6 @@ If any provision of this Agreement is held to be invalid or unenforceable, the r
 **10. 分離可能性**
 
 本契約のいずれかの条項が無効または執行不能と見なされた場合でも、残りの条項は完全に効力を持ち続けます。
-
-**視彩（上海）光電技術有限公司**
 
 **ColrVision Inc**
 
@@ -278,8 +268,6 @@ If any provision of this Agreement is held to be invalid or unenforceable, the r
 **10. 분리 가능성**
 
 본 계약의 어떤 조항이 무효 또는 집행 불가능한 것으로 간주되더라도, 나머지 조항은 계속해서 완전한 효력을 갖습니다.
-
-**시차이(상하이)광전기술유한공사**
 
 **ColrVision Inc**
 

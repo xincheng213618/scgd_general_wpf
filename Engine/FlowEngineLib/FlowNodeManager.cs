@@ -86,6 +86,10 @@ public class FlowNodeManager
 
 	public void UpdateDevice(List<MQTTServiceInfo> services)
 	{
+		if (services == null)
+		{
+			return;
+		}
 		Dictionary<string, Dictionary<string, MQTTDeviceInfo>> dictionary = new Dictionary<string, Dictionary<string, MQTTDeviceInfo>>();
 		foreach (MQTTServiceInfo service in services)
 		{

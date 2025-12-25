@@ -182,15 +182,15 @@ namespace ColorVision.Engine.Media
                     default:
                         break;
                 }
-
-
             }
 
-            imageView.ImageViewModel.MouseMagnifier.ClearMouseMoveColorHandler();
 
             imageView.ClearImageEventHandler += (s, e) =>
             {
                 int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
+                result = ConvertXYZ.CM_UnInitXYZ(Config.ConvertXYZhandle);
+                result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
+                imageView.ImageViewModel.MouseMagnifier.ClearMouseMoveColorHandler();
             };
             if (!Config.ConvertXYZhandleOnce)
             {

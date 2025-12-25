@@ -64,7 +64,7 @@ internal class MQTTCustomSubscribeNode : MQTTBaseNode
 			_MQTTHelper.SubscribeAsync_Client(_Topic);
 			break;
 		}
-		LogHelper.WriteLog(JsonConvert.SerializeObject((object)resultData_MQTT, (Formatting)0));
+		LogHelper.WriteLog(JsonConvert.SerializeObject(resultData_MQTT, Formatting.None));
 	}
 
 	private void DoRecvMsg(ResultData_MQTT resultData_MQTT)

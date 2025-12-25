@@ -48,8 +48,8 @@ internal class MQTTBaseNode : STNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		string userName = "";
+		string result = "";
 		string password = "";
-		MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref userName, ref password);
+		MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref result, ref password);
 	}
 }

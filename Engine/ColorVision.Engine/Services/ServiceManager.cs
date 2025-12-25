@@ -1,4 +1,5 @@
-﻿using ColorVision.Database;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -11,6 +12,7 @@ using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
+using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
@@ -20,11 +22,36 @@ using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Data;
 using System.Linq;
+using System.Reflection;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services
 {
+
+    public class TextCFWPropertiesEditor : IPropertyEditor
+    {
+        public DockPanel GenProperties(PropertyInfo property, object obj)
+        {
+            var rm = PropertyEditorHelper.GetResourceManager(obj);
+            var dockPanel = new DockPanel();
+
+
+
+            var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
+            dockPanel.Children.Add(textBlock);
+
+            var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = PropertyEditorHelper.ComboBoxSmallStyle, IsEditable = true };
+            HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
+            combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
+            combo.ItemsSource = ServiceManager.GetInstance().DeviceServices.Where(item => item is DeviceCfwPort).Select(item => item.Code).ToList();
+            dockPanel.Children.Add(combo);
+            return dockPanel;
+        }
+    }
 
     public class ServiceManager
     {

@@ -1,6 +1,5 @@
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
-using FlowEngineLib.Node.OLED;
 using log4net;
 using ST.Library.UI.NodeEditor;
 
@@ -9,7 +8,7 @@ namespace FlowEngineLib.Node.Algorithm;
 [STNode("/03_5 OLED")]
 public class AlgorithmOLED_AOINode : CVBaseServerNode
 {
-	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDRebuildPixelsNode));
+	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmOLED_AOINode));
 
 	private AlgorithmOLED_AOIType _Algorithm;
 
@@ -176,6 +175,9 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 			operatorCode = "OLED.FindVHLine";
 			break;
 		case AlgorithmOLED_AOIType.点缺陷:
+			operatorCode = "OLED.FindPixelDefectsForRebuildPic";
+			break;
+		case AlgorithmOLED_AOIType.点缺陷_Grade:
 			operatorCode = "OLED.FindPixelDefectsForRebuildPicGrading";
 			break;
 		case AlgorithmOLED_AOIType.Mura:

@@ -437,14 +437,16 @@ namespace ColorVision.Engine.Services.Flow
             BatchManager.GetInstance().Edit();
         }
 
-        private void Button_Click_2(object sender, RoutedEventArgs e)
+        private void Button_Click_PreProcess(object sender, RoutedEventArgs e)
         {
-            string baseDir =Directory.GetParent(FlowEngineManager.ServiceConfig.CVMainService_x64).FullName;
-            string latestLogPath = LogFileHelper.GetLatestMainLogPath(baseDir);
-            if (!string.IsNullOrEmpty(latestLogPath))
+            PreProcessManager.GetInstance().Edit();
+        }
+
+        private void NodeListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (NodeListView.SelectedIndex > -1)
             {
-                WindowLogLocal windowLogLocal = new WindowLogLocal(latestLogPath, Encoding.GetEncoding("GB2312"));
-                windowLogLocal.Show();
+                STNodeEditorMain.SetActiveNode(FlowEngineManager.CVBaseServerNodes[NodeListView.SelectedIndex]);
             }
         }
     }
@@ -481,17 +483,22 @@ namespace ColorVision.Engine.Services.Flow
         /// <summary>
         /// 获取目录下最新修改的日志文件（备用方案）
         /// </summary>
-        public static string GetMostRecentLogFile(string logDirectory)
+        public static string GetMostRecentLogFile(string logDirectory,string prefix = "")
         {
             if (!Directory.Exists(logDirectory))
                 return null;
 
-            var directory = new DirectoryInfo(logDirectory);
-            var latestFile = directory.GetFiles("*.log")
-                                      .OrderByDescending(f => f.LastWriteTime)
-                                      .FirstOrDefault();
+            // 如果传进来的是完整路径，取出文件名前缀
+            var filePrefix = Path.GetFileNameWithoutExtension(prefix);
 
-            return latestFile?.FullName;
+            var pattern = $"{filePrefix}*.log";
+
+            var latest = Directory.EnumerateFiles(logDirectory, pattern, SearchOption.TopDirectoryOnly)
+                                  .Select(p => new FileInfo(p))
+                                  .OrderByDescending(f => f.LastWriteTimeUtc)
+                                  .FirstOrDefault();
+
+            return latest?.FullName;
         }
     }
 }

@@ -43,6 +43,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public FilterWheelConfig FilterWheelConfig { get; set; } = new FilterWheelConfig();
 
+        public int Fileversion { get => _Fileversion; set { _Fileversion = value; OnPropertyChanged(); } }
+        private int _Fileversion = 2;
+
     }
 
     public class CameraParameterLimit : ViewModelBase

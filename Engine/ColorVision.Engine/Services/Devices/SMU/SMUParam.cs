@@ -1,4 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Database;
+using ColorVision.Engine.Properties;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
+using ColorVision.Engine.Services.Devices.SMU.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Utilities;
 using cvColorVision;
@@ -7,7 +11,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
-using ColorVision.Engine.Properties;
 namespace ColorVision.Engine.Services.Devices.SMU
 {
 
@@ -22,17 +25,31 @@ namespace ColorVision.Engine.Services.Devices.SMU
             TemplateDicId = 13;
             TemplateParams = Params;
         }
+        public override IMysqlCommand? GetMysqlCommand() => new MysqlSMU();
     }
+
+
 
     public enum SMUMeasureType
     {
         VoltageSource = 0,
         CurrentSource = 1
     }
+
+
     public class SMUParam : ParamModBase
     {
 
         public SMUParam() { }
+
+        [Description("Support A & B")]
+        public SMUChannelType Channel
+        {
+            set { SetProperty(ref _Channel, value, "Channel"); }
+            get => GetValue(_Channel, "Channel");
+        }
+        private SMUChannelType _Channel  = SMUChannelType.A;
+
 
         public SMUParam(ModMasterModel modMaster, List<ModDetailModel> sxDetail) : base(modMaster, sxDetail) { }
         [LocalizedDisplayName(typeof(Resources), "StartMeasurementValue_V_mA"), LocalizedDescription(typeof(Resources), "VoltageSourceUnit_V_CurrentSourceUnit_mA")]
@@ -71,6 +88,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             get => IsSourceV ? SMUMeasureType.VoltageSource : SMUMeasureType.CurrentSource;
             set => IsSourceV = value == SMUMeasureType.VoltageSource;
         }
+
         private double _StartMeasureVal;
         private double _StopMeasureVal;
         private double _LmtVal;

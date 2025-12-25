@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public MQTTSMU DService { get; set; }
 
         public ViewSMU View { get; set; }
-        public IDisPlayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisPlayConfigBase>(Config.Code);
+        public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
 
         public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
 
         public override UserControl GetDeviceInfo() => new InfoSMU(this);
-        public override UserControl GetDisplayControl() => new DisplaySMUControl(this);
+        public override UserControl GetDisplayControl() => new DisplaySMU(this);
 
         public override MQTTServiceBase? GetMQTTService()
         {

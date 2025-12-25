@@ -322,8 +322,8 @@ namespace ColorVision.UI
             {
                 string backupFileName = $"{ConfigDIFileName}Backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
                 string backupPath = Path.Combine(BackupFolderPath, backupFileName);
-                SaveConfigs(backupPath);
                 CleanupOldBackups();
+                SaveConfigs(backupPath);
             }
             catch (Exception ex)
             {

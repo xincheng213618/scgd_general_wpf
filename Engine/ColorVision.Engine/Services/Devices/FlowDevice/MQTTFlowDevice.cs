@@ -8,10 +8,7 @@ namespace ColorVision.Engine.Services.Devices.FlowDevice
         {
             MsgReturnReceived += ProcessingReceived;
             DeviceStatus = DeviceStatusType.Closed;
-            DisConnected += (s, e) =>
-            {
-                DeviceStatus = DeviceStatusType.Closed;
-            };
+
         }
 
         private void ProcessingReceived(MsgReturn msg)

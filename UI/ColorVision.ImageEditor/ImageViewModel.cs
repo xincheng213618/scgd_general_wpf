@@ -373,6 +373,7 @@ namespace ColorVision.ImageEditor
             set
             {
                 if (_ImageEditMode == value) return;
+                Config.IsToolBarDrawVisible = value;
                 _ImageEditMode = value;
 
                 if (_ImageEditMode)

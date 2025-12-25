@@ -46,259 +46,259 @@
     <value>LoopNode</value>
   </data>
   <data name="电(压/流)源" xml:space="preserve">
-    <value>Voltage (V) / Current (mA)</value>
+    <value>Voltage(V)/Current(mA)</value>
   </data>
   <data name="灯珠检测" xml:space="preserve">
-    <value>LED bead testing</value>
+    <value>LED-Inspection</value>
   </data>
   <data name="灯带检测" xml:space="preserve">
-    <value>LED strip testing</value>
+    <value>LEDLight</value>
   </data>
   <data name="相机模板" xml:space="preserve">
-    <value>Camera template</value>
+    <value>Camera-Temp</value>
   </data>
   <data name="Current_I" xml:space="preserve">
-    <value>Current(I)(mA)</value>
+    <value>Current_I</value>
   </data>
   <data name="状态触发" xml:space="preserve">
-    <value>State Trigger</value>
+    <value>StatusTrigger</value>
   </data>
   <data name="积分时间" xml:space="preserve">
-    <value>Points Time</value>
+    <value>Int-Time</value>
   </data>
   <data name="OLED数据提取" xml:space="preserve">
-    <value>OLED data extraction</value>
+    <value>OLED-DataExtraction</value>
   </data>
   <data name="绝对位置" xml:space="preserve">
-    <value>Absolute position</value>
+    <value>Absolute-Pos</value>
   </data>
   <data name="缓存大小" xml:space="preserve">
-    <value>Cache size</value>
+    <value>BuffLen</value>
   </data>
   <data name="SolidPoint" xml:space="preserve">
-    <value>solid point</value>
+    <value>SolidPoint</value>
   </data>
   <data name="BExpDesc" xml:space="preserve">
-    <value>B channel exposure time (ms)</value>
+    <value>Blue channel exposure time (ms)</value>
   </data>
   <data name="算子模板" xml:space="preserve">
-    <value>Operator template</value>
+    <value>AOI-Temp</value>
   </data>
   <data name="曝光模板" xml:space="preserve">
-    <value>Exposure template</value>
+    <value>ExpTemp</value>
   </data>
   <data name="曝光时间" xml:space="preserve">
-    <value>Exposure time (ms)</value>
+    <value>Exposure time(ms)</value>
   </data>
   <data name="是否新增" xml:space="preserve">
-    <value>Is it possible to add new ones?</value>
+    <value>IsAdd</value>
   </data>
   <data name="服务名称" xml:space="preserve">
-    <value>Service Name</value>
+    <value>ServiceName</value>
   </data>
   <data name="最小超时" xml:space="preserve">
-    <value>Minimum Timeout</value>
+    <value>MinTimeout</value>
   </data>
   <data name="最大超时" xml:space="preserve">
-    <value>Maximum timeout</value>
+    <value>MaxTimeout</value>
   </data>
   <data name="手动确认" xml:space="preserve">
-    <value>Manual confirmation</value>
+    <value>ManConfirm</value>
   </data>
   <data name="控制命令" xml:space="preserve">
-    <value>Control commands</value>
+    <value>Command</value>
   </data>
   <data name="指令类型" xml:space="preserve">
-    <value>Instruction type</value>
+    <value>CmdTypes</value>
   </data>
   <data name="接收指令" xml:space="preserve">
-    <value>Receive instructions</value>
+    <value>RecvCmd</value>
   </data>
   <data name="指定画面" xml:space="preserve">
-    <value>Designated screen</value>
+    <value>SpecifyIndex</value>
   </data>
   <data name="模板文件" xml:space="preserve">
-    <value>template file</value>
+    <value>TemplateFile</value>
   </data>
   <data name="模板匹配" xml:space="preserve">
-    <value>Template matching</value>
+    <value>TemplateMatching</value>
   </data>
   <data name="03_2 Algorithm" xml:space="preserve">
-    <value>032 Algorithm</value>
+    <value>03_2 Algorithm</value>
   </data>
   <data name="自适应校零" xml:space="preserve">
-    <value>Adaptive zeroing</value>
+    <value>AdaptDark</value>
   </data>
   <data name="Spectrum_FilterWheel" xml:space="preserve">
-    <value>Spectrometer + ND</value>
+    <value>Spectrometer+ND</value>
   </data>
   <data name="校正模板" xml:space="preserve">
-    <value>Correction template</value>
+    <value>Cali-Temp</value>
   </data>
   <data name="图像裁剪" xml:space="preserve">
-    <value>Image cropping</value>
+    <value>ImageCropping</value>
   </data>
   <data name="图像文件" xml:space="preserve">
-    <value>Image files</value>
+    <value>ImageFile</value>
   </data>
   <data name="图像拼接" xml:space="preserve">
-    <value>Image stitching</value>
+    <value>ImageCompound</value>
   </data>
   <data name="图像翻转" xml:space="preserve">
-    <value>Image Flip</value>
+    <value>ImageFlip</value>
   </data>
   <data name="发送指令" xml:space="preserve">
-    <value>Send command</value>
+    <value>SendCmd</value>
   </data>
   <data name="SFR_FindROI" xml:space="preserve">
-    <value>SFRFindROI</value>
+    <value>SFR_FindROI</value>
   </data>
   <data name="启用ND" xml:space="preserve">
-    <value>Enable ND</value>
+    <value>EnableND</value>
   </data>
   <data name="名称前缀" xml:space="preserve">
-    <value>Name prefix</value>
+    <value>NamePrefix</value>
   </data>
   <data name="十字计算" xml:space="preserve">
-    <value>Cross-shaped calculation</value>
+    <value>Cross-Calc</value>
   </data>
   <data name="合规算法" xml:space="preserve">
-    <value>Compliance Algorithm</value>
+    <value>Compliance</value>
   </data>
   <data name="发光区定位" xml:space="preserve">
-    <value>Positioning of the light-emitting area</value>
+    <value>LightArea-Localization</value>
   </data>
   <data name="发光区检测" xml:space="preserve">
-    <value>Detection of luminescent areas</value>
+    <value>AA-Inspection</value>
   </data>
   <data name="ARVR算法" xml:space="preserve">
-    <value>ARVR algorithm</value>
+    <value>ARVR</value>
   </data>
   <data name="双目融合" xml:space="preserve">
-    <value>Binocular Fusion</value>
+    <value>BinocularVision</value>
   </data>
   <data name="参数模板" xml:space="preserve">
-    <value>Parameter template</value>
+    <value>TempName</value>
   </data>
   <data name="关闭输出" xml:space="preserve">
-    <value>Turn off output</value>
+    <value>CloseOutput</value>
   </data>
   <data name="布点类型" xml:space="preserve">
-    <value>Distribution type</value>
+    <value>LayoutType</value>
   </data>
   <data name="平均次数" xml:space="preserve">
-    <value>Average number of times</value>
+    <value>AverageTimes</value>
   </data>
   <data name="MQTT订阅HUB" xml:space="preserve">
-    <value>Subscribe to HUB</value>
+    <value>SubscriptionHUB</value>
   </data>
   <data name="Timer.Time" xml:space="preserve">
     <value>Time</value>
   </data>
   <data name="定位输出" xml:space="preserve">
-    <value>Positioning output</value>
+    <value>PosOutImg</value>
   </data>
   <data name="自动/自适应" xml:space="preserve">
-    <value>Automatic/Adaptive</value>
+    <value>Auto/Adapt</value>
   </data>
   <data name="发光区检测OLED" xml:space="preserve">
-    <value>OLED Emitting Area Detection</value>
+    <value>OLED-AA-Inspection</value>
   </data>
   <data name="保存原图" xml:space="preserve">
-    <value>Save original image</value>
+    <value>SaveImage</value>
   </data>
   <data name="修正模板" xml:space="preserve">
-    <value>Modify template</value>
+    <value>PatchTemp</value>
   </data>
   <data name="修正输出" xml:space="preserve">
-    <value>Correct output</value>
+    <value>PatchOut</value>
   </data>
   <data name="Common" xml:space="preserve">
     <value>Common</value>
   </data>
   <data name="Camera" xml:space="preserve">
-    <value>camera</value>
+    <value>Camera</value>
   </data>
   <data name="Circle" xml:space="preserve">
-    <value>round</value>
+    <value>Circle</value>
   </data>
   <data name="03_3 第三方算法" xml:space="preserve">
-    <value>033 Third-party algorithms</value>
+    <value>03_3 TPAlgorithm</value>
   </data>
   <data name="Start_MQTT" xml:space="preserve">
-    <value>StartMQTT</value>
+    <value>Start_MQTT</value>
   </data>
   <data name="实时关注点算法" xml:space="preserve">
-    <value>Real-time attention algorithm</value>
+    <value>Real-POI</value>
   </data>
   <data name="ReMapping" xml:space="preserve">
     <value>ReMapping</value>
   </data>
   <data name="L/BV相机" xml:space="preserve">
-    <value>L/BV camera</value>
+    <value>L/BVCamera</value>
   </data>
   <data name="Locate" xml:space="preserve">
-    <value>position</value>
+    <value>Locate</value>
   </data>
   <data name="OLED算法" xml:space="preserve">
-    <value>OLED algorithm</value>
+    <value>OLED-Alg</value>
   </data>
   <data name="布点ROI" xml:space="preserve">
-    <value>Location ROI</value>
+    <value>Layout-ROI</value>
   </data>
   <data name="SolidPoint_KB" xml:space="preserve">
-    <value>Real Point - KB</value>
+    <value>SolidPoint_KB</value>
   </data>
   <data name="通用AOI相机" xml:space="preserve">
-    <value>General-purpose AOI camera</value>
+    <value>GeneralCamera-AOI</value>
   </data>
   <data name="关注点布点2" xml:space="preserve">
-    <value>Focus Point 2</value>
+    <value>POI-Layout2</value>
   </data>
   <data name="Height" xml:space="preserve">
-    <value>high</value>
+    <value>Height</value>
   </data>
   <data name="OLED.AOI" xml:space="preserve">
-    <value>OLED-AOI algorithm</value>
+    <value>OLED-AOI</value>
   </data>
   <data name="通用传感器" xml:space="preserve">
-    <value>General Sensors</value>
+    <value>GeneralSensor</value>
   </data>
   <data name="03_4 KB" xml:space="preserve">
-    <value>034 KB</value>
+    <value>03_4 KB</value>
   </data>
   <data name="Reopen" xml:space="preserve">
     <value>Reopen</value>
   </data>
   <data name="物理设备控制" xml:space="preserve">
-    <value>Physical equipment control</value>
+    <value>PhysicalDeviceControl</value>
   </data>
   <data name="Server" xml:space="preserve">
-    <value>server</value>
+    <value>Server</value>
   </data>
   <data name="保存/翻转" xml:space="preserve">
     <value>Save/Flip</value>
   </data>
   <data name="POI点名称" xml:space="preserve">
-    <value>POI Names</value>
+    <value>POI-Name</value>
   </data>
   <data name="MQTT自定义订阅" xml:space="preserve">
-    <value>Custom subscription</value>
+    <value>CustomSubscription</value>
   </data>
   <data name="第三方算法2" xml:space="preserve">
-    <value>Third-party algorithm 2</value>
+    <value>Third-Party-Algorithm2</value>
   </data>
   <data name="MQTT自定义发布" xml:space="preserve">
-    <value>Custom publishing</value>
+    <value>CustomPublish</value>
   </data>
   <data name="Voltage_V" xml:space="preserve">
-    <value>Voltage (V)</value>
+    <value>Voltage_V</value>
   </data>
   <data name="POI保存模板" xml:space="preserve">
-    <value>POI Save Template</value>
+    <value>POI-SaveTemp</value>
   </data>
   <data name="POI修正模板" xml:space="preserve">
-    <value>POI Correction Template</value>
+    <value>POI Patch Template</value>
   </data>
   <data name="Command" xml:space="preserve">
     <value>Command</value>
@@ -316,13 +316,13 @@
     <value>11 ROI</value>
   </data>
   <data name="第三方算法" xml:space="preserve">
-    <value>Third-party algorithm</value>
+    <value>Third-Party-Algorithm</value>
   </data>
   <data name="09 合规验证" xml:space="preserve">
-    <value>09 Compliance Verification</value>
+    <value>09 ComplianceVerification</value>
   </data>
   <data name="POI过滤模板" xml:space="preserve">
-    <value>POI filter template</value>
+    <value>POI Filtering Template</value>
   </data>
   <data name="EndNode" xml:space="preserve">
     <value>EndNode</value>
@@ -337,16 +337,16 @@
     <value>Down</value>
   </data>
   <data name="上" xml:space="preserve">
-    <value>superior</value>
+    <value>Up</value>
   </data>
   <data name="重置" xml:space="preserve">
     <value>Reset</value>
   </data>
   <data name="限值" xml:space="preserve">
-    <value>Limits (current/voltage)</value>
+    <value>LimitValue(I/V)</value>
   </data>
   <data name="颜色" xml:space="preserve">
-    <value>color</value>
+    <value>Color</value>
   </data>
   <data name="鬼影" xml:space="preserve">
     <value>Ghost</value>
@@ -355,7 +355,7 @@
     <value>Output</value>
   </data>
   <data name="Db" xml:space="preserve">
-    <value>database</value>
+    <value>Db</value>
   </data>
   <data name="PG" xml:space="preserve">
     <value>PG</value>
@@ -364,79 +364,79 @@
     <value>XY</value>
   </data>
   <data name="畸变" xml:space="preserve">
-    <value>distortion</value>
+    <value>Distortion</value>
   </data>
   <data name="点数" xml:space="preserve">
     <value>Points</value>
   </data>
   <data name="相机" xml:space="preserve">
-    <value>camera</value>
+    <value>Camera</value>
   </data>
   <data name="焦距" xml:space="preserve">
-    <value>focal length</value>
+    <value>FocalLen</value>
   </data>
   <data name="类别" xml:space="preserve">
-    <value>category</value>
+    <value>Type</value>
   </data>
   <data name="算子" xml:space="preserve">
     <value>Operator</value>
   </data>
   <data name="曝光" xml:space="preserve">
-    <value>Exposure (ms)</value>
+    <value>Exp(ms)</value>
   </data>
   <data name="指定" xml:space="preserve">
     <value>Specify</value>
   </data>
   <data name="校零" xml:space="preserve">
-    <value>Zero calibration</value>
+    <value>Init-Dark</value>
   </data>
   <data name="模板" xml:space="preserve">
-    <value>template</value>
+    <value>Template</value>
   </data>
   <data name="源表" xml:space="preserve">
-    <value>Source table</value>
+    <value>SMU</value>
   </data>
   <data name="校正" xml:space="preserve">
-    <value>Correction</value>
+    <value>Calibration</value>
   </data>
   <data name="检测" xml:space="preserve">
-    <value>Detection</value>
+    <value>Measure</value>
   </data>
   <data name="其他" xml:space="preserve">
-    <value>other</value>
+    <value>Other</value>
   </data>
   <data name="命令" xml:space="preserve">
-    <value>Order</value>
+    <value>Command</value>
   </data>
   <data name="停止" xml:space="preserve">
-    <value>stop</value>
+    <value>Stop</value>
   </data>
   <data name="光圈" xml:space="preserve">
-    <value>aperture</value>
+    <value>Aperture</value>
   </data>
   <data name="开始" xml:space="preserve">
-    <value>start</value>
+    <value>Start</value>
   </data>
   <data name="增益" xml:space="preserve">
     <value>Gain</value>
   </data>
   <data name="位置" xml:space="preserve">
-    <value>Location</value>
+    <value>Position</value>
   </data>
   <data name="图像水平翻转" xml:space="preserve">
-    <value>Image horizontal flip</value>
+    <value>HorizontalFlip</value>
   </data>
   <data name="RExpDesc" xml:space="preserve">
-    <value>R channel exposure time (ms)</value>
+    <value>Red channel exposure time (ms)</value>
   </data>
   <data name="04 源表" xml:space="preserve">
-    <value>04 Source Table</value>
+    <value>04 SMU</value>
   </data>
   <data name="00 全局" xml:space="preserve">
     <value>00 Global</value>
   </data>
   <data name="01 运算" xml:space="preserve">
-    <value>01 Calculation</value>
+    <value>01 Operation</value>
   </data>
   <data name="02 相机" xml:space="preserve">
     <value>02 Camera</value>
@@ -445,19 +445,19 @@
     <value>Spectrometer</value>
   </data>
   <data name="值显示HUB" xml:space="preserve">
-    <value>Value display HUB</value>
+    <value>DisplayHUB</value>
   </data>
   <data name="FixedLEDToFile" xml:space="preserve">
     <value>FixedLEDToFile</value>
   </data>
   <data name="逻辑与" xml:space="preserve">
-    <value>Logic AND</value>
+    <value>LogicalAND</value>
   </data>
   <data name="校正ROI" xml:space="preserve">
-    <value>Correcting ROI</value>
+    <value>ROI-Calibration</value>
   </data>
   <data name="起始值" xml:space="preserve">
-    <value>initial value</value>
+    <value>StartValue</value>
   </data>
   <data name="z-index" xml:space="preserve">
     <value>z-index</value>
@@ -466,13 +466,13 @@
     <value>10 MQTT</value>
   </data>
   <data name="R曝光" xml:space="preserve">
-    <value>R exposure (ms)</value>
+    <value>R Exp(ms)</value>
   </data>
   <data name="B曝光" xml:space="preserve">
-    <value>B exposure (ms)</value>
+    <value>B Exp(ms)</value>
   </data>
   <data name="G曝光" xml:space="preserve">
-    <value>G exposure (ms)</value>
+    <value>G Exp(ms)</value>
   </data>
   <data name="FOV" xml:space="preserve">
     <value>FOV</value>
@@ -499,7 +499,7 @@
     <value>Hex</value>
   </data>
   <data name="RED" xml:space="preserve">
-    <value>red</value>
+    <value>RED</value>
   </data>
   <data name="P/O" xml:space="preserve">
     <value>P/O</value>
@@ -511,70 +511,70 @@
     <value>SFR</value>
   </data>
   <data name="SMU" xml:space="preserve">
-    <value>Source table</value>
+    <value>SMU</value>
   </data>
   <data name="点类型" xml:space="preserve">
-    <value>Point type</value>
+    <value>PointType</value>
   </data>
   <data name="点缺陷" xml:space="preserve">
-    <value>Point defects</value>
+    <value>PointDefect</value>
   </data>
   <data name="线缺陷" xml:space="preserve">
-    <value>Line defects</value>
+    <value>LineDefect</value>
   </data>
   <data name="结束值" xml:space="preserve">
-    <value>End value</value>
+    <value>EndValue</value>
   </data>
   <data name="滤色轮" xml:space="preserve">
-    <value>Color filter wheel</value>
+    <value>FilterWheel</value>
   </data>
   <data name="光谱仪" xml:space="preserve">
     <value>Spectrometer</value>
   </data>
   <data name="固定点" xml:space="preserve">
-    <value>Fixed point</value>
+    <value>FixedLED</value>
   </data>
   <data name="Ascii" xml:space="preserve">
     <value>Ascii</value>
   </data>
   <data name="单步值" xml:space="preserve">
-    <value>single step value</value>
+    <value>StepValue</value>
   </data>
   <data name="AOI算法" xml:space="preserve">
-    <value>AOI algorithm</value>
+    <value>AOI-Operator</value>
   </data>
   <data name="AOI总成" xml:space="preserve">
-    <value>AOI All</value>
+    <value>AOI-ALL</value>
   </data>
   <data name="当前值" xml:space="preserve">
-    <value>Current value</value>
+    <value>Cur-Val</value>
   </data>
   <data name="GREEN" xml:space="preserve">
-    <value>green</value>
+    <value>GREEN</value>
   </data>
   <data name="AI算法2" xml:space="preserve">
-    <value>AI Algorithm 2</value>
+    <value>VisionAlgorithm2</value>
   </data>
   <data name="亚像素" xml:space="preserve">
     <value>Subpixel</value>
   </data>
   <data name="二次修正文件" xml:space="preserve">
-    <value>Second revision document</value>
+    <value>SecondRevisionFile</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>closure</value>
+    <value>Close</value>
   </data>
   <data name="CAD文件" xml:space="preserve">
-    <value>CAD files</value>
+    <value>CADFile</value>
   </data>
   <data name="LED定位" xml:space="preserve">
-    <value>LED positioning</value>
+    <value>LED-Localization</value>
   </data>
   <data name="JND算法" xml:space="preserve">
-    <value>JND algorithm</value>
+    <value>JND</value>
   </data>
   <data name="Value" xml:space="preserve">
-    <value>value</value>
+    <value>Value</value>
   </data>
   <data name="Width" xml:space="preserve">
     <value>Width</value>
@@ -583,202 +583,202 @@
     <value>Timer</value>
   </data>
   <data name="Topic" xml:space="preserve">
-    <value>theme</value>
+    <value>Topic</value>
   </data>
   <data name="Token" xml:space="preserve">
     <value>Token</value>
   </data>
   <data name="POI宽度" xml:space="preserve">
-    <value>POI width</value>
+    <value>POI-Width</value>
   </data>
   <data name="POI修正" xml:space="preserve">
-    <value>POI Correction</value>
+    <value>POI-Patch</value>
   </data>
   <data name="POI类型" xml:space="preserve">
-    <value>POI type</value>
+    <value>POI-Type</value>
   </data>
   <data name="POI模板" xml:space="preserve">
-    <value>POI template</value>
+    <value>POITemp</value>
   </data>
   <data name="POI新增" xml:space="preserve">
-    <value>New POIs</value>
+    <value>POI-Add</value>
   </data>
   <data name="POI高度" xml:space="preserve">
-    <value>POI height</value>
+    <value>POI-Height</value>
   </data>
   <data name="POI过滤" xml:space="preserve">
-    <value>POI Filtering</value>
+    <value>POI-Filter</value>
   </data>
   <data name="相机ROI" xml:space="preserve">
-    <value>Camera ROI</value>
+    <value>ROI-Camera</value>
   </data>
   <data name="相机参数模板" xml:space="preserve">
-    <value>Camera parameter template</value>
+    <value>Camera Parameters Template</value>
   </data>
   <data name="LoopNextNode" xml:space="preserve">
     <value>LoopNextNode</value>
   </data>
   <data name="Extract" xml:space="preserve">
-    <value>extract</value>
+    <value>Extract</value>
   </data>
   <data name="关注点算法" xml:space="preserve">
-    <value>Focus Algorithm</value>
+    <value>POI</value>
   </data>
   <data name="关注点分析" xml:space="preserve">
-    <value>Focus Analysis</value>
+    <value>POI-Analysis</value>
   </data>
   <data name="关注点布点" xml:space="preserve">
-    <value>Focus Points and Deployment</value>
+    <value>POI-Layout</value>
   </data>
   <data name="03_1 关注点" xml:space="preserve">
-    <value>031 Focus</value>
+    <value>03_1 POI</value>
   </data>
   <data name="通用相机" xml:space="preserve">
-    <value>general camera</value>
+    <value>GeneralCamera</value>
   </data>
   <data name="CIE_BUZ" xml:space="preserve">
-    <value>CIEBUZ</value>
+    <value>CIE_BUZ</value>
   </data>
   <data name="自动积分" xml:space="preserve">
-    <value>Automatic points</value>
+    <value>AutoIntegration</value>
   </data>
   <data name="自动校零" xml:space="preserve">
-    <value>Automatic zeroing</value>
+    <value>AutoDark</value>
   </data>
   <data name="自动曝光" xml:space="preserve">
-    <value>Automatic Exposure</value>
+    <value>AutoExposure</value>
   </data>
   <data name="自动对焦" xml:space="preserve">
     <value>Autofocus</value>
   </data>
   <data name="节点ID" xml:space="preserve">
-    <value>Node ID</value>
+    <value>NodeID</value>
   </data>
   <data name="节点类型" xml:space="preserve">
-    <value>Equipment type</value>
+    <value>DeviceType</value>
   </data>
   <data name="角点顺序" xml:space="preserve">
-    <value>Corner order</value>
+    <value>CornerOrder</value>
   </data>
   <data name="输出类别" xml:space="preserve">
-    <value>Output Category</value>
+    <value>OutType</value>
   </data>
   <data name="输出文件" xml:space="preserve">
-    <value>Output file</value>
+    <value>OutFileName</value>
   </data>
   <data name="输出模板" xml:space="preserve">
-    <value>Output template</value>
+    <value>OutTemp</value>
   </data>
   <data name="过滤模板" xml:space="preserve">
-    <value>Filter template</value>
+    <value>FilterTemp</value>
   </data>
   <data name="色温/波长" xml:space="preserve">
-    <value>Color temperature/wavelength</value>
+    <value>CCT/Wave</value>
   </data>
   <data name="CADMapping" xml:space="preserve">
     <value>CADMapping</value>
   </data>
   <data name="设备类型" xml:space="preserve">
-    <value>Equipment type</value>
+    <value>DeviceType</value>
   </data>
   <data name="设备代码" xml:space="preserve">
-    <value>Device Code</value>
+    <value>DeviceCode</value>
   </data>
   <data name="BlackMura算法" xml:space="preserve">
-    <value>BlackMura algorithm</value>
+    <value>BlackMura</value>
   </data>
   <data name="输出POI模板" xml:space="preserve">
-    <value>Output POI template</value>
+    <value>OutPOITemp</value>
   </data>
   <data name="MessageText" xml:space="preserve">
-    <value>Message content</value>
+    <value>MessageText</value>
   </data>
   <data name="OutFile" xml:space="preserve">
     <value>OutFile</value>
   </data>
   <data name="ARVR.Ghost算法" xml:space="preserve">
-    <value>ARVR.Ghost Algorithm</value>
+    <value>ARVR-Ghost</value>
   </data>
   <data name="源表[模板]" xml:space="preserve">
-    <value>Source Table - Template</value>
+    <value>SMU-Template</value>
   </data>
   <data name="ImageCompound" xml:space="preserve">
-    <value>Image stitching</value>
+    <value>ImageCompound</value>
   </data>
   <data name="Camera_FilterWheel" xml:space="preserve">
-    <value>Camera + ND</value>
+    <value>Camera+ND</value>
   </data>
   <data name="FlowEngineLib" xml:space="preserve">
     <value>FlowEngineLib</value>
   </data>
   <data name="MQTT发布HUB" xml:space="preserve">
-    <value>Release HUB</value>
+    <value>PublishHUB</value>
   </data>
   <data name="03_5 OLED" xml:space="preserve">
-    <value>035 OLED</value>
+    <value>03_5 OLED</value>
   </data>
   <data name="自动曝光/ND" xml:space="preserve">
-    <value>Automatic Exposure/ND</value>
+    <value>AE/ND</value>
   </data>
   <data name="关注点修正标定" xml:space="preserve">
-    <value>Focus point correction calibration</value>
+    <value>POI-Calibration</value>
   </data>
   <data name="FixedLED" xml:space="preserve">
     <value>FixedLED</value>
   </data>
   <data name="GeneralSensor" xml:space="preserve">
-    <value>General Sensors</value>
+    <value>GeneralSensor</value>
   </data>
   <data name="自动对焦模板" xml:space="preserve">
-    <value>Autofocus template</value>
+    <value>AF-Temp</value>
   </data>
   <data name="参数模板ID" xml:space="preserve">
-    <value>Parameter Template ID</value>
+    <value>TempId</value>
   </data>
   <data name="o-index" xml:space="preserve">
     <value>o-index</value>
   </data>
   <data name="文件输出模板" xml:space="preserve">
-    <value>File output template</value>
+    <value>FileOutTemp</value>
   </data>
   <data name="通用AOI相机2" xml:space="preserve">
-    <value>Universal AOI camera 2</value>
+    <value>GeneralCamera-AOI2</value>
   </data>
   <data name="电机[相机]" xml:space="preserve">
-    <value>Motor [Camera]</value>
+    <value>Motor[Camera]</value>
   </data>
   <data name="POI模板(Re)" xml:space="preserve">
-    <value>POI Template - Re</value>
+    <value>POITemp-Re</value>
   </data>
   <data name="GExpDesc" xml:space="preserve">
-    <value>G channel exposure time (ms)</value>
+    <value>Green channel exposure time (ms)</value>
   </data>
   <data name="FilterWheel" xml:space="preserve">
-    <value>Filter wheel</value>
+    <value>FilterWheel</value>
   </data>
   <data name="KB输出" xml:space="preserve">
-    <value>KB output</value>
+    <value>KB-Output</value>
   </data>
   <data name="KB算法" xml:space="preserve">
-    <value>KB algorithm</value>
+    <value>KB</value>
   </data>
   <data name="CV相机" xml:space="preserve">
-    <value>CV camera</value>
+    <value>CVCamera</value>
   </data>
   <data name="File" xml:space="preserve">
-    <value>document</value>
+    <value>File</value>
   </data>
   <data name="Data" xml:space="preserve">
-    <value>data</value>
+    <value>Data</value>
   </data>
   <data name="BLUE" xml:space="preserve">
-    <value>blue</value>
+    <value>BLUE</value>
   </data>
   <data name="Mura" xml:space="preserve">
     <value>Mura</value>
   </data>
   <data name="AI算法" xml:space="preserve">
-    <value>AI algorithms</value>
+    <value>VisionAlgorithm</value>
   </data>
   <data name="None" xml:space="preserve">
     <value>None</value>
@@ -787,15 +787,54 @@
     <value>Open</value>
   </data>
   <data name="AA布点" xml:space="preserve">
-    <value>AA layout</value>
+    <value>AA-Layout</value>
   </data>
   <data name="Rect" xml:space="preserve">
-    <value>rectangle</value>
+    <value>Rect</value>
   </data>
   <data name="Scan" xml:space="preserve">
-    <value>scanning</value>
+    <value>Scan</value>
   </data>
   <data name="Port" xml:space="preserve">
-    <value>port</value>
+    <value>Port</value>
+  </data>
+  <data name="OLED数据提取2" xml:space="preserve">
+    <value>OLED Data Extraction 2</value>
+  </data>
+  <data name="点缺陷_Grade" xml:space="preserve">
+    <value>Point Defect Grade</value>
+  </data>
+  <data name="OLED图像4In1合并" xml:space="preserve">
+    <value>OLED image 4In1 merging</value>
+  </data>
+  <data name="CalcEQE" xml:space="preserve">
+    <value>EQE calculation</value>
+  </data>
+  <data name="A" xml:space="preserve">
+    <value>A</value>
+  </data>
+  <data name="B" xml:space="preserve">
+    <value>B</value>
+  </data>
+  <data name="通道" xml:space="preserve">
+    <value>aisle</value>
+  </data>
+  <data name="CsvFileName" xml:space="preserve">
+    <value>Csv filename</value>
+  </data>
+  <data name="图像文件4" xml:space="preserve">
+    <value>Image file 4</value>
+  </data>
+  <data name="图像文件1" xml:space="preserve">
+    <value>Image file 1</value>
+  </data>
+  <data name="图像文件3" xml:space="preserve">
+    <value>Image file 3</value>
+  </data>
+  <data name="图像文件2" xml:space="preserve">
+    <value>Image file 2</value>
+  </data>
+  <data name="源表[CSV]" xml:space="preserve">
+    <value>Source Table - CSV</value>
   </data>
 </root>

@@ -43,6 +43,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
         [SugarColumn(ColumnName = "fPL", IsNullable = true, IsJson = true, ColumnDataType = "json", ColumnDescription = "相对光谱数据")]
         public string? fPL { get; set; }
 
+        [SugarColumn(ColumnName = "fPL_file_name", IsNullable = true, Length =1024, ColumnDescription = "相对光谱数据文件(fPL为空)")]
+        public string? fPL_file_name { get; set; }
+
         [SugarColumn(ColumnName = "fRi", IsNullable = true, IsJson = true, ColumnDataType = "json", ColumnDescription = "显色性指数 R1-R15")]
         public string? fRi { get; set; }
 

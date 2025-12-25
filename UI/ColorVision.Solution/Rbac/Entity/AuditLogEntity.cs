@@ -1,6 +1,6 @@
 using SqlSugar;
 
-namespace ColorVision.Rbac
+namespace ColorVision.Rbac.Entity
 {
     [SugarTable("sys_audit_log")]    
     public class AuditLogEntity

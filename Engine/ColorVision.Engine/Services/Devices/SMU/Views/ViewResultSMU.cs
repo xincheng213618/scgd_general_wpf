@@ -47,6 +47,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             Id = item.Id;
             CreateTime = item.CreateDate;
             BatchID = item.BatchId;
+            ChannelType = item.ChannelType;
             MeasurementType = item.IsSourceV == true ? MeasurementType.Voltage : MeasurementType.Current;
             LimitEnd = item.LimitValue ?? 0;
             VResult = item.VResult ?? 0;
@@ -192,6 +193,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         public ObservableCollection<SMUData> SMUDatas { get; set; } = new ObservableCollection<SMUData>();
 
         public MeasurementType MeasurementType { get; set; }
+
+        public SMUChannelType ChannelType { get; set; } = SMUChannelType.A;
 
         public  bool IsSourceV { get => MeasurementType == MeasurementType.Voltage; }
 

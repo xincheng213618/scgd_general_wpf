@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Batch;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
@@ -9,6 +10,7 @@ using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
+using Dm.util;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -18,6 +20,7 @@ using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Services;
 using Quartz;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -29,6 +32,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using static Azure.Core.HttpHeader;
 
 namespace ProjectARVRPro
 {
@@ -114,7 +118,7 @@ namespace ProjectARVRPro
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ProjectARVRProConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
+                    ProjectARVRProConfig.Instance.SN = SN;
                 });
             }
         }
@@ -330,7 +334,7 @@ namespace ProjectARVRPro
                 log.Info("当前flowControl存在流程执行");
                 return;
             }
-            flowControl.IsFlowRun = true;
+
             TryCount++;
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
 
@@ -348,7 +352,9 @@ namespace ProjectARVRPro
             }
 
             FlowName = FlowTemplate.Text;
-            CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+
+            string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
+            CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
 
             await Refresh();
 
@@ -375,6 +381,53 @@ namespace ProjectARVRPro
             timer.Change(0, 500); // 启动定时器
         }
 
+        private bool PreProcessing(string flowName, string serialNumber)
+        {
+            try
+            {
+                // Find all matching PreProcessMeta entries for this flow template name
+                var matchingMetas = PreProcessManager.GetInstance().ProcessMetas
+                    .Where(m => string.Equals(m.TemplateName, flowName, StringComparison.OrdinalIgnoreCase) && m.PreProcess != null)
+                    .ToList();
+
+                if (matchingMetas.Count > 0)
+                {
+                    log.Info($"匹配到 {matchingMetas.Count} 个预处理 {flowName}");
+
+                    var ctx = new IPreProcessContext
+                    {
+                        FlowName = flowName,
+                        SerialNumber = serialNumber,
+                    };
+
+                    // Execute all matching pre-processors sequentially
+                    foreach (var meta in matchingMetas)
+                    {
+                        log.Info($"执行预处理 {meta.Name} -> {meta.ProcessTypeName}");
+                        try
+                        {
+                            bool success = meta.PreProcess.PreProcess(ctx);
+                            if (!success)
+                            {
+                                log.Warn($"预处理 {meta.Name} 执行返回失败");
+                                return false; // Abort flow if any pre-processor fails
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error($"预处理 {meta.Name} 执行异常", ex);
+                            return false; // Abort flow on exception
+                        }
+                    }
+                }
+                return true; // All pre-processors succeeded or none configured
+            }
+            catch (Exception ex)
+            {
+                log.Error("匹配/执行预处理出错", ex);
+                return false;
+            }
+        }
 
 
         private FlowControl flowControl;
@@ -563,6 +616,47 @@ namespace ProjectARVRPro
                         ViewResultManager.Save(result);
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
 
+                        if (ViewResultManager.Config.IsSaveLink)
+                        {
+                            string linkPath = ViewResultManager.Config.CsvSavePath;
+                            string sn = result.SN;
+
+                            if (ViewResultManager.Config.SaveByDate)
+                            {
+                                string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                                linkPath = Path.Combine(linkPath, dateFolder);
+                            }
+
+                            // 处理 SN 不为空的情况
+                            if (!string.IsNullOrWhiteSpace(sn))
+                            {
+                                // 移除 SN 中的非法文件名字符
+                                foreach (char c in Path.GetInvalidFileNameChars())
+                                {
+                                    sn = sn.Replace(c.ToString(), "");
+                                }
+
+                                // 再次检查移除特殊字符后是否为空，如果不为空则组合路径
+                                if (!string.IsNullOrWhiteSpace(sn))
+                                {
+                                    linkPath = Path.Combine(linkPath, sn);
+                                }
+                            }
+                            // 如果 sn 原本为空或清理后为空，linkPath 保持为 ViewResultManager.Config.CsvSavePath
+
+                            // 注意：原始代码中是 if (Directory.Exists) Create... 
+                            // 这里修正为如果目录不存在(!Exists)则创建，确保路径有效
+                            if (!Directory.Exists(linkPath))
+                                Directory.CreateDirectory(linkPath);
+
+                            string shortcutName = Path.GetFileNameWithoutExtension(result.FileName) + $"_{result.Model}";
+                            string shortcutPath = linkPath;
+
+                            if (shortcutName != null)
+                                ColorVision.Common.NativeMethods.ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, result.FileName, "");
+                        }
+                        IsSaveImageReuslt = ViewResultManager.Config.IsSaveImageReuslt;
+
                         if (IsTestTypeCompleted())
                         {
                             TestCompleted();
@@ -585,6 +679,8 @@ namespace ProjectARVRPro
             }
             ViewResultManager.Save(result);
         }
+
+        public bool IsSaveImageReuslt { get;set; }
 
         private bool IsTestTypeCompleted()
         {
@@ -647,14 +743,21 @@ namespace ProjectARVRPro
                 log.Info("找不到连接的Socket");
                 return;
             }
-            ObjectiveTestResult.TotalResult = true;
-
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
             if (ViewResultManager.Config.IsSaveCsv)
             {
+
+                string linkPath = ViewResultManager.Config.CsvSavePath;
+                if (ViewResultManager.Config.SaveByDate)
+                {
+                    string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                    linkPath = Path.Combine(linkPath, dateFolder);
+                }
+
+
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults_{timeStr}.csv");
+                string filePath = Path.Combine(linkPath, $"TestResults_{SNtextBox.Text}_{timeStr}_.csv");
                 ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
             }
 
@@ -743,6 +846,57 @@ namespace ProjectARVRPro
                                     log.Error("自定义 IProcess 执行异常", ex);
                                 }
                             }
+
+                            log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
+                            if (IsSaveImageReuslt)
+                            {
+                                IsSaveImageReuslt = false;
+                                Task.Run(async () =>
+                                {
+                                    await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
+                                    string linkPath = ViewResultManager.Config.CsvSavePath;
+                                    string sn = result.SN;
+
+                                    if (ViewResultManager.Config.SaveByDate)
+                                    {
+                                        string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                                        linkPath = Path.Combine(linkPath, dateFolder);
+                                    }
+
+                                    // 处理 SN 不为空的情况
+                                    if (!string.IsNullOrWhiteSpace(sn))
+                                    {
+                                        // 移除 SN 中的非法文件名字符
+                                        foreach (char c in Path.GetInvalidFileNameChars())
+                                        {
+                                            sn = sn.Replace(c.ToString(), "");
+                                        }
+
+                                        // 再次检查移除特殊字符后是否为空，如果不为空则组合路径
+                                        if (!string.IsNullOrWhiteSpace(sn))
+                                        {
+                                            linkPath = Path.Combine(linkPath, sn);
+                                        }
+                                    }
+
+                                    // 如果 sn 原本为空或清理后为空，linkPath 保持为 ViewResultManager.Config.CsvSavePath
+
+                                    // 注意：原始代码中是 if (Directory.Exists) Create... 
+                                    // 这里修正为如果目录不存在(!Exists)则创建，确保路径有效
+                                    if (!Directory.Exists(linkPath))
+                                        Directory.CreateDirectory(linkPath);
+
+                                    string FileName = Path.GetFileNameWithoutExtension(result.FileName);
+
+                                    string FilePath = Path.Combine(linkPath, $"{FileName}_{result.Model}result.png");
+                                    log.Info(FilePath);
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        ImageView.Save(FilePath);
+                                    });
+                                });
+                            }
+
 
                         });
                     }

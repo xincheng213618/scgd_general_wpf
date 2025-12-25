@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public string Group { get; set; }
     }
 
-    public class DisplayAlgorithmConfig: IDisPlayConfigBase
+    public class DisplayAlgorithmConfig: IDisplayConfigBase
     {
         public string LastSelectTemplate { get => _LastSelectTemplate; set { _LastSelectTemplate = value; OnPropertyChanged(); } }
         private string _LastSelectTemplate = "POI";
@@ -66,8 +66,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             DataContext = Device;
 
-            this.ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
+            this.ContextMenu = Device.ContextMenu;
+
+
             List<DisplayAlgorithmMeta> algorithmMetas = new List<DisplayAlgorithmMeta>();
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())

@@ -82,7 +82,7 @@
                     <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Style="{StaticResource ComboBox.Small}" Width="100" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
                 </ToolBar>
 
-                <ToolBarTray x:Name="ToolBarDraw" HorizontalAlignment="Center" VerticalAlignment="Bottom" Grid.Column="1" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
+                <ToolBarTray x:Name="ToolBarDraw" HorizontalAlignment="Center" VerticalAlignment="Bottom" Grid.Column="1" Visibility="{Binding Config.IsToolBarDrawVisible,Converter={StaticResource bool2VisibilityConverter}}">
                     <ToolBar ToolBarTray.IsLocked="True"  >
                     </ToolBar>
                 </ToolBarTray>

@@ -58,6 +58,8 @@ namespace ProjectARVRPro
             ProjectWindowInstance.WindowInstance.InitTest(string.Empty);
         }
 
+
+
         public int StepIndex { get => _StepIndex; set { _StepIndex = value; OnPropertyChanged(); } }
         private int _StepIndex = 0;
 

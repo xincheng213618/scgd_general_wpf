@@ -94,11 +94,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 EditConfig.CFW.ChannelCfgs.Add(new Services.PhyCameras.Configs.ChannelCfg());
             }
 
-            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.CFW));
-            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.CameraCfg));
-            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.CameraParameterLimit));
-            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.MotorConfig));
-            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig));
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

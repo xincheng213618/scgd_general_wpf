@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Templates.Compliance
             ViewResultAlgType.Compliance_Math_CIE_XYZ,
         };
 
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
             view.ImageView.ImageShow.Clear();
 

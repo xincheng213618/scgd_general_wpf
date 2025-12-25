@@ -47,11 +47,11 @@
                     <DockPanel Margin="0,3">
                         <DockPanel  Margin="5,0">
                             <TextBlock Text="Width" MinWidth="25" Margin="0,0,5,0"/>
-                            <TextBox x:Name="TextBoxCADW" Text="{Binding Width}" Width="55" />
+                            <TextBox x:Name="TextBoxCADW" Text="{Binding Width}" Width="65" />
                         </DockPanel>
                         <DockPanel  Margin="5,0"  HorizontalAlignment="Left">
                             <TextBlock Text="Height" MinWidth="25" Margin="0,0,5,0"/>
-                            <TextBox x:Name="TextBoxCADH"  Text="{Binding Height}" Width="55" />
+                            <TextBox x:Name="TextBoxCADH"  Text="{Binding Height}" Width="65" />
                         </DockPanel>
                     </DockPanel>
                     <StackPanel  Orientation="Horizontal" Margin="0,2">
@@ -70,14 +70,15 @@
                         <ComboBox x:Name="ComboBoxImg"  Margin="2,0"  Style="{StaticResource ComboBox.Small}"/>
                     </DockPanel>
                     <DockPanel Margin="0,2">
-                        <TextBlock Text="背景图片"  Margin="2,0,5,0"/>
+                        <Button DockPanel.Dock="Right" Content="..." Command="{Binding PoiConfig.SelectBackgroundFilePathCommand}" Margin="5,0,0,0"/>
+                        <TextBlock Text="背景"  Margin="2,0,5,0"/>
                         <TextBox Text="{Binding PoiConfig.BackgroundFilePath}" IsReadOnly="True"/>
                     </DockPanel>
                     <StackPanel  Margin="2" Orientation="Horizontal">
                         <Button  ToolTip="保存关注点" Click="Button_Save_Click" HorizontalAlignment="Right" Margin="0,0,5,0">
                             <Image Source="{StaticResource DrawingImageSave}" Height="20" />
                         </Button>
-                        <Button x:Name="button3" ToolTip="清空关注点" Click="Button3_Click" HorizontalAlignment="Right">
+                        <Button x:Name="button3" ToolTip="清空关注点" Click="Button3_Click" HorizontalAlignment="Right" Margin="0,0,5,0">
                             <Image Source="{StaticResource DrawingImageClear}" Height="20"/>
                         </Button>
                         <Button Content="另存为" ToolTip="另存为需要先保存数据，不保存的数据暂时无法创建新的副本" Click="CreateCopy_Click"/>
@@ -87,7 +88,7 @@
             <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
                 <StackPanel Margin="5">
                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="KBLVSacle" Width="60"/>
+                        <TextBlock Text="KBLVSacle" Width="60" Margin="0,0,5,0"/>
                         <TextBox  BorderThickness="1" Width="100" Style="{StaticResource TextBox.Small}" Text="{Binding KBLVSacle}"/>
                     </StackPanel>
                     <DockPanel Margin="0,0">
@@ -347,7 +348,7 @@
                                 </DockPanel>
                             </StackPanel>
                             <ComboBox x:Name="ComboBoxBorderType2"  Visibility="{Binding ElementName=RadioButtonAreaMask,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}" HorizontalAlignment="Left" Width="100" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="5,3"/>
-                            <Button x:Name="button2" Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="绘制" Click="Button2_Click"/>
+                            <Button x:Name="button2" Margin="5"  Height="35" Width="130" FontWeight="Bold" HorizontalAlignment="Left"  Content="绘制" Click="Button2_Click"/>
                         </StackPanel>
 
                     </Border>

@@ -132,7 +132,20 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             fSpect1 = item.fSpect1 ?? 0;
             fSpect2 = item.fSpect2 ?? 0;
             fInterval = item.fInterval ?? 0;
-            fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? Array.Empty<float>();
+
+            if (!string.IsNullOrWhiteSpace(item.fPL_file_name) && File.Exists(item.fPL_file_name))
+            {
+                File.ReadAllBytes(item.fPL_file_name);
+                string json = File.ReadAllText(item.fPL_file_name);
+                fPL = JsonConvert.DeserializeObject<float[]>(json) ?? Array.Empty<float>();
+            }
+            else
+            {
+                fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? Array.Empty<float>();
+            }
+
+
+
             fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? Array.Empty<float>();
             Gen();
         }

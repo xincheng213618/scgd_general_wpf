@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ProjectARVRPro.Process;
 using ProjectARVRPro.Process.Black;
 using ProjectARVRPro.Process.Blue;
 using ProjectARVRPro.Process.Chessboard;
@@ -29,6 +30,27 @@ namespace ProjectARVRPro
                     if (testItem != null)
                     {
                         rows.Add(FormatCsvRow(testScreenName, property.Name, testItem));
+                    }
+                }
+                else if (property.PropertyType == typeof(List<PoixyuvData>))
+                {
+                    try
+                    {
+                        var list = (List<PoixyuvData>)property.GetValue(obj);
+                        if (list != null)
+                        {
+                            foreach (var item in list) 
+                            {
+                                rows.Add($"{testScreenName},{item.Name}(Lv),{item.Y},cd/m2,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(Cx),{item.x},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(Cy),{item.y},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(u'),{item.u},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(v'),{item.v},None,0,0,None");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
                     }
                 }
                 else if (!property.PropertyType.IsValueType && property.PropertyType != typeof(string))
@@ -155,7 +177,7 @@ namespace ProjectARVRPro
         [DisplayName("B255")]
         public BlueTestResult BlueTestResult { get; set; }
 
-        [DisplayName("Chessborad_7x7")]
+        [DisplayName("Chessborad")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
 
         [DisplayName("MTF")]
@@ -174,7 +196,7 @@ namespace ProjectARVRPro
         /// 总体测试结果（true表示通过，false表示不通过）
         /// </summary>
         public bool TotalResult { get => _TotalResult; set { _TotalResult = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalResultString)); } } 
-        private bool _TotalResult = false;
+        private bool _TotalResult = true;
 
         /// <summary>
         /// 总体测试结果字符串（如“pass”或“fail”）

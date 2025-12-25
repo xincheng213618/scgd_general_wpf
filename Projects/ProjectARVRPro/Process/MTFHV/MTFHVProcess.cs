@@ -3,7 +3,6 @@ using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.MTF2; // MTFDetailViewReslut
 using ColorVision.ImageEditor.Draw;
-using Dm.util;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
 using SqlSugar;
@@ -272,7 +271,8 @@ namespace ProjectARVRPro.Process.MTFHV
             if (testResult == null) return;
 
             int id = 0;
-            if (testResult.MTFDetailViewReslut.MTFResult.result.Count != 0)
+
+            if (testResult.MTFDetailViewReslut != null && testResult.MTFDetailViewReslut.MTFResult !=null && testResult.MTFDetailViewReslut.MTFResult.result.Count != 0)
             {
                 foreach (var item in testResult.MTFDetailViewReslut.MTFResult.result)
                 {
@@ -282,8 +282,7 @@ namespace ProjectARVRPro.Process.MTFHV
                     Rectangle.Attribute.Brush = Brushes.Transparent;
                     Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                     Rectangle.Attribute.Id = id;
-                    Rectangle.Attribute.Text = item.name + "_" + item.id;
-                    Rectangle.Attribute.Msg = item.mtfValue.ToString();
+                    Rectangle.Attribute.Msg = item.mtfValue?.ToString(Config.ShowConfig);
                     Rectangle.Render();
                     ctx.ImageView.AddVisual(Rectangle);
                 }

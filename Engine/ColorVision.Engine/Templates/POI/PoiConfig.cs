@@ -82,6 +82,8 @@ namespace ColorVision.Engine.Templates.POI
         public string BackgroundFilePath { get => _BackgroundFilePath; set { _BackgroundFilePath = value; OnPropertyChanged(); } }
         private string _BackgroundFilePath;
 
+
+
         [JsonIgnore]
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams => DeviceCamera?.PhyCamera?.CalibrationParams;
         [JsonIgnore]

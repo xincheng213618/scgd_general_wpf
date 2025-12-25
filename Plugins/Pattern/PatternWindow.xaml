@@ -153,13 +153,14 @@
 
                     <!-- 模板选择 -->
                     <DockPanel Margin="0,0,0,8">
-                        <Button DockPanel.Dock="Right" Grid.Column="1" Margin="8,0,8,0" HorizontalAlignment="Left" Padding="2" Height="25" Width="25" Click="Button_Click" ToolTip="编辑模板参数">
-                            <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                        <Button DockPanel.Dock="Right" Grid.Column="1" Margin="8,0,4,0" HorizontalAlignment="Left" Padding="2" Height="28" Width="28" Click="Button_Click" ToolTip="编辑模板参数">
+                            <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="18" Foreground="{DynamicResource GlobalTextBrush}">
                                 <TextBlock.RenderTransform>
                                     <RotateTransform x:Name="rotateTransform2"/>
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Button>
+                        <Button DockPanel.Dock="Right" Content="Reset" Click="Reset_Click"  Margin="8,0,0,0" />
                         <ComboBox x:Name="cmbPattern1" DisplayMemberPath="Name" Height="28"/>
                     </DockPanel>
                     <!-- 模板参数编辑区 -->
