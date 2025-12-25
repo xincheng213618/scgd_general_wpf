@@ -280,9 +280,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 // Find all enabled PreProcessMeta entries for this flow template name
                 var matchingMetas = PreProcessManager.GetInstance().ProcessMetas
-                    .Where(m => string.Equals(m.TemplateName, flowName, StringComparison.OrdinalIgnoreCase) && 
-                               m.PreProcess != null && 
-                               m.IsEnabled)
+                    .Where(m => IsValidEnabledPreProcessor(m, flowName))
                     .ToList();
 
                 if (matchingMetas.Count > 0)
@@ -322,6 +320,16 @@ namespace ColorVision.Engine.Templates.Flow
                 log.Error("匹配/执行预处理出错", ex);
                 return false;
             }
+        }
+        
+        /// <summary>
+        /// Checks if a PreProcessMeta is valid and enabled for the given flow.
+        /// </summary>
+        private static bool IsValidEnabledPreProcessor(PreProcessMeta meta, string flowName)
+        {
+            return string.Equals(meta.TemplateName, flowName, StringComparison.OrdinalIgnoreCase) 
+                   && meta.PreProcess != null 
+                   && meta.IsEnabled;
         }
         
         private void Processing(MeasureBatchModel batch)

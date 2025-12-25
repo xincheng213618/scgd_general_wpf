@@ -22,6 +22,11 @@ namespace ColorVision.Engine.Batch
         private const string PersistFileName = "PreProcessConfig.json";
         private static string PersistDirectory => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
         private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
+        
+        /// <summary>
+        /// Default enabled state for newly created preprocessor entries
+        /// </summary>
+        private const bool DefaultIsEnabled = false;
 
         private static PreProcessManager _instance;
         private static readonly object _locker = new();
@@ -163,7 +168,7 @@ namespace ColorVision.Engine.Batch
                                 Name = $"{template.Key}_{metadata.DisplayName}",
                                 TemplateName = template.Key,
                                 PreProcess = newProcess,
-                                IsEnabled = false // Default to disabled for new entries
+                                IsEnabled = DefaultIsEnabled
                             };
                             meta.PropertyChanged += Meta_PropertyChanged;
                             ProcessMetas.Add(meta);
