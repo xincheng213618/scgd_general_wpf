@@ -34,22 +34,6 @@ namespace ColorVision.Engine.Batch
             // Default implementation does nothing
         }
 
-        /// <summary>
-        /// Creates a new instance of this pre-processor with the same type.
-        /// </summary>
-        /// <returns>A new instance of the pre-processor.</returns>
-        IPreProcess CreateInstance()
-        {
-            try
-            {
-                return (IPreProcess)System.Activator.CreateInstance(this.GetType());
-            }
-            catch
-            {
-                // If instance creation fails, return this instance as fallback
-                return this;
-            }
-        }
     }
 
     /// <summary>
@@ -79,23 +63,6 @@ namespace ColorVision.Engine.Batch
                 Config = JsonConvert.DeserializeObject<T>(configJson) ?? new T();
             }
         }
-
-        /// <summary>
-        /// Creates a new instance of this pre-processor.
-        /// </summary>
-        public IPreProcess CreateInstance()
-        {
-            try
-            {
-                return (IPreProcess)System.Activator.CreateInstance(this.GetType());
-            }
-            catch
-            {
-                // If instance creation fails, return this instance as fallback
-                return this;
-            }
-        }
-
         /// <summary>
         /// Executes the pre-processing logic.
         /// </summary>
