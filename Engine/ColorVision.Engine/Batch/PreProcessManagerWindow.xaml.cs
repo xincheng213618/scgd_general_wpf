@@ -236,6 +236,7 @@ namespace ColorVision.Engine.Batch
                 _configPropertyChangedHandler = (s, e) =>
                 {
                     // Save happens automatically via PreProcessManager event handlers
+                    // Note: Only works if config implements INotifyPropertyChanged
                 };
                 _currentConfig.PropertyChanged += _configPropertyChangedHandler;
             }
