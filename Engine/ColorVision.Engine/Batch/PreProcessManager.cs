@@ -168,8 +168,15 @@ namespace ColorVision.Engine.Batch
                     var process = Processes.FirstOrDefault(p => p.GetType().FullName == item.ProcessTypeFullName);
                     if (process != null)
                     {
-                        // Apply the stored configuration
-                        process.SetConfig(item.ConfigJson);
+                        try
+                        {
+                            // Apply the stored configuration
+                            process.SetConfig(item.ConfigJson);
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Warn($"加载预处理器 {item.ProcessTypeFullName} 配置失败: {ex.Message}");
+                        }
                     }
                 }
                 
@@ -187,14 +194,25 @@ namespace ColorVision.Engine.Batch
             {
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
                 
-                var list = Processes
-                    .Where(p => p.GetConfig() != null)
-                    .Select(p => new PreProcessPersist
+                var list = new List<PreProcessPersist>();
+                foreach (var p in Processes)
+                {
+                    if (p.GetConfig() == null) continue;
+                    
+                    try
                     {
-                        ProcessTypeFullName = p.GetType().FullName,
-                        ConfigJson = JsonConvert.SerializeObject(p.GetConfig())
-                    })
-                    .ToList();
+                        var persist = new PreProcessPersist
+                        {
+                            ProcessTypeFullName = p.GetType().FullName,
+                            ConfigJson = JsonConvert.SerializeObject(p.GetConfig())
+                        };
+                        list.Add(persist);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Warn($"序列化预处理器 {p.GetType().Name} 配置失败: {ex.Message}");
+                    }
+                }
                 
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
                 File.WriteAllText(PersistFilePath, json);
