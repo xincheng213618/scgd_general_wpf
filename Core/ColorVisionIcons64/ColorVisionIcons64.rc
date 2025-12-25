@@ -62,6 +62,8 @@ IDI_ICON4               ICON                    "flow.ico"
 
 IDI_ICON5               ICON                    "cvx.ico"
 
+IDI_ICON6               ICON                    "cvxp.ico"
+
 #endif    // 中文(简体，中国) resources
 /////////////////////////////////////////////////////////////////////////////
 

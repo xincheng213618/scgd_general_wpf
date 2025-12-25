@@ -155,6 +155,7 @@
     <Image Include="cie.ico" />
     <Image Include="ColorVision1.ico" />
     <Image Include="cvx.ico" />
+    <Image Include="cvxp.ico" />
     <Image Include="flow.ico" />
     <Image Include="Grid.ico" />
     <Image Include="grif.ico" />
