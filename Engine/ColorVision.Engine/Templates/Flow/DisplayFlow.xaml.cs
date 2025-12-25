@@ -278,14 +278,16 @@ namespace ColorVision.Engine.Templates.Flow
         {
             try
             {
-                // Find all matching PreProcessMeta entries for this flow template name
+                // Find all enabled PreProcessMeta entries for this flow template name
                 var matchingMetas = PreProcessManager.GetInstance().ProcessMetas
-                    .Where(m => string.Equals(m.TemplateName, flowName, StringComparison.OrdinalIgnoreCase) && m.PreProcess != null)
+                    .Where(m => string.Equals(m.TemplateName, flowName, StringComparison.OrdinalIgnoreCase) && 
+                               m.PreProcess != null && 
+                               m.IsEnabled)
                     .ToList();
 
                 if (matchingMetas.Count > 0)
                 {
-                    log.Info($"匹配到 {matchingMetas.Count} 个预处理 {flowName}");
+                    log.Info($"匹配到 {matchingMetas.Count} 个已启用的预处理 {flowName}");
                     
                     var ctx = new IPreProcessContext
                     {

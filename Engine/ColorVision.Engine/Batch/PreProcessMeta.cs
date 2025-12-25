@@ -16,6 +16,14 @@ namespace ColorVision.Engine.Batch
         private string _TemplateName;
 
         /// <summary>
+        /// Gets or sets whether this pre-processor is enabled for execution.
+        /// </summary>
+        [DisplayName("启用")]
+        [Description("启用此预处理器")]
+        public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged(); } }
+        private bool _IsEnabled = false;
+
+        /// <summary>
         /// Gets or sets user-defined tag/label for this pre-processor.
         /// </summary>
         [DisplayName("标签")]

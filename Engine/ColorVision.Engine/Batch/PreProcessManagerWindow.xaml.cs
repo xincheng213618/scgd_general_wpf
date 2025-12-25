@@ -191,6 +191,9 @@ namespace ColorVision.Engine.Batch
                 Margin = new Thickness(0, 0, 0, 8) 
             });
 
+            // IsEnabled
+            AddLabeledCheckBox(stack, "启用:", meta.IsEnabled, isChecked => meta.IsEnabled = isChecked);
+
             // Name
             AddLabeledTextBox(stack, "名称:", meta.Name, text => meta.Name = text);
 
@@ -291,6 +294,28 @@ namespace ColorVision.Engine.Batch
             textBox.LostFocus += (s, e) => onChanged?.Invoke(textBox.Text);
             
             dock.Children.Add(textBox);
+            parent.Children.Add(dock);
+        }
+
+        private void AddLabeledCheckBox(StackPanel parent, string label, bool value, Action<bool> onChanged)
+        {
+            var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+            dock.Children.Add(new TextBlock 
+            { 
+                Text = label, 
+                Width = 70, 
+                VerticalAlignment = VerticalAlignment.Center 
+            });
+            
+            var checkBox = new CheckBox 
+            { 
+                IsChecked = value, 
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            checkBox.Checked += (s, e) => onChanged?.Invoke(true);
+            checkBox.Unchecked += (s, e) => onChanged?.Invoke(false);
+            
+            dock.Children.Add(checkBox);
             parent.Children.Add(dock);
         }
     }

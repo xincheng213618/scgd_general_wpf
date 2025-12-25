@@ -15,5 +15,10 @@ namespace ColorVision.Engine.Batch
         /// User-defined tag/label for this pre-processor.
         /// </summary>
         public string Tag { get; set; }
+        
+        /// <summary>
+        /// Whether this pre-processor is enabled for execution.
+        /// </summary>
+        public bool IsEnabled { get; set; }
     }
 }
