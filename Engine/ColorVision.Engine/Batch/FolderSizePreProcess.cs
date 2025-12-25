@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Batch
     /// <summary>
     /// Configuration for folder size monitoring and cleanup
     /// </summary>
-    public class FolderSizePreProcessConfig : ViewModelBase
+    public class FolderSizePreProcessConfig : PreProcessConfigBase
     {
         [DisplayName("监控文件夹")]
         [Description("要监控的文件夹路径")]
@@ -33,11 +33,6 @@ namespace ColorVision.Engine.Batch
         [Description("是否包含子文件夹中的文件")]
         public bool IncludeSubfolders { get => _IncludeSubfolders; set { _IncludeSubfolders = value; OnPropertyChanged(); } }
         private bool _IncludeSubfolders = true;
-
-        [DisplayName("启用")]
-        [Description("是否启用此预处理")]
-        public bool Enabled { get => _Enabled; set { _Enabled = value; OnPropertyChanged(); } }
-        private bool _Enabled = true;
     }
 
     [PreProcess("文件夹大小检测", "检测文件夹大小，超出限制后删除最早的文件")]
@@ -47,12 +42,6 @@ namespace ColorVision.Engine.Batch
 
         public override bool PreProcess(IPreProcessContext ctx)
         {
-            if (!Config.Enabled)
-            {
-                log.Info("FolderSizePreProcess 未启用，跳过");
-                return true;
-            }
-
             if (string.IsNullOrWhiteSpace(Config.FolderPath))
             {
                 log.Warn("FolderSizePreProcess: 文件夹路径未配置");
