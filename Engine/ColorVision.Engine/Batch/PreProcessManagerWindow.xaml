@@ -52,7 +52,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="描述" Width="*">
+                        <GridViewColumn Header="描述" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Description}"/>
