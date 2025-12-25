@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PreProcessManager}"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-        Title="预处理配置" Height="720" Width="1280"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="预处理配置" Height="720" Width="1080"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <local:PreTypeNameConverter x:Key="TypeNameConverter"/>
         <local:PreProcessTooltipConverter x:Key="ProcessTooltipConverter"/>
@@ -15,7 +15,7 @@
     </Window.Resources>
     <Grid Margin="8">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" MinWidth="600"/>
+            <ColumnDefinition Width="*" MinWidth="400"/>
             <ColumnDefinition Width="5"/>
             <ColumnDefinition Width="350" MinWidth="250"/>
         </Grid.ColumnDefinitions>
@@ -30,32 +30,35 @@
             <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0 0 0 8">
                 <Button Content="上移" Padding="12 4" Command="{Binding MoveUpCommand}"/>
                 <Button Content="下移" Padding="12 4" Margin="8 0 0 0" Command="{Binding MoveDownCommand}"/>
-                <TextBlock Text="  所有预处理器已自动创建，启用/禁用通过勾选框控制，同一流程可配置多个预处理按顺序执行" 
+                <TextBlock Text="  所有预处理器，在右侧配置启用状态和应用模板" 
                           VerticalAlignment="Center" Margin="12 0 0 0" Foreground="Gray" TextWrapping="Wrap"/>
             </StackPanel>
 
-            <ListView Grid.Row="1" ItemsSource="{Binding ProcessMetas}" SelectedItem="{Binding SelectedProcessMeta}" x:Name="lvMetas" SelectionChanged="ListView_SelectionChanged">
+            <ListView Grid.Row="1" ItemsSource="{Binding Processes}" SelectedItem="{Binding SelectedProcess}" x:Name="lvProcesses" SelectionChanged="ListView_SelectionChanged">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="启用" Width="50">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <CheckBox IsChecked="{Binding IsEnabled}" HorizontalAlignment="Center"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
                         <GridViewColumn Header="序号" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding ExecutionOrder}"/>
+                                    <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Converter={StaticResource TypeNameConverter}, ConverterParameter=Index}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="流程模板" Width="120" DisplayMemberBinding="{Binding TemplateName}"/>
-                        <GridViewColumn Header="处理类" Width="140" DisplayMemberBinding="{Binding ProcessDisplayName}"/>
-                        <GridViewColumn Header="名称" Width="120" DisplayMemberBinding="{Binding Name}"/>
-                        <GridViewColumn Header="标签" Width="80" DisplayMemberBinding="{Binding Tag}"/>
-                        <GridViewColumn Header="描述" Width="150" DisplayMemberBinding="{Binding ProcessDescription}"/>
+                        <GridViewColumn Header="处理类" Width="200">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" 
+                                              ToolTip="{Binding Converter={StaticResource ProcessTooltipConverter}}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="描述" Width="*">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}, ConverterParameter=Description}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                     </GridView>
                 </ListView.View>
             </ListView>
@@ -74,20 +77,13 @@
                 
                 <!-- Header -->
                 <Border Grid.Row="0" Background="{DynamicResource GlobalBorderBrush}" CornerRadius="4,4,0,0" Padding="12,8">
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="&#xE713;" FontFamily="Segoe MDL2 Assets" 
-                                Command="{Binding SelectedProcessMeta.EditConfigCommand}"
-                                Visibility="{Binding SelectedProcessMeta.HasConfig, Converter={StaticResource BoolToVisibilityConverter}}"
-                                ToolTip="在独立窗口编辑配置"
-                                Padding="6,4" Margin="8,0,0,0"/>
-                        <TextBlock Text="属性配置" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
-                    </DockPanel>
+                    <TextBlock Text="预处理器配置" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
                 </Border>
                 
                 <!-- Properties Content -->
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
                     <StackPanel x:Name="PropertyPanel">
-                        <TextBlock Text="请选择一个预处理项查看配置" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"
+                        <TextBlock Text="请选择一个预处理器查看配置" Foreground="Gray" HorizontalAlignment="Center" Margin="0,20,0,0"
                                    x:Name="PlaceholderText"/>
                     </StackPanel>
                 </ScrollViewer>

@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Batch
     /// <summary>
     /// Configuration for folder size monitoring and cleanup
     /// </summary>
-    public class FolderSizePreProcessConfig : ViewModelBase
+    public class FolderSizePreProcessConfig : PreProcessConfigBase
     {
         [DisplayName("监控文件夹")]
         [Description("要监控的文件夹路径")]

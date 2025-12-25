@@ -1,6 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;
@@ -15,6 +13,15 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Batch
 {
+    /// <summary>
+    /// Simplified persistence model for pre-processors
+    /// </summary>
+    internal class PreProcessPersist
+    {
+        public string ProcessTypeFullName { get; set; }
+        public string ConfigJson { get; set; }
+    }
+
     public class PreProcessManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(PreProcessManager));
@@ -22,11 +29,6 @@ namespace ColorVision.Engine.Batch
         private const string PersistFileName = "PreProcessConfig.json";
         private static string PersistDirectory => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\Config\\";
         private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
-        
-        /// <summary>
-        /// Default enabled state for newly created preprocessor entries
-        /// </summary>
-        private const bool DefaultIsEnabled = false;
 
         private static PreProcessManager _instance;
         private static readonly object _locker = new();
@@ -34,13 +36,10 @@ namespace ColorVision.Engine.Batch
 
         public ObservableCollection<IPreProcess> Processes { get; } = new ObservableCollection<IPreProcess>();
 
-        public ObservableCollection<PreProcessMeta> ProcessMetas { get; } = new ObservableCollection<PreProcessMeta>();
-
-        public ObservableCollection<TemplateModel<FlowParam>> templateModels { get; set; } = TemplateFlow.Params;
         public RelayCommand EditCommand { get; set; }
 
-        public PreProcessMeta SelectedProcessMeta { get => _SelectedProcessMeta; set { _SelectedProcessMeta = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
-        private PreProcessMeta _SelectedProcessMeta;
+        public IPreProcess SelectedProcess { get => _SelectedProcess; set { _SelectedProcess = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
+        private IPreProcess _SelectedProcess;
 
         public RelayCommand MoveUpCommand { get; set; }
         public RelayCommand MoveDownCommand { get; set; }
@@ -48,13 +47,11 @@ namespace ColorVision.Engine.Batch
         public PreProcessManager()
         {
             LoadProcesses();
-            ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged;
+            Processes.CollectionChanged += Processes_CollectionChanged;
             EditCommand = new RelayCommand(a => Edit());
             MoveUpCommand = new RelayCommand(a => MoveUp(), a => CanMoveUp());
             MoveDownCommand = new RelayCommand(a => MoveDown(), a => CanMoveDown());
-            LoadPersistedMetas();
-            // Auto-populate all discovered preprocessors if not already present
-            InitializeAllPreProcessors();
+            LoadPersisted();
         }
 
         private void LoadProcesses()
@@ -91,44 +88,36 @@ namespace ColorVision.Engine.Batch
             }
         }
 
-        private void ProcessMetas_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        private void Processes_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             if (e.NewItems != null)
             {
-                foreach (PreProcessMeta meta in e.NewItems)
+                foreach (IPreProcess process in e.NewItems)
                 {
-                    meta.PropertyChanged += Meta_PropertyChanged;
+                    var config = process.GetConfig();
+                    if (config is System.ComponentModel.INotifyPropertyChanged notifyConfig)
+                    {
+                        notifyConfig.PropertyChanged += Process_PropertyChanged;
+                    }
                 }
             }
             if (e.OldItems != null)
             {
-                foreach (PreProcessMeta meta in e.OldItems)
+                foreach (IPreProcess process in e.OldItems)
                 {
-                    meta.PropertyChanged -= Meta_PropertyChanged;
+                    var config = process.GetConfig();
+                    if (config is System.ComponentModel.INotifyPropertyChanged notifyConfig)
+                    {
+                        notifyConfig.PropertyChanged -= Process_PropertyChanged;
+                    }
                 }
             }
-            SavePersistedMetas();
-            NotifyAllExecutionOrders();
+            SavePersisted();
         }
 
-        /// <summary>
-        /// Notifies all PreProcessMeta items to update their ExecutionOrder property.
-        /// </summary>
-        private void NotifyAllExecutionOrders()
+        private void Process_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            foreach (var meta in ProcessMetas)
-            {
-                meta.NotifyExecutionOrderChanged();
-            }
-        }
-
-        private void Meta_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            // Skip persistence for UI-only display properties like ExecutionOrder
-            if (e.PropertyName == nameof(PreProcessMeta.ExecutionOrder))
-                return;
-            
-            SavePersistedMetas();
+            SavePersisted();
         }
 
         public void Edit()
@@ -138,158 +127,81 @@ namespace ColorVision.Engine.Batch
             processManagerWindow.ShowDialog();
         }
 
-        /// <summary>
-        /// Initializes PreProcessMeta entries for all discovered preprocessors across all templates.
-        /// Creates entries for each combination of template and preprocessor.
-        /// </summary>
-        private void InitializeAllPreProcessors()
-        {
-            ProcessMetas.CollectionChanged -= ProcessMetas_CollectionChanged; // Pause events
-            
-            try
-            {
-                foreach (var template in templateModels)
-                {
-                    foreach (var process in Processes)
-                    {
-                        // Check if this combination already exists
-                        var existingMeta = ProcessMetas.FirstOrDefault(m => 
-                            string.Equals(m.TemplateName, template.Key, StringComparison.OrdinalIgnoreCase) &&
-                            m.PreProcess?.GetType().FullName == process.GetType().FullName);
-                        
-                        if (existingMeta == null)
-                        {
-                            // Create a new instance for this meta
-                            var newProcess = process.CreateInstance();
-                            var metadata = PreProcessMetadata.FromProcess(newProcess);
-                            
-                            var meta = new PreProcessMeta
-                            {
-                                Name = $"{template.Key}_{metadata.DisplayName}",
-                                TemplateName = template.Key,
-                                PreProcess = newProcess,
-                                IsEnabled = DefaultIsEnabled
-                            };
-                            meta.PropertyChanged += Meta_PropertyChanged;
-                            ProcessMetas.Add(meta);
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged; // Resume events
-                SavePersistedMetas();
-                NotifyAllExecutionOrders();
-            }
-        }
-
         private bool CanMoveUp()
         {
-            return SelectedProcessMeta != null && ProcessMetas.IndexOf(SelectedProcessMeta) > 0;
+            return SelectedProcess != null && Processes.IndexOf(SelectedProcess) > 0;
         }
 
         private void MoveUp()
         {
             if (!CanMoveUp()) return;
-            int index = ProcessMetas.IndexOf(SelectedProcessMeta);
-            ProcessMetas.Move(index, index - 1);
+            int index = Processes.IndexOf(SelectedProcess);
+            Processes.Move(index, index - 1);
         }
 
         private bool CanMoveDown()
         {
-            return SelectedProcessMeta != null && ProcessMetas.IndexOf(SelectedProcessMeta) < ProcessMetas.Count - 1;
+            return SelectedProcess != null && Processes.IndexOf(SelectedProcess) < Processes.Count - 1;
         }
 
         private void MoveDown()
         {
             if (!CanMoveDown()) return;
-            int index = ProcessMetas.IndexOf(SelectedProcessMeta);
-            ProcessMetas.Move(index, index + 1);
+            int index = Processes.IndexOf(SelectedProcess);
+            Processes.Move(index, index + 1);
         }
 
-        private void LoadPersistedMetas()
+        private void LoadPersisted()
         {
             try
             {
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
                 if (!File.Exists(PersistFilePath)) return;
+                
                 string json = File.ReadAllText(PersistFilePath);
-                var list = JsonConvert.DeserializeObject<List<PreProcessMetaPersist>>(json) ?? new List<PreProcessMetaPersist>();
-                ProcessMetas.CollectionChanged -= ProcessMetas_CollectionChanged; // 暂停事件
+                var list = JsonConvert.DeserializeObject<List<PreProcessPersist>>(json) ?? new List<PreProcessPersist>();
+                
+                Processes.CollectionChanged -= Processes_CollectionChanged; // Pause events
+                
                 foreach (var item in list)
                 {
-                    IPreProcess proc = null;
-                    var templateProc = Processes.FirstOrDefault(p => p.GetType().FullName == item.ProcessTypeFullName);
-                    
-                    if (templateProc != null)
+                    var process = Processes.FirstOrDefault(p => p.GetType().FullName == item.ProcessTypeFullName);
+                    if (process != null)
                     {
-                        // Create a new instance for each meta to have its own config
-                        proc = templateProc.CreateInstance();
+                        // Apply the stored configuration
+                        process.SetConfig(item.ConfigJson);
                     }
-                    else
-                    {
-                        // 尝试反射创建
-                        try
-                        {
-                            var t = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).FirstOrDefault(x => x.FullName == item.ProcessTypeFullName && typeof(IPreProcess).IsAssignableFrom(x));
-                            if (t != null)
-                            {
-                                proc = Activator.CreateInstance(t) as IPreProcess;
-                                if (proc != null && !Processes.Any(p => p.GetType().FullName == proc.GetType().FullName))
-                                    Processes.Add(proc);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Warn(ColorVision.Engine.Properties.Resources.UnableToInstantiateProcessType+$" {item.ProcessTypeFullName}: {ex.Message}");
-                        }
-                    }
-                    
-                    PreProcessMeta meta = new PreProcessMeta() 
-                    { 
-                        Name = item.Name, 
-                        TemplateName = item.TemplateName, 
-                        PreProcess = proc,
-                        ConfigJson = item.ConfigJson,
-                        Tag = item.Tag,
-                        IsEnabled = item.IsEnabled
-                    };
-                    
-                    // Apply the stored config to the pre-processor
-                    meta.ApplyConfig();
-                    
-                    meta.PropertyChanged += Meta_PropertyChanged;
-                    ProcessMetas.Add(meta);
                 }
-                ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged; // 恢复事件
+                
+                Processes.CollectionChanged += Processes_CollectionChanged; // Resume events
             }
             catch (Exception ex)
             {
-                log.Error("加载PreProcessMetas失败", ex);
+                log.Error("加载预处理器配置失败", ex);
             }
         }
 
-        private void SavePersistedMetas()
+        private void SavePersisted()
         {
             try
             {
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
-                var list = ProcessMetas.Select(m => new PreProcessMetaPersist
-                {
-                    Name = m.Name,
-                    TemplateName = m.TemplateName,
-                    ProcessTypeFullName = m.PreProcess?.GetType().FullName,
-                    ConfigJson = m.ConfigJson,
-                    Tag = m.Tag,
-                    IsEnabled = m.IsEnabled
-                }).ToList();
+                
+                var list = Processes
+                    .Where(p => p.GetConfig() != null)
+                    .Select(p => new PreProcessPersist
+                    {
+                        ProcessTypeFullName = p.GetType().FullName,
+                        ConfigJson = JsonConvert.SerializeObject(p.GetConfig())
+                    })
+                    .ToList();
+                
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
                 File.WriteAllText(PersistFilePath, json);
             }
             catch (Exception ex)
             {
-                log.Error("保存PreProcessMetas失败", ex);
+                log.Error("保存预处理器配置失败", ex);
             }
         }
     }
