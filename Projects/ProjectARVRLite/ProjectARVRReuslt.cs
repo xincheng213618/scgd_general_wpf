@@ -390,6 +390,11 @@ namespace ProjectARVRLite
         /// </summary>
         public ObjectiveTestItem W255ColorUniformity { get; set; } = new ObjectiveTestItem();
 
+        /// <summary>
+        /// 鬼影(%) 测试项
+        /// </summary>
+        public ObjectiveTestItem Ghost { get; set; } = new ObjectiveTestItem();
+
     }
 
     public class ViewReslutCheckerboard

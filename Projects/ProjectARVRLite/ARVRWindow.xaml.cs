@@ -732,6 +732,8 @@ namespace ProjectARVRLite
                                         Value = ratio,
                                         TestValue = ratio.ToString("F4")
                                     };
+                                    result.ViewResultWhite.Ghost = ObjectiveTestResult.Ghost1;
+                                    result.Result = result.Result && ObjectiveTestResult.Ghost1.TestResult;
 
                                 }
                             }
@@ -1574,6 +1576,7 @@ namespace ProjectARVRLite
                         foreach (var item in POIPointResultModels)
                         {
                             PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item) { Id = id++ };
+                            result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                             points.Add(poiResultCIExyuvData.Y);
                         }
                         points.Sort();
@@ -1597,6 +1600,8 @@ namespace ProjectARVRLite
                                 TestValue = ratio.ToString("F4")
                             };
 
+                            result.ViewResultWhite.Ghost = ObjectiveTestResult.Ghost1;
+                            result.Result = result.Result && ObjectiveTestResult.Ghost1.TestResult;
                         }
                     }
 
@@ -1682,12 +1687,14 @@ namespace ProjectARVRLite
             ObjectiveTestResult.TotalResult = true;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowW51TestReslut;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowWhiteTestReslut;
-            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowBlackTestReslut;
+
+            //ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowBlackTestReslut;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowW25TestReslut;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowChessboardTestReslut;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFHVTestReslut;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowDistortionTestReslut;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowOpticCenterTestReslut;
+
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
             string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -2003,7 +2010,7 @@ namespace ProjectARVRLite
                     outtext += $"VerticalFieldOfViewAngle:{result.ViewReslutW51.VerticalFieldOfViewAngle.TestValue} LowLimit:{result.ViewReslutW51.VerticalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewReslutW51.VerticalFieldOfViewAngle.UpLimit},Rsult{(result.ViewReslutW51.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
                 case ARVR1TestType.White:
-                    outtext += $"白画面九点圆 测试项：关注点算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
+                    outtext += $"白画面九点Ghost 测试项：关注点算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
 
                     if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
                     {
@@ -2016,7 +2023,7 @@ namespace ProjectARVRLite
                     outtext += $"CenterCorrelatedColorTemperature:{result.ViewResultWhite.CenterCorrelatedColorTemperature.TestValue}  LowLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.LowLimit} UpLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.UpLimit},Rsult{(result.ViewResultWhite.CenterCorrelatedColorTemperature.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     outtext += $"Luminance_uniformity:{result.ViewResultWhite.W255LuminanceUniformity.TestValue} LowLimit:{result.ViewResultWhite.W255LuminanceUniformity.LowLimit}  UpLimit:{result.ViewResultWhite.W255LuminanceUniformity.UpLimit},Rsult{(result.ViewResultWhite.W255LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     outtext += $"Color_uniformity:{result.ViewResultWhite.W255ColorUniformity.TestValue} LowLimit:{result.ViewResultWhite.W255ColorUniformity.LowLimit} UpLimit:{result.ViewResultWhite.W255ColorUniformity.UpLimit},Rsult{(result.ViewResultWhite.W255ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-
+                    outtext += $"Ghost:{result.ViewResultWhite.Ghost.TestValue}  LowLimit:{result.ViewResultWhite.Ghost.LowLimit} UpLimit:{result.ViewResultWhite.Ghost.UpLimit},Rsult{(result.ViewResultWhite.Ghost.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
                 case ARVR1TestType.W25:
                     outtext += $"W25 测试项：自动AA区域定位算法+关注点算法+序列对比度算法(中心亮度比值)" + Environment.NewLine;
@@ -2066,6 +2073,15 @@ namespace ProjectARVRLite
                     break;
                 case ARVR1TestType.Ghost:
                     outtext += $"鬼影 测试项：" + Environment.NewLine;
+                    if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
+                    {
+                        foreach (var item in result.ViewResultWhite.PoiResultCIExyuvDatas)
+                        {
+                            outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
+                        }
+                    }
+                    outtext += $"Ghost:{result.ViewResultWhite.Ghost.TestValue}  LowLimit:{result.ViewResultWhite.Ghost.LowLimit} UpLimit:{result.ViewResultWhite.Ghost.UpLimit},Rsult{(result.ViewResultWhite.Ghost.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+
                     break;
                 case ARVR1TestType.OpticCenter:
                     outtext += $"OpticCenter 测试项：" + Environment.NewLine;
