@@ -1,16 +1,10 @@
-﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.FileIO;
 using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
-using CVCommCore.CVAlgorithm;
 using log4net;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -18,11 +12,9 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -184,10 +176,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (listView1.SelectedIndex < 0) return;
+
             if (ViewResults[listView1.SelectedIndex] is not ViewResultAlg result) return;
+
             var ResultHandle = DisplayAlgorithmManager.GetInstance().ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
 
-            ViewResultContext viewResultContext = new ViewResultContext();
             if (ResultHandle != null)
             {
                 ImageView.ImageShow.Clear();
@@ -198,58 +191,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 return;
             }
 
-            ImageView.ImageShow.Clear();
-            if (File.Exists(result.FilePath))
-                ImageView.OpenImage(result.FilePath);
-
-            List<POIPoint> DrawPoiPoint = new();
-            List<string> header = new();
-            List<string> bdHeader = new();
-
-            switch (result.ResultType)
-            {
-                case ViewResultAlgType.POI_XYZ_File:
-                case ViewResultAlgType.POI_Y_File:
-                    header = new List<string> { "file_name", "FileUrl", "FileType" };
-                    bdHeader = new List<string> { "FileName", "FileUrl", "FileType", };
-                    break;
-                case ViewResultAlgType.POI:
-                    if (result.ViewResults == null)
-                    {
-                        result.ViewResults = new ObservableCollection<IViewResult>();
-                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
-                        int id = 0;
-                        foreach (var item in POIPointResultModels)
-                        {
-                            PoiResultData poiResult = new(item) { Id = id++ };
-                            result.ViewResults.Add(poiResult);
-                        }
-                    }
-
-                    header = new List<string> { "名称", "位置", "大小", "形状" };
-                    bdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes"};
-
-                    foreach (var item in result.ViewResults)
-                    {
-                        if (item is PoiResultData poiResultData)
-                        {
-                            DrawPoiPoint.Add(poiResultData.Point);
-                        }
-                    }
-                    AddPOIPoint(DrawPoiPoint);
-                    break;
-                default:
-                    break;
-            }
-
-            if (listViewSide.View is GridView gridView)
-            {
-                LeftGridViewColumnVisibilitys.Clear();
-                gridView.Columns.Clear();
-                for (int i = 0; i < header.Count; i++)
-                    gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                listViewSide.ItemsSource = result.ViewResults;
-            }
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -282,73 +223,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        internal void OpenImage(CVCIEFile fileInfo)
-        {
-            ImageView.OpenImage(fileInfo.FilePath);
-        }
-
 
         private void Button_Delete_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
         }
-
-        public async void AddPOIPoint(List<POIPoint> PoiPoints)
-        {
-            ImageView.ImageShow.Clear();
-            await Task.Delay(1000);
-            for (int i = 0; i < PoiPoints.Count; i++)
-            {
-                if (i % 10000 == 0)
-                    await Task.Delay(30);
-
-                var item = PoiPoints[i];
-                switch (item.PointType)
-                {
-                    case POIPointTypes.Circle:
-                        CircleTextProperties circleTextProperties = new CircleTextProperties();
-                        circleTextProperties.Center = new Point(item.PixelX, item.PixelY);
-                        circleTextProperties.Radius = item.Radius;
-                        circleTextProperties.Brush = Brushes.Transparent;
-                        circleTextProperties.Pen = new Pen(Brushes.Red, 1);
-                        circleTextProperties.Id = item.Id ?? -1;
-                        circleTextProperties.Text = item.Name;
-
-                        DVCircleText Circle = new DVCircleText(circleTextProperties);
-                        Circle.Render();
-                        ImageView.AddVisual(Circle);
-                        break;
-                    case POIPointTypes.Rect:
-                        RectangleTextProperties rectangleTextProperties = new RectangleTextProperties();
-                        rectangleTextProperties.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                        rectangleTextProperties.Brush = Brushes.Transparent;
-                        rectangleTextProperties.Pen = new Pen(Brushes.Red, 1);
-                        rectangleTextProperties.Id = item.Id ?? -1;
-                        rectangleTextProperties.Text = item.Name;
-
-                        DVRectangleText Rectangle = new DVRectangleText(rectangleTextProperties);
-                        Rectangle.Render();
-                        ImageView.AddVisual(Rectangle);
-                        break;
-                    case POIPointTypes.SolidPoint:
-                        CircleProperties circleProperties = new CircleProperties();
-                        circleProperties.Center = new Point(item.PixelX, item.PixelY);
-                        circleProperties.Radius = 10;
-                        circleProperties.Brush = Brushes.Red;
-                        circleProperties.Pen = new Pen(Brushes.Red, 1);
-                        circleProperties.Id = item.Id ?? -1;
-
-                        DVCircle Circle1 = new DVCircle(circleProperties);
-                        Circle1.Render();
-                        ImageView.AddVisual(Circle1);
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-
-
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         private void ContextMenu1_Opened(object sender, RoutedEventArgs e)
