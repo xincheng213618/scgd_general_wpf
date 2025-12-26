@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -95,6 +96,60 @@ namespace ColorVision.Engine.Services.PhyCameras
             if(PhyCameras.Count > 0)
             {
                 PhyCameras[0].IsSelected = true;
+            }
+
+            OpenMVSLogViewerCommand = new RelayCommand(a => OpenMVSLogViewer(), a => File.Exists("C:\\Program Files (x86)\\MVS\\Applications\\Win64\\LogViewer.exe"));
+        }
+
+        public RelayCommand OpenMVSLogViewerCommand { get; set; }
+        public void OpenMVSLogViewer()
+        {
+            string MVSLogViewer = "C:\\Program Files (x86)\\MVS\\Applications\\Win64\\LogViewer.exe";
+            if (!File.Exists(MVSLogViewer))
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    "MVS LogViewer not found at the expected location.",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    FileName = MVSLogViewer,
+                    UseShellExecute = true,
+                    Verb = "runas" // 请求管理员权限
+                };
+                Process.Start(startInfo);
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                // 用户取消了 UAC 提示或其他启动失败
+                if (ex.NativeErrorCode == 1223) // ERROR_CANCELLED
+                {
+                    // 用户取消了权限提升，可以选择不显示错误
+                    return;
+                }
+
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"Failed to start MVS LogViewer:  {ex.Message}",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    Application.Current.GetActiveWindow(),
+                    $"An unexpected error occurred: {ex.Message}",
+                    "ColorVision",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 

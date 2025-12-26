@@ -499,9 +499,16 @@ namespace ColorVision.Engine.Services.PhyCameras
                     case LicenseState.Unlicensed:
                         return new SolidColorBrush(Colors.Red);
                     case LicenseState.Licensed:
+                        var expiryDate = CameraLicenseModel.ExpiryDate.Value;
+                        if (expiryDate < DateTime.Now)
+                            return new SolidColorBrush(Colors.Red);
+
+                        var daysRemaining = (expiryDate - DateTime.Now).Days;
+                        if (daysRemaining <= 30)
+                            return new SolidColorBrush(Colors.Orange);
                         return new SolidColorBrush(Colors.Green);
                     case LicenseState.Expired:
-                        return new SolidColorBrush(Colors.Yellow);
+                        return new SolidColorBrush(Colors.Red);
                     case LicenseState.Invalid:
                         return new SolidColorBrush(Colors.Gray);
                     default:
