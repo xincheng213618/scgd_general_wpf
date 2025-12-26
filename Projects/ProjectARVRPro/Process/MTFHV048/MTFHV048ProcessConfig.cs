@@ -15,28 +15,28 @@ namespace ProjectARVRPro.Process.MTFHV048
         private string _Key_Center_0F = "Center_0F";
 
         [Category("解析配置")]
-        [DisplayName("LeftUp_0_5F解析Key")]
-        [Description("用于解析LeftUp_0_5F数据的Key")]
-        public string Key_LeftUp_0_5F { get => _Key_LeftUp_0_5F; set { _Key_LeftUp_0_5F = value; OnPropertyChanged(); } }
-        private string _Key_LeftUp_0_5F = "LeftUp_0.5F";
+        [DisplayName("LeftUp_0_4F解析Key")]
+        [Description("用于解析LeftUp_0_4F数据的Key")]
+        public string Key_LeftUp_0_4F { get => _Key_LeftUp_0_4F; set { _Key_LeftUp_0_4F = value; OnPropertyChanged(); } }
+        private string _Key_LeftUp_0_4F = "LeftUp_0.4F";
 
         [Category("解析配置")]
-        [DisplayName("LeftDown_0_5F解析Key")]
-        [Description("用于解析LeftDown_0_5F数据的Key")]
-        public string Key_LeftDown_0_5F { get => _Key_LeftDown_0_5F; set { _Key_LeftDown_0_5F = value; OnPropertyChanged(); } }
-        private string _Key_LeftDown_0_5F = "LeftDown_0.5F";
+        [DisplayName("LeftDown_0_4F解析Key")]
+        [Description("用于解析LeftDown_0_4F数据的Key")]
+        public string Key_LeftDown_0_4F { get => _Key_LeftDown_0_4F; set { _Key_LeftDown_0_4F = value; OnPropertyChanged(); } }
+        private string _Key_LeftDown_0_4F = "LeftDown_0.4F";
 
         [Category("解析配置")]
-        [DisplayName("RightDown_0_5F解析Key")]
-        [Description("用于解析RightDown_0_5F数据的Key")]
-        public string Key_RightDown_0_5F { get => _Key_RightDown_0_5F; set { _Key_RightDown_0_5F = value; OnPropertyChanged(); } }
-        private string _Key_RightDown_0_5F = "RightDown_0.5F";
+        [DisplayName("RightDown_0_4F解析Key")]
+        [Description("用于解析RightDown_0_4F数据的Key")]
+        public string Key_RightDown_0_4F { get => _Key_RightDown_0_4F; set { _Key_RightDown_0_4F = value; OnPropertyChanged(); } }
+        private string _Key_RightDown_0_4F = "RightDown_0.4F";
 
         [Category("解析配置")]
-        [DisplayName("RightUp_0_5F解析Key")]
-        [Description("用于解析RightUp_0_5F数据的Key")]
-        public string Key_RightUp_0_5F { get => _Key_RightUp_0_5F; set { _Key_RightUp_0_5F = value; OnPropertyChanged(); } }
-        private string _Key_RightUp_0_5F = "RightUp_0.5F";
+        [DisplayName("RightUp_0_4F解析Key")]
+        [Description("用于解析RightUp_0_4F数据的Key")]
+        public string Key_RightUp_0_4F { get => _Key_RightUp_0_4F; set { _Key_RightUp_0_4F = value; OnPropertyChanged(); } }
+        private string _Key_RightUp_0_4F = "RightUp_0.4F";
 
         [Category("解析配置")]
         [DisplayName("LeftUp_0_8F解析Key")]

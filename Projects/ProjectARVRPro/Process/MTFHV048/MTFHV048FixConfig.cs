@@ -14,32 +14,32 @@ namespace ProjectARVRPro.Process.MTFHV048
         private double _MTF048_V_Center_0F = 1;
 
         [Category("MTFHV048")]
-        public double MTF_HV_H_LeftUp_0_5F { get => _MTF_HV_H_LeftUp_0_5F; set { _MTF_HV_H_LeftUp_0_5F = value; OnPropertyChanged(); } }
-        private double _MTF_HV_H_LeftUp_0_5F = 1;
+        public double MTF_HV_H_LeftUp_0_4F { get => _MTF_HV_H_LeftUp_0_4F; set { _MTF_HV_H_LeftUp_0_4F = value; OnPropertyChanged(); } }
+        private double _MTF_HV_H_LeftUp_0_4F = 1;
         [Category("MTFHV048")]
-        public double MTF_HV_V_LeftUp_0_5F { get => _MTF_HV_V_LeftUp_0_5F; set { _MTF_HV_V_LeftUp_0_5F = value; OnPropertyChanged(); } }
-        private double _MTF_HV_V_LeftUp_0_5F = 1;
+        public double MTF_HV_V_LeftUp_0_4F { get => _MTF_HV_V_LeftUp_0_4F; set { _MTF_HV_V_LeftUp_0_4F = value; OnPropertyChanged(); } }
+        private double _MTF_HV_V_LeftUp_0_4F = 1;
 
         [Category("MTFHV048")]
-        public double MTF_HV_H_RightUp_0_5F { get => _MTF_HV_H_RightUp_0_5F; set { _MTF_HV_H_RightUp_0_5F = value; OnPropertyChanged(); } }
-        private double _MTF_HV_H_RightUp_0_5F = 1;
+        public double MTF_HV_H_RightUp_0_4F { get => _MTF_HV_H_RightUp_0_4F; set { _MTF_HV_H_RightUp_0_4F = value; OnPropertyChanged(); } }
+        private double _MTF_HV_H_RightUp_0_4F = 1;
         [Category("MTFHV048")]
-        public double MTF_HV_V_RightUp_0_5F { get => _MTF_HV_V_RightUp_0_5F; set { _MTF_HV_V_RightUp_0_5F = value; OnPropertyChanged(); } }
-        private double _MTF_HV_V_RightUp_0_5F = 1;
+        public double MTF_HV_V_RightUp_0_4F { get => _MTF_HV_V_RightUp_0_4F; set { _MTF_HV_V_RightUp_0_4F = value; OnPropertyChanged(); } }
+        private double _MTF_HV_V_RightUp_0_4F = 1;
 
         [Category("MTFHV048")]
-        public double MTF_HV_H_RightDown_0_5F { get => _MTF_HV_H_RightDown_0_5F; set { _MTF_HV_H_RightDown_0_5F = value; OnPropertyChanged(); } }
-        private double _MTF_HV_H_RightDown_0_5F = 1;
+        public double MTF_HV_H_RightDown_0_4F { get => _MTF_HV_H_RightDown_0_4F; set { _MTF_HV_H_RightDown_0_4F = value; OnPropertyChanged(); } }
+        private double _MTF_HV_H_RightDown_0_4F = 1;
         [Category("MTFHV048")]
-        public double MTF_HV_V_RightDown_0_5F { get => _MTF_HV_V_RightDown_0_5F; set { _MTF_HV_V_RightDown_0_5F = value; OnPropertyChanged(); } }
-        private double _MTF_HV_V_RightDown_0_5F = 1;
+        public double MTF_HV_V_RightDown_0_4F { get => _MTF_HV_V_RightDown_0_4F; set { _MTF_HV_V_RightDown_0_4F = value; OnPropertyChanged(); } }
+        private double _MTF_HV_V_RightDown_0_4F = 1;
 
         [Category("MTFHV048")]
-        public double MTF_HV_H_LeftDown_0_5F { get => _MTF_HV_H_LeftDown_0_5F; set { _MTF_HV_H_LeftDown_0_5F = value; OnPropertyChanged(); } }
-        private double _MTF_HV_H_LeftDown_0_5F = 1;
+        public double MTF_HV_H_LeftDown_0_4F { get => _MTF_HV_H_LeftDown_0_4F; set { _MTF_HV_H_LeftDown_0_4F = value; OnPropertyChanged(); } }
+        private double _MTF_HV_H_LeftDown_0_4F = 1;
         [Category("MTFHV048")]
-        public double MTF_HV_V_LeftDown_0_5F { get => _MTF_HV_V_LeftDown_0_5F; set { _MTF_HV_V_LeftDown_0_5F = value; OnPropertyChanged(); } }
-        private double _MTF_HV_V_LeftDown_0_5F = 1;
+        public double MTF_HV_V_LeftDown_0_4F { get => _MTF_HV_V_LeftDown_0_4F; set { _MTF_HV_V_LeftDown_0_4F = value; OnPropertyChanged(); } }
+        private double _MTF_HV_V_LeftDown_0_4F = 1;
 
 
         [Category("MTFHV048")]
