@@ -8,6 +8,9 @@ using System.Linq;
 
 namespace ColorVision.Engine.Batch
 {
+
+
+
     /// <summary>
     /// Configuration for folder size monitoring and cleanup
     /// </summary>

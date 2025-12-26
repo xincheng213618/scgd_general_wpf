@@ -11,6 +11,7 @@ using ProjectARVRPro.Process.OpticCenter;
 using ProjectARVRPro.Process.Red;
 using ProjectARVRPro.Process.W25;
 using ProjectARVRPro.Process.W255;
+using ProjectARVRPro.Process.W51;
 using System.Collections;
 using System.ComponentModel;
 using System.IO;
@@ -164,8 +165,12 @@ namespace ProjectARVRPro
         [DisplayName("W25")]
         public W25TestResult W25TestResult { get; set; }
 
+        [DisplayName("W51")]
+        public W51TestResult W51TestResult { get; set; }
+
         [DisplayName("W255")]
         public W255TestResult W255TestResult { get; set; }
+
         [DisplayName("Black")]
         public BlackTestResult BlackTestResult { get; set; }
 

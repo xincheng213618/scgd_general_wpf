@@ -47,15 +47,29 @@ namespace ProjectARVRPro.Process.Black
                             testResult.ViewPoixyuvDatas.Add(poi);
                             testResult.PoixyuvDatas.Add(new PoixyuvData() { Id = poi.Id, Name = poi.Name, X = poi.X, Y = poi.Y, Z = poi.Z, x = poi.x, y = poi.y, u = poi.u, v = poi.v, CCT = poi.CCT, Wave = poi.Wave });
                         }
+
                         // 需要白画面亮度才能计算对比度
-                        if (ctx.ObjectiveTestResult.W255TestResult != null && ctx.ObjectiveTestResult.W255TestResult.CenterLunimance != null)
+                        if (ctx.ObjectiveTestResult.W255TestResult != null)
                         {
-                            double contrast = ctx.ObjectiveTestResult.W255TestResult.CenterLunimance.Value / testResult.ViewPoixyuvDatas[0].Y;
+                            double contrast = 0;
+                            if (Config.IsUsingNing)
+                            {
+                                double whiteLuminance = ctx.ObjectiveTestResult.W255TestResult.PoixyuvDatas.Sum(x => x.Y);
+                                double blackLuminance = testResult.PoixyuvDatas.Sum(x => x.Y);
+                                contrast = whiteLuminance / blackLuminance;
+                                log?.Info($"白画面Sum:{whiteLuminance},黑画面Sum:{blackLuminance},contrast{contrast}");
+                            }
+                            else
+                            {
+                                if (ctx.ObjectiveTestResult.W255TestResult.CenterLunimance != null)
+                                    contrast = ctx.ObjectiveTestResult.W255TestResult.CenterLunimance.Value / testResult.ViewPoixyuvDatas[0].Y;
+                            }
+
                             contrast *= fixConfig.FOFOContrast;
                             testResult.FOFOContrast.LowLimit = recipeConfig.FOFOContrast.Min;
                             testResult.FOFOContrast.UpLimit = recipeConfig.FOFOContrast.Max;
                             testResult.FOFOContrast.Value = contrast;
-                            testResult.FOFOContrast.TestValue = contrast.ToString("F2");
+                            testResult.FOFOContrast.TestValue = contrast.ToString(Config.FormatString);
 
                             ctx.Result.Result &= testResult.FOFOContrast.TestResult;
                         }
