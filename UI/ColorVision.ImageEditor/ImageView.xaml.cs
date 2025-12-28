@@ -108,9 +108,14 @@ namespace ColorVision.ImageEditor
                 if (e)
                 {
                     Zoombox1.UpdateLayout();
+                    ImageShow.IsLayoutUpdated = Config.IsLayoutUpdated;
+                    ImageShow.Sacle = 1 / EditorContext.ZoomRatio;
                 }
             };
-            
+            Zoombox1.LayoutUpdated +=(s,e) => ImageShow.Sacle = 1 / EditorContext.ZoomRatio;
+            ImageShow.IsLayoutUpdated = Config.IsLayoutUpdated;
+            ImageShow.Sacle = 1 / EditorContext.ZoomRatio;
+
             Config.ShowMsgChanged += (s, e) =>
             {
                 if (!e)

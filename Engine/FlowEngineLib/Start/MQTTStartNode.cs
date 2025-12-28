@@ -75,8 +75,8 @@ public class MQTTStartNode : BaseStartNode
 	{
 		if (_MQTTHelper == null)
 		{
-			_MQTTHelper = new MQTTHelper();
-			string userName = "";
+			_MQTTHelper = MQTTHelper.GetInstance();
+            string userName = "";
 			string password = "";
 			MQTTHelper.GetDefaultCfg(ref _Server, ref _Port, ref userName, ref password);
 			_MQTTHelper.CreateMQTTClientAndStart(_Server, _Port, userName, password, onMsgSub);
@@ -93,7 +93,7 @@ public class MQTTStartNode : BaseStartNode
 	{
 		if (_MQTTHelper != null)
 		{
-			_MQTTHelper.DisconnectAsync_Client();
+			//_MQTTHelper.DisconnectAsync_Client();
 			_MQTTHelper = null;
 			logger.Info("Begin Disconnect MQTT");
 		}

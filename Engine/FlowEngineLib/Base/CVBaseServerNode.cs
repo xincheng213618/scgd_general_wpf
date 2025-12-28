@@ -158,6 +158,7 @@ public class CVBaseServerNode : CVCommonNode
 		int maxDelay = GetMaxDelay();
 
         // 使用异步等待，避免线程池阻塞
+        logger.InfoFormat("[{0}]WaitForMessageAsync", ToShortString());
         bool result = await cmd.waiter.WaitForMessageAsync(maxDelay);
 		if (logger.IsInfoEnabled)
 		{

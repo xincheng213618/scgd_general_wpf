@@ -1,10 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using FlowEngineLib.MQTT;
 using log4net;
 using MQTTnet;
@@ -12,12 +5,30 @@ using MQTTnet.Client;
 using MQTTnet.Packets;
 using MQTTnet.Server;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace FlowEngineLib;
 
 public class MQTTHelper
 {
-	public static readonly ILog logger = LogManager.GetLogger(typeof(MQTTHelper));
+    private static MQTTHelper _instance;
+    private static readonly object _locker = new();
+    public static MQTTHelper GetInstance()
+    {
+        lock (_locker)
+        {
+            _instance ??= new MQTTHelper();
+            return _instance;
+        }
+    }
+
+    public static readonly ILog logger = LogManager.GetLogger(typeof(MQTTHelper));
 
 	private static string Server;
 
@@ -269,15 +280,22 @@ public class MQTTHelper
 		new ResultData_MQTT();
 		_Callback = callback;
 		ResultData_MQTT resultData_MQTT;
-		try
+        try
 		{
-			MqttClientOptions options = mqttClientOptionsBuilder.Build();
-			_MqttClient = new MqttFactory().CreateMqttClient();
-			_MqttClient.ConnectedAsync += ConnectedHandle;
-			_MqttClient.DisconnectedAsync += DisconnectedHandle;
-			_MqttClient.ApplicationMessageReceivedAsync += ApplicationMessageReceivedHandle;
-			await _MqttClient.ConnectAsync(options);
-			resultData_MQTT = ((!_MqttClient.IsConnected) ? new ResultData_MQTT
+            if (_MqttClient == null)
+            {
+                _MqttClient = new MqttFactory().CreateMqttClient();
+                _MqttClient.ConnectedAsync += ConnectedHandle;
+                _MqttClient.DisconnectedAsync += DisconnectedHandle;
+                _MqttClient.ApplicationMessageReceivedAsync += ApplicationMessageReceivedHandle;
+            }
+            MqttClientOptions options = mqttClientOptionsBuilder.Build();
+            // 只有在未连接的情况下才尝试连接
+            if (!_MqttClient.IsConnected)
+            {
+                await _MqttClient.ConnectAsync(options);
+            }
+            resultData_MQTT = ((!_MqttClient.IsConnected) ? new ResultData_MQTT
 			{
 				ResultCode = -1,
 				EventType = EventTypeEnum.ClientConnected,

@@ -364,8 +364,8 @@ public abstract class BaseStartNode : CVCommonNode
 		{
 			userName = startAction.Data["Msg"].ToString();
 		}
-		logger.InfoFormat("Fire Flow Finished Before");
+		//logger.InfoFormat("Fire Flow Finished Before");
 		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, userName));
-		logger.InfoFormat("Fire Flow Finished End");
+		//logger.InfoFormat("Fire Flow Finished End");
 	}
 }
