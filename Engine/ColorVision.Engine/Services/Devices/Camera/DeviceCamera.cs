@@ -29,6 +29,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using WindowsFormsTest;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -84,6 +85,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
             this.ContextMenu.Items.Add(new MenuItem() { Header ="Log",Command = FlowEngineManager.GetInstance().WindowsServiceX64.OpenLogCommand });
             this.ContextMenu.Items.Add(new MenuItem() { Header = "CameraLog", Command = OpenCameraLogCommand });
+
+
+            MenuItem menuItem = new MenuItem() { Header = "Local" };
+            menuItem.Click += (s, e) =>
+            {
+                if (!File.Exists($"lincense\\{Config.CameraCode}.lic"))
+                {
+                    LicenseManagerViewModel licenseManagerViewModel  = new LicenseManagerViewModel();
+                    licenseManagerViewModel.SaveToLincense();
+                }
+
+                Form1 form1 = new Form1();
+                form1.Show();
+            };
+
+            ContextMenu.Items.Add(menuItem);
 
         }
 

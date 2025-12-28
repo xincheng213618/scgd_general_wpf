@@ -109,14 +109,7 @@ namespace ColorVision.Engine.Services
         {
             SysResourceModel = sysResourceModel;
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() {  Header="Local"};
-            menuItem.Click += (s, e) =>
-            {
-                Form1 form1 = new Form1();
-                form1.Show();
-            };
 
-            ContextMenu.Items.Add(menuItem);
 
             ExportCommand = new RelayCommand(a =>
             {

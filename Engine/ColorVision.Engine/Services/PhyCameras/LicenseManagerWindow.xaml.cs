@@ -78,6 +78,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             dialog.Multiselect = false;
             dialog.Title = "Select a folder";
             dialog.DefaultDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            dialog.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
             // Show open folder dialog box
             bool? result = dialog.ShowDialog();
 

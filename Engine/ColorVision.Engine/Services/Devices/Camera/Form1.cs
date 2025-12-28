@@ -93,8 +93,6 @@ namespace WindowsFormsTest
             btn_MeasTif.Enabled = false;
             button1.Enabled = false;
             btn_CalAutoExp.Enabled = true;
-
-            //H264Encoder.H264_Encoder_Init(10090, "127.0.0.1", 9002);
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
@@ -497,8 +495,6 @@ namespace WindowsFormsTest
             m_eCameraMdl = (CameraModel)cb_CM_TYPE.SelectedIndex;
 
             cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, m_eCameraMdl, m_eCameraMode);
-
-            //cvCameraCSLib.CM_SetCV_MIL_CLParam(m_hCamHandle, "COM3", 9600);
 
             cb_CM_ID.Items.Clear();
             string szText = "";
