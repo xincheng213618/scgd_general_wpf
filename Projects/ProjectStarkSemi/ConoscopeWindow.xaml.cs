@@ -64,7 +64,22 @@ namespace ProjectStarkSemi
         private Point currentImageCenter;
         private int currentImageRadius;
 
-        public double MaxAngle { get; set; } = 60;
+        public double MaxAngle
+        {
+            get
+            {
+                if (ConoscopeConfig.CurrentModel == ConoscopeModelType.VA80)
+                {
+                    return 80;
+                }
+                else if (ConoscopeConfig.CurrentModel == ConoscopeModelType.VA60)
+                {
+                    return 60;
+                }
+                return 80;
+            }
+
+        }
 
         public ConoscopeWindow()
         {
@@ -80,14 +95,28 @@ namespace ProjectStarkSemi
         private void Window_Initialized(object sender, EventArgs e)
         {
             ImageView.SetBackGround(Brushes.Transparent);
-            if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
+            try
             {
-                toolReferenceLine.ReferenceLine = new ReferenceLine(ConoscopeConfig.ReferenceLineParam);
+                if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
+                {
+                    toolReferenceLine.ReferenceLine = new ReferenceLine(ConoscopeConfig.ReferenceLineParam);
+                }
+
+            }catch(Exception ex)
+            {
+                log.Info(ex);
+                if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
+                {
+                    ConoscopeConfig.ReferenceLineParam = new ReferenceLineParam();
+                    toolReferenceLine.ReferenceLine = new ReferenceLine(ConoscopeConfig.ReferenceLineParam);
+                }
             }
+
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>() is MouseMagnifierManager  mouseMagnifierManager)
             {
                 mouseMagnifierManager.IsChecked = true;
             }
+
             ImageView.Config.IsToolBarAlVisible = false;
             ImageView.Config.IsToolBarLeftVisible = false;
             ImageView.Config.IsToolBarRightVisible = true;
@@ -178,7 +207,6 @@ namespace ProjectStarkSemi
                     {
                         ObservationCameraSeparator.Visibility = Visibility.Visible;
                     }
-                    MaxAngle = 60;
                     wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
                     wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
                     break;
@@ -194,7 +222,6 @@ namespace ProjectStarkSemi
                     {
                         ObservationCameraSeparator.Visibility = Visibility.Collapsed;
                     }
-                    MaxAngle = 80;
                     wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
                     wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
                     break;
@@ -226,9 +253,8 @@ namespace ProjectStarkSemi
                 {
                     param = new CalibrationParam() { Id = -1, Name = "Empty" };
                 }
-
                 log.Info($"准备获取图像 - 相机: {Device.Name}, 校正: {param.Name}");
-                
+              
                 double[] expTime = new double[] { Device.Config.ExpTime };
                 AutoExpTimeParam autoExpTimeParam = new AutoExpTimeParam { Id = -1 };
                 ParamBase hdrParam = new ParamBase { Id = -1 };
@@ -256,33 +282,20 @@ namespace ProjectStarkSemi
                             
                             if (resultMaster != null && resultMaster.Count > 0)
                             {
+                                string filename = string.Empty;
                                 foreach (MeasureResultImgModel result in resultMaster)
                                 {
-                                    try
+                                    if (CVFileUtil.IsCVCIEFile(result.FileUrl))
                                     {
-                                        if (result.FileUrl != null)
-                                        {
-                                            ImageView.OpenImage(result.FileUrl);
-                                            tbMeasurementCameraStatus.Text = "已获取";
-                                            tbMeasurementCameraStatus.Foreground = new SolidColorBrush(System.Windows.Media.Colors.Green);
-                                            log.Info($"成功加载图像: {result.FileUrl}");
-                                        }
-                                        else
-                                        {
-                                            tbMeasurementCameraStatus.Text = "失败";
-                                            tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Red);
-                                            MessageBox.Show("获取图像失败，找不到文件地址", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                                            log.Error("获取图像失败：找不到文件地址");
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        tbMeasurementCameraStatus.Text = "失败";
-                                        tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Red);
-                                        MessageBox.Show($"打开图像失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                                        log.Error($"打开图像失败: {ex.Message}", ex);
+                                        filename = result.FileUrl;
+                                        break;
                                     }
                                 }
+                                if (string.IsNullOrEmpty(filename))
+                                {
+                                    filename = resultMaster[0].FileUrl;
+                                }
+                                OpenConoscope(filename);
                             }
                             else
                             {
@@ -478,69 +491,73 @@ namespace ProjectStarkSemi
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string filename = openFileDialog.FileName;
-                if (CVFileUtil.IsCVCIEFile(filename))
+                OpenConoscope(filename);
+            }       
+        }
+
+        private void OpenConoscope(string filename)
+        {
+            if (CVFileUtil.IsCVCIEFile(filename))
+            {
+                XMat?.Dispose();
+                YMat?.Dispose();
+                ZMat?.Dispose();
+
+                CVCIEFile fileInfo = new CVCIEFile();
+                CVFileUtil.Read(filename, out fileInfo);
+
+
+
+                // Calculate the size of a single channel in bytes
+                int channelSize = fileInfo.Cols * fileInfo.Rows * (fileInfo.Bpp / 8);
+
+
+                OpenCvSharp.MatType singleChannelType;
+                switch (fileInfo.Bpp)
                 {
-                    XMat?.Dispose();
-                    YMat?.Dispose();
-                    ZMat?.Dispose();
+                    case 8: singleChannelType = OpenCvSharp.MatType.CV_8UC1; break;
+                    case 16: singleChannelType = OpenCvSharp.MatType.CV_16UC1; break;
+                    case 32: singleChannelType = OpenCvSharp.MatType.CV_32FC1; break; // Most likely for XYZ
+                    case 64: singleChannelType = OpenCvSharp.MatType.CV_64FC1; break;
+                    default: throw new NotSupportedException($"Bpp {fileInfo.Bpp} not supported");
+                }
+                if (fileInfo.Channels == 3)
+                {
+                    byte[] dataX = new byte[channelSize];
+                    byte[] dataY = new byte[channelSize];
+                    byte[] dataZ = new byte[channelSize];
 
-                    CVCIEFile fileInfo = new CVCIEFile();
-                    CVFileUtil.Read(filename, out fileInfo);
+                    Buffer.BlockCopy(fileInfo.Data, 0, dataX, 0, channelSize);
+                    Buffer.BlockCopy(fileInfo.Data, channelSize, dataY, 0, channelSize);
+                    Buffer.BlockCopy(fileInfo.Data, channelSize * 2, dataZ, 0, channelSize);
 
-
-                    
-                    // Calculate the size of a single channel in bytes
-                    int channelSize = fileInfo.Cols * fileInfo.Rows * (fileInfo.Bpp / 8);
-
-
-                    OpenCvSharp.MatType singleChannelType;
-                    switch (fileInfo.Bpp)
-                    {
-                        case 8: singleChannelType = OpenCvSharp.MatType.CV_8UC1; break;
-                        case 16: singleChannelType = OpenCvSharp.MatType.CV_16UC1; break;
-                        case 32: singleChannelType = OpenCvSharp.MatType.CV_32FC1; break; // Most likely for XYZ
-                        case 64: singleChannelType = OpenCvSharp.MatType.CV_64FC1; break;
-                        default: throw new NotSupportedException($"Bpp {fileInfo.Bpp} not supported");
-                    }
-                    if (fileInfo.Channels == 3)
-                    {
-                        byte[] dataX = new byte[channelSize];
-                        byte[] dataY = new byte[channelSize];
-                        byte[] dataZ = new byte[channelSize];
-
-                        Buffer.BlockCopy(fileInfo.Data, 0, dataX, 0, channelSize);
-                        Buffer.BlockCopy(fileInfo.Data, channelSize, dataY, 0, channelSize);
-                        Buffer.BlockCopy(fileInfo.Data, channelSize * 2, dataZ, 0, channelSize);
-
-                        XMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
-                        YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataY);
-                        ZMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataZ);
-                    }
-                    else
-                    {
-                        byte[] dataX = new byte[channelSize];
-                        Buffer.BlockCopy(fileInfo.Data, 0, dataX, 0, channelSize);
-                        YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
-                    }
-
+                    XMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
+                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataY);
+                    ZMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataZ);
+                }
+                else
+                {
+                    byte[] dataX = new byte[channelSize];
+                    Buffer.BlockCopy(fileInfo.Data, 0, dataX, 0, channelSize);
+                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
                 }
 
-                ImageView.OpenImage(filename);
-                ImageView.ImageShow.ImageInitialized += (s, e) =>
-                {
-                    ImageView.Config.IsPseudo = true;
-                    CreateAndAnalyzePolarLines();
-                    Application.Current.Dispatcher.Invoke(async () =>
-                    {
-                        await Task.Delay(500);
-                        if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
-                        {
-                            toolReferenceLine.IsChecked = true;
-                        }
-                    });
-                };
             }
-            
+
+            ImageView.OpenImage(filename);
+            ImageView.ImageShow.ImageInitialized += (s, e) =>
+            {
+                ImageView.Config.IsPseudo = true;
+                CreateAndAnalyzePolarLines();
+                Application.Current.Dispatcher.Invoke(async () =>
+                {
+                    await Task.Delay(500);
+                    if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
+                    {
+                        toolReferenceLine.IsChecked = true;
+                    }
+                });
+            };
         }
 
         /// <summary>
