@@ -283,6 +283,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 else
                 {
                     var temp = ScatterPlots[listView1.SelectedIndex];
+                    if (temp == null) return;
                     temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                     temp.LineWidth = 1;
                     temp.MarkerSize = 1;
