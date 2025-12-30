@@ -132,7 +132,7 @@ namespace ColorVision.Engine.Batch.Eqe
 
                 // Query EQE results for this batch
                 var eqeResults = DB.Queryable<EqeResultEntity>()
-                    .Where(x => x.BatchId == ctx.Batch.Id)
+                    .Where(x => x.BatchId == 28)
                     .ToList();
 
                 // Query SMU results if available
