@@ -195,7 +195,7 @@ namespace ColorVision.Engine.Batch.IVL
                     IsAutoCloseConnection = true
                 });
 
-                var list = DB1.Queryable<SpectumResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
+                var list = DB1.Queryable<SpectumResultEntity>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
                 DB1.Dispose();
                 ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();
                 if (list.Count == 0)

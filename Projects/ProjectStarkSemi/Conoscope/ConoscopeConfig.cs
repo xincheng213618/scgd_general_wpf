@@ -12,8 +12,11 @@ namespace ProjectStarkSemi.Conoscope
         public ConoscopeModelType CurrentModel { get => _CurrentModel; set { _CurrentModel = value; OnPropertyChanged(); } }
         private ConoscopeModelType _CurrentModel = ConoscopeModelType.VA80;
 
+
+
         public double ConoscopeCoefficient { get => _ConoscopeCoefficient; set { _ConoscopeCoefficient = value; OnPropertyChanged(); } }
         private double _ConoscopeCoefficient = 0.02645;
+
 
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public ObservableCollection<double> DefaultAngles { get => _DefaultAngles; set { _DefaultAngles = value; OnPropertyChanged(); } }

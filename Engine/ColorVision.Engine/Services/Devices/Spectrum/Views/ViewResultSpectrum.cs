@@ -104,7 +104,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         }
 
-        public ViewResultSpectrum(SpectumResultModel item)
+        public ViewResultSpectrum(SpectumResultEntity item)
         {
             Id = item.Id;
             BatchID = item.BatchId;

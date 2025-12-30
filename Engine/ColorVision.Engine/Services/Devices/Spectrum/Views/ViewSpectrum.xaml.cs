@@ -548,7 +548,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             ScatterPlots.Clear();
             AbsoluteScatterPlots.Clear();
 
-            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>();
+            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultEntity>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
@@ -563,7 +563,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         }
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<SpectumResultModel, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultModel, ViewResultSpectrum>(MySqlControl.GetInstance().DB, ViewResults, 
+            GenericQuery<SpectumResultEntity, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultSpectrum>(MySqlControl.GetInstance().DB, ViewResults, 
                 t =>
                 {
                     ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(t);

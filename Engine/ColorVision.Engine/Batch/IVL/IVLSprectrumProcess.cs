@@ -59,7 +59,7 @@ namespace ColorVision.Engine.Batch.IVL
                 {
                     testResult.SMUResultModels.Add(item);
                 }
-                var list = DB.Queryable<SpectumResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
+                var list = DB.Queryable<SpectumResultEntity>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
 
                 DB.Dispose();
                 ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();

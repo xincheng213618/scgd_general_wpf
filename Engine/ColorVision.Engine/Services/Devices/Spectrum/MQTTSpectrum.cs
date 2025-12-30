@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                     DbType = SqlSugar.DbType.MySql,
                                     IsAutoCloseConnection = true
                                 });
-                                SpectumResultModel model = DB.Queryable<SpectumResultModel>().Where(x => x.Id == masterId).First();
+                                SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().Where(x => x.Id == masterId).First();
                                 DB.Dispose();
                                 if (model != null)
                                 {
