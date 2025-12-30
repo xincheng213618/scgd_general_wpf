@@ -182,9 +182,9 @@ public class POINode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		AlgorithmPreStepParam graphics = new AlgorithmPreStepParam();
-		getPreStepParam(start, graphics);
-		return new POIDataParam(_ImgFileName, _TempId, _TemplateName, _FilterTemplateName, _ReviseTemplateName, _OutputTemplateName, graphics, _IsSubPixel, _IsCCTWave)
+		AlgorithmPreStepParam param = new AlgorithmPreStepParam();
+		getPreStepParam(start, param);
+		return new POIDataParam(_ImgFileName, _TempId, _TemplateName, _FilterTemplateName, _ReviseTemplateName, _OutputTemplateName, param, _IsSubPixel, _IsCCTWave)
 		{
 			SMUData = GetSMUResult(start)
 		};

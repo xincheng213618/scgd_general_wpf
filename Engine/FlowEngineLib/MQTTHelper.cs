@@ -1,10 +1,3 @@
-using FlowEngineLib.MQTT;
-using log4net;
-using MQTTnet;
-using MQTTnet.Client;
-using MQTTnet.Packets;
-using MQTTnet.Server;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,23 +5,19 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using FlowEngineLib.MQTT;
+using log4net;
+using MQTTnet;
+using MQTTnet.Client;
+using MQTTnet.Packets;
+using MQTTnet.Server;
+using Newtonsoft.Json;
 
 namespace FlowEngineLib;
 
 public class MQTTHelper
 {
-    private static MQTTHelper _instance;
-    private static readonly object _locker = new();
-    public static MQTTHelper GetInstance()
-    {
-        lock (_locker)
-        {
-            _instance ??= new MQTTHelper();
-            return _instance;
-        }
-    }
-
-    public static readonly ILog logger = LogManager.GetLogger(typeof(MQTTHelper));
+	public static readonly ILog logger = LogManager.GetLogger(typeof(MQTTHelper));
 
 	private static string Server;
 
@@ -211,24 +200,24 @@ public class MQTTHelper
 
 	private Task ClientConnectedHandle(ClientConnectedEventArgs arg)
 	{
-		IList<MqttClientStatus> key = _MqttServer.GetClientsAsync().Result;
+		IList<MqttClientStatus> result = _MqttServer.GetClientsAsync().Result;
 		_Callback?.Invoke(new ResultData_MQTT
 		{
 			ResultCode = 1,
 			EventType = EventTypeEnum.ClientConnected,
-			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'已成功连接！当前客户端连接数：{key?.Count}个。"
+			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'已成功连接！当前客户端连接数：{result?.Count}个。"
 		});
 		return Task.CompletedTask;
 	}
 
 	private Task ClientDisconnectedHandle(ClientDisconnectedEventArgs arg)
 	{
-		IList<MqttClientStatus> trans_action = _MqttServer.GetClientsAsync().Result;
+		IList<MqttClientStatus> result = _MqttServer.GetClientsAsync().Result;
 		_Callback?.Invoke(new ResultData_MQTT
 		{
 			ResultCode = 1,
 			EventType = EventTypeEnum.ClientDisconnected,
-			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'已断开连接！当前客户端连接数：{trans_action?.Count}个。"
+			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'已断开连接！当前客户端连接数：{result?.Count}个。"
 		});
 		return Task.CompletedTask;
 	}
@@ -280,22 +269,15 @@ public class MQTTHelper
 		new ResultData_MQTT();
 		_Callback = callback;
 		ResultData_MQTT resultData_MQTT;
-        try
+		try
 		{
-            if (_MqttClient == null)
-            {
-                _MqttClient = new MqttFactory().CreateMqttClient();
-                _MqttClient.ConnectedAsync += ConnectedHandle;
-                _MqttClient.DisconnectedAsync += DisconnectedHandle;
-                _MqttClient.ApplicationMessageReceivedAsync += ApplicationMessageReceivedHandle;
-            }
-            MqttClientOptions options = mqttClientOptionsBuilder.Build();
-            // 只有在未连接的情况下才尝试连接
-            if (!_MqttClient.IsConnected)
-            {
-                await _MqttClient.ConnectAsync(options);
-            }
-            resultData_MQTT = ((!_MqttClient.IsConnected) ? new ResultData_MQTT
+			MqttClientOptions options = mqttClientOptionsBuilder.Build();
+			_MqttClient = new MqttFactory().CreateMqttClient();
+			_MqttClient.ConnectedAsync += ConnectedHandle;
+			_MqttClient.DisconnectedAsync += DisconnectedHandle;
+			_MqttClient.ApplicationMessageReceivedAsync += ApplicationMessageReceivedHandle;
+			await _MqttClient.ConnectAsync(options);
+			resultData_MQTT = ((!_MqttClient.IsConnected) ? new ResultData_MQTT
 			{
 				ResultCode = -1,
 				EventType = EventTypeEnum.ClientConnected,
@@ -323,7 +305,7 @@ public class MQTTHelper
 	private MqttClientOptionsBuilder buildOptions(string mqttServerUrl, int port, string userName, string userPassword)
 	{
 		MqttClientOptionsBuilder mqttClientOptionsBuilder = new MqttClientOptionsBuilder();
-		mqttClientOptionsBuilder.WithTcpServer(mqttServerUrl, port);
+		mqttClientOptionsBuilder.WithTcpServer(mqttServerUrl, (int?)port);
 		if (!string.IsNullOrEmpty(userName))
 		{
 			mqttClientOptionsBuilder.WithCredentials(userName, userPassword);

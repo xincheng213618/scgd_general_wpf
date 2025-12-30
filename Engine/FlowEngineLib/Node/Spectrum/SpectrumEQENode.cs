@@ -6,9 +6,11 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.Node.Spectrum;
 
 [STNode("/05 光谱仪")]
-public class SpectrumNode : CVBaseServerNode
+public class SpectrumEQENode : CVBaseServerNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SpectrumNode));
+
+	private float _Divisor;
 
 	private SPCommCmdType _Cmd;
 
@@ -17,8 +19,6 @@ public class SpectrumNode : CVBaseServerNode
 	private int _AveNum;
 
 	private bool _AutoIntTime;
-
-	private bool _IsWithND;
 
 	private bool _SelfDark;
 
@@ -33,6 +33,19 @@ public class SpectrumNode : CVBaseServerNode
 	private STNodeEditText<int> m_ctrl_AveNum;
 
 	private STNodeEditText<string> m_ctrl_Dark;
+
+	[STNodeProperty("修正系数", "修正系数", true)]
+	public float Divisor
+	{
+		get
+		{
+			return _Divisor;
+		}
+		set
+		{
+			_Divisor = value;
+		}
+	}
 
 	[STNodeProperty("命令", "命令", true)]
 	public SPCommCmdType PGCmd
@@ -89,19 +102,6 @@ public class SpectrumNode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("启用ND", "启用ND滤轮(自动曝光)", true)]
-	public bool IsWithND
-	{
-		get
-		{
-			return _IsWithND;
-		}
-		set
-		{
-			_IsWithND = value;
-		}
-	}
-
 	[STNodeProperty("自适应校零", "自适应校零", true)]
 	public bool SelfDark
 	{
@@ -143,14 +143,15 @@ public class SpectrumNode : CVBaseServerNode
 		}
 	}
 
-	public SpectrumNode()
-		: base("光谱仪", "Spectrum", "SVR.Spectrum.Default", "DEV.Spectrum.Default")
+	public SpectrumEQENode()
+		: base("EQE", "Spectrum", "SVR.Spectrum.Default", "DEV.Spectrum.Default")
 	{
-		operatorCode = "GetData";
+		operatorCode = "EQE.GetData";
 		_Cmd = SPCommCmdType.检测;
 		_Temp = 100f;
 		_AveNum = 1;
-		_OutputDataFilename = "SPData.json";
+		_Divisor = 1f;
+		_OutputDataFilename = "EQEData.json";
 		_AutoIntTime = false;
 		_SelfDark = false;
 		base.Height += 75;
@@ -176,7 +177,7 @@ public class SpectrumNode : CVBaseServerNode
 			m_ctrl_editText.Visable = true;
 			m_ctrl_AveNum.Visable = true;
 			m_ctrl_Dark.Visable = true;
-			operatorCode = "GetData";
+			operatorCode = "EQE.GetData";
 		}
 	}
 
@@ -201,15 +202,15 @@ public class SpectrumNode : CVBaseServerNode
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		SMUResultData sMUResult = GetSMUResult(start);
-		return new SpectrumParamData
+		return new SpectrumEQEParamData
 		{
 			IntegralTime = _Temp,
 			NumberOfAverage = _AveNum,
 			AutoIntegration = _AutoIntTime,
 			SelfAdaptionInitDark = _SelfDark,
 			AutoInitDark = _AutoInitDark,
+			Divisor = _Divisor,
 			OutputDataFilename = _OutputDataFilename,
-			IsWithND = _IsWithND,
 			SMUData = sMUResult
 		};
 	}

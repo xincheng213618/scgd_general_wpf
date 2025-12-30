@@ -57,11 +57,11 @@ public class FormCalibrationProperty : Form, ILoopFormProperty
 
 	private void button_add_Click(object sender, EventArgs e)
 	{
-		CalibrationNodeProperty cVMQTTRequest = new CalibrationNodeProperty();
-		cVMQTTRequest.ImgFileName = textBox_imag_file.Text;
-		cVMQTTRequest.TempName = textBox_cali_name.Text;
-		cVMQTTRequest.ExpTempName = textBox_exp_name.Text;
-		dialog.Add(cVMQTTRequest);
+		CalibrationNodeProperty calibrationNodeProperty = new CalibrationNodeProperty();
+		calibrationNodeProperty.ImgFileName = textBox_imag_file.Text;
+		calibrationNodeProperty.TempName = textBox_cali_name.Text;
+		calibrationNodeProperty.ExpTempName = textBox_exp_name.Text;
+		dialog.Add(calibrationNodeProperty);
 	}
 
 	private void button_insert_Click(object sender, EventArgs e)

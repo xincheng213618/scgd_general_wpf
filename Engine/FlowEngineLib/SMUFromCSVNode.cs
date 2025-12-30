@@ -142,34 +142,31 @@ public class SMUFromCSVNode : CVBaseServerNode, ICVLoopNextNode
 	{
 		if (!string.IsNullOrEmpty(csvFileName) && File.Exists(csvFileName))
 		{
-            using (FileStream fileStream = new FileStream(csvFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+			using (FileStream stream = new FileStream(csvFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 			{
-                using (StreamReader streamReader = new StreamReader(fileStream))
-                {
-                    using CsvReader csvReader = new CsvReader(streamReader, CultureInfo.InvariantCulture);
-                    srcValues = csvReader.GetRecords<SMUCsvSrcData>().ToList();
-                    if (srcValues != null && srcValues.Count > 0)
-                    {
-                        m_point_num = srcValues.Count;
-                        m_step_idx = 0;
-                        m_cur_val = srcValues[m_step_idx].SrcValue;
-                        m_limit_val = srcValues[m_step_idx].LimitValue;
-                    }
-                    else
-                    {
-                        if (logger.IsErrorEnabled)
-                        {
-                            logger.ErrorFormat("CsvFileName content is empty or has an invalid format.");
-                        }
-                        m_point_num = 0;
-                        m_cur_val = 0.0;
-                        m_limit_val = 0f;
-                    }
-                    streamReader.Close();
-                    return;
-                }
-            }
-
+				using StreamReader streamReader = new StreamReader(stream);
+				using CsvReader csvReader = new CsvReader(streamReader, CultureInfo.InvariantCulture);
+				srcValues = csvReader.GetRecords<SMUCsvSrcData>().ToList();
+				if (srcValues != null && srcValues.Count > 0)
+				{
+					m_point_num = srcValues.Count;
+					m_step_idx = 0;
+					m_cur_val = srcValues[m_step_idx].SrcValue;
+					m_limit_val = srcValues[m_step_idx].LimitValue;
+				}
+				else
+				{
+					if (logger.IsErrorEnabled)
+					{
+						logger.ErrorFormat("CsvFileName content is empty or has an invalid format.");
+					}
+					m_point_num = 0;
+					m_cur_val = 0.0;
+					m_limit_val = 0f;
+				}
+				streamReader.Close();
+				return;
+			}
 		}
 		if (logger.IsErrorEnabled)
 		{
@@ -199,11 +196,11 @@ public class SMUFromCSVNode : CVBaseServerNode, ICVLoopNextNode
 		{
 			logger.Debug("Send To Server CloseOutput");
 		}
-		CVStartCFC array = trans.trans_action;
-		string i = GetToken();
-		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, "CloseOutput", array.SerialNumber, null, i, base.ZIndex);
+		CVStartCFC trans_action = trans.trans_action;
+		string token = GetToken();
+		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, "CloseOutput", trans_action.SerialNumber, null, token, base.ZIndex);
 		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
-		MQActionEvent act = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, i);
+		MQActionEvent act = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
 		trans.trans_action.GetStartNode().DoPublish(act);
 	}
 
@@ -263,13 +260,13 @@ public class SMUFromCSVNode : CVBaseServerNode, ICVLoopNextNode
 
 	private MQActionEvent DoNextActionEvent(CVTransAction trans)
 	{
-		CVStartCFC channelCount = trans.trans_action;
-		string num = GetToken();
-		CVMQTTRequest i = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, channelCount.SerialNumber, new SMUData(Source == SourceType.Voltage_V, _channel, m_cur_val, m_limit_val), num, base.ZIndex);
-		CVBaseEventCmd channel = AddActionCmd(trans, i);
-		string message = JsonConvert.SerializeObject(i, Formatting.None);
-		MQActionEvent mQActionEvent = new MQActionEvent(i.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), i.EventName, message, num);
-		DoTransferToServer(trans, mQActionEvent, channel);
+		CVStartCFC trans_action = trans.trans_action;
+		string token = GetToken();
+		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(_channel, Source == SourceType.Voltage_V, m_cur_val, m_limit_val), token, base.ZIndex);
+		CVBaseEventCmd cmd = AddActionCmd(trans, cVMQTTRequest);
+		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
+		MQActionEvent mQActionEvent = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
+		DoTransferToServer(trans, mQActionEvent, cmd);
 		if (logger.IsDebugEnabled)
 		{
 			logger.DebugFormat("[{0}] Next Step Source value = {1}", ToShortString(), m_cur_val);
@@ -303,9 +300,9 @@ public class SMUFromCSVNode : CVBaseServerNode, ICVLoopNextNode
 
 	protected override CVMQTTRequest getActionEvent(STNodeOptionEventArgs e)
 	{
-		CVMQTTRequest channelCount = null;
-		CVStartCFC i = (CVStartCFC)e.TargetOption.Data;
-		if (i.IsRunning)
+		CVMQTTRequest result = null;
+		CVStartCFC cVStartCFC = (CVStartCFC)e.TargetOption.Data;
+		if (cVStartCFC.IsRunning)
 		{
 			if (m_point_num > 0)
 			{
@@ -314,10 +311,10 @@ public class SMUFromCSVNode : CVBaseServerNode, ICVLoopNextNode
 				m_cur_val = srcValues[m_step_idx].SrcValue;
 				m_limit_val = srcValues[m_step_idx].LimitValue;
 				m_op_end.TransferData(null);
-				channelCount = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, i.SerialNumber, new SMUData(Source == SourceType.Voltage_V, _channel, m_cur_val, m_limit_val), GetToken(), base.ZIndex);
+				result = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, cVStartCFC.SerialNumber, new SMUData(_channel, Source == SourceType.Voltage_V, m_cur_val, m_limit_val), GetToken(), base.ZIndex);
 				m_step_idx++;
 				updateUI();
-				AddCFCData(i);
+				AddCFCData(cVStartCFC);
 			}
 			else if (logger.IsErrorEnabled)
 			{
@@ -328,6 +325,6 @@ public class SMUFromCSVNode : CVBaseServerNode, ICVLoopNextNode
 		{
 			m_cur_val = 0.0;
 		}
-		return channelCount;
+		return result;
 	}
 }

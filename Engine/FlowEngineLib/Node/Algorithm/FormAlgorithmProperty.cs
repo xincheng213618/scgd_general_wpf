@@ -79,15 +79,15 @@ public class FormAlgorithmProperty : Form, ILoopFormProperty
 
 	private void button_insert_Click(object sender, EventArgs e)
 	{
-		AlgorithmNodeProperty result = new AlgorithmNodeProperty();
-		result.AlgorithmType = comboBox1.Text;
-		result.ImgFileName = textBox_imag_file.Text;
-		result.TempName = textBox_cali_name.Text;
+		AlgorithmNodeProperty algorithmNodeProperty = new AlgorithmNodeProperty();
+		algorithmNodeProperty.AlgorithmType = comboBox1.Text;
+		algorithmNodeProperty.ImgFileName = textBox_imag_file.Text;
+		algorithmNodeProperty.TempName = textBox_cali_name.Text;
 		if (textBox_poi.Visible)
 		{
-			result.POIName = textBox_poi.Text;
+			algorithmNodeProperty.POIName = textBox_poi.Text;
 		}
-		dialog.Insert(result);
+		dialog.Insert(algorithmNodeProperty);
 	}
 
 	private void button_del_Click(object sender, EventArgs e)

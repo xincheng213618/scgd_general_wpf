@@ -210,11 +210,11 @@ public class CVCameraNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		float[] rawData = new float[3] { _TempR, _TempG, _TempB };
+		float[] array = new float[3] { _TempR, _TempG, _TempB };
 		_Channel = new Channel();
 		for (int i = 0; i < szTypeCode.Length; i++)
 		{
-			_Channel.Add(szTypeCode[i], i, rawData[i]);
+			_Channel.Add(szTypeCode[i], i, array[i]);
 		}
 		initCtrl();
 	}
@@ -293,8 +293,8 @@ public class CVCameraNode : CVBaseServerNode
 
 	private void setEditValue()
 	{
-		int baseStartNode = _Channel.GetChannelCount();
-		for (int i = 0; i < baseStartNode; i++)
+		int channelCount = _Channel.GetChannelCount();
+		for (int i = 0; i < channelCount; i++)
 		{
 			ChannelData channel = _Channel.GetChannel(i);
 			m_ctrl_expTime[i].Value = channel.Temp;
