@@ -13,7 +13,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
 {
 
-    [DisplayAlgorithm(54, "色差校正", "Json")]
+    [DisplayAlgorithm(56, "色差校正", "Json")]
     public class AlgorithmCaliAngleShift : DisplayAlgorithmBase
     {
 

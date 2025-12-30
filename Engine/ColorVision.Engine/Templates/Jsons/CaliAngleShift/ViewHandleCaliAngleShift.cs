@@ -132,6 +132,8 @@ namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
 
                     void ExportToPoi()
                     {
+                        if (caliresult.CaliAngleShiftResult?.result == null) return;
+                        
                         int old1 = TemplatePoi.Params.Count;
                         TemplatePoi templatePoi1 = new TemplatePoi();
                         templatePoi1.ImportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
@@ -179,7 +181,7 @@ namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
                 if (result.ViewResults[0] is CaliAngleShiftDetailViewResult caliAngleShiftDetailViewResult)
                 {
                     int id = 0;
-                    if (caliAngleShiftDetailViewResult.CaliAngleShiftResult.result.Count != 0)
+                    if (caliAngleShiftDetailViewResult.CaliAngleShiftResult?.result != null && caliAngleShiftDetailViewResult.CaliAngleShiftResult.result.Count != 0)
                     {
                         foreach (var item in caliAngleShiftDetailViewResult.CaliAngleShiftResult.result)
                         {
@@ -190,7 +192,7 @@ namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                             Rectangle.Attribute.Id = id;
                             Rectangle.Attribute.Text = item.name;
-                            Rectangle.Attribute.Msg = item.value.ToString();
+                            Rectangle.Attribute.Msg = item.value?.ToString() ?? string.Empty;
                             Rectangle.Render();
                             view.ImageView.AddVisual(Rectangle);
                         }
