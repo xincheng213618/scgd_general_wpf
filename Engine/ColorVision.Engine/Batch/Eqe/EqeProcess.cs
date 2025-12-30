@@ -8,6 +8,7 @@ using ColorVision.Engine.Services;
 using log4net;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
