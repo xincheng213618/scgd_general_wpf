@@ -27,6 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
     /// </summary>
     public partial class ViewSpectrum : UserControl,IView
     {
+
         public ObservableCollection<ViewResultSpectrum> ViewResults { get; set; } = new ObservableCollection<ViewResultSpectrum>();
         public View View { get; set; }
 

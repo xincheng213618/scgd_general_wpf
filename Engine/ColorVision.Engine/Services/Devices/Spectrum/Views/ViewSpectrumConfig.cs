@@ -23,5 +23,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         [DisplayName("ShowSidebar"), Category("Control")]
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView;
+
+        public double divisor { get => _divisor; set { _divisor = value; OnPropertyChanged(); } }
+        private double _divisor = 1.0;
     }
 }

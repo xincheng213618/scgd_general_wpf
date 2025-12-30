@@ -1711,7 +1711,7 @@
     <value>Spectre absolu</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>Actuel</value>
+    <value>Actuel(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>Tension</value>

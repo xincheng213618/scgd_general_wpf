@@ -1711,7 +1711,7 @@
     <value>Absolute Spectrum</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>Current</value>
+    <value>Current(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>Voltage</value>

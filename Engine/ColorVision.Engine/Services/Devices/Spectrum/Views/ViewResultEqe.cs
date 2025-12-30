@@ -11,12 +11,13 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
     public class ViewResultEqe : ViewModelBase
     {
-        private static int No;
+        public ContextMenu ContextMenu { get; set; }
 
         [DisplayName("SerialNumber1")]
         public int Id { get; set; }
@@ -31,6 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public Scatter ScatterPlot { get; set; }
         public Scatter AbsoluteScatterPlot { get; set; }
+
 
         public void Gen()
         {
@@ -159,7 +161,61 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                     I = smuResult.IResult;
                 }
             }
+            VerifyRadiantFluxCommand = new RelayCommand(a => VerifyRadiantFlux());
 
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem
+            {
+                Header = "Verify Radiant Flux",
+                Command = VerifyRadiantFluxCommand
+            });
+        }
+        public RelayCommand VerifyRadiantFluxCommand { get; set; }
+
+        // ==========================================
+        // 2. 验算逻辑方法
+        // ==========================================
+        /// <summary>
+        /// 验算/重新计算辐射通量 (W)
+        /// 此逻辑与 C++ 中的 dW 积分逻辑完全一致
+        /// </summary>
+        public void VerifyRadiantFlux()
+        {
+            if (fPL == null || fPL.Length == 0) return;
+
+            // 1. 确定步长
+            // 4001个点 (380-780) -> 0.1nm
+            // 401个点 (380-780) -> 1.0nm
+            double step_nm = 1.0;
+            if (fPL.Length > 401) step_nm = 0.1;
+
+            double sum_Power = 0.0;
+
+            // 2. 积分 Sum(P_lambda * step)
+            // P_lambda(W/nm) = 相对光谱值(fPL) * 绝对系数(fPlambda)
+            for (int i = 0; i < fPL.Length; i++)
+            {
+                sum_Power += fPL[i] * fPlambda;
+            }
+
+            // 3. 更新辐射通量 (W)
+            // 公式: dW = Sum(P) * dl
+            RadiantFlux = sum_Power * step_nm;
+
+            // 4. 同步更新光效 (lm/W)
+            // 光效 = 光通量(lm) / 辐射通量(W)
+            // 优先使用 fPh (C++中的 dIm / Luminous Flux)
+            double flux_lm = fPh;
+            if (LuminousFlux != 0) flux_lm = LuminousFlux;
+
+            if (RadiantFlux != 0)
+            {
+                LuminousEfficacy = flux_lm / RadiantFlux;
+            }
+            else
+            {
+                LuminousEfficacy = 0;
+            }
         }
 
         public float? V { get; set; }

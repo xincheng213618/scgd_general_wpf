@@ -1711,7 +1711,7 @@
     <value>절대 스펙트럼</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>현재의</value>
+    <value>현재의(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>전압</value>
