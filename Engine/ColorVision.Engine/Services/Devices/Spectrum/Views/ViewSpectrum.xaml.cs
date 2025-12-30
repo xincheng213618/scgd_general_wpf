@@ -536,8 +536,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public void AddViewResultSpectrum(ViewResultSpectrum viewResultSpectrum)
         {
-            viewResultSpectrum.V = float.NaN;
-            viewResultSpectrum.I = float.NaN;
             ViewResults.Add(viewResultSpectrum);
             ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
             AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);

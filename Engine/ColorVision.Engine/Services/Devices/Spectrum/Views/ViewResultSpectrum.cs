@@ -1,4 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using cvColorVision;
 using iText.Commons.Bouncycastle.Asn1.X509;
@@ -6,6 +8,7 @@ using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.DataSources;
 using ScottPlot.Plottables;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -148,6 +151,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? Array.Empty<float>();
             Gen();
+
+            if (item.SmuDataId > 0)
+            {
+                var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                var smuResult = DB.Queryable<SMUResultModel>().Where(x => x.BatchId == item.SmuDataId).First();
+                DB.Dispose();
+                if (smuResult != null)
+                {
+                    V = smuResult.VResult;
+                    I = smuResult.IResult;
+                }
+            }
         }
 
 
@@ -181,10 +196,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             fPL = colorParam.fPL;
             Gen();
 
+
+
         }
 
-        public float V { get; set; }
-        public float I { get; set; }
+        public float? V { get; set; }
+        public float? I { get; set; }
 
         /// <summary>
         /// IP

@@ -499,8 +499,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public void AddViewResultEqe(ViewResultEqe viewResultEqe)
         {
-            viewResultEqe.V = float.NaN;
-            viewResultEqe.I = float.NaN;
             ViewResults.Add(viewResultEqe);
             ScatterPlots.Add(viewResultEqe.ScatterPlot);
             AbsoluteScatterPlots.Add(viewResultEqe.AbsoluteScatterPlot);

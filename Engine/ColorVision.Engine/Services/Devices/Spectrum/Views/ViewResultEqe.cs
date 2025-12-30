@@ -1,9 +1,12 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.DataSources;
 using ScottPlot.Plottables;
+using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -143,10 +146,25 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
 
             Gen();
+            if (item.SmuDataId > 0)
+            {
+                var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+                // Query SMU results if available
+                var smuResult = DB.Queryable<SMUResultModel>()
+                    .Where(x => x.BatchId == item.SmuDataId).First();
+                DB.Dispose();
+                if (smuResult != null)
+                {
+                    V = smuResult.VResult;
+                    I = smuResult.IResult;
+                }
+            }
+
         }
 
-        public float V { get; set; }
-        public float I { get; set; }
+        public float? V { get; set; }
+        public float? I { get; set; }
 
         /// <summary>
         /// IP

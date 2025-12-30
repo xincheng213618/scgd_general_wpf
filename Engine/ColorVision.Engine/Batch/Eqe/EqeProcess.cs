@@ -123,20 +123,10 @@ namespace ColorVision.Engine.Batch.Eqe
 
             try
             {
-                var DB = new SqlSugarClient(new ConnectionConfig
-                {
-                    ConnectionString = MySqlControl.GetConnectionString(),
-                    DbType = SqlSugar.DbType.MySql,
-                    IsAutoCloseConnection = true
-                });
+                var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
                 // Query EQE results for this batch
                 var eqeResults = DB.Queryable<EqeResultEntity>()
-                    .Where(x => x.BatchId == ctx.Batch.Id)
-                    .ToList();
-
-                // Query SMU results if available
-                var smuResults = DB.Queryable<SMUResultModel>()
                     .Where(x => x.BatchId == ctx.Batch.Id)
                     .ToList();
 
@@ -163,19 +153,6 @@ namespace ColorVision.Engine.Batch.Eqe
                     foreach (var item in eqeResults)
                     {
                         ViewResultEqe viewResultEqe = new ViewResultEqe(item);
-                        
-                        // Associate SMU data if available
-                        if (smuResults.Count > i)
-                        {
-                            var SMUResultModel = smuResults[i];
-                            viewResultEqe.V = SMUResultModel.VResult ?? 0;
-                            viewResultEqe.I = SMUResultModel.IResult ?? 0;
-                        }
-                        else
-                        {
-                            viewResultEqe.V = float.NaN;
-                            viewResultEqe.I = float.NaN;
-                        }
                         i++;
                         ViewResults.Add(viewResultEqe);
                     }
