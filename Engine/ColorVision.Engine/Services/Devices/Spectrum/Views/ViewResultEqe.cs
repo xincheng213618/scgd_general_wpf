@@ -151,8 +151,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
                 // Query SMU results if available
-                var smuResult = DB.Queryable<SMUResultModel>()
-                    .Where(x => x.BatchId == item.SmuDataId).First();
+                var smuResult = DB.Queryable<SMUResultModel>().Where(x => x.Id == item.SmuDataId).First();
                 DB.Dispose();
                 if (smuResult != null)
                 {
