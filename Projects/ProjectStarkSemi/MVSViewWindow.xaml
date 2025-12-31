@@ -66,10 +66,10 @@
                     <TextBlock x:Name="label2" Text="增益"/>
                 </DockPanel>
                 <DockPanel Margin="0,0,0,5">
-                    <TextBox x:Name="tbFrameRate" DockPanel.Dock="Right" Width="150" IsEnabled="False" Style="{StaticResource TextBox.Small}" TextChanged="tbFrameRate_TextChanged"/>
+                    <TextBox x:Name="tbFrameRate" IsReadOnly="True" BorderThickness="0" DockPanel.Dock="Right" Width="150" IsEnabled="False" Style="{StaticResource TextBox.Small}" TextChanged="tbFrameRate_TextChanged"/>
                     <TextBlock x:Name="label3" Text="帧率"/>
                 </DockPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Visibility="Collapsed">
                     <Button x:Name="bnGetParam"  Click="bnGetParam_Click" IsEnabled="False" Content="获取参数" Margin="0,0,5,0" />
                     <Button x:Name="bnSetParam"  Click="bnSetParam_Click" IsEnabled="False" Content="设置参数"/>
                 </StackPanel>

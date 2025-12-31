@@ -151,7 +151,7 @@
                         <Button x:Name="btnOpenObservationCamera" 
                         Content="{x:Static properties:Resources.OpenObservationCamera}"
                         Click="btnOpenObservationCamera_Click"
-                        Height="30"/>
+                        Height="30"/>WW
                     </RibbonGroup>
 
 
