@@ -140,8 +140,6 @@
                         <RibbonButton Label="极角导出"  Click="btnExportCircleMode_Click" Padding="10,5"/>
 
                     </RibbonGroup>
-                </RibbonTab>
-                <RibbonTab Header="Camera"  Padding="10">
                     <RibbonGroup x:Name="rbnGr2" Header="General">
                         <StackPanel>
                             <DockPanel >
@@ -194,6 +192,8 @@
                               Click="btnCalibration_Click"
                               Height="30"/>
                     </RibbonGroup>
+                </RibbonTab>
+                <RibbonTab Header="Edit">
                     <RibbonGroup Header="{x:Static properties:Resources.ImageFilter}">
                         <StackPanel >
                             <DockPanel Margin="0,0,0,10">
@@ -273,12 +273,6 @@
                                 Click="btnApplyFilter_Click"
                                 />
                     </RibbonGroup>
-
-
-                </RibbonTab>
-
-                <RibbonTab Header="Edit">
-
                 </RibbonTab>
 
                 <RibbonTab Header="View">
