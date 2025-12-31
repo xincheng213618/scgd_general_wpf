@@ -202,11 +202,11 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 AddStackPanel(name => fwnode.DeviceCode = name, fwnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCfwPort>().ToList());
             }
-            if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.CalibrationNode calibrationNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmCaliNode AlgorithmCaliNode)
             {
-                AddStackPanel(name => calibrationNode.DeviceCode = name, calibrationNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-                AddImagePath(name => calibrationNode.ImgFileName = name, calibrationNode.ImgFileName);
-                AddStackPanel(name => calibrationNode.DeviceCode = name, calibrationNode.DeviceCode, "色差", new TemplateCaliAngleShift());
+                AddStackPanel(name => AlgorithmCaliNode.DeviceCode = name, AlgorithmCaliNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddImagePath(name => AlgorithmCaliNode.ImgFileName = name, AlgorithmCaliNode.ImgFileName);
+                AddStackPanel(name => AlgorithmCaliNode.TempName = name, AlgorithmCaliNode.TempName, "色差", new TemplateCaliAngleShift());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmFindLightAreaNode algorithmFindLightAreaNode)

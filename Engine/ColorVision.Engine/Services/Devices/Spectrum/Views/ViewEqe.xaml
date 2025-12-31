@@ -129,13 +129,6 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn Header="{x:Static properties:Resources.Lv}">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewResultEqe}">
-                                        <TextBlock Text="{Binding Lv}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
                             <GridViewColumn Header="EQE">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewResultEqe}">
