@@ -75,6 +75,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             RefreshCommand = new RelayCommand(a => RestartRCService());
+
             ServiceClearCommand = new RelayCommand(a => ServiceClear(), b => AccessControl.Check(ServiceClear));
 
             EditAutoExpTimeCommand = new RelayCommand(a => EditAutoExpTime());
@@ -83,6 +84,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
+
             this.ContextMenu.Items.Add(new MenuItem() { Header ="Log",Command = FlowEngineManager.GetInstance().WindowsServiceX64.OpenLogCommand });
             this.ContextMenu.Items.Add(new MenuItem() { Header = "CameraLog", Command = OpenCameraLogCommand });
 

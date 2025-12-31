@@ -1,5 +1,7 @@
 #pragma warning disable CS8604
 using ColorVision.Common.Utilities;
+using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using ScottPlot;
@@ -571,6 +573,57 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             // Close the window containing this control
             Window.GetWindow(this)?.Close();
+        }
+
+        private void Inquire_Click(object sender, RoutedEventArgs e)
+        {
+            ViewResults.Clear();
+            ScatterPlots.Clear();
+            AbsoluteScatterPlots.Clear();
+
+            var query = MySqlControl.GetInstance().DB.Queryable<EqeResultEntity>();
+            query = query.OrderBy(x => x.Id, Config.OrderByType);
+            var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
+            foreach (var item in dbList)
+            {
+                ViewResultEqe viewResultSpectrum = new ViewResultEqe(item);
+                ViewResults.Add(viewResultSpectrum);
+                ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
+                AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
+            }
+            if (ViewResults.Count > 0)
+                listView1.SelectedIndex = 0;
+        }
+        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
+        {
+            GenericQuery<EqeResultEntity, ViewResultEqe> genericQuery = new GenericQuery<EqeResultEntity, ViewResultEqe>(MySqlControl.GetInstance().DB, ViewResults,
+                t =>
+                {
+                    ViewResultEqe viewResultSpectrum = new ViewResultEqe(t);
+
+                    ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
+                    AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
+                    return viewResultSpectrum;
+                }
+                );
+            genericQuery.PreQuery += (s, e) =>
+            {
+                ScatterPlots.Clear();
+                AbsoluteScatterPlots.Clear();
+            };
+            genericQuery.QueryCompleted += (s, e) =>
+            {
+                if (ViewResults.Count > 0)
+                {
+                    listView1.Visibility = Visibility.Visible;
+                    listView2.Visibility = Visibility.Visible;
+                    listView1.SelectedIndex = 0;
+                }
+            };
+            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
+            genericQueryWindow.ShowDialog();
+
+
         }
     }
 }

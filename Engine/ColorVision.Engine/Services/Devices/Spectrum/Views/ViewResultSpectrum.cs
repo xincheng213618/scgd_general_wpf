@@ -282,6 +282,20 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             fCIEy_2015 = cieData.fCIEy_2015;
             fCIEz_2015 = cieData.fCIEz_2015;
 
+            LuminousFlux = (float)(fCIEy * ViewSpectrumConfig.Instance.divisor);
+
+            if (fPL.Length > 0)
+            {
+                double step_nm = 0.1;
+                double sum_Power = 0.0;
+
+                for (int i = 0; i < 4001; i++)
+                {
+                    double P_val = fPlambda * fPL[i]; // 绝对功率 (W/nm)
+                    sum_Power += P_val;
+                }
+                RadiantFlux = sum_Power * step_nm;
+            }
 
             if (item.SmuDataId > 0)
             {
@@ -298,30 +312,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 {
                     CalculateEqe(I.Value /1000);
                 }
-            }
 
-
-            LuminousFlux = (float)(fCIEy * ViewSpectrumConfig.Instance.divisor);
-
-            if (fPL.Length > 0)
-            {
-                double step_nm = 0.1;
-                double sum_Power = 0.0;
-
-                for (int i = 0; i < 4001; i++)
+                if (RadiantFlux.HasValue && RadiantFlux.Value != 0)
                 {
-                    double P_val = fPlambda * fPL[i]; // 绝对功率 (W/nm)
-                    sum_Power += P_val;
+                    LuminousEfficacy = LuminousFlux / (V*I/1000);
                 }
-                RadiantFlux = sum_Power * step_nm;
-            }
-            if (RadiantFlux.HasValue && RadiantFlux.Value != 0)
-            {
-                LuminousEfficacy = LuminousFlux / RadiantFlux;
-            }
-            else
-            {
-                LuminousEfficacy = 0;
+                else
+                {
+                    LuminousEfficacy = 0;
+                }
             }
 
             Gen();
@@ -407,14 +406,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 RadiantFlux = sum_Power * step_nm;
             }
 
-            if (RadiantFlux.HasValue && RadiantFlux.Value != 0)
-            {
-                LuminousEfficacy = LuminousFlux / RadiantFlux;
-            }
-            else
-            {
-                LuminousEfficacy = 0;
-            }
             Gen();
         }
 

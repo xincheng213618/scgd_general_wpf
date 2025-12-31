@@ -78,11 +78,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                 });
                                 SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().Where(x => x.Id == masterId).First();
                                 DB.Dispose();
+                                log.Info($"GetData MasterId:{masterId} ");
                                 if (model != null)
                                 {
-                                    ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
+                                        ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                         Device.View.AddViewResultSpectrum(viewResultSpectrum);
                                     });
                                 }
@@ -92,9 +93,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         {
                             JObject data = msg.Data;
                             SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
-                            ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam.Data);
                             Application.Current.Dispatcher.Invoke(() =>
                             {
+                                ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam.Data);
                                 Device.View.AddViewResultSpectrum(viewResultSpectrum);
                             });
 
