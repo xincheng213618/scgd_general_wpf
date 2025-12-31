@@ -427,7 +427,7 @@
                     </GroupBox>
                     <TabControl Grid.Row="2" Margin="5">
                         <!-- Azimuth Tab -->
-                        <TabItem Header="Azimuth" >
+                        <TabItem Header="{x:Static properties:Resources.Azimuth}" >
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -452,7 +452,7 @@
                                 </StackPanel>
                             </Grid>
                         </TabItem>
-                        <TabItem Header="Polar Angle">
+                        <TabItem Header="{x:Static properties:Resources.PolarAngle}">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
