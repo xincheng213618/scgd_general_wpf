@@ -151,7 +151,7 @@
                         <Button x:Name="btnOpenObservationCamera" 
                         Content="{x:Static properties:Resources.OpenObservationCamera}"
                         Click="btnOpenObservationCamera_Click"
-                        Height="30"/>WW
+                        Height="30"/>
                     </RibbonGroup>
 
 
@@ -469,6 +469,12 @@
                                     </StackPanel>
                                 </StackPanel>
                             </Grid>
+                        </TabItem>
+                        <TabItem Header="Settting">
+                            <Grid x:Name="GridSetting">
+                                
+                            </Grid>
+                            
                         </TabItem>
                     </TabControl>
                 </Grid>

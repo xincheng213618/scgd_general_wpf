@@ -112,6 +112,8 @@ namespace ProjectStarkSemi
                 }
             }
 
+            GridSetting.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(ConoscopeConfig.ReferenceLineParam));
+
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>() is MouseMagnifierManager  mouseMagnifierManager)
             {
                 mouseMagnifierManager.IsChecked = true;
