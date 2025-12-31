@@ -136,8 +136,8 @@
                     <RibbonGroup Header="Files">
                         <RibbonButton Label="Open" SmallImageSource="Images/Open32.png"  KeyTip="O" Click="OpenFile_Click" />
                         <RibbonButton Label="SaveAs" SmallImageSource="Images/SaveAs32.png"  KeyTip="O" Click="OpenFile_Click" />
-                        <RibbonButton Label="直径线导出"  Click="btnExportAngleMode_Click" Padding="10,5"/>
-                        <RibbonButton Label="R圆导出"  Click="btnExportCircleMode_Click" Padding="10,5"/>
+                        <RibbonButton Label="方位角导出"  Click="btnExportAngleMode_Click" Padding="10,5"/>
+                        <RibbonButton Label="极角导出"  Click="btnExportCircleMode_Click" Padding="10,5"/>
 
                     </RibbonGroup>
                 </RibbonTab>
@@ -404,8 +404,8 @@
                                 <ComboBox x:Name="cbExportMode" 
                                              MinWidth="120" 
                                              SelectedIndex="0">
-                                    <ComboBoxItem Content="按直径线导出" Tag="Angle"/>
-                                    <ComboBoxItem Content="按R圆导出" Tag="Circle"/>
+                                    <ComboBoxItem Content="按方位角导出" Tag="Angle"/>
+                                    <ComboBoxItem Content="按极角导出" Tag="Circle"/>
                                 </ComboBox>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
@@ -420,24 +420,24 @@
                                 </ComboBox>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="直径线导出"   Click="btnExportAngleMode_Click"    Padding="10,5"  Margin="5,0,5,0"/>
-                                <Button Content="R圆导出"    Click="btnExportCircleMode_Click"   Padding="10,5"/>
+                                <Button Content="方位角导出"   Click="btnExportAngleMode_Click"    Padding="10,5"  Margin="5,0,5,0"/>
+                                <Button Content="极角导出"    Click="btnExportCircleMode_Click"   Padding="10,5"/>
                             </StackPanel>
                         </StackPanel>
                     </GroupBox>
                     <TabControl Grid.Row="2" Margin="5">
-                        <!-- Diameter Line Tab -->
-                        <TabItem Header="Diameter Line" >
+                        <!-- Azimuth Tab -->
+                        <TabItem Header="Azimuth" >
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
 
-                                <!-- Diameter Line Plot -->
+                                <!-- Azimuth Plot -->
                                 <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotDiameterLine" />
 
-                                <!-- Diameter Line Controls -->
+                                <!-- Azimuth Controls -->
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                         <TextBlock Text="添加角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
@@ -452,14 +452,14 @@
                                 </StackPanel>
                             </Grid>
                         </TabItem>
-                        <TabItem Header="R Circle">
+                        <TabItem Header="Polar Angle">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
 
-                                <!-- Diameter Line Plot -->
+                                <!-- Polar Angle Plot -->
                                 <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotRCircle"/>
 
                                 <StackPanel>
