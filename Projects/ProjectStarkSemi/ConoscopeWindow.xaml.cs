@@ -678,6 +678,28 @@ namespace ProjectStarkSemi
         /// </summary>
         private void RgbChannelVisibility_Changed(object sender, RoutedEventArgs e)
         {
+            // If multiple selection is not allowed, implement exclusive selection behavior
+            if (!ConoscopeConfig.AllowMultipleChannelSelection && sender is CheckBox changedCheckBox)
+            {
+                // If a checkbox was checked (not unchecked), uncheck all others
+                if (changedCheckBox.IsChecked == true)
+                {
+                    // Uncheck all other checkboxes except the one that was just checked
+                    if (changedCheckBox != chkShowRed)
+                        chkShowRed.IsChecked = false;
+                    if (changedCheckBox != chkShowGreen)
+                        chkShowGreen.IsChecked = false;
+                    if (changedCheckBox != chkShowBlue)
+                        chkShowBlue.IsChecked = false;
+                    if (changedCheckBox != chkShowXlue)
+                        chkShowXlue.IsChecked = false;
+                    if (changedCheckBox != chkShowYlue)
+                        chkShowYlue.IsChecked = false;
+                    if (changedCheckBox != chkShowZlue)
+                        chkShowZlue.IsChecked = false;
+                }
+            }
+            
             UpdatePlot();
             UpdatePlotForCircle();
         }
