@@ -28,6 +28,7 @@ using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.BuildPOIAA;
+using ColorVision.Engine.Templates.Jsons.CaliAngleShift;
 using ColorVision.Engine.Templates.Jsons.CompoundImg;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.Engine.Templates.Jsons.FindCross;
@@ -54,6 +55,7 @@ using ColorVision.Engine.Templates.SFR;
 using ColorVision.Engine.Templates.Validate;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
+using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -199,6 +201,12 @@ namespace ColorVision.Engine.Templates.Flow
             if (STNodeEditor.ActiveNode is FlowEngineLib.FWNode fwnode)
             {
                 AddStackPanel(name => fwnode.DeviceCode = name, fwnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCfwPort>().ToList());
+            }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.CalibrationNode calibrationNode)
+            {
+                AddStackPanel(name => calibrationNode.DeviceCode = name, calibrationNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddImagePath(name => calibrationNode.ImgFileName = name, calibrationNode.ImgFileName);
+                AddStackPanel(name => calibrationNode.DeviceCode = name, calibrationNode.DeviceCode, "色差", new TemplateCaliAngleShift());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmFindLightAreaNode algorithmFindLightAreaNode)
