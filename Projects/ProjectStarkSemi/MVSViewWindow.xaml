@@ -8,7 +8,7 @@
         xmlns:wfHost="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:MVSViewManager}"
-        Title="BasicDemoWPF" Height="600" Width="1024" Initialized="Window_Initialized">
+        Title="MVS相机视图" Height="600" Width="1024" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
