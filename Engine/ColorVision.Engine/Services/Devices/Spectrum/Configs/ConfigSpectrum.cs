@@ -74,6 +74,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         [DisplayName("ConnectType"), Category("Base")]
         public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); if (value == SpectrometerType.CMvSpectra) _ComPort = "0"; OnPropertyChanged(nameof(ComPort)); } }
         private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
+
         [ Category("Base")]
         public string ComPort { get => _ComPort; set { _ComPort = value; OnPropertyChanged(); } }
         private string _ComPort = "0";
@@ -94,12 +95,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public int AutoTestTime { get => _AutoTestTime; set { _AutoTestTime = value; OnPropertyChanged(); } }
         private int _AutoTestTime = 100;
 
+
+
+
         [DisplayName("StartIntegrationTime_Ms"), Category("Base")]
         public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; OnPropertyChanged(); } }
         private float _TimeFrom = 10;
 
-        [DisplayName("StartIntegrationTime_Ms"), Category("Base")]
-        public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutterEnable = false; _IsAutoDark = value; OnPropertyChanged(); } }
+        [Category("Base")]
+        public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutter = false; _IsAutoDark = value; OnPropertyChanged(); } }
         private bool _IsAutoDark;
 
         public SelfAdaptionInitDark SelfAdaptionInitDark { get; set; } = new SelfAdaptionInitDark();
@@ -108,7 +112,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         public NDConfig NDConfig { get; set; } = new NDConfig();
 
-        public bool IsShutterEnable { get => _IsShutter; set { if (value) IsAutoDark = false; _IsShutter = value; OnPropertyChanged(); } }
+        public bool IsShutter { get => _IsShutter; set { if (value) IsAutoDark = false; _IsShutter = value; OnPropertyChanged(); } }
         private bool _IsShutter;
 
         public ShutterConfig ShutterCfg { get => _ShutterCfg; set { _ShutterCfg = value; OnPropertyChanged(); } }

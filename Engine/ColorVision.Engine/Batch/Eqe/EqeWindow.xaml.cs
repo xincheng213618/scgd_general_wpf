@@ -17,26 +17,56 @@ namespace ColorVision.Engine.Batch.Eqe
         }
     }
 
+
+
     /// <summary>
     /// EqeWindow.xaml 的交互逻辑
     /// </summary>
     public partial class EqeWindow : Window
     {
+
+        private static EqeWindow Instance { get; set; }
+
+        public static EqeWindow GetEqeWindow(ObservableCollection<ViewResultEqe> viewResults)
+        {
+            if (Instance == null)
+            {
+                Instance = new EqeWindow(viewResults);
+            }
+            foreach (var viewResult in viewResults)
+            {
+                Instance.AddViewResultEqe(viewResult);
+            }
+            return Instance;
+        }
+
+
+        public ViewEqe ViewEqe { get; private set; }
+
         public EqeWindow(ObservableCollection<ViewResultEqe> viewResults)
         {
             InitializeComponent();
 
             // Create and initialize ViewEqe control
-            var viewEqe = new ViewEqe();
+            ViewEqe = new ViewEqe();
             
             // Populate with data
             foreach (var result in viewResults)
             {
-                viewEqe.AddViewResultEqe(result);
+                ViewEqe.AddViewResultEqe(result);
             }
 
             // Set the content
-            ViewEqeContent.Content = viewEqe;
+            ViewEqeContent.Content = ViewEqe;
+            Instance = this;
+        }
+
+        public void AddViewResultEqe(ViewResultEqe viewResultEqe) => ViewEqe.AddViewResultEqe(viewResultEqe);
+
+
+        private void Window_Closed(object sender, System.EventArgs e)
+        {
+            Instance = null;
         }
     }
 }

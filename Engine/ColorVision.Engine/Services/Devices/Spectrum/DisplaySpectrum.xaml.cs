@@ -1,7 +1,12 @@
-﻿using ColorVision.Engine.Messages;
+﻿using ColorVision.Database;
+using ColorVision.Engine.Batch.Eqe;
+using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI;
+using SqlSugar;
 using System;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -143,7 +148,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.GetData((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked??false, AutoDark.IsChecked ?? false, AutoShutterDark.IsChecked ?? false);
+            MsgRecord msgRecord = DService.GetData();
             msgRecord.MsgRecordStateChanged += (e) =>
             {
                 if (e == MsgRecordState.Success)
@@ -161,7 +166,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             string btnTitle = btn_autoTest.Content.ToString();
             if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals(ColorVision.Engine.Properties.Resources.ContinuousMeasurement, StringComparison.Ordinal))
             {
-                DService.GetDataAuto((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked ?? false, AutoDark.IsChecked ?? false);
+                DService.GetDataAuto();
                 btn_autoTest.Content = ColorVision.Engine.Properties.Resources.CancelAutoTest;
             }
             else
@@ -172,7 +177,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)
         {
-            MsgRecord  msgRecord = DService.InitDark((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value);
+            MsgRecord  msgRecord = DService.InitDark();
             msgRecord.MsgRecordStateChanged += (e) =>
             {
                 if (e == MsgRecordState.Success)
@@ -226,7 +231,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 if (e == MsgRecordState.Success)
                 {
                     int port = msgRecord.MsgReturn.Data.Port;
-                    Device.DisplaySpectrumConfig.PortNum = port;
+                    Device.DisplayConfig.PortNum = port;
                 }
                 else
                 {
@@ -238,6 +243,38 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
+        }
+
+        private void GetEQE_Click(object sender, RoutedEventArgs e)
+        {
+            MsgRecord msgRecord = DService.GetEQEdata();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Success)
+                {
+                    int MasterId = msgRecord.MsgReturn.Data.MasterId;
+                    if(MasterId > 0)
+                    {
+                        var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+                        // Query EQE results for this batch
+                        var eqeResult = DB.Queryable<EqeResultEntity>()
+                            .Where(x => x.Id == MasterId)
+                            .First();
+
+                        DB.Dispose();
+
+                        ObservableCollection<ViewResultEqe> ViewResults = new ObservableCollection<ViewResultEqe>();
+                        ViewResults.Add(new ViewResultEqe(eqeResult));
+                        EqeWindow.GetEqeWindow(ViewResults).Activate();
+                    }
+
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                }
+            };
         }
     }
 }

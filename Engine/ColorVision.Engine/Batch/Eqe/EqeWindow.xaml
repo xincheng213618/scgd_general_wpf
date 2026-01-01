@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Batch.Eqe"
         mc:Ignorable="d"
         Title="EQE结果查看器" Height="600" Width="1000"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen" Closed="Window_Closed">
     <Grid>
         <ContentControl x:Name="ViewEqeContent"/>
     </Grid>

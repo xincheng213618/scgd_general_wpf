@@ -11,6 +11,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using cvColorVision;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -31,8 +32,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     public class DisplaySpectrumConfig : IDisplayConfigBase
     {
+        public double IntTime { get => _IntTime; set { _IntTime = value; OnPropertyChanged(); } }
+        private double _IntTime = 100;
+
+        public int AveNum { get => _AveNum; set { _AveNum = value; OnPropertyChanged(); } }
+        private int _AveNum = 1;
+
         public int PortNum { get => _PortNum; set { _PortNum = value; OnPropertyChanged(); } }
         private int _PortNum = 1;
+
+        [DisplayName("自动积分"), Category("Base")]
+        public bool IsAutoIntTime { get => _IsAutoIntegra; set { _IsAutoIntegra = value; OnPropertyChanged(); } }
+        private bool _IsAutoIntegra;
+
         public double? V { get => _V; set { _V = value; OnPropertyChanged(); } }
         private double? _V;
         public double? I { get => _I; set { _I = value; OnPropertyChanged(); } }
