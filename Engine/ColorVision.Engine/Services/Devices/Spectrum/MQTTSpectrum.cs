@@ -157,11 +157,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public MsgRecord GetEQEdata()
         {
-            var Param = new Dictionary<string, object>() { { "IntegralTime", Device.DisplayConfig.IntTime }, { "NumberOfAverage", Device.DisplayConfig.AveNum } };
-
+            var Param = new Dictionary<string, object>();
             MsgSend msg = new()
             {
-                EventName = "GetData",
+                EventName = "EQE.GetData",
                 Params = Param
             };
             Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
