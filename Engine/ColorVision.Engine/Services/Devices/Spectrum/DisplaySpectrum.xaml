@@ -116,6 +116,22 @@
                                 </Button>
 
                             </DockPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="EQE"  Margin="2" Click="Button_Click_AutoTest"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <DockPanel >
+                                        <TextBlock  Text="{x:Static properties:Resources.V}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                        <TextBlock  DockPanel.Dock="Right" Text="V" Width="30" Block.TextAlignment="Center"/>
+                                        <TextBox  Text="{Binding DisplayConfig.V, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1"  Width="50"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock  Text="{x:Static properties:Resources.I}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                        <TextBlock  DockPanel.Dock="Right" Text="mA" Width="30" Block.TextAlignment="Center"/>
+                                        <TextBox  Text="{Binding DisplayConfig.I, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1"  Width="50"/>
+                                        
+                                    </DockPanel>
+                                </StackPanel>
+                            </DockPanel>
                             <DockPanel Margin="0,2" Visibility="{Binding Config.IsWithND,Converter={StaticResource bool2VisibilityConverter}}">
                                 <Button  DockPanel.Dock="Right" Content="Get"  Click="GetNDport_Click" />
                                 <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.ChangeNDPort}"  Click="NDport_Click" />

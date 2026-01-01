@@ -97,6 +97,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         [DisplayName("StartIntegrationTime_Ms"), Category("Base")]
         public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; OnPropertyChanged(); } }
         private float _TimeFrom = 10;
+
         [DisplayName("StartIntegrationTime_Ms"), Category("Base")]
         public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutterEnable = false; _IsAutoDark = value; OnPropertyChanged(); } }
         private bool _IsAutoDark;

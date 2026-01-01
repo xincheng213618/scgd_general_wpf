@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Extension;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.PhyCameras.Dao;
@@ -30,18 +29,21 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
-    public class DisplaySpectrumConfig : ViewModelBase
+    public class DisplaySpectrumConfig : IDisplayConfigBase
     {
         public int PortNum { get => _PortNum; set { _PortNum = value; OnPropertyChanged(); } }
         private int _PortNum = 1;
+        public double? V { get => _V; set { _V = value; OnPropertyChanged(); } }
+        private double? _V;
+        public double? I { get => _I; set { _I = value; OnPropertyChanged(); } }
+        private double? _I;
     }
 
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>
     {
-        public DisplaySpectrumConfig DisplaySpectrumConfig { get; set; } = new DisplaySpectrumConfig();
         public MQTTSpectrum DService { get; set; }
         public ViewSpectrum View { get; set; }
-        public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
+        public DisplaySpectrumConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySpectrumConfig>(Config.Code);
 
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
         public RelayCommand RefreshDeviceIdCommand { get; set; }
