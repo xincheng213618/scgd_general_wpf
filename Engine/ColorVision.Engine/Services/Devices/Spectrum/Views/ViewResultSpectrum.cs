@@ -332,22 +332,38 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         private void CalculateEqe()
         {
-            string input = Microsoft.VisualBasic.Interaction.InputBox("请输入电流 (A):", "计算 EQE", "0.01");
-
+            string input = Microsoft.VisualBasic.Interaction.InputBox("请输入电流 (mA):", "计算 EQE", "1");
             if (float.TryParse(input, out float currentA))
             {
                 // 更新 ViewModel 中的电流属性（可选）
-                I = currentA * 1000;
-
+                I = currentA;
                 // 调用我们在 ViewModel 中新加的方法
-               CalculateEqe(currentA);
-                // 因为 Eqe 属性有了 setter，且实现了 NotifyPropertyChanged (ViewModelBase)，
-                // 界面会自动刷新 EQE 列的值。
+                CalculateEqe(currentA);
             }
             else
             {
                 MessageBox.Show("请输入有效的电流数值。");
+                return;
             }
+            string input1 = Microsoft.VisualBasic.Interaction.InputBox("请输入电压 (V):", "光效", "5");
+            if (float.TryParse(input1, out float v))
+            {
+                V=v;
+                if (RadiantFlux.HasValue && RadiantFlux.Value != 0)
+                {
+                    LuminousEfficacy = LuminousFlux / (V * I / 1000);
+                }
+                else
+                {
+                    LuminousEfficacy = 0;
+                }
+            }
+            else
+            {
+                MessageBox.Show("请输入有效的电压数值。");
+            }
+
+
         }
 
 

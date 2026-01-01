@@ -13,7 +13,11 @@ namespace ColorVision.Engine.Batch.Eqe
         public override string Header => "EqeWindow";
         public override void Execute()
         {
-            new EqeWindow(new ObservableCollection<ViewResultEqe>()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            // Fix: Use the static method instead of 'new' to ensure singleton behavior
+            var window = EqeWindow.GetEqeWindow(new ObservableCollection<ViewResultEqe>());
+            window.Owner = Application.Current.GetActiveWindow();
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            window.Show();
         }
     }
 
@@ -25,23 +29,41 @@ namespace ColorVision.Engine.Batch.Eqe
     public partial class EqeWindow : Window
     {
 
-        private static EqeWindow Instance { get; set; }
+        private static EqeWindow _instance;
 
         public static EqeWindow GetEqeWindow(ObservableCollection<ViewResultEqe> viewResults)
         {
-            if (Instance == null)
+            // Check if instance exists and is actually usable (Loaded)
+            if (_instance == null || !_instance.IsLoaded)
             {
-                Instance = new EqeWindow(viewResults);
+                _instance = new EqeWindow();
             }
-            foreach (var viewResult in viewResults)
+            // Bring to front if it was already open
+            if (_instance.WindowState == WindowState.Minimized)
+                _instance.WindowState = WindowState.Normal;
+
+            _instance.Activate();
+
+            // Add new data
+            if (viewResults != null && viewResults.Count > 0)
             {
-                Instance.AddViewResultEqe(viewResult);
+                foreach (var result in viewResults)
+                {
+                    _instance.AddViewResultEqe(result);
+                }
             }
-            return Instance;
+
+            return _instance;
         }
 
 
         public ViewEqe ViewEqe { get; private set; }
+        private EqeWindow()
+        {
+            InitializeComponent();
+            ViewEqe = new ViewEqe();
+            ViewEqeContent.Content = ViewEqe;
+        }
 
         public EqeWindow(ObservableCollection<ViewResultEqe> viewResults)
         {
@@ -58,7 +80,6 @@ namespace ColorVision.Engine.Batch.Eqe
 
             // Set the content
             ViewEqeContent.Content = ViewEqe;
-            Instance = this;
         }
 
         public void AddViewResultEqe(ViewResultEqe viewResultEqe) => ViewEqe.AddViewResultEqe(viewResultEqe);
@@ -66,7 +87,7 @@ namespace ColorVision.Engine.Batch.Eqe
 
         private void Window_Closed(object sender, System.EventArgs e)
         {
-            Instance = null;
+            _instance = null;
         }
     }
 }
