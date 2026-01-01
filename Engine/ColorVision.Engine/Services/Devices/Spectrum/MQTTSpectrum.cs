@@ -165,7 +165,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             };
             Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
             Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
-            Param.Add("AutoIntegration", Config.IsAutoDark);
+            Param.Add("AutoInitDark", Config.IsAutoDark);
             Param.Add("SelfAdaptionInitDark", Config.IsShutter);
             Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
             Param.Add("Divisor", ViewSpectrumConfig.Instance.divisor);
