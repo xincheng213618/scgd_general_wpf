@@ -45,5 +45,13 @@ namespace ProjectStarkSemi.Conoscope
 
         public bool IsShowZChannel { get => _IsShowZChannel; set { _IsShowZChannel = value; OnPropertyChanged(); } }
         private bool _IsShowZChannel ;
+
+        /// <summary>
+        /// 是否允许多选通道显示
+        /// true: 允许多选（当前行为）
+        /// false: 只允许单选（互斥切换模式）
+        /// </summary>
+        public bool AllowMultipleChannelSelection { get => _AllowMultipleChannelSelection; set { _AllowMultipleChannelSelection = value; OnPropertyChanged(); } }
+        private bool _AllowMultipleChannelSelection = true;
     }
 }

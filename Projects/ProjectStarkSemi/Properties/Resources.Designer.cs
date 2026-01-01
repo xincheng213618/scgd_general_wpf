@@ -70,6 +70,15 @@ namespace ProjectStarkSemi.Properties {
         }
         
         /// <summary>
+        ///   查找类似 方位角 的本地化字符串。
+        /// </summary>
+        public static string Azimuth {
+            get {
+                return ResourceManager.GetString("Azimuth", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 双边滤波 的本地化字符串。
         /// </summary>
         public static string BilateralFilter {
@@ -246,6 +255,15 @@ namespace ProjectStarkSemi.Properties {
         public static string OpenObservationCamera {
             get {
                 return ResourceManager.GetString("OpenObservationCamera", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 极角 的本地化字符串。
+        /// </summary>
+        public static string PolarAngle {
+            get {
+                return ResourceManager.GetString("PolarAngle", resourceCulture);
             }
         }
         
