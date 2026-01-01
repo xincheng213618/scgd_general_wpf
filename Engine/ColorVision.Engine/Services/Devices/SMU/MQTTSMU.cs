@@ -64,8 +64,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
                                     foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>())
                                     {
-                                        item.DisplayConfig.V = Config.V;
-                                        item.DisplayConfig.I = Config.I;
+                                        item.DisplayConfig.V = Config.V ??0;
+                                        item.DisplayConfig.I = Config.I ?? 0;
                                     }
                                 });
                             }
