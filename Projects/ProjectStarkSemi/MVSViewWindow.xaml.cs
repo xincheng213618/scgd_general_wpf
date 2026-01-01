@@ -723,6 +723,8 @@ namespace ProjectStarkSemi
             {
                 tbFrameRate.Text = stParam.fCurValue.ToString("F1");
             }
+
+            UpdateStatusBar();
         }
 
         private void bnSetParam_Click(object sender, RoutedEventArgs e)
@@ -789,6 +791,8 @@ namespace ProjectStarkSemi
             {
                 ShowErrorMsg("Set Gain Fail!", nRet);
             }
+
+            UpdateStatusBar();
         }
 
         private void tbExposure_TextChanged(object sender, TextChangedEventArgs e)
@@ -810,6 +814,7 @@ namespace ProjectStarkSemi
                 ShowErrorMsg("Set Exposure Time Fail!", nRet);
             }
 
+            UpdateStatusBar();
         }
 
         private void tbFrameRate_TextChanged(object sender, TextChangedEventArgs e)
@@ -830,6 +835,8 @@ namespace ProjectStarkSemi
             {
                 ShowErrorMsg("Set Frame Rate Fail!", nRet);
             }
+
+            UpdateStatusBar();
         }
 
         private void cbModelType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -839,6 +846,56 @@ namespace ProjectStarkSemi
             //{
             //    ShowErrorMsg("Set Frame Rate Fail!", nRet);
             //}
+        }
+
+        // Menu event handlers
+        private void MenuShowSidePanel_Checked(object sender, RoutedEventArgs e)
+        {
+            if (SidePanelColumn != null)
+            {
+                SidePanelColumn.Width = new GridLength(200);
+            }
+        }
+
+        private void MenuShowSidePanel_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (SidePanelColumn != null)
+            {
+                SidePanelColumn.Width = new GridLength(0);
+            }
+        }
+
+        private void MenuShowStatusBar_Checked(object sender, RoutedEventArgs e)
+        {
+            if (StatusBarBottom != null)
+            {
+                StatusBarBottom.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void MenuShowStatusBar_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (StatusBarBottom != null)
+            {
+                StatusBarBottom.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        // Update status bar with current camera parameters
+        private void UpdateStatusBar()
+        {
+            if (StatusExposureText != null && !string.IsNullOrEmpty(tbExposure.Text))
+            {
+                StatusExposureText.Text = tbExposure.Text;
+            }
+            if (StatusGainText != null && !string.IsNullOrEmpty(tbGain.Text))
+            {
+                StatusGainText.Text = tbGain.Text;
+            }
+            if (StatusFrameRateText != null && !string.IsNullOrEmpty(tbFrameRate.Text))
+            {
+                StatusFrameRateText.Text = tbFrameRate.Text;
+            }
         }
     }
 }
