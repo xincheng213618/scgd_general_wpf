@@ -45,10 +45,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public bool IsAutoIntTime { get => _IsAutoIntegra; set { _IsAutoIntegra = value; OnPropertyChanged(); } }
         private bool _IsAutoIntegra;
 
-        public double? V { get => _V; set { _V = value; OnPropertyChanged(); } }
-        private double? _V;
-        public double? I { get => _I; set { _I = value; OnPropertyChanged(); } }
-        private double? _I;
+        public double V { get => _V; set { _V = value; OnPropertyChanged(); } }
+        private double _V;
+        public double I { get => _I; set { _I = value; OnPropertyChanged(); } }
+        private double _I;
     }
 
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>

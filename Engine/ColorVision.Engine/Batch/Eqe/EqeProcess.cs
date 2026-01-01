@@ -175,7 +175,7 @@ namespace ColorVision.Engine.Batch.Eqe
                     {
                         try
                         {
-                            var eqeWindow = new EqeWindow(ViewResults);
+                            EqeWindow eqeWindow = EqeWindow.GetEqeWindow(ViewResults);
                             eqeWindow.Show();
                         }
                         catch (Exception ex)

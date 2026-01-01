@@ -155,7 +155,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
 
 
-        public MsgRecord GetEQEdata()
+        public MsgRecord GetEqe()
         {
             var Param = new Dictionary<string, object>();
             MsgSend msg = new()
@@ -171,7 +171,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             Param.Add("Divisor", ViewSpectrumConfig.Instance.divisor);
             Param.Add("OutputDataFilename", "EQEData.json");
 
-            var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I },{ "Channel",0 },{ "MasterId",1},{ "MasterResultType", 200 } };
+
+            var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };
+            int MasterId = DB.Insertable(sMUResultModel).ExecuteReturnIdentity();
+            DB.Dispose();
+           
+            var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I },{ "Channel",-1 },{ "MasterId", MasterId },{ "MasterResultType", 200 } };
             Param.Add("SMUData", SMUData);
             MsgRecord msgRecord = PublishAsyncClient(msg);
             return msgRecord;

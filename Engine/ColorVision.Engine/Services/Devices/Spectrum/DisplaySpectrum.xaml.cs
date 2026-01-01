@@ -247,7 +247,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private void GetEQE_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.GetEQEdata();
+            MsgRecord msgRecord = DService.GetEqe();
             msgRecord.MsgRecordStateChanged += (e) =>
             {
                 if (e == MsgRecordState.Success)
