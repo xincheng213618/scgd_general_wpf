@@ -266,7 +266,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
                         ObservableCollection<ViewResultEqe> ViewResults = new ObservableCollection<ViewResultEqe>();
                         ViewResults.Add(new ViewResultEqe(eqeResult));
-                        EqeWindow.GetEqeWindow(ViewResults).Activate();
+                        EqeWindow eqeWindow = EqeWindow.GetEqeWindow(ViewResults);
+                        eqeWindow.Show();
                     }
 
                 }
