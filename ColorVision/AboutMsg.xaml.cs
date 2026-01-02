@@ -1,11 +1,13 @@
-﻿using ColorVision.Properties;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor;
+using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.CUDA;
-using ColorVision.UI.Graphics;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -13,6 +15,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision
 {
@@ -33,6 +36,21 @@ namespace ColorVision
             new AboutMsgWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
+
+    public class MenuRbacManager : IRightMenuItemProvider
+    {
+        public IEnumerable<MenuItemMetadata> GetMenuItems()
+        {
+            MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
+            menuItemMetadata.Command = new RelayCommand(a => new AboutMsgWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            var Image = new System.Windows.Controls.Image();
+            Image.Source = new BitmapImage(new Uri("/ColorVision;component/Assets/Image/ColorVision.ico", UriKind.Relative));
+            menuItemMetadata.Icon = Image;
+            menuItemMetadata.Order = 999;
+            return new MenuItemMetadata[] { menuItemMetadata };
+        }
+    }
+
 
     /// <summary>
     /// AboutMsg.xaml 的交互逻辑

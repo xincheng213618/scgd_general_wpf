@@ -136,7 +136,7 @@
                                 <Button  DockPanel.Dock="Right" Content="Get"  Click="GetNDport_Click" />
                                 <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.ChangeNDPort}"  Click="NDport_Click" />
                                 <TextBlock Text="NDPort" />
-                                <TextBox Text="{Binding DisplaySpectrumConfig.PortNum}"  BorderThickness="0,0,0,1" Margin="5,0"/>
+                                <TextBox Text="{Binding DisplayConfig.PortNum}"  BorderThickness="0,0,0,1" Margin="5,0"/>
                             </DockPanel>
                         </StackPanel>
                         <GroupBox Header="Shutter" Margin="0,0,0,5" Visibility="{Binding Config.IsShutter,Converter={StaticResource bool2VisibilityConverter}}">

@@ -37,7 +37,7 @@ namespace ColorVision.UI
         // Prefixes for system assemblies to exclude from discovery
         private static readonly HashSet<string> ExcludedAssemblyPrefixes = new(StringComparer.OrdinalIgnoreCase)
         {
-            "System", "Microsoft", "netstandard", "WindowsBase",
+            "System.", "Microsoft.", "netstandard", "WindowsBase",
             "PresentationCore", "PresentationFramework", "mscorlib",
             "Newtonsoft", "EntityFramework", "log4net", "Wpf.Ui", "HandyControl"
         };

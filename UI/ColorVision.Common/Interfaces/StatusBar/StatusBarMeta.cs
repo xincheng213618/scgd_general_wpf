@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Windows.Input;
 
 namespace ColorVision.UI
 {
 
+
+
     public class StatusBarMeta
     {
         public string Name { get; set; }
+
         /// <summary>
         /// 描述项，还是要看实现
         /// </summary>
@@ -26,6 +30,6 @@ namespace ColorVision.UI
 
         public object Source { get; set; }
 
-        public Action Action { get; set; }
+        public ICommand Command { get; set; }
     }
 }
