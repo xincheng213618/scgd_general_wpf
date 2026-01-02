@@ -181,7 +181,7 @@ namespace ColorVision.Engine.Services.Flow
         public FlowParam FlowParam { get; set; }
 
         STNodeTreeView STNodeTreeView1 = new STNodeTreeView();
-        NodePropertyEditorWindow PropertyEditorWindow;
+        NodePropertyEditorWindow PropertyEditorWindow { get; set; }
         
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -189,10 +189,7 @@ namespace ColorVision.Engine.Services.Flow
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             
-            // Create the popup window
-            PropertyEditorWindow = new NodePropertyEditorWindow();
-            PropertyEditorWindow.SetOwner(Application.Current.GetActiveWindow());
-            
+
             STNodeEditorMain.ActiveChanged += (s, e) =>
             {
                 SignStackBorder.Visibility = STNodeEditorMain.ActiveNode != null ? Visibility.Visible : Visibility.Collapsed;
@@ -245,8 +242,7 @@ namespace ColorVision.Engine.Services.Flow
                     );
                 }
             };
-            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain, STNodeTreeView1, PropertyEditorWindow.PropertyGrid, PropertyEditorWindow.SignStackPanel);
-            STNodeEditorHelper.PropertyEditorWindow = PropertyEditorWindow;
+            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain, STNodeTreeView1);
         }
 
 

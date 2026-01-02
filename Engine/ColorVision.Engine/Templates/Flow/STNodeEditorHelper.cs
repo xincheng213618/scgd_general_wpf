@@ -79,18 +79,16 @@ namespace ColorVision.Engine.Templates.Flow
     {
         public STNodeEditor STNodeEditor { get; set; }
 
-        public STNodePropertyGrid STNodePropertyGrid1 { get; set; }
-        public StackPanel SignStackPanel { get; set; }
+        public STNodePropertyGrid STNodePropertyGrid1 => PropertyEditorWindow.STNodePropertyGrid1;
+        public StackPanel SignStackPanel => PropertyEditorWindow.SignStackPanel;
         public NodePropertyEditorWindow PropertyEditorWindow { get; set; }
 
         public STNodeTreeView STNodeTreeView1 { get; set; }
 
-        public STNodeEditorHelper(Control Paraent,STNodeEditor sTNodeEditor, STNodeTreeView sTNodeTreeView1, STNodePropertyGrid sTNodePropertyGrid, StackPanel stackPanel)
+        public STNodeEditorHelper(Control Paraent,STNodeEditor sTNodeEditor, STNodeTreeView sTNodeTreeView1)
         {
             STNodeEditor = sTNodeEditor;
             STNodeTreeView1 = sTNodeTreeView1;
-            STNodePropertyGrid1 = sTNodePropertyGrid;
-            SignStackPanel = stackPanel;
             STNodeEditor.NodeAdded += StNodeEditor1_NodeAdded;
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
 
@@ -186,8 +184,16 @@ namespace ColorVision.Engine.Templates.Flow
         #region Activate
         private void STNodeEditorMain_ActiveChanged(object? sender, EventArgs e)
         {
+            if (PropertyEditorWindow == null)
+            {
+                PropertyEditorWindow = new NodePropertyEditorWindow();
+                PropertyEditorWindow?.ShowPropertyEditor();
+            }
+
             STNodePropertyGrid1.SetNode(STNodeEditor.ActiveNode);
             SignStackPanel.Children.Clear();
+
+
 
             if (STNodeEditor.ActiveNode == null)
             {
@@ -195,7 +201,7 @@ namespace ColorVision.Engine.Templates.Flow
                 PropertyEditorWindow?.Hide();
                 return;
             }
-            
+
             // Show the popup window when a node is activated
             PropertyEditorWindow?.ShowPropertyEditor();
 

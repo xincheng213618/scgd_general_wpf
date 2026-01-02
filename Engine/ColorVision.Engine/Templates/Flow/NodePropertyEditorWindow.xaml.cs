@@ -59,7 +59,7 @@ namespace ColorVision.Engine.Templates.Flow
         private void Window_Deactivated(object sender, EventArgs e)
         {
             // Hide window when it loses focus
-            Hide();
+            //Hide();
         }
 
         private void Window_Activated(object sender, EventArgs e)
