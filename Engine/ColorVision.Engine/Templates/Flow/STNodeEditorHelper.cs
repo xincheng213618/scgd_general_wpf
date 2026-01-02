@@ -81,6 +81,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public STNodePropertyGrid STNodePropertyGrid1 { get; set; }
         public StackPanel SignStackPanel { get; set; }
+        public NodePropertyEditorWindow PropertyEditorWindow { get; set; }
 
         public STNodeTreeView STNodeTreeView1 { get; set; }
 
@@ -191,8 +192,12 @@ namespace ColorVision.Engine.Templates.Flow
             if (STNodeEditor.ActiveNode == null)
             {
                 SignStackPanel.Visibility = Visibility.Collapsed;
+                PropertyEditorWindow?.Hide();
                 return;
             }
+            
+            // Show the popup window when a node is activated
+            PropertyEditorWindow?.ShowPropertyEditor();
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.PG.PGNode pgnode)
             {

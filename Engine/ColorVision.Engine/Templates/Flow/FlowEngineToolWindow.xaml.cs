@@ -56,6 +56,7 @@ namespace ColorVision.Engine.Templates.Flow
         FlowParam FlowParam { get; set; }
 
         public STNodeEditorHelper STNodeEditorHelper { get; set; }
+        NodePropertyEditorWindow PropertyEditorWindow;
 
         public FlowEngineToolWindow(FlowParam flowParam) : this()
         {
@@ -174,7 +175,11 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            STNodePropertyGrid1.Text = "属性";
+            // Create the popup window
+            PropertyEditorWindow = new NodePropertyEditorWindow();
+            PropertyEditorWindow.SetOwner(this);
+            
+            PropertyEditorWindow.PropertyGrid.Text = "属性";
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
 
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
@@ -207,10 +212,12 @@ namespace ColorVision.Engine.Templates.Flow
                         }
                     }
                 }
+                PropertyEditorWindow?.Close();
 
             };
 
-            STNodeEditorHelper = new STNodeEditorHelper(this,STNodeEditorMain, STNodeTreeView1,STNodePropertyGrid1, SignStackPannel);
+            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain, STNodeTreeView1, PropertyEditorWindow.PropertyGrid, PropertyEditorWindow.SignStackPanel);
+            STNodeEditorHelper.PropertyEditorWindow = PropertyEditorWindow;
         }
         public void AutoAlignment()
         {
