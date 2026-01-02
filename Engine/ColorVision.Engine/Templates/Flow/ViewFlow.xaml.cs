@@ -18,6 +18,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using WinForms = System.Windows.Forms;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -27,13 +28,13 @@ namespace ColorVision.Engine.Services.Flow
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewFlow : UserControl, IView, IDisposable
+    public partial class ViewFlow : System.Windows.Controls.UserControl, IView, IDisposable
     {
         public FlowEngineControl FlowEngineControl { get; set; }
 
         public static FlowEngineManager FlowEngineManager => FlowEngineManager.GetInstance();
 
-        public View View { get; set; }
+        public ColorVision.UI.Views.View View { get; set; }
         public RelayCommand AutoSizeCommand { get; set; }
 
         public event EventHandler RefreshFlow;
@@ -180,21 +181,16 @@ namespace ColorVision.Engine.Services.Flow
         public FlowParam FlowParam { get; set; }
 
         STNodeTreeView STNodeTreeView1 = new STNodeTreeView();
+        
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this;
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
-            STNodeEditorMain.ActiveChanged += (s, e) =>
-            {
-                SignStackBorder.Visibility = STNodeEditorMain.ActiveNode != null ? Visibility.Visible : Visibility.Collapsed;
-                winf2.Visibility = STNodeEditorMain.ActiveNode != null ? Visibility.Visible : Visibility.Collapsed;
-            };
-
-
+            
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
-                if (e.KeyCode == System.Windows.Forms.Keys.Delete)
+                if (e.KeyCode == WinForms.Keys.Delete)
                 {
                     if (STNodeEditorMain.ActiveNode != null)
                     {
@@ -207,7 +203,7 @@ namespace ColorVision.Engine.Services.Flow
                         STNodeEditorMain.Nodes.Remove(item);
                     }
                 }
-                if (e.KeyCode == System.Windows.Forms.Keys.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                if (e.KeyCode == WinForms.Keys.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
                     AutoAlignment();
                 }
@@ -222,7 +218,7 @@ namespace ColorVision.Engine.Services.Flow
             {
                 if (e == -2)
                 {
-                    STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                    STNodeEditorMain.ContextMenuStrip = new WinForms.ContextMenuStrip();
                     STNodeEditorMain.ContextMenuStrip.Items.Add("还原到主窗口中", null, (s, e1) =>
                     {
 
@@ -238,7 +234,7 @@ namespace ColorVision.Engine.Services.Flow
                     );
                 }
             };
-            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain, STNodeTreeView1, STNodePropertyGrid1, SignStackPannel);
+            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain, STNodeTreeView1);
         }
 
 
@@ -256,7 +252,7 @@ namespace ColorVision.Engine.Services.Flow
             }
         }
 
-        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void UserControl_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (STNodeEditorMain.ActiveNode == null && STNodeEditorMain.GetSelectedNode().Length == 0)
             {
@@ -324,7 +320,7 @@ namespace ColorVision.Engine.Services.Flow
 
         private bool IsMouseDown;
         private System.Drawing.Point lastMousePosition;
-        private void STNodeEditorMain_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
+        private void STNodeEditorMain_MouseDown(object sender, WinForms.MouseEventArgs e)
         {
             lastMousePosition = e.Location;
             System.Drawing.PointF m_pt_down_in_canvas = new System.Drawing.PointF();
@@ -344,18 +340,18 @@ namespace ColorVision.Engine.Services.Flow
             {
 
             }
-            else if (e.Button == System.Windows.Forms.MouseButtons.Left)
+            else if (e.Button == WinForms.MouseButtons.Left)
             {
                 IsMouseDown = true;
             }
         }
 
-        private void STNodeEditorMain_MouseUp(object sender, System.Windows.Forms.MouseEventArgs e)
+        private void STNodeEditorMain_MouseUp(object sender, WinForms.MouseEventArgs e)
         {
             IsMouseDown = false;
         }
 
-        private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
+        private void STNodeEditorMain_MouseMove(object sender, WinForms.MouseEventArgs e)
         {
             if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && IsMouseDown)
             {        // 计算鼠标移动的距离
@@ -376,7 +372,7 @@ namespace ColorVision.Engine.Services.Flow
         }
 
 
-        private void STNodeEditorMain_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
+        private void STNodeEditorMain_MouseWheel(object sender, WinForms.MouseEventArgs e)
         {
             var mousePosition = e.Location; // e.Location 已是控件坐标
             float delta = e.Delta > 0 ? 0.05f : -0.05f;
@@ -398,6 +394,7 @@ namespace ColorVision.Engine.Services.Flow
         {
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
 
+            STNodeEditorHelper?.PropertyEditorWindow?.CloseWindow();
             STNodeEditorMain?.Dispose();
             STNodeTreeView1?.Dispose();
             winf1?.Dispose();
@@ -427,9 +424,6 @@ namespace ColorVision.Engine.Services.Flow
         {
             if (sender is Grid grid)
             {
-                if (winf2.Visibility == Visibility.Visible)
-                    winf2.Visibility = grid.ActualHeight < 500 || grid.ActualWidth < 300 ? Visibility.Collapsed : Visibility.Visible;
-
                 winf1.Visibility = grid.ActualHeight < 200 || grid.ActualWidth < 100 ? Visibility.Collapsed : Visibility.Visible;
             }
         }
