@@ -406,7 +406,7 @@ namespace ColorVision.Engine.Services.Flow
         {
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
 
-            PropertyEditorWindow?.Close();
+            PropertyEditorWindow?.CloseWindow();
             STNodeEditorMain?.Dispose();
             STNodeTreeView1?.Dispose();
             winf1?.Dispose();

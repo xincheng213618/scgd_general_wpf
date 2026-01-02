@@ -212,7 +212,7 @@ namespace ColorVision.Engine.Templates.Flow
                         }
                     }
                 }
-                PropertyEditorWindow?.Close();
+                PropertyEditorWindow?.CloseWindow();
 
             };
 

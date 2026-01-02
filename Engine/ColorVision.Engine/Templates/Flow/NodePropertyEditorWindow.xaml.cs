@@ -7,11 +7,12 @@ namespace ColorVision.Engine.Templates.Flow
 {
     /// <summary>
     /// NodePropertyEditorWindow.xaml 的交互逻辑
+    /// Popup window for editing node properties with toggle between PropertyGrid and SignStackPanel
     /// </summary>
     public partial class NodePropertyEditorWindow : Window
     {
         private Window _owner;
-        private bool _isManualClose = false;
+        private bool _allowClose = false;
 
         public STNodePropertyGrid PropertyGrid => STNodePropertyGrid1;
         public StackPanel SignStackPanel => SignStackPanelContainer;
@@ -19,6 +20,18 @@ namespace ColorVision.Engine.Templates.Flow
         public NodePropertyEditorWindow()
         {
             InitializeComponent();
+            // Prevent actual closing, just hide instead
+            Closing += NodePropertyEditorWindow_Closing;
+        }
+
+        private void NodePropertyEditorWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            // Prevent window from closing unless explicitly allowed
+            if (!_allowClose)
+            {
+                e.Cancel = true;
+                Hide();
+            }
         }
 
         public void SetOwner(Window owner)
@@ -46,10 +59,7 @@ namespace ColorVision.Engine.Templates.Flow
         private void Window_Deactivated(object sender, EventArgs e)
         {
             // Hide window when it loses focus
-            if (!_isManualClose)
-            {
-                Hide();
-            }
+            Hide();
         }
 
         private void Window_Activated(object sender, EventArgs e)
@@ -62,10 +72,13 @@ namespace ColorVision.Engine.Templates.Flow
             // Clean up
         }
 
-        public new void Close()
+        /// <summary>
+        /// Closes the window permanently. Only call this when disposing.
+        /// </summary>
+        public void CloseWindow()
         {
-            _isManualClose = true;
-            base.Close();
+            _allowClose = true;
+            Close();
         }
 
         private void ToggleEditMode_Checked(object sender, RoutedEventArgs e)
@@ -82,13 +95,29 @@ namespace ColorVision.Engine.Templates.Flow
             SignStackScrollViewer.Visibility = Visibility.Collapsed;
         }
 
+        /// <summary>
+        /// Shows the property editor window and activates it
+        /// </summary>
         public void ShowPropertyEditor()
         {
-            if (!IsVisible)
+            try
             {
-                Show();
+                if (!IsVisible)
+                {
+                    Show();
+                }
+                
+                // Try to activate the window
+                if (IsVisible)
+                {
+                    Activate();
+                }
             }
-            Activate();
+            catch (InvalidOperationException)
+            {
+                // Window was closed, cannot reopen
+                // This should not happen with our Closing event handler, but just in case
+            }
         }
     }
 }
