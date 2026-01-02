@@ -65,18 +65,18 @@ public class FormSpectumParam : Form, ILoopFormProperty
 
 	private void button_add_Click(object sender, EventArgs e)
 	{
-		SpectrumNodeProperty array = new SpectrumNodeProperty();
-		array.Cmd = (SPCommCmdType)Enum.Parse(typeof(SPCommCmdType), comboBox_cmd.Text);
+		SpectrumNodeProperty spectrumNodeProperty = new SpectrumNodeProperty();
+		spectrumNodeProperty.Cmd = (SPCommCmdType)Enum.Parse(typeof(SPCommCmdType), comboBox_cmd.Text);
 		if (comboBox_cmd.SelectedIndex == 0)
 		{
-			array.Data = new SpectrumParamData();
-			array.Data.IntegralTime = int.Parse(textBox_integral_time.Text);
-			array.Data.NumberOfAverage = int.Parse(textBox_number_of_average.Text);
-			array.Data.AutoIntegration = checkBox_auto_integration.Checked;
-			array.Data.SelfAdaptionInitDark = checkBox_self_adaption.Checked;
-			array.Data.AutoInitDark = checkBox_AutoInitDark.Checked;
+			spectrumNodeProperty.Data = new SpectrumParamData();
+			spectrumNodeProperty.Data.IntegralTime = int.Parse(textBox_integral_time.Text);
+			spectrumNodeProperty.Data.NumberOfAverage = int.Parse(textBox_number_of_average.Text);
+			spectrumNodeProperty.Data.AutoIntegration = checkBox_auto_integration.Checked;
+			spectrumNodeProperty.Data.SelfAdaptionInitDark = checkBox_self_adaption.Checked;
+			spectrumNodeProperty.Data.AutoInitDark = checkBox_AutoInitDark.Checked;
 		}
-		dialog.Add(array);
+		dialog.Add(spectrumNodeProperty);
 	}
 
 	private void button_save_Click(object sender, EventArgs e)

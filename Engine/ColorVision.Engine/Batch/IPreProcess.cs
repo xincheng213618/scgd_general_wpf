@@ -1,5 +1,7 @@
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
+using System;
+using System.Linq;
 
 namespace ColorVision.Engine.Batch
 {
@@ -34,29 +36,51 @@ namespace ColorVision.Engine.Batch
             // Default implementation does nothing
         }
 
+    }
+
+    /// <summary>
+    /// Base configuration class for pre-processors with enable/disable and template filtering support.
+    /// </summary>
+    public abstract class PreProcessConfigBase : ViewModelBase
+    {
         /// <summary>
-        /// Creates a new instance of this pre-processor with the same type.
+        /// Gets or sets whether this pre-processor is enabled for execution.
         /// </summary>
-        /// <returns>A new instance of the pre-processor.</returns>
-        IPreProcess CreateInstance()
+        [System.ComponentModel.DisplayName("启用")]
+        [System.ComponentModel.Description("启用此预处理器")]
+        public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged(); } }
+        private bool _IsEnabled = false;
+
+        /// <summary>
+        /// Gets or sets the template names (comma-separated) this preprocessor applies to.
+        /// Empty means applies to all templates.
+        /// </summary>
+        [System.ComponentModel.DisplayName("应用模板")]
+        [System.ComponentModel.Description("逗号分隔的模板名称，留空表示应用于所有模板")]
+        public string TemplateNames { get => _TemplateNames; set { _TemplateNames = value; OnPropertyChanged(); } }
+        private string _TemplateNames = string.Empty;
+
+        /// <summary>
+        /// Checks if this preprocessor applies to the given template.
+        /// </summary>
+        public bool AppliesToTemplate(string templateName)
         {
-            try
-            {
-                return (IPreProcess)System.Activator.CreateInstance(this.GetType());
-            }
-            catch
-            {
-                // If instance creation fails, return this instance as fallback
-                return this;
-            }
+            if (string.IsNullOrWhiteSpace(TemplateNames))
+                return true; // Apply to all templates
+            
+            var templates = TemplateNames.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                        .Select(t => t.Trim())
+                                        .Where(t => !string.IsNullOrEmpty(t));
+            
+            return templates.Any(t => string.Equals(t, templateName, StringComparison.OrdinalIgnoreCase));
         }
     }
 
     /// <summary>
     /// Base class for pre-processors with typed configuration support.
     /// </summary>
-    /// <typeparam name="T">The configuration type, must inherit from ViewModelBase.</typeparam>
-    public abstract class PreProcessBase<T> : IPreProcess where T : ViewModelBase, new()
+    /// <typeparam name="T">The configuration type, must inherit from PreProcessConfigBase.</typeparam>
+    public abstract class PreProcessBase<T> : IPreProcess where T : PreProcessConfigBase, new()
     {
         /// <summary>
         /// Gets or sets the configuration for this pre-processor.
@@ -79,23 +103,6 @@ namespace ColorVision.Engine.Batch
                 Config = JsonConvert.DeserializeObject<T>(configJson) ?? new T();
             }
         }
-
-        /// <summary>
-        /// Creates a new instance of this pre-processor.
-        /// </summary>
-        public IPreProcess CreateInstance()
-        {
-            try
-            {
-                return (IPreProcess)System.Activator.CreateInstance(this.GetType());
-            }
-            catch
-            {
-                // If instance creation fails, return this instance as fallback
-                return this;
-            }
-        }
-
         /// <summary>
         /// Executes the pre-processing logic.
         /// </summary>

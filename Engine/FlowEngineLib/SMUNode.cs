@@ -262,7 +262,7 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 	{
 		CVStartCFC trans_action = trans.trans_action;
 		string token = GetToken();
-		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(Source == SourceType.Voltage_V, _channel, m_cur_val, LimitVal), token, base.ZIndex);
+		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, trans_action.SerialNumber, new SMUData(_channel, Source == SourceType.Voltage_V, m_cur_val, LimitVal), token, base.ZIndex);
 		CVBaseEventCmd cmd = AddActionCmd(trans, cVMQTTRequest);
 		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
 		MQActionEvent mQActionEvent = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
@@ -300,9 +300,9 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 
 	protected override CVMQTTRequest getActionEvent(STNodeOptionEventArgs e)
 	{
-		CVMQTTRequest cFC = null;
-		CVStartCFC op_loop = (CVStartCFC)e.TargetOption.Data;
-		if (op_loop.IsRunning)
+		CVMQTTRequest result = null;
+		CVStartCFC cVStartCFC = (CVStartCFC)e.TargetOption.Data;
+		if (cVStartCFC.IsRunning)
 		{
 			double num = EndVal - BeginVal;
 			if (PointNum > 1)
@@ -316,16 +316,16 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 			m_cur_val = BeginVal;
 			m_step_count = 0;
 			m_op_end.TransferData(null);
-			cFC = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, op_loop.SerialNumber, new SMUData(Source == SourceType.Voltage_V, _channel, m_cur_val, LimitVal), GetToken(), base.ZIndex);
+			result = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, cVStartCFC.SerialNumber, new SMUData(_channel, Source == SourceType.Voltage_V, m_cur_val, LimitVal), GetToken(), base.ZIndex);
 			m_step_count++;
 			updateUI();
-			AddCFCData(op_loop);
+			AddCFCData(cVStartCFC);
 		}
 		else
 		{
 			m_cur_val = 0.0;
 			m_step_val = 0.0;
 		}
-		return cFC;
+		return result;
 	}
 }

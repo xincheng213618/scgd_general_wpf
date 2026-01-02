@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using iText.Commons.Bouncycastle.Asn1.X509;
 using MQTTMessageLib;
 using MQTTMessageLib.Spectrum;
 using MQTTnet.Client;
@@ -28,9 +29,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [JsonProperty("AutoIntegration")]
         public bool BUseAutoIntTime { get; set; }
         [JsonProperty("SelfAdaptionInitDark")]
-        public bool BUseAutoDark { get; set; }
-        [JsonProperty("AutoInitDark")]
-        public bool BUseAutoShutterDark { get; set; }
+        public bool SelfAdaptionInitDark { get; set; }
+
+        public bool AutoInitDark { get; set; }
 
         public bool IsWithND { get; set; }
     }
@@ -76,13 +77,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                     DbType = SqlSugar.DbType.MySql,
                                     IsAutoCloseConnection = true
                                 });
-                                SpectumResultModel model = DB.Queryable<SpectumResultModel>().Where(x => x.Id == masterId).First();
+                                SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().Where(x => x.Id == masterId).First();
                                 DB.Dispose();
+                                log.Info($"GetData MasterId:{masterId} ");
                                 if (model != null)
                                 {
-                                    ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
+                                        ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                         Device.View.AddViewResultSpectrum(viewResultSpectrum);
                                     });
                                 }
@@ -92,9 +94,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         {
                             JObject data = msg.Data;
                             SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
-                            ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam.Data);
                             Application.Current.Dispatcher.Invoke(() =>
                             {
+                                ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam.Data);
                                 Device.View.AddViewResultSpectrum(viewResultSpectrum);
                             });
 
@@ -152,6 +154,36 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return true;
         }
 
+
+        public MsgRecord GetEqe()
+        {
+            var Param = new Dictionary<string, object>();
+            MsgSend msg = new()
+            {
+                EventName = "EQE.GetData",
+                Params = Param
+            };
+            Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
+            Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
+            Param.Add("AutoInitDark", Config.IsAutoDark);
+            Param.Add("SelfAdaptionInitDark", Config.IsShutter);
+            Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
+            Param.Add("Divisor", ViewSpectrumConfig.Instance.divisor);
+            Param.Add("OutputDataFilename", "EQEData.json");
+
+
+            var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };
+            int MasterId = DB.Insertable(sMUResultModel).ExecuteReturnIdentity();
+            DB.Dispose();
+           
+            var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I },{ "Channel",-1 },{ "MasterId", MasterId },{ "MasterResultType", 200 } };
+            Param.Add("SMUData", SMUData);
+            MsgRecord msgRecord = PublishAsyncClient(msg);
+            return msgRecord;
+        }
+
         public MsgRecord Open()
         {
             var Params = new Dictionary<string, object>() { };
@@ -166,24 +198,22 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetData(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
+        public MsgRecord GetData()
         {
-            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             MsgSend msg = new()
             {
                 EventName = "GetData",
-                SerialNumber = sn,
-                ServiceName = Config.Code,
                 Params = new GetDataParam()
                 {
-                    IntTime = IntTime,
-                    AveNum = AveNum,
-                    BUseAutoIntTime = bUseAutoIntTime,
-                    BUseAutoDark = bUseAutoDark,
-                    BUseAutoShutterDark = bUseAutoShutterDark,
-                    IsWithND =Config.IsWithND
+                    IntTime = (float)Device.DisplayConfig.IntTime,
+                    AveNum = Device.DisplayConfig.AveNum,
+                    BUseAutoIntTime = Device.DisplayConfig.IsAutoIntTime,
+                    SelfAdaptionInitDark = Config.IsShutter,
+                    AutoInitDark = Config.IsAutoDark,
+                    IsWithND = Config.IsWithND
                 }
             };
+
             MsgRecord msgRecord= PublishAsyncClient(msg);
             return msgRecord;
         }
@@ -214,9 +244,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 EventName = "SetPort",
                 Params = Params
             };
-            Params.Add("PortNum", Device.DisplaySpectrumConfig.PortNum);
+            Params.Add("PortNum", Device.DisplayConfig.PortNum);
             return PublishAsyncClient(msg);
         }
+
+
         public MsgRecord GetPort()
         {
             MsgSend msg = new()
@@ -227,19 +259,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
 
 
-        public MsgRecord InitDark(float IntTime, int AveNum)
+        public MsgRecord InitDark()
         {
             MsgSend msg = new()
             {
                 EventName = "InitDark",
-                ServiceName = Config.Code,
-                Params = new Dictionary<string, object>() { { "IntegralTime", IntTime }, { "NumberOfAverage", AveNum } }
+                Params = new Dictionary<string, object>() { { "IntegralTime", Device.DisplayConfig.IntTime }, { "NumberOfAverage", Device.DisplayConfig.AveNum } }
 
             };
             return PublishAsyncClient(msg);
         }
 
-        public void GetDataAuto(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
+        public void GetDataAuto()
         {
             MsgSend msg = new()
             {
@@ -247,11 +278,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 ServiceName = Config.Code,
                 Params = new GetDataParam()
                 {
-                    IntTime = IntTime,
-                    AveNum = AveNum,
-                    BUseAutoIntTime = bUseAutoIntTime,
-                    BUseAutoDark = bUseAutoDark,
-                    BUseAutoShutterDark = bUseAutoShutterDark,
+                    IntTime = (float)Device.DisplayConfig.IntTime,
+                    AveNum = Device.DisplayConfig.AveNum,
+                    BUseAutoIntTime = Device.DisplayConfig.IsAutoIntTime,
+                    SelfAdaptionInitDark = Config.IsShutter,
+                    AutoInitDark = Config.IsAutoDark,
                     IsWithND = Config.IsWithND
                 }
             };

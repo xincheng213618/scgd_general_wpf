@@ -1711,7 +1711,7 @@
     <value>绝对光谱</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>电流</value>
+    <value>电流(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>电压</value>

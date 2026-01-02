@@ -6,11 +6,13 @@ using ProjectARVRPro.Process.Chessboard;
 using ProjectARVRPro.Process.Distortion;
 using ProjectARVRPro.Process.Green;
 using ProjectARVRPro.Process.MTFHV;
+using ProjectARVRPro.Process.MTFHV048;
 using ProjectARVRPro.Process.MTFHV058;
 using ProjectARVRPro.Process.OpticCenter;
 using ProjectARVRPro.Process.Red;
 using ProjectARVRPro.Process.W25;
 using ProjectARVRPro.Process.W255;
+using ProjectARVRPro.Process.W51;
 using System.Collections;
 using System.ComponentModel;
 using System.IO;
@@ -42,10 +44,10 @@ namespace ProjectARVRPro
                             foreach (var item in list) 
                             {
                                 rows.Add($"{testScreenName},{item.Name}(Lv),{item.Y},cd/m2,0,0,None");
-                                rows.Add($"{testScreenName},{item.Name}(Cx),{item.Y},None,0,0,None");
-                                rows.Add($"{testScreenName},{item.Name}(Cy),{item.Y},None,0,0,None");
-                                rows.Add($"{testScreenName},{item.Name}(u'),{item.Y},None,0,0,None");
-                                rows.Add($"{testScreenName},{item.Name}(v'),{item.Y},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(Cx),{item.x},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(Cy),{item.y},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(u'),{item.u},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(v'),{item.v},None,0,0,None");
                             }
                         }
                     }
@@ -164,8 +166,12 @@ namespace ProjectARVRPro
         [DisplayName("W25")]
         public W25TestResult W25TestResult { get; set; }
 
+        [DisplayName("W51")]
+        public W51TestResult W51TestResult { get; set; }
+
         [DisplayName("W255")]
         public W255TestResult W255TestResult { get; set; }
+
         [DisplayName("Black")]
         public BlackTestResult BlackTestResult { get; set; }
 
@@ -183,6 +189,9 @@ namespace ProjectARVRPro
         [DisplayName("MTF")]
         public MTFHVTestResult MTFHVTestResult { get; set; }
 
+        [DisplayName("MTF048")]
+        public List<MTFHV048TestResult> MTFHV048TestResults { get; set; } = new List<MTFHV048TestResult>();
+
         [DisplayName("MTF058")]
         public List<MTFHV058TestResult> MTFHV058TestResults { get; set; } = new List<MTFHV058TestResult>();
 
@@ -196,7 +205,7 @@ namespace ProjectARVRPro
         /// 总体测试结果（true表示通过，false表示不通过）
         /// </summary>
         public bool TotalResult { get => _TotalResult; set { _TotalResult = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalResultString)); } } 
-        private bool _TotalResult = false;
+        private bool _TotalResult = true;
 
         /// <summary>
         /// 总体测试结果字符串（如“pass”或“fail”）

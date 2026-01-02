@@ -46,22 +46,22 @@ namespace ColorVision.Engine.Templates.FindLightArea
         }
 
 
-        public override void Load(IViewImageA view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
         }
 
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            view.ImageView.ImageShow.Clear();
+            ctx.ImageView.ImageShow.Clear();
 
 
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
-            Load(view, result);
+            Load(ctx, result);
 
-            view.ImageView.ImageShow.Clear();
+            ctx.ImageView.ImageShow.Clear();
             DVPolygon polygon = new DVPolygon();
             List<System.Windows.Point> point1s = new List<System.Windows.Point>();
             foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultLightAreaModel>())
@@ -77,7 +77,7 @@ namespace ColorVision.Engine.Templates.FindLightArea
             polygon.Attribute.Id = -1;
             polygon.IsComple = true;
             polygon.Render();
-            view.ImageView.AddVisual(polygon);
+            ctx.ImageView.AddVisual(polygon);
 
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
@@ -85,14 +85,14 @@ namespace ColorVision.Engine.Templates.FindLightArea
             List<string> bdHeader = new List<string> { "PosX", "PosY" };
 
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.ListView.ItemsSource = null;
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.ListView.ItemsSource = null;
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

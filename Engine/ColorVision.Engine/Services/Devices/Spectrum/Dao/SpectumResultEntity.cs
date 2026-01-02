@@ -10,8 +10,10 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 {
+
+
     [SugarTable("t_scgd_measure_result_spectrometer")]
-    public class SpectumResultModel : EntityBase,IInitTables
+    public class SpectumResultEntity : EntityBase,IInitTables
     {
         [SugarColumn(ColumnName = "device_code", IsNullable = true, Length = 255)]
         public string? DeviceCode { get; set; }
@@ -39,6 +41,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 
         [SugarColumn(ColumnName = "self_adaption_init_dark", IsNullable = true, ColumnDescription = "自适应校零")]
         public bool? SelfAdaptionInitDark { get; set; }
+
+        [SugarColumn(ColumnName = "nd_port", IsNullable = true, ColumnDescription = "ND滤轮")]
+        public bool? NDPort { get; set; }
 
         [SugarColumn(ColumnName = "fPL", IsNullable = true, IsJson = true, ColumnDataType = "json", ColumnDescription = "相对光谱数据")]
         public string? fPL { get; set; }

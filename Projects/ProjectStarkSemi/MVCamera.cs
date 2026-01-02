@@ -1112,10 +1112,10 @@ namespace MvCamCtrl.NET
         }
 
         /// <summary>
-        /// Issue Action Command
+        /// Issue Command Command
         /// </summary>
-        /// <param name="pstActionCmdInfo">Action Command info</param>
-        /// <param name="pstActionCmdResults">Action Command Result List</param>
+        /// <param name="pstActionCmdInfo">Command Command info</param>
+        /// <param name="pstActionCmdResults">Command Command Result List</param>
         /// <returns>Success, return MV_OK. Failure, return error code</returns>
         public Int32 MV_GIGE_IssueActionCommand_NET(ref MV_ACTION_CMD_INFO pstActionCmdInfo, ref MV_ACTION_CMD_RESULT_LIST pstActionCmdResults)
         {

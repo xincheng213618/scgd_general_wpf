@@ -150,7 +150,7 @@ public class SpectrumNode : CVBaseServerNode
 		_Cmd = SPCommCmdType.检测;
 		_Temp = 100f;
 		_AveNum = 1;
-		_OutputDataFilename = "SPData.csv";
+		_OutputDataFilename = "SPData.json";
 		_AutoIntTime = false;
 		_SelfDark = false;
 		base.Height += 75;

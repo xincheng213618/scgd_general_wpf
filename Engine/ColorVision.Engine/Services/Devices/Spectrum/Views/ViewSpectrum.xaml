@@ -96,6 +96,11 @@
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     </ListView.Resources>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                            <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.View >
                         <GridView >
                             <GridView.ColumnHeaderContainerStyle>
@@ -222,6 +227,34 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{ Binding fHW}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="EQE">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewResultEqe}">
+                                        <TextBlock Text="{Binding Eqe, StringFormat={}{0:F4}}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="光通量(lm)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewResultEqe}">
+                                        <TextBlock Text="{Binding LuminousFlux, StringFormat={}{0:F4}}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="辐射通量(W)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewResultEqe}">
+                                        <TextBlock Text="{Binding RadiantFlux, StringFormat={}{0:F6}}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Header="光效(lm/W)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewResultEqe}">
+                                        <TextBlock Text="{Binding LuminousEfficacy, StringFormat={}{0:F4}}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

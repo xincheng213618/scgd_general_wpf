@@ -4,7 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/03_3 第三方算法")]
+[STNode("/12 第三方算法")]
 public class TPAlgorithm2Node : CVBaseServerNodeIn2Hub
 {
 	private string _TempName;

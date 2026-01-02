@@ -262,9 +262,9 @@ public class CVAOI2CameraNode : CVBaseServerNodeIn2Hub
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		AlgorithmPreStepParam array = new AlgorithmPreStepParam();
-		getPreStepParam(1, array);
-		string i = "OLED_RebuildPixelsMem";
-		return new CVAOI2CameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, i, _AlgTempName, array.MasterId, _IsHDR, _IsSaveRawImg);
+		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
+		getPreStepParam(1, algorithmPreStepParam);
+		string algParamType = "OLED_RebuildPixelsMem";
+		return new CVAOI2CameraParam(_CamTempName, _IsWithND, _IsAutoExp, _TempName, _CalibTempName, algParamType, _AlgTempName, algorithmPreStepParam.MasterId, _IsHDR, _IsSaveRawImg);
 	}
 }

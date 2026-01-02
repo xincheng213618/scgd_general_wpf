@@ -58,7 +58,7 @@
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock  Text="{x:Static properties:Resources.AverageTimes}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                             <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderAveNum,Path=Value}"  Width="50"/>
-                            <hc:PreviewSlider x:Name="SpectrumSliderAveNum"  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="1"  Value="1" Maximum="100">
+                            <hc:PreviewSlider x:Name="SpectrumSliderAveNum"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding DisplayConfig.AveNum}" Maximum="100">
                                 <hc:PreviewSlider.PreviewContent>
                                     <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0"/>
                                 </hc:PreviewSlider.PreviewContent>
@@ -67,7 +67,7 @@
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock  Text="{x:Static properties:Resources.IntegrationTime}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                             <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderIntTime,Path=Value}"  Width="50"/>
-                            <hc:PreviewSlider x:Name="SpectrumSliderIntTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="60000">
+                            <hc:PreviewSlider x:Name="SpectrumSliderIntTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding DisplayConfig.IntTime}" Maximum="60000">
                                 <hc:PreviewSlider.PreviewContent>
                                     <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0"/>
                                 </hc:PreviewSlider.PreviewContent>
@@ -75,10 +75,10 @@
                         </DockPanel>
                         <StackPanel Margin="0,0,0,5">
                             <UniformGrid Columns="2">
-                                <CheckBox Content="{x:Static properties:Resources.AutoIntegra}" x:Name="AutoIntTime"/>
+                                <CheckBox Content="{x:Static properties:Resources.AutoIntegra}"  IsChecked="{Binding DisplayConfig.IsAutoIntTime}"/>
                                 <CheckBox Content="ND"  IsChecked="{Binding Config.IsWithND}"/>
-                                <CheckBox Content="{x:Static properties:Resources.AutoZeroCalibration}"  IsChecked="{Binding Config.IsShutterEnable}" x:Name="AutoShutterDark"/>
-                                <CheckBox Content="{x:Static properties:Resources.AdaptiveZeroCalibration}" x:Name="AutoDark"  IsChecked="{Binding Config.IsAutoDark}"/>
+                                <CheckBox Content="{x:Static properties:Resources.AutoZeroCalibration}"  IsChecked="{Binding Config.IsAutoDark}"/>
+                                <CheckBox Content="{x:Static properties:Resources.AdaptiveZeroCalibration}" IsChecked="{Binding Config.IsShutter}"/>
                             </UniformGrid>
                         </StackPanel>
 
@@ -116,14 +116,30 @@
                                 </Button>
 
                             </DockPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="EQE"  Margin="2" Click="GetEQE_Click"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <DockPanel >
+                                        <TextBlock  Text="{x:Static properties:Resources.V}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                        <TextBlock  DockPanel.Dock="Right" Text="V" Width="30" Block.TextAlignment="Center"/>
+                                        <TextBox  Text="{Binding DisplayConfig.V, StringFormat={}{0:F1}}" BorderThickness="0,0,0,1"  Width="50"/>
+                                    </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock  Text="{x:Static properties:Resources.I}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                        <TextBlock  DockPanel.Dock="Right" Text="mA" Width="30" Block.TextAlignment="Center"/>
+                                        <TextBox  Text="{Binding DisplayConfig.I, StringFormat={}{0:F1}}" BorderThickness="0,0,0,1"  Width="50"/>
+                                        
+                                    </DockPanel>
+                                </StackPanel>
+                            </DockPanel>
                             <DockPanel Margin="0,2" Visibility="{Binding Config.IsWithND,Converter={StaticResource bool2VisibilityConverter}}">
                                 <Button  DockPanel.Dock="Right" Content="Get"  Click="GetNDport_Click" />
                                 <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.ChangeNDPort}"  Click="NDport_Click" />
                                 <TextBlock Text="NDPort" />
-                                <TextBox Text="{Binding DisplaySpectrumConfig.PortNum}"  BorderThickness="0,0,0,1" Margin="5,0"/>
+                                <TextBox Text="{Binding DisplayConfig.PortNum}"  BorderThickness="0,0,0,1" Margin="5,0"/>
                             </DockPanel>
                         </StackPanel>
-                        <GroupBox Header="Shutter" Margin="0,0,0,5" Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
+                        <GroupBox Header="Shutter" Margin="0,0,0,5" Visibility="{Binding Config.IsShutter,Converter={StaticResource bool2VisibilityConverter}}">
                             <StackPanel Margin="5">
                                 <DockPanel  Margin="0,2">
                                     <TextBlock Text="{Binding Config.ShutterCfg.Addr}" MinWidth="40"/>

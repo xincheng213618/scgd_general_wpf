@@ -206,7 +206,10 @@ namespace ColorVision.UI
                     MessageBox.Show(Properties.Resources.ConfigFileResetDueToError);
                 }
             }
-            foreach (var configPair in Configs)
+            //防止被修改
+            var configsSnapshot = Configs.ToArray();
+
+            foreach (var configPair in configsSnapshot)
             {
                 try
                 {
@@ -322,8 +325,8 @@ namespace ColorVision.UI
             {
                 string backupFileName = $"{ConfigDIFileName}Backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
                 string backupPath = Path.Combine(BackupFolderPath, backupFileName);
-                SaveConfigs(backupPath);
                 CleanupOldBackups();
+                SaveConfigs(backupPath);
             }
             catch (Exception ex)
             {

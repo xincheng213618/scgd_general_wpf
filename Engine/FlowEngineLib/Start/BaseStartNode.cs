@@ -149,9 +149,9 @@ public abstract class BaseStartNode : CVCommonNode
 
 	private void m_op_start_Connected(object sender, STNodeOptionEventArgs e)
 	{
-		STNodeOption obj = sender as STNodeOption;
-		SetOptionText(obj, "--");
-		DoStartConnected(obj, e);
+		STNodeOption sTNodeOption = sender as STNodeOption;
+		SetOptionText(sTNodeOption, "--");
+		DoStartConnected(sTNodeOption, e);
 	}
 
 	public virtual void DoLoopTransferData(STNodeOption sender, CVLoopCFC next)
@@ -165,11 +165,11 @@ public abstract class BaseStartNode : CVCommonNode
 
 	private void DoLoopNextTask(object obj)
 	{
-		KeyValuePair<STNodeOption, CVLoopCFC> cVMQTTRequest = (KeyValuePair<STNodeOption, CVLoopCFC>)obj;
-		STNodeOption key = cVMQTTRequest.Key;
-		CVLoopCFC data = cVMQTTRequest.Value;
-		key.TransferData(data);
-		DoLoopNextAction(data, data.NodeName);
+		KeyValuePair<STNodeOption, CVLoopCFC> keyValuePair = (KeyValuePair<STNodeOption, CVLoopCFC>)obj;
+		STNodeOption key = keyValuePair.Key;
+		CVLoopCFC value = keyValuePair.Value;
+		key.TransferData(value);
+		DoLoopNextAction(value, value.NodeName);
 	}
 
 	protected virtual void DoLoopNextAction(CVLoopCFC next, string nodeName)
@@ -338,8 +338,8 @@ public abstract class BaseStartNode : CVCommonNode
 
 	public void Stop(string serialNumber)
 	{
-		CVStartCFC timer = new CVStartCFC(ActionTypeEnum.Stop, serialNumber);
-		DoStartTransferData(timer);
+		CVStartCFC action = new CVStartCFC(ActionTypeEnum.Stop, serialNumber);
+		DoStartTransferData(action);
 	}
 
 	public void StopAll()
@@ -359,13 +359,13 @@ public abstract class BaseStartNode : CVCommonNode
 	public void FireFinished(CVStartCFC startAction)
 	{
 		StatusTypeEnum flowStatus = startAction.FlowStatus;
-		string userName = string.Empty;
+		string message = string.Empty;
 		if (flowStatus == StatusTypeEnum.Failed && startAction.Data.ContainsKey("Msg"))
 		{
-			userName = startAction.Data["Msg"].ToString();
+			message = startAction.Data["Msg"].ToString();
 		}
 		logger.InfoFormat("Fire Flow Finished Before");
-		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, userName));
+		this.Finished?.Invoke(this, new FlowStartEventArgs(startAction.SerialNumber, flowStatus, (long)startAction.GetTotalTime().TotalMilliseconds, message));
 		logger.InfoFormat("Fire Flow Finished End");
 	}
 }

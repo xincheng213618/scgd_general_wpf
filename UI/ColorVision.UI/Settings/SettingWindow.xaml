@@ -9,7 +9,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:properties="clr-namespace:ColorVision.UI.Properties"
         mc:Ignorable="d"     
-        Height="450" Title="{x:Static properties:Resources.Options}" WindowStartupLocation="CenterScreen"   Background="{DynamicResource GlobalBackground}" Width="600" Initialized="Window_Initialized">
+        Height="500" Title="{x:Static properties:Resources.Options}" WindowStartupLocation="CenterScreen"  Background="{DynamicResource GlobalBackground}" Width="650" Initialized="Window_Initialized">
     <Window.Resources>
         <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
             <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
@@ -37,6 +37,10 @@
         </Style>
     </Window.Resources>
     <Grid Margin="0,5,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
         <TabControl x:Name="TabControlSetting" TabStripPlacement="Left" Background="Transparent" BorderThickness="1,0,0,0"  Style="{StaticResource  TabControlBaseStyle}">
             <TabControl.Resources>
                 <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
@@ -49,7 +53,7 @@
                     <Setter Property="Background" Value="Transparent"/>
                 </Style>
             </TabControl.Resources>
-            <TabItem  x:Name="UniversalTabItem" Background="Transparent" MinWidth="100" Header="{x:Static properties:Resources.GeneralSettings}" >
+            <TabItem  x:Name="UniversalTabItem" Background="Transparent" MinWidth="125" Header="{x:Static properties:Resources.GeneralSettings}" >
                 <ScrollViewer  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="UniversalStackPanel" Margin="10">
 
@@ -57,8 +61,5 @@
                 </ScrollViewer>
             </TabItem>
         </TabControl>
-
-
-
     </Grid>
 </Window>

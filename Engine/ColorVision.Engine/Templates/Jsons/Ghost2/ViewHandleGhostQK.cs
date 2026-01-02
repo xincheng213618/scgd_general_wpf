@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
         }
 
 
-        public override void Load(IViewImageA view, ViewResultAlg result)
+        public override void Load(ViewResultContext view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
             }
         }
 
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
             foreach (var item in result.ViewResults)
             {

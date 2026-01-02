@@ -1,7 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Core;
 using ColorVision.Database;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Engine.ToolPlugins;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,8 +12,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
-using ColorVision.Engine.Services;
-using ColorVision.Core;
 
 namespace ColorVision.Engine.Templates.LedCheck
 {
@@ -44,7 +43,7 @@ namespace ColorVision.Engine.Templates.LedCheck
 
 
 
-        public override void Load(IViewImageA view, ViewResultAlg result)
+        public override void Load(ViewResultContext view, ViewResultAlg result)
         {
             base.Load(view, result);
             if (result.ViewResults == null)
@@ -62,7 +61,7 @@ namespace ColorVision.Engine.Templates.LedCheck
         }
 
 
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
 
             if (File.Exists(result.FilePath))
@@ -97,7 +96,7 @@ namespace ColorVision.Engine.Templates.LedCheck
                 BitmapImage bitmapImage = new BitmapImage(new Uri(result.FilePath));
                 HImage hImage = bitmapImage.ToHImage();
 
-                int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, (int)radius, ints, ints.Length, LedToolConfig.Instance.Thickness);
+                int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, (int)radius, ints, ints.Length, 1);
                 if (ret == 0)
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(view.ImageView.FunctionImage, hImageProcessed))

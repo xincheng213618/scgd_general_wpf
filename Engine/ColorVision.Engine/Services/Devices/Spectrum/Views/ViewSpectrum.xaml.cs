@@ -27,6 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
     /// </summary>
     public partial class ViewSpectrum : UserControl,IView
     {
+
         public ObservableCollection<ViewResultSpectrum> ViewResults { get; set; } = new ObservableCollection<ViewResultSpectrum>();
         public View View { get; set; }
 
@@ -283,6 +284,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 else
                 {
                     var temp = ScatterPlots[listView1.SelectedIndex];
+                    if (temp == null) return;
                     temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                     temp.LineWidth = 1;
                     temp.MarkerSize = 1;
@@ -535,8 +537,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public void AddViewResultSpectrum(ViewResultSpectrum viewResultSpectrum)
         {
-            viewResultSpectrum.V = float.NaN;
-            viewResultSpectrum.I = float.NaN;
             ViewResults.Add(viewResultSpectrum);
             ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
             AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
@@ -548,7 +548,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             ScatterPlots.Clear();
             AbsoluteScatterPlots.Clear();
 
-            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>();
+            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultEntity>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
@@ -563,7 +563,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         }
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<SpectumResultModel, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultModel, ViewResultSpectrum>(MySqlControl.GetInstance().DB, ViewResults, 
+            GenericQuery<SpectumResultEntity, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultSpectrum>(MySqlControl.GetInstance().DB, ViewResults, 
                 t =>
                 {
                     ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(t);

@@ -366,6 +366,8 @@ namespace ColorVision.ImageEditor
             IsUpdatedRender = false;
         }
 
+
+
         private bool _ImageEditMode;
         public bool ImageEditMode
         {

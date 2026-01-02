@@ -164,11 +164,12 @@ namespace ColorVision.Engine.Templates.Flow
             this.Loaded -= FlowDisplayControl_Loaded;
         }
 
+        bool IsRefresh;
         public async Task Refresh()
         {
-            if (ComboBoxFlow.SelectedIndex  <0 || ComboBoxFlow.SelectedIndex >= TemplateFlow.Params.Count) return;
+            if (IsRefresh) return;
+            IsRefresh = true;
             MqttRCService.GetInstance().QueryServices();
-
             FlowParam flowParam = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Value;
 
             if (View == null) return;
@@ -182,6 +183,8 @@ namespace ColorVision.Engine.Templates.Flow
 
             try
             {
+                var CVBaseServerNodes = FlowEngineManager.CVBaseServerNodes;
+                CVBaseServerNodes.Clear();
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
                     item.nodeRunEvent -= UpdateMsg;
@@ -190,17 +193,14 @@ namespace ColorVision.Engine.Templates.Flow
                 View.FlowEngineControl.FlowClear();
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
-                for (int i = 0; i < 20; i++)
-                {
-                    Config.IsReady = View.FlowEngineControl.IsReady;
-                    if (View.FlowEngineControl.IsReady)
-                        break;
-                     await Task.Delay(10);
-                }
+
 
                 View.FlowParam = flowParam;
+
+
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
+                    CVBaseServerNodes.Insert(0,item);
                     item.nodeRunEvent += UpdateMsg;
                     item.nodeEndEvent += nodeEndEvent;
                 }
@@ -208,6 +208,14 @@ namespace ColorVision.Engine.Templates.Flow
 
                 if (Config.IsAutoSize)
                     View.AutoSize();
+
+                for (int i = 0; i < 20; i++)
+                {
+                    Config.IsReady = View.FlowEngineControl.IsReady;
+                    if (View.FlowEngineControl.IsReady)
+                        break;
+                    await Task.Delay(10);
+                }
             }
             catch (Exception ex)
             {
@@ -218,7 +226,7 @@ namespace ColorVision.Engine.Templates.Flow
                 });
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
             }
-            return;
+            IsRefresh = false;
         }
 
         public event RoutedEventHandler Selected;
@@ -270,14 +278,14 @@ namespace ColorVision.Engine.Templates.Flow
         {
             try
             {
-                // Find all matching PreProcessMeta entries for this flow template name
-                var matchingMetas = PreProcessManager.GetInstance().ProcessMetas
-                    .Where(m => string.Equals(m.TemplateName, flowName, StringComparison.OrdinalIgnoreCase) && m.PreProcess != null)
+                // Find all enabled pre-processors that apply to this flow template
+                var matchingProcessors = PreProcessManager.GetInstance().Processes
+                    .Where(p => IsValidEnabledPreProcessor(p, flowName))
                     .ToList();
 
-                if (matchingMetas.Count > 0)
+                if (matchingProcessors.Count > 0)
                 {
-                    log.Info($"匹配到 {matchingMetas.Count} 个预处理 {flowName}");
+                    log.Info($"匹配到 {matchingProcessors.Count} 个已启用的预处理 {flowName}");
                     
                     var ctx = new IPreProcessContext
                     {
@@ -286,21 +294,22 @@ namespace ColorVision.Engine.Templates.Flow
                     };
 
                     // Execute all matching pre-processors sequentially
-                    foreach (var meta in matchingMetas)
+                    foreach (var processor in matchingProcessors)
                     {
-                        log.Info($"执行预处理 {meta.Name} -> {meta.ProcessTypeName}");
+                        var metadata = PreProcessMetadata.FromProcess(processor);
+                        log.Info($"执行预处理 {metadata.DisplayName}");
                         try
                         {
-                            bool success = meta.PreProcess.PreProcess(ctx);
+                            bool success = processor.PreProcess(ctx);
                             if (!success)
                             {
-                                log.Warn($"预处理 {meta.Name} 执行返回失败");
+                                log.Warn($"预处理 {metadata.DisplayName} 执行返回失败");
                                 return false; // Abort flow if any pre-processor fails
                             }
                         }
                         catch (Exception ex)
                         {
-                            log.Error($"预处理 {meta.Name} 执行异常", ex);
+                            log.Error($"预处理 {metadata.DisplayName} 执行异常", ex);
                             return false; // Abort flow on exception
                         }
                     }
@@ -312,6 +321,19 @@ namespace ColorVision.Engine.Templates.Flow
                 log.Error("匹配/执行预处理出错", ex);
                 return false;
             }
+        }
+        
+        /// <summary>
+        /// Checks if a pre-processor is valid and enabled for the given flow.
+        /// </summary>
+        private static bool IsValidEnabledPreProcessor(IPreProcess processor, string flowName)
+        {
+            var config = processor.GetConfig();
+            if (config is PreProcessConfigBase baseConfig)
+            {
+                return baseConfig.IsEnabled && baseConfig.AppliesToTemplate(flowName);
+            }
+            return false;
         }
         
         private void Processing(MeasureBatchModel batch)
@@ -475,6 +497,7 @@ namespace ColorVision.Engine.Templates.Flow
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.WorkflowStartNodeNotFound_RunFailed, "ColorVision");
                 return;
             }
+
 
             foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
             {

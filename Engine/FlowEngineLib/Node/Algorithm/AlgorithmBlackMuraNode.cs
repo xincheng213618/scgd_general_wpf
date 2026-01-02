@@ -108,15 +108,15 @@ public class AlgorithmBlackMuraNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		int[] text = null;
+		int[] oIndex = null;
 		if (!string.IsNullOrEmpty(_OIndex))
 		{
-			text = JsonConvert.DeserializeObject<int[]>(_OIndex);
+			oIndex = JsonConvert.DeserializeObject<int[]>(_OIndex);
 		}
-		BlackMuraParam text2 = new BlackMuraParam(_TempId, _TempName, _ImgFileName, GetImageFileType(_ImgFileName), _SavePOITempName, text);
-		getPreStepParam(start, text2);
-		text2.SMUData = GetSMUResult(start);
-		return text2;
+		BlackMuraParam blackMuraParam = new BlackMuraParam(_TempId, _TempName, _ImgFileName, GetImageFileType(_ImgFileName), _SavePOITempName, oIndex);
+		getPreStepParam(start, blackMuraParam);
+		blackMuraParam.SMUData = GetSMUResult(start);
+		return blackMuraParam;
 	}
 
 	private void setOIndex(string value)

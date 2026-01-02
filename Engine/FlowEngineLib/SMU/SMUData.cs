@@ -10,7 +10,7 @@ public class SMUData
 
 	public double LimitValue { get; set; }
 
-	public SMUData(bool isSourceV, SMUChannelType channel, double measureValue, double limitValue)
+	public SMUData(SMUChannelType channel, bool isSourceV, double measureValue, double limitValue)
 	{
 		IsSourceV = isSourceV;
 		Channel = channel;

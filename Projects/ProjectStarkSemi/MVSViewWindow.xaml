@@ -1,24 +1,66 @@
 ﻿<Window x:Class="ProjectStarkSemi.MVSViewWindow"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:wfCtrl="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
-    xmlns:wfHost="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration" 
-    Title="BasicDemoWPF" Height="600" Width="800" Initialized="Window_Initialized">
-    <Grid Margin="5">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-        <Grid Grid.Column="0">
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wfCtrl="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        xmlns:local="clr-namespace:ProjectStarkSemi"
+        xmlns:wfHost="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:MVSViewManager}"
+        Title="MVS相机视图" Height="600" Width="1024" Initialized="Window_Initialized">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Menu Bar -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="视图">
+                <MenuItem Header="显示功能栏" IsCheckable="True" IsChecked="True" Checked="MenuShowSidePanel_Checked" Unchecked="MenuShowSidePanel_Unchecked"/>
+                <MenuItem Header="显示状态栏" IsCheckable="True" IsChecked="True" Checked="MenuShowStatusBar_Checked" Unchecked="MenuShowStatusBar_Unchecked"/>
+            </MenuItem>
+        </Menu>
+        
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Margin="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="SidePanelColumn" Width="200" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid x:Name="SidePanelGrid" Grid.Column="0">
             <StackPanel>
+                <DockPanel  Margin="0,0,0,5">
+                    <Button  DockPanel.Dock="Right" Command="{Binding  EditMVSViewConfigCommand }" Padding="2" Height="22" Width="22" Margin="5,0,0,0" >
+                        <Button.Triggers>
+                            <EventTrigger RoutedEvent="Button.Click">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Button.Triggers>
+                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform x:Name="rotateTransform2" CenterX="6" CenterY="6"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Button>
+                    <Button x:Name="bnEnum"  Click="bnEnum_Click" Content="查找设备"/>
+                </DockPanel>
                 <ComboBox  Name="cbDeviceList" Margin="0,0,0,5"/>
-                <Button x:Name="bnEnum"  Click="bnEnum_Click" Content="查找设备" Margin="0,0,0,5"/>
+
+                <ComboBox x:Name="cbPixelType"  SelectionChanged="cbModelType_SelectionChanged" SelectedItem="{Binding Config.PixelType}"/>
                 <UniformGrid Columns="2" Margin="0,0,0,5">
                     <Button x:Name="bnOpen"  Click="bnOpen_Click" Content="打开设备" Margin="0,0,5,0" />
                     <Button x:Name="bnClose"  Click="bnClose_Click" IsEnabled="False" Content="关闭设备" />
                 </UniformGrid>
 
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Visibility="Collapsed">
                     <RadioButton x:Name="bnContinuesMode" Checked="bnContinuesMode_Checked" IsEnabled="False" Content="连续模式" Margin="0,0,5,0" />
                     <RadioButton x:Name="bnTriggerMode" Checked="bnTriggerMode_Checked" IsEnabled="False" Content="触发模式" />
                 </StackPanel>
@@ -26,24 +68,24 @@
                     <Button x:Name="bnStartGrab" Click="bnStartGrab_Click" IsEnabled="False"  Content="开始采集" Margin="0,0,5,0"/>
                     <Button x:Name="bnStopGrab" Click="bnStopGrab_Click" IsEnabled="False" Content="停止采集"/>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Visibility="Collapsed">
                     <CheckBox x:Name="cbSoftTrigger" Checked="cbSoftTrigger_Checked" IsEnabled="False" Content="软触发"   Margin="0,0,5,0"/>
                     <Button x:Name="bnTriggerExec" Click="bnTriggerExec_Click" IsEnabled="False" Content="软触发一次" />
                 </StackPanel>
 
                 <DockPanel Margin="0,0,0,5">
-                    <TextBox x:Name="tbExposure" DockPanel.Dock="Right" Width="150" IsEnabled="False" Style="{StaticResource TextBox.Small}"  />
-                    <TextBlock x:Name="label1" Text="曝光" />
+                    <TextBox x:Name="tbExposure" DockPanel.Dock="Right" Width="150" IsEnabled="False" Style="{StaticResource TextBox.Small}"  TextChanged="tbExposure_TextChanged"/>
+                    <TextBlock x:Name="label1" Text="曝光 (ns)" />
                 </DockPanel>
                 <DockPanel Margin="0,0,0,5">
-                    <TextBox x:Name="tbGain" DockPanel.Dock="Right" Width="150" IsEnabled="False" Style="{StaticResource TextBox.Small}"  />
+                    <TextBox x:Name="tbGain" DockPanel.Dock="Right" Width="150" IsEnabled="False" Style="{StaticResource TextBox.Small}" />
                     <TextBlock x:Name="label2" Text="增益"/>
                 </DockPanel>
                 <DockPanel Margin="0,0,0,5">
-                    <TextBox x:Name="tbFrameRate" DockPanel.Dock="Right" Width="150" IsEnabled="False" Style="{StaticResource TextBox.Small}"  />
+                    <TextBox x:Name="tbFrameRate" IsReadOnly="True" BorderThickness="0" DockPanel.Dock="Right" Width="150" IsEnabled="False" Style="{StaticResource TextBox.Small}" TextChanged="tbFrameRate_TextChanged"/>
                     <TextBlock x:Name="label3" Text="帧率"/>
                 </DockPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Visibility="Collapsed">
                     <Button x:Name="bnGetParam"  Click="bnGetParam_Click" IsEnabled="False" Content="获取参数" Margin="0,0,5,0" />
                     <Button x:Name="bnSetParam"  Click="bnSetParam_Click" IsEnabled="False" Content="设置参数"/>
                 </StackPanel>
@@ -56,5 +98,32 @@
             <wfCtrl:PictureBox x:Name="displayArea"/>
         </wfHost:WindowsFormsHost>-->
 
+        </Grid>
+        
+        <!-- Status Bar -->
+        <StatusBar x:Name="StatusBarBottom" Grid.Row="2">
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="曝光: "/>
+                    <Run x:Name="StatusExposureText" Text="--"/>
+                    <Run Text=" ns"/>
+                </TextBlock>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="增益: "/>
+                    <Run x:Name="StatusGainText" Text="--"/>
+                </TextBlock>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="帧率: "/>
+                    <Run x:Name="StatusFrameRateText" Text="--"/>
+                    <Run Text=" FPS"/>
+                </TextBlock>
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </Window>

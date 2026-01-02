@@ -146,13 +146,13 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNode
 			bool flag = true;
 			if (e.TargetOption.DataType == typeof(CVStartCFC))
 			{
-				CVStartCFC result = e.TargetOption.Data as CVStartCFC;
-				if (result.IsPaused)
+				CVStartCFC cVStartCFC = e.TargetOption.Data as CVStartCFC;
+				if (cVStartCFC.IsPaused)
 				{
-					DoTransferToServer(result, e);
+					DoTransferToServer(cVStartCFC, e);
 					return;
 				}
-				CVStartCFC data = new CVStartCFC(result);
+				CVStartCFC data = new CVStartCFC(cVStartCFC);
 				sender.Data = data;
 				int num = 0;
 				StatusTypeEnum statusType = StatusTypeEnum.Runing;
@@ -161,19 +161,19 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNode
 					STNodeOption sTNodeOption = base.InputOptions[i];
 					if (sTNodeOption.DataType == typeof(CVStartCFC))
 					{
-						CVStartCFC cVStartCFC = (CVStartCFC)sTNodeOption.Data;
-						if (cVStartCFC != null)
+						CVStartCFC cVStartCFC2 = (CVStartCFC)sTNodeOption.Data;
+						if (cVStartCFC2 != null)
 						{
-							if (cVStartCFC.IsRunning)
+							if (cVStartCFC2.IsRunning)
 							{
 								flag = flag;
 							}
 							else
 							{
-								statusType = cVStartCFC.FlowStatus;
+								statusType = cVStartCFC2.FlowStatus;
 								flag = !flag && false;
 							}
-							masterInput[i] = cVStartCFC;
+							masterInput[i] = cVStartCFC2;
 							num++;
 						}
 					}
@@ -184,19 +184,19 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNode
 				}
 				if (logger.IsDebugEnabled)
 				{
-					logger.DebugFormat("[{0}][{1}/{2}] DoServerTransfer => {3} [{4}/{5}]", ToShortString(), num, base.InputOptionsCount, result.ToShortString(), sender.Text, JsonConvert.SerializeObject(result.Data));
+					logger.DebugFormat("[{0}][{1}/{2}] DoServerTransfer => {3} [{4}/{5}]", ToShortString(), num, base.InputOptionsCount, cVStartCFC.ToShortString(), sender.Text, JsonConvert.SerializeObject(cVStartCFC.Data));
 				}
 				if (num == base.InputOptionsCount)
 				{
 					clearData();
 					if (flag)
 					{
-						DoTransferToServer(result, e);
+						DoTransferToServer(cVStartCFC, e);
 					}
 					else
 					{
-						result.SetStatusType(statusType);
-						DoNodeEndedTransferData(result);
+						cVStartCFC.SetStatusType(statusType);
+						DoNodeEndedTransferData(cVStartCFC);
 					}
 					clearInCFC();
 				}
@@ -216,9 +216,9 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNode
 
 	private void clearInCFC()
 	{
-		for (int cVServerResponse = 0; cVServerResponse < base.InputOptionsCount; cVServerResponse++)
+		for (int i = 0; i < base.InputOptionsCount; i++)
 		{
-			masterInput[cVServerResponse] = null;
+			masterInput[i] = null;
 		}
 	}
 

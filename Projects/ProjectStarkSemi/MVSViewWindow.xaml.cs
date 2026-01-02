@@ -1,7 +1,12 @@
-﻿using ColorVision.Core;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Core;
 using ColorVision.ImageEditor;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
+using log4net;
 using MvCamCtrl.NET;
+using ProjectStarkSemi.Conoscope;
+using ScottPlot.AxisLimitManagers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +22,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using static MvCamCtrl.NET.MyCamera;
 
 namespace ProjectStarkSemi
 {
@@ -33,11 +39,53 @@ namespace ProjectStarkSemi
         }
     }
 
+
+    public enum PixelType
+    {
+        PixelType_Gvsp_BayerGB8 = 0x0108000a,
+        PixelType_Gvsp_RGB8_Packed = 0x02180014
+    }
+
+    public class MVSViewWindowConfig : ViewModelBase,IConfig
+    {
+        public static MVSViewWindowConfig Instance => ConfigService.Instance.GetRequiredService<MVSViewWindowConfig>();
+
+        public PixelType PixelType { get => _PixelType; set { _PixelType = value; OnPropertyChanged(); } }
+        private PixelType _PixelType = PixelType.PixelType_Gvsp_BayerGB8;
+
+        public bool IsCoverBayer { get => _IsCoverBayer; set { _IsCoverBayer = value; OnPropertyChanged(); } }
+        private bool _IsCoverBayer = true;
+    }
+
+    public class MVSViewManager
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(MVSViewManager));
+        private static MVSViewManager _instance;
+        private static readonly object _locker = new();
+        public static MVSViewManager GetInstance() { lock (_locker) { return _instance ??= new MVSViewManager(); } }
+
+        public MVSViewWindowConfig Config { get; set; }
+        public RelayCommand EditMVSViewConfigCommand { get; set; }
+
+        public MVSViewManager() 
+        {
+            Config = MVSViewWindowConfig.Instance;
+            EditMVSViewConfigCommand = new RelayCommand(a => EditMVSViewConfig());
+        }
+        public void EditMVSViewConfig()
+        {
+            new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+    }
+
+
     /// <summary>
     /// Interaction logic for Window1.xaml
     /// </summary>
     public partial class MVSViewWindow : Window
     {
+        public MVSViewManager MVSViewManager { get; set; }
         MyCamera.MV_CC_DEVICE_INFO_LIST m_stDeviceList = new MyCamera.MV_CC_DEVICE_INFO_LIST();
         private MyCamera m_MyCamera = new MyCamera();
         bool m_bGrabbing = false;
@@ -54,8 +102,12 @@ namespace ProjectStarkSemi
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            MVSViewManager = MVSViewManager.GetInstance();
+            this.DataContext = MVSViewManager;
             imgDisplay = new ImageView();
             DisplayGrid.Child = imgDisplay;
+            cbPixelType.ItemsSource = Enum.GetValues(typeof(PixelType));
+
         }
 
         private void BasicDemoWindow_Load(object sender, RoutedEventArgs e)
@@ -181,6 +233,7 @@ namespace ProjectStarkSemi
 
         private void bnOpen_Click(object sender, RoutedEventArgs e)
         {
+            writeableBitmap = null;
             if (m_stDeviceList.nDeviceNum == 0 || cbDeviceList.SelectedIndex == -1)
             {
                 ShowErrorMsg("No device, please select", 0);
@@ -233,6 +286,7 @@ namespace ProjectStarkSemi
                     ShowErrorMsg("Get Packet Size failed!", nPacketSize);
                 }
             }
+            int i = m_MyCamera.MV_CC_SetEnumValue_NET("PixelFormat", (uint)MVSViewWindowConfig.Instance.PixelType);
 
             // ch:设置采集连续模式 | en:Set Continues Aquisition Mode
             m_MyCamera.MV_CC_SetEnumValue_NET("AcquisitionMode", (uint)MyCamera.MV_CAM_ACQUISITION_MODE.MV_ACQ_MODE_CONTINUOUS);
@@ -330,6 +384,8 @@ namespace ProjectStarkSemi
         {
             MyCamera.MV_FRAME_OUT stFrameInfo = new MyCamera.MV_FRAME_OUT();
             MyCamera.MV_DISPLAY_FRAME_INFO stDisplayInfo = new MyCamera.MV_DISPLAY_FRAME_INFO();
+            MV_PIXEL_CONVERT_PARAM stConvertParam = new MV_PIXEL_CONVERT_PARAM();
+            IntPtr pImageBuffer = IntPtr.Zero;
             int nRet = MyCamera.MV_OK;
 
             while (m_bGrabbing)
@@ -338,6 +394,137 @@ namespace ProjectStarkSemi
                 if (nRet == MyCamera.MV_OK)
                 {
                     if (stFrameInfo.stFrameInfo.enPixelType == MyCamera.MvGvspPixelType.PixelType_Gvsp_BayerGB8)
+                    {
+                        if (MVSViewManager.Config.IsCoverBayer)
+                        {
+                            MvGvspPixelType enDstPixelType = MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB8_Packed;
+                            uint nConvertDataSize = (uint)stFrameInfo.stFrameInfo.nWidth * stFrameInfo.stFrameInfo.nHeight * 3;
+                            if (pImageBuffer == IntPtr.Zero)
+                            {
+                                pImageBuffer = Marshal.AllocHGlobal((int)nConvertDataSize);
+                            }
+
+                            // ch:像素格式转换 | en:Convert pixel format 
+
+                            stConvertParam.nWidth = stFrameInfo.stFrameInfo.nWidth;                 //ch:图像宽 | en:image width
+                            stConvertParam.nHeight = stFrameInfo.stFrameInfo.nHeight;               //ch:图像高 | en:image height
+                            stConvertParam.pSrcData = stFrameInfo.pBufAddr;                         //ch:输入数据缓存 | en:input data buffer
+                            stConvertParam.nSrcDataLen = stFrameInfo.stFrameInfo.nFrameLen;         //ch:输入数据大小 | en:input data size
+                            stConvertParam.enSrcPixelType = stFrameInfo.stFrameInfo.enPixelType;    //ch:输入像素格式 | en:input pixel format
+                            stConvertParam.enDstPixelType = enDstPixelType;                         //ch:输出像素格式 | en:output pixel format
+                            stConvertParam.nDstBufferSize = nConvertDataSize;                       //ch:输出缓存大小 | en:output buffer size'
+                            stConvertParam.pDstBuffer = pImageBuffer; //ch:输出数据缓存 | en:output data buffer
+
+                            nRet = m_MyCamera.MV_CC_ConvertPixelType_NET(ref stConvertParam);//图像格式转化
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                // Bail out if grabbing has been stopped while waiting for the dispatcher
+                                if (!m_bGrabbing) return;
+
+                                // --- KEY CHANGE: Only create the WriteableBitmap if needed ---
+                                // 1. If it hasn't been created yet (is null)
+                                // 2. Or if the image resolution has changed
+                                if (writeableBitmap == null ||
+                                    writeableBitmap.PixelWidth != stFrameInfo.stFrameInfo.nWidth ||
+                                    writeableBitmap.PixelHeight != stFrameInfo.stFrameInfo.nHeight)
+                                {
+                                    // Create the bitmap with the correct dimensions and format
+                                    writeableBitmap = new WriteableBitmap(
+                                        stFrameInfo.stFrameInfo.nWidth,
+                                        stFrameInfo.stFrameInfo.nHeight,
+                                        96, 96, // DPI X and Y
+                                        PixelFormats.Rgb24, // Displaying Bayer as Grayscale
+                                        null);
+
+                                    // Set the Image control's source ONCE, when the bitmap is first created
+                                    imgDisplay.ImageShow.Source = writeableBitmap;
+                                    imgDisplay.UpdateZoomAndScale();
+                                }
+
+                                // --- Update the existing bitmap's buffer on every frame ---
+                                try
+                                {
+                                    // Reserve the back buffer for writing
+                                    writeableBitmap.Lock();
+
+                                    // Copy the image data from the camera buffer to the bitmap's back buffer
+                                    // Note: Ensure the buffer sizes match to avoid exceptions.
+                                    uint bufferSize = (uint)(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * writeableBitmap.Format.BitsPerPixel / 8);
+                                    uint dataSize = stConvertParam.nDstBufferSize;
+                                    uint bytesToCopy = Math.Min(bufferSize, dataSize);
+
+                                    RtlMoveMemory(writeableBitmap.BackBuffer, stConvertParam.pDstBuffer, bytesToCopy);
+
+                                    // Specify the area of the bitmap that changed (the whole image)
+                                    writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+                                }
+                                finally
+                                {
+                                    // Release the back buffer to allow the UI to render the changes
+                                    writeableBitmap.Unlock();
+                                }
+                            });
+                        }
+                        else
+                        {
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                // Bail out if grabbing has been stopped while waiting for the dispatcher
+                                if (!m_bGrabbing) return;
+
+                                // --- KEY CHANGE: Only create the WriteableBitmap if needed ---
+                                // 1. If it hasn't been created yet (is null)
+                                // 2. Or if the image resolution has changed
+                                if (writeableBitmap == null ||
+                                    writeableBitmap.PixelWidth != stFrameInfo.stFrameInfo.nWidth ||
+                                    writeableBitmap.PixelHeight != stFrameInfo.stFrameInfo.nHeight)
+                                {
+                                    // Create the bitmap with the correct dimensions and format
+                                    writeableBitmap = new WriteableBitmap(
+                                        stFrameInfo.stFrameInfo.nWidth,
+                                        stFrameInfo.stFrameInfo.nHeight,
+                                        96, 96, // DPI X and Y
+                                        PixelFormats.Gray8, // Displaying Bayer as Grayscale
+                                        null);
+
+                                    // Set the Image control's source ONCE, when the bitmap is first created
+                                    imgDisplay.ImageShow.Source = writeableBitmap;
+                                    imgDisplay.UpdateZoomAndScale();
+                                }
+
+                                // --- Update the existing bitmap's buffer on every frame ---
+                                try
+                                {
+                                    // Reserve the back buffer for writing
+                                    writeableBitmap.Lock();
+
+                                    // Copy the image data from the camera buffer to the bitmap's back buffer
+                                    // Note: Ensure the buffer sizes match to avoid exceptions.
+                                    uint bufferSize = (uint)(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * writeableBitmap.Format.BitsPerPixel / 8);
+                                    uint dataSize = stFrameInfo.stFrameInfo.nFrameLen;
+                                    uint bytesToCopy = Math.Min(bufferSize, dataSize);
+
+                                    RtlMoveMemory(writeableBitmap.BackBuffer, stFrameInfo.pBufAddr, bytesToCopy);
+
+                                    // Specify the area of the bitmap that changed (the whole image)
+                                    writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+                                }
+                                finally
+                                {
+                                    // Release the back buffer to allow the UI to render the changes
+                                    writeableBitmap.Unlock();
+                                }
+                            });
+                        }
+
+
+
+                    };
+
+
+                    if (stFrameInfo.stFrameInfo.enPixelType == MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB8_Packed)
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
@@ -356,7 +543,7 @@ namespace ProjectStarkSemi
                                     stFrameInfo.stFrameInfo.nWidth,
                                     stFrameInfo.stFrameInfo.nHeight,
                                     96, 96, // DPI X and Y
-                                    PixelFormats.Gray8, // Displaying Bayer as Grayscale
+                                    PixelFormats.Rgb24, // Displaying Bayer as Grayscale
                                     null);
 
                                 // Set the Image control's source ONCE, when the bitmap is first created
@@ -387,7 +574,9 @@ namespace ProjectStarkSemi
                                 writeableBitmap.Unlock();
                             }
                         });
-                    };
+                    }
+                    ;
+
 
                     //stDisplayInfo.hWnd = displayHandle;
                     //stDisplayInfo.pData = stFrameInfo.pBufAddr;
@@ -400,6 +589,42 @@ namespace ProjectStarkSemi
                     m_MyCamera.MV_CC_FreeImageBuffer_NET(ref stFrameInfo);
                 }
             }
+        }
+
+        public Int32 ConvertToRGB(object obj, IntPtr pSrc, ushort nHeight, ushort nWidth, MyCamera.MvGvspPixelType nPixelType, IntPtr pDst)
+        {
+            if (IntPtr.Zero == pSrc || IntPtr.Zero == pDst)
+            {
+                return MyCamera.MV_E_PARAMETER;
+            }
+
+            int nRet = MyCamera.MV_OK;
+            MyCamera device = obj as MyCamera;
+            MyCamera.MV_PIXEL_CONVERT_PARAM stPixelConvertParam = new MyCamera.MV_PIXEL_CONVERT_PARAM();
+
+            stPixelConvertParam.pSrcData = pSrc;//源数据
+            if (IntPtr.Zero == stPixelConvertParam.pSrcData)
+            {
+                return -1;
+            }
+
+            stPixelConvertParam.nWidth = nWidth;//图像宽度
+            stPixelConvertParam.nHeight = nHeight;//图像高度
+            stPixelConvertParam.enSrcPixelType = nPixelType;//源数据的格式
+            stPixelConvertParam.nSrcDataLen = (uint)(nWidth * nHeight * ((((uint)nPixelType) >> 16) & 0x00ff) >> 3);
+
+            stPixelConvertParam.nDstBufferSize = (uint)(nWidth * nHeight * ((((uint)MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB8_Packed) >> 16) & 0x00ff) >> 3);
+            stPixelConvertParam.pDstBuffer = pDst;//转换后的数据
+            stPixelConvertParam.enDstPixelType = MyCamera.MvGvspPixelType.PixelType_Gvsp_RGB8_Packed;
+            stPixelConvertParam.nDstBufferSize = (uint)nWidth * nHeight * 3;
+
+            nRet = device.MV_CC_ConvertPixelType_NET(ref stPixelConvertParam);//格式转换
+            if (MyCamera.MV_OK != nRet)
+            {
+                return -1;
+            }
+
+            return MyCamera.MV_OK;
         }
 
         private void bnStartGrab_Click(object sender, RoutedEventArgs e)
@@ -498,6 +723,8 @@ namespace ProjectStarkSemi
             {
                 tbFrameRate.Text = stParam.fCurValue.ToString("F1");
             }
+
+            UpdateStatusBar();
         }
 
         private void bnSetParam_Click(object sender, RoutedEventArgs e)
@@ -546,6 +773,129 @@ namespace ProjectStarkSemi
             MyCamera.MV_CC_Finalize_NET();
         }
 
+        private void tbGain_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            try
+            {
+                float.Parse(tbGain.Text);
+            }
+            catch
+            {
+                ShowErrorMsg("Please enter correct type!", 0);
+                return;
+            }
 
+            m_MyCamera.MV_CC_SetEnumValue_NET("GainAuto", 0);
+            int nRet = m_MyCamera.MV_CC_SetFloatValue_NET("Gain", float.Parse(tbGain.Text));
+            if (nRet != MyCamera.MV_OK)
+            {
+                ShowErrorMsg("Set Gain Fail!", nRet);
+            }
+
+            UpdateStatusBar();
+        }
+
+        private void tbExposure_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            try
+            {
+                float.Parse(tbExposure.Text);
+            }
+            catch
+            {
+                ShowErrorMsg("Please enter correct type!", 0);
+                return;
+            }
+
+            m_MyCamera.MV_CC_SetEnumValue_NET("ExposureAuto", 0);
+            int nRet = m_MyCamera.MV_CC_SetFloatValue_NET("ExposureTime", float.Parse(tbExposure.Text));
+            if (nRet != MyCamera.MV_OK)
+            {
+                ShowErrorMsg("Set Exposure Time Fail!", nRet);
+            }
+
+            UpdateStatusBar();
+        }
+
+        private void tbFrameRate_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            try
+            {
+                float.Parse(tbFrameRate.Text);
+            }
+            catch
+            {
+                ShowErrorMsg("Please enter correct type!", 0);
+                return;
+            }
+
+
+            int nRet = m_MyCamera.MV_CC_SetFloatValue_NET("AcquisitionFrameRate", float.Parse(tbFrameRate.Text));
+            if (nRet != MyCamera.MV_OK)
+            {
+                ShowErrorMsg("Set Frame Rate Fail!", nRet);
+            }
+
+            UpdateStatusBar();
+        }
+
+        private void cbModelType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            //int nRet = m_MyCamera.MV_CC_SetEnumValue_NET("PixelFormat", (uint)MVSViewWindowConfig.Instance.PixelType);
+            //if (nRet != MyCamera.MV_OK)
+            //{
+            //    ShowErrorMsg("Set Frame Rate Fail!", nRet);
+            //}
+        }
+
+        // Menu event handlers
+        private void MenuShowSidePanel_Checked(object sender, RoutedEventArgs e)
+        {
+            if (SidePanelColumn != null)
+            {
+                SidePanelColumn.Width = new GridLength(200);
+            }
+        }
+
+        private void MenuShowSidePanel_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (SidePanelColumn != null)
+            {
+                SidePanelColumn.Width = new GridLength(0);
+            }
+        }
+
+        private void MenuShowStatusBar_Checked(object sender, RoutedEventArgs e)
+        {
+            if (StatusBarBottom != null)
+            {
+                StatusBarBottom.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void MenuShowStatusBar_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (StatusBarBottom != null)
+            {
+                StatusBarBottom.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        // Update status bar with current camera parameters
+        private void UpdateStatusBar()
+        {
+            if (StatusExposureText != null && !string.IsNullOrEmpty(tbExposure.Text))
+            {
+                StatusExposureText.Text = tbExposure.Text;
+            }
+            if (StatusGainText != null && !string.IsNullOrEmpty(tbGain.Text))
+            {
+                StatusGainText.Text = tbGain.Text;
+            }
+            if (StatusFrameRateText != null && !string.IsNullOrEmpty(tbFrameRate.Text))
+            {
+                StatusFrameRateText.Text = tbFrameRate.Text;
+            }
+        }
     }
 }

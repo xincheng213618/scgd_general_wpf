@@ -79,10 +79,8 @@ namespace ProjectARVRPro
         {
             if (string.IsNullOrWhiteSpace(viewResultJson))
                 return;
-
             try
             {
-                // Try to parse the JSON and extract ObjectiveTestItem properties
                 var obj = JsonConvert.DeserializeObject<object>(viewResultJson);
                 if (obj != null)
                 {
@@ -111,7 +109,6 @@ namespace ProjectARVRPro
                 Name = $"{poiData.Name}(Cx)",
                 Value = poiData.x,
                 TestValue = poiData.x.ToString("F4"),
-                Unit = "None",
                 LowLimit = 0,
                 UpLimit = 0
             });
@@ -120,7 +117,6 @@ namespace ProjectARVRPro
                 Name = $"{poiData.Name}(Cy)",
                 Value = poiData.y,
                 TestValue = poiData.y.ToString("F4"),
-                Unit = "None",
                 LowLimit = 0,
                 UpLimit = 0
             });
@@ -129,7 +125,6 @@ namespace ProjectARVRPro
                 Name = $"{poiData.Name}(u')",
                 Value = poiData.u,
                 TestValue = poiData.u.ToString("F4"),
-                Unit = "None",
                 LowLimit = 0,
                 UpLimit = 0
             });
@@ -138,7 +133,6 @@ namespace ProjectARVRPro
                 Name = $"{poiData.Name}(v')",
                 Value = poiData.v,
                 TestValue = poiData.v.ToString("F4"),
-                Unit = "None",
                 LowLimit = 0,
                 UpLimit = 0
             });
@@ -151,118 +145,94 @@ namespace ProjectARVRPro
             // Handle JObject from JSON deserialization
             if (obj is Newtonsoft.Json.Linq.JObject jObject)
             {
-                foreach (var property in jObject.Properties())
+                // Check if this looks like an ObjectiveTestItem
+                if (jObject.ContainsKey("Name") && jObject.ContainsKey("Value"))
                 {
-                    if (property.Value is Newtonsoft.Json.Linq.JObject childObj)
+                    try
                     {
-                        // Check if this looks like a PoixyuvData object
-                        if (childObj.ContainsKey("Name") && childObj.ContainsKey("Y") && 
-                            childObj.ContainsKey("x") && childObj.ContainsKey("y") &&
-                            childObj.ContainsKey("u") && childObj.ContainsKey("v"))
-                        {
-                            try
-                            {
-                                var poiData = childObj.ToObject<PoixyuvData>();
-                                if (poiData != null)
-                                {
-                                    // Convert PoixyuvData to multiple ObjectiveTestItem entries
-                                    AddPoixyuvDataAsTestItems(poiData, items);
-                                    continue;
-                                }
-                            }
-                            catch
-                            {
-                                // Not a PoixyuvData, continue processing
-                            }
-                        }
-                        
-                        // Check if this looks like an ObjectiveTestItem
-                        if (childObj.ContainsKey("Name") && childObj.ContainsKey("Value"))
-                        {
-                            try
-                            {
-                                var testItem = childObj.ToObject<ObjectiveTestItem>();
-                                if (testItem != null)
-                                {
-                                    items.Add(testItem);
-                                }
-                            }
-                            catch
-                            {
-                                // Not an ObjectiveTestItem, try to recurse
-                                CollectTestItems(childObj, items);
-                            }
-                        }
-                        else
-                        {
-                            // Recurse into child object
-                            CollectTestItems(childObj, items);
-                        }
-                    }
-                    else if (property.Value is Newtonsoft.Json.Linq.JArray jArray)
-                    {
-                        // Handle arrays
-                        foreach (var arrayItem in jArray)
-                        {
-                            if (arrayItem is Newtonsoft.Json.Linq.JObject arrayObj)
-                            {
-                                CollectTestItems(arrayObj, items);
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // Handle regular .NET objects
-                foreach (var property in obj.GetType().GetProperties())
-                {
-                    if (property.PropertyType == typeof(ObjectiveTestItem))
-                    {
-                        var testItem = (ObjectiveTestItem)property.GetValue(obj);
+                        var testItem = jObject.ToObject<ObjectiveTestItem>();
                         if (testItem != null)
                         {
                             items.Add(testItem);
                         }
                     }
-                    else if (property.PropertyType.IsGenericType && 
-                             property.PropertyType.GetGenericTypeDefinition() == typeof(List<>) &&
-                             property.PropertyType.GetGenericArguments()[0] == typeof(PoixyuvData))
+                    catch
                     {
-                        // Handle List<PoixyuvData>
-                        try
+
+                    }
+                }
+                else if (jObject.ContainsKey("Name") && jObject.ContainsKey("Y"))
+                {
+                    try
+                    {
+                        var poiData = jObject.ToObject<PoixyuvData>();
+                        if (poiData != null)
                         {
-                            var list = property.GetValue(obj) as List<PoixyuvData>;
-                            if (list != null)
+                            // Convert PoixyuvData to multiple ObjectiveTestItem entries
+                            AddPoixyuvDataAsTestItems(poiData, items);
+                        }
+                    }
+                    catch
+                    {
+                        // Not a PoixyuvData, continue processing
+                    }
+                }
+                else
+                {
+                    foreach (var property in jObject.Properties())
+                    {
+                        if (property.Value is Newtonsoft.Json.Linq.JArray jArray)
+                        {
+                            // Handle arrays
+                            foreach (var arrayItem in jArray)
                             {
-                                foreach (var poiData in list)
+                                CollectTestItems(arrayItem, items);
+                            }
+                        }
+                        else if (property.Value is Newtonsoft.Json.Linq.JObject childObj)
+                        {
+                            // Check if this looks like a PoixyuvData object
+                            if (childObj.ContainsKey("Name") && childObj.ContainsKey("Y"))
+                            {
+                                try
                                 {
-                                    // Convert each PoixyuvData to multiple ObjectiveTestItem entries
-                                    AddPoixyuvDataAsTestItems(poiData, items);
+                                    var poiData = childObj.ToObject<PoixyuvData>();
+                                    if (poiData != null)
+                                    {
+                                        // Convert PoixyuvData to multiple ObjectiveTestItem entries
+                                        AddPoixyuvDataAsTestItems(poiData, items);
+                                        continue;
+                                    }
+                                }
+                                catch
+                                {
+                                    // Not a PoixyuvData, continue processing
+                                }
+                            }
+
+                            // Check if this looks like an ObjectiveTestItem
+                            if (childObj.ContainsKey("Name") && childObj.ContainsKey("Value"))
+                            {
+                                try
+                                {
+                                    var testItem = childObj.ToObject<ObjectiveTestItem>();
+                                    if (testItem != null)
+                                    {
+                                        items.Add(testItem);
+                                    }
+                                }
+                                catch
+                                {
+                                    // Not an ObjectiveTestItem, try to recurse
+                                    CollectTestItems(childObj, items);
                                 }
                             }
                         }
-                        catch
-                        {
-                            // Ignore errors
-                        }
-                    }
-                    else if (!property.PropertyType.IsValueType && property.PropertyType != typeof(string))
-                    {
-                        try
-                        {
-                            var childObj = property.GetValue(obj);
-                            if (childObj != null)
-                            {
-                                CollectTestItems(childObj, items);
-                            }
-                        }
-                        catch
-                        {
-                            // Ignore errors
-                        }
+
                     }
                 }
+
+
             }
         }
 

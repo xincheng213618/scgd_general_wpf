@@ -18,6 +18,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using WindowsFormsTest;
 
 namespace ColorVision.Engine.Services
 {
@@ -108,6 +109,7 @@ namespace ColorVision.Engine.Services
         {
             SysResourceModel = sysResourceModel;
             ContextMenu = new ContextMenu();
+
 
             ExportCommand = new RelayCommand(a =>
             {

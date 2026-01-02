@@ -183,4 +183,10 @@
   <data name="NotCalibrated" xml:space="preserve">
     <value>non corrigé</value>
   </data>
+  <data name="Azimuth" xml:space="preserve">
+    <value>Azimut</value>
+  </data>
+  <data name="PolarAngle" xml:space="preserve">
+    <value>Angle polaire</value>
+  </data>
 </root>

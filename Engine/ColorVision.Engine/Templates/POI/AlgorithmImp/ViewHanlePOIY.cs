@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
     public class ViewHanlePOIY : IResultHandleBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));
-        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.POI_Y};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.POI, ViewResultAlgType.POI_Y};
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string fileName = Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
         }
 
-        public override void Load(IViewImageA view, ViewResultAlg result)
+        public override void Load(ViewResultContext view, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                 result.ContextMenu.Items.Add(new MenuItem() { Header = "调试", Command = new RelayCommand(a => DisplayAlgorithmManager.GetInstance().SetType(new DisplayAlgorithmParam() { Type = typeof(AlgorithmPoi), ImageFilePath = result.FilePath })) });
             }
         }
-        public override void Handle(IViewImageA view, ViewResultAlg result)
+        public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
@@ -56,16 +56,11 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                         DrawPoiPoint.Add(poiResultData.Point);
                     }
                 }
-                view.AddPOIPoint(DrawPoiPoint);
+                AddPOIPoint(view.ImageView, DrawPoiPoint);
             }
             else
             {
                 log.Info($"result.ViewResults.Count:{result.ViewResults.Count}");
-
-
-
-
-
             }
 
             if (view.ListView.View is GridView gridView)

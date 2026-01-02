@@ -18,106 +18,136 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Column="0" Grid.ColumnSpan="1" x:Name="Grid1" SizeChanged="Grid1_SizeChanged" >
-            <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch" >
-                <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
-            </WindowsFormsHost>
-            <WindowsFormsHost x:Name="winf2" Height="250"  Width="250" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,0,5" Visibility="Collapsed">
-                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
-            </WindowsFormsHost>
-        </Grid>
-        <Grid Grid.Column="1"  x:Name="Grid2"  Width="250" >
-            <Grid.RowDefinitions >
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
+        <Grid>
+            <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Border Grid.Row="0"    Margin="0,5,0,5" >
-                <StackPanel Margin="0">
-                    <UniformGrid  Columns="6" Margin="0,0,0,5">
-                        <Button Command="{Binding SaveCommand}" Height="30" Width="30"  Margin="0,0,5,0" Padding="2">
-                            <Image Source="{DynamicResource DrawingImageSave}" Height="20" />
-                        </Button>
-                        <Button Command="{Binding RefreshCommand}" Padding="2" Height="30" Width="30"   Margin="0,0,5,0" >
-                            <Button.Triggers>
-                                <EventTrigger RoutedEvent="Button.Click">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Button.Triggers>
-                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"  ToolTip="{x:Static properties:Resources.Refresh}">
-                                <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                        </Button>
-                        <Button Command="{Binding AutoSizeCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
-                            <Image  Source="{DynamicResource DrawingImageexpend}"/>
-                        </Button>
-                        <Button Command="{Binding AutoAlignmentCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
-                            <Button.Triggers>
-                                <EventTrigger RoutedEvent="Button.Click">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="rotateTransform3" Storyboard.TargetProperty="Angle" From="0" To="720" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Button.Triggers>
-                            <Image  Source="{DynamicResource DrawingImageFlow}">
-                                <Image.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform3" CenterX="8" CenterY="8"/>
-                                </Image.RenderTransform>
-                            </Image>
-                        </Button>
-                        <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
-                            <Image  Source="{DynamicResource DrawingImageClear}"/>
-                        </Button>
-                        <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
-                            <Image  Source="{DynamicResource DIExpand}"/>
-                        </Button>
-                    </UniformGrid>
-                    <DockPanel>
-                        <TextBlock Text="{Binding FlowEngineManager.Batch.Code}" />
-                    </DockPanel>
-                    <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-                        <Button Content="{x:Static properties:Resources.SearchResults}" Click="Button_Click" Margin="0,0,5,0"/>
-                        <Button Content="{x:Static properties:Resources.FlowResultManagement}"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
+            <Grid Grid.Column="0" Grid.ColumnSpan="1" x:Name="Grid1" SizeChanged="Grid1_SizeChanged" >
+                <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch" >
+                    <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
+                </WindowsFormsHost>
+            </Grid>
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Row="0"  Width="200" >
+                        <UniformGrid  Columns="6" Margin="0,0,0,5">
+                            <Button Command="{Binding SaveCommand}" Height="30" Width="30"  Margin="0,0,5,0" Padding="2">
+                                <Image Source="{DynamicResource DrawingImageSave}" Height="20" />
+                            </Button>
+                            <Button Command="{Binding RefreshCommand}" Padding="2" Height="30" Width="30"   Margin="0,0,5,0" >
+                                <Button.Triggers>
+                                    <EventTrigger RoutedEvent="Button.Click">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Button.Triggers>
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"  ToolTip="{x:Static properties:Resources.Refresh}">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                            </Button>
+                            <Button Command="{Binding AutoSizeCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
+                                <Image  Source="{DynamicResource DrawingImageexpend}"/>
+                            </Button>
+                            <Button Command="{Binding AutoAlignmentCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
+                                <Button.Triggers>
+                                    <EventTrigger RoutedEvent="Button.Click">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="rotateTransform3" Storyboard.TargetProperty="Angle" From="0" To="720" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Button.Triggers>
+                                <Image  Source="{DynamicResource DrawingImageFlow}">
+                                    <Image.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform3" CenterX="8" CenterY="8"/>
+                                    </Image.RenderTransform>
+                                </Image>
+                            </Button>
+                            <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
+                                <Image  Source="{DynamicResource DrawingImageClear}"/>
+                            </Button>
+                            <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
+                                <Image  Source="{DynamicResource DIExpand}"/>
+                            </Button>
+                        </UniformGrid>
+                        <StackPanel Grid.Column="2">
+                            <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                                <Button Content="{x:Static properties:Resources.SearchResults}" Click="Button_Click" Margin="0,0,5,0"/>
+                                <Button Content="{x:Static properties:Resources.FlowResultManagement}"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                                <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1" Margin="0,0,5,0"/>
+                                <Button Content="预处理管理" Click="Button_Click_PreProcess"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,5"  Orientation="Horizontal">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                    <Button Content="x64" Command="{Binding FlowEngineManager.WindowsServiceX64.OpenLogCommand}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                    <Button Content="dev" Command="{Binding FlowEngineManager.WindowsServiceDev.OpenLogCommand}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                    <Button Content="RC" Command="{Binding FlowEngineManager.WindowsServiceReg.OpenLogCommand}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Camera" Command="{Binding FlowEngineManager.OpenCameraLogCommand}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
-                    <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-                        <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1" Margin="0,0,5,0"/>
-                        <Button Content="预处理管理" Click="Button_Click_PreProcess"/>
-                    </StackPanel>
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="x64Log" Command="{Binding FlowEngineManager.WindowsServiceX64.OpenLogCommand}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="devLog" Command="{Binding FlowEngineManager.WindowsServiceDev.OpenLogCommand}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="RCLog" Command="{Binding FlowEngineManager.WindowsServiceReg.OpenLogCommand}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="CameraLog" Command="{Binding FlowEngineManager.OpenCameraLogCommand}"/>
-                        </StackPanel>
-                    </StackPanel>
-                    
-                    <ProgressBar x:Name="ProgressBar1" Maximum="100"/>
-                    <TextBox x:FieldModifier="public"  x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="105" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" Margin="0,0,0,5" />
-                </StackPanel>
-            </Border>
-    
-            <Border x:Name="SignStackBorder" Grid.Row="3" Visibility="Visible" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="5">
-                <StackPanel>
-                    <StackPanel x:Name="SignStackPannel"  Orientation="Vertical" Margin="4" />
-                </StackPanel>
-            </Border>
+                    <ListView x:Name="NodeListView" Grid.Column="1"  Background="Transparent" Height="120" SelectionChanged="NodeListView_SelectionChanged" ItemsSource="{Binding FlowEngineManager.CVBaseServerNodes}">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.View>
+                            <GridView >
+                                <GridView.ColumnHeaderContainerStyle>
+                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </Style>
+                                </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn   Width="230">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Title,Mode=OneWay}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <ProgressBar x:Name="ProgressBar1" Maximum="100"/>
+                        <TextBox x:FieldModifier="public" x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="100"  Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True"/>
+
+                    </Grid>
+
+                </Grid>
+
+
+            </Grid>
 
         </Grid>
     </Grid>

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -128,9 +129,30 @@ namespace ColorVision.ImageEditor
             VisualsChanged?.Invoke(this, new VisualChangedEventArgs(null, VisualChangeType.Clear));
         }
 
+        public bool IsLayoutUpdated { get; set; } = true;
+
+        public double Sacle { get; set; } = 1;
+
         public void AddVisual(Visual visual)
         {
             if (visual == null || visuals.Contains(visual)) return;
+
+            if (IsLayoutUpdated && visual is IDrawingVisual drawingVisual)
+            {
+                bool isRender = false;
+                if (drawingVisual.BaseAttribute is ITextProperties textProperties && textProperties.TextAttribute.FontSize != 10 * Sacle)
+                {
+                    isRender = true;
+                    textProperties.TextAttribute.FontSize = 10 * Sacle;
+                }
+                if (drawingVisual.Pen.Thickness != Sacle)
+                {
+                    isRender = true;
+                    drawingVisual.Pen.Thickness = Sacle;
+                }
+                if (isRender)
+                    drawingVisual.Render();
+            }
             visuals.Add(visual);
             AddVisualTree(visual);
         }
@@ -145,6 +167,23 @@ namespace ColorVision.ImageEditor
         public void AddVisualCommand(Visual visual)
         {
             if (visual == null || visuals.Contains(visual)) return;
+
+            if (IsLayoutUpdated && visual is IDrawingVisual drawingVisual)
+            {
+                bool isRender = false;
+                if (drawingVisual.BaseAttribute is ITextProperties textProperties && textProperties.TextAttribute.FontSize != 10 * Sacle)
+                {
+                    isRender = true;
+                    textProperties.TextAttribute.FontSize = 10 * Sacle;
+                }
+                if (drawingVisual.Pen.Thickness != Sacle)
+                {
+                    isRender = true;
+                    drawingVisual.Pen.Thickness = Sacle;
+                }
+                if (isRender)
+                    drawingVisual.Render();
+            }
 
             visuals.Add(visual);
             AddVisualTree(visual);

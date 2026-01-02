@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Database;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -38,11 +39,8 @@ namespace ColorVision.Engine.MQTT
         }
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
-            Action action = new Action(() =>
-            {
-                new MQTTConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            });
 
+            RelayCommand relayCommand = new RelayCommand(a => new MQTTConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             return new List<StatusBarMeta>
             {
                 new StatusBarMeta()
@@ -54,7 +52,7 @@ namespace ColorVision.Engine.MQTT
                     VisibilityBindingName = nameof(MQTTSetting.IsUseMQTT),
                     ButtonStyleName ="ButtonDrawingImageMQTT",
                     Source = MQTTSetting.Instance,
-                    Action =action
+                    Command =relayCommand
                 }
             };
         }

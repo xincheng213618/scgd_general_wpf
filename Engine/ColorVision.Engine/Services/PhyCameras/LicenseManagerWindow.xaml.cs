@@ -9,6 +9,7 @@ using cvColorVision;
 using log4net;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -51,6 +52,9 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand GetCameraLicenseCommand { get; set; }
         public RelayCommand GetSpectrumLicenseCommand { get; set; }
 
+        public RelayCommand SaveToLincenseCommand { get; set; }
+
+
         public LicenseManagerViewModel()
         {
             RefreshCommand = new RelayCommand(a => LoadLicenses());
@@ -58,9 +62,138 @@ namespace ColorVision.Engine.Services.PhyCameras
             ExportSelectedCommand = new RelayCommand(a => ExportSelected(), a => SelectedLicense != null);
             DeleteSelectedCommand = new RelayCommand(a => DeleteSelected(), a => SelectedLicense != null);
             CopyLicenseCommand = new RelayCommand(a => CopyLicense(), a => SelectedLicense != null);
+            GetCameraLicenseCommand = new RelayCommand(a=> GetCameraLicense());
+            GetSpectrumLicenseCommand = new RelayCommand(a => GetSpectrumLicense());
 
+            SaveToLincenseCommand = new RelayCommand(a=> SaveToLincense());
             LoadLicenses();
         }
+
+        public void SaveToLincense()
+        {
+            // 1. 让用户选择保存目录，默认定位到程序目录
+
+            Microsoft.Win32.OpenFolderDialog dialog = new();
+
+            dialog.Multiselect = false;
+            dialog.Title = "Select a folder";
+            dialog.DefaultDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            dialog.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            // Show open folder dialog box
+            bool? result = dialog.ShowDialog();
+
+            // 如果用户取消，直接返回
+            if (result !=true) return;
+
+            // 取用户选中的目录
+            string licenseDir = Path.Combine(dialog.FolderName, "lincense");
+
+            try
+            {
+                // 检查是否有写入权限（简单判断：如果是管理员或者目录不在受保护区域，通常可以直接写）
+                // 但最稳妥的是直接尝试写，如果报错UnauthorizedAccessException再提权，或者预先判断IsAdministrator
+                if (ColorVision.Common.Utilities.Tool.IsAdministrator())
+                {
+                    WriteLicensesToDir(licenseDir);
+                }
+                else
+                {
+                    // 尝试创建一个测试文件来验证是否有权限
+                    bool hasPermission = false;
+                    try
+                    {
+                        if (!Directory.Exists(licenseDir))
+                        {
+                            // 尝试创建目录
+                            Directory.CreateDirectory(licenseDir);
+                        }
+
+                        string testFile = Path.Combine(licenseDir, Guid.NewGuid().ToString() + ".tmp");
+                        File.WriteAllText(testFile, "test");
+                        File.Delete(testFile);
+                        hasPermission = true;
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        hasPermission = false;
+                    }
+                    catch (Exception)
+                    {
+                        // 其他错误暂且认为没权限或路径非法
+                        hasPermission = false;
+                    }
+
+                    if (hasPermission)
+                    {
+                        WriteLicensesToDir(licenseDir);
+                    }
+                    else
+                    {
+                        // 没有权限，使用命令行提权方案
+                        // 1. 先写到 Temp 目录
+                        string tempDir = Path.Combine(Path.GetTempPath(), "ColorVisionLicenses_" + Guid.NewGuid().ToString());
+                        WriteLicensesToDir(tempDir);
+
+                        // 2. 调用 CMD (runas) 将 Temp 目录内容 xcopy 到目标目录
+                        // 注意：目标路径可能包含空格，需要引号
+                        string src = tempDir;
+                        string dst = licenseDir;
+
+                        // 构建批处理命令：创建目录 -> 复制文件 -> 删除临时目录
+                        // /E 复制目录和子目录 /Y 覆盖不提示 /I 如果目标不存在且复制多个文件则假定目标是目录
+                        string cmdArgs = $"/c xcopy \"{src}\" \"{dst}\" /E /Y /I && rmdir /s /q \"{src}\"";
+
+                        var psi = new ProcessStartInfo
+                        {
+                            FileName = "cmd.exe",
+                            Arguments = cmdArgs,
+                            UseShellExecute = true,
+                            Verb = "runas", // 提权
+                            WindowStyle = ProcessWindowStyle.Hidden
+                        };
+
+                        try
+                        {
+                            var proc = Process.Start(psi);
+                            proc?.WaitForExit();
+                            MessageBox.Show("License 文件已通过管理员权限导出完成！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                            return; // 提权执行后直接返回，不由下方统一提示
+                        }
+                        catch (System.ComponentModel.Win32Exception)
+                        {
+                            MessageBox.Show("用户取消了操作或提权失败。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return;
+                        }
+                    }
+                }
+
+                MessageBox.Show("License 文件已导出完成！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void WriteLicensesToDir(string directoryPath)
+        {
+            if (!Directory.Exists(directoryPath))
+                Directory.CreateDirectory(directoryPath);
+
+            foreach (var vm in Licenses)
+            {
+                if (string.IsNullOrWhiteSpace(vm.MacAddress))
+                    continue;
+
+                string fileName = $"{vm.MacAddress}.lic";
+                string filePath = Path.Combine(directoryPath, fileName);
+                File.WriteAllText(filePath, vm.Model.LicenseValue ?? string.Empty, Encoding.UTF8);
+            }
+        }
+
+
+
+
         private bool _isRefreshing = false;
         public void GetCameraLicense()
         {

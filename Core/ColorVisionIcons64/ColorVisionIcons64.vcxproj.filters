@@ -54,5 +54,11 @@
     <Image Include="flow.ico">
       <Filter>资源文件</Filter>
     </Image>
+    <Image Include="cvx.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="cvxp.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

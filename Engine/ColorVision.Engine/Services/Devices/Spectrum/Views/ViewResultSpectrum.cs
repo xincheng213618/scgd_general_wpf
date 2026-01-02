@@ -1,4 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using cvColorVision;
 using iText.Commons.Bouncycastle.Asn1.X509;
@@ -6,21 +8,37 @@ using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.DataSources;
 using ScottPlot.Plottables;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Text;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
-
+    public class cieData
+    {
+        public double fCIEx { get; set; }
+        public double fCIEy { get; set; }
+        public double fCIEz { get; set; }
+        public double fu_2015 { get; set; }
+        public double fv_2015 { get; set; }
+        public double fx_2015 { get; set; }
+        public double fy_2015 { get; set; }
+        public double fCIEx_2015 { get; set; }
+        public double fCIEy_2015 { get; set; }
+        public double fCIEz_2015 { get; set; }
+    }
 
 
     public class ViewResultSpectrum : ViewModelBase
     {
-        private static int No;
+        private static int No = 1;
+        public ContextMenu ContextMenu { get; set; }
 
         [DisplayName("SerialNumber1")]
         public int Id { get; set; }
@@ -34,6 +52,35 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public Scatter ScatterPlot { get; set; }
         public Scatter AbsoluteScatterPlot { get; set; }
+
+        // ==========================================
+        // 1. Added New Properties
+        // ==========================================
+
+        /// <summary>
+        /// External Quantum Efficiency (%)
+        /// Requires Current (I) to calculate.
+        /// </summary>
+        [DisplayName("EQE (%)")]
+        public double? Eqe { get; set; }
+
+        /// <summary>
+        /// Luminous Flux (lm) - Often mapped from fPh
+        /// </summary>
+        [DisplayName("Luminous Flux (lm)")]
+        public float? LuminousFlux { get; set; }
+
+        /// <summary>
+        /// Radiant Flux (W) - Often mapped from fPhe
+        /// </summary>
+        [DisplayName("Radiant Flux (W)")]
+        public double? RadiantFlux { get; set; }
+
+        /// <summary>
+        /// Luminous Efficacy (lm/W)
+        /// </summary>
+        [DisplayName("Luminous Efficacy (lm/W)")]
+        public double? LuminousEfficacy { get; set; }
 
         public void Gen()
         {
@@ -97,6 +144,79 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
 
         }
+
+
+        // ==========================================
+        // 2. Logic to Calculate EQE
+        // ==========================================
+        /// <summary>
+        /// Recalculates EQE based on the provided Current (Amps)
+        /// Call this method from your Right-Click Menu Command.
+        /// </summary>
+        /// <param name="currentA">Current in Amps</param>
+        public void CalculateEqe(float currentA)
+        {
+            if (currentA == 0)
+            {
+                Eqe = 0;
+                return;
+            }
+
+            // Constants
+            const double h = 6.62607015e-34;
+            const double c = 299792458.0;
+            const double q = 1.602176634e-19; // Elementary charge
+            double step_nm = 1.0;
+            if (fPL.Length > 2000)
+            {
+                step_nm = 0.1;
+            }
+
+            double sum_P_times_Lambda = 0.0;
+
+            // 使用 fPL.Length 防止数组越界，不要写死 4001
+            for (int i = 0; i < fPL.Length; i++)
+            {
+                double val = fPL[i];
+
+                // 当前波长
+                double lambda_nm = 380.0 + step_nm * i;
+
+                // 积分累加项：归一化光谱 * 波长
+                sum_P_times_Lambda += val * lambda_nm;
+            }
+
+            // 提取公共常数计算
+            // 公式推导: TotalPhotons = Sum(P * step * lambda_m / hc)
+            // P = val * fPlambda
+            // lambda_m = lambda_nm * 1e-9
+            // 组合: (val * fPlambda) * step_nm * (lambda_nm * 1e-9) / (hc)
+
+            double divisor = ViewSpectrumConfig.Instance.divisor;
+
+            // 【修复 2】: 将 divisor 应用到 fPlambda
+            // 公式: TotalPhotons = Sum(P * step * lambda_m / hc)
+            // 系数 K = (fPlambda * divisor * step_nm * 1.0e-9) / (h * c)
+            double K_constant = (fPlambda * divisor * step_nm * 1.0e-9) / (h * c);
+
+            double total_photons_per_sec = sum_P_times_Lambda * K_constant;
+            double total_electrons_per_sec = currentA / q;
+
+            if (total_electrons_per_sec != 0)
+            {
+                // 【注意单位】: 
+                // 如果您希望和 C++ 结果完全一致（比率），请去掉 * 100.0
+                // 如果您希望显示百分比（通常 UI 显示都是百分比），请保留 * 100.0，但需知悉 C++ 算出的是比率。
+                Eqe = (total_photons_per_sec / total_electrons_per_sec);
+            }
+            else
+            {
+                Eqe = 0;
+            }
+
+            OnPropertyChanged(nameof(Eqe));
+        }
+
         public float? IntTime { get; set; }
 
         public ViewResultSpectrum()
@@ -104,7 +224,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         }
 
-        public ViewResultSpectrum(SpectumResultModel item)
+        public ViewResultSpectrum(SpectumResultEntity item)
         {
             Id = item.Id;
             BatchID = item.BatchId;
@@ -147,44 +267,178 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
 
             fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? Array.Empty<float>();
+
+            cieData cieData = JsonConvert.DeserializeObject<cieData>(item.CieDataEx ?? string.Empty)?? new cieData();
+
+
+            fCIEx = cieData.fCIEx;
+            fCIEy = cieData.fCIEy;
+            fCIEz = cieData.fCIEz;
+            fu_2015 = cieData.fu_2015;
+            fv_2015 = cieData.fv_2015;
+            fx_2015 = cieData.fx_2015;
+            fy_2015 = cieData.fy_2015;
+            fCIEx_2015 = cieData.fCIEx_2015;
+            fCIEy_2015 = cieData.fCIEy_2015;
+            fCIEz_2015 = cieData.fCIEz_2015;
+
+            LuminousFlux = (float)(fCIEy * ViewSpectrumConfig.Instance.divisor);
+
+            if (fPL.Length > 0)
+            {
+                double step_nm = 0.1;
+                double sum_Power = 0.0;
+
+                for (int i = 0; i < 4001; i++)
+                {
+                    double P_val = fPlambda * fPL[i]; // 绝对功率 (W/nm)
+                    sum_Power += P_val;
+                }
+                RadiantFlux = sum_Power * step_nm;
+            }
+
+            if (item.SmuDataId > 0)
+            {
+                var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                var smuResult = DB.Queryable<SMUResultModel>().Where(x => x.Id == item.SmuDataId).First();
+                DB.Dispose();
+                if (smuResult != null)
+                {
+                    V = smuResult.VResult;
+                    I = smuResult.IResult;
+                }
+
+                if (I.HasValue && I.Value != 0 && fPL.Length > 0)
+                {
+                    CalculateEqe(I.Value /1000);
+                }
+
+                if (RadiantFlux.HasValue && RadiantFlux.Value != 0)
+                {
+                    LuminousEfficacy = LuminousFlux / (V*I/1000);
+                }
+                else
+                {
+                    LuminousEfficacy = 0;
+                }
+            }
+
             Gen();
+
+            RelayCommand relayCommand = new RelayCommand(a => CalculateEqe());
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header ="计算EQE",Command = relayCommand });
+        }
+
+        private void CalculateEqe()
+        {
+            string input = Microsoft.VisualBasic.Interaction.InputBox("请输入电流 (mA):", "计算 EQE", "1");
+            if (float.TryParse(input, out float currentA))
+            {
+                // 更新 ViewModel 中的电流属性（可选）
+                I = currentA;
+                // 调用我们在 ViewModel 中新加的方法
+                CalculateEqe(currentA);
+            }
+            else
+            {
+                MessageBox.Show("请输入有效的电流数值。");
+                return;
+            }
+            string input1 = Microsoft.VisualBasic.Interaction.InputBox("请输入电压 (V):", "光效", "5");
+            if (float.TryParse(input1, out float v))
+            {
+                V=v;
+                if (RadiantFlux.HasValue && RadiantFlux.Value != 0)
+                {
+                    LuminousEfficacy = LuminousFlux / (V * I / 1000);
+                }
+                else
+                {
+                    LuminousEfficacy = 0;
+                }
+            }
+            else
+            {
+                MessageBox.Show("请输入有效的电压数值。");
+            }
+
+
         }
 
 
-        public ViewResultSpectrum(COLOR_PARA colorParam)
+        public ViewResultSpectrum(COLOR_PARA item)
         {
             Id = No++; 
-            fx = colorParam.fx;
-            fy = colorParam.fy;
-            fu = colorParam.fu;
-            fv = colorParam.fv;
-            fCCT = colorParam.fCCT;
-            dC = colorParam.dC;
-            fLd = colorParam.fLd;
-            fPur = colorParam.fPur;
-            fLp = colorParam.fLp;
-            fHW = colorParam.fHW;
-            fLav = colorParam.fLav;
-            dC = colorParam.dC;
-            fRa = colorParam.fRa;
-            fRR = colorParam.fRR;
-            fGR = colorParam.fGR;
-            fBR = colorParam.fBR;
-            fRi = colorParam.fRi;
-            fIp = colorParam.fIp;
-            fPh = colorParam.fPh;
-            fPhe = colorParam.fPhe;
-            fPlambda = colorParam.fPlambda;
-            fSpect1 = colorParam.fSpect1;
-            fSpect2 = colorParam.fSpect2;
-            fInterval = colorParam.fInterval;
-            fPL = colorParam.fPL;
-            Gen();
+            fx = item.fx;
+            fy = item.fy;
+            fu = item.fu;
+            fv = item.fv;
+            fCCT = item.fCCT;
+            dC = item.dC;
+            fLd = item.fLd;
+            fPur = item.fPur;
+            fLp = item.fLp;
+            fHW = item.fHW;
+            fLav = item.fLav;
+            dC = item.dC;
+            fRa = item.fRa;
+            fRR = item.fRR;
+            fGR = item.fGR;
+            fBR = item.fBR;
+            fRi = item.fRi;
+            fIp = item.fIp;
+            fPh = item.fPh;
+            fPhe = item.fPhe;
+            fPlambda = item.fPlambda;
+            fSpect1 = item.fSpect1;
+            fSpect2 = item.fSpect2;
+            fInterval = item.fInterval;
+            fPL = item.fPL;
+            fCIEx  = item.fCIEx;
+            fCIEy  = item.fCIEy;
+            fCIEz  = item.fCIEz;
+            fu_2015  = item.fu_2015;
+            fv_2015  = item.fv_2015;
+            fx_2015  = item.fx_2015;
+            fy_2015 = item.fy_2015;
+            fCIEx_2015  = item.fCIEx_2015;
+            fCIEy_2015 = item.fCIEy_2015;
+            fCIEz_2015 = item.fCIEz_2015;
 
+
+            LuminousFlux = (float)(fCIEy * ViewSpectrumConfig.Instance.divisor);
+
+            if (fPL.Length > 0)
+            {
+                double step_nm = 0.1;
+                double sum_Power = 0.0;
+
+                for (int i = 0; i < 4001; i++)
+                {
+                    double P_val = fPlambda * fPL[i]; // 绝对功率 (W/nm)
+                    sum_Power += P_val;
+                }
+                RadiantFlux = sum_Power * step_nm;
+            }
+
+            Gen();
         }
 
-        public float V { get; set; }
-        public float I { get; set; }
+        public double fCIEx { get; set; }
+        public double fCIEy { get; set; }
+        public double fCIEz { get; set; }
+        public double fu_2015 { get; set; }
+        public double fv_2015 { get; set; }
+        public double fx_2015 { get; set; }
+        public double fy_2015 { get; set; }
+        public double fCIEx_2015 { get; set; }
+        public double fCIEy_2015 { get; set; }
+        public double fCIEz_2015 { get; set; }
+
+        public float? V { get; set; }
+        public float? I { get => _I; set { _I = value; OnPropertyChanged(); } }
+        private float? _I;
 
         /// <summary>
         /// IP

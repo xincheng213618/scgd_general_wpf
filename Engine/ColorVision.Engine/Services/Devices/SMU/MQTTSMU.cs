@@ -4,11 +4,13 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
+using ColorVision.Engine.Services.Devices.Spectrum;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -59,6 +61,12 @@ namespace ColorVision.Engine.Services.Devices.SMU
                                     DeviceSMU.View.AddViewResultSMU(viewResultSpectrum);
                                     Config.I = model.IResult;
                                     Config.V = model.VResult;
+
+                                    foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>())
+                                    {
+                                        item.DisplayConfig.V = Config.V ??0;
+                                        item.DisplayConfig.I = Config.I ?? 0;
+                                    }
                                 });
                             }
                         }

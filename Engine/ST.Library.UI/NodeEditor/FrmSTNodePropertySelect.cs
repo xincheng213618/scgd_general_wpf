@@ -110,7 +110,14 @@ internal class FrmSTNodePropertySelect : Form
 				graphics.FillRectangle(m_brush, 4, rect.Top + 10, 5, 5);
 			}
 			m_brush.Color = m_descriptor.Control.ForeColor;
-			graphics.DrawString(item.ToString(), m_descriptor.Control.Font, m_brush, rectangle, m_sf);
+			if (m_descriptor.PropertyInfo.PropertyType.IsEnum)
+			{
+				graphics.DrawString(Lang.Get(item.ToString()), m_descriptor.Control.Font, m_brush, rectangle, m_sf);
+			}
+			else
+			{
+				graphics.DrawString(item.ToString(), m_descriptor.Control.Font, m_brush, rectangle, m_sf);
+			}
 			rect.Y += m_nItemHeight;
 			rectangle.Y += m_nItemHeight;
 		}

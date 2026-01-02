@@ -7,10 +7,8 @@ using System.Windows.Forms;
 
 namespace ColorVision.UI.CUDA
 {
-    public class SystemHelper : ViewModelBase, IConfig, IConfigSettingProvider
+    public static class SystemHelper 
     {
-        public static SystemHelper Instance => ConfigService.Instance.GetRequiredService<SystemHelper>();
-
         // 获取是否处于调试模式
         public static bool IsDebugMode()
         {
@@ -72,6 +70,24 @@ namespace ColorVision.UI.CUDA
             return Environment.MachineName;
         }
 
+        // 获取应用程序启动时间
+        public static DateTime GetStartupTime()
+        {
+            if (StartTime == DateTime.MinValue)
+            {
+                StartTime = System.Diagnostics.Process.GetCurrentProcess().StartTime;
+            }
+            return StartTime;
+        }
+
+        private static DateTime StartTime = DateTime.MinValue;
+
+        // 获取应用程序运行时长
+        public static TimeSpan GetUptime()
+        {
+            return DateTime.Now - GetStartupTime();
+        }
+
         // 获取当前用户名称
         public static string GetUserName()
         {
@@ -93,14 +109,6 @@ namespace ColorVision.UI.CUDA
                     return string.Empty;
                 }
             }
-        }
-
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata>
-            {
-
-            };
         }
     }
 }
