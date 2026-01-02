@@ -8,13 +8,29 @@
         xmlns:wfHost="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:MVSViewManager}"
-        Title="BasicDemoWPF" Height="600" Width="1024" Initialized="Window_Initialized">
-    <Grid Margin="5">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-        <Grid Grid.Column="0">
+        Title="MVS相机视图" Height="600" Width="1024" Initialized="Window_Initialized">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Menu Bar -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="视图">
+                <MenuItem Header="显示功能栏" IsCheckable="True" IsChecked="True" Checked="MenuShowSidePanel_Checked" Unchecked="MenuShowSidePanel_Unchecked"/>
+                <MenuItem Header="显示状态栏" IsCheckable="True" IsChecked="True" Checked="MenuShowStatusBar_Checked" Unchecked="MenuShowStatusBar_Unchecked"/>
+            </MenuItem>
+        </Menu>
+        
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Margin="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="SidePanelColumn" Width="200" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid x:Name="SidePanelGrid" Grid.Column="0">
             <StackPanel>
                 <DockPanel  Margin="0,0,0,5">
                     <Button  DockPanel.Dock="Right" Command="{Binding  EditMVSViewConfigCommand }" Padding="2" Height="22" Width="22" Margin="5,0,0,0" >
@@ -59,7 +75,7 @@
 
                 <DockPanel Margin="0,0,0,5">
                     <TextBox x:Name="tbExposure" DockPanel.Dock="Right" Width="150" IsEnabled="False" Style="{StaticResource TextBox.Small}"  TextChanged="tbExposure_TextChanged"/>
-                    <TextBlock x:Name="label1" Text="曝光" />
+                    <TextBlock x:Name="label1" Text="曝光 (ns)" />
                 </DockPanel>
                 <DockPanel Margin="0,0,0,5">
                     <TextBox x:Name="tbGain" DockPanel.Dock="Right" Width="150" IsEnabled="False" Style="{StaticResource TextBox.Small}" />
@@ -82,5 +98,32 @@
             <wfCtrl:PictureBox x:Name="displayArea"/>
         </wfHost:WindowsFormsHost>-->
 
+        </Grid>
+        
+        <!-- Status Bar -->
+        <StatusBar x:Name="StatusBarBottom" Grid.Row="2">
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="曝光: "/>
+                    <Run x:Name="StatusExposureText" Text="--"/>
+                    <Run Text=" ns"/>
+                </TextBlock>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="增益: "/>
+                    <Run x:Name="StatusGainText" Text="--"/>
+                </TextBlock>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="帧率: "/>
+                    <Run x:Name="StatusFrameRateText" Text="--"/>
+                    <Run Text=" FPS"/>
+                </TextBlock>
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </Window>
