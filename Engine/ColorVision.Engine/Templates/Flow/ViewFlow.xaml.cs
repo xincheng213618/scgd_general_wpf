@@ -188,13 +188,6 @@ namespace ColorVision.Engine.Services.Flow
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             
-
-            STNodeEditorMain.ActiveChanged += (s, e) =>
-            {
-                SignStackBorder.Visibility = STNodeEditorMain.ActiveNode != null ? Visibility.Visible : Visibility.Collapsed;
-            };
-
-
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
                 if (e.KeyCode == WinForms.Keys.Delete)

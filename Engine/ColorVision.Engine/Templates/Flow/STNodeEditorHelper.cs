@@ -90,10 +90,6 @@ namespace ColorVision.Engine.Templates.Flow
             STNodeEditor = sTNodeEditor;
             STNodeTreeView1 = sTNodeTreeView1;
             
-            // Create the popup window and position it relative to STNodeEditor
-            PropertyEditorWindow = new NodePropertyEditorWindow();
-            PropertyEditorWindow.SetTargetControl(sTNodeEditor);
-            
             STNodeEditor.NodeAdded += StNodeEditor1_NodeAdded;
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
 
@@ -191,7 +187,8 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (PropertyEditorWindow == null)
             {
-                PropertyEditorWindow = new NodePropertyEditorWindow();
+                PropertyEditorWindow = new NodePropertyEditorWindow() { Owner = Application.Current.GetActiveWindow() };
+                PropertyEditorWindow.SetTargetControl(STNodeEditor);
                 PropertyEditorWindow?.ShowPropertyEditor();
             }
 

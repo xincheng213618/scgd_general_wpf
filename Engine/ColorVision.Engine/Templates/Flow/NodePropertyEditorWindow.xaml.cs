@@ -21,10 +21,17 @@ namespace ColorVision.Engine.Templates.Flow
 
         public NodePropertyEditorWindow()
         {
+            using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero);
+            DpiX = graphics.DpiX;
             InitializeComponent();
             // Prevent actual closing, just hide instead
             Closing += NodePropertyEditorWindow_Closing;
+
         }
+
+        public static float DpiX { get; set; }
+
+
 
         private void NodePropertyEditorWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
@@ -80,14 +87,14 @@ namespace ColorVision.Engine.Templates.Flow
                 var controlLocation = _targetControl.PointToScreen(new System.Drawing.Point(0, 0));
                 
                 // Position the window to the right of the target control
-                Left = controlLocation.X + _targetControl.Width + 10;
-                Top = controlLocation.Y;
+                Left = (controlLocation.X + _targetControl.Width + 10  ) * 96 / DpiX - this.ActualWidth; 
+                Top = controlLocation.Y * 96 / DpiX;
             }
             else if (_owner != null && _owner.IsLoaded)
             {
                 // Fallback: Position the window to the right of the owner
-                Left = _owner.Left + _owner.ActualWidth + 10;
-                Top = _owner.Top;
+                Left = (_owner.Left + _owner.ActualWidth + 10 ) * 96 / DpiX - this.ActualWidth;
+                Top = _owner.Top * 96 / DpiX;
             }
         }
 
