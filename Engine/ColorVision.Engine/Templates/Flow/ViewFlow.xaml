@@ -18,15 +18,66 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Column="0" Grid.ColumnSpan="1" x:Name="Grid1" SizeChanged="Grid1_SizeChanged" >
-            <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch" >
-                <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
-            </WindowsFormsHost>
-            <WindowsFormsHost x:Name="winf2" Height="250"  Width="250" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,0,5" Visibility="Collapsed">
-                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
-            </WindowsFormsHost>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Column="0" Grid.ColumnSpan="1" x:Name="Grid1" SizeChanged="Grid1_SizeChanged" >
+                <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch" >
+                    <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
+                </WindowsFormsHost>
+                <WindowsFormsHost x:Name="winf2" Height="250"  Width="250" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,5" Visibility="Collapsed">
+                    <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
+                </WindowsFormsHost>
+            </Grid>
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <ProgressBar x:Name="ProgressBar1" Maximum="100"/>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:FieldModifier="public" Grid.Column="1" x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="100" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True"/>
+                    <StackPanel Grid.Row="1">
+                        <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                            <Button Content="{x:Static properties:Resources.SearchResults}" Click="Button_Click" Margin="0,0,5,0"/>
+                            <Button Content="{x:Static properties:Resources.FlowResultManagement}"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                            <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1" Margin="0,0,5,0"/>
+                            <Button Content="预处理管理" Click="Button_Click_PreProcess"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,5"  Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                <Button Content="x64" Command="{Binding FlowEngineManager.WindowsServiceX64.OpenLogCommand}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                <Button Content="dev" Command="{Binding FlowEngineManager.WindowsServiceDev.OpenLogCommand}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                                <Button Content="RC" Command="{Binding FlowEngineManager.WindowsServiceReg.OpenLogCommand}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Camera" Command="{Binding FlowEngineManager.OpenCameraLogCommand}"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <DockPanel>
+                            <TextBlock Text="{Binding FlowEngineManager.Batch.Code}" />
+                        </DockPanel>
+                    </StackPanel>
+                </Grid>
+
+
+            </Grid>
+
         </Grid>
-        <Grid Grid.Column="1"  x:Name="Grid2"  Width="250" >
+
+        <Grid Grid.Column="1"  x:Name="Grid2"  Width="200" >
             <Grid.RowDefinitions >
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -80,31 +131,8 @@
                             <Image  Source="{DynamicResource DIExpand}"/>
                         </Button>
                     </UniformGrid>
-                    <DockPanel>
-                        <TextBlock Text="{Binding FlowEngineManager.Batch.Code}" />
-                    </DockPanel>
-                    <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-                        <Button Content="{x:Static properties:Resources.SearchResults}" Click="Button_Click" Margin="0,0,5,0"/>
-                        <Button Content="{x:Static properties:Resources.FlowResultManagement}"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-                        <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1" Margin="0,0,5,0"/>
-                        <Button Content="预处理管理" Click="Button_Click_PreProcess"/>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,0,5"  Orientation="Horizontal">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
-                            <Button Content="x64" Command="{Binding FlowEngineManager.WindowsServiceX64.OpenLogCommand}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
-                            <Button Content="dev" Command="{Binding FlowEngineManager.WindowsServiceDev.OpenLogCommand}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
-                            <Button Content="RC" Command="{Binding FlowEngineManager.WindowsServiceReg.OpenLogCommand}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="Camera" Command="{Binding FlowEngineManager.OpenCameraLogCommand}"/>
-                        </StackPanel>
-                    </StackPanel>
+    
+
                     <ListView x:Name="NodeListView"  Background="Transparent" BorderThickness="0" Padding="0" SelectionChanged="NodeListView_SelectionChanged" ItemsSource="{Binding FlowEngineManager.CVBaseServerNodes}">
                         <ListView.ItemContainerStyle>
                             <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
@@ -127,9 +155,6 @@
                             </GridView>
                         </ListView.View>
                     </ListView>
-
-                    <ProgressBar x:Name="ProgressBar1" Maximum="100"/>
-                    <TextBox x:FieldModifier="public"  x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="105" Grid.Row="1" Padding="5,5" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" Margin="0,0,0,5" />
                 </StackPanel>
             </Border>
 

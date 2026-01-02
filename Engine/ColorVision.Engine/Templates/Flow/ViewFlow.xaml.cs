@@ -17,10 +17,14 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Flow
 {
+
+
+
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
@@ -45,7 +49,6 @@ namespace ColorVision.Engine.Services.Flow
         public RelayCommand OpenFlowTemplateCommand { get; set; }
 
         public static FlowEngineConfig Config => FlowEngineConfig.Instance;
-
 
         public DisplayFlow DisplayFlow { get; set; }
 
