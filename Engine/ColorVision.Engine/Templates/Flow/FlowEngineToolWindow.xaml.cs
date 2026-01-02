@@ -206,6 +206,7 @@ namespace ColorVision.Engine.Templates.Flow
                         }
                     }
                 }
+                STNodeEditorHelper?.PropertyEditorWindow?.CloseWindow();
 
             };
 

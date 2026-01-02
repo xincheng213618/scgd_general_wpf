@@ -79,8 +79,8 @@ namespace ColorVision.Engine.Templates.Flow
     {
         public STNodeEditor STNodeEditor { get; set; }
 
-        public STNodePropertyGrid STNodePropertyGrid1 => PropertyEditorWindow.STNodePropertyGrid1;
-        public StackPanel SignStackPanel => PropertyEditorWindow.SignStackPanel;
+        public STNodePropertyGrid STNodePropertyGrid1 => PropertyEditorWindow?.PropertyGrid;
+        public StackPanel SignStackPanel => PropertyEditorWindow?.SignStackPanel;
         public NodePropertyEditorWindow PropertyEditorWindow { get; set; }
 
         public STNodeTreeView STNodeTreeView1 { get; set; }
@@ -89,6 +89,11 @@ namespace ColorVision.Engine.Templates.Flow
         {
             STNodeEditor = sTNodeEditor;
             STNodeTreeView1 = sTNodeTreeView1;
+            
+            // Create the popup window and position it relative to STNodeEditor
+            PropertyEditorWindow = new NodePropertyEditorWindow();
+            PropertyEditorWindow.SetTargetControl(sTNodeEditor);
+            
             STNodeEditor.NodeAdded += StNodeEditor1_NodeAdded;
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
 

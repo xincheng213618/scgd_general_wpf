@@ -181,7 +181,6 @@ namespace ColorVision.Engine.Services.Flow
         public FlowParam FlowParam { get; set; }
 
         STNodeTreeView STNodeTreeView1 = new STNodeTreeView();
-        NodePropertyEditorWindow PropertyEditorWindow { get; set; }
         
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -402,7 +401,7 @@ namespace ColorVision.Engine.Services.Flow
         {
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
 
-            PropertyEditorWindow?.CloseWindow();
+            STNodeEditorHelper?.PropertyEditorWindow?.CloseWindow();
             STNodeEditorMain?.Dispose();
             STNodeTreeView1?.Dispose();
             winf1?.Dispose();

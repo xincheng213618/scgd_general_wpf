@@ -1,5 +1,6 @@
 ﻿using ST.Library.UI.NodeEditor;
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -13,6 +14,7 @@ namespace ColorVision.Engine.Templates.Flow
     {
         private Window _owner;
         private bool _allowClose = false;
+        private System.Windows.Forms.Control _targetControl;
 
         public STNodePropertyGrid PropertyGrid => STNodePropertyGrid1;
         public StackPanel SignStackPanel => SignStackPanelContainer;
@@ -46,11 +48,44 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
+        /// <summary>
+        /// Set the target control to position the window relative to (e.g., STNodeEditorMain)
+        /// </summary>
+        public void SetTargetControl(System.Windows.Forms.Control targetControl)
+        {
+            _targetControl = targetControl;
+            if (_targetControl != null)
+            {
+                // Find the WPF window that hosts this control
+                var handle = _targetControl.FindForm()?.Handle;
+                if (handle.HasValue)
+                {
+                    var helper = new System.Windows.Interop.WindowInteropHelper(this);
+                    var window = System.Windows.Application.Current.Windows.Cast<Window>()
+                        .FirstOrDefault(w => new System.Windows.Interop.WindowInteropHelper(w).Handle == handle.Value);
+                    if (window != null)
+                    {
+                        SetOwner(window);
+                    }
+                }
+                UpdatePosition();
+            }
+        }
+
         private void UpdatePosition()
         {
-            if (_owner != null && _owner.IsLoaded)
+            if (_targetControl != null && _targetControl.IsHandleCreated)
             {
-                // Position the window to the right of the owner
+                // Get the screen position of the target control (STNodeEditorMain)
+                var controlLocation = _targetControl.PointToScreen(new System.Drawing.Point(0, 0));
+                
+                // Position the window to the right of the target control
+                Left = controlLocation.X + _targetControl.Width + 10;
+                Top = controlLocation.Y;
+            }
+            else if (_owner != null && _owner.IsLoaded)
+            {
+                // Fallback: Position the window to the right of the owner
                 Left = _owner.Left + _owner.ActualWidth + 10;
                 Top = _owner.Top;
             }
