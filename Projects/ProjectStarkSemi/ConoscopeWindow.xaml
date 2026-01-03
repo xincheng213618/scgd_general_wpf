@@ -10,7 +10,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance  Conoscope:ConoscopeManager}"
-        Title="" Height="750" Width="1280" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
+        Title="" Height="750" Width="1582" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" Closed="Window_Closed">
     <Grid >
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -209,8 +209,6 @@
                                     <ComboBoxItem Content="{x:Static properties:Resources.BilateralFilter}"/>
                                 </ComboBox>
                             </DockPanel>
-
-
                         </StackPanel>
 
                         <!-- Kernel Size Parameter -->
@@ -334,7 +332,13 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-
+            <StackPanel x:Name="StackPanelControl" Width="300" >
+                <StackPanel Margin="0,0,0,5" >
+                    <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}">
+                        <Button Content="ExecuteFlow"  x:Name="ButtonRun" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
+                    </Border>
+                </StackPanel>
+            </StackPanel>
             <!-- Left Side: Image Display -->
             <Grid Grid.Column="1">
                 <Grid.ColumnDefinitions>
@@ -349,9 +353,6 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <StackPanel>
-                        <StackPanel x:Name="StackPanelControl" >
-
-                        </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="5">
 
                             <CheckBox x:Name="chkShowRed" 
@@ -481,9 +482,8 @@
                         </TabItem>
                         <TabItem Header="Settting">
                             <Grid x:Name="GridSetting">
-                                
+
                             </Grid>
-                            
                         </TabItem>
                     </TabControl>
                 </Grid>

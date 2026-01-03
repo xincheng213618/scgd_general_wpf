@@ -5,8 +5,10 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
@@ -16,6 +18,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
+using NPOI.OpenXmlFormats.Spreadsheet;
 using OpenCvSharp.WpfExtensions;
 using ProjectStarkSemi.Conoscope;
 using SqlSugar;
@@ -98,55 +101,17 @@ namespace ProjectStarkSemi
             foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>())
             {
                 StackPanelControl.Children.Add(item.GetDisplayCamera());
-                item.MsgRecordChanged += (s, e) =>
-                {
-                    e.MsgSucessed += (arg) =>
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            int masterId = Convert.ToInt32(arg.Data.MasterId);
-                            List<MeasureResultImgModel> resultMaster = null;
-
-                            if (masterId > 0)
-                            {
-                                resultMaster = new List<MeasureResultImgModel>();
-                                MeasureResultImgModel model = MeasureImgResultDao.Instance.GetById(masterId);
-                                if (model != null)
-                                    resultMaster.Add(model);
-                            }
-
-                            if (resultMaster != null && resultMaster.Count > 0)
-                            {
-                                string filename = string.Empty;
-                                foreach (MeasureResultImgModel result in resultMaster)
-                                {
-                                    if (CVFileUtil.IsCVCIEFile(result.FileUrl))
-                                    {
-                                        filename = result.FileUrl;
-                                        break;
-                                    }
-                                }
-                                if (string.IsNullOrEmpty(filename))
-                                {
-                                    filename = resultMaster[0].FileUrl;
-                                }
-                                OpenConoscope(filename);
-                            }
-                            else
-                            {
-                                tbMeasurementCameraStatus.Text = "无数据";
-                                tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Red);
-                                log.Warn("未获取到图像数据");
-                            }
-                        });
-                    };
-                };
+                item.MsgRecordChanged -= Item_MsgRecordChanged;
+                item.MsgRecordChanged += Item_MsgRecordChanged;
             }
 
             foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCfwPort>())
             {
                 StackPanelControl.Children.Add(item.GetDisplayControl());
             }
+            FlowEngineManager.GetInstance().BatchRecord -= ConoscopeWindow_BatchRecord;
+            FlowEngineManager.GetInstance().BatchRecord += ConoscopeWindow_BatchRecord;
+
 
             ImageView.SetBackGround(Brushes.Transparent);
             try
@@ -190,6 +155,73 @@ namespace ProjectStarkSemi
             
             // Initialize Polar Angle Plot
             InitializePlot(wpfPlotRCircle, "极角分布曲线 (Polar Angle Distribution)");
+        }
+
+        private void Item_MsgRecordChanged(object? sender, MsgRecord e)
+        {
+            e.MsgSucessed += (arg) =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    int masterId = Convert.ToInt32(arg.Data.MasterId);
+                    List<MeasureResultImgModel> resultMaster = null;
+
+                    if (masterId > 0)
+                    {
+                        resultMaster = new List<MeasureResultImgModel>();
+                        MeasureResultImgModel model = MeasureImgResultDao.Instance.GetById(masterId);
+                        if (model != null)
+                            resultMaster.Add(model);
+                    }
+
+                    if (resultMaster != null && resultMaster.Count > 0)
+                    {
+                        string filename = string.Empty;
+                        foreach (MeasureResultImgModel result in resultMaster)
+                        {
+                            if (CVFileUtil.IsCVCIEFile(result.FileUrl))
+                            {
+                                filename = result.FileUrl;
+                                break;
+                            }
+                        }
+                        if (string.IsNullOrEmpty(filename))
+                        {
+                            filename = resultMaster[0].FileUrl;
+                        }
+                        OpenConoscope(filename);
+                    }
+                    else
+                    {
+                        tbMeasurementCameraStatus.Text = "无数据";
+                        tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Red);
+                        log.Warn("未获取到图像数据");
+                    }
+                });
+            }; throw new NotImplementedException();
+        }
+
+        private void ConoscopeWindow_BatchRecord(object? sender, MeasureBatchModel e)
+        {
+            e.FlowStatusChaned += (s, e1) =>
+            {
+                if (e.FlowStatus == FlowStatus.Completed)
+                {
+                    var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+                    // Query EQE results for this batch
+                    var MeasureResultImgModels = DB.Queryable<MeasureResultImgModel>()
+                        .Where(x => x.BatchId == e.Id)
+                        .ToList();
+                    DB.Dispose();
+
+                    var model = MeasureResultImgModels.Last();
+                    if (model != null)
+                    {
+                        OpenConoscope(model.FileUrl);
+                    }
+                }
+            };
         }
 
         private void InitializePlot(ScottPlot.WPF.WpfPlot plot, string title)
@@ -2077,6 +2109,8 @@ README.md 文件未找到，显示默认内容。";
         }
         public void Dispose()
         {
+            FlowEngineManager.GetInstance().BatchRecord -= ConoscopeWindow_BatchRecord;
+
             XMat?.Dispose();
             XMat = null;
             YMat?.Dispose();
@@ -2096,6 +2130,11 @@ README.md 文件未找到，显示默认内容。";
         private void RibbonButton_Click_1(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
+        {
+            DisplayFlow.GetInstance().RunFlow();
         }
     }
 }

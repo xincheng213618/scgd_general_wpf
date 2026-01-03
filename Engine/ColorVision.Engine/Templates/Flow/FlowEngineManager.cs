@@ -86,6 +86,7 @@ namespace ColorVision.Engine.Templates.Flow
         private static readonly object _locker = new();
         public static FlowEngineManager GetInstance() { lock (_locker) { return _instance ??= new FlowEngineManager(); } }
 
+
         public static FlowEngineConfig Config => FlowEngineConfig.Instance;
         public ObservableCollection<TemplateModel<FlowParam>> FlowParams { get; set; } = TemplateFlow.Params;
 
@@ -102,8 +103,11 @@ namespace ColorVision.Engine.Templates.Flow
         public RelayCommand MeasureBatchManagerCommand { get; set; }
         public ViewFlow View { get; set; }
         public FlowEngineControl FlowEngineControl { get; set; }
-        public MeasureBatchModel Batch { get => _Batch; set { _Batch = value; OnPropertyChanged(); } }
+
+        public MeasureBatchModel Batch { get => _Batch; set { _Batch = value; OnPropertyChanged(); BatchRecord?.Invoke(this, _Batch); } }
         private MeasureBatchModel _Batch;
+        public event EventHandler<MeasureBatchModel> BatchRecord;
+
 
         public ServiceConfig ServiceConfig { get; set; }
 

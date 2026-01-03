@@ -15,7 +15,7 @@ namespace ColorVision.Engine
     }
 
     [SugarTable("t_scgd_measure_batch")]
-    public class MeasureBatchModel : EntityBase
+    public class MeasureBatchModel : ViewEntity
     {
 
         [SugarColumn(ColumnName = "t_id", IsNullable = true)]
@@ -36,7 +36,10 @@ namespace ColorVision.Engine
         public string? Result { get; set; }
 
         [SugarColumn(ColumnName = "result_code", IsNullable = true)]
-        public FlowStatus FlowStatus { get; set; } = FlowStatus.Ready;
+        public FlowStatus FlowStatus { get => _FlowStatus; set { if (_FlowStatus == value) return; _FlowStatus = value; OnPropertyChanged(); FlowStatusChaned?.Invoke(this,_FlowStatus); } } 
+        private FlowStatus _FlowStatus = FlowStatus.Ready;
+
+        public event EventHandler <FlowStatus> FlowStatusChaned;
 
         [SugarColumn(ColumnName = "archived_flag")]
         public ArchiveStatus ArchiveStatus { get; set; } = ArchiveStatus.Pending;
