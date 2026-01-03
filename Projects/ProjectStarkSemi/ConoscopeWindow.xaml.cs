@@ -4,6 +4,7 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
+using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.FileIO;
@@ -94,6 +95,59 @@ namespace ProjectStarkSemi
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>())
+            {
+                StackPanelControl.Children.Add(item.GetDisplayCamera());
+                item.MsgRecordChanged += (s, e) =>
+                {
+                    e.MsgSucessed += (arg) =>
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            int masterId = Convert.ToInt32(arg.Data.MasterId);
+                            List<MeasureResultImgModel> resultMaster = null;
+
+                            if (masterId > 0)
+                            {
+                                resultMaster = new List<MeasureResultImgModel>();
+                                MeasureResultImgModel model = MeasureImgResultDao.Instance.GetById(masterId);
+                                if (model != null)
+                                    resultMaster.Add(model);
+                            }
+
+                            if (resultMaster != null && resultMaster.Count > 0)
+                            {
+                                string filename = string.Empty;
+                                foreach (MeasureResultImgModel result in resultMaster)
+                                {
+                                    if (CVFileUtil.IsCVCIEFile(result.FileUrl))
+                                    {
+                                        filename = result.FileUrl;
+                                        break;
+                                    }
+                                }
+                                if (string.IsNullOrEmpty(filename))
+                                {
+                                    filename = resultMaster[0].FileUrl;
+                                }
+                                OpenConoscope(filename);
+                            }
+                            else
+                            {
+                                tbMeasurementCameraStatus.Text = "无数据";
+                                tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Red);
+                                log.Warn("未获取到图像数据");
+                            }
+                        });
+                    };
+                };
+            }
+
+            foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCfwPort>())
+            {
+                StackPanelControl.Children.Add(item.GetDisplayControl());
+            }
+
             ImageView.SetBackGround(Brushes.Transparent);
             try
             {

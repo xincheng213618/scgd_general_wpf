@@ -330,11 +330,13 @@
         <!-- Main Content Area -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
+
             <!-- Left Side: Image Display -->
-            <Grid Grid.Column="0">
+            <Grid Grid.Column="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="640"/>
                     <ColumnDefinition Width="*"/>
@@ -346,49 +348,56 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <StackPanel Orientation="Horizontal" Margin="5">
-                        <CheckBox x:Name="chkShowRed" 
+                    <StackPanel>
+                        <StackPanel x:Name="StackPanelControl" >
+
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="5">
+
+                            <CheckBox x:Name="chkShowRed" 
                                                   Content="R" 
                                                   Foreground="Red" 
                                                   IsChecked="{Binding Config.IsShowRedChannel}"
                                                   Margin="5,0"
                                                   Checked="RgbChannelVisibility_Changed"
                                                   Unchecked="RgbChannelVisibility_Changed"/>
-                        <CheckBox x:Name="chkShowGreen" 
+                            <CheckBox x:Name="chkShowGreen" 
                                                   Content="G" 
                                                   Foreground="Green" 
                                                   IsChecked="{Binding Config.IsShowGreenChannel}"
                                                   Margin="5,0"
                                                   Checked="RgbChannelVisibility_Changed"
                                                   Unchecked="RgbChannelVisibility_Changed"/>
-                        <CheckBox x:Name="chkShowBlue" 
+                            <CheckBox x:Name="chkShowBlue" 
                                                   Content="B" 
                                                   Foreground="Blue" 
                                                   IsChecked="{Binding Config.IsShowBlueChannel}"
                                                   Margin="5,0"
                                                   Checked="RgbChannelVisibility_Changed"
                                                   Unchecked="RgbChannelVisibility_Changed"/>
-                        <CheckBox x:Name="chkShowXlue" 
+                            <CheckBox x:Name="chkShowXlue" 
                                                   Content="X" 
                                                   Foreground="Gold" 
                                                   IsChecked="{Binding Config.IsShowXChannel}"
                                                   Margin="5,0"
                                                   Checked="RgbChannelVisibility_Changed"
                                                   Unchecked="RgbChannelVisibility_Changed"/>
-                        <CheckBox x:Name="chkShowYlue" 
+                            <CheckBox x:Name="chkShowYlue" 
                                                   Content="Y" 
                                                   Foreground="Gray" 
                                                   IsChecked="{Binding Config.IsShowYChannel}"
                                                   Margin="5,0"
                                                   Checked="RgbChannelVisibility_Changed"
                                                   Unchecked="RgbChannelVisibility_Changed"/>
-                        <CheckBox x:Name="chkShowZlue" 
+                            <CheckBox x:Name="chkShowZlue" 
                                                   Content="Z" 
                                                   Foreground="Violet" 
                                                   IsChecked="{Binding Config.IsShowZChannel}"
                                                   Margin="5,0"
                                                   Checked="RgbChannelVisibility_Changed"
                                                   Unchecked="RgbChannelVisibility_Changed"/>
+                        </StackPanel>
+
                     </StackPanel>
                     <!-- Export Settings -->
                     <GroupBox Grid.Row="1" Header="导出设置" Margin="0,0,0,5">

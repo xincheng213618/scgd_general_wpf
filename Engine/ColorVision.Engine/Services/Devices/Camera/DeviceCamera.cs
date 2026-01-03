@@ -46,6 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public DisplayCameraConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(Config.Code);
 
 
+
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCamera(Config);
@@ -426,6 +427,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public Lazy<DisplayCamera> DisplayCameraControlLazy { get; set; }
 
         public override UserControl GetDisplayControl() => DisplayCameraControlLazy.Value;
+
+        public DisplayCamera GetDisplayCamera()=> new DisplayCamera(this);
 
         public override MQTTServiceBase? GetMQTTService()
         {
