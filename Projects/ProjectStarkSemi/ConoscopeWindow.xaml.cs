@@ -82,7 +82,6 @@ namespace ProjectStarkSemi
                 }
                 return 80;
             }
-
         }
 
         public ConoscopeWindow()
@@ -92,15 +91,18 @@ namespace ProjectStarkSemi
             ConoscopeWindowConfig.Instance.SetWindow(this);
             this.Title += Assembly.GetAssembly(typeof(ConoscopeWindow))?.GetName().Version?.ToString() ?? "";
         }
-
-        public ConoscopeManager ConoscopeManager => ConoscopeManager.GetInstance();
-        public ConoscopeConfig ConoscopeConfig => ConoscopeManager.Config;
+        public ConoscopeConfig ConoscopeConfig => ConoscopeManager.GetInstance().Config;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
             foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>())
             {
                 StackPanelControl.Children.Add(item.GetDisplayCamera());
+
+                this.Closed += (s, e) =>
+                {
+                    item.MsgRecordChanged -= Item_MsgRecordChanged;
+                };
                 item.MsgRecordChanged -= Item_MsgRecordChanged;
                 item.MsgRecordChanged += Item_MsgRecordChanged;
             }
@@ -145,15 +147,11 @@ namespace ProjectStarkSemi
             ImageView.Config.IsToolBarDrawVisible = false;
 
             cbModelType.ItemsSource = Enum.GetValues(typeof(ConoscopeModelType));
-            this.DataContext = ConoscopeManager;
+            this.DataContext = ConoscopeManager.GetInstance();
 
             LoadCameraServices();
             UpdateUIForModel(ConoscopeConfig.CurrentModel);
-
-            // Initialize Azimuth Plot
             InitializePlot(wpfPlotDiameterLine, "方位角分布曲线 (Azimuth Distribution)");
-            
-            // Initialize Polar Angle Plot
             InitializePlot(wpfPlotRCircle, "极角分布曲线 (Polar Angle Distribution)");
         }
 
@@ -193,12 +191,10 @@ namespace ProjectStarkSemi
                     }
                     else
                     {
-                        tbMeasurementCameraStatus.Text = "无数据";
-                        tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Red);
                         log.Warn("未获取到图像数据");
                     }
                 });
-            }; throw new NotImplementedException();
+            };
         }
 
         private void ConoscopeWindow_BatchRecord(object? sender, MeasureBatchModel e)
@@ -209,7 +205,6 @@ namespace ProjectStarkSemi
                 {
                     var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-                    // Query EQE results for this batch
                     var MeasureResultImgModels = DB.Queryable<MeasureResultImgModel>()
                         .Where(x => x.BatchId == e.Id)
                         .ToList();
@@ -260,8 +255,6 @@ namespace ProjectStarkSemi
             Device = cbMeasurementCamera.SelectedItem as DeviceCamera;
             if (Device != null)
             {
-                log.Info($"已选择测量相机: {Device.Name}");
-                // Load calibration templates for selected camera
                 ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
                 ComboxCalibrationTemplate.SelectedIndex = 0;
             }
@@ -280,36 +273,15 @@ namespace ProjectStarkSemi
         private void UpdateUIForModel(ConoscopeModelType model)
         {
             if (tbCurrentModel == null) return;
-            
             tbCurrentModel.Text = model.ToString();
             switch (model)
             {
                 case ConoscopeModelType.VA60:
-                    // VA60: 显示观察相机控件和状态栏项
-                    btnOpenObservationCamera.Visibility = Visibility.Visible;
-                    if (ObservationCameraStatusItem != null)
-                    {
-                        ObservationCameraStatusItem.Visibility = Visibility.Visible;
-                    }
-                    if (ObservationCameraSeparator != null)
-                    {
-                        ObservationCameraSeparator.Visibility = Visibility.Visible;
-                    }
                     wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
                     wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
                     break;
                     
                 case ConoscopeModelType.VA80:
-                    // VA80: 隐藏观察相机控件和状态栏项
-                    btnOpenObservationCamera.Visibility = Visibility.Collapsed;
-                    if (ObservationCameraStatusItem != null)
-                    {
-                        ObservationCameraStatusItem.Visibility = Visibility.Collapsed;
-                    }
-                    if (ObservationCameraSeparator != null)
-                    {
-                        ObservationCameraSeparator.Visibility = Visibility.Collapsed;
-                    }
                     wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
                     wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
                     break;
@@ -409,11 +381,6 @@ namespace ProjectStarkSemi
                 log.Error($"打开测量相机失败: {ex.Message}", ex);
                 MessageBox.Show($"打开测量相机失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        private void btnCalibration_Click(object sender, RoutedEventArgs e)
-        {
-
         }
 
         private void cbFilterType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -2028,84 +1995,6 @@ README.md 文件未找到，显示默认内容。";
                 log.Error($"显示README失败: {ex.Message}", ex);
                 MessageBox.Show($"显示README失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        /// <summary>
-        /// 显示CHANGELOG文档
-        /// </summary>
-        private void btnShowChangelog_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                string changelogPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CHANGELOG.md");
-                
-                // 创建一个窗口显示CHANGELOG内容
-                var changelogWindow = new Window
-                {
-                    Title = "ProjectStarkSemi - CHANGELOG",
-                    Width = 800,
-                    Height = 600,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                    Owner = this
-                };
-
-                var scrollViewer = new ScrollViewer
-                {
-                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    Padding = new Thickness(20)
-                };
-
-                var textBlock = new TextBlock
-                {
-                    TextWrapping = TextWrapping.Wrap,
-                    FontFamily = new System.Windows.Media.FontFamily("Consolas, Microsoft YaHei"),
-                    FontSize = 12
-                };
-
-                if (System.IO.File.Exists(changelogPath))
-                {
-                    textBlock.Text = System.IO.File.ReadAllText(changelogPath, System.Text.Encoding.UTF8);
-                }
-                else
-                {
-                    textBlock.Text = @"# CHANGELOG
-
-## [1.0.0] 最新版本
-
-### 新增功能
-- ✨ 方位角分析功能 - 支持极角线RGB/XYZ分布分析
-- ✨ 极角分析功能 - 支持同心圆周向RGB/XYZ分布分析
-- ✨ 双Tab图表显示 - 方位角和极角各自独立图表
-- ✨ 中英文双语界面 - 支持界面中英文混合显示
-- ✨ 数据导出功能 - 支持CSV格式导出（英文标题）
-
-### 改进
-- 📈 极角采样点增加到720个，显示更平滑
-- 🎨 优化UI布局，使用TabControl分离不同分析模式
-- 🔧 完善数据验证和错误处理
-
-### 技术栈
-- .NET 8.0
-- WPF
-- ScottPlot 5.x
-- OpenCvSharp4
-";
-                }
-
-                scrollViewer.Content = textBlock;
-                changelogWindow.Content = scrollViewer;
-                changelogWindow.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                log.Error($"显示CHANGELOG失败: {ex.Message}", ex);
-                MessageBox.Show($"显示CHANGELOG失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void RibbonButton_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("视角测量");
         }
         public void Dispose()
         {

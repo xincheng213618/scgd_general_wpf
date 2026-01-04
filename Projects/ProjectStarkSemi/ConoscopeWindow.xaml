@@ -186,11 +186,6 @@
                               Click="btnOpenMeasurementCamera_Click"
                               Margin="0,0,0,5"
                               Height="30"/>
-
-                        <Button x:Name="btnCalibration" 
-                              Content="{x:Static properties:Resources.Calibration}"
-                              Click="btnCalibration_Click"
-                              Height="30"/>
                     </RibbonGroup>
                 </RibbonTab>
                 <RibbonTab Header="Edit">
@@ -278,34 +273,13 @@
                 </RibbonTab>
 
                 <RibbonTab Header="Analysis">
-                    <RibbonGroup Header="Grey Levels">
-                        <RibbonButton  Content="NEw Data Set"/>
-                        <RibbonButton  Content="Open"/>
-                        <RibbonButton  Content="HideAll"/>
-                        <RibbonButton  Content="VT Curve"/>
-                    </RibbonGroup>
-                    <RibbonGroup Header="Display Aspect">
-                        <RibbonButton  Content="NEw Data Set"/>
-                        <RibbonButton  Content="Open"/>
-                    </RibbonGroup>
-                    <RibbonGroup Header="3D Displays">
-                        <RibbonButton  Content="NEw Data Set"/>
-                        <RibbonButton  Content="Open"/>
-                    </RibbonGroup>
+
                 </RibbonTab>
 
 
                 <RibbonTab Header="Help">
-                    <RibbonGroup Header="Help" x:Name="Help"  SmallImageSource="Images/InsertPicture16.png" GroupSizeDefinitions="{DynamicResource 4ControlLSC}">
-                        <RibbonButton Label="README" SmallImageSource="Images/InsertPicture16.png" Click="btnShowReadme_Click"/>
-                        <RibbonButton Label="CHANGELOG" SmallImageSource="Images/InsertPicture16.png" Click="btnShowChangelog_Click"/>
-                    </RibbonGroup>
 
-                    <RibbonGroup Header="About" x:Name="About"  SmallImageSource="Images/InsertPicture16.png" GroupSizeDefinitions="{DynamicResource 4ControlLSC}">
-                        <RibbonButton Label="About" SmallImageSource="Images/smallicon.png"  Click="RibbonButton_Click"/>
-                    </RibbonGroup>
-
-                </RibbonTab>
+               </RibbonTab>
             </Ribbon>
             <Button  VerticalAlignment="Top" HorizontalAlignment="Right" Command="{Binding EditConoscopeConfigCommand}" Padding="2" Height="40" Width="40" Margin="0,69,25,0" >
                 <Button.Triggers>

@@ -27,7 +27,7 @@
         <!-- Main Content -->
         <Grid Grid.Row="1" Margin="5">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="SidePanelColumn" Width="200" />
+                <ColumnDefinition x:Name="SidePanelColumn" Width="180" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <Grid x:Name="SidePanelGrid" Grid.Column="0">
@@ -53,7 +53,7 @@
                 </DockPanel>
                 <ComboBox  Name="cbDeviceList" Margin="0,0,0,5"/>
 
-                <ComboBox x:Name="cbPixelType"  SelectionChanged="cbModelType_SelectionChanged" SelectedItem="{Binding Config.PixelType}"/>
+                    <ComboBox x:Name="cbPixelType"  SelectionChanged="cbModelType_SelectionChanged" SelectedItem="{Binding Config.PixelType}"  Margin="0,0,0,5"/>
                 <UniformGrid Columns="2" Margin="0,0,0,5">
                     <Button x:Name="bnOpen"  Click="bnOpen_Click" Content="打开设备" Margin="0,0,5,0" />
                     <Button x:Name="bnClose"  Click="bnClose_Click" IsEnabled="False" Content="关闭设备" />
@@ -73,12 +73,12 @@
                     <Button x:Name="bnTriggerExec" Click="bnTriggerExec_Click" IsEnabled="False" Content="软触发一次" />
                 </StackPanel>
 
+                    <DockPanel Margin="0,0,0,5">
+                        <TextBox DockPanel.Dock="Right" Width="120"  Style="{StaticResource TextBox.Small}"  Text="{Binding Config.Exposure,StringFormat=F1}" TextChanged="tbExposure_TextChanged"/>
+                        <TextBlock x:Name="label1" Text="曝光(ms)" />
+                    </DockPanel>
                 <DockPanel Margin="0,0,0,5">
-                    <TextBox x:Name="tbExposure" DockPanel.Dock="Right" Width="150" IsEnabled="False" Style="{StaticResource TextBox.Small}"  TextChanged="tbExposure_TextChanged"/>
-                    <TextBlock x:Name="label1" Text="曝光 (ns)" />
-                </DockPanel>
-                <DockPanel Margin="0,0,0,5">
-                    <TextBox x:Name="tbGain" DockPanel.Dock="Right" Width="150" IsEnabled="False" Style="{StaticResource TextBox.Small}" />
+                        <TextBox x:Name="tbGain" DockPanel.Dock="Right" Width="120"  Style="{StaticResource TextBox.Small}" />
                     <TextBlock x:Name="label2" Text="增益"/>
                 </DockPanel>
                 <DockPanel Margin="0,0,0,5">
@@ -105,8 +105,8 @@
             <StatusBarItem>
                 <TextBlock>
                     <Run Text="曝光: "/>
-                    <Run x:Name="StatusExposureText" Text="--"/>
-                    <Run Text=" ns"/>
+                    <Run x:Name="StatusExposureText" Text="{Binding Config.Exposure}"/>
+                    <Run Text=" ms"/>
                 </TextBlock>
             </StatusBarItem>
             <Separator/>
