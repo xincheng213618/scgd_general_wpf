@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.ServiceProcess;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -23,35 +24,38 @@ namespace ColorVision.Engine
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SqlInitialized));
 
-        public static Version Version { get; set; } = new Version(4, 0, 0,105);
+        public static Version Version { get; set; } = new Version(4, 0, 0,107);
 
         public Task Initialize()
         {
-            log.Info("CommadnInitialized");
             SqlConfig sqlConfig = ConfigService.Instance.GetRequiredService<SqlConfig>();
             if (sqlConfig.Version  < Version)
             {
                 sqlConfig.Version = Version;
                 ConfigService.Instance.SaveConfigs();
                 log.Info($"SqlConfig 版本更新到 {Version}");
-
-                foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+                Thread thread = new Thread(() =>
                 {
-                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitTables).IsAssignableFrom(t) && !t.IsAbstract))
+                    foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
                     {
-                        try
+                        foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitTables).IsAssignableFrom(t) && !t.IsAbstract))
                         {
-                            log.Info($"正在初始化表：{type.Name}");
-                            MySqlControl.GetInstance().DB.CodeFirst.InitTables(type);
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error(ex);
+                            try
+                            {
+                                log.Info($"正在初始化表：{type.Name}");
+                                MySqlControl.GetInstance().DB.CodeFirst.InitTables(type);
+                            }
+                            catch (Exception ex)
+                            {
+                                log.Error(ex);
+                            }
+
                         }
 
                     }
-
-                }
+                    log.Info("SqlInitialized");
+                });
+                thread.Start();
             }
             return Task.CompletedTask;
         }
