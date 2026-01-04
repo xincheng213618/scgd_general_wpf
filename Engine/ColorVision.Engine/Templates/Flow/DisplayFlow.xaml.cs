@@ -265,13 +265,11 @@ namespace ColorVision.Engine.Templates.Flow
                     MarkColorProperty.SetValue(LastNode, System.Drawing.Color.Red);
                 }
             }
-            else if (FlowControlData.EventName == "Completed")
+
+            Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                Application.Current.Dispatcher.BeginInvoke(() =>
-                {
-                    Processing(FlowEngineManager.Batch);
-                });
-            }
+                Processing(FlowEngineManager.Batch);
+            });
         }
         
         private bool PreProcessing(string flowName, string serialNumber)
@@ -344,6 +342,7 @@ namespace ColorVision.Engine.Templates.Flow
                 var matchingMetas = BatchManager.GetInstance().ProcessMetas
                     .Where(m => string.Equals(m.TemplateName, FlowName, StringComparison.OrdinalIgnoreCase) && m.BatchProcess != null)
                     .ToList();
+
 
                 if (matchingMetas.Count > 0)
                 {

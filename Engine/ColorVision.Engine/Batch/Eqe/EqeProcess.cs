@@ -1,10 +1,11 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Spectrum.Dao;
-using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
-using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Templates.Flow;
 using log4net;
 using SqlSugar;
 using System;
@@ -117,6 +118,8 @@ namespace ColorVision.Engine.Batch.Eqe
         public override bool Process(IBatchContext ctx)
         {
             if (ctx?.Batch == null) return false;
+            if (ctx?.Batch.FlowStatus != FlowStatus.Completed) return false;
+
             var batchConfig = ctx.Config;
 
             string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");

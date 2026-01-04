@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
+using ColorVision.Engine.Templates.Flow;
 using log4net;
 using SqlSugar;
 using System;
@@ -45,6 +46,8 @@ namespace ColorVision.Engine.Batch.IVL
         public override bool Process(IBatchContext ctx)
         {
             if (ctx?.Batch == null) return false;
+            if (ctx?.Batch.FlowStatus != FlowStatus.Completed) return false;
+
             var batchConfig = ctx.Config;
 
             try
