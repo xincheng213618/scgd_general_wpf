@@ -123,6 +123,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
         [SugarColumn(ColumnName = "fInterval", IsNullable = true, ColumnDescription = "波长间隔")]
         public float? fInterval { get; set; }
 
+
+        [SugarColumn(ColumnName = "eqe", IsNullable = true, ColumnDescription = "EQE")]
+        public double? Eqe { get; set; }
+
+        [SugarColumn(ColumnName = "luminous_flux", IsNullable = true, ColumnDescription = "光通量 (lm)")]
+        public float? LuminousFlux { get; set; }
+
+        [SugarColumn(ColumnName = "radiant_flux", IsNullable = true, ColumnDescription = "辐射通量 (W)")]
+        public double? RadiantFlux { get; set; }
+
+        [SugarColumn(ColumnName = "luminous_efficacy", IsNullable = true, ColumnDescription = "光效 (lm/W)")]
+        public double? LuminousEfficacy { get; set; }
+
         [SugarColumn(ColumnName = "result_code", IsNullable = true, ColumnDescription = "结果CODE")]
         public int? ResultCode { get; set; }
 

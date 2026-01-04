@@ -253,6 +253,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             fSpect2 = item.fSpect2 ?? 0;
             fInterval = item.fInterval ?? 0;
 
+
+            // EQE-specific fields
+            Eqe = item.Eqe ?? 0;
+            LuminousFlux = item.LuminousFlux ?? 0;
+            RadiantFlux = item.RadiantFlux ?? 0;
+            LuminousEfficacy = item.LuminousEfficacy ?? 0;
+
+
             if (!string.IsNullOrWhiteSpace(item.fPL_file_name) && File.Exists(item.fPL_file_name))
             {
                 File.ReadAllBytes(item.fPL_file_name);

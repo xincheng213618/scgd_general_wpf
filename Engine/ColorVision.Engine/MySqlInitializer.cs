@@ -1,15 +1,63 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.UI;
 using log4net;
 using System;
 using System.IO;
+using System.Linq;
 using System.ServiceProcess;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine
 {
+
+    public class SqlConfig : ViewModelBase, IConfig
+    {
+        public Version Version { get => _Version; set { _Version = value; OnPropertyChanged(); } }
+        private Version _Version = new Version(0, 0, 0);
+    }
+
+    public class SqlInitialized : IMainWindowInitialized
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(SqlInitialized));
+
+        public static Version Version { get; set; } = new Version(4, 0, 0,105);
+
+        public Task Initialize()
+        {
+            log.Info("CommadnInitialized");
+            SqlConfig sqlConfig = ConfigService.Instance.GetRequiredService<SqlConfig>();
+            if (sqlConfig.Version  < Version)
+            {
+                sqlConfig.Version = Version;
+                ConfigService.Instance.SaveConfigs();
+                log.Info($"SqlConfig 版本更新到 {Version}");
+
+                foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+                {
+                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitTables).IsAssignableFrom(t) && !t.IsAbstract))
+                    {
+                        try
+                        {
+                            log.Info($"正在初始化表：{type.Name}");
+                            MySqlControl.GetInstance().DB.CodeFirst.InitTables(type);
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error(ex);
+                        }
+
+                    }
+
+                }
+            }
+            return Task.CompletedTask;
+        }
+    }
+
+
     public class MySqlInitializer : InitializerBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MySqlInitializer));
