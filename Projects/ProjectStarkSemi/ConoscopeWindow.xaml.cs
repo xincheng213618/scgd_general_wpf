@@ -587,15 +587,16 @@ namespace ProjectStarkSemi
                     Buffer.BlockCopy(fileInfo.Data, channelSize, dataY, 0, channelSize);
                     Buffer.BlockCopy(fileInfo.Data, channelSize * 2, dataZ, 0, channelSize);
 
-                    XMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
-                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataY);
-                    ZMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataZ);
+                    XMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, singleChannelType, dataX);
+                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, singleChannelType, dataY);
+
+                    ZMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, singleChannelType, dataZ);
                 }
                 else
                 {
                     byte[] dataX = new byte[channelSize];
                     Buffer.BlockCopy(fileInfo.Data, 0, dataX, 0, channelSize);
-                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, singleChannelType, dataX);
+                    YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, singleChannelType, dataX);
                 }
 
             }
@@ -1611,6 +1612,11 @@ namespace ProjectStarkSemi
                     int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
                     int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
 
+                    if (ix == 0)
+                    {
+                        log.Info(ix);
+                    }
+
                     double position = - MaxAngle + (i / (double)(numSamples - 1)) * MaxAngle * 2;
 
                     // Extract RGB values based on image type
@@ -1712,6 +1718,8 @@ namespace ProjectStarkSemi
                     polarLine.RgbData.Add(new RgbSample
                     {
                         Position = position,
+                        DX =ix,
+                        DY =iy,
                         R = r,
                         G = g,
                         B = b,

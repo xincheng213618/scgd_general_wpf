@@ -8,6 +8,10 @@
 
         public double Position { get; set; }
 
+        public double DX { get; set; }
+        public double DY { get; set; }
+
+
         /// <summary>
         /// 红色通道值
         /// </summary>
