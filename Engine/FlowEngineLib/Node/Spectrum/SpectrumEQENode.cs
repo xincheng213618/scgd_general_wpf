@@ -12,7 +12,11 @@ public class SpectrumEQENode : CVBaseServerNode
 
 	private float _Divisor;
 
-	private SPCommCmdType _Cmd;
+	private bool _IsCustomVI;
+
+	private float _Voltage;
+
+	private float _Current;
 
 	private float _Temp;
 
@@ -20,13 +24,15 @@ public class SpectrumEQENode : CVBaseServerNode
 
 	private bool _AutoIntTime;
 
+	private bool _IsWithND;
+
 	private bool _SelfDark;
 
 	private bool _AutoInitDark;
 
 	private string _OutputDataFilename;
 
-	private STNodeEditText<SPCommCmdType> m_ctrl_cmd;
+	private STNodeEditText<bool> m_ctrl_nd;
 
 	private STNodeEditText<float> m_ctrl_editText;
 
@@ -47,17 +53,42 @@ public class SpectrumEQENode : CVBaseServerNode
 		}
 	}
 
-	[STNodeProperty("命令", "命令", true)]
-	public SPCommCmdType PGCmd
+	[STNodeProperty("自定义电压/流", "自定义电压/流", true)]
+	public bool IsCustomVI
 	{
 		get
 		{
-			return _Cmd;
+			return _IsCustomVI;
 		}
 		set
 		{
-			_Cmd = value;
-			setValue(_Cmd);
+			_IsCustomVI = value;
+		}
+	}
+
+	[STNodeProperty("电压", "电压", true)]
+	public float Voltage
+	{
+		get
+		{
+			return _Voltage;
+		}
+		set
+		{
+			_Voltage = value;
+		}
+	}
+
+	[STNodeProperty("电流", "电流", true)]
+	public float Current
+	{
+		get
+		{
+			return _Current;
+		}
+		set
+		{
+			_Current = value;
 		}
 	}
 
@@ -99,6 +130,20 @@ public class SpectrumEQENode : CVBaseServerNode
 		set
 		{
 			_AutoIntTime = value;
+		}
+	}
+
+	[STNodeProperty("启用ND", "启用ND滤轮(自动曝光)", true)]
+	public bool IsWithND
+	{
+		get
+		{
+			return _IsWithND;
+		}
+		set
+		{
+			_IsWithND = value;
+			m_ctrl_nd.Value = value;
 		}
 	}
 
@@ -147,7 +192,9 @@ public class SpectrumEQENode : CVBaseServerNode
 		: base("EQE", "Spectrum", "SVR.Spectrum.Default", "DEV.Spectrum.Default")
 	{
 		operatorCode = "EQE.GetData";
-		_Cmd = SPCommCmdType.检测;
+		_IsCustomVI = false;
+		_Voltage = 0f;
+		_Current = 0f;
 		_Temp = 100f;
 		_AveNum = 1;
 		_Divisor = 1f;
@@ -164,7 +211,6 @@ public class SpectrumEQENode : CVBaseServerNode
 
 	private void setValue(SPCommCmdType _Cmd)
 	{
-		m_ctrl_cmd.Value = _Cmd;
 		if (_Cmd == SPCommCmdType.校零)
 		{
 			m_ctrl_editText.Visable = false;
@@ -185,7 +231,7 @@ public class SpectrumEQENode : CVBaseServerNode
 	{
 		base.OnCreate();
 		Rectangle custom_item = m_custom_item;
-		m_ctrl_cmd = CreateControl(typeof(STNodeEditText<SPCommCmdType>), custom_item, "命令:", _Cmd);
+		m_ctrl_nd = CreateControl(typeof(STNodeEditText<bool>), custom_item, "启用ND:", _IsWithND);
 		custom_item.Y += 25;
 		m_ctrl_editText = CreateControl(typeof(STNodeEditText<float>), custom_item, "积分时间:", _Temp);
 		custom_item.Y += 25;
@@ -201,7 +247,26 @@ public class SpectrumEQENode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		SMUResultData sMUResult = GetSMUResult(start);
+		SMUResultData sMUResultData = GetSMUResult(start);
+		if (_IsCustomVI)
+		{
+			if (sMUResultData == null)
+			{
+				sMUResultData = new SMUResultData
+				{
+					Channel = SMUChannelType.A,
+					V = _Voltage,
+					I = _Current,
+					MasterId = 0,
+					MasterResultType = 200
+				};
+			}
+			else
+			{
+				sMUResultData.V = _Voltage;
+				sMUResultData.I = _Current;
+			}
+		}
 		return new SpectrumEQEParamData
 		{
 			IntegralTime = _Temp,
@@ -211,7 +276,7 @@ public class SpectrumEQENode : CVBaseServerNode
 			AutoInitDark = _AutoInitDark,
 			Divisor = _Divisor,
 			OutputDataFilename = _OutputDataFilename,
-			SMUData = sMUResult
+			SMUData = sMUResultData
 		};
 	}
 }

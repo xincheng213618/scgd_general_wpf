@@ -1,4 +1,3 @@
-using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
 
@@ -14,10 +13,6 @@ public class AlgorithmCaliNode : CVBaseServerNode
 	private string _ImgFileName;
 
 	private STNodeEditText<string> m_ctrl_temp;
-
-	private STNodeEditText<TPAlgorithmType> m_ctrl_editText;
-
-	private STNodeEditText<string> m_ctrl_op;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TempName
