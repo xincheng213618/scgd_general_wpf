@@ -5,9 +5,7 @@
     /// </summary>
     public class RgbSample
     {
-        /// <summary>
-        /// 位置（从-80到80映射）
-        /// </summary>
+
         public double Position { get; set; }
 
         /// <summary>

@@ -144,7 +144,7 @@
                         <StackPanel>
                             <DockPanel >
                                 <TextBlock Text="{x:Static properties:Resources.Model}" VerticalAlignment="Center" Width="80"/>
-                                <ComboBox x:Name="cbModelType"  SelectionChanged="cbModelType_SelectionChanged" SelectedItem="{Binding ConoscopeConfig.CurrentModel}">
+                                <ComboBox x:Name="cbModelType"  SelectionChanged="cbModelType_SelectionChanged" SelectedValue="{Binding Config.CurrentModel}">
                                 </ComboBox>
                             </DockPanel>
                         </StackPanel>

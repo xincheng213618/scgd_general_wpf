@@ -8,6 +8,10 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     public class ConfigCfwPort: DeviceServiceConfig
     {
+        [DisplayName("AutoConnect")]
+        public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
+        private bool _IsAutoOpen = true;
+
         [DisplayName("SzComName"), PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
         public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
         private string _szComName = "COM1";
@@ -27,9 +31,15 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         [DisplayName("FilterWheelCount")]
         public int Ports { get => _Ports; set { _Ports = value; OnPropertyChanged(); } } 
         private int _Ports = 6;
-        [DisplayName("AutoConnect")]
-        public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
-        private bool _IsAutoOpen = true;
+
+
+        [DisplayName("Delay")]
+        public int Delay { get => _Delay; set { _Delay = value; OnPropertyChanged(); } }
+        private int _Delay;
+
+        [DisplayName("IsCVMode")]
+        public bool IsCVMode { get => _IsCVMode; set { _IsCVMode = value; OnPropertyChanged(); } }
+        private bool _IsCVMode;
 
         [DisplayName("EnableVSPHub")]
         public bool EnableVSPHub { get => _EnableVSPHub; set { _EnableVSPHub = value; OnPropertyChanged(); } }

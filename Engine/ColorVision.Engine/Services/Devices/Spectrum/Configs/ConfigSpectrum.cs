@@ -126,23 +126,28 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
     public class NDConfig : ViewModelBase
     {
-        public bool EnableResetND { get => _EnableResetND; set { _EnableResetND = value; OnPropertyChanged(); } }
-        private bool _EnableResetND;
-
         public bool IsNDPort { get => _IsNDPort; set { _IsNDPort = value; OnPropertyChanged(); } }
         private bool _IsNDPort;
 
-        [PropertyEditorType(typeof(TextCFWPropertiesEditor))]
+
+        public bool IsBingNDDevice { get => _IsBingNDDevice; set { _IsBingNDDevice = value; OnPropertyChanged(); } }
+        private bool _IsBingNDDevice = true;
+
+
+        [PropertyEditorType(typeof(TextCFWPropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice))]
         public string NDBindDeviceCode { get => _NDBindDeviceCode; set { _NDBindDeviceCode = value; OnPropertyChanged(); } }
         private string _NDBindDeviceCode;
 
-        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
+        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice),true)]
         public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
         private string _szComName = "COM1";
 
-        [PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
+        [PropertyEditorType(typeof(TextBaudRatePropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice), true)]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 115200;
+
+        public bool EnableResetND { get => _EnableResetND; set { _EnableResetND = value; OnPropertyChanged(); } }
+        private bool _EnableResetND;
 
         public double NDMaxExpTime { get => _NDMaxExpTime; set { _NDMaxExpTime = value; OnPropertyChanged(); } }
         private double _NDMaxExpTime;

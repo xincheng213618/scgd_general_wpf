@@ -123,14 +123,10 @@ namespace ProjectStarkSemi
                     toolReferenceLine.ReferenceLine = new ReferenceLine(ConoscopeConfig.ReferenceLineParam);
                 }
 
-            }catch(Exception ex)
+            }
+            catch(Exception ex)
             {
                 log.Info(ex);
-                if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
-                {
-                    ConoscopeConfig.ReferenceLineParam = new ReferenceLineParam();
-                    toolReferenceLine.ReferenceLine = new ReferenceLine(ConoscopeConfig.ReferenceLineParam);
-                }
             }
 
             GridSetting.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(ConoscopeConfig.ReferenceLineParam));
@@ -150,9 +146,35 @@ namespace ProjectStarkSemi
             this.DataContext = ConoscopeManager.GetInstance();
 
             LoadCameraServices();
-            UpdateUIForModel(ConoscopeConfig.CurrentModel);
-            InitializePlot(wpfPlotDiameterLine, "方位角分布曲线 (Azimuth Distribution)");
+
+            ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
+            ConoscopeConfig.ModelTypeChanged += ConoscopeConfig_ModelTypeChanged;
+            ConoscopeConfig_ModelTypeChanged(sender, ConoscopeConfig.CurrentModel);
+
+            this.Closed += (s, e) =>
+            {
+                ConoscopeConfig.ModelTypeChanged -= ConoscopeConfig_ModelTypeChanged;
+            };
+            InitializePlot(wpfPlotDiameterLine, "方位角分布曲线 (Azimuth Distribution)"); ;
             InitializePlot(wpfPlotRCircle, "极角分布曲线 (Polar Angle Distribution)");
+        }
+
+        private void ConoscopeConfig_ModelTypeChanged(object? sender, ConoscopeModelType e)
+        {
+            if (tbCurrentModel == null) return;
+            tbCurrentModel.Text = ConoscopeConfig.CurrentModel.ToString();
+            switch (ConoscopeConfig.CurrentModel)
+            {
+                case ConoscopeModelType.VA60:
+                    wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
+                    wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
+                    break;
+
+                case ConoscopeModelType.VA80:
+                    wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
+                    wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
+                    break;
+            }
         }
 
         private void Item_MsgRecordChanged(object? sender, MsgRecord e)
@@ -234,7 +256,7 @@ namespace ProjectStarkSemi
             // Enable grid for better readability
             plot.Plot.Grid.MajorLineColor = ScottPlot.Color.FromColor(System.Drawing.Color.LightGray);
             plot.Plot.Grid.MajorLineWidth = 1;
-            plot.Plot.Axes.SetLimits(-80, 80, 0, 600);
+            plot.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
 
             plot.Refresh();
         }
@@ -266,27 +288,9 @@ namespace ProjectStarkSemi
             if (cbModelType.SelectedItem is ConoscopeModelType conoscopeModelType)
             {
                 ConoscopeConfig.CurrentModel = conoscopeModelType;
-                UpdateUIForModel(ConoscopeConfig.CurrentModel);
             }
         }
 
-        private void UpdateUIForModel(ConoscopeModelType model)
-        {
-            if (tbCurrentModel == null) return;
-            tbCurrentModel.Text = model.ToString();
-            switch (model)
-            {
-                case ConoscopeModelType.VA60:
-                    wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
-                    wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
-                    break;
-                    
-                case ConoscopeModelType.VA80:
-                    wpfPlotDiameterLine.Plot.Axes.SetLimits(-MaxAngle, MaxAngle, 0, 600);
-                    wpfPlotRCircle.Plot.Axes.SetLimits(0, 360, 0, 600);
-                    break;
-            }
-        }
 
         private void btnOpenObservationCamera_Click(object sender, RoutedEventArgs e)
         {
@@ -519,7 +523,6 @@ namespace ProjectStarkSemi
         }
 
 
-
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
             if (Device.PhyCamera == null)
@@ -561,8 +564,6 @@ namespace ProjectStarkSemi
                 CVCIEFile fileInfo = new CVCIEFile();
                 CVFileUtil.Read(filename, out fileInfo);
 
-
-
                 // Calculate the size of a single channel in bytes
                 int channelSize = fileInfo.Cols * fileInfo.Rows * (fileInfo.Bpp / 8);
 
@@ -598,6 +599,8 @@ namespace ProjectStarkSemi
                 }
 
             }
+
+            ImageView.Clear();
 
             ImageView.OpenImage(filename);
             ImageView.ImageShow.ImageInitialized += (s, e) =>
@@ -1393,12 +1396,7 @@ namespace ProjectStarkSemi
             };
         }
 
-        /// <summary>
-        /// 创建极角数据
-        /// VA60: 61个极角 (每度一个，从0度到60度)
-        /// VA80: 81个极角 (每度一个，从0度到80度)
-        /// 0度为中心点，使用插值
-        /// </summary>
+
         private void CreateConcentricCirclesData()
         {
             concentricCircleLines.Clear();
@@ -1555,12 +1553,13 @@ namespace ProjectStarkSemi
             DVLine line = new DVLine();
             line.Points.Add(start);
             line.Points.Add(end);
+
             line.Pen = new Pen(Brushes.Yellow,0.5/ ImageView.EditorContext.ZoomRatio);
+
             line.Render();
 
-            // Add to ImageView
-            ImageView.AddVisual(line);
 
+            ImageView.AddVisual(line);
 
             // Create PolarAngleLine object
             PolarAngleLine polarLine = new PolarAngleLine
@@ -1599,6 +1598,8 @@ namespace ProjectStarkSemi
                     return;
                 }
 
+                PixelFormat PixelFormat = ImageView.EditorContext.Config.GetProperties<PixelFormat>("PixelFormat");
+
                 // Sample points along the line
                 for (int i = 0; i < numSamples; i++)
                 {
@@ -1610,10 +1611,7 @@ namespace ProjectStarkSemi
                     int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
                     int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
 
-                    // Map position from pixel index to -80 to 80 range
-                    // Linear mapping: position = -80 + (i / (numSamples - 1)) * 160
-                    // This ensures: i=0 -> -80°, i=(numSamples-1) -> 80°
-                    double position = -80 + (i / (double)(numSamples - 1)) * 160;
+                    double position = - MaxAngle + (i / (double)(numSamples - 1)) * MaxAngle * 2;
 
                     // Extract RGB values based on image type
                     double r = 0, g = 0, b = 0;
@@ -1639,16 +1637,67 @@ namespace ProjectStarkSemi
                         if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
                         {
                             OpenCvSharp.Vec3b pixel = mat.At<OpenCvSharp.Vec3b>(iy, ix);
-                            b = pixel.Item0;
-                            g = pixel.Item1;
-                            r = pixel.Item2;
+                            switch (PixelFormat.ToString())
+                            {
+                                case "Bgr32":
+                                case "Bgra32":
+                                case "Pbgra32":
+                                case "Bgr24":
+                                    b = pixel.Item0;
+                                    g = pixel.Item1;
+                                    r = pixel.Item2;
+                                    break;
+                                case "Rgb24":
+                                case "Rgb48":
+                                    r = pixel.Item0;
+                                    g = pixel.Item1;
+                                    b = pixel.Item2;
+                                    break;
+                                case "Gray8":
+                                    break;
+                                case "Gray16":
+                                    break;
+                                case "Gray32Float":
+                                    break;
+                                default:
+                                    b = pixel.Item0;
+                                    g = pixel.Item1;
+                                    r = pixel.Item2;
+                                    break;
+                            }
+  
                         }
                         else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
                         {
                             OpenCvSharp.Vec3w pixel = mat.At<OpenCvSharp.Vec3w>(iy, ix);
-                            b = pixel.Item0;
-                            g = pixel.Item1;
-                            r = pixel.Item2;
+                            switch (PixelFormat.ToString())
+                            {
+                                case "Bgr32":
+                                case "Bgra32":
+                                case "Pbgra32":
+                                case "Bgr24":
+                                    b = pixel.Item0;
+                                    g = pixel.Item1;
+                                    r = pixel.Item2;
+                                    break;
+                                case "Rgb24":
+                                case "Rgb48":
+                                    r = pixel.Item0;
+                                    g = pixel.Item1;
+                                    b = pixel.Item2;
+                                    break;
+                                case "Gray8":
+                                    break;
+                                case "Gray16":
+                                    break;
+                                case "Gray32Float":
+                                    break;
+                                default:
+                                    b = pixel.Item0;
+                                    g = pixel.Item1;
+                                    r = pixel.Item2;
+                                    break;
+                            }
                         }
 
                         if (XMat != null)
@@ -1658,6 +1707,7 @@ namespace ProjectStarkSemi
                         if (ZMat != null)
                             Z = ZMat.At<float>(iy, ix);
                     }
+
 
                     polarLine.RgbData.Add(new RgbSample
                     {
@@ -1926,76 +1976,6 @@ namespace ProjectStarkSemi
             }
         }
 
-        /// <summary>
-        /// 显示README文档
-        /// </summary>
-        private void btnShowReadme_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                string readmePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "README.md");
-                
-                // 创建一个窗口显示README内容
-                var readmeWindow = new Window
-                {
-                    Title = "ProjectStarkSemi - README",
-                    Width = 800,
-                    Height = 600,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                    Owner = this
-                };
-
-                var scrollViewer = new ScrollViewer
-                {
-                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    Padding = new Thickness(20)
-                };
-
-                var textBlock = new TextBlock
-                {
-                    TextWrapping = TextWrapping.Wrap,
-                    FontFamily = new System.Windows.Media.FontFamily("Consolas, Microsoft YaHei"),
-                    FontSize = 12
-                };
-
-                if (System.IO.File.Exists(readmePath))
-                {
-                    textBlock.Text = System.IO.File.ReadAllText(readmePath, System.Text.Encoding.UTF8);
-                }
-                else
-                {
-                    textBlock.Text = @"# ProjectStarkSemi (星钥半导体)
-
-## 🎯 功能定位
-星钥半导体客户定制项目 - 集成了锥光镜观察系统和MVS相机控制的专业光学测试解决方案
-
-## 主要功能
-- **锥光镜观察系统** - 支持VA60和VA80两种硬件型号
-- **方位角分析** - 极角线RGB/XYZ分布分析
-- **极角分析** - 同心圆周向RGB/XYZ分布分析  
-- **MVS相机集成** - 海康威视工业相机支持
-- **数据导出** - 支持CSV格式导出分析数据
-
-## 使用方式
-1. 打开图像文件
-2. 选择分析模式（方位角或极角）
-3. 添加分析线/圆
-4. 查看RGB/XYZ分布图表
-5. 导出分析数据
-
-README.md 文件未找到，显示默认内容。";
-                }
-
-                scrollViewer.Content = textBlock;
-                readmeWindow.Content = scrollViewer;
-                readmeWindow.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                log.Error($"显示README失败: {ex.Message}", ex);
-                MessageBox.Show($"显示README失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
         public void Dispose()
         {
             FlowEngineManager.GetInstance().BatchRecord -= ConoscopeWindow_BatchRecord;

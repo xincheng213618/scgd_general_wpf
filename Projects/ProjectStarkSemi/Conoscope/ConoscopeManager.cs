@@ -6,6 +6,7 @@ using System.Windows;
 
 namespace ProjectStarkSemi.Conoscope
 {
+
     public class ConoscopeManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeManager));
@@ -26,9 +27,6 @@ namespace ProjectStarkSemi.Conoscope
             Config =ConfigService.Instance.GetRequiredService<ConoscopeConfig>();
             EditConoscopeConfigCommand = new RelayCommand(a=> EditConoscopeConfig());
         }
-
-
-
 
     }
 }
