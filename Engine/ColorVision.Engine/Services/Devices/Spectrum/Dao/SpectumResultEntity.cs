@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
     [SugarTable("t_scgd_measure_result_spectrometer")]
     public class SpectumResultEntity : EntityBase,IInitTables
     {
-        [SugarColumn(ColumnName = "data_type", IsNullable = false, Length = 1, ColumnDescription = "数据类型(0:光谱,1:EQE)")]
+        [SugarColumn(ColumnName = "data_type", IsNullable = false,DefaultValue ="0", Length = 1, ColumnDescription = "数据类型(0:光谱,1:EQE)")]
         public bool DataType { get; set; } = false;
 
         [SugarColumn(ColumnName = "device_code", IsNullable = true, Length = 255)]
