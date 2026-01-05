@@ -602,27 +602,25 @@ namespace ProjectStarkSemi
             }
 
             ImageView.Clear();
-            if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
-            {
-                toolReferenceLine.IsChecked = false;
-                toolReferenceLine.IsChecked = true;
-            }
+            ImageView.ImageShow.ImageInitialized -= ImageShow_ImageInitialized;
+            ImageView.ImageShow.ImageInitialized += ImageShow_ImageInitialized;
             ImageView.OpenImage(filename);
-            ImageView.ImageShow.ImageInitialized += (s, e) =>
-            {
-                ImageView.Config.IsPseudo = true;
-                CreateAndAnalyzePolarLines();
-                Application.Current.Dispatcher.Invoke(async () =>
-                {
-                    await Task.Delay(500);
-                    if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
-                    {
-                        toolReferenceLine.IsChecked = true;
-                    }
-                });
-            };
         }
 
+        private void ImageShow_ImageInitialized(object? sender, EventArgs e)
+        {
+            ImageView.Config.IsPseudo = true;
+            CreateAndAnalyzePolarLines();
+            Application.Current.Dispatcher.Invoke(async () =>
+            {
+                await Task.Delay(200);
+                if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
+                {
+                    toolReferenceLine.IsChecked = false;
+                    toolReferenceLine.IsChecked = true;
+                }
+            });
+        }
         /// <summary>
         /// 创建极角线并进行分析
         /// </summary>
