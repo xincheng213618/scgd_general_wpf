@@ -66,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         else if (msg.EventName == "Open")
                         {
                         }
-                        else if (msg.EventName == "GetData")
+                        else if (msg.EventName == "GetData" || msg.EventName == "EQE.GetData")
                         {
                             if (msg !=null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
                             {
@@ -90,7 +90,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                 }
                             }
                         }
-                        else if (msg.EventName == "GetDataAuto")
+                        else if (msg.EventName == "GetDataAuto" || msg.EventName == "EQE.GetDataAuto")
                         {
                             JObject data = msg.Data;
                             SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
