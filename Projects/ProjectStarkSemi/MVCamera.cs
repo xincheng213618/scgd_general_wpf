@@ -197,7 +197,7 @@ namespace MvCamCtrl.NET
         }
 
         /// <summary>
-        /// Get SDK Version
+        /// Get SDK ServiceVersion
         /// </summary>
         /// <returns>Always return 4 Bytes of version number |Main  |Sub   |Rev   |Test|
         ///                                                   8bits  8bits  8bits  8bits 

@@ -44,13 +44,13 @@ namespace ColorVision.Update
         //public static async Task CheckVersion()
         //{
         //    await Task.Delay(100);
-        //    if (Assembly.GetExecutingAssembly().GetName().Version > MainWindowConfig.Instance.LastOpenVersion)
+        //    if (Assembly.GetExecutingAssembly().GetName().ServiceVersion > MainWindowConfig.Instance.LastOpenVersion)
         //    {
         //        Application.Current.Dispatcher.Invoke(() =>
         //        {
         //            try
         //            {
-        //                string? currentVersion = Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
+        //                string? currentVersion = Assembly.GetExecutingAssembly().GetName()?.ServiceVersion?.ToString();
         //                string changelogPath = "CHANGELOG.md";
 
         //                // 读取CHANGELOG.md文件的所有内容
@@ -80,7 +80,7 @@ namespace ColorVision.Update
         //            }
         //        });
         //    }
-        //    MainWindowConfig.Instance.LastOpenVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        //    MainWindowConfig.Instance.LastOpenVersion = Assembly.GetExecutingAssembly().GetName().ServiceVersion;
         //}
 
 

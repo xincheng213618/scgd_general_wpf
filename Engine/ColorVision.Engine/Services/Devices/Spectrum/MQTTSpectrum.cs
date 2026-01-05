@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Templates.Flow;
 using iText.Commons.Bouncycastle.Asn1.X509;
 using MQTTMessageLib;
 using MQTTMessageLib.Spectrum;
@@ -92,14 +93,43 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         }
                         else if (msg.EventName == "GetDataAuto" || msg.EventName == "EQE.GetDataAuto")
                         {
-                            JObject data = msg.Data;
-                            SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam.Data);
-                                Device.View.AddViewResultSpectrum(viewResultSpectrum);
-                            });
 
+                            //未来全面启用4.0之后移除
+                            log.Info(FlowEngineManager.GetInstance().ServiceVersion);
+                            if (FlowEngineManager.GetInstance().ServiceVersion> new Version(4, 0, 1, 104))
+                            {
+                                if (msg != null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
+                                {
+                                    int masterId = msg.Data?.MasterId;
+                                    var DB = new SqlSugarClient(new ConnectionConfig
+                                    {
+                                        ConnectionString = MySqlControl.GetConnectionString(),
+                                        DbType = SqlSugar.DbType.MySql,
+                                        IsAutoCloseConnection = true
+                                    });
+                                    SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().Where(x => x.Id == masterId).First();
+                                    DB.Dispose();
+                                    log.Info($"GetData MasterId:{masterId} ");
+                                    if (model != null)
+                                    {
+                                        Application.Current.Dispatcher.Invoke(() =>
+                                        {
+                                            ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
+                                            Device.View.AddViewResultSpectrum(viewResultSpectrum);
+                                        });
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                JObject data = msg.Data;
+                                SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam.Data);
+                                    Device.View.AddViewResultSpectrum(viewResultSpectrum);
+                                });
+                            }
                         }
                         else if (msg.EventName == "Close")
                         {
@@ -210,7 +240,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             Param.Add("SelfAdaptionInitDark", Config.IsShutter);
             Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
             Param.Add("IsWithND", Config.IsWithND);
-            if (Config.IsLuminousFluxMode)
+            if (Device.DisplayConfig.IsLuminousFluxMode)
             {
                 msg.EventName = "EQE.GetData";
                 Param.Add("AFactor", ViewSpectrumConfig.Instance.divisor);
@@ -295,7 +325,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
             Param.Add("IsWithND", Config.IsWithND);
 
-            if (Config.IsLuminousFluxMode)
+            if (Device.DisplayConfig.IsLuminousFluxMode)
             {
                 msg.EventName = "EQE.GetDataAuto";
 

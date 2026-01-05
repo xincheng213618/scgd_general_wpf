@@ -49,6 +49,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private double _V;
         public double I { get => _I; set { _I = value; OnPropertyChanged(); } }
         private double _I;
+
+        /// <summary>
+        /// 是否光通量模式
+        /// </summary>
+        public bool IsLuminousFluxMode { get => _IsLuminousFluxMode; set { if (_IsLuminousFluxMode == value) return;  _IsLuminousFluxMode = value; OnPropertyChanged(); IsIsLuminousFluxModeChanged?.Invoke(this, value); } }
+        private bool _IsLuminousFluxMode;
+
+        public event EventHandler<bool> IsIsLuminousFluxModeChanged;
+
     }
 
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>
@@ -80,7 +89,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
-            View = new ViewSpectrum(Config);
+            View = new ViewSpectrum(DisplayConfig);
             View.View.Title = ColorVision.Engine.Properties.Resources.SpectrumView+$" - {Config.Code}";
             this.SetIconResource("DISpectrumIcon", View.View);
 

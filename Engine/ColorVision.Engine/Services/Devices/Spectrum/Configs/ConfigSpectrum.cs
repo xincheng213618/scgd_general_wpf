@@ -74,12 +74,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public override string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
 
-        /// <summary>
-        /// 是否光通量模式
-        /// </summary>
-        public bool IsLuminousFluxMode { get => _IsLuminousFluxMode; set { _IsLuminousFluxMode = value; OnPropertyChanged(); } }
-        private bool _IsLuminousFluxMode;
-
 
         [DisplayName("DeviceAutoConnect"), Category("Base")]
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }

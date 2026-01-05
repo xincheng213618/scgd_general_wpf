@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Spectrum" 
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceSpectrum}"
              d:DesignHeight="450" d:DesignWidth="300" Width="300" Initialized="UserControl_Initialized"   >
@@ -56,6 +56,10 @@
                     </DockPanel>
                     <StackPanel x:Name="StackPanelOpen">
                         <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="光通量模式" Margin="0,0,5,0"/>
+                            <ui:ToggleSwitch IsChecked="{Binding DisplayConfig.IsLuminousFluxMode}" />
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
                             <TextBlock  Text="{x:Static properties:Resources.AverageTimes}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                             <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderAveNum,Path=Value}"  Width="50"/>
                             <hc:PreviewSlider x:Name="SpectrumSliderAveNum"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding DisplayConfig.AveNum}" Maximum="100">
@@ -81,7 +85,7 @@
                                 <CheckBox Content="{x:Static properties:Resources.AdaptiveZeroCalibration}" IsChecked="{Binding Config.IsShutter}"/>
                             </UniformGrid>
                         </StackPanel>
-                        <DockPanel Visibility="{Binding Config.IsLuminousFluxMode,Converter={StaticResource bool2VisibilityConverter}}">
+                        <DockPanel Visibility="{Binding  DisplayConfig.IsLuminousFluxMode,Converter={StaticResource bool2VisibilityConverter}}">
                             <StackPanel Orientation="Horizontal">
                                 <DockPanel >
                                     <TextBlock  Text="{x:Static properties:Resources.V}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />

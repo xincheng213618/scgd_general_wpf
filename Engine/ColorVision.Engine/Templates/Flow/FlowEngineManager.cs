@@ -121,6 +121,8 @@ namespace ColorVision.Engine.Templates.Flow
         public WindowsServiceBase WindowsServiceReg { get; set; }
         public RelayCommand OpenCameraLogCommand { get; set; }
 
+        public Version ServiceVersion => new Version(ServiceConfig.RegistrationCenterServiceInfo.FileVersion ?? string.Empty);
+
         public FlowEngineManager()
         {
             ContextMenu = new ContextMenu();

@@ -55,16 +55,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public static ViewSpectrumConfig Config => ViewSpectrumConfig.Instance;
 
-        public ConfigSpectrum ConfigSpectrum { get; set; }
-        public ViewSpectrum(ConfigSpectrum configSpectrum)
+        public DisplaySpectrumConfig DisplayConfig { get; set; }
+        public ViewSpectrum(DisplaySpectrumConfig displayConfig)
         {
-            ConfigSpectrum = configSpectrum;
+            DisplayConfig = displayConfig;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this;
+
             TextBox TextBox1 = new() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
@@ -125,7 +126,58 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
 
+            DisplayConfig_IsIsLuminousFluxModeChanged();
+            DisplayConfig.IsIsLuminousFluxModeChanged +=(s,e) => DisplayConfig_IsIsLuminousFluxModeChanged();
         }
+
+        private void DisplayConfig_IsIsLuminousFluxModeChanged()
+        {
+            List<string> EQE = new List<string>();
+            EQE.Add("EQE");
+            EQE.Add("光通量(lm)");
+            EQE.Add("辐射通量(W)");
+            EQE.Add("光效(lm/W)");
+            List<string> Nomarl = new List<string>();
+            Nomarl.Add(Properties.Resources.Lv);
+
+            if (DisplayConfig.IsLuminousFluxMode)
+            {
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (EQE.Contains(item.ColumnName))
+                    {
+                        item.IsVisible = true;
+                    }
+                    if (Nomarl.Contains(item.ColumnName))
+                    {
+                        item.IsVisible = false;
+                    }
+                }
+
+            }
+            else
+            {
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (EQE.Contains(item.ColumnName))
+                    {
+                        item.IsVisible = false;
+                    }
+                    if (Nomarl.Contains(item.ColumnName))
+                    {
+                        item.IsVisible = true;
+                    }
+                }
+
+            }
+            if (listView1.View is GridView gridView)
+            {
+                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+
+            }
+
+        }
+
         private void Delete()
         {
             if (listView1.SelectedItems.Count == listView1.Items.Count)
