@@ -138,7 +138,7 @@ namespace ColorVision.Engine.Batch.IVL
 
                 for (int i = 0; i < result.SMUDatas.Count; i++)
                 {
-                    csvBuilder.AppendLine($"{timeStr},{i + 1},{result.SMUDatas[i].Voltage},{result.SMUDatas[i].Current},{result.Id},{measurementTypeStr},{Recipe},{result.ChannelType},{result.SMUDatas[i]}{result.LimitStart},{result.LimitEnd}");
+                    csvBuilder.AppendLine($"{timeStr},{i + 1},{result.SMUDatas[i].Voltage},{result.SMUDatas[i].Current},{result.Id},{measurementTypeStr},{Recipe},{result.ChannelType},{result.LimitEnd}{result.LimitStart},{result.LimitEnd}");
                 }
             }
 
