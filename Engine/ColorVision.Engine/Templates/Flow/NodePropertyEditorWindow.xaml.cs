@@ -125,6 +125,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void ToggleEditMode_Checked(object sender, RoutedEventArgs e)
         {
+            if (PropertyGridHost == null) return;
             // Show SignStackPanel, hide PropertyGrid
             PropertyGridHost.Visibility = Visibility.Collapsed;
             SignStackScrollViewer.Visibility = Visibility.Visible;
@@ -132,6 +133,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void ToggleEditMode_Unchecked(object sender, RoutedEventArgs e)
         {
+            if (PropertyGridHost == null) return;
             // Show PropertyGrid, hide SignStackPanel
             PropertyGridHost.Visibility = Visibility.Visible;
             SignStackScrollViewer.Visibility = Visibility.Collapsed;

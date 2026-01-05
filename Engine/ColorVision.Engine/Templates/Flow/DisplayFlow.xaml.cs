@@ -114,7 +114,10 @@ namespace ColorVision.Engine.Templates.Flow
 
             this.AddViewConfig(View, ComboxView);
             View.DisplayFlow = this;
-
+            Unselected += (s, e) =>
+            {
+                View.STNodeEditorHelper.PropertyEditorWindow?.Hide();
+            };
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
@@ -136,6 +139,7 @@ namespace ColorVision.Engine.Templates.Flow
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
                 _=Refresh();
             };
+            
 
             MqttRCService.GetInstance().ServiceTokensUpdated += (s, e) =>
             {

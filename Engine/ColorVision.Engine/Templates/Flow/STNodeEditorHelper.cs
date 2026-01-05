@@ -199,7 +199,6 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (STNodeEditor.ActiveNode == null)
             {
-                SignStackPanel.Visibility = Visibility.Collapsed;
                 PropertyEditorWindow?.Hide();
                 return;
             }
