@@ -129,16 +129,17 @@ namespace ColorVision.Engine.Batch.IVL
             var csvBuilder = new StringBuilder();
 
             // Write header
-            csvBuilder.AppendLine("Time,Index,Voltage(V),Current(A),ScanId,SourceMeterType,Recipe,Channel,SrcBegin,SrcEnd,Temperature");
+            csvBuilder.AppendLine("Time,Index,Voltage(V),Current(mA),ScanId,SourceMeterType,Recipe,Channel,SrcBegin,SrcEnd");
 
+            int index = 0;
             foreach (var result in viewResults)
             {
                 string measurementTypeStr = result.MeasurementType == MeasurementType.Voltage ? "Voltage" : "Current";
                 string timeStr = result.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A";
-
+                index++;
                 for (int i = 0; i < result.SMUDatas.Count; i++)
                 {
-                    csvBuilder.AppendLine($"{timeStr},{i + 1},{result.SMUDatas[i].Voltage},{result.SMUDatas[i].Current},{result.Id},{measurementTypeStr},{Recipe},{result.ChannelType},{result.LimitEnd}{result.LimitStart},{result.LimitEnd}");
+                    csvBuilder.AppendLine($"{timeStr},{index},{result.SMUDatas[i].Voltage},{result.SMUDatas[i].Current},{result.Id},{measurementTypeStr},{Recipe},{result.ChannelType},{result.LimitEnd}{result.LimitStart},{result.LimitEnd}");
                 }
             }
 
