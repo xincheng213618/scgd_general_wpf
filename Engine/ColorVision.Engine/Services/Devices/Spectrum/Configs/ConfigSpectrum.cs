@@ -6,12 +6,15 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 {
@@ -20,7 +23,25 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         CMvSpectra = 0,
         LightModule = 1,
     }
+    public class BoolToWidthConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            bool isVisible = (bool)value;
+            // If parameter is "Inverse", flip the logic
+            if (parameter != null && parameter.ToString() == "Inverse")
+            {
+                isVisible = !isVisible;
+            }
 
+            return isVisible ? double.NaN : 0.0; // double.NaN is equivalent to "Auto"
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
     public class TextSectrumSNPropertiesEditor : IPropertyEditor
     {
         public DockPanel GenProperties(PropertyInfo property, object obj)
@@ -47,11 +68,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         {
 
         }
-       
+      
 
         [PropertyEditorType(typeof(TextSectrumSNPropertiesEditor)), Category("Base")]
         public override string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
+
+        /// <summary>
+        /// 是否光通量模式
+        /// </summary>
+        public bool IsLuminousFluxMode { get => _IsLuminousFluxMode; set { _IsLuminousFluxMode = value; OnPropertyChanged(); } }
+        private bool _IsLuminousFluxMode;
+
 
         [DisplayName("DeviceAutoConnect"), Category("Base")]
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
@@ -128,7 +156,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
     {
         public bool IsNDPort { get => _IsNDPort; set { _IsNDPort = value; OnPropertyChanged(); } }
         private bool _IsNDPort;
-
 
         public bool IsBingNDDevice { get => _IsBingNDDevice; set { _IsBingNDDevice = value; OnPropertyChanged(); } }
         private bool _IsBingNDDevice = true;

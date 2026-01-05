@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -10,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -18,10 +20,30 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
+    public class BoolToWidthConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            bool isVisible = (bool)value;
+            // If parameter is "Inverse", flip the logic
+            if (parameter != null && parameter.ToString() == "Inverse")
+            {
+                isVisible = !isVisible;
+            }
+
+            return isVisible ? double.NaN : 0.0; // double.NaN is equivalent to "Auto"
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
@@ -33,8 +55,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public static ViewSpectrumConfig Config => ViewSpectrumConfig.Instance;
 
-        public ViewSpectrum()
+        public ConfigSpectrum ConfigSpectrum { get; set; }
+        public ViewSpectrum(ConfigSpectrum configSpectrum)
         {
+            ConfigSpectrum = configSpectrum;
             InitializeComponent();
         }
 
