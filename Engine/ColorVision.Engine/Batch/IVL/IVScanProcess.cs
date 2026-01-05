@@ -12,6 +12,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows.Xps;
 
 namespace ColorVision.Engine.Batch.IVL
 {
@@ -93,7 +94,7 @@ namespace ColorVision.Engine.Batch.IVL
                     }
 
                     string csvFilePath = Path.Combine(batchConfig.SavePath, $"IV_Scan_{timeStr}.csv");
-                    SaveIVScanToCsv(viewResults, csvFilePath);
+                    SaveIVScanToCsv(viewResults,ctx.FlowName , csvFilePath);
                     log.Info($"IV Scan data saved to: {csvFilePath}");
                 }
 
@@ -123,12 +124,12 @@ namespace ColorVision.Engine.Batch.IVL
             }
         }
 
-        private void SaveIVScanToCsv(ObservableCollection<ViewResultSMU> viewResults, string csvFilePath)
+        private void SaveIVScanToCsv(ObservableCollection<ViewResultSMU> viewResults, string Recipe,string csvFilePath)
         {
             var csvBuilder = new StringBuilder();
 
             // Write header
-            csvBuilder.AppendLine("Time,ScanId,MeasurementType,SrcBegin,SrcEnd,Index,Voltage(V),Current(A)");
+            csvBuilder.AppendLine("Time,Index,Voltage(V),Current(A),ScanId,SourceMeterType,Recipe,Channel,SrcBegin,SrcEnd,Temperature");
 
             foreach (var result in viewResults)
             {
@@ -137,7 +138,7 @@ namespace ColorVision.Engine.Batch.IVL
 
                 for (int i = 0; i < result.SMUDatas.Count; i++)
                 {
-                    csvBuilder.AppendLine($"{timeStr},{result.Id},{measurementTypeStr},{result.LimitStart},{result.LimitEnd},{i + 1},{result.SMUDatas[i].Voltage},{result.SMUDatas[i].Current}");
+                    csvBuilder.AppendLine($"{timeStr},{i + 1},{result.SMUDatas[i].Voltage},{result.SMUDatas[i].Current},{result.Id},{measurementTypeStr},{Recipe},{result.ChannelType},{result.SMUDatas[i]}{result.LimitStart},{result.LimitEnd}");
                 }
             }
 
