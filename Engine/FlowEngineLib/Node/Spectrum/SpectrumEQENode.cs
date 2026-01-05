@@ -10,7 +10,7 @@ public class SpectrumEQENode : CVBaseServerNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SpectrumNode));
 
-	private float _Divisor;
+	private float _AFactor;
 
 	private bool _IsCustomVI;
 
@@ -41,15 +41,15 @@ public class SpectrumEQENode : CVBaseServerNode
 	private STNodeEditText<string> m_ctrl_Dark;
 
 	[STNodeProperty("修正系数", "修正系数", true)]
-	public float Divisor
+	public float AFactor
 	{
 		get
 		{
-			return _Divisor;
+			return _AFactor;
 		}
 		set
 		{
-			_Divisor = value;
+			_AFactor = value;
 		}
 	}
 
@@ -197,7 +197,7 @@ public class SpectrumEQENode : CVBaseServerNode
 		_Current = 0f;
 		_Temp = 100f;
 		_AveNum = 1;
-		_Divisor = 1f;
+		_AFactor = 1f;
 		_OutputDataFilename = "EQEData.json";
 		_AutoIntTime = false;
 		_SelfDark = false;
@@ -274,7 +274,7 @@ public class SpectrumEQENode : CVBaseServerNode
 			AutoIntegration = _AutoIntTime,
 			SelfAdaptionInitDark = _SelfDark,
 			AutoInitDark = _AutoInitDark,
-			Divisor = _Divisor,
+			AFactor = _AFactor,
 			OutputDataFilename = _OutputDataFilename,
 			SMUData = sMUResultData
 		};

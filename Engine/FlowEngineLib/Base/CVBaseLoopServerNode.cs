@@ -39,7 +39,7 @@ public abstract class CVBaseLoopServerNode<T> : CVBaseServerNode
 		idx %= _params.Count;
 	}
 
-	protected override void Reset()
+	protected override void Reset(CVTransAction trans)
 	{
 		idx = 0;
 		base.ZIndex = -1;

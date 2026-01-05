@@ -14,7 +14,7 @@ public class SpectrumEQEParamData
 
 	public string OutputDataFilename { get; set; }
 
-	public float Divisor { get; set; } = 1f;
+	public float AFactor { get; set; } = 1f;
 
 	public SMUResultData SMUData { get; set; }
 }

@@ -178,7 +178,7 @@ public class CVBaseServerNode : CVCommonNode
 				logger.InfoFormat("[{0}]OverTime => {1} ms", ToShortString(), maxDelay);
 			}
 			cVTransAction.NodeOverTime(GetFullNodeName());
-			Reset();
+			Reset(cVTransAction);
 			m_op_end.TransferData(cVTransAction.trans_action);
 		}
 		else
@@ -192,7 +192,7 @@ public class CVBaseServerNode : CVCommonNode
 		return _MaxTime;
 	}
 
-	protected virtual void Reset()
+	protected virtual void Reset(CVTransAction trans)
 	{
 	}
 
@@ -476,7 +476,7 @@ public class CVBaseServerNode : CVCommonNode
 					cVTransByEvent.Cancel();
 				}
 				m_op_end.TransferData(e.TargetOption.Data);
-				Reset();
+				Reset(cVTransByEvent);
 			}
 			else
 			{
@@ -564,9 +564,10 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected virtual void release(string serialNumber)
 	{
+		CVTransAction cVTransAction = null;
 		if (m_trans_action.ContainsKey(serialNumber))
 		{
-			CVTransAction cVTransAction = m_trans_action[serialNumber];
+			cVTransAction = m_trans_action[serialNumber];
 			if (logger.IsDebugEnabled)
 			{
 				logger.DebugFormat("{0} release => {1}", ToShortString(), cVTransAction.trans_action.SerialNumber);
@@ -577,7 +578,7 @@ public class CVBaseServerNode : CVCommonNode
 		{
 			m_op_svr_out_act.TransferData(null);
 		}
-		Reset();
+		Reset(cVTransAction);
 	}
 
 	protected virtual CVMQTTRequest getActionEvent(STNodeOptionEventArgs e)

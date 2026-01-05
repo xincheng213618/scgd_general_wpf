@@ -18,25 +18,25 @@ public class CVEndNode : CVCommonNode
 	public CVEndNode()
 		: base("EndNode", "EndNode", "EN1", "DEV01")
 	{
+		base.Height = 160;
 	}
 
 	protected override void OnCreate()
 	{
 		base.OnCreate();
 		base.TitleColor = Color.FromArgb(200, Color.Goldenrod);
-		m_in_loop_next = new STNodeOption[2];
+		m_in_loop_next = new STNodeOption[5];
 		m_in_start = base.InputOptions.Add("IN", typeof(CVStartCFC), bSingle: true);
-		m_in_loop_next[0] = base.InputOptions.Add("IN_LOOP_NEXT1", typeof(CVLoopCFC), bSingle: true);
-		m_in_loop_next[1] = base.InputOptions.Add("IN_LOOP_NEXT2", typeof(CVLoopCFC), bSingle: true);
+		for (int i = 0; i < 5; i++)
+		{
+			m_in_loop_next[i] = base.InputOptions.Add($"IN_LOOP_NEXT{i + 1}", typeof(CVLoopCFC), bSingle: true);
+			m_in_loop_next[i].Connected += m_in_loop_next_Connected;
+			m_in_loop_next[i].DisConnected += m_in_loop_next_DisConnected;
+			m_in_loop_next[i].DataTransfer += m_in_loop_next_DataTransfer;
+		}
 		m_in_start.Connected += m_in_start_Connected;
-		m_in_loop_next[0].Connected += m_in_loop_next_Connected;
-		m_in_loop_next[1].Connected += m_in_loop_next_Connected;
 		m_in_start.DisConnected += m_in_start_DisConnected;
-		m_in_loop_next[0].DisConnected += m_in_loop_next_DisConnected;
-		m_in_loop_next[1].DisConnected += m_in_loop_next_DisConnected;
 		m_in_start.DataTransfer += m_in_start_DataTransfer;
-		m_in_loop_next[0].DataTransfer += m_in_loop_next_DataTransfer;
-		m_in_loop_next[1].DataTransfer += m_in_loop_next_DataTransfer;
 	}
 
 	protected virtual void m_in_loop_next_DataTransfer(object sender, STNodeOptionEventArgs e)

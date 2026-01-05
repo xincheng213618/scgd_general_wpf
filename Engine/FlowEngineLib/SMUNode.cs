@@ -328,4 +328,13 @@ public class SMUNode : CVBaseServerNode, ICVLoopNextNode
 		}
 		return result;
 	}
+
+	protected override void Reset(CVTransAction trans)
+	{
+		logger.DebugFormat("[{0}]Reset", ToShortString());
+		if (m_IsCloseOutput && trans != null)
+		{
+			SendToCloseOutput(trans);
+		}
+	}
 }

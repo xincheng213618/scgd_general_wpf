@@ -24,7 +24,7 @@ namespace ColorVision.Engine
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SqlInitialized));
 
-        public static Version Version { get; set; } = new Version(4, 0, 0,108);
+        public static Version Version { get; set; } = new Version(4,0 , 1,100);
 
         public Task Initialize()
         {
