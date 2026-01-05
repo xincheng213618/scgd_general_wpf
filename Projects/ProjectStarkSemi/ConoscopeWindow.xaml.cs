@@ -602,7 +602,11 @@ namespace ProjectStarkSemi
             }
 
             ImageView.Clear();
-
+            if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
+            {
+                toolReferenceLine.IsChecked = false;
+                toolReferenceLine.IsChecked = true;
+            }
             ImageView.OpenImage(filename);
             ImageView.ImageShow.ImageInitialized += (s, e) =>
             {
@@ -2008,7 +2012,6 @@ namespace ProjectStarkSemi
         {
             this.Close();
         }
-
         private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
             DisplayFlow.GetInstance().RunFlow();

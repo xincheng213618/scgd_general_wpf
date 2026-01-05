@@ -108,8 +108,11 @@ namespace ColorVision.Engine.Templates.Flow
         private MeasureBatchModel _Batch;
         public event EventHandler<MeasureBatchModel> BatchRecord;
 
+        public double BatchProgress { get => _BatchProgress; set { _BatchProgress = value; OnPropertyChanged(); } }
+        private double _BatchProgress ;
 
         public ServiceConfig ServiceConfig { get; set; }
+
 
         public ObservableCollection<CVBaseServerNode> CVBaseServerNodes { get; set; } = new ObservableCollection<CVBaseServerNode>();
 

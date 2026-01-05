@@ -309,7 +309,11 @@
             <StackPanel x:Name="StackPanelControl" Width="300" >
                 <StackPanel Margin="0,0,0,5" >
                     <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}">
-                        <Button Content="ExecuteFlow"  x:Name="ButtonRun" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
+                        <StackPanel>
+                            <Button Content="ExecuteFlow"  x:Name="ButtonRun" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
+                            <ProgressBar  Maximum="100" Value="{Binding FlowEngineManager.BatchProgress}"/>
+                        </StackPanel>
+ 
                     </Border>
                 </StackPanel>
             </StackPanel>

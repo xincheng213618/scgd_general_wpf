@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using log4net;
 using System.Windows;
@@ -16,6 +17,7 @@ namespace ProjectStarkSemi.Conoscope
 
         public ConoscopeConfig Config { get; set; }
         public RelayCommand EditConoscopeConfigCommand { get; set; }
+        public FlowEngineManager FlowEngineManager => FlowEngineManager.GetInstance();
 
         public void EditConoscopeConfig()
         {

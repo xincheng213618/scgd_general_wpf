@@ -54,10 +54,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
         [SugarColumn(ColumnName = "nd_port", IsNullable = true, ColumnDescription = "ND滤轮")]
         public bool? NDPort { get; set; }
 
-        [SugarColumn(ColumnName = "params", IsNullable = true, ColumnDescription = "参数")]
+        [SugarColumn(ColumnName = "params", IsNullable = true, ColumnDataType = "json", ColumnDescription = "参数")]
         public string? Params { get; set; }
 
-        [SugarColumn(ColumnName = "a_factor", IsNullable = true, ColumnDataType = "json", ColumnDescription = "EQE修正系数")]
+        [SugarColumn(ColumnName = "a_factor", IsNullable = true, ColumnDescription = "EQE修正系数")]
         public float? AFactor { get; set; }
 
         [SugarColumn(ColumnName = "eqe", IsNullable = true, ColumnDescription = "EQE")]

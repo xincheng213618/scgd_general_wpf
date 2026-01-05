@@ -255,7 +255,7 @@ namespace ColorVision.Engine.Templates.Flow
             ButtonStop.Visibility = Visibility.Collapsed;
             string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{Msg1}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
             View.logTextBox.Text = msg;
-            View.ProgressBar1.Value = 100;
+            FlowEngineManager.BatchProgress = 100;
             log.Info(msg);
 
             if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
@@ -411,7 +411,7 @@ namespace ColorVision.Engine.Templates.Flow
                     if (LastFlowTime != 0)
                     {
                         double perfect = (double) elapsedMilliseconds / (double)LastFlowTime * 100;
-                        View.ProgressBar1.Value = perfect >= 100 ?  99:perfect;
+                        FlowEngineManager.BatchProgress = perfect >= 100 ?  99:perfect;
                     }
                     View.logTextBox.Text = msg;
                 });
@@ -515,7 +515,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
-            View.ProgressBar1.Value = 0;
+            FlowEngineManager.BatchProgress = 0;
 
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

@@ -139,7 +139,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-                        <ProgressBar x:Name="ProgressBar1" Maximum="100"/>
+                        <ProgressBar  Maximum="100" Value="{Binding FlowEngineManager.BatchProgress}"/>
                         <TextBox x:FieldModifier="public" x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="100"  Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True"/>
 
                     </Grid>
