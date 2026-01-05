@@ -624,7 +624,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             ScatterPlots.Clear();
             AbsoluteScatterPlots.Clear();
 
-            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultEntity>();
+            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultEntity>().Where(x => x.DataType == DisplayConfig.IsLuminousFluxMode);
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)

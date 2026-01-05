@@ -129,8 +129,8 @@ namespace ColorVision.Engine.Batch.Eqe
                 var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
                 // Query EQE results for this batch
-                var eqeResults = DB.Queryable<EqeResultEntity>()
-                    .Where(x => x.BatchId == ctx.Batch.Id)
+                var eqeResults = DB.Queryable<SpectumResultEntity>()
+                    .Where(x => x.BatchId == ctx.Batch.Id && x.DataType == true)
                     .ToList();
 
                 DB.Dispose();

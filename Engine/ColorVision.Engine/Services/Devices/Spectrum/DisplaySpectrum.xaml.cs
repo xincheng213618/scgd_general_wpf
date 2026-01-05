@@ -244,38 +244,5 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
-
-        private void GetEQE_Click(object sender, RoutedEventArgs e)
-        {
-            MsgRecord msgRecord = DService.GetEqe();
-            msgRecord.MsgRecordStateChanged += (e) =>
-            {
-                if (e == MsgRecordState.Success)
-                {
-                    int MasterId = msgRecord.MsgReturn.Data.MasterId;
-                    if(MasterId > 0)
-                    {
-                        var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                        // Query EQE results for this batch
-                        var eqeResult = DB.Queryable<EqeResultEntity>()
-                            .Where(x => x.Id == MasterId)
-                            .First();
-
-                        DB.Dispose();
-
-                        ObservableCollection<ViewResultEqe> ViewResults = new ObservableCollection<ViewResultEqe>();
-                        ViewResults.Add(new ViewResultEqe(eqeResult));
-                        EqeWindow eqeWindow = EqeWindow.GetEqeWindow(ViewResults);
-                        eqeWindow.Show();
-                    }
-
-                }
-                else
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
-                }
-            };
-        }
     }
 }

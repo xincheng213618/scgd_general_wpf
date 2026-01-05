@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using cvColorVision;
 using iText.Commons.Bouncycastle.Asn1.X509;
+using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.DataSources;
@@ -229,6 +230,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             Id = item.Id;
             BatchID = item.BatchId;
             CreateTime = item.CreateDate;
+            V = item.VResult;
+            I = item.IResult;
             IntTime = item.IntTime;
             fx = item.fx ?? 0;
             fy = item.fy ?? 0;
@@ -259,6 +262,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             LuminousFlux = item.LuminousFlux ?? 0;
             RadiantFlux = item.RadiantFlux ?? 0;
             LuminousEfficacy = item.LuminousEfficacy ?? 0;
+
 
 
             if (!string.IsNullOrWhiteSpace(item.fPL_file_name) && File.Exists(item.fPL_file_name))
@@ -292,44 +296,44 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             LuminousFlux = (float)(fCIEy * ViewSpectrumConfig.Instance.divisor);
 
-            if (fPL.Length > 0)
-            {
-                double step_nm = 0.1;
-                double sum_Power = 0.0;
+            //if (fPL.Length > 0)
+            //{
+            //    double step_nm = 0.1;
+            //    double sum_Power = 0.0;
 
-                for (int i = 0; i < 4001; i++)
-                {
-                    double P_val = fPlambda * fPL[i]; // 绝对功率 (W/nm)
-                    sum_Power += P_val;
-                }
-                RadiantFlux = sum_Power * step_nm;
-            }
+            //    for (int i = 0; i < 4001; i++)
+            //    {
+            //        double P_val = fPlambda * fPL[i]; // 绝对功率 (W/nm)
+            //        sum_Power += P_val;
+            //    }
+            //    RadiantFlux = sum_Power * step_nm;
+            //}
 
-            if (item.SmuDataId > 0)
-            {
-                var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                var smuResult = DB.Queryable<SMUResultModel>().Where(x => x.Id == item.SmuDataId).First();
-                DB.Dispose();
-                if (smuResult != null)
-                {
-                    V = smuResult.VResult;
-                    I = smuResult.IResult;
-                }
+            //if (item.SmuDataId > 0)
+            //{
+            //    var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            //    var smuResult = DB.Queryable<SMUResultModel>().Where(x => x.Id == item.SmuDataId).First();
+            //    DB.Dispose();
+            //    if (smuResult != null)
+            //    {
+            //        V = smuResult.VResult;
+            //        I = smuResult.IResult;
+            //    }
 
-                if (I.HasValue && I.Value != 0 && fPL.Length > 0)
-                {
-                    CalculateEqe(I.Value /1000);
-                }
+            //    if (I.HasValue && I.Value != 0 && fPL.Length > 0)
+            //    {
+            //        CalculateEqe(I.Value /1000);
+            //    }
 
-                if (RadiantFlux.HasValue && RadiantFlux.Value != 0)
-                {
-                    LuminousEfficacy = LuminousFlux / (V*I/1000);
-                }
-                else
-                {
-                    LuminousEfficacy = 0;
-                }
-            }
+            //    if (RadiantFlux.HasValue && RadiantFlux.Value != 0)
+            //    {
+            //        LuminousEfficacy = LuminousFlux / (V*I/1000);
+            //    }
+            //    else
+            //    {
+            //        LuminousEfficacy = 0;
+            //    }
+            //}
 
             Gen();
 
@@ -415,20 +419,20 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             fCIEz_2015 = item.fCIEz_2015;
 
 
-            LuminousFlux = (float)(fCIEy * ViewSpectrumConfig.Instance.divisor);
+            //LuminousFlux = (float)(fCIEy * ViewSpectrumConfig.Instance.divisor);
 
-            if (fPL.Length > 0)
-            {
-                double step_nm = 0.1;
-                double sum_Power = 0.0;
+            //if (fPL.Length > 0)
+            //{
+            //    double step_nm = 0.1;
+            //    double sum_Power = 0.0;
 
-                for (int i = 0; i < 4001; i++)
-                {
-                    double P_val = fPlambda * fPL[i]; // 绝对功率 (W/nm)
-                    sum_Power += P_val;
-                }
-                RadiantFlux = sum_Power * step_nm;
-            }
+            //    for (int i = 0; i < 4001; i++)
+            //    {
+            //        double P_val = fPlambda * fPL[i]; // 绝对功率 (W/nm)
+            //        sum_Power += P_val;
+            //    }
+            //    RadiantFlux = sum_Power * step_nm;
+            //}
 
             Gen();
         }
