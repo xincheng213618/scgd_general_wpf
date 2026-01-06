@@ -347,7 +347,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 // 更新 ViewModel 中的电流属性（可选）
                 I = currentA;
                 // 调用我们在 ViewModel 中新加的方法
-                CalculateEqe(currentA);
+                CalculateEqe((currentA / 1000));
             }
             else
             {

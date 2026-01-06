@@ -588,6 +588,7 @@ namespace ProjectStarkSemi
                     Buffer.BlockCopy(fileInfo.Data, channelSize * 2, dataZ, 0, channelSize);
 
                     XMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, singleChannelType, dataX);
+
                     YMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, singleChannelType, dataY);
 
                     ZMat = OpenCvSharp.Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, singleChannelType, dataZ);
