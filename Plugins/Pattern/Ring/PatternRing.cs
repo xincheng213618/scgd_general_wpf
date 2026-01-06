@@ -66,6 +66,11 @@ namespace Pattern.Ring
         public bool DrawCenterLine { get => _DrawCenterLine; set { _DrawCenterLine = value; OnPropertyChanged(); } }
         private bool _DrawCenterLine = true;
 
+        [PropertyVisibility(nameof(DrawCenterLine), true)]
+        [DisplayName("中心线宽度")]
+        public int CenterLineWidth { get => _CenterLineWidth; set { _CenterLineWidth = value; OnPropertyChanged(); } }
+        private int _CenterLineWidth = 2;
+
         [DisplayName("尺寸模式")]
         public PatternSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
         private PatternSizeMode _SizeMode = PatternSizeMode.ByFieldOfView;
@@ -184,11 +189,12 @@ namespace Pattern.Ring
             {
                 int centerXInt = (int)Math.Round(centerX);
                 int centerYInt = (int)Math.Round(centerY);
+                int lineWidth = Math.Max(1, Config.CenterLineWidth);
                 
                 // Horizontal line
-                Cv2.Line(ring, new Point(0, centerYInt), new Point(fovWidth - 1, centerYInt), Config.AltBrush.ToScalar(), 2);
+                Cv2.Line(ring, new Point(0, centerYInt), new Point(fovWidth - 1, centerYInt), Config.AltBrush.ToScalar(), lineWidth);
                 // Vertical line
-                Cv2.Line(ring, new Point(centerXInt, 0), new Point(centerXInt, fovHeight - 1), Config.AltBrush.ToScalar(), 2);
+                Cv2.Line(ring, new Point(centerXInt, 0), new Point(centerXInt, fovHeight - 1), Config.AltBrush.ToScalar(), lineWidth);
             }
 
             // If dimensions match the entire image, return directly
