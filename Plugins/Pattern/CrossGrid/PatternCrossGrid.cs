@@ -73,12 +73,12 @@ namespace Pattern.CrossGrid
         public bool AddEdgeLines { get => _AddEdgeLines; set { _AddEdgeLines = value; OnPropertyChanged(); } }
         private bool _AddEdgeLines;
 
-        [PropertyVisibility(nameof(AddEdgeLines), true)]
+        [PropertyVisibility(nameof(AddEdgeLines))]
         [DisplayName("边缘偏移量")]
         public int EdgeOffsetPx { get => _EdgeOffsetPx; set { _EdgeOffsetPx = value; OnPropertyChanged(); } }
         private int _EdgeOffsetPx = 200;
 
-        [PropertyVisibility(nameof(AddEdgeLines), true)]
+        [PropertyVisibility(nameof(AddEdgeLines))]
         [DisplayName("边缘线宽度")]
         public int EdgeThickness { get => _EdgeThickness; set { _EdgeThickness = value; OnPropertyChanged(); } }
         private int _EdgeThickness = 5;
@@ -114,8 +114,20 @@ namespace Pattern.CrossGrid
         public override UserControl GetPatternEditor() => new CrossGridEditor(Config); // 可自定义编辑器
         public override string GetTemplateName()
         {
-            string baseName = "CrossGrid" + "_" + DateTime.Now.ToString("HHmmss");
-            
+            string baseName = "CrossGrid";
+            if (Config.DrawMode == CrossGridDrawMode.ByCount)
+            {
+                baseName += $"_ByCount_{Config.NumLinesHorizontal}x{Config.NumLinesVertical}";
+            }
+            else
+            {
+                baseName += $"_BySpacing_{Config.SpacingHorizontal}x{Config.SpacingVertical}";
+            }
+
+            if (Config.AddEdgeLines)
+            {
+                baseName += $"_EdgeLines_{Config.EdgeOffsetPx}x{Config.EdgeThickness}";
+            }
             // Add FOV/Pixel suffix
             if (Config.SizeMode == PatternSizeMode.ByPixelSize)
             {
@@ -126,7 +138,7 @@ namespace Pattern.CrossGrid
                 // Only add suffix if not full FOV
                 if (Config.FieldOfViewX != 1.0 || Config.FieldOfViewY != 1.0)
                 {
-                    baseName += $"_FOV_{Config.FieldOfViewX:0.##}x{Config.FieldOfViewY:0.##}";
+                    baseName += $"_View_{Config.FieldOfViewX:0.##}x{Config.FieldOfViewY:0.##}";
                 }
             }
             
