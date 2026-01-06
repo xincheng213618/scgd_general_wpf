@@ -160,7 +160,8 @@
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Button>
-                        <Button DockPanel.Dock="Right" Content="Reset" Click="Reset_Click"  Margin="8,0,0,0" />
+                        <Button DockPanel.Dock="Right" Content="保存默认" Click="SaveAsDefault_Click" Margin="8,0,0,0" ToolTip="保存当前配置为用户默认值" />
+                        <Button DockPanel.Dock="Right" Content="Reset" Click="Reset_Click"  Margin="8,0,0,0" ToolTip="重置到用户默认值" />
                         <ComboBox x:Name="cmbPattern1" DisplayMemberPath="Name" Height="28"/>
                     </DockPanel>
                     <!-- 模板参数编辑区 -->

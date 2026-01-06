@@ -252,10 +252,40 @@ namespace Pattern
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
+            if (PatternMeta == null) return;
+
             Type type = PatternMeta.Pattern.GetType();
-            IPattern pattern = (IPattern)Activator.CreateInstance(type);
-            PatternMeta.Pattern.SetConfig(pattern.GetConfig().ToJsonN());
+            
+            // Try to load user default first
+            string userDefault = PatternUserDefaultManager.LoadUserDefault(type);
+            if (userDefault != null)
+            {
+                // Reset to user default
+                PatternMeta.Pattern.SetConfig(userDefault);
+            }
+            else
+            {
+                // Reset to class default
+                IPattern pattern = (IPattern)Activator.CreateInstance(type);
+                PatternMeta.Pattern.SetConfig(pattern.GetConfig().ToJsonN());
+            }
+            
             PatternEditorGrid.Child = PatternMeta.Pattern.GetPatternEditor();
+        }
+
+        private void SaveAsDefault_Click(object sender, RoutedEventArgs e)
+        {
+            if (PatternMeta == null) return;
+
+            try
+            {
+                PatternUserDefaultManager.SaveUserDefault(PatternMeta.Pattern);
+                MessageBox.Show("当前配置已保存为默认值", "保存成功", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"保存失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public void SetTemplatePattern(string templatePath)

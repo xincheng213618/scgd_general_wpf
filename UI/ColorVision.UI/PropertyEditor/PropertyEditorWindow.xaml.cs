@@ -136,6 +136,24 @@ namespace ColorVision.UI
             }
         }
 
+        private void ResetToFactory_Click(object sender, RoutedEventArgs e)
+        {
+            SearchBox.Text = string.Empty;  // Clear search when resetting
+            
+            if (!IsEdit)
+            {
+                // Reset EditConfig to class default
+                EditConfig.Reset();
+                PropertyPanel.Children.Clear();
+                DisplayProperties(EditConfig);
+            }
+            else
+            {
+                // Reset Config to class default
+                Config.Reset();
+            }
+        }
+
 
         public void GenCategoryGroups(object source)
         {
