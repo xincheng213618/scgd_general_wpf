@@ -254,23 +254,34 @@ namespace Pattern
         {
             if (PatternMeta == null) return;
 
-            Type type = PatternMeta.Pattern.GetType();
-            
-            // Try to load user default first
-            string userDefault = PatternUserDefaultManager.LoadUserDefault(type);
-            if (userDefault != null)
+            try
             {
-                // Reset to user default
-                PatternMeta.Pattern.SetConfig(userDefault);
+                Type type = PatternMeta.Pattern.GetType();
+                
+                // Try to load user default first
+                string userDefault = PatternUserDefaultManager.LoadUserDefault(type);
+                if (userDefault != null)
+                {
+                    // Reset to user default
+                    PatternMeta.Pattern.SetConfig(userDefault);
+                }
+                else
+                {
+                    // Reset to class default
+                    IPattern pattern = (IPattern)Activator.CreateInstance(type);
+                    if (pattern != null)
+                    {
+                        PatternMeta.Pattern.SetConfig(pattern.GetConfig().ToJsonN());
+                    }
+                }
+                
+                PatternEditorGrid.Child = PatternMeta.Pattern.GetPatternEditor();
             }
-            else
+            catch (Exception ex)
             {
-                // Reset to class default
-                IPattern pattern = (IPattern)Activator.CreateInstance(type);
-                PatternMeta.Pattern.SetConfig(pattern.GetConfig().ToJsonN());
+                log.Error($"Failed to reset pattern: {ex.Message}", ex);
+                MessageBox.Show($"重置失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            
-            PatternEditorGrid.Child = PatternMeta.Pattern.GetPatternEditor();
         }
 
         private void SaveAsDefault_Click(object sender, RoutedEventArgs e)

@@ -1,8 +1,11 @@
 using ColorVision.Common.Utilities;
+using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Pattern
 {
@@ -12,17 +15,21 @@ namespace Pattern
     public class PatternUserDefaultManager
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PatternUserDefaultManager));
-        private static readonly string UserDefaultPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), 
-            "ColorVision", 
-            "Pattern", 
-            "UserDefaults");
-
-        static PatternUserDefaultManager()
+        private static readonly Lazy<string> _userDefaultPath = new Lazy<string>(() =>
         {
-            if (!Directory.Exists(UserDefaultPath))
-                Directory.CreateDirectory(UserDefaultPath);
-        }
+            string path = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "ColorVision",
+                "Pattern",
+                "UserDefaults");
+            
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+                
+            return path;
+        });
+
+        private static string UserDefaultPath => _userDefaultPath.Value;
 
         /// <summary>
         /// Save current configuration as user default for the pattern type
@@ -99,7 +106,20 @@ namespace Pattern
 
         private static string GetUserDefaultPath(string typeName)
         {
-            string safeFileName = typeName.Replace('.', '_').Replace('<', '_').Replace('>', '_');
+            // Sanitize the type name to create a safe filename
+            // Remove all invalid filename characters
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+            string safeFileName = string.Join("_", typeName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
+            
+            // Also replace additional potentially problematic characters
+            safeFileName = Regex.Replace(safeFileName, @"[<>:""/\\|?*]", "_");
+            
+            // Ensure filename isn't too long (leave room for .json extension)
+            if (safeFileName.Length > 200)
+            {
+                safeFileName = safeFileName.Substring(0, 200);
+            }
+            
             return Path.Combine(UserDefaultPath, $"{safeFileName}.json");
         }
     }
