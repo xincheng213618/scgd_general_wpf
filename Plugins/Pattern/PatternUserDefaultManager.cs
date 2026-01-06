@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace Pattern
 {
@@ -110,9 +109,6 @@ namespace Pattern
             // Remove all invalid filename characters
             char[] invalidChars = Path.GetInvalidFileNameChars();
             string safeFileName = string.Join("_", typeName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
-            
-            // Also replace additional potentially problematic characters
-            safeFileName = Regex.Replace(safeFileName, @"[<>:""/\\|?*]", "_");
             
             // Ensure filename isn't too long (leave room for .json extension)
             if (safeFileName.Length > 200)
