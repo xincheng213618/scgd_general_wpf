@@ -7,28 +7,58 @@ using System.Windows.Media;
 
 namespace Pattern.CrossGrid
 {
+    /// <summary>
+    /// 十字网格绘制模式
+    /// </summary>
+    public enum CrossGridDrawMode
+    {
+        /// <summary>
+        /// 按数量绘制（指定线条数量，自动计算间隔）
+        /// </summary>
+        [Description("按数量")]
+        ByCount,
+        /// <summary>
+        /// 按间隔绘制（指定间隔，自动计算线条数量）
+        /// </summary>
+        [Description("按间隔")]
+        BySpacing
+    }
 
     public class PatternCrossGridConfig:ViewModelBase,IConfig
     {
+        [DisplayName("绘制模式")]
+        public CrossGridDrawMode DrawMode { get => _DrawMode; set { _DrawMode = value; OnPropertyChanged(); } }
+        private CrossGridDrawMode _DrawMode = CrossGridDrawMode.ByCount;
 
-        // 网格参数
+        // 按数量模式的参数
+        [PropertyVisibility(nameof(DrawMode), CrossGridDrawMode.ByCount)]
+        [DisplayName("水平线条数")]
         public int NumLinesHorizontal { get => _NumLinesHorizontal; set { _NumLinesHorizontal = value; OnPropertyChanged(); } }
-        private int _NumLinesHorizontal = 3;
+        private int _NumLinesHorizontal = 5;
 
+        [PropertyVisibility(nameof(DrawMode), CrossGridDrawMode.ByCount)]
+        [DisplayName("垂直线条数")]
         public int NumLinesVertical { get => _NumLinesVertical; set { _NumLinesVertical = value; OnPropertyChanged(); } }
-        private int _NumLinesVertical = 3;
+        private int _NumLinesVertical = 5;
 
+        // 按间隔模式的参数
+        [PropertyVisibility(nameof(DrawMode), CrossGridDrawMode.BySpacing)]
+        [DisplayName("水平间隔")]
         public int SpacingHorizontal { get => _SpacingHorizontal; set { _SpacingHorizontal = value; OnPropertyChanged(); } }
-        private int _SpacingHorizontal = 400;
+        private int _SpacingHorizontal = 200;
 
+        [PropertyVisibility(nameof(DrawMode), CrossGridDrawMode.BySpacing)]
+        [DisplayName("垂直间隔")]
         public int SpacingVertical { get => _SpacingVertical; set { _SpacingVertical = value; OnPropertyChanged(); } }
-        private int _SpacingVertical = 400;
+        private int _SpacingVertical = 200;
 
+        [DisplayName("水平线宽度")]
         public int HorizontalLineWidth { get => _HorizontalLineWidth; set { _HorizontalLineWidth = value; OnPropertyChanged(); } }
-        private int _HorizontalLineWidth = 9;
+        private int _HorizontalLineWidth = 5;
 
+        [DisplayName("垂直线宽度")]
         public int VerticalLineWidth { get => _VerticalLineWidth; set { _VerticalLineWidth = value; OnPropertyChanged(); } }
-        private int _VerticalLineWidth = 9;
+        private int _VerticalLineWidth = 5;
 
 
         public SolidColorBrush LineBrush { get => _LineBrush; set { _LineBrush = value; OnPropertyChanged(); } }
@@ -38,19 +68,20 @@ namespace Pattern.CrossGrid
         private SolidColorBrush _BackgroundBrush = Brushes.Black;
 
 
-        // 额外的边缘/内边距加粗线（模拟 MATLAB 中 200px 处的加粗线）
+        // 边缘线配置
+        [DisplayName("绘制边缘线")]
         public bool AddEdgeLines { get => _AddEdgeLines; set { _AddEdgeLines = value; OnPropertyChanged(); } }
-        private bool _AddEdgeLines = true;
+        private bool _AddEdgeLines;
 
+        [PropertyVisibility(nameof(AddEdgeLines), true)]
+        [DisplayName("边缘偏移量")]
         public int EdgeOffsetPx { get => _EdgeOffsetPx; set { _EdgeOffsetPx = value; OnPropertyChanged(); } }
         private int _EdgeOffsetPx = 200;
 
+        [PropertyVisibility(nameof(AddEdgeLines), true)]
+        [DisplayName("边缘线宽度")]
         public int EdgeThickness { get => _EdgeThickness; set { _EdgeThickness = value; OnPropertyChanged(); } }
-        private int _EdgeThickness = 9;
-
-        // 是否水平拼接两张（等价于 [img, img]）
-        public bool DuplicateHorizontally { get => _DuplicateHorizontally; set { _DuplicateHorizontally = value; OnPropertyChanged(); } }
-        private bool _DuplicateHorizontally = true;
+        private int _EdgeThickness = 5;
 
         [DisplayName("尺寸模式")]
         public PatternSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
@@ -77,7 +108,7 @@ namespace Pattern.CrossGrid
         private int _PixelHeight = 100;
     }
 
-    [DisplayName("十字网格"),Browsable(false)]
+    [DisplayName("十字网格")]
     public class PatternCrossGrid : IPatternBase<PatternCrossGridConfig>
     {
         public override UserControl GetPatternEditor() => new CrossGridEditor(Config); // 可自定义编辑器
@@ -127,26 +158,18 @@ namespace Pattern.CrossGrid
 
             Mat grid = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, bg);
 
-            // 计算水平线位置（用 fovHeight）
-            if (Config.NumLinesHorizontal > 0 && Config.SpacingHorizontal > 0)
+            // 根据绘制模式计算线条位置
+            if (Config.DrawMode == CrossGridDrawMode.ByCount)
             {
-                int startY = (fovHeight - (Config.NumLinesHorizontal * Config.SpacingHorizontal)) + 1; // 对齐 MATLAB 逻辑
-                for (int i = 0; i < Config.NumLinesHorizontal; i++)
-                {
-                    int y = startY + i * Config.SpacingHorizontal;
-                    DrawHorizontalLine(grid, y, Config.HorizontalLineWidth, line);
-                }
+                // 按数量模式：指定线条数量，均匀分布
+                DrawLinesByCount(grid, Config.NumLinesHorizontal, Config.NumLinesVertical, 
+                    Config.HorizontalLineWidth, Config.VerticalLineWidth, line);
             }
-
-            // 计算竖直线位置（用 fovWidth）
-            if (Config.NumLinesVertical > 0 && Config.SpacingVertical > 0)
+            else // BySpacing
             {
-                int startX = (fovWidth - (Config.NumLinesVertical * Config.SpacingVertical)) + 1; // 对齐 MATLAB 逻辑
-                for (int i = 0; i < Config.NumLinesVertical; i++)
-                {
-                    int x = startX + i * Config.SpacingVertical;
-                    DrawVerticalLine(grid, x, Config.VerticalLineWidth, line);
-                }
+                // 按间隔模式：指定间隔，自动计算线条数量
+                DrawLinesBySpacing(grid, Config.SpacingHorizontal, Config.SpacingVertical,
+                    Config.HorizontalLineWidth, Config.VerticalLineWidth, line);
             }
 
             // 边缘/内边距加粗线，默认在距离边界 EdgeOffsetPx 处加粗（水平+竖直）
@@ -168,32 +191,6 @@ namespace Pattern.CrossGrid
                     DrawVerticalLine(grid, fovWidth - off, t, line);
             }
 
-            if (Config.DuplicateHorizontally)
-            {
-                Mat combined = new Mat();
-                Cv2.HConcat(new[] { grid, grid }, combined);
-                
-                // If dimensions match the entire image, return directly
-                if (fovWidth * 2 == width && fovHeight == height)
-                {
-                    return combined;
-                }
-                else
-                {
-                    // Create background mat and paste combined grid in center
-                    var mat = new Mat(height, width, MatType.CV_8UC3, bg);
-                    int startX = (width - fovWidth * 2) / 2;
-                    int startY = (height - fovHeight) / 2;
-                    int combinedWidth = Math.Min(fovWidth * 2, width - startX);
-
-                    combined[new Rect(0, 0, combinedWidth, fovHeight)].CopyTo(mat[new Rect(startX, startY, combinedWidth, fovHeight)]);
-                    combined.Dispose();
-                    grid.Dispose();
-
-                    return mat;
-                }
-            }
-
             // If dimensions match the entire image, return directly
             if (fovWidth == width && fovHeight == height)
             {
@@ -210,6 +207,92 @@ namespace Pattern.CrossGrid
                 grid.Dispose();
 
                 return mat;
+            }
+        }
+
+        /// <summary>
+        /// 按数量模式绘制：指定线条数量，均匀分布
+        /// </summary>
+        private static void DrawLinesByCount(Mat img, int numHorizontal, int numVertical, 
+            int hThickness, int vThickness, Scalar color)
+        {
+            int h = img.Rows;
+            int w = img.Cols;
+
+            // 绘制水平线：在高度方向均匀分布
+            if (numHorizontal > 0)
+            {
+                for (int i = 0; i < numHorizontal; i++)
+                {
+                    // 均匀分布：将高度分成 (numHorizontal + 1) 段，线条在每段之间
+                    int y = (int)((i + 1) * h / (double)(numHorizontal + 1));
+                    DrawHorizontalLine(img, y, hThickness, color);
+                }
+            }
+
+            // 绘制垂直线：在宽度方向均匀分布
+            if (numVertical > 0)
+            {
+                for (int i = 0; i < numVertical; i++)
+                {
+                    // 均匀分布：将宽度分成 (numVertical + 1) 段，线条在每段之间
+                    int x = (int)((i + 1) * w / (double)(numVertical + 1));
+                    DrawVerticalLine(img, x, vThickness, color);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 按间隔模式绘制：指定间隔，自动计算线条数量并居中
+        /// </summary>
+        private static void DrawLinesBySpacing(Mat img, int hSpacing, int vSpacing,
+            int hThickness, int vThickness, Scalar color)
+        {
+            int h = img.Rows;
+            int w = img.Cols;
+
+            // 绘制水平线：按指定间隔，从中心向两边分布
+            if (hSpacing > 0)
+            {
+                int centerY = h / 2;
+                int numLines = (h / hSpacing) + 1;  // 计算能容纳的线条数
+                
+                // 从中心线开始
+                DrawHorizontalLine(img, centerY, hThickness, color);
+                
+                // 向上和向下绘制
+                for (int i = 1; i * hSpacing < h / 2; i++)
+                {
+                    int yUp = centerY - i * hSpacing;
+                    int yDown = centerY + i * hSpacing;
+                    
+                    if (yUp >= 0 && yUp < h)
+                        DrawHorizontalLine(img, yUp, hThickness, color);
+                    if (yDown >= 0 && yDown < h)
+                        DrawHorizontalLine(img, yDown, hThickness, color);
+                }
+            }
+
+            // 绘制垂直线：按指定间隔，从中心向两边分布
+            if (vSpacing > 0)
+            {
+                int centerX = w / 2;
+                int numLines = (w / vSpacing) + 1;  // 计算能容纳的线条数
+                
+                // 从中心线开始
+                DrawVerticalLine(img, centerX, vThickness, color);
+                
+                // 向左和向右绘制
+                for (int i = 1; i * vSpacing < w / 2; i++)
+                {
+                    int xLeft = centerX - i * vSpacing;
+                    int xRight = centerX + i * vSpacing;
+                    
+                    if (xLeft >= 0 && xLeft < w)
+                        DrawVerticalLine(img, xLeft, vThickness, color);
+                    if (xRight >= 0 && xRight < w)
+                        DrawVerticalLine(img, xRight, vThickness, color);
+                }
             }
         }
 
