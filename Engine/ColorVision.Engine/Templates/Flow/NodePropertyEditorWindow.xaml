@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.Flow"
         xmlns:st="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
         mc:Ignorable="d"
-        Title="属性编辑器" Height="450" Width="300"
+        Title="属性编辑器" Height="450" Width="450"
         WindowStyle="ToolWindow"
         ShowInTaskbar="False"
         Topmost="False"

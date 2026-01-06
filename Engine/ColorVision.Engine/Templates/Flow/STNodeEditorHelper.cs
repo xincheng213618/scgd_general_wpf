@@ -53,6 +53,7 @@ using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIRevise;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.Engine.Templates.Validate;
+using ColorVision.UI;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
 using FlowEngineLib.Node.Algorithm;
@@ -229,9 +230,17 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "发光区定位", new TemplateRoi());
                 AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "FocusPoints", new TemplateFocusPoints());
                 AddStackPanel(name => algorithmFindLightAreaNode.SavePOITempName = name, algorithmFindLightAreaNode.SavePOITempName, "保存POI", new TemplatePoi());
-
-
             }
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Spectrum.SpectrumEQENode SpectrumEQENode)
+            {
+                AddStackPanel(name => SpectrumEQENode.DeviceCode = name, SpectrumEQENode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().ToList());
+            }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Spectrum.SpectrumNode SpectrumNode)
+            {
+                AddStackPanel(name => SpectrumNode.DeviceCode = name, SpectrumNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().ToList());
+            }
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmFindLEDNode algorithmFindLEDNode)
             {
                 AddStackPanel(name => algorithmFindLEDNode.DeviceCode = name, algorithmFindLEDNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
@@ -636,16 +645,7 @@ namespace ColorVision.Engine.Templates.Flow
                 Refesh();
             }
 
-            if (STNodeEditor.ActiveNode is CVBaseServerNode baseServerNode)
-            {
-                Type type = typeof(CVBaseServerNode);
-                TextboxPropertiesEditor textboxPropertiesEditor = new TextboxPropertiesEditor();
-
-                SignStackPanel.Children.Add(textboxPropertiesEditor.GenProperties(type.GetProperty("MaxTime"), baseServerNode));
-            }
-
-
-
+            SignStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode));
             SignStackPanel.Visibility = SignStackPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
 
