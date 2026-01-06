@@ -283,6 +283,29 @@ namespace Pattern
                 MessageBox.Show($"重置失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+        private void ResetSaveAsDefault_Click(object sender, RoutedEventArgs e)
+        {                  
+            if (PatternMeta == null) return;
+
+            try
+            {
+                Type type = PatternMeta.Pattern.GetType();
+
+                // Reset to class default
+                IPattern pattern = (IPattern)Activator.CreateInstance(type);
+                if (pattern != null)
+                {
+                    PatternMeta.Pattern.SetConfig(pattern.GetConfig().ToJsonN());
+                }
+                PatternUserDefaultManager.SaveUserDefault(PatternMeta.Pattern);
+                PatternEditorGrid.Child = PatternMeta.Pattern.GetPatternEditor();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Failed to reset pattern: {ex.Message}", ex);
+                MessageBox.Show($"重置失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
         private void SaveAsDefault_Click(object sender, RoutedEventArgs e)
         {

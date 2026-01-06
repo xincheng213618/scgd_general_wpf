@@ -160,8 +160,8 @@
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Button>
-                        <Button DockPanel.Dock="Right" Content="保存默认" Click="SaveAsDefault_Click" Margin="8,0,0,0" ToolTip="保存当前配置为用户默认值" />
-                        <Button DockPanel.Dock="Right" Content="Reset" Click="Reset_Click"  Margin="8,0,0,0" ToolTip="重置到用户默认值(如果有)或类默认值" />
+                        <Button DockPanel.Dock="Right" Content="重置默认配置" Click="ResetSaveAsDefault_Click" Margin="8,0,0,0" ToolTip="重置默认配置" />
+                        <Button DockPanel.Dock="Right" Content="重置" Click="Reset_Click"  Margin="8,0,0,0" ToolTip="重置到用户默认值(如果有)或类默认值" />
                         <ComboBox x:Name="cmbPattern1" DisplayMemberPath="Name" Height="28"/>
                     </DockPanel>
                     <!-- 模板参数编辑区 -->
@@ -171,8 +171,9 @@
             <!-- 操作按钮区 -->
             <Grid Grid.Row="1" Margin="0,0,0,8">
                 <StackPanel>
-                    <UniformGrid Columns="2" Margin="0,0,0,8">
+                    <UniformGrid Columns="3" Margin="0,0,0,8">
                         <Button Content="保存到模板" Click="TempSave_Click" Height="40" Margin="0,0,4,0" ToolTip="保存当前参数到模板"/>
+                        <Button Content="保存到默认" Click="SaveAsDefault_Click" Height="40" Margin="0,0,4,0" ToolTip="保存当前参数到模板"/>
                         <Button Content="生成图卡" Click="PatternGen_Click" Height="40" Margin="4,0,0,0" ToolTip="生成当前图卡"/>
                     </UniformGrid>
                     <DockPanel>
