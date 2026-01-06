@@ -4,6 +4,21 @@ using System.Windows.Controls;
 
 namespace Pattern
 {
+    /// <summary>
+    /// 图案尺寸模式：按视场系数或按像素尺寸
+    /// </summary>
+    public enum PatternSizeMode
+    {
+        /// <summary>
+        /// 按视场系数（0-1.0）
+        /// </summary>
+        ByFieldOfView,
+        /// <summary>
+        /// 按像素尺寸
+        /// </summary>
+        ByPixelSize
+    }
+
     public interface IPattern
     {
         ViewModelBase GetConfig();

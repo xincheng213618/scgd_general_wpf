@@ -51,6 +51,30 @@ namespace Pattern.CrossGrid
         // 是否水平拼接两张（等价于 [img, img]）
         public bool DuplicateHorizontally { get => _DuplicateHorizontally; set { _DuplicateHorizontally = value; OnPropertyChanged(); } }
         private bool _DuplicateHorizontally = true;
+
+        [DisplayName("尺寸模式")]
+        public PatternSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
+        private PatternSizeMode _SizeMode = PatternSizeMode.ByFieldOfView;
+
+        [PropertyVisibility(nameof(SizeMode), PatternSizeMode.ByFieldOfView)]
+        [DisplayName("视场系数X")]
+        public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
+        private double _FieldOfViewX = 1.0;
+
+        [PropertyVisibility(nameof(SizeMode), PatternSizeMode.ByFieldOfView)]
+        [DisplayName("视场系数Y")]
+        public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
+        private double _FieldOfViewY = 1.0;
+
+        [PropertyVisibility(nameof(SizeMode), PatternSizeMode.ByPixelSize)]
+        [DisplayName("像素宽度")]
+        public int PixelWidth { get => _PixelWidth; set { _PixelWidth = value; OnPropertyChanged(); } }
+        private int _PixelWidth = 100;
+
+        [PropertyVisibility(nameof(SizeMode), PatternSizeMode.ByPixelSize)]
+        [DisplayName("像素高度")]
+        public int PixelHeight { get => _PixelHeight; set { _PixelHeight = value; OnPropertyChanged(); } }
+        private int _PixelHeight = 100;
     }
 
     [DisplayName("十字网格"),Browsable(false)]
@@ -59,34 +83,69 @@ namespace Pattern.CrossGrid
         public override UserControl GetPatternEditor() => new CrossGridEditor(Config); // 可自定义编辑器
         public override string GetTemplateName()
         {
-            return "CrossGrid" + "_" + DateTime.Now.ToString("HHmmss");
+            string baseName = "CrossGrid" + "_" + DateTime.Now.ToString("HHmmss");
+            
+            // Add FOV/Pixel suffix
+            if (Config.SizeMode == PatternSizeMode.ByPixelSize)
+            {
+                baseName += $"_Pixel_{Config.PixelWidth}x{Config.PixelHeight}";
+            }
+            else // ByFieldOfView
+            {
+                // Only add suffix if not full FOV
+                if (Config.FieldOfViewX != 1.0 || Config.FieldOfViewY != 1.0)
+                {
+                    baseName += $"_FOV_{Config.FieldOfViewX:0.##}x{Config.FieldOfViewY:0.##}";
+                }
+            }
+            
+            return baseName;
         }
         public override Mat Gen(int height, int width)
         {
+            int fovWidth, fovHeight;
+
+            // Calculate dimensions based on size mode
+            if (Config.SizeMode == PatternSizeMode.ByPixelSize)
+            {
+                // Use pixel-based dimensions
+                fovWidth = Math.Min(Config.PixelWidth, width);
+                fovHeight = Math.Min(Config.PixelHeight, height);
+            }
+            else // ByFieldOfView
+            {
+                // Use field-of-view coefficients
+                double fovx = Math.Max(0, Math.Min(Config.FieldOfViewX, 1.0));
+                double fovy = Math.Max(0, Math.Min(Config.FieldOfViewY, 1.0));
+
+                fovWidth = (int)(width * fovx);
+                fovHeight = (int)(height * fovy);
+            }
+
             Scalar bg = Config.BackgroundBrush.ToScalar();
             Scalar line = Config.LineBrush.ToScalar();
 
-            Mat img = new Mat(height, width, MatType.CV_8UC3, bg);
+            Mat grid = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, bg);
 
-            // 计算水平线位置（用 height）
+            // 计算水平线位置（用 fovHeight）
             if (Config.NumLinesHorizontal > 0 && Config.SpacingHorizontal > 0)
             {
-                int startY = (height - (Config.NumLinesHorizontal * Config.SpacingHorizontal)) + 1; // 对齐 MATLAB 逻辑
+                int startY = (fovHeight - (Config.NumLinesHorizontal * Config.SpacingHorizontal)) + 1; // 对齐 MATLAB 逻辑
                 for (int i = 0; i < Config.NumLinesHorizontal; i++)
                 {
                     int y = startY + i * Config.SpacingHorizontal;
-                    DrawHorizontalLine(img, y, Config.HorizontalLineWidth, line);
+                    DrawHorizontalLine(grid, y, Config.HorizontalLineWidth, line);
                 }
             }
 
-            // 计算竖直线位置（用 width）
+            // 计算竖直线位置（用 fovWidth）
             if (Config.NumLinesVertical > 0 && Config.SpacingVertical > 0)
             {
-                int startX = (width - (Config.NumLinesVertical * Config.SpacingVertical)) + 1; // 对齐 MATLAB 逻辑
+                int startX = (fovWidth - (Config.NumLinesVertical * Config.SpacingVertical)) + 1; // 对齐 MATLAB 逻辑
                 for (int i = 0; i < Config.NumLinesVertical; i++)
                 {
                     int x = startX + i * Config.SpacingVertical;
-                    DrawVerticalLine(img, x, Config.VerticalLineWidth, line);
+                    DrawVerticalLine(grid, x, Config.VerticalLineWidth, line);
                 }
             }
 
@@ -97,26 +156,61 @@ namespace Pattern.CrossGrid
                 int t = Config.EdgeThickness;
 
                 // 水平两条
-                if (off >= 0 && off < height)
-                    DrawHorizontalLine(img, off, t, line);
-                if (height - off >= 0 && height - off < height)
-                    DrawHorizontalLine(img, height - off, t, line);
+                if (off >= 0 && off < fovHeight)
+                    DrawHorizontalLine(grid, off, t, line);
+                if (fovHeight - off >= 0 && fovHeight - off < fovHeight)
+                    DrawHorizontalLine(grid, fovHeight - off, t, line);
 
                 // 竖直两条
-                if (off >= 0 && off < width)
-                    DrawVerticalLine(img, off, t, line);
-                if (width - off >= 0 && width - off < width)
-                    DrawVerticalLine(img, width - off, t, line);
+                if (off >= 0 && off < fovWidth)
+                    DrawVerticalLine(grid, off, t, line);
+                if (fovWidth - off >= 0 && fovWidth - off < fovWidth)
+                    DrawVerticalLine(grid, fovWidth - off, t, line);
             }
 
             if (Config.DuplicateHorizontally)
             {
                 Mat combined = new Mat();
-                Cv2.HConcat(new[] { img, img }, combined);
-                return combined;
+                Cv2.HConcat(new[] { grid, grid }, combined);
+                
+                // If dimensions match the entire image, return directly
+                if (fovWidth * 2 == width && fovHeight == height)
+                {
+                    return combined;
+                }
+                else
+                {
+                    // Create background mat and paste combined grid in center
+                    var mat = new Mat(height, width, MatType.CV_8UC3, bg);
+                    int startX = (width - fovWidth * 2) / 2;
+                    int startY = (height - fovHeight) / 2;
+                    int combinedWidth = Math.Min(fovWidth * 2, width - startX);
+
+                    combined[new Rect(0, 0, combinedWidth, fovHeight)].CopyTo(mat[new Rect(startX, startY, combinedWidth, fovHeight)]);
+                    combined.Dispose();
+                    grid.Dispose();
+
+                    return mat;
+                }
             }
 
-            return img;
+            // If dimensions match the entire image, return directly
+            if (fovWidth == width && fovHeight == height)
+            {
+                return grid;
+            }
+            else
+            {
+                // Create background mat and paste grid in center
+                var mat = new Mat(height, width, MatType.CV_8UC3, bg);
+                int startX = (width - fovWidth) / 2;
+                int startY = (height - fovHeight) / 2;
+
+                grid.CopyTo(mat[new Rect(startX, startY, fovWidth, fovHeight)]);
+                grid.Dispose();
+
+                return mat;
+            }
         }
 
         private static void DrawHorizontalLine(Mat img, int centerY, int thickness, Scalar color)
