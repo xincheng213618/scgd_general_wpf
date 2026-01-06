@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Interop;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
@@ -53,10 +54,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
-                log.Info(Msg);
+                log.Debug(Msg);
                 try
                 {
                     MsgReturn msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
+
+                    if (Config.Code != null && msg.DeviceCode != Config.Code) return Task.CompletedTask;
+
                     if (msg == null)
                         return Task.CompletedTask;
                     if (msg.Code == 0 || msg.Code == 102)

@@ -148,28 +148,28 @@
                             </GridViewColumn>
                             <GridViewColumn Header="EQE">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewResultEqe}">
+                                    <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding Eqe, StringFormat={}{0:F4}}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn Header="光通量(lm)">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewResultEqe}">
+                                    <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding LuminousFlux, StringFormat={}{0:F4}}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn Header="辐射通量(W)" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewResultEqe}">
+                                    <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding RadiantFlux, StringFormat={}{0:F6}}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn Header="光效(lm/W)">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewResultEqe}">
+                                    <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding LuminousEfficacy, StringFormat={}{0:F4}}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>

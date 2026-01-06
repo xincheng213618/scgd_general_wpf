@@ -42,6 +42,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 try
                 {
                     MsgReturn msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
+                    if (Config.Code != null && msg.DeviceCode != Config.Code) return Task.CompletedTask;
+
                     if (msg == null)
                         return Task.CompletedTask;
 

@@ -70,6 +70,8 @@ namespace ProjectARVR
         BKscreeenDefectDetection
     }
 
+
+
     [SugarTable("ARVRReuslt")]
     public class ProjectARVRReuslt : ViewEntity 
     {
