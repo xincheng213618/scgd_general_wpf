@@ -141,9 +141,9 @@ namespace Pattern.Ring
             // Generate ring pattern within FOV dimensions
             var ring = new Mat(fovHeight, fovWidth, MatType.CV_8UC3, Config.MainBrush.ToScalar());
             
-            // Calculate center point
-            double centerX = Config.UseCustomCenter ? Config.CenterX : fovWidth / 2.0;
-            double centerY = Config.UseCustomCenter ? Config.CenterY : fovHeight / 2.0;
+            // Calculate center point with validation
+            double centerX = Config.UseCustomCenter ? Math.Max(0, Math.Min(Config.CenterX, fovWidth)) : fovWidth / 2.0;
+            double centerY = Config.UseCustomCenter ? Math.Max(0, Math.Min(Config.CenterY, fovHeight)) : fovHeight / 2.0;
             
             // Calculate maximum radius based on center position
             double maxR = Math.Min(
@@ -157,7 +157,7 @@ namespace Pattern.Ring
                 // Use pixel radius values
                 foreach (var radius in Config.PixelRadii)
                 {
-                    if (radius > 0 && radius <= maxR)
+                    if (radius > 0 && radius <= maxR - ringWidth / 2.0)
                     {
                         Cv2.Circle(ring, new Point(centerX, centerY), radius, Config.AltBrush.ToScalar(), ringWidth, LineTypes.AntiAlias);
                     }
@@ -171,7 +171,10 @@ namespace Pattern.Ring
                     if (ratio > 0 && ratio <= 1.0)
                     {
                         int radius = (int)Math.Round(maxR * ratio);
-                        Cv2.Circle(ring, new Point(centerX, centerY), radius, Config.AltBrush.ToScalar(), ringWidth, LineTypes.AntiAlias);
+                        if (radius <= maxR - ringWidth / 2.0)
+                        {
+                            Cv2.Circle(ring, new Point(centerX, centerY), radius, Config.AltBrush.ToScalar(), ringWidth, LineTypes.AntiAlias);
+                        }
                     }
                 }
             }
