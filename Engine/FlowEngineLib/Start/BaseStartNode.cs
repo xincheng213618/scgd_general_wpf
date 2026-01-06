@@ -24,15 +24,18 @@ public abstract class BaseStartNode : CVCommonNode
 
 	protected Dictionary<string, List<CVServiceProxy>> topicServerProxy;
 
+	protected int LoopNum = 2;
+
 	public bool Ready { get; set; }
 
 	public bool Running { get; set; }
 
 	public event FlowStartEventHandler Finished;
 
-	protected BaseStartNode(string title)
+	protected BaseStartNode(string title, int loopNum = 2)
 		: base(title, "StartNode", "S1", "DEV01")
 	{
+		LoopNum = loopNum;
 		topicServer = new Dictionary<string, List<CVBaseServerNode>>();
 		topicServerProxy = new Dictionary<string, List<CVServiceProxy>>();
 		startActions = new Dictionary<string, CVStartCFC>();
@@ -47,8 +50,8 @@ public abstract class BaseStartNode : CVCommonNode
 		base.TitleColor = Color.FromArgb(200, Color.Goldenrod);
 		m_op_start = new STNodeOption("OUT_START", typeof(CVStartCFC), bSingle: false);
 		base.OutputOptions.Add(m_op_start);
-		m_op_loop = new STNodeOption[5];
-		for (int i = 0; i < 5; i++)
+		m_op_loop = new STNodeOption[LoopNum];
+		for (int i = 0; i < LoopNum; i++)
 		{
 			m_op_loop[i] = base.OutputOptions.Add($"OUT_LOOP{i + 1}", typeof(CVLoopCFC), bSingle: false);
 			m_op_loop[i].Connected += m_op_loop_Connected;

@@ -7,7 +7,7 @@ using ST.Library.UI.NodeEditor;
 namespace FlowEngineLib.End;
 
 [STNode("/00 全局")]
-public class CVEndNode : CVCommonNode
+public class CVEndV5Node : CVCommonNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(CVEndNode));
 
@@ -15,18 +15,19 @@ public class CVEndNode : CVCommonNode
 
 	protected STNodeOption[] m_in_loop_next;
 
-	public CVEndNode()
-		: base("EndNode", "EndNode", "EN1", "DEV01")
+	public CVEndV5Node()
+		: base("EndV5Node", "EndNode", "EN1", "DEV01")
 	{
+		base.Height = 160;
 	}
 
 	protected override void OnCreate()
 	{
 		base.OnCreate();
 		base.TitleColor = Color.FromArgb(200, Color.Goldenrod);
-		m_in_loop_next = new STNodeOption[2];
+		m_in_loop_next = new STNodeOption[5];
 		m_in_start = base.InputOptions.Add("IN", typeof(CVStartCFC), bSingle: true);
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			m_in_loop_next[i] = base.InputOptions.Add($"IN_LOOP_NEXT{i + 1}", typeof(CVLoopCFC), bSingle: true);
 			m_in_loop_next[i].Connected += m_in_loop_next_Connected;

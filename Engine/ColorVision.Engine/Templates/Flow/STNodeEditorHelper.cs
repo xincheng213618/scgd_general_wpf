@@ -761,6 +761,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
+                STNodeEditorMain_ActiveChanged(this,new EventArgs());
             };
 
             // Create a ToggleButton
