@@ -48,10 +48,6 @@ namespace Pattern.CrossGrid
         public int EdgeThickness { get => _EdgeThickness; set { _EdgeThickness = value; OnPropertyChanged(); } }
         private int _EdgeThickness = 9;
 
-        // 是否水平拼接两张（等价于 [img, img]）
-        public bool DuplicateHorizontally { get => _DuplicateHorizontally; set { _DuplicateHorizontally = value; OnPropertyChanged(); } }
-        private bool _DuplicateHorizontally = true;
-
         [DisplayName("尺寸模式")]
         public PatternSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
         private PatternSizeMode _SizeMode = PatternSizeMode.ByFieldOfView;
@@ -77,7 +73,7 @@ namespace Pattern.CrossGrid
         private int _PixelHeight = 100;
     }
 
-    [DisplayName("十字网格"),Browsable(false)]
+    [DisplayName("十字网格")]
     public class PatternCrossGrid : IPatternBase<PatternCrossGridConfig>
     {
         public override UserControl GetPatternEditor() => new CrossGridEditor(Config); // 可自定义编辑器
@@ -166,32 +162,6 @@ namespace Pattern.CrossGrid
                     DrawVerticalLine(grid, off, t, line);
                 if (fovWidth - off >= 0 && fovWidth - off < fovWidth)
                     DrawVerticalLine(grid, fovWidth - off, t, line);
-            }
-
-            if (Config.DuplicateHorizontally)
-            {
-                Mat combined = new Mat();
-                Cv2.HConcat(new[] { grid, grid }, combined);
-                
-                // If dimensions match the entire image, return directly
-                if (fovWidth * 2 == width && fovHeight == height)
-                {
-                    return combined;
-                }
-                else
-                {
-                    // Create background mat and paste combined grid in center
-                    var mat = new Mat(height, width, MatType.CV_8UC3, bg);
-                    int startX = (width - fovWidth * 2) / 2;
-                    int startY = (height - fovHeight) / 2;
-                    int combinedWidth = Math.Min(fovWidth * 2, width - startX);
-
-                    combined[new Rect(0, 0, combinedWidth, fovHeight)].CopyTo(mat[new Rect(startX, startY, combinedWidth, fovHeight)]);
-                    combined.Dispose();
-                    grid.Dispose();
-
-                    return mat;
-                }
             }
 
             // If dimensions match the entire image, return directly
