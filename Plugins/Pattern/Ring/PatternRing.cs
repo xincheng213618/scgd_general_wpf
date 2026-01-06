@@ -52,12 +52,12 @@ namespace Pattern.Ring
         public bool UseCustomCenter { get => _UseCustomCenter; set { _UseCustomCenter = value; OnPropertyChanged(); } }
         private bool _UseCustomCenter;
 
-        [PropertyVisibility(nameof(UseCustomCenter), true)]
+        [PropertyVisibility(nameof(UseCustomCenter))]
         [DisplayName("圆心X坐标")]
         public int CenterX { get => _CenterX; set { _CenterX = value; OnPropertyChanged(); } }
         private int _CenterX;
 
-        [PropertyVisibility(nameof(UseCustomCenter), true)]
+        [PropertyVisibility(nameof(UseCustomCenter))]
         [DisplayName("圆心Y坐标")]
         public int CenterY { get => _CenterY; set { _CenterY = value; OnPropertyChanged(); } }
         private int _CenterY;
