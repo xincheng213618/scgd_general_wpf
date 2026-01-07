@@ -98,7 +98,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
                                 try
                                 {
-                                    double IntegralTime = msg?.Data?.IntegrationTime;
+                                    double? IntegralTime = msg?.Data?.IntegralTime;
                                     Device.DisplayConfig.IntTime = (float)IntegralTime;
 
                                 }
@@ -138,7 +138,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
                                     try
                                     {
-                                        double IntegralTime = msg?.Data?.IntegrationTime;
+                                        double? IntegralTime = msg?.Data?.IntegralTime;
                                         Device.DisplayConfig.IntTime = (float)IntegralTime;
 
                                     }
