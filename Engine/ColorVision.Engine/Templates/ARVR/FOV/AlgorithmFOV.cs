@@ -11,7 +11,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.FOV
 {
-    [DisplayAlgorithm(53, "FOV", "ARVR")]
+    [DisplayAlgorithm(53, "FOV1.0", "ARVR")]
     public class AlgorithmFOV : DisplayAlgorithmBase
     {
 

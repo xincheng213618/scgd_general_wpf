@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
     projects = {
         'ColorVision': {
-            'msbuild_path': r'C:\\Program Files\\Microsoft Visual Studio\\2022\\Preview\\MSBuild\\Current\\Bin\\msbuild.exe',
+            'msbuild_path': r'C:\\Program Files\\Microsoft Visual Studio\\18\\Insiders\\MSBuild\\Current\\Bin\\MSBuild.exe',
             'solution_path': os.path.join(base_path, 'build.sln'),
             'advanced_installer_path': os.path.join(base_path,'..', 'AdvancedInstaller v19.7.1', 'App', 'ProgramFiles', 'bin', 'x86', 'AdvancedInstaller.com'),
             # 动态路径：仅修改这两个字段

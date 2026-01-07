@@ -10,7 +10,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Ghost
 {
-    [DisplayAlgorithm(54, "鬼影", "ARVR")]
+    [DisplayAlgorithm(54, "Ghost1.0", "ARVR")]
     public class AlgorithmGhost : DisplayAlgorithmBase
     {
 
