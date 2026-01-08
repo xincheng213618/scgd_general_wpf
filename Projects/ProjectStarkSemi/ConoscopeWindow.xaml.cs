@@ -1274,7 +1274,9 @@ namespace ProjectStarkSemi
                         Angle = phi
                     };
 
-                    double radians = phi * Math.PI / 180.0;
+                    // Add 90° to place 0° at the top (first quadrant/north)
+                    // Negate to make rotation counter-clockwise in screen coordinates
+                    double radians = (90 - phi) * Math.PI / 180.0;
 
                     // Sample from center (theta=0) to edge (theta=MaxAngle)
                     for (int theta = 0; theta <= (int)MaxAngle; theta++)
@@ -1458,7 +1460,9 @@ namespace ProjectStarkSemi
                         // Sample points along the circle (360 samples for full circle, one per degree)
                         for (int anglePos = 0; anglePos <= 360; anglePos++)
                         {
-                            double radians = anglePos * Math.PI / 180.0;
+                            // Add 90° to place 0° at the top (first quadrant/north)
+                            // Negate to make rotation counter-clockwise in screen coordinates
+                            double radians = (90 - anglePos) * Math.PI / 180.0;
                             double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
                             double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
 
@@ -1544,7 +1548,9 @@ namespace ProjectStarkSemi
         private void CreatePolarLine(double angle, System.Windows.Point center, int radius, BitmapSource bitmapSource)
         {
             // Convert angle to radians
-            double radians = angle * Math.PI / 180.0;
+            // Add 90° to place 0° at the top (first quadrant/north)
+            // Negate to make rotation counter-clockwise in screen coordinates
+            double radians = (90 - angle) * Math.PI / 180.0;
 
             // Calculate line endpoints
             double dx = radius * Math.Cos(radians);
@@ -1760,7 +1766,9 @@ namespace ProjectStarkSemi
                 for (int i = 0; i < numSamples; i++)
                 {
                     double anglePos = i * 360.0 / numSamples; // 0.5 degree intervals
-                    double radians = anglePos * Math.PI / 180.0;
+                    // Add 90° to place 0° at the top (first quadrant/north)
+                    // Negate to make rotation counter-clockwise in screen coordinates
+                    double radians = (90 - anglePos) * Math.PI / 180.0;
                     double x = center.X + radiusPixels * Math.Cos(radians);
                     double y = center.Y + radiusPixels * Math.Sin(radians);
 
@@ -2014,6 +2022,508 @@ namespace ProjectStarkSemi
         private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
             DisplayFlow.GetInstance().RunFlow();
+        }
+
+        /// <summary>
+        /// 高级导出按钮点击事件
+        /// </summary>
+        private void btnAdvancedExport_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (currentBitmapSource == null)
+                {
+                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var dialog = new AdvancedExportDialog { Owner = this };
+                if (dialog.ShowDialog() == true)
+                {
+                    var settings = dialog.Settings;
+                    PerformAdvancedExport(settings);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"高级导出失败: {ex.Message}", ex);
+                MessageBox.Show($"高级导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 执行高级导出
+        /// </summary>
+        private void PerformAdvancedExport(AdvancedExportSettings settings)
+        {
+            try
+            {
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                int filesExported = 0;
+
+                // Handle cross-section export separately
+                if (settings.EnableCrossSection)
+                {
+                    ExportCrossSection(settings, timestamp, ref filesExported);
+                    MessageBox.Show($"截面导出完成，共导出 {filesExported} 个文件", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    log.Info($"截面导出完成: {filesExported} 个文件");
+                    return;
+                }
+
+                // Export azimuth data
+                if (settings.ExportAzimuth)
+                {
+                    foreach (var channel in settings.Channels)
+                    {
+                        string filename = $"{settings.FilePrefix}_Azimuth_{channel}_{timestamp}.csv";
+                        var saveFileDialog = new SaveFileDialog
+                        {
+                            Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                            DefaultExt = "csv",
+                            FileName = filename,
+                            RestoreDirectory = true
+                        };
+
+                        if (saveFileDialog.ShowDialog() == true)
+                        {
+                            ExportAzimuthWithStep(saveFileDialog.FileName, channel, settings.AzimuthStep);
+                            filesExported++;
+                            log.Info($"方位角导出成功: {saveFileDialog.FileName}");
+                        }
+                        else
+                        {
+                            break; // User cancelled
+                        }
+                    }
+                }
+
+                // Export polar data
+                if (settings.ExportPolar)
+                {
+                    foreach (var channel in settings.Channels)
+                    {
+                        string filename = $"{settings.FilePrefix}_Polar_{channel}_{ConoscopeConfig.CurrentModel}_{timestamp}.csv";
+                        var saveFileDialog = new SaveFileDialog
+                        {
+                            Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                            DefaultExt = "csv",
+                            FileName = filename,
+                            RestoreDirectory = true
+                        };
+
+                        if (saveFileDialog.ShowDialog() == true)
+                        {
+                            ExportPolarWithStep(saveFileDialog.FileName, channel, settings.PolarStep, settings.CircumferentialStep);
+                            filesExported++;
+                            log.Info($"极角导出成功: {saveFileDialog.FileName}");
+                        }
+                        else
+                        {
+                            break; // User cancelled
+                        }
+                    }
+                }
+
+                MessageBox.Show($"导出完成，共导出 {filesExported} 个文件", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                log.Info($"高级导出完成: {filesExported} 个文件");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"高级导出执行失败: {ex.Message}", ex);
+                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 导出截面数据
+        /// </summary>
+        private void ExportCrossSection(AdvancedExportSettings settings, string timestamp, ref int filesExported)
+        {
+            try
+            {
+                foreach (var channel in settings.Channels)
+                {
+                    string sectionType = settings.CrossSectionType == CrossSectionType.Azimuth ? "Azimuth" : "Polar";
+                    string filename = $"{settings.FilePrefix}_CrossSection_{sectionType}_{settings.CrossSectionAngle}deg_{channel}_{timestamp}.csv";
+                    
+                    var saveFileDialog = new SaveFileDialog
+                    {
+                        Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                        DefaultExt = "csv",
+                        FileName = filename,
+                        RestoreDirectory = true
+                    };
+
+                    if (saveFileDialog.ShowDialog() == true)
+                    {
+                        if (settings.CrossSectionType == CrossSectionType.Azimuth)
+                        {
+                            ExportAzimuthCrossSection(saveFileDialog.FileName, channel, settings.CrossSectionAngle);
+                        }
+                        else
+                        {
+                            ExportPolarCrossSection(saveFileDialog.FileName, channel, settings.CrossSectionAngle);
+                        }
+                        filesExported++;
+                        log.Info($"截面导出成功: {saveFileDialog.FileName}");
+                    }
+                    else
+                    {
+                        break; // User cancelled
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"截面导出失败: {ex.Message}", ex);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 按步进导出方位角数据
+        /// </summary>
+        private void ExportAzimuthWithStep(string filePath, ExportChannel channel, int step)
+        {
+            if (currentBitmapSource == null)
+            {
+                log.Warn("没有图像数据，无法导出");
+                return;
+            }
+
+            OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
+
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                {
+                    // Write header comments
+                    writer.WriteLine($"# Azimuth Export Data (with step = {step})");
+                    writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                    writer.WriteLine($"# Export Channel: {channel}");
+                    writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
+                    writer.WriteLine($"# Max Angle: {MaxAngle}°");
+                    writer.WriteLine($"# Phi (Column): Azimuth angle (0°-180°, step={step})");
+                    writer.WriteLine($"# Theta (Row): Polar radius (0 to MaxAngle)");
+                    writer.WriteLine();
+
+                    // Create list of angles to export based on step
+                    var anglesToExport = new List<int>();
+                    for (int phi = 0; phi <= 180; phi += step)
+                    {
+                        anglesToExport.Add(phi);
+                    }
+
+                    // Write CSV header
+                    StringBuilder headerLine = new StringBuilder();
+                    headerLine.Append("Phi \\ Theta");
+                    foreach (var angle in anglesToExport)
+                    {
+                        headerLine.Append($",{angle}");
+                    }
+                    writer.WriteLine(headerLine.ToString());
+
+                    // Sample data for each angle
+                    var angleData = new List<List<RgbSample>>();
+                    foreach (var phi in anglesToExport)
+                    {
+                        var samples = new List<RgbSample>();
+                        // Add 90° to place 0° at the top (first quadrant/north)
+                        // Negate to make rotation counter-clockwise in screen coordinates
+                        double radians = (90 - phi) * Math.PI / 180.0;
+
+                        for (int theta = 0; theta <= (int)MaxAngle; theta++)
+                        {
+                            double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
+                            double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                            double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
+
+                            int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
+                            int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+
+                            double r = 0, g = 0, b = 0;
+                            double X = 0, Y = 0, Z = 0;
+
+                            ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
+
+                            samples.Add(new RgbSample
+                            {
+                                Position = theta,
+                                R = r,
+                                G = g,
+                                B = b,
+                                X = X,
+                                Y = Y,
+                                Z = Z
+                            });
+                        }
+                        angleData.Add(samples);
+                    }
+
+                    // Write data rows
+                    int maxSamples = angleData[0].Count;
+                    for (int i = 0; i < maxSamples; i++)
+                    {
+                        StringBuilder dataLine = new StringBuilder();
+                        dataLine.Append($"{angleData[0][i].Position:F2}");
+
+                        foreach (var samples in angleData)
+                        {
+                            if (samples.Count > i)
+                            {
+                                double value = GetChannelValue(samples[i], channel);
+                                dataLine.Append($",{value:F2}");
+                            }
+                            else
+                            {
+                                dataLine.Append(",");
+                            }
+                        }
+                        writer.WriteLine(dataLine.ToString());
+                    }
+
+                    log.Info($"方位角导出完成，步进={step}, 角度数={anglesToExport.Count}, 通道={channel}");
+                }
+            }
+            finally
+            {
+                mat.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 按步进导出极角数据
+        /// </summary>
+        private void ExportPolarWithStep(string filePath, ExportChannel channel, int polarStep, int circumStep)
+        {
+            if (currentBitmapSource == null)
+            {
+                log.Warn("没有图像数据，无法导出");
+                return;
+            }
+
+            OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
+
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                {
+                    // Write header comments
+                    writer.WriteLine($"# Polar Angle Export Data (polar step = {polarStep}, circumferential step = {circumStep})");
+                    writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                    writer.WriteLine($"# Export Channel: {channel}");
+                    writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
+                    writer.WriteLine($"# Max Angle: {MaxAngle}°");
+                    writer.WriteLine($"# Phi (Column): Polar radius angle (0-{MaxAngle}°, step={polarStep})");
+                    writer.WriteLine($"# Theta (Row): Circumferential angle (0-360°, step={circumStep})");
+                    writer.WriteLine();
+
+                    // Create list of polar angles to export
+                    var polarAngles = new List<int>();
+                    for (int phi = 0; phi <= (int)MaxAngle; phi += polarStep)
+                    {
+                        polarAngles.Add(phi);
+                    }
+
+                    // Write CSV header
+                    StringBuilder headerLine = new StringBuilder();
+                    headerLine.Append("Phi \\ Theta");
+                    foreach (var angle in polarAngles)
+                    {
+                        headerLine.Append($",{angle}");
+                    }
+                    writer.WriteLine(headerLine.ToString());
+
+                    // Sample data for each polar angle
+                    var polarData = new List<List<RgbSample>>();
+                    foreach (var polarAngle in polarAngles)
+                    {
+                        var samples = new List<RgbSample>();
+                        double radiusPixels = polarAngle / ConoscopeConfig.ConoscopeCoefficient;
+
+                        for (int theta = 0; theta <= 360; theta += circumStep)
+                        {
+                            // Add 90° to place 0° at the top (first quadrant/north)
+                            // Negate to make rotation counter-clockwise in screen coordinates
+                            double radians = (90 - theta) * Math.PI / 180.0;
+                            double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                            double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
+
+                            int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
+                            int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+
+                            double r = 0, g = 0, b = 0;
+                            double X = 0, Y = 0, Z = 0;
+
+                            ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
+
+                            samples.Add(new RgbSample
+                            {
+                                Position = theta,
+                                R = r,
+                                G = g,
+                                B = b,
+                                X = X,
+                                Y = Y,
+                                Z = Z
+                            });
+                        }
+                        polarData.Add(samples);
+                    }
+
+                    // Write data rows
+                    int maxSamples = polarData[0].Count;
+                    for (int i = 0; i < maxSamples; i++)
+                    {
+                        StringBuilder dataLine = new StringBuilder();
+                        dataLine.Append($"{polarData[0][i].Position}");
+
+                        foreach (var samples in polarData)
+                        {
+                            if (samples.Count > i)
+                            {
+                                double value = GetChannelValue(samples[i], channel);
+                                dataLine.Append($",{value:F2}");
+                            }
+                            else
+                            {
+                                dataLine.Append(",");
+                            }
+                        }
+                        writer.WriteLine(dataLine.ToString());
+                    }
+
+                    log.Info($"极角导出完成，极角步进={polarStep}, 圆周步进={circumStep}, 极角数={polarAngles.Count}, 通道={channel}");
+                }
+            }
+            finally
+            {
+                mat.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 导出方位角截面数据
+        /// </summary>
+        private void ExportAzimuthCrossSection(string filePath, ExportChannel channel, double azimuthAngle)
+        {
+            if (currentBitmapSource == null)
+            {
+                log.Warn("没有图像数据，无法导出");
+                return;
+            }
+
+            OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
+
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                {
+                    // Write header comments
+                    writer.WriteLine($"# Azimuth Cross-Section Export (Angle = {azimuthAngle}°)");
+                    writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                    writer.WriteLine($"# Export Channel: {channel}");
+                    writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
+                    writer.WriteLine($"# Max Angle: {MaxAngle}°");
+                    writer.WriteLine();
+
+                    // Write CSV header
+                    writer.WriteLine("Polar Radius (degrees),Value");
+
+                    // Add 90° to place 0° at the top (first quadrant/north)
+                    // Negate to make rotation counter-clockwise in screen coordinates
+                    double radians = (90 - azimuthAngle) * Math.PI / 180.0;
+
+                    // Sample from center to edge
+                    for (int theta = 0; theta <= (int)MaxAngle; theta++)
+                    {
+                        double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
+                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
+
+                        int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
+                        int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+
+                        double r = 0, g = 0, b = 0;
+                        double X = 0, Y = 0, Z = 0;
+
+                        ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
+
+                        var sample = new RgbSample { R = r, G = g, B = b, X = X, Y = Y, Z = Z };
+                        double value = GetChannelValue(sample, channel);
+                        
+                        writer.WriteLine($"{theta},{value:F2}");
+                    }
+
+                    log.Info($"方位角截面导出完成: {azimuthAngle}°, 通道={channel}");
+                }
+            }
+            finally
+            {
+                mat.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 导出极角截面数据
+        /// </summary>
+        private void ExportPolarCrossSection(string filePath, ExportChannel channel, double polarAngle)
+        {
+            if (currentBitmapSource == null)
+            {
+                log.Warn("没有图像数据，无法导出");
+                return;
+            }
+
+            OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
+
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                {
+                    // Write header comments
+                    writer.WriteLine($"# Polar Cross-Section Export (Radius Angle = {polarAngle}°)");
+                    writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                    writer.WriteLine($"# Export Channel: {channel}");
+                    writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
+                    writer.WriteLine($"# Max Angle: {MaxAngle}°");
+                    writer.WriteLine();
+
+                    // Write CSV header
+                    writer.WriteLine("Circumferential Angle (degrees),Value");
+
+                    double radiusPixels = polarAngle / ConoscopeConfig.ConoscopeCoefficient;
+
+                    // Sample around the circle
+                    for (int theta = 0; theta <= 360; theta++)
+                    {
+                        // Add 90° to place 0° at the top (first quadrant/north)
+                        // Negate to make rotation counter-clockwise in screen coordinates
+                        double radians = (90 - theta) * Math.PI / 180.0;
+                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
+
+                        int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
+                        int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+
+                        double r = 0, g = 0, b = 0;
+                        double X = 0, Y = 0, Z = 0;
+
+                        ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
+
+                        var sample = new RgbSample { R = r, G = g, B = b, X = X, Y = Y, Z = Z };
+                        double value = GetChannelValue(sample, channel);
+                        
+                        writer.WriteLine($"{theta},{value:F2}");
+                    }
+
+                    log.Info($"极角截面导出完成: {polarAngle}°, 通道={channel}");
+                }
+            }
+            finally
+            {
+                mat.Dispose();
+            }
         }
     }
 }
