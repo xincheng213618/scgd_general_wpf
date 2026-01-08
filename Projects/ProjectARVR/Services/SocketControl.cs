@@ -21,7 +21,10 @@ namespace ProjectARVR.Services
             SocketControl.Current.Stream = stream;
             if (ProjectWindowInstance.WindowInstance != null)
             {
-                ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
+                });
                 //现在先切换PG
                 return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = (ARVRTestType)1 } };
             }
