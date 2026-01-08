@@ -64,9 +64,10 @@ namespace ProjectStarkSemi
                 }
 
                 // Step sizes
-                Settings.AzimuthStep = int.Parse(txtAzimuthStep.Text);
-                Settings.PolarStep = int.Parse(txtPolarStep.Text);
-                Settings.CircumferentialStep = int.Parse(txtCircumferentialStep.Text);
+                Settings.AzimuthStep = double.Parse(txtAzimuthStep.Text);
+                Settings.RadialStep = double.Parse(txtRadialStep.Text);
+                Settings.PolarStep = double.Parse(txtPolarStep.Text);
+                Settings.CircumferentialStep = double.Parse(txtCircumferentialStep.Text);
 
                 // Cross-section
                 Settings.EnableCrossSection = chkEnableCrossSection.IsChecked == true;
@@ -104,23 +105,30 @@ namespace ProjectStarkSemi
             }
 
             // Validate azimuth step
-            if (!int.TryParse(txtAzimuthStep.Text, out int azimuthStep) || azimuthStep < 1 || azimuthStep > 180)
+            if (!double.TryParse(txtAzimuthStep.Text, out double azimuthStep) || azimuthStep < 0.01 || azimuthStep > 180)
             {
-                MessageBox.Show("方位角步进必须是1-180之间的整数", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("方位角步进必须是0.01-180之间的数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            // Validate radial step
+            if (!double.TryParse(txtRadialStep.Text, out double radialStep) || radialStep < 0.01 || radialStep > 80)
+            {
+                MessageBox.Show("径向采样步进必须是0.01-80之间的数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
             // Validate polar step
-            if (!int.TryParse(txtPolarStep.Text, out int polarStep) || polarStep < 1 || polarStep > 80)
+            if (!double.TryParse(txtPolarStep.Text, out double polarStep) || polarStep < 0.01 || polarStep > 80)
             {
-                MessageBox.Show("极角步进必须是1-80之间的整数", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("圆环步进必须是0.01-80之间的数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
             // Validate circumferential step
-            if (!int.TryParse(txtCircumferentialStep.Text, out int circumStep) || circumStep < 1 || circumStep > 360)
+            if (!double.TryParse(txtCircumferentialStep.Text, out double circumStep) || circumStep < 0.01 || circumStep > 360)
             {
-                MessageBox.Show("圆周角步进必须是1-360之间的整数", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("圆周角步进必须是0.01-360之间的数值", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
 
@@ -158,9 +166,10 @@ namespace ProjectStarkSemi
         public List<Conoscope.ExportChannel> Channels { get; set; } = new List<Conoscope.ExportChannel>();
         public bool ExportAzimuth { get; set; } = true;
         public bool ExportPolar { get; set; } = false;
-        public int AzimuthStep { get; set; } = 1;
-        public int PolarStep { get; set; } = 1;
-        public int CircumferentialStep { get; set; } = 1;
+        public double AzimuthStep { get; set; } = 1;
+        public double RadialStep { get; set; } = 1;
+        public double PolarStep { get; set; } = 1;
+        public double CircumferentialStep { get; set; } = 1;
         public bool EnableCrossSection { get; set; } = false;
         public CrossSectionType CrossSectionType { get; set; } = CrossSectionType.Azimuth;
         public double CrossSectionAngle { get; set; } = 0;

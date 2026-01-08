@@ -2090,7 +2090,7 @@ namespace ProjectStarkSemi
                         {
                             string filename = $"{settings.FilePrefix}_Azimuth_{channel}_{timestamp}.csv";
                             string filePath = Path.Combine(outputFolder, filename);
-                            ExportAzimuthWithStep(filePath, channel, settings.AzimuthStep);
+                            ExportAzimuthWithStep(filePath, channel, settings.AzimuthStep, settings.RadialStep);
                             filesExported++;
                             log.Info($"方位角导出成功: {filePath}");
                         }
@@ -2155,7 +2155,7 @@ namespace ProjectStarkSemi
         /// <summary>
         /// 按步进导出方位角数据
         /// </summary>
-        private void ExportAzimuthWithStep(string filePath, ExportChannel channel, int step)
+        private void ExportAzimuthWithStep(string filePath, ExportChannel channel, double azimuthStep, double radialStep)
         {
             if (currentBitmapSource == null)
             {
@@ -2170,18 +2170,18 @@ namespace ProjectStarkSemi
                 using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
                 {
                     // Write header comments
-                    writer.WriteLine($"# Azimuth Export Data (with step = {step})");
+                    writer.WriteLine($"# Azimuth Export Data (azimuth step = {azimuthStep}°, radial step = {radialStep}°)");
                     writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                     writer.WriteLine($"# Export Channel: {channel}");
                     writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
                     writer.WriteLine($"# Max Angle: {MaxAngle}°");
-                    writer.WriteLine($"# Phi (Column): Azimuth angle (0°-180°, step={step})");
-                    writer.WriteLine($"# Theta (Row): Polar radius (0 to MaxAngle)");
+                    writer.WriteLine($"# Phi (Column): Azimuth angle (0°-180°, step={azimuthStep}°)");
+                    writer.WriteLine($"# Theta (Row): Polar radius (0 to MaxAngle, step={radialStep}°)");
                     writer.WriteLine();
 
                     // Create list of angles to export based on step
-                    var anglesToExport = new List<int>();
-                    for (int phi = 0; phi <= 180; phi += step)
+                    var anglesToExport = new List<double>();
+                    for (double phi = 0; phi <= 180; phi += azimuthStep)
                     {
                         anglesToExport.Add(phi);
                     }
@@ -2191,7 +2191,7 @@ namespace ProjectStarkSemi
                     headerLine.Append("Phi \\ Theta");
                     foreach (var angle in anglesToExport)
                     {
-                        headerLine.Append($",{angle}");
+                        headerLine.Append($",{angle:F2}");
                     }
                     writer.WriteLine(headerLine.ToString());
 
@@ -2204,7 +2204,7 @@ namespace ProjectStarkSemi
                         // Negate to make rotation counter-clockwise in screen coordinates
                         double radians = (90 - phi) * Math.PI / 180.0;
 
-                        for (int theta = 0; theta <= (int)MaxAngle; theta++)
+                        for (double theta = 0; theta <= MaxAngle; theta += radialStep)
                         {
                             double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
                             double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
@@ -2266,7 +2266,7 @@ namespace ProjectStarkSemi
         /// <summary>
         /// 按步进导出极角数据
         /// </summary>
-        private void ExportPolarWithStep(string filePath, ExportChannel channel, int polarStep, int circumStep)
+        private void ExportPolarWithStep(string filePath, ExportChannel channel, double polarStep, double circumStep)
         {
             if (currentBitmapSource == null)
             {
@@ -2281,18 +2281,18 @@ namespace ProjectStarkSemi
                 using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
                 {
                     // Write header comments
-                    writer.WriteLine($"# Polar Angle Export Data (polar step = {polarStep}, circumferential step = {circumStep})");
+                    writer.WriteLine($"# Polar Angle Export Data (ring step = {polarStep}°, circumferential step = {circumStep}°)");
                     writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
                     writer.WriteLine($"# Export Channel: {channel}");
                     writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
                     writer.WriteLine($"# Max Angle: {MaxAngle}°");
-                    writer.WriteLine($"# Phi (Column): Polar radius angle (0-{MaxAngle}°, step={polarStep})");
-                    writer.WriteLine($"# Theta (Row): Circumferential angle (0-360°, step={circumStep})");
+                    writer.WriteLine($"# Phi (Column): Polar radius angle (0-{MaxAngle}°, step={polarStep}°)");
+                    writer.WriteLine($"# Theta (Row): Circumferential angle (0-360°, step={circumStep}°)");
                     writer.WriteLine();
 
                     // Create list of polar angles to export
-                    var polarAngles = new List<int>();
-                    for (int phi = 0; phi <= (int)MaxAngle; phi += polarStep)
+                    var polarAngles = new List<double>();
+                    for (double phi = 0; phi <= MaxAngle; phi += polarStep)
                     {
                         polarAngles.Add(phi);
                     }
@@ -2302,7 +2302,7 @@ namespace ProjectStarkSemi
                     headerLine.Append("Phi \\ Theta");
                     foreach (var angle in polarAngles)
                     {
-                        headerLine.Append($",{angle}");
+                        headerLine.Append($",{angle:F2}");
                     }
                     writer.WriteLine(headerLine.ToString());
 
@@ -2313,7 +2313,7 @@ namespace ProjectStarkSemi
                         var samples = new List<RgbSample>();
                         double radiusPixels = polarAngle / ConoscopeConfig.ConoscopeCoefficient;
 
-                        for (int theta = 0; theta <= 360; theta += circumStep)
+                        for (double theta = 0; theta <= 360; theta += circumStep)
                         {
                             // Add 90° to place 0° at the top (first quadrant/north)
                             // Negate to make rotation counter-clockwise in screen coordinates
@@ -2348,7 +2348,7 @@ namespace ProjectStarkSemi
                     for (int i = 0; i < maxSamples; i++)
                     {
                         StringBuilder dataLine = new StringBuilder();
-                        dataLine.Append($"{polarData[0][i].Position}");
+                        dataLine.Append($"{polarData[0][i].Position:F2}");
 
                         foreach (var samples in polarData)
                         {

@@ -62,9 +62,14 @@
                         <DockPanel Margin="5">
                             <TextBlock Text="方位角步进 (度):" Width="120" VerticalAlignment="Center"/>
                             <TextBox x:Name="txtAzimuthStep" Text="1" Width="60"/>
-                            <TextBlock Text="(1-180)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                            <TextBlock Text="(0.01-180)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
                         </DockPanel>
-                        <TextBlock Text="提示: 步进为1表示导出所有0°-180°的方位角数据" 
+                        <DockPanel Margin="5">
+                            <TextBlock Text="径向采样步进 (度):" Width="120" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txtRadialStep" Text="1" Width="60"/>
+                            <TextBlock Text="(0.01-80)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                        </DockPanel>
+                        <TextBlock Text="提示: 方位角步进控制角度方向采样密度，径向采样步进控制从中心到边缘的采样密度" 
                                    Margin="5" FontSize="11" Foreground="Gray"/>
                     </StackPanel>
                 </GroupBox>
@@ -73,16 +78,16 @@
                 <GroupBox Header="极角设置" Margin="0,0,0,10">
                     <StackPanel>
                         <DockPanel Margin="5">
-                            <TextBlock Text="极角步进 (度):" Width="120" VerticalAlignment="Center"/>
+                            <TextBlock Text="圆环步进 (度):" Width="120" VerticalAlignment="Center"/>
                             <TextBox x:Name="txtPolarStep" Text="1" Width="60"/>
-                            <TextBlock Text="(1-80)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                            <TextBlock Text="(0.01-80)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
                         </DockPanel>
                         <DockPanel Margin="5">
                             <TextBlock Text="圆周角步进 (度):" Width="120" VerticalAlignment="Center"/>
                             <TextBox x:Name="txtCircumferentialStep" Text="1" Width="60"/>
-                            <TextBlock Text="(1-360)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                            <TextBlock Text="(0.01-360)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
                         </DockPanel>
-                        <TextBlock Text="提示: 极角步进控制半径方向采样，圆周角步进控制圆周方向采样" 
+                        <TextBlock Text="提示: 圆环步进控制圆环数量（半径方向），圆周角步进控制每个圆环上的采样密度" 
                                    Margin="5" FontSize="11" Foreground="Gray"/>
                     </StackPanel>
                 </GroupBox>
