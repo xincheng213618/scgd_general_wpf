@@ -11,7 +11,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.Ghost2
 {
-    [DisplayAlgorithm(54, "鬼影2", "Json")]
+    [DisplayAlgorithm(54, "Ghost2.0", "ARVR")]
     public class AlgorithmGhost2 : DisplayAlgorithmBase
     {
 

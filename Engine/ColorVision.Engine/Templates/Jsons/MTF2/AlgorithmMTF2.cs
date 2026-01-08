@@ -13,7 +13,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.Jsons.MTF2
 {
 
-    [DisplayAlgorithm(53, "MTF2.0", "Json")]
+    [DisplayAlgorithm(53, "MTF2.0", "ARVR")]
     public class AlgorithmMTF2 : DisplayAlgorithmBase
     {
 

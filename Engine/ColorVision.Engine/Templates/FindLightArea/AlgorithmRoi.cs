@@ -12,7 +12,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.FindLightArea
 {
 
-    [DisplayAlgorithm(11, "发光区检测", "FindLightArea")]
+    [DisplayAlgorithm(70, "发光区定位1", "基础算法")]
     public class AlgorithmRoi : DisplayAlgorithmBase
     {
 

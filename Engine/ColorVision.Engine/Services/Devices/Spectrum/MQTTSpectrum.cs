@@ -76,6 +76,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                             if (msg !=null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
                             {
                                 int masterId = msg.Data?.MasterId;
+
+
                                 var DB = new SqlSugarClient(new ConnectionConfig
                                 {
                                     ConnectionString = MySqlControl.GetConnectionString(),
@@ -92,6 +94,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                         ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                         Device.View.AddViewResultSpectrum(viewResultSpectrum);
                                     });
+                                }
+
+                                try
+                                {
+                                    double? IntegralTime = msg?.Data?.IntegralTime;
+                                    Device.DisplayConfig.IntTime = (float)IntegralTime;
+
+                                }
+                                catch(Exception ex)
+                                {
+                                    log.Error(ex);
                                 }
                             }
                         }
@@ -121,6 +134,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                             ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                             Device.View.AddViewResultSpectrum(viewResultSpectrum);
                                         });
+                                    }
+
+                                    try
+                                    {
+                                        double? IntegralTime = msg?.Data?.IntegralTime;
+                                        Device.DisplayConfig.IntTime = (float)IntegralTime;
+
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        log.Error(ex);
                                     }
                                 }
                             }

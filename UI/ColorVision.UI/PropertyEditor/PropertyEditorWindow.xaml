@@ -169,7 +169,8 @@
 
         <Grid Grid.Row="2">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
-                <Button Content="{x:Static properties:Resources.Reset}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Reset_Click" />
+                <Button Content="恢复出厂" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="ResetToFactory_Click" ToolTip="重置到类默认值" />
+                <Button Content="{x:Static properties:Resources.Reset}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Reset_Click" Margin="5,0,0,0" />
                 <Button Content="{x:Static properties:Resources.OK}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="OK_Click" Margin="5,0,0,0"/>
                 <Button Content="{x:Static properties:Resources.Cancel}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Cancel_Click" Margin="5,0,0,0"/>
             </StackPanel>
