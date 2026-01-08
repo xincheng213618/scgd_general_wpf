@@ -1,11 +1,13 @@
 using System.Drawing;
+using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
 using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib;
 
-public class AlgorithmEQENode : CVBaseServerNode
+[STNode("/03_2 Algorithm")]
+public class AlgorithmEQENode : CVBaseServerNodeIn2Hub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmEQENode));
 
@@ -33,6 +35,8 @@ public class AlgorithmEQENode : CVBaseServerNode
 		m_is_out_release = false;
 		m_has_svr_item = false;
 		_TempName = "";
+		m_in_text = "IN_SP";
+		m_in2_text = "IN_SMU";
 		operatorCode = "CalcEQE";
 	}
 
@@ -50,8 +54,11 @@ public class AlgorithmEQENode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		EQEParam eQEParam = new EQEParam(_TempName);
-		getPreStepParam(start, eQEParam);
-		return eQEParam;
+		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
+		CalcEQEParam calcEQEParam = new CalcEQEParam(_TempName);
+		getPreStepParam(0, calcEQEParam);
+		getPreStepParam(1, algorithmPreStepParam);
+		calcEQEParam.SMU_MasterId = algorithmPreStepParam.MasterId;
+		return calcEQEParam;
 	}
 }
