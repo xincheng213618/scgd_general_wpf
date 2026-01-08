@@ -77,7 +77,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                             {
                                 int masterId = msg.Data?.MasterId;
 
-
                                 var DB = new SqlSugarClient(new ConnectionConfig
                                 {
                                     ConnectionString = MySqlControl.GetConnectionString(),
@@ -93,19 +92,20 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                     {
                                         ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                         Device.View.AddViewResultSpectrum(viewResultSpectrum);
+                                        try
+                                        {
+                                            double? IntegralTime = msg?.Data?.IntegralTime;
+                                            Device.DisplayConfig.IntTime = (float)IntegralTime;
+
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            log.Error(ex);
+                                        }
                                     });
                                 }
 
-                                try
-                                {
-                                    double? IntegralTime = msg?.Data?.IntegralTime;
-                                    Device.DisplayConfig.IntTime = (float)IntegralTime;
-
-                                }
-                                catch(Exception ex)
-                                {
-                                    log.Error(ex);
-                                }
+      
                             }
                         }
                         else if (msg.EventName == "GetDataAuto" || msg.EventName == "EQE.GetDataAuto")
@@ -133,19 +133,21 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                         {
                                             ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                             Device.View.AddViewResultSpectrum(viewResultSpectrum);
+
+                                            try
+                                            {
+                                                double? IntegralTime = msg?.Data?.IntegralTime;
+                                                Device.DisplayConfig.IntTime = (float)IntegralTime;
+
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                log.Error(ex);
+                                            }
                                         });
                                     }
 
-                                    try
-                                    {
-                                        double? IntegralTime = msg?.Data?.IntegralTime;
-                                        Device.DisplayConfig.IntTime = (float)IntegralTime;
-
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        log.Error(ex);
-                                    }
+          
                                 }
                             }
                             else

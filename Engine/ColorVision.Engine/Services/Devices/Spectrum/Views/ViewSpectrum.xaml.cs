@@ -617,6 +617,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
             AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
             listView1.SelectedIndex = ViewResults.Count - 1;
+            listView1.ScrollIntoView(viewResultSpectrum);
         }
         private void Inquire_Click(object sender, RoutedEventArgs e)
         {
