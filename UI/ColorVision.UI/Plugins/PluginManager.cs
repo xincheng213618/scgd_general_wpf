@@ -111,8 +111,15 @@ namespace ColorVision.UI.Plugins
             {
                 foreach (var plugin in pluginsToUpdate)
                 {
-                    // 异步调用，避免阻塞UI
-                    Application.Current.Dispatcher.InvokeAsync(() => plugin.Update());
+                    try
+                    {
+                        // 异步调用，避免阻塞UI
+                        Application.Current.Dispatcher.InvokeAsync(() => plugin.Update());
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error($"更新插件 {plugin.Name} 时发生错误: {ex.Message}", ex);
+                    }
                 }
             }
         }
