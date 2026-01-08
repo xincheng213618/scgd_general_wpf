@@ -2061,71 +2061,57 @@ namespace ProjectStarkSemi
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 int filesExported = 0;
 
-                // Handle cross-section export separately
-                if (settings.EnableCrossSection)
+                // Select output folder
+                using (var folderDialog = new System.Windows.Forms.FolderBrowserDialog())
                 {
-                    ExportCrossSection(settings, timestamp, ref filesExported);
-                    MessageBox.Show($"截面导出完成，共导出 {filesExported} 个文件", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
-                    log.Info($"截面导出完成: {filesExported} 个文件");
-                    return;
-                }
+                    folderDialog.Description = "选择导出文件夹";
+                    folderDialog.ShowNewFolderButton = true;
 
-                // Export azimuth data
-                if (settings.ExportAzimuth)
-                {
-                    foreach (var channel in settings.Channels)
+                    if (folderDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                     {
-                        string filename = $"{settings.FilePrefix}_Azimuth_{channel}_{timestamp}.csv";
-                        var saveFileDialog = new SaveFileDialog
-                        {
-                            Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
-                            DefaultExt = "csv",
-                            FileName = filename,
-                            RestoreDirectory = true
-                        };
+                        return; // User cancelled
+                    }
 
-                        if (saveFileDialog.ShowDialog() == true)
+                    string outputFolder = folderDialog.SelectedPath;
+
+                    // Handle cross-section export separately
+                    if (settings.EnableCrossSection)
+                    {
+                        ExportCrossSectionToFolder(settings, timestamp, outputFolder, ref filesExported);
+                        MessageBox.Show($"截面导出完成，共导出 {filesExported} 个文件到:\n{outputFolder}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                        log.Info($"截面导出完成: {filesExported} 个文件");
+                        return;
+                    }
+
+                    // Export azimuth data
+                    if (settings.ExportAzimuth)
+                    {
+                        foreach (var channel in settings.Channels)
                         {
-                            ExportAzimuthWithStep(saveFileDialog.FileName, channel, settings.AzimuthStep);
+                            string filename = $"{settings.FilePrefix}_Azimuth_{channel}_{timestamp}.csv";
+                            string filePath = Path.Combine(outputFolder, filename);
+                            ExportAzimuthWithStep(filePath, channel, settings.AzimuthStep);
                             filesExported++;
-                            log.Info($"方位角导出成功: {saveFileDialog.FileName}");
-                        }
-                        else
-                        {
-                            break; // User cancelled
+                            log.Info($"方位角导出成功: {filePath}");
                         }
                     }
-                }
 
-                // Export polar data
-                if (settings.ExportPolar)
-                {
-                    foreach (var channel in settings.Channels)
+                    // Export polar data
+                    if (settings.ExportPolar)
                     {
-                        string filename = $"{settings.FilePrefix}_Polar_{channel}_{ConoscopeConfig.CurrentModel}_{timestamp}.csv";
-                        var saveFileDialog = new SaveFileDialog
+                        foreach (var channel in settings.Channels)
                         {
-                            Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
-                            DefaultExt = "csv",
-                            FileName = filename,
-                            RestoreDirectory = true
-                        };
-
-                        if (saveFileDialog.ShowDialog() == true)
-                        {
-                            ExportPolarWithStep(saveFileDialog.FileName, channel, settings.PolarStep, settings.CircumferentialStep);
+                            string filename = $"{settings.FilePrefix}_Polar_{channel}_{ConoscopeConfig.CurrentModel}_{timestamp}.csv";
+                            string filePath = Path.Combine(outputFolder, filename);
+                            ExportPolarWithStep(filePath, channel, settings.PolarStep, settings.CircumferentialStep);
                             filesExported++;
-                            log.Info($"极角导出成功: {saveFileDialog.FileName}");
-                        }
-                        else
-                        {
-                            break; // User cancelled
+                            log.Info($"极角导出成功: {filePath}");
                         }
                     }
-                }
 
-                MessageBox.Show($"导出完成，共导出 {filesExported} 个文件", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
-                log.Info($"高级导出完成: {filesExported} 个文件");
+                    MessageBox.Show($"导出完成，共导出 {filesExported} 个文件到:\n{outputFolder}", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    log.Info($"高级导出完成: {filesExported} 个文件");
+                }
             }
             catch (Exception ex)
             {
@@ -2135,9 +2121,9 @@ namespace ProjectStarkSemi
         }
 
         /// <summary>
-        /// 导出截面数据
+        /// 导出截面数据到文件夹
         /// </summary>
-        private void ExportCrossSection(AdvancedExportSettings settings, string timestamp, ref int filesExported)
+        private void ExportCrossSectionToFolder(AdvancedExportSettings settings, string timestamp, string outputFolder, ref int filesExported)
         {
             try
             {
@@ -2145,32 +2131,18 @@ namespace ProjectStarkSemi
                 {
                     string sectionType = settings.CrossSectionType == CrossSectionType.Azimuth ? "Azimuth" : "Polar";
                     string filename = $"{settings.FilePrefix}_CrossSection_{sectionType}_{settings.CrossSectionAngle}deg_{channel}_{timestamp}.csv";
+                    string filePath = Path.Combine(outputFolder, filename);
                     
-                    var saveFileDialog = new SaveFileDialog
+                    if (settings.CrossSectionType == CrossSectionType.Azimuth)
                     {
-                        Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
-                        DefaultExt = "csv",
-                        FileName = filename,
-                        RestoreDirectory = true
-                    };
-
-                    if (saveFileDialog.ShowDialog() == true)
-                    {
-                        if (settings.CrossSectionType == CrossSectionType.Azimuth)
-                        {
-                            ExportAzimuthCrossSection(saveFileDialog.FileName, channel, settings.CrossSectionAngle);
-                        }
-                        else
-                        {
-                            ExportPolarCrossSection(saveFileDialog.FileName, channel, settings.CrossSectionAngle);
-                        }
-                        filesExported++;
-                        log.Info($"截面导出成功: {saveFileDialog.FileName}");
+                        ExportAzimuthCrossSection(filePath, channel, settings.CrossSectionAngle);
                     }
                     else
                     {
-                        break; // User cancelled
+                        ExportPolarCrossSection(filePath, channel, settings.CrossSectionAngle);
                     }
+                    filesExported++;
+                    log.Info($"截面导出成功: {filePath}");
                 }
             }
             catch (Exception ex)
@@ -2523,6 +2495,98 @@ namespace ProjectStarkSemi
             finally
             {
                 mat.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 导出当前选中的方位角
+        /// </summary>
+        private void btnExportCurrentAzimuth_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (selectedPolarLine == null)
+                {
+                    MessageBox.Show("请先选择一个方位角", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (currentBitmapSource == null)
+                {
+                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Get channel selection
+                var channel = GetSelectedExportChannel();
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string filename = $"Azimuth_{selectedPolarLine.Angle}deg_{channel}_{timestamp}.csv";
+
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                    DefaultExt = "csv",
+                    FileName = filename,
+                    RestoreDirectory = true
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    ExportAzimuthCrossSection(saveFileDialog.FileName, channel, selectedPolarLine.Angle);
+                    MessageBox.Show($"方位角 {selectedPolarLine.Angle}° 导出成功", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    log.Info($"单个方位角导出成功: {saveFileDialog.FileName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"导出当前方位角失败: {ex.Message}", ex);
+                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 导出当前选中的极角
+        /// </summary>
+        private void btnExportCurrentPolar_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (selectedCircleLine == null)
+                {
+                    MessageBox.Show("请先选择一个极角", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (currentBitmapSource == null)
+                {
+                    MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Get channel selection
+                var channel = GetSelectedExportChannel();
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string filename = $"Polar_{selectedCircleLine.RadiusAngle}deg_{channel}_{timestamp}.csv";
+
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "CSV文件 (*.csv)|*.csv|所有文件 (*.*)|*.*",
+                    DefaultExt = "csv",
+                    FileName = filename,
+                    RestoreDirectory = true
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    ExportPolarCrossSection(saveFileDialog.FileName, channel, selectedCircleLine.RadiusAngle);
+                    MessageBox.Show($"极角 {selectedCircleLine.RadiusAngle}° 导出成功", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    log.Info($"单个极角导出成功: {saveFileDialog.FileName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"导出当前极角失败: {ex.Message}", ex);
+                MessageBox.Show($"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
