@@ -295,6 +295,10 @@ public class CVBaseServerNode : CVCommonNode
 				MQActionEvent act = new MQActionEvent(actionEvent.MsgID, m_nodeName, GetDeviceCode(), GetSendTopic(), actionEvent.EventName, message, token);
 				DoTransferToServer(cVTransAction, act, cmd);
 			}
+			else
+			{
+				cVTransAction.NodeFailed("Build MQTT Request failed", base.DeviceCode);
+			}
 		}
 	}
 

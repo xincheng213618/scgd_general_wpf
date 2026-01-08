@@ -1,7 +1,18 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable
+using ColorVision.Common.Algorithms;
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine;
+using ColorVision.Engine.Archive.Dao;
+using ColorVision.Engine.Media;
+using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Types;
+using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
@@ -12,6 +23,7 @@ using Newtonsoft.Json;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -25,9 +37,9 @@ namespace ProjectARVR
         /// <summary>
         /// 白画面
         /// </summary>
-        //White2,
+        White2,
         White,
-        //White1,
+        White1,
         /// <summary>
         /// 黑画面
         /// </summary>
@@ -70,10 +82,8 @@ namespace ProjectARVR
         BKscreeenDefectDetection
     }
 
-
-
     [SugarTable("ARVRReuslt")]
-    public class ProjectARVRReuslt : ViewEntity 
+    public class ProjectARVRReuslt : ViewEntity
     {
         [SqlSugar.SugarColumn(IsIgnore = true)]
         public ContextMenu ContextMenu { get; set; }
