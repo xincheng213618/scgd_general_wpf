@@ -35,7 +35,7 @@ namespace ColorVision.Scheduler
         private static QuartzSchedulerManager _instance;
         private static readonly object _locker = new();
         public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
-        private static readonly string ConfigFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scheduler_tasks.json");
+        private static readonly string ConfigFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"ColorVision", "scheduler_tasks.json");
         private readonly SchedulerLogger _logger;
         
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; } = new ObservableCollection<SchedulerInfo>();
