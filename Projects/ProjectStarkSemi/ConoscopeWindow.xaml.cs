@@ -2254,7 +2254,7 @@ namespace ProjectStarkSemi
                         writer.WriteLine(dataLine.ToString());
                     }
 
-                    log.Info($"方位角导出完成，步进={step}, 角度数={anglesToExport.Count}, 通道={channel}");
+                    log.Info($"方位角导出完成，步进={azimuthStep}, 角度数={anglesToExport.Count}, 通道={channel}");
                 }
             }
             finally
