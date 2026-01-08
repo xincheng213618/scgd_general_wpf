@@ -1276,7 +1276,7 @@ namespace ProjectStarkSemi
 
                     // Add 90° to place 0° at the top (first quadrant/north)
                     // Negate to make rotation counter-clockwise in screen coordinates
-                    double radians = (90 - phi) * Math.PI / 180.0;
+                    double radians = (180 - phi) * Math.PI / 180.0;
 
                     // Sample from center (theta=0) to edge (theta=MaxAngle)
                     for (int theta = 0; theta <= (int)MaxAngle; theta++)
@@ -1550,7 +1550,7 @@ namespace ProjectStarkSemi
             // Convert angle to radians
             // Add 90° to place 0° at the top (first quadrant/north)
             // Negate to make rotation counter-clockwise in screen coordinates
-            double radians = (90 - angle) * Math.PI / 180.0;
+            double radians = (180 - angle) * Math.PI / 180.0;
 
             // Calculate line endpoints
             double dx = radius * Math.Cos(radians);
