@@ -291,9 +291,17 @@ namespace Spectrum
 
         public void GenerateAmplitude()  
         {
-            GetLightData();
-            bool ret = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, MaguideFileOutput);
-            if (ret)
+            int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fLightData);
+            if (ret == 1)
+            {
+            }
+            else
+            {
+                MessageBox.Show("获取LightData失败");
+                return;
+            }
+            bool ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, MaguideFileOutput);
+            if (ret1)
             {
                 MessageBox.Show("生成成功");
             }
