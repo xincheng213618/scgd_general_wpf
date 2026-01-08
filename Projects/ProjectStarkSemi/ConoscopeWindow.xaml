@@ -138,6 +138,7 @@
                         <RibbonButton Label="SaveAs" SmallImageSource="Images/SaveAs32.png"  KeyTip="O" Click="OpenFile_Click" />
                         <RibbonButton Label="方位角导出"  Click="btnExportAngleMode_Click" Padding="10,5"/>
                         <RibbonButton Label="极角导出"  Click="btnExportCircleMode_Click" Padding="10,5"/>
+                        <RibbonButton Label="高级导出"  Click="btnAdvancedExport_Click" Padding="10,5"/>
 
                     </RibbonGroup>
                     <RibbonGroup x:Name="rbnGr2" Header="General">
@@ -421,15 +422,14 @@
 
                                 <!-- Azimuth Controls -->
                                 <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                                        <TextBlock Text="添加角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <TextBox x:Name="txtAngle" MinWidth="60"   VerticalAlignment="Center"   Margin="0,0,5,0"/>
-                                        <Button Content="添加"  Click="btnAddAngle_Click"   Padding="10,2" Margin="0,0,5,0"/>
-                                        <Button Content="删除选中" Click="btnRemoveAngle_Click"   Padding="10,2"/>
-                                    </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="当前角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                         <ComboBox x:Name="cbPolarAngleLines"  MinWidth="100"  SelectionChanged="cbPolarAngleLines_SelectionChanged"/>
+                                        <Button Content="导出" Click="btnExportCurrentAzimuth_Click" Padding="10,2" Margin="5,0,5,0"/>
+                                        <Button Content="删除选中" Click="btnRemoveAngle_Click"   Padding="10,2" Margin="5,0,5,0"/>
+                                        <TextBlock Text="添加角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                                        <TextBox x:Name="txtAngle" MinWidth="60"   VerticalAlignment="Center"   Margin="0,0,5,0"/>
+                                        <Button Content="添加"  Click="btnAddAngle_Click"   Padding="10,2" Margin="0,0,5,0"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Grid>
@@ -445,15 +445,14 @@
                                 <ScottPlot:WpfPlot Grid.Row="1" x:Name="wpfPlotRCircle"/>
 
                                 <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                                        <TextBlock Text="添加半径角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
-                                        <TextBox x:Name="txtCircleAngle" MinWidth="60"   VerticalAlignment="Center"   Margin="0,0,5,0"/>
-                                        <Button Content="添加"  Click="btnAddCircleAngle_Click"   Padding="10,2" Margin="0,0,5,0"/>
-                                        <Button Content="删除选中" Click="btnRemoveCircleAngle_Click"   Padding="10,2"/>
-                                    </StackPanel>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="当前半径角度:" VerticalAlignment="Center" Margin="5,0,5,0"/>
                                         <ComboBox x:Name="cbConcentricCircles"  MinWidth="100"  SelectionChanged="cbConcentricCircles_SelectionChanged"/>
+                                        <Button Content="导出" Click="btnExportCurrentPolar_Click" Padding="10,2" Margin="5,0,5,0"/>
+                                        <Button Content="删除选中" Click="btnRemoveCircleAngle_Click"   Padding="10,2" Margin="5,0,5,0"/>
+                                        <TextBlock Text="添加半径角度:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <TextBox x:Name="txtCircleAngle" MinWidth="60"   VerticalAlignment="Center"   Margin="0,0,5,0"/>
+                                        <Button Content="添加"  Click="btnAddCircleAngle_Click"   Padding="10,2" Margin="0,0,5,0"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Grid>
