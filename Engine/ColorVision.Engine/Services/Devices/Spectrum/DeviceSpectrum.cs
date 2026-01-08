@@ -55,9 +55,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private bool _IsAutoIntTime;
 
         public double V { get => _V; set { _V = value; OnPropertyChanged(); } }
-        private double _V;
+        private double _V = 5;
         public double I { get => _I; set { _I = value; OnPropertyChanged(); } }
-        private double _I;
+        private double _I = 1;
 
 
     }

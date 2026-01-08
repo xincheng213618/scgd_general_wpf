@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Messages
                 _MsgRecordState = value;
                 OnPropertyChanged();
 
-                Application.Current.Dispatcher.Invoke(() => MsgRecordStateChanged?.Invoke(MsgRecordState));
+                Application.Current.Dispatcher.Invoke(() => MsgRecordStateChanged?.Invoke(_MsgRecordState));
                 if (value == MsgRecordState.Success || value == MsgRecordState.Fail)
                 {
                     OnPropertyChanged(nameof(IsRecive));

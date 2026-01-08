@@ -1,36 +1,54 @@
-﻿
+﻿#pragma warning disable
 using ColorVision.Common.Algorithms;
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Types;
+using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
+using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
+using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
+using log4net.Util;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Org.BouncyCastle.Asn1.Ocsp;
+using ProjectARVR;
 using ProjectARVR.Services;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -92,10 +110,7 @@ namespace ProjectARVR
             }
             else
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ProjectARVRConfig.Instance.SN = "SN" + Random.NextInt64(1000, 9000).ToString();
-                });
+                ProjectARVRConfig.Instance.SN = SN;
             }
         }
 
@@ -122,15 +137,17 @@ namespace ProjectARVR
                 nextIndex = (nextIndex + 1) % values.Length;
             var TestType = (ARVRTestType)values.GetValue(nextIndex);
 
+            log.Info($"TestType{TestType}");
+
             try
             {
-                //if (TestType == ARVRTestType.White2)
-                //{
-                //    ProjectARVRConfig.Instance.StepIndex = 1;
-                //    TemplateName.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("WhiteFOV")).Value;
-                //    CurrentTestType = TestType;
-                //    RunTemplate();
-                //}
+                if (TestType == ARVRTestType.White2)
+                {
+                    ProjectARVRConfig.Instance.StepIndex = 1;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("WhiteFOV")).Value;
+                    CurrentTestType = TestType;
+                    RunTemplate();
+                }
                 if (TestType == ARVRTestType.White)
                 {
                     ProjectARVRConfig.Instance.StepIndex = 2;
@@ -138,13 +155,13 @@ namespace ProjectARVR
                     CurrentTestType = TestType;
                     RunTemplate();
                 }
-                //if (TestType == ARVRTestType.White1)
-                //{
-                //    ProjectARVRConfig.Instance.StepIndex = 3;
-                //    TemplateName.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White_calibrate")).Value;
-                //    CurrentTestType = TestType;
-                //    RunTemplate();
-                //}
+                if (TestType == ARVRTestType.White1)
+                {
+                    ProjectARVRConfig.Instance.StepIndex = 3;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White_calibrate")).Value;
+                    CurrentTestType = TestType;
+                    RunTemplate();
+                }
                 if (TestType == ARVRTestType.Black)
                 {
                     ProjectARVRConfig.Instance.StepIndex = 4;
@@ -428,10 +445,6 @@ namespace ProjectARVR
                 try
                 {
                     //如果没有执行完，先切换PG，并且提前设置流程
-                    if (!IsTestTypeCompleted())
-                    {
-                        SwitchPG();
-                    }
 
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
@@ -553,190 +566,192 @@ namespace ProjectARVR
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
                 return;
             }
-            ProjectARVRReuslt result = CurrentFlowResult ?? new ProjectARVRReuslt();
 
+            ProjectARVRReuslt result = CurrentFlowResult ?? new ProjectARVRReuslt();
             result.BatchId = Batch.Id;
             result.FlowStatus = FlowStatus.Completed;
             result.CreateTime = DateTime.Now;
             result.Result = true;
 
-            //if (result.Model.Contains("White_calibrate"))
-            //{
-            //    log.Info("正在解析白画面的流程");
-            //    result.TestType = ARVRTestType.White1;
-            //    var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
-            //    if (values.Count > 0)
-            //    {
-            //        result.FileName = values[0].FileUrl;
-            //    }
-            //    var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
-            //    log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
-            //    foreach (var AlgResultMaster in AlgResultMasterlists)
-            //    {
-            //        if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.POI_XYZ)
-            //        {
-            //            List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
-            //            int id = 0;
-            //            foreach (var item in POIPointResultModels)
-            //            {
-            //                PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item) { Id = id++ };
+            if (result.Model.Contains("White_calibrate"))
+            {
+                log.Info("正在解析White_calibrate的流程");
+                result.TestType = ARVRTestType.White1;
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                if (values.Count > 0)
+                {
+                    result.FileName = values[0].FileUrl;
+                }
+                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+                log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
+                foreach (var AlgResultMaster in AlgResultMasterlists)
+                {
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.POI_XYZ)
+                    {
+                        result.ViewResultWhite.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                        int id = 0;
+                        foreach (var item in POIPointResultModels)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item) { Id = id++ };
 
-            //                if (item.PoiName == "P_1")
-            //                {
-            //                    var White1CenterCorrelatedColorTemperature = new ObjectiveTestItem()
-            //                    {
-            //                        Name = "White1CenterCorrelatedColorTemperature",
-            //                        TestValue = poiResultCIExyuvData.CCT.ToString(),
-            //                        Value = poiResultCIExyuvData.CCT,
-            //                        LowLimit = SPECConfig.White1CenterCorrelatedColorTemperatureMin,
-            //                        UpLimit = SPECConfig.White1CenterCorrelatedColorTemperatureMax
-            //                    };
-            //                    ObjectiveTestResult.White1CenterCorrelatedColorTemperature = White1CenterCorrelatedColorTemperature;
-            //                    result.Result = result.Result && White1CenterCorrelatedColorTemperature.TestResult;
+                            if (item.PoiName == "P_1")
+                            {
+                                var White1CenterCorrelatedColorTemperature = new ObjectiveTestItem()
+                                {
+                                    Name = "White1CenterCorrelatedColorTemperature",
+                                    TestValue = poiResultCIExyuvData.CCT.ToString(),
+                                    Value = poiResultCIExyuvData.CCT,
+                                    LowLimit = SPECConfig.White1CenterCorrelatedColorTemperatureMin,
+                                    UpLimit = SPECConfig.White1CenterCorrelatedColorTemperatureMax
+                                };
+                                ObjectiveTestResult.White1CenterCorrelatedColorTemperature = White1CenterCorrelatedColorTemperature;
+                                result.Result = result.Result && White1CenterCorrelatedColorTemperature.TestResult;
 
-            //                    var White1CenterLuminace = new ObjectiveTestItem()
-            //                    {
-            //                        Name = "White1CenterLuminace",
-            //                        TestValue = poiResultCIExyuvData.Y.ToString(),
-            //                        Value = poiResultCIExyuvData.Y,
-            //                        LowLimit = SPECConfig.White1CenterLuminaceMin,
-            //                        UpLimit = SPECConfig.White1CenterLuminaceMax
-            //                    };
-            //                    ObjectiveTestResult.White1CenterLuminace = White1CenterLuminace;
-            //                    result.Result = result.Result && White1CenterLuminace.TestResult;
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
+                                var White1CenterLuminace = new ObjectiveTestItem()
+                                {
+                                    Name = "White1CenterLuminace",
+                                    TestValue = poiResultCIExyuvData.Y.ToString(),
+                                    Value = poiResultCIExyuvData.Y,
+                                    LowLimit = SPECConfig.White1CenterLuminaceMin,
+                                    UpLimit = SPECConfig.White1CenterLuminaceMax
+                                };
+                                ObjectiveTestResult.White1CenterLuminace = White1CenterLuminace;
+                                result.Result = result.Result && White1CenterLuminace.TestResult;
+                            }
+                            result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                        }
+                    }
+                }
+            }
 
-            //if (result.Model.Contains("WhiteFOV"))
-            //{
-            //    log.Info("正在解析白画面的流程");
-            //    result.TestType = ARVRTestType.White;
-            //    ObjectiveTestResult.FlowWhiteTestReslut = true;
+            if (result.Model.Contains("WhiteFOV"))
+            {
+                log.Info("正在解析WhiteFOV的流程");
+                result.TestType = ARVRTestType.White2;
+                ObjectiveTestResult.FlowWhiteTestReslut = true;
 
-            //    var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
-            //    if (values.Count > 0)
-            //    {
-            //        result.FileName = values[0].FileUrl;
-            //    }
-            //    var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
-            //    log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
-            //    foreach (var AlgResultMaster in AlgResultMasterlists)
-            //    {
-            //        if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.FindLightArea)
-            //        {
-            //            result.ViewResultWhite.AlgResultLightAreaModels = AlgResultLightAreaDao.Instance.GetAllByPid(AlgResultMaster.Id);
-            //        }
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                if (values.Count > 0)
+                {
+                    result.FileName = values[0].FileUrl;
+                }
+                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+                log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
+                foreach (var AlgResultMaster in AlgResultMasterlists)
+                {
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.FindLightArea)
+                    {
+                        result.ViewResultWhite.AlgResultLightAreaModels = AlgResultLightAreaDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                    }
 
-            //        if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.PoiAnalysis)
-            //        {
-            //            if (AlgResultMaster.TName.Contains("Luminance_uniformity"))
-            //            {
-            //                List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
-            //                if (detailCommonModels.Count == 1)
-            //                {
-            //                    PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.PoiAnalysis)
+                    {
+                        if (AlgResultMaster.TName.Contains("Luminance_uniformity"))
+                        {
+                            List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                            if (detailCommonModels.Count == 1)
+                            {
+                                PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
 
-            //                    viewReslut.PoiAnalysisResult.result.Value = viewReslut.PoiAnalysisResult.result.Value * ObjectiveTestResultFix.LuminanceUniformity;
-            //                    var LuminanceUniformity = new ObjectiveTestItem()
-            //                    {
-            //                        Name = "Luminance_uniformity(%)",
-            //                        TestValue = (viewReslut.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%",
-            //                        Value = viewReslut.PoiAnalysisResult.result.Value,
-            //                        LowLimit = SPECConfig.LuminanceUniformityMin,
-            //                        UpLimit = SPECConfig.LuminanceUniformityMax,
-            //                    };
-            //                    ObjectiveTestResult.LuminanceUniformity = LuminanceUniformity;
-            //                    result.ViewResultWhite.LuminanceUniformity = LuminanceUniformity;
+                                viewReslut.PoiAnalysisResult.result.Value = viewReslut.PoiAnalysisResult.result.Value * ObjectiveTestResultFix.LuminanceUniformity;
+                                var LuminanceUniformity = new ObjectiveTestItem()
+                                {
+                                    Name = "Luminance_uniformity(%)",
+                                    TestValue = (viewReslut.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%",
+                                    Value = viewReslut.PoiAnalysisResult.result.Value,
+                                    LowLimit = SPECConfig.LuminanceUniformityMin,
+                                    UpLimit = SPECConfig.LuminanceUniformityMax,
+                                };
+                                ObjectiveTestResult.LuminanceUniformity = LuminanceUniformity;
+                                result.ViewResultWhite.LuminanceUniformity = LuminanceUniformity;
 
-            //                    result.Result = result.Result && LuminanceUniformity.TestResult;
+                                result.Result = result.Result && LuminanceUniformity.TestResult;
 
-            //                }
+                            }
 
-            //            }
-            //            if (AlgResultMaster.TName.Contains("Color_uniformity"))
-            //            {
-            //                List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
-            //                if (detailCommonModels.Count == 1)
-            //                {
-            //                    PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
-            //                    viewReslut.PoiAnalysisResult.result.Value = viewReslut.PoiAnalysisResult.result.Value * ObjectiveTestResultFix.ColorUniformity;
+                        }
+                        if (AlgResultMaster.TName.Contains("Color_uniformity"))
+                        {
+                            List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                            if (detailCommonModels.Count == 1)
+                            {
+                                PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
+                                viewReslut.PoiAnalysisResult.result.Value = viewReslut.PoiAnalysisResult.result.Value * ObjectiveTestResultFix.ColorUniformity;
 
-            //                    var ColorUniformity = new ObjectiveTestItem()
-            //                    {
-            //                        Name = "Color_uniformity",
-            //                        TestValue = (viewReslut.PoiAnalysisResult.result.Value).ToString("F5"),
-            //                        Value = viewReslut.PoiAnalysisResult.result.Value,
-            //                        LowLimit = SPECConfig.ColorUniformityMin,
-            //                        UpLimit = SPECConfig.ColorUniformityMax
-            //                    };
-            //                    ObjectiveTestResult.ColorUniformity = ColorUniformity;
-            //                    result.ViewResultWhite.ColorUniformity = ColorUniformity;
+                                var ColorUniformity = new ObjectiveTestItem()
+                                {
+                                    Name = "Color_uniformity",
+                                    TestValue = (viewReslut.PoiAnalysisResult.result.Value).ToString("F5"),
+                                    Value = viewReslut.PoiAnalysisResult.result.Value,
+                                    LowLimit = SPECConfig.ColorUniformityMin,
+                                    UpLimit = SPECConfig.ColorUniformityMax
+                                };
+                                ObjectiveTestResult.ColorUniformity = ColorUniformity;
+                                result.ViewResultWhite.ColorUniformity = ColorUniformity;
 
-            //                    result.Result = result.Result && ColorUniformity.TestResult;
+                                result.Result = result.Result && ColorUniformity.TestResult;
 
-            //                }
-            //            }
-            //        }
+                            }
+                        }
+                    }
 
-            //        if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.FOV)
-            //        {
-            //            List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
-            //            if (AlgResultModels.Count == 1)
-            //            {
-            //                DFovView view1 = new DFovView(AlgResultModels[0]);
-            //                view1.Result.result.D_Fov = view1.Result.result.D_Fov * ObjectiveTestResultFix.DiagonalFieldOfViewAngle;
-            //                view1.Result.result.ClolorVisionH_Fov = view1.Result.result.H_Fov * ObjectiveTestResultFix.HorizontalFieldOfViewAngle;
-            //                view1.Result.result.ClolorVisionV_Fov = view1.Result.result.V_FOV * ObjectiveTestResultFix.VerticalFieldOfViewAngle;
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.FOV)
+                    {
+                        List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                        if (AlgResultModels.Count == 1)
+                        {
+                            DFovView view1 = new DFovView(AlgResultModels[0]);
+                            view1.Result.result.D_Fov = view1.Result.result.D_Fov * ObjectiveTestResultFix.DiagonalFieldOfViewAngle;
+                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.H_Fov * ObjectiveTestResultFix.HorizontalFieldOfViewAngle;
+                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.V_FOV * ObjectiveTestResultFix.VerticalFieldOfViewAngle;
 
-            //                result.ViewResultWhite.DFovView = view1;
-
-
-
-            //                ObjectiveTestResult.DiagonalFieldOfViewAngle = new ObjectiveTestItem()
-            //                {
-            //                    Name = "DiagonalFieldOfViewAngle",
-            //                    LowLimit = SPECConfig.DiagonalFieldOfViewAngleMin,
-            //                    UpLimit = SPECConfig.DiagonalFieldOfViewAngleMax,
-            //                    Value = view1.Result.result.D_Fov,
-            //                    TestValue = view1.Result.result.D_Fov.ToString("F3")
-            //                };
-
-            //                ObjectiveTestResult.HorizontalFieldOfViewAngle = new ObjectiveTestItem()
-            //                {
-            //                    Name = "HorizontalFieldOfViewAngle",
-            //                    LowLimit = SPECConfig.HorizontalFieldOfViewAngleMin,
-            //                    UpLimit = SPECConfig.HorizontalFieldOfViewAngleMax,
-            //                    Value = view1.Result.result.ClolorVisionH_Fov,
-            //                    TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F3")
-            //                };
-            //                ObjectiveTestResult.VerticalFieldOfViewAngle = new ObjectiveTestItem()
-            //                {
-            //                    Name = "VerticalFieldOfViewAngle",
-            //                    LowLimit = SPECConfig.VerticalFieldOfViewAngleMin,
-            //                    UpLimit = SPECConfig.VerticalFieldOfViewAngleMax,
-            //                    Value = view1.Result.result.ClolorVisionV_Fov,
-            //                    TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3")
-            //                };
-            //                result.ViewResultWhite.DiagonalFieldOfViewAngle = ObjectiveTestResult.DiagonalFieldOfViewAngle;
-            //                result.ViewResultWhite.HorizontalFieldOfViewAngle = ObjectiveTestResult.HorizontalFieldOfViewAngle;
-            //                result.ViewResultWhite.VerticalFieldOfViewAngle = ObjectiveTestResult.VerticalFieldOfViewAngle;
+                            result.ViewResultWhite.DFovView = view1;
 
 
-            //                result.Result = result.Result && ObjectiveTestResult.DiagonalFieldOfViewAngle.TestResult;
-            //                result.Result = result.Result && ObjectiveTestResult.HorizontalFieldOfViewAngle.TestResult;
-            //                result.Result = result.Result && ObjectiveTestResult.VerticalFieldOfViewAngle.TestResult;
-            //            }
 
-            //        }
-            //    }
-            //}
+                            ObjectiveTestResult.DiagonalFieldOfViewAngle = new ObjectiveTestItem()
+                            {
+                                Name = "DiagonalFieldOfViewAngle",
+                                LowLimit = SPECConfig.DiagonalFieldOfViewAngleMin,
+                                UpLimit = SPECConfig.DiagonalFieldOfViewAngleMax,
+                                Value = view1.Result.result.D_Fov,
+                                TestValue = view1.Result.result.D_Fov.ToString("F3")
+                            };
+
+                            ObjectiveTestResult.HorizontalFieldOfViewAngle = new ObjectiveTestItem()
+                            {
+                                Name = "HorizontalFieldOfViewAngle",
+                                LowLimit = SPECConfig.HorizontalFieldOfViewAngleMin,
+                                UpLimit = SPECConfig.HorizontalFieldOfViewAngleMax,
+                                Value = view1.Result.result.ClolorVisionH_Fov,
+                                TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F3")
+                            };
+                            ObjectiveTestResult.VerticalFieldOfViewAngle = new ObjectiveTestItem()
+                            {
+                                Name = "VerticalFieldOfViewAngle",
+                                LowLimit = SPECConfig.VerticalFieldOfViewAngleMin,
+                                UpLimit = SPECConfig.VerticalFieldOfViewAngleMax,
+                                Value = view1.Result.result.ClolorVisionV_Fov,
+                                TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3")
+                            };
+                            result.ViewResultWhite.DiagonalFieldOfViewAngle = ObjectiveTestResult.DiagonalFieldOfViewAngle;
+                            result.ViewResultWhite.HorizontalFieldOfViewAngle = ObjectiveTestResult.HorizontalFieldOfViewAngle;
+                            result.ViewResultWhite.VerticalFieldOfViewAngle = ObjectiveTestResult.VerticalFieldOfViewAngle;
+
+
+                            result.Result = result.Result && ObjectiveTestResult.DiagonalFieldOfViewAngle.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.HorizontalFieldOfViewAngle.TestResult;
+                            result.Result = result.Result && ObjectiveTestResult.VerticalFieldOfViewAngle.TestResult;
+                        }
+
+                    }
+                }
+            }
 
             if (result.Model.Contains("White255"))
             {
-                log.Info("正在解析白画面的流程");
+                log.Info("正在解析White255的流程");
                 result.TestType = ARVRTestType.White;
                 ObjectiveTestResult.FlowWhiteTestReslut = true;
 
@@ -901,113 +916,6 @@ namespace ProjectARVR
                         }
 
                     }
-
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.FindLightArea)
-                    {
-                        result.ViewResultWhite.AlgResultLightAreaModels = AlgResultLightAreaDao.Instance.GetAllByPid(AlgResultMaster.Id);
-                    }
-
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.PoiAnalysis)
-                    {
-                        if (AlgResultMaster.TName.Contains("Luminance_uniformity"))
-                        {
-                            List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
-                            if (detailCommonModels.Count == 1)
-                            {
-                                PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
-
-                                viewReslut.PoiAnalysisResult.result.Value = viewReslut.PoiAnalysisResult.result.Value * ObjectiveTestResultFix.LuminanceUniformity;
-                                var LuminanceUniformity = new ObjectiveTestItem()
-                                {
-                                    Name = "Luminance_uniformity(%)",
-                                    TestValue = (viewReslut.PoiAnalysisResult.result.Value * 100).ToString("F3") + "%",
-                                    Value = viewReslut.PoiAnalysisResult.result.Value,
-                                    LowLimit = SPECConfig.LuminanceUniformityMin,
-                                    UpLimit = SPECConfig.LuminanceUniformityMax,
-                                };
-                                ObjectiveTestResult.LuminanceUniformity = LuminanceUniformity;
-                                result.ViewResultWhite.LuminanceUniformity = LuminanceUniformity;
-
-                                result.Result = result.Result && LuminanceUniformity.TestResult;
-
-                            }
-
-                        }
-                        if (AlgResultMaster.TName.Contains("Color_uniformity"))
-                        {
-                            List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
-                            if (detailCommonModels.Count == 1)
-                            {
-                                PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
-                                viewReslut.PoiAnalysisResult.result.Value = viewReslut.PoiAnalysisResult.result.Value * ObjectiveTestResultFix.ColorUniformity;
-
-                                var ColorUniformity = new ObjectiveTestItem()
-                                {
-                                    Name = "Color_uniformity",
-                                    TestValue = (viewReslut.PoiAnalysisResult.result.Value).ToString("F5"),
-                                    Value = viewReslut.PoiAnalysisResult.result.Value,
-                                    LowLimit = SPECConfig.ColorUniformityMin,
-                                    UpLimit = SPECConfig.ColorUniformityMax
-                                };
-                                ObjectiveTestResult.ColorUniformity = ColorUniformity;
-                                result.ViewResultWhite.ColorUniformity = ColorUniformity;
-
-                                result.Result = result.Result && ColorUniformity.TestResult;
-
-                            }
-                        }
-                    }
-
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.FOV)
-                    {
-                        List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
-                        if (AlgResultModels.Count == 1)
-                        {
-                            DFovView view1 = new DFovView(AlgResultModels[0]);
-                            view1.Result.result.D_Fov = view1.Result.result.D_Fov * ObjectiveTestResultFix.DiagonalFieldOfViewAngle;
-                            view1.Result.result.ClolorVisionH_Fov = view1.Result.result.H_Fov * ObjectiveTestResultFix.HorizontalFieldOfViewAngle;
-                            view1.Result.result.ClolorVisionV_Fov = view1.Result.result.V_FOV * ObjectiveTestResultFix.VerticalFieldOfViewAngle;
-
-                            result.ViewResultWhite.DFovView = view1;
-
-
-
-                            ObjectiveTestResult.DiagonalFieldOfViewAngle = new ObjectiveTestItem()
-                            {
-                                Name = "DiagonalFieldOfViewAngle",
-                                LowLimit = SPECConfig.DiagonalFieldOfViewAngleMin,
-                                UpLimit = SPECConfig.DiagonalFieldOfViewAngleMax,
-                                Value = view1.Result.result.D_Fov,
-                                TestValue = view1.Result.result.D_Fov.ToString("F3")
-                            };
-
-                            ObjectiveTestResult.HorizontalFieldOfViewAngle = new ObjectiveTestItem()
-                            {
-                                Name = "HorizontalFieldOfViewAngle",
-                                LowLimit = SPECConfig.HorizontalFieldOfViewAngleMin,
-                                UpLimit = SPECConfig.HorizontalFieldOfViewAngleMax,
-                                Value = view1.Result.result.ClolorVisionH_Fov,
-                                TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F3")
-                            };
-                            ObjectiveTestResult.VerticalFieldOfViewAngle = new ObjectiveTestItem()
-                            {
-                                Name = "VerticalFieldOfViewAngle",
-                                LowLimit = SPECConfig.VerticalFieldOfViewAngleMin,
-                                UpLimit = SPECConfig.VerticalFieldOfViewAngleMax,
-                                Value = view1.Result.result.ClolorVisionV_Fov,
-                                TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3")
-                            };
-                            result.ViewResultWhite.DiagonalFieldOfViewAngle = ObjectiveTestResult.DiagonalFieldOfViewAngle;
-                            result.ViewResultWhite.HorizontalFieldOfViewAngle = ObjectiveTestResult.HorizontalFieldOfViewAngle;
-                            result.ViewResultWhite.VerticalFieldOfViewAngle = ObjectiveTestResult.VerticalFieldOfViewAngle;
-
-
-                            result.Result = result.Result && ObjectiveTestResult.DiagonalFieldOfViewAngle.TestResult;
-                            result.Result = result.Result && ObjectiveTestResult.HorizontalFieldOfViewAngle.TestResult;
-                            result.Result = result.Result && ObjectiveTestResult.VerticalFieldOfViewAngle.TestResult;
-                        }
-
-                    }
                 }
             }
             else if (result.Model.Contains("Black"))
@@ -1016,7 +924,7 @@ namespace ProjectARVR
                 result.TestType = ARVRTestType.Black;
                 ObjectiveTestResult.FlowBlackTestReslut = true;
 
-                if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRConfig.Instance.SN) is ProjectARVRReuslt result1)
+                if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRConfig.Instance.SN &&a.TestType == ARVRTestType.White && a.ViewResultWhite.PoiResultCIExyuvDatas!=null) is ProjectARVRReuslt result1)
                 {
                     result.ViewResultWhite = result1.ViewResultWhite;
                 }
@@ -1521,6 +1429,7 @@ namespace ProjectARVR
 
                             result.ViewReslutDistortionGhost.Distortion2View = blackMuraView;
 
+
                             ObjectiveTestResult.HorizontalTVDistortion = new ObjectiveTestItem()
                             {
                                 Name = "HorizontalTVDistortion",
@@ -1549,6 +1458,7 @@ namespace ProjectARVR
 
                     }
                 }
+
             }
             else if (result.Model.Contains("OpticCenter"))
             {
@@ -1629,10 +1539,15 @@ namespace ProjectARVR
 
 
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
-
+      
             if (IsTestTypeCompleted())
             {
                 TestCompleted();
+            }
+            else
+            {
+                SwitchPG();
+
             }
         }
 
@@ -1646,7 +1561,7 @@ namespace ProjectARVR
                 nextIndex = (nextIndex + 1) % values.Length;
             ARVRTestType aRVRTestType = (ARVRTestType)values.GetValue(nextIndex);
 
-            return aRVRTestType >= ProjectARVRConfig.Instance.TestTypeCompleted;
+            return aRVRTestType >= ARVRTestType.Ghost;
         }
 
         private void SwitchPG()
@@ -1706,7 +1621,7 @@ namespace ProjectARVR
 
 
 
-            string filePath = Path.Combine(ViewResultManager.Config.TextSavePath, $"ObjectiveTestResults_{timeStr}.csv");
+            string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults_{timeStr}.csv");
 
             List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
 
@@ -1800,18 +1715,48 @@ namespace ProjectARVR
                 ImageView.OpenImage(result.FileName);
                 ImageView.ImageShow.Clear();
 
+                if (result.TestType == ARVRTestType.White2)
+                {
+                    DVPolygon polygon = new DVPolygon();
+                    List<System.Windows.Point> point1s = new List<System.Windows.Point>();
+
+                    if (result.ViewResultWhite == null)
+                    {
+                        log.Info("找不到WFOV的结果");
+                        return;
+                    }
+                    if (result.ViewResultWhite.AlgResultLightAreaModels != null)
+                    {
+                        foreach (var item in result.ViewResultWhite.AlgResultLightAreaModels)
+                        {
+                            point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
+                        }
+                        foreach (var item in GrahamScan.ComputeConvexHull(point1s))
+                        {
+                            polygon.Attribute.Points.Add(new Point(item.X, item.Y));
+                        }
+                        polygon.Attribute.Brush = Brushes.Transparent;
+                        polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
+                        polygon.Attribute.Id = -1;
+                        polygon.IsComple = true;
+                        polygon.Render();
+                        ImageView.AddVisual(polygon);
+                    }
+
+                }
 
                 if (result.TestType == ARVRTestType.White)
                 {
                     DVPolygon polygon = new DVPolygon();
                     List<System.Windows.Point> point1s = new List<System.Windows.Point>();
 
-                    if(result.ViewResultWhite == null || result.ViewResultWhite.PoiResultCIExyuvDatas ==null)
+                    if (result.ViewResultWhite == null)
                     {
                         log.Info("找不到白画面的结果");
                         return;
                     }
-                    if(result.ViewResultWhite.AlgResultLightAreaModels != null)
+
+                    if (result.ViewResultWhite.AlgResultLightAreaModels != null)
                     {
                         foreach (var item in result.ViewResultWhite.AlgResultLightAreaModels)
                         {
@@ -1830,38 +1775,81 @@ namespace ProjectARVR
                     }
 
 
-                    foreach (var poiResultCIExyuvData in result.ViewResultWhite.PoiResultCIExyuvDatas)
+                    if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
                     {
-                        var item = poiResultCIExyuvData.Point;
-                        switch (item.PointType)
+                        foreach (var poiResultCIExyuvData in result.ViewResultWhite.PoiResultCIExyuvDatas)
                         {
-                            case POIPointTypes.Circle:
-                                DVCircleText Circle = new DVCircleText();
-                                Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                                Circle.Attribute.Radius = item.Radius;
-                                Circle.Attribute.Brush = Brushes.Transparent;
-                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                                Circle.Attribute.Id = item.Id ?? -1;
-                                Circle.Attribute.Text = item.Name;
-                                Circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
-                                Circle.Render();
-                                ImageView.AddVisual(Circle);
-                                break;
-                            case POIPointTypes.Rect:
-                                DVRectangleText Rectangle = new DVRectangleText();
-                                Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                                Rectangle.Attribute.Brush = Brushes.Transparent;
-                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                                Rectangle.Attribute.Id = item.Id ?? -1;
-                                Rectangle.Attribute.Text = item.Name;
-                                Rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
-                                Rectangle.Render();
-                                ImageView.AddVisual(Rectangle);
-                                break;
-                            default:
-                                break;
+                            var item = poiResultCIExyuvData.Point;
+                            switch (item.PointType)
+                            {
+                                case POIPointTypes.Circle:
+                                    DVCircleText Circle = new DVCircleText();
+                                    Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                                    Circle.Attribute.Radius = item.Radius;
+                                    Circle.Attribute.Brush = Brushes.Transparent;
+                                    Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                    Circle.Attribute.Id = item.Id ?? -1;
+                                    Circle.Attribute.Text = item.Name;
+                                    Circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                    Circle.Render();
+                                    ImageView.AddVisual(Circle);
+                                    break;
+                                case POIPointTypes.Rect:
+                                    DVRectangleText Rectangle = new DVRectangleText();
+                                    Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                                    Rectangle.Attribute.Brush = Brushes.Transparent;
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                    Rectangle.Attribute.Id = item.Id ?? -1;
+                                    Rectangle.Attribute.Text = item.Name;
+                                    Rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                    Rectangle.Render();
+                                    ImageView.AddVisual(Rectangle);
+                                    break;
+                                default:
+                                    break;
+                            }
                         }
                     }
+
+                }
+                if (result.TestType == ARVRTestType.White1)
+                {
+                    if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
+                    {
+                        foreach (var poiResultCIExyuvData in result.ViewResultWhite.PoiResultCIExyuvDatas)
+                        {
+                            var item = poiResultCIExyuvData.Point;
+                            switch (item.PointType)
+                            {
+                                case POIPointTypes.Circle:
+                                    DVCircleText Circle = new DVCircleText();
+                                    Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                                    Circle.Attribute.Radius = item.Radius;
+                                    Circle.Attribute.Brush = Brushes.Transparent;
+                                    Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                    Circle.Attribute.Id = item.Id ?? -1;
+                                    Circle.Attribute.Text = item.Name;
+                                    Circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                    Circle.Render();
+                                    ImageView.AddVisual(Circle);
+                                    break;
+                                case POIPointTypes.Rect:
+                                    DVRectangleText Rectangle = new DVRectangleText();
+                                    Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                                    Rectangle.Attribute.Brush = Brushes.Transparent;
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                    Rectangle.Attribute.Id = item.Id ?? -1;
+                                    Rectangle.Attribute.Text = item.Name;
+                                    Rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                    Rectangle.Render();
+                                    ImageView.AddVisual(Rectangle);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+
                 }
 
                 if (result.TestType == ARVRTestType.Black)
@@ -2063,8 +2051,9 @@ namespace ProjectARVR
 
             switch (result.TestType)
             {
-                case ARVRTestType.White:
+                case ARVRTestType.White2:
                     outtext += $"白画面 测试项：自动AA区域定位算法+关注点算法+FOV算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
+
                     if (result.ViewResultWhite.AlgResultLightAreaModels != null)
                     {
                         foreach (var item in result.ViewResultWhite.AlgResultLightAreaModels)
@@ -2072,21 +2061,37 @@ namespace ProjectARVR
                             outtext += $"AlgResultLightAreaModel:{item.PosX},{item.PosY}" + Environment.NewLine;
                         }
                     }
+                    break;
+                case ARVRTestType.White:
+                    outtext += $"白画面 测试项：自动AA区域定位算法+关注点算法+FOV算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
 
-                    if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
+                    if (result.ViewResultWhite.AlgResultLightAreaModels != null)
                     {
-                        foreach (var item in result.ViewResultWhite.PoiResultCIExyuvDatas)
+                        foreach (var item in result.ViewResultWhite.AlgResultLightAreaModels)
                         {
-                            outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
+                            outtext += $"AlgResultLightAreaModel:{item.PosX},{item.PosY}" + Environment.NewLine;
                         }
                     }
+                    try
+                    {
+                        if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
+                        {
+                            foreach (var item in result.ViewResultWhite.PoiResultCIExyuvDatas)
+                            {
+                                outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
+                            }
+                        }
+                        outtext += $"CenterCorrelatedColorTemperature:{result.ViewResultWhite.CenterCorrelatedColorTemperature.TestValue}  LowLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.LowLimit} UpLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.UpLimit},Rsult{(result.ViewResultWhite.CenterCorrelatedColorTemperature.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                        outtext += $"Luminance_uniformity:{result.ViewResultWhite.LuminanceUniformity.TestValue} LowLimit:{result.ViewResultWhite.LuminanceUniformity.LowLimit}  UpLimit:{result.ViewResultWhite.LuminanceUniformity.UpLimit},Rsult{(result.ViewResultWhite.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                        outtext += $"Color_uniformity:{result.ViewResultWhite.ColorUniformity.TestValue} LowLimit:{result.ViewResultWhite.ColorUniformity.LowLimit} UpLimit:{result.ViewResultWhite.ColorUniformity.UpLimit},Rsult{(result.ViewResultWhite.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                        outtext += $"DiagonalFieldOfViewAngle:{result.ViewResultWhite.DiagonalFieldOfViewAngle.TestValue}  LowLimit:{result.ViewResultWhite.DiagonalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewResultWhite.DiagonalFieldOfViewAngle.UpLimit},Rsult{(result.ViewResultWhite.DiagonalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                        outtext += $"HorizontalFieldOfViewAngle:{result.ViewResultWhite.HorizontalFieldOfViewAngle.TestValue} LowLimit:{result.ViewResultWhite.HorizontalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewResultWhite.HorizontalFieldOfViewAngle.UpLimit} ,Rsult{(result.ViewResultWhite.HorizontalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                        outtext += $"VerticalFieldOfViewAngle:{result.ViewResultWhite.VerticalFieldOfViewAngle.TestValue} LowLimit:{result.ViewResultWhite.VerticalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewResultWhite.VerticalFieldOfViewAngle.UpLimit},Rsult{(result.ViewResultWhite.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    }
+                    catch (Exception ex)
+                    {
 
-                    outtext += $"CenterCorrelatedColorTemperature:{result.ViewResultWhite.CenterCorrelatedColorTemperature.TestValue}  LowLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.LowLimit} UpLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.UpLimit},Rsult{(result.ViewResultWhite.CenterCorrelatedColorTemperature.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    outtext += $"Luminance_uniformity:{result.ViewResultWhite.LuminanceUniformity.TestValue} LowLimit:{result.ViewResultWhite.LuminanceUniformity.LowLimit}  UpLimit:{result.ViewResultWhite.LuminanceUniformity.UpLimit},Rsult{(result.ViewResultWhite.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    outtext += $"Color_uniformity:{result.ViewResultWhite.ColorUniformity.TestValue} LowLimit:{result.ViewResultWhite.ColorUniformity.LowLimit} UpLimit:{result.ViewResultWhite.ColorUniformity.UpLimit},Rsult{(result.ViewResultWhite.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    outtext += $"DiagonalFieldOfViewAngle:{result.ViewResultWhite.DiagonalFieldOfViewAngle.TestValue}  LowLimit:{result.ViewResultWhite.DiagonalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewResultWhite.DiagonalFieldOfViewAngle.UpLimit},Rsult{(result.ViewResultWhite.DiagonalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    outtext += $"HorizontalFieldOfViewAngle:{result.ViewResultWhite.HorizontalFieldOfViewAngle.TestValue} LowLimit:{result.ViewResultWhite.HorizontalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewResultWhite.HorizontalFieldOfViewAngle.UpLimit} ,Rsult{(result.ViewResultWhite.HorizontalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-                    outtext += $"VerticalFieldOfViewAngle:{result.ViewResultWhite.VerticalFieldOfViewAngle.TestValue} LowLimit:{result.ViewResultWhite.VerticalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewResultWhite.VerticalFieldOfViewAngle.UpLimit},Rsult{(result.ViewResultWhite.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    }
 
                     break;
                 case ARVRTestType.Black:
