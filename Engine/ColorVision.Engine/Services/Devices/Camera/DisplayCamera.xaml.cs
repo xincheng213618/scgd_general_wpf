@@ -153,7 +153,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     case DeviceStatusType.UnInit:
                         SetVisibility(ButtonInit, Visibility.Visible);
                         break;
-                    case DeviceStatusType.Closing:
                     case DeviceStatusType.Closed:
                         SetVisibility(ButtonOpen, Visibility.Visible);
                         break;
