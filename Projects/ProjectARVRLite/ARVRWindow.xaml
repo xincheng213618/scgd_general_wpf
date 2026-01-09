@@ -270,6 +270,9 @@
                 <Button Content="EditFix" Command="{Binding FixManager.EditCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
+                <Button Content="测试类型配置" Command="{Binding TestTypeConfigManager.EditCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
                 <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
