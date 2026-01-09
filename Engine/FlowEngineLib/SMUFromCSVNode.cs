@@ -68,6 +68,22 @@ public class SMUFromCSVNode : SMUBaseNode
 		updateUI();
 	}
 
+	protected override void updateUI()
+	{
+		if (IsStarted)
+		{
+			base.updateUI();
+		}
+		else if (!string.IsNullOrEmpty(_csvFileName))
+		{
+			m_ctrl_curValue.Value = Path.GetFileName(_csvFileName);
+		}
+		else
+		{
+			m_ctrl_curValue.Value = string.Empty;
+		}
+	}
+
 	private bool LoadFromCsv(string csvFileName)
 	{
 		if (!string.IsNullOrEmpty(csvFileName) && File.Exists(csvFileName))

@@ -192,7 +192,8 @@ public abstract class BaseStartNode : CVCommonNode
 		}
 		if (action != null)
 		{
-			if (!startActions.ContainsKey(action.SerialNumber))
+			string serialNumber = action.SerialNumber;
+			if (string.IsNullOrEmpty(serialNumber) || !startActions.ContainsKey(serialNumber))
 			{
 				if (action.IsRunning)
 				{
@@ -212,7 +213,7 @@ public abstract class BaseStartNode : CVCommonNode
 				DoStatusTransferData(action);
 				return;
 			}
-			CVStartCFC cVStartCFC = startActions[action.SerialNumber];
+			CVStartCFC cVStartCFC = startActions[serialNumber];
 			if (action.IsStop)
 			{
 				cVStartCFC.SetActionType(action.GetActionType());

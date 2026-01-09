@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Drawing;
+using System.Threading.Tasks;
 using FlowEngineLib.Base;
 using FlowEngineLib.MQTT;
 using FlowEngineLib.SMU;
+using FlowEngineLib.Start;
 using log4net;
 using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
@@ -15,7 +17,7 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 
 	protected STNodeOption m_in_next;
 
-	protected STNodeEditText<string> m_ctrl_editText;
+	protected STNodeEditText<string> m_ctrl_curValue;
 
 	protected STNodeEditText<string> m_ctrl_lpName;
 
@@ -42,6 +44,8 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 	protected double m_step_val;
 
 	protected int m_step_idx;
+
+	public bool IsStarted;
 
 	protected List<SMUSrcValueData> srcValues;
 
@@ -78,6 +82,7 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		m_is_out_release = false;
 		m_has_svr_item = false;
 		m_IsCloseOutput = false;
+		IsStarted = false;
 		operatorCode = "GetData";
 		srcValues = null;
 		_source = SourceType.Voltage_V;
@@ -105,7 +110,7 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		custom_item.Y = 50;
 		m_ctrl_channel = CreateControl(typeof(STNodeEditText<SMUChannelType>), custom_item, "通道:", _channel);
 		custom_item.Y += 25;
-		m_ctrl_editText = CreateControl(typeof(STNodeEditText<string>), custom_item, "当前值:", string.Empty);
+		m_ctrl_curValue = CreateControl(typeof(STNodeEditText<string>), custom_item, "当前值:", string.Empty);
 		custom_item.Y += 25;
 		m_ctrl_lpName = CreateControl(typeof(STNodeEditText<string>), custom_item, "LoopName:", loopName);
 	}
@@ -114,43 +119,40 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 	{
 		if (m_step_idx == 0)
 		{
-			m_ctrl_editText.Value = $"{m_begin_val}-{m_end_val}/{m_point_num}";
+			m_ctrl_curValue.Value = $"{m_begin_val}-{m_end_val}/{m_point_num}";
 		}
 		else
 		{
-			m_ctrl_editText.Value = string.Format("{2:F4}:{0}/{1}", m_step_idx, m_point_num, m_cur_src_val);
+			m_ctrl_curValue.Value = string.Format("{2:F4}:{0}/{1}", m_step_idx, m_point_num, m_cur_src_val);
 		}
 	}
 
-	protected void end(CVTransAction trans)
+	protected virtual void end(CVTransAction trans)
 	{
 		updateUI();
-		if (logger.IsDebugEnabled)
-		{
-			logger.DebugFormat("[{0}]Device is end,IsCloseOutput={1}", ToShortString(), m_IsCloseOutput);
-		}
-		if (m_IsCloseOutput && trans != null)
-		{
-			SendToCloseOutput(trans);
-		}
 	}
 
 	private void SendToCloseOutput(CVTransAction trans)
+	{
+		CVStartCFC trans_action = trans.trans_action;
+		SendToCloseOutput(trans_action.SerialNumber, trans.trans_action.GetStartNode());
+	}
+
+	private void SendToCloseOutput(string serialNumber, BaseStartNode startNode)
 	{
 		if (logger.IsDebugEnabled)
 		{
 			logger.Debug("Send To Server CloseOutput");
 		}
-		CVStartCFC trans_action = trans.trans_action;
 		string token = GetToken();
 		SMUCloseOutputRequestParam data = new SMUCloseOutputRequestParam
 		{
 			Channel = _channel
 		};
-		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, "CloseOutput", trans_action.SerialNumber, data, token, base.ZIndex);
+		CVMQTTRequest cVMQTTRequest = new CVMQTTRequest(GetServiceName(), m_deviceCode, "CloseOutput", serialNumber, data, token, base.ZIndex);
 		string message = JsonConvert.SerializeObject(cVMQTTRequest, Formatting.None);
 		MQActionEvent act = new MQActionEvent(cVMQTTRequest.MsgID, m_nodeName, m_deviceCode, GetSendTopic(), cVMQTTRequest.EventName, message, token);
-		trans.trans_action.GetStartNode().DoPublish(act);
+		startNode.DoPublish(act);
 	}
 
 	private void m_in_next_DataTransfer(object sender, STNodeOptionEventArgs e)
@@ -260,7 +262,9 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 			if (BuildValueData())
 			{
 				m_op_end.TransferData(null);
+				m_step_idx = 0;
 				result = new CVMQTTRequest(GetServiceName(), GetDeviceCode(), operatorCode, cVStartCFC.SerialNumber, new SMUData(_channel, _source == SourceType.Voltage_V, m_cur_src_val, _limitVal), GetToken(), base.ZIndex);
+				IsStarted = true;
 				m_step_idx++;
 				updateUI();
 				AddCFCData(cVStartCFC);
@@ -290,19 +294,24 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 			m_step_val = num;
 		}
 		m_cur_src_val = m_begin_val;
-		m_step_idx = 0;
 		return true;
 	}
 
-	protected override void Reset(CVTransAction trans)
+	protected override void Reset(CVStartCFC action)
 	{
+		IsStarted = false;
 		if (logger.IsDebugEnabled)
 		{
-			logger.DebugFormat("[{0}]Reset", ToShortString());
+			logger.DebugFormat("[{0}]Reset,IsCloseOutput={1}", ToShortString(), m_IsCloseOutput);
 		}
-		if (m_IsCloseOutput && trans != null)
+		if (m_IsCloseOutput)
 		{
-			SendToCloseOutput(trans);
+			string serialNumber = action.SerialNumber;
+			BaseStartNode startNode = action.GetStartNode();
+			Task.Delay(500).ContinueWith(delegate
+			{
+				SendToCloseOutput(serialNumber, startNode);
+			});
 		}
 	}
 }
