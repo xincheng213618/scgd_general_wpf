@@ -89,6 +89,8 @@ namespace ProjectARVRLite
 
         public static ObjectiveTestResultFix ObjectiveTestResultFix => FixManager.GetInstance().ObjectiveTestResultFix;
 
+        public static TestTypeConfigManager TestTypeConfigManager => TestTypeConfigManager.GetInstance();
+
         public ARVRWindow()
         {
             InitializeComponent();
@@ -136,13 +138,16 @@ namespace ProjectARVRLite
                 log.Info("PG切换错误，正在执行流程");
                 return;
             }
-            var values = Enum.GetValues(typeof(ARVR1TestType));
-            int currentIndex = Array.IndexOf(values, CurrentTestType);
-            int nextIndex = (currentIndex + 1) % values.Length;
-            // 跳过 None（假设 None 是第一个）
-            if ((ARVR1TestType)values.GetValue(nextIndex) == ARVR1TestType.None)
-                nextIndex = (nextIndex + 1) % values.Length;
-            var TestType = (ARVR1TestType)values.GetValue(nextIndex);
+            
+            // Get next enabled test type from configuration
+            var TestType = TestTypeConfigManager.GetNextEnabledTestType(CurrentTestType);
+            
+            if (TestType == ARVR1TestType.None)
+            {
+                log.Info("没有找到下一个启用的测试类型");
+                IsSwitchRun = false;
+                return;
+            }
 
             try
             {
@@ -1632,15 +1637,7 @@ namespace ProjectARVRLite
 
         private bool IsTestTypeCompleted()
         {
-            var values = Enum.GetValues(typeof(ARVR1TestType));
-            int currentIndex = Array.IndexOf(values, CurrentTestType);
-            int nextIndex = (currentIndex + 1) % values.Length;
-            // 跳过 None（假设 None 是第一个）
-            if ((ARVR1TestType)values.GetValue(nextIndex) == ARVR1TestType.None)
-                nextIndex = (nextIndex + 1) % values.Length;
-            ARVR1TestType aRVRTestType = (ARVR1TestType)values.GetValue(nextIndex);
-
-            return aRVRTestType >= ProjectConfig.TestTypeCompleted;
+            return !TestTypeConfigManager.HasMoreEnabledTestTypes(CurrentTestType);
         }
 
         private void SwitchPG()
@@ -1652,13 +1649,7 @@ namespace ProjectARVRLite
             }
             log.Info("Socket已经链接 ");
 
-            var values = Enum.GetValues(typeof(ARVR1TestType));
-            int currentIndex = Array.IndexOf(values, CurrentTestType);
-            int nextIndex = (currentIndex + 1) % values.Length;
-            // 跳过 None（假设 None 是第一个）
-            if ((ARVR1TestType)values.GetValue(nextIndex) == ARVR1TestType.None)
-                nextIndex = (nextIndex + 1) % values.Length;
-            ARVR1TestType aRVRTestType = (ARVR1TestType)values.GetValue(nextIndex);
+            var aRVRTestType = TestTypeConfigManager.GetNextEnabledTestType(CurrentTestType);
 
             var response = new SocketResponse
             {

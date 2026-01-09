@@ -41,7 +41,7 @@ namespace ProjectARVRLite.Services
                     ProjectWindowInstance.WindowInstance.InitTest(request.SerialNumber);
                 }
             });
-            return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVR1TestType.W51 } };
+            return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = TestTypeConfigManager.GetInstance().GetFirstEnabledTestType() } };
         }
     }
 
