@@ -14,6 +14,7 @@
     <converter:BooleanToVisibilityReConverter x:Key="bool2VisibilityConverter1"/>
     <converter:EnumToVisibilityConverter x:Key="enum2VisibilityConverter"/>
     <converter:EnumToVisibilityReConverter x:Key="enum2VisibilityConverter1"/>
+    <converter:IntToVisibilityConverter x:Key="int2VisibilityConverter"/>
     
     <Style TargetType="{x:Type AccessText}">
         <Setter Property="VerticalAlignment" Value="Center"/>

@@ -61,6 +61,9 @@ namespace ColorVision.UI.Plugins
         // 在 PluginLoader 类中添加
         public RelayCommand UpdateAllCommand { get; set; }
 
+        public int UpdateAvailableCount { get => _UpdateAvailableCount; set { _UpdateAvailableCount = value; OnPropertyChanged(); } }
+        private int _UpdateAvailableCount;
+
         public PluginManager()
         {
             log.Info(Properties.Resources.CheckingForAdditionalProjects);
@@ -70,6 +73,13 @@ namespace ColorVision.UI.Plugins
                 if (item.Value.Manifest != null)
                 {
                     PluginInfoVM info = new PluginInfoVM(item.Value);
+                    info.PropertyChanged += (s, e) =>
+                    {
+                        if (e.PropertyName == nameof(PluginInfoVM.HasUpdate))
+                        {
+                            UpdateAvailableCount = Plugins.Count(p => p.HasUpdate);
+                        }
+                    };
                     Plugins.Add(info);
                 }
             }
@@ -85,17 +95,31 @@ namespace ColorVision.UI.Plugins
         }
         public void UpdateAll()
         {
-            foreach (var plugin in Plugins)
+            var pluginsToUpdate = Plugins.Where(p => p.PluginInfo.Enabled && p.HasUpdate).ToList();
+            
+            if (pluginsToUpdate.Count == 0)
             {
-                // 可根据实际需求判断是否已启用
-                if (plugin.PluginInfo.Enabled)
+                MessageBox.Show(Application.Current.GetActiveWindow(), "没有可更新的插件", "插件管理", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), 
+                $"检测到 {pluginsToUpdate.Count} 个插件有可用更新，是否全部更新？", 
+                "一键更新", 
+                MessageBoxButton.YesNo, 
+                MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                foreach (var plugin in pluginsToUpdate)
                 {
-
-                    // 建议异步调用，避免阻塞UI
-                    Application.Current.Dispatcher.InvokeAsync(() => plugin.Update());
-
-
-
+                    try
+                    {
+                        // 异步调用，避免阻塞UI
+                        Application.Current.Dispatcher.InvokeAsync(() => plugin.Update());
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error($"更新插件 {plugin.Name} 时发生错误: {ex.Message}", ex);
+                    }
                 }
             }
         }
