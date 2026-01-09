@@ -304,5 +304,13 @@ namespace ProjectARVRLite
         public double GhostMax { get => _GhostMax; set { _GhostMax = value; OnPropertyChanged(); } }
         private double _GhostMax = 0.05;
 
+
+        [Category("Ghost")]
+        public double Ghost1Min { get => _Ghost1Min; set { _Ghost1Min = value; OnPropertyChanged(); } }
+        private double _Ghost1Min;
+        [Category("Ghost")]
+        public double Ghost1Max { get => _Ghost1Max; set { _Ghost1Max = value; OnPropertyChanged(); } }
+        private double _Ghost1Max = 0.05;
+
     }
 }

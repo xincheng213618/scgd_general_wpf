@@ -20,6 +20,7 @@ namespace ProjectARVRLite
         public static RecipeManager RecipeManager => RecipeManager.GetInstance();
         public static FixManager FixManager => FixManager.GetInstance();
         public static SummaryManager SummaryManager => SummaryManager.GetInstance();
+        public static TestTypeConfigManager TestTypeConfigManager => TestTypeConfigManager.GetInstance();
 
         [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
@@ -57,7 +58,7 @@ namespace ProjectARVRLite
         }
 
         public int StepIndex { get => _StepIndex; set { _StepIndex = value; OnPropertyChanged(); } }
-        private int _StepIndex;
+        private int _StepIndex = 5;
 
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility = value; OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
@@ -143,7 +144,7 @@ namespace ProjectARVRLite
 
         [DisplayName("测试结束类型")]
         public ARVR1TestType TestTypeCompleted { get => _TestTypeCompleted; set { _TestTypeCompleted = value; OnPropertyChanged(); } }
-        private ARVR1TestType _TestTypeCompleted = ARVR1TestType.Ghost;
+        private ARVR1TestType _TestTypeCompleted = ARVR1TestType.DotMatrix;
 
 
         public event EventHandler<string> SNChanged;

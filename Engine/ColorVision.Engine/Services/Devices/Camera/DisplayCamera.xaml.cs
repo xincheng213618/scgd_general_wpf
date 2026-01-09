@@ -177,7 +177,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             }
                         }
                         break;
-                    case DeviceStatusType.Opening:
                     case DeviceStatusType.Opened:
                         SetVisibility(StackPanelOpen, Visibility.Visible);
                         SetVisibility(ButtonClose, Visibility.Visible);
