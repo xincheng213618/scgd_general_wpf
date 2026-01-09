@@ -174,7 +174,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            STNodePropertyGrid1.Text = "属性";
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
 
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
@@ -207,10 +206,11 @@ namespace ColorVision.Engine.Templates.Flow
                         }
                     }
                 }
+                STNodeEditorHelper?.PropertyEditorWindow?.CloseWindow();
 
             };
 
-            STNodeEditorHelper = new STNodeEditorHelper(this,STNodeEditorMain, STNodeTreeView1,STNodePropertyGrid1, SignStackPannel);
+            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain, STNodeTreeView1);
         }
         public void AutoAlignment()
         {

@@ -31,14 +31,13 @@ namespace Spectrum
     public class MenuChangeCali : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => "幅值标定文件";
+        public override string Header => "生成幅值标定文件";
         public override int Order => 1;
         public override void Execute()
         {
             if (Application.Current.MainWindow is MainWindow mainWindow)
             {
                 new GenerateAmplitudeWindow(mainWindow.SpectrometerHandle).ShowDialog();
-
             }
         }
     }

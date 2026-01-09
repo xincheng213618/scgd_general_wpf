@@ -1,7 +1,12 @@
-﻿using ColorVision.Engine.Messages;
+﻿using ColorVision.Database;
+using ColorVision.Engine.Batch.Eqe;
+using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI;
+using SqlSugar;
 using System;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -143,7 +148,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.GetData((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked??false, AutoDark.IsChecked ?? false, AutoShutterDark.IsChecked ?? false);
+            MsgRecord msgRecord = DService.GetData();
             msgRecord.MsgRecordStateChanged += (e) =>
             {
                 if (e == MsgRecordState.Success)
@@ -161,7 +166,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             string btnTitle = btn_autoTest.Content.ToString();
             if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals(ColorVision.Engine.Properties.Resources.ContinuousMeasurement, StringComparison.Ordinal))
             {
-                DService.GetDataAuto((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked ?? false, AutoDark.IsChecked ?? false);
+                DService.GetDataAuto();
                 btn_autoTest.Content = ColorVision.Engine.Properties.Resources.CancelAutoTest;
             }
             else
@@ -172,7 +177,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)
         {
-            MsgRecord  msgRecord = DService.InitDark((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value);
+            MsgRecord  msgRecord = DService.InitDark();
             msgRecord.MsgRecordStateChanged += (e) =>
             {
                 if (e == MsgRecordState.Success)
@@ -226,7 +231,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 if (e == MsgRecordState.Success)
                 {
                     int port = msgRecord.MsgReturn.Data.Port;
-                    Device.DisplaySpectrumConfig.PortNum = port;
+                    Device.DisplayConfig.PortNum = port;
                 }
                 else
                 {

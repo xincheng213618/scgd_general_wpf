@@ -1,0 +1,37 @@
+﻿<Window x:Class="ColorVision.Engine.Templates.Flow.NodePropertyEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine.Templates.Flow"
+        xmlns:st="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
+        mc:Ignorable="d"
+        Title="属性编辑器" Height="450" Width="450"
+        WindowStyle="ToolWindow"
+        ShowInTaskbar="False"
+        Topmost="False"
+        Background="{DynamicResource GlobalBackground}"
+        Deactivated="Window_Deactivated"
+        Activated="Window_Activated"
+        Closed="Window_Closed">
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Toggle button between property editor and SignStackPanel -->
+        <ToggleButton x:Name="ToggleEditMode"  Content="切换编辑模式"  IsChecked="True"  Checked="ToggleEditMode_Checked" Unchecked="ToggleEditMode_Unchecked" HorizontalAlignment="Stretch"  Margin="0,0,0,5"/>
+
+        <Grid Grid.Row="1">
+            <WindowsFormsHost x:Name="PropertyGridHost" 
+                              Visibility="Collapsed">
+                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
+            </WindowsFormsHost>
+
+            <ScrollViewer x:Name="SignStackScrollViewer"  Visibility="Visible"  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <StackPanel x:Name="SignStackPanelContainer"  Orientation="Vertical"/>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>

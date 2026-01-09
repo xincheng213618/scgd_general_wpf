@@ -67,13 +67,13 @@ public class CVServiceProxy
 
 	public string GetSendTopic()
 	{
-		string rectangleR = DefaultPublishTopic;
+		string result = DefaultPublishTopic;
 		MQTTServiceInfo service = FlowServiceManager.Instance.GetService(m_nodeType, m_nodeName);
 		if (service != null)
 		{
-			rectangleR = service.PublishTopic;
+			result = service.PublishTopic;
 		}
-		return rectangleR;
+		return result;
 	}
 
 	public string GetRecvTopic()

@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -10,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -18,28 +20,52 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
+    public class BoolToWidthConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            bool isVisible = (bool)value;
+            // If parameter is "Inverse", flip the logic
+            if (parameter != null && parameter.ToString() == "Inverse")
+            {
+                isVisible = !isVisible;
+            }
+
+            return isVisible ? double.NaN : 0.0; // double.NaN is equivalent to "Auto"
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
     public partial class ViewSpectrum : UserControl,IView
     {
+
         public ObservableCollection<ViewResultSpectrum> ViewResults { get; set; } = new ObservableCollection<ViewResultSpectrum>();
         public View View { get; set; }
 
         public static ViewSpectrumConfig Config => ViewSpectrumConfig.Instance;
 
-        public ViewSpectrum()
+        public DisplaySpectrumConfig DisplayConfig { get; set; }
+        public ViewSpectrum(DisplaySpectrumConfig displayConfig)
         {
+            DisplayConfig = displayConfig;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this;
+
             TextBox TextBox1 = new() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
@@ -100,7 +126,58 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
 
+            DisplayConfig_IsIsLuminousFluxModeChanged();
+            DisplayConfig.IsIsLuminousFluxModeChanged +=(s,e) => DisplayConfig_IsIsLuminousFluxModeChanged();
         }
+
+        private void DisplayConfig_IsIsLuminousFluxModeChanged()
+        {
+            List<string> EQE = new List<string>();
+            EQE.Add("EQE");
+            EQE.Add("光通量(lm)");
+            EQE.Add("辐射通量(W)");
+            EQE.Add("光效(lm/W)");
+            List<string> Nomarl = new List<string>();
+            Nomarl.Add(Properties.Resources.Lv);
+
+            if (DisplayConfig.IsLuminousFluxMode)
+            {
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (EQE.Contains(item.ColumnName))
+                    {
+                        item.IsVisible = true;
+                    }
+                    if (Nomarl.Contains(item.ColumnName))
+                    {
+                        item.IsVisible = false;
+                    }
+                }
+
+            }
+            else
+            {
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (EQE.Contains(item.ColumnName))
+                    {
+                        item.IsVisible = false;
+                    }
+                    if (Nomarl.Contains(item.ColumnName))
+                    {
+                        item.IsVisible = true;
+                    }
+                }
+
+            }
+            if (listView1.View is GridView gridView)
+            {
+                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+
+            }
+
+        }
+
         private void Delete()
         {
             if (listView1.SelectedItems.Count == listView1.Items.Count)
@@ -283,6 +360,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 else
                 {
                     var temp = ScatterPlots[listView1.SelectedIndex];
+                    if (temp == null) return;
                     temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                     temp.LineWidth = 1;
                     temp.MarkerSize = 1;
@@ -535,12 +613,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public void AddViewResultSpectrum(ViewResultSpectrum viewResultSpectrum)
         {
-            viewResultSpectrum.V = float.NaN;
-            viewResultSpectrum.I = float.NaN;
             ViewResults.Add(viewResultSpectrum);
             ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
             AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
             listView1.SelectedIndex = ViewResults.Count - 1;
+            listView1.ScrollIntoView(viewResultSpectrum);
         }
         private void Inquire_Click(object sender, RoutedEventArgs e)
         {
@@ -548,7 +625,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             ScatterPlots.Clear();
             AbsoluteScatterPlots.Clear();
 
-            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultModel>();
+            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultEntity>().Where(x => x.DataType == DisplayConfig.IsLuminousFluxMode);
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
@@ -563,7 +640,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         }
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<SpectumResultModel, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultModel, ViewResultSpectrum>(MySqlControl.GetInstance().DB, ViewResults, 
+            GenericQuery<SpectumResultEntity, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultSpectrum>(MySqlControl.GetInstance().DB, ViewResults, 
                 t =>
                 {
                     ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(t);

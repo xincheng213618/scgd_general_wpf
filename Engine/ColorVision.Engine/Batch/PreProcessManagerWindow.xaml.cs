@@ -1,5 +1,4 @@
 using ColorVision.UI;
-using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
 using System.Globalization;
@@ -16,9 +15,28 @@ namespace ColorVision.Engine.Batch
             if (value is IPreProcess process)
             {
                 var metadata = PreProcessMetadata.FromProcess(process);
+                if (parameter?.ToString() == "Description")
+                    return metadata.Description;
                 return metadata.DisplayName;
             }
+            if (value is ListViewItem item && parameter?.ToString() == "Index")
+            {
+                var listView = FindParent<ListView>(item);
+                if (listView != null)
+                {
+                    int index = listView.Items.IndexOf(item.Content);
+                    return (index + 1).ToString();
+                }
+            }
             return value?.GetType().Name ?? string.Empty;
+        }
+
+        private static T FindParent<T>(DependencyObject child) where T : DependencyObject
+        {
+            DependencyObject parentObject = System.Windows.Media.VisualTreeHelper.GetParent(child);
+            if (parentObject == null) return null;
+            if (parentObject is T parent) return parent;
+            return FindParent<T>(parentObject);
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -67,7 +85,7 @@ namespace ColorVision.Engine.Batch
     /// </summary>
     public partial class PreProcessManagerWindow : Window
     {
-        private PreProcessMeta _currentSelectedMeta;
+        private IPreProcess _currentSelectedProcess;
         private INotifyPropertyChanged _currentConfig;
         private PropertyChangedEventHandler _configPropertyChangedHandler;
 
@@ -85,12 +103,6 @@ namespace ColorVision.Engine.Batch
 
         private void CleanupEventHandlers()
         {
-            if (_currentSelectedMeta != null)
-            {
-                _currentSelectedMeta.PropertyChanged -= SelectedMeta_PropertyChanged;
-                _currentSelectedMeta = null;
-            }
-
             if (_currentConfig != null && _configPropertyChangedHandler != null)
             {
                 _currentConfig.PropertyChanged -= _configPropertyChangedHandler;
@@ -122,14 +134,14 @@ namespace ColorVision.Engine.Batch
             }
 
             var manager = DataContext as PreProcessManager;
-            var selectedMeta = manager?.SelectedProcessMeta;
+            var selectedProcess = manager?.SelectedProcess;
 
-            if (selectedMeta == null)
+            if (selectedProcess == null)
             {
                 // Show placeholder text
                 PropertyPanel.Children.Add(new TextBlock 
                 { 
-                    Text = "请选择一个预处理项查看配置", 
+                    Text = "请选择一个预处理器查看配置", 
                     Foreground = System.Windows.Media.Brushes.Gray,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Margin = new Thickness(0, 20, 0, 0)
@@ -137,40 +149,23 @@ namespace ColorVision.Engine.Batch
                 return;
             }
 
-            // Unsubscribe from previous meta if any
-            if (_currentSelectedMeta != null && _currentSelectedMeta != selectedMeta)
-            {
-                _currentSelectedMeta.PropertyChanged -= SelectedMeta_PropertyChanged;
-            }
+            _currentSelectedProcess = selectedProcess;
 
-            if (_currentSelectedMeta != selectedMeta)
-            {
-                _currentSelectedMeta = selectedMeta;
-                _currentSelectedMeta.PropertyChanged += SelectedMeta_PropertyChanged;
-            }
-
-            // Add meta info section
-            AddMetaInfoSection(selectedMeta);
+            // Add processor info section
+            AddProcessorInfoSection(selectedProcess);
 
             // Add pre-processor config if available
-            var config = selectedMeta.PreProcess?.GetConfig();
+            var config = selectedProcess.GetConfig();
             if (config != null)
             {
-                AddConfigSection(config, selectedMeta);
+                AddConfigSection(config);
             }
         }
 
-        private void SelectedMeta_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void AddProcessorInfoSection(IPreProcess process)
         {
-            // Refresh when PreProcess changes (which may change the config)
-            if (e.PropertyName == nameof(PreProcessMeta.PreProcess))
-            {
-                RefreshPropertyPanel();
-            }
-        }
-
-        private void AddMetaInfoSection(PreProcessMeta meta)
-        {
+            var metadata = PreProcessMetadata.FromProcess(process);
+            
             var border = new Border
             {
                 BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
@@ -191,28 +186,25 @@ namespace ColorVision.Engine.Batch
                 Margin = new Thickness(0, 0, 0, 8) 
             });
 
-            // Name
-            AddLabeledTextBox(stack, "名称:", meta.Name, text => meta.Name = text);
+            // Process Type
+            AddLabeledText(stack, "处理类:", metadata.DisplayName);
 
-            // Template Name (read-only)
-            AddLabeledText(stack, "流程模板:", meta.TemplateName);
-
-            // Process Type (read-only)
-            AddLabeledText(stack, "处理类:", meta.ProcessDisplayName);
-
-            // Tag (editable)
-            AddLabeledTextBox(stack, "标签:", meta.Tag ?? "", text => meta.Tag = text);
-
-            // Description (read-only)
-            if (!string.IsNullOrEmpty(meta.ProcessDescription))
+            // Category
+            if (!string.IsNullOrEmpty(metadata.Category))
             {
-                AddLabeledText(stack, "描述:", meta.ProcessDescription);
+                AddLabeledText(stack, "类别:", metadata.Category);
+            }
+
+            // Description
+            if (!string.IsNullOrEmpty(metadata.Description))
+            {
+                AddLabeledText(stack, "描述:", metadata.Description);
             }
 
             PropertyPanel.Children.Add(border);
         }
 
-        private void AddConfigSection(object config, PreProcessMeta meta)
+        private void AddConfigSection(object config)
         {
             var border = new Border
             {
@@ -229,7 +221,7 @@ namespace ColorVision.Engine.Batch
             // Header
             stack.Children.Add(new TextBlock 
             { 
-                Text = "预处理配置", 
+                Text = "预处理器配置", 
                 FontWeight = FontWeights.Bold, 
                 Margin = new Thickness(0, 0, 0, 8) 
             });
@@ -243,8 +235,8 @@ namespace ColorVision.Engine.Batch
                 _currentConfig = notifyConfig;
                 _configPropertyChangedHandler = (s, e) =>
                 {
-                    // Save config changes
-                    meta.ConfigJson = JsonConvert.SerializeObject(config);
+                    // Save happens automatically via PreProcessManager event handlers
+                    // Note: Only works if config implements INotifyPropertyChanged
                 };
                 _currentConfig.PropertyChanged += _configPropertyChangedHandler;
             }
@@ -269,28 +261,6 @@ namespace ColorVision.Engine.Batch
                 VerticalAlignment = VerticalAlignment.Center,
                 TextWrapping = TextWrapping.Wrap
             });
-            parent.Children.Add(dock);
-        }
-
-        private void AddLabeledTextBox(StackPanel parent, string label, string value, Action<string> onChanged)
-        {
-            var dock = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
-            dock.Children.Add(new TextBlock 
-            { 
-                Text = label, 
-                Width = 70, 
-                VerticalAlignment = VerticalAlignment.Center 
-            });
-            
-            var textBox = new TextBox 
-            { 
-                Text = value ?? "", 
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            // Use LostFocus instead of TextChanged to reduce update frequency
-            textBox.LostFocus += (s, e) => onChanged?.Invoke(textBox.Text);
-            
-            dock.Children.Add(textBox);
             parent.Children.Add(dock);
         }
     }

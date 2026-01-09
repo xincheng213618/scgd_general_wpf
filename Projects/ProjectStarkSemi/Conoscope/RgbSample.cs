@@ -5,10 +5,12 @@
     /// </summary>
     public class RgbSample
     {
-        /// <summary>
-        /// 位置（从-80到80映射）
-        /// </summary>
+
         public double Position { get; set; }
+
+        public double DX { get; set; }
+        public double DY { get; set; }
+
 
         /// <summary>
         /// 红色通道值

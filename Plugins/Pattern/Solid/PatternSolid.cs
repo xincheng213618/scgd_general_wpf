@@ -7,11 +7,6 @@ using System.Windows.Media;
 
 namespace Pattern.Solid
 {
-    public enum SolidSizeMode
-    {
-        ByFieldOfView,
-        ByPixelSize
-    }
 
     public class PatternSolodConfig:ViewModelBase,IConfig
     {
@@ -27,24 +22,24 @@ namespace Pattern.Solid
         public SolidColorBrush BackGroundBrush { get => _BackGroundBrush; set { _BackGroundBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _BackGroundBrush = Brushes.Black;
         [DisplayName("尺寸模式")]
-        public SolidSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
-        private SolidSizeMode _SizeMode = SolidSizeMode.ByFieldOfView;
+        public PatternSizeMode SizeMode { get => _SizeMode; set { _SizeMode = value; OnPropertyChanged(); } }
+        private PatternSizeMode _SizeMode = PatternSizeMode.ByFieldOfView;
 
-        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByFieldOfView)]
+        [PropertyVisibility(nameof(SizeMode), PatternSizeMode.ByFieldOfView)]
         [DisplayName("视场系数X")]
         public double FieldOfViewX { get => _FieldOfViewX; set { _FieldOfViewX = value; OnPropertyChanged(); } }
         private double _FieldOfViewX = 1.0;
 
-        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByFieldOfView)]
+        [PropertyVisibility(nameof(SizeMode), PatternSizeMode.ByFieldOfView)]
         [DisplayName("视场系数Y")]
         public double FieldOfViewY { get => _FieldOfViewY; set { _FieldOfViewY = value; OnPropertyChanged(); } }
         private double _FieldOfViewY = 1.0;
 
-        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByPixelSize)]
+        [PropertyVisibility(nameof(SizeMode), PatternSizeMode.ByPixelSize)]
         [DisplayName("像素宽度")]
         public int PixelWidth { get => _PixelWidth; set { _PixelWidth = value; OnPropertyChanged(); } }
         private int _PixelWidth = 100;
-        [PropertyVisibility(nameof(SizeMode), SolidSizeMode.ByPixelSize)]
+        [PropertyVisibility(nameof(SizeMode), PatternSizeMode.ByPixelSize)]
         [DisplayName("像素高度")]
         public int PixelHeight { get => _PixelHeight; set { _PixelHeight = value; OnPropertyChanged(); } }
         private int _PixelHeight = 100;
@@ -61,7 +56,7 @@ namespace Pattern.Solid
             string baseName = "Solid" + "_" + Config.Tag;
             
             // Add FOV/Pixel suffix
-            if (Config.SizeMode == SolidSizeMode.ByPixelSize)
+            if (Config.SizeMode == PatternSizeMode.ByPixelSize)
             {
                 baseName += $"_Pixel_{Config.PixelWidth}x{Config.PixelHeight}";
             }
@@ -82,7 +77,7 @@ namespace Pattern.Solid
             int fovWidth, fovHeight;
 
             // Calculate dimensions based on size mode
-            if (Config.SizeMode == SolidSizeMode.ByPixelSize)
+            if (Config.SizeMode == PatternSizeMode.ByPixelSize)
             {
                 // Use pixel-based dimensions
                 fovWidth = Math.Min(Config.PixelWidth, width);

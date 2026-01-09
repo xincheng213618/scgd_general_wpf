@@ -29,6 +29,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using WindowsFormsTest;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -43,6 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
         public RelayCommand DisPlaySaveCommand { get; set; }
         public DisplayCameraConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(Config.Code);
+
 
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
@@ -74,6 +76,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             RefreshCommand = new RelayCommand(a => RestartRCService());
+
             ServiceClearCommand = new RelayCommand(a => ServiceClear(), b => AccessControl.Check(ServiceClear));
 
             EditAutoExpTimeCommand = new RelayCommand(a => EditAutoExpTime());
@@ -82,8 +85,25 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
             OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
+
             this.ContextMenu.Items.Add(new MenuItem() { Header ="Log",Command = FlowEngineManager.GetInstance().WindowsServiceX64.OpenLogCommand });
             this.ContextMenu.Items.Add(new MenuItem() { Header = "CameraLog", Command = OpenCameraLogCommand });
+
+
+            MenuItem menuItem = new MenuItem() { Header = "Local" };
+            menuItem.Click += (s, e) =>
+            {
+                if (!File.Exists($"lincense\\{Config.CameraCode}.lic"))
+                {
+                    LicenseManagerViewModel licenseManagerViewModel  = new LicenseManagerViewModel();
+                    licenseManagerViewModel.SaveToLincense();
+                }
+
+                Form1 form1 = new Form1();
+                form1.Show();
+            };
+
+            ContextMenu.Items.Add(menuItem);
 
         }
 
@@ -407,6 +427,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public Lazy<DisplayCamera> DisplayCameraControlLazy { get; set; }
 
         public override UserControl GetDisplayControl() => DisplayCameraControlLazy.Value;
+
+        public DisplayCamera GetDisplayCamera()=> new DisplayCamera(this);
 
         public override MQTTServiceBase? GetMQTTService()
         {

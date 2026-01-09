@@ -61,9 +61,8 @@
 
             <Grid  Grid.Column="1">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="250"/>
-                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <ScrollViewer Grid.Row="0"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                     <WindowsFormsHost Grid.Row="0">
@@ -71,9 +70,6 @@
                     </WindowsFormsHost>
                 </ScrollViewer>
                 <StackPanel x:Name="SignStackPannel" Grid.Row="1" Orientation="Vertical" Margin="3" />
-                <WindowsFormsHost Grid.Row="2">
-                    <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
-                </WindowsFormsHost>
             </Grid>
         </Grid>
     </Grid>

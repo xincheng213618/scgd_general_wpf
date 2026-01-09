@@ -30,8 +30,8 @@ public static class LogHelper
 		}
 		else if (!string.IsNullOrEmpty(info) && ex != null)
 		{
-			string task = BeautyErrorMsg(ex);
-			logerror.ErrorFormat("【附加信息】 : {0}<br>{1}", new object[2] { info, task });
+			string text = BeautyErrorMsg(ex);
+			logerror.ErrorFormat("【附加信息】 : {0}<br>{1}", new object[2] { info, text });
 		}
 		else if (string.IsNullOrEmpty(info) && ex != null)
 		{

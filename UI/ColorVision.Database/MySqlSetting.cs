@@ -27,11 +27,7 @@ namespace ColorVision.Database
         }
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
-            Action action = new Action(() =>
-            {
-                new MySqlConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            });
-
+            RelayCommand relayCommand = new RelayCommand(a => new MySqlConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             return new List<StatusBarMeta>
             {
                 new StatusBarMeta()
@@ -43,7 +39,7 @@ namespace ColorVision.Database
                     VisibilityBindingName = nameof(MySqlSetting.IsUseMySql),
                     ButtonStyleName ="ButtonDrawingImageMysql",
                     Source = MySqlSetting.Instance,
-                    Action =action
+                    Command =relayCommand
                 }
             };
         }

@@ -13,7 +13,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.Jsons.SFR2
 {
 
-    [DisplayAlgorithm(52, "SFR2.0", "Json")]
+    [DisplayAlgorithm(52, "SFR2.0", "ARVR")]
     public class AlgorithmSFR2 : DisplayAlgorithmBase
     {
 

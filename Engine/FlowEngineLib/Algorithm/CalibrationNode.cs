@@ -4,7 +4,7 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Algorithm;
 
-[STNode("/03_2 Algorithm")]
+[STNode("/03_3 校正")]
 public class CalibrationNode : CVBaseServerNode
 {
 	protected string _GlobalVariableName;

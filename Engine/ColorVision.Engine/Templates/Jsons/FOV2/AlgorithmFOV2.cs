@@ -12,7 +12,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
 
-    [DisplayAlgorithm(53, "FOV2.0", "Json")]
+    [DisplayAlgorithm(53, "FOV2.0", "ARVR")]
     public class AlgorithmFOV2 : DisplayAlgorithmBase
     {
 

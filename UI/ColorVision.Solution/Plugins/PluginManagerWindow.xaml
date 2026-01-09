@@ -30,7 +30,17 @@
                         <Button Content="安装包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
                         <Button Content="DLL版本" Command="{Binding OpenViewDllViersionCommand}" Margin="0,0,5,0"/>
                         <Button Content="重启" Command="{Binding RestartCommand}" Margin="0,0,5,0"/>
-                        <Button Content="一键更新" Command="{Binding RestartCommand}" Margin="0,0,5,0"/>
+                        <Button Margin="0,0,5,0">
+                            <Button.Command>
+                                <Binding Path="UpdateAllCommand"/>
+                            </Button.Command>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="一键更新" VerticalAlignment="Center"/>
+                                <Border Background="#FF5252" CornerRadius="8" Padding="4,0" Margin="5,0,0,0" MinWidth="16" Visibility="{Binding UpdateAvailableCount, Converter={StaticResource int2VisibilityConverter}}">
+                                    <TextBlock Text="{Binding UpdateAvailableCount}" Foreground="White" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/>
+                                </Border>
+                            </StackPanel>
+                        </Button>
                        
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
@@ -93,6 +103,13 @@
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasUpdate}" Value="True">
+                                <Setter Property="Background" Value="#FFF3E0"/>
+                                <Setter Property="BorderBrush" Value="#FFA726"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                            </DataTrigger>
+                        </Style.Triggers>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.View>
@@ -109,6 +126,9 @@
                                 <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
                                     <StackPanel Orientation="Horizontal">
                                         <ui:ToggleSwitch  IsChecked="{Binding PluginInfo.Enabled}"  Margin="0,0,10,0" />
+                                        <Border Background="#FFA726" CornerRadius="10" Width="20" Height="20" Margin="0,0,5,0" ToolTip="有可用更新" Visibility="{Binding HasUpdate, Converter={StaticResource bool2VisibilityConverter}}">
+                                            <TextBlock Text="⬆" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
+                                        </Border>
                                         <Image Source="{Binding Icon}" Width="20" Margin="0,0,10,0"/>
                                         <TextBlock  Text="{Binding Name,Mode=OneWay}"/>
                                     </StackPanel>

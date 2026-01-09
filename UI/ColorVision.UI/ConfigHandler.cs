@@ -206,7 +206,10 @@ namespace ColorVision.UI
                     MessageBox.Show(Properties.Resources.ConfigFileResetDueToError);
                 }
             }
-            foreach (var configPair in Configs)
+            //防止被修改
+            var configsSnapshot = Configs.ToArray();
+
+            foreach (var configPair in configsSnapshot)
             {
                 try
                 {

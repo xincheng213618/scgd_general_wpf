@@ -1711,7 +1711,7 @@
     <value>Абсолютный Спектр</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>Текущий</value>
+    <value>Текущий(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>Напряжение</value>

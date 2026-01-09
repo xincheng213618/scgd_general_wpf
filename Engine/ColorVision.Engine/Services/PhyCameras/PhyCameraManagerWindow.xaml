@@ -21,6 +21,8 @@
                 <Button Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.LicenseManager}" Command="{Binding OpenLicenseManagerCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.OpenDeviceManager}" Command="{Binding OpenDeviceManagerCommand}" Margin="0,0,5,0"/>
+                <Button Content="OpenMVSLogViewer" Command="{Binding OpenMVSLogViewerCommand}" Margin="0,0,5,0"/>
+
                 <Button  Command="{Binding EditCofigCommand}" Padding="2" Height="27" Width="27" >
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5"  FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">
                         <TextBlock.RenderTransform>

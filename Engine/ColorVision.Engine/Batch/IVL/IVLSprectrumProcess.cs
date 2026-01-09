@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using log4net;
 using SqlSugar;
@@ -41,6 +42,7 @@ namespace ColorVision.Engine.Batch.IVL
         public override bool Process(IBatchContext ctx)
         {
             if (ctx?.Batch == null) return false;
+            if (ctx?.Batch.FlowStatus != FlowStatus.Completed) return false;
             var batchConfig = ctx.Config;
 
             string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -59,7 +61,7 @@ namespace ColorVision.Engine.Batch.IVL
                 {
                     testResult.SMUResultModels.Add(item);
                 }
-                var list = DB.Queryable<SpectumResultModel>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
+                var list = DB.Queryable<SpectumResultEntity>().Where(x => x.BatchId == ctx.Batch.Id).ToList();
 
                 DB.Dispose();
                 ObservableCollection<ViewResultSpectrum> ViewResults = new ObservableCollection<ViewResultSpectrum>();

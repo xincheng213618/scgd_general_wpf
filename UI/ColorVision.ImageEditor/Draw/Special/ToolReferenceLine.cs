@@ -143,7 +143,7 @@ namespace ColorVision.ImageEditor.Draw.Special
             Attribute.Pen = new Pen(Attribute.Brush, 1);
             Attribute.PropertyChanged += (s, e) => Render();
         }
-        public double Ratio { get; set; }
+        public double Ratio { get; set; } = 1;
         public double ActualWidth { get; set; }
         public double ActualHeight { get; set; }
 
@@ -166,6 +166,7 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public override void Render()
         {
+
             using DrawingContext dc = RenderOpen();
             dc.DrawRectangle(SolidColorBrush, new Pen(Brushes.Transparent, 0), new Rect(0,0,ActualWidth,ActualHeight));
 
@@ -397,6 +398,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 
                 // 4. 显示文本信息
                 TextAttribute textAttribute = new();
+
                 textAttribute.FontSize = 15 / Ratio;
                 double a = 15 / Ratio;
                 
@@ -409,6 +411,48 @@ namespace ColorVision.ImageEditor.Draw.Special
                 FormattedText angleText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(angleText, RMouseDownP + new Vector(a, a));
             }
+
+            if (Attribute.IsMapping)
+            {
+                Pen mappingPen = new Pen(Brushes.Blue, 1 / Ratio);
+                // 1. 计算实际显示的宽和高 (对应 MATLAB: res * mapping)
+                double mapWidth = Attribute.MappingW * Attribute.Mapping;
+                double mapHeight = Attribute.MappingH * Attribute.Mapping;
+
+                // 只有尺寸有效才绘制
+                if (mapWidth > 0 && mapHeight > 0)
+                {
+                    // 2. 定义矩形
+                    // 在 WPF 中，Rect 定义为 (Left, Top, Width, Height)
+                    // 对应 MATLAB: [cx - w/2, cy - h/2, w, h]
+                    Rect mapRect = new Rect(
+                        CenterPoint.X - mapWidth / 2.0,
+                        CenterPoint.Y - mapHeight / 2.0,
+                        mapWidth,
+                        mapHeight);
+
+                    // 3. 应用旋转
+                    // 使用 WPF 的变换堆栈。以 CenterPoint 为旋转中心，旋转 Angle 度。
+                    // 这样矩形会跟随参考线一起旋转。
+                    dc.PushTransform(new RotateTransform(angle, CenterPoint.X, CenterPoint.Y));
+
+                    // 4. 绘制矩形
+                    // Fill 为 null (透明)，Pen 使用当前属性定义的画笔
+                    // 如果想要像 MATLAB 那样使用虚线，可以创建一个新的 DashStyle Pen，
+                    // 但这里为了保持与 ReferenceLine 样式一致，使用了传入的 pen。
+                    dc.DrawRectangle(null, mappingPen, mapRect);
+
+                    // (可选) 如果需要绘制矩形尺寸文字，可以在这里添加 DrawText
+                    // TextAttribute mapTextAttr = new TextAttribute() { FontSize = 12 / Ratio, Brush = pen.Brush };
+                    // FormattedText sizeText = new FormattedText($"{Attribute.MappingW}x{Attribute.MappingH}", ...);
+                    // dc.DrawText(sizeText, new Point(mapRect.Left, mapRect.Top - 20 / Ratio));
+
+                    // 5. 恢复变换状态 (非常重要，否则后续绘制会被错误旋转)
+                    dc.Pop();
+                }
+            }
+
+
 
             if (IsLocked && Attribute.IsShowLockedText)
             {
@@ -558,6 +602,23 @@ namespace ColorVision.ImageEditor.Draw.Special
         [DisplayName("中心点Y")]
         public double PointY { get => _PointY; set { _PointY = value; OnPropertyChanged(); } }
         private double _PointY;
+
+
+        [Category("Mapping"), DisplayName("IsMapping")]
+        public bool IsMapping { get => _IsMapping; set { _IsMapping = value; OnPropertyChanged(); } }
+        private bool _IsMapping;
+
+        [Category("Mapping"),DisplayName("Mapping"), PropertyVisibility(nameof(IsMapping))]
+        public double Mapping { get => _Mapping; set { _Mapping = value; OnPropertyChanged(); } }
+        private double _Mapping = 4;
+        [Category("Mapping"), DisplayName("MappingW"), PropertyVisibility(nameof(IsMapping))]
+        public double MappingW { get => _MappingW; set { _MappingW = value; OnPropertyChanged(); } }
+        private double _MappingW = 2436.0;
+        [Category("Mapping"), DisplayName("MappingH"), PropertyVisibility(nameof(IsMapping))]
+        public double MappingH { get => _MappingH; set { _MappingH = value; OnPropertyChanged(); } }
+        private double _MappingH = 1080.0;
+
+
 
 
         // 遮罩相关属性

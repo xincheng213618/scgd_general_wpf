@@ -122,6 +122,7 @@ namespace ColorVision
 
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.LoadHotKeyFromAssembly();
+            StatusBarGridInitialized();
 
             Application.Current.MainWindow = this;
             Task.Run(() =>
@@ -177,14 +178,12 @@ namespace ColorVision
 
         private void InitRightMenuItemPanel()
         {
-            RightMenuItemPanel.Children.Clear();
             var allSettings = new List<MenuItemMetadata>();
-
             foreach (var item in AssemblyService.Instance.LoadImplementations<IRightMenuItemProvider>())
             {
                 allSettings.AddRange(item.GetMenuItems());
             }
-
+            allSettings.Sort((a, b) => a.Order.CompareTo(b.Order));
             foreach (var item in allSettings)
             {
                 Button button = new Button
@@ -255,11 +254,10 @@ namespace ColorVision
         }
 
 
-        private void StatusBarGrid_Initialized(object sender, EventArgs e)
+        private void StatusBarGridInitialized()
         {
             ContextMenu contextMenu= new ContextMenu();
             StatusBarGrid.ContextMenu = contextMenu;
-
 
             void AddStatusBarIconMetadata(StatusBarMeta statusBarIconMetadata)
             {
@@ -278,13 +276,12 @@ namespace ColorVision
                         statusBarItem.SetBinding(VisibilityProperty, visibilityBinding);
                     }
                     // 设置 MouseLeftButtonDown 事件处理程序
-                    if (statusBarIconMetadata.Action != null)
+                    if (statusBarIconMetadata.Command != null)
                     {
-                        statusBarItem.MouseLeftButtonDown += (s, e) => statusBarIconMetadata.Action.Invoke();
+                        statusBarItem.MouseLeftButtonDown += (s, e) => statusBarIconMetadata.Command.Execute(e);
                     }
-                    // 创建 ToggleButton
+
                     ToggleButton toggleButton = new ToggleButton { IsEnabled = false };
-                    // 设置 Style 资源
                     if (Application.Current.TryFindResource(statusBarIconMetadata.ButtonStyleName) is Style styleResource)
                         toggleButton.Style = styleResource;
 
@@ -294,7 +291,7 @@ namespace ColorVision
                     statusBarItem.Content = toggleButton;
                     toggleButton.DataContext = statusBarIconMetadata.Source;
 
-                    StatusBarIconDocker.Children.Add(statusBarItem);
+                    StatusBarTextDocker.Children.Add(statusBarItem);
 
                     MenuItem menuItem = new MenuItem() { Header = statusBarIconMetadata.Name };
                     menuItem.Click += (s, e) => menuItem.IsChecked = !menuItem.IsChecked;

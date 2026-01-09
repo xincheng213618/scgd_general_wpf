@@ -200,24 +200,24 @@ public class MQTTHelper
 
 	private Task ClientConnectedHandle(ClientConnectedEventArgs arg)
 	{
-		IList<MqttClientStatus> key = _MqttServer.GetClientsAsync().Result;
+		IList<MqttClientStatus> result = _MqttServer.GetClientsAsync().Result;
 		_Callback?.Invoke(new ResultData_MQTT
 		{
 			ResultCode = 1,
 			EventType = EventTypeEnum.ClientConnected,
-			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'已成功连接！当前客户端连接数：{key?.Count}个。"
+			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'已成功连接！当前客户端连接数：{result?.Count}个。"
 		});
 		return Task.CompletedTask;
 	}
 
 	private Task ClientDisconnectedHandle(ClientDisconnectedEventArgs arg)
 	{
-		IList<MqttClientStatus> trans_action = _MqttServer.GetClientsAsync().Result;
+		IList<MqttClientStatus> result = _MqttServer.GetClientsAsync().Result;
 		_Callback?.Invoke(new ResultData_MQTT
 		{
 			ResultCode = 1,
 			EventType = EventTypeEnum.ClientDisconnected,
-			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'已断开连接！当前客户端连接数：{trans_action?.Count}个。"
+			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'已断开连接！当前客户端连接数：{result?.Count}个。"
 		});
 		return Task.CompletedTask;
 	}
@@ -305,7 +305,7 @@ public class MQTTHelper
 	private MqttClientOptionsBuilder buildOptions(string mqttServerUrl, int port, string userName, string userPassword)
 	{
 		MqttClientOptionsBuilder mqttClientOptionsBuilder = new MqttClientOptionsBuilder();
-		mqttClientOptionsBuilder.WithTcpServer(mqttServerUrl, port);
+		mqttClientOptionsBuilder.WithTcpServer(mqttServerUrl, (int?)port);
 		if (!string.IsNullOrEmpty(userName))
 		{
 			mqttClientOptionsBuilder.WithCredentials(userName, userPassword);

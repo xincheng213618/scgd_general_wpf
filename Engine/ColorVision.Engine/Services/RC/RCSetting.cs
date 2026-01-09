@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.MQTT;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -29,11 +30,9 @@ namespace ColorVision.Engine.Services.RC
 
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
-            Action action = new Action(() =>
-            {
-                new RCServiceConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            });
 
+
+            RelayCommand relayCommand = new RelayCommand(a => new RCServiceConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             return new List<StatusBarMeta>
             {
                 new StatusBarMeta()
@@ -45,7 +44,7 @@ namespace ColorVision.Engine.Services.RC
                     VisibilityBindingName =nameof(RCSetting.IsUseRCService),
                     ButtonStyleName ="ButtonDrawingImageRCService",
                     Source = RCSetting.Instance,
-                    Action =action
+                    Command =relayCommand
                 }
             };
         }

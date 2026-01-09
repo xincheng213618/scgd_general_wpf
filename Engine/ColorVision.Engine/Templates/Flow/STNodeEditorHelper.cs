@@ -28,6 +28,7 @@ using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.BuildPOIAA;
+using ColorVision.Engine.Templates.Jsons.CaliAngleShift;
 using ColorVision.Engine.Templates.Jsons.CompoundImg;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.Engine.Templates.Jsons.FindCross;
@@ -52,8 +53,10 @@ using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIRevise;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.Engine.Templates.Validate;
+using ColorVision.UI;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
+using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -77,17 +80,17 @@ namespace ColorVision.Engine.Templates.Flow
     {
         public STNodeEditor STNodeEditor { get; set; }
 
-        public STNodePropertyGrid STNodePropertyGrid1 { get; set; }
-        public StackPanel SignStackPanel { get; set; }
+        public STNodePropertyGrid STNodePropertyGrid1 => PropertyEditorWindow?.PropertyGrid;
+        public StackPanel SignStackPanel => PropertyEditorWindow?.SignStackPanel;
+        public NodePropertyEditorWindow PropertyEditorWindow { get; set; }
 
         public STNodeTreeView STNodeTreeView1 { get; set; }
 
-        public STNodeEditorHelper(Control Paraent,STNodeEditor sTNodeEditor, STNodeTreeView sTNodeTreeView1, STNodePropertyGrid sTNodePropertyGrid, StackPanel stackPanel)
+        public STNodeEditorHelper(Control Paraent,STNodeEditor sTNodeEditor, STNodeTreeView sTNodeTreeView1)
         {
             STNodeEditor = sTNodeEditor;
             STNodeTreeView1 = sTNodeTreeView1;
-            STNodePropertyGrid1 = sTNodePropertyGrid;
-            SignStackPanel = stackPanel;
+            
             STNodeEditor.NodeAdded += StNodeEditor1_NodeAdded;
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
 
@@ -183,14 +186,26 @@ namespace ColorVision.Engine.Templates.Flow
         #region Activate
         private void STNodeEditorMain_ActiveChanged(object? sender, EventArgs e)
         {
+            if (PropertyEditorWindow == null)
+            {
+                PropertyEditorWindow = new NodePropertyEditorWindow() { Owner = Application.Current.GetActiveWindow() };
+                PropertyEditorWindow.SetTargetControl(STNodeEditor);
+                PropertyEditorWindow?.ShowPropertyEditor();
+            }
+
             STNodePropertyGrid1.SetNode(STNodeEditor.ActiveNode);
             SignStackPanel.Children.Clear();
 
+
+
             if (STNodeEditor.ActiveNode == null)
             {
-                SignStackPanel.Visibility = Visibility.Collapsed;
+                PropertyEditorWindow?.Hide();
                 return;
             }
+
+            // Show the popup window when a node is activated
+            PropertyEditorWindow?.ShowPropertyEditor();
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.PG.PGNode pgnode)
             {
@@ -199,6 +214,12 @@ namespace ColorVision.Engine.Templates.Flow
             if (STNodeEditor.ActiveNode is FlowEngineLib.FWNode fwnode)
             {
                 AddStackPanel(name => fwnode.DeviceCode = name, fwnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCfwPort>().ToList());
+            }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmCaliNode AlgorithmCaliNode)
+            {
+                AddStackPanel(name => AlgorithmCaliNode.DeviceCode = name, AlgorithmCaliNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddImagePath(name => AlgorithmCaliNode.ImgFileName = name, AlgorithmCaliNode.ImgFileName);
+                AddStackPanel(name => AlgorithmCaliNode.TempName = name, AlgorithmCaliNode.TempName, "色差", new TemplateCaliAngleShift());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmFindLightAreaNode algorithmFindLightAreaNode)
@@ -209,9 +230,17 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "发光区定位", new TemplateRoi());
                 AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "FocusPoints", new TemplateFocusPoints());
                 AddStackPanel(name => algorithmFindLightAreaNode.SavePOITempName = name, algorithmFindLightAreaNode.SavePOITempName, "保存POI", new TemplatePoi());
-
-
             }
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Spectrum.SpectrumEQENode SpectrumEQENode)
+            {
+                AddStackPanel(name => SpectrumEQENode.DeviceCode = name, SpectrumEQENode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().ToList());
+            }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Spectrum.SpectrumNode SpectrumNode)
+            {
+                AddStackPanel(name => SpectrumNode.DeviceCode = name, SpectrumNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().ToList());
+            }
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmFindLEDNode algorithmFindLEDNode)
             {
                 AddStackPanel(name => algorithmFindLEDNode.DeviceCode = name, algorithmFindLEDNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
@@ -616,16 +645,7 @@ namespace ColorVision.Engine.Templates.Flow
                 Refesh();
             }
 
-            if (STNodeEditor.ActiveNode is CVBaseServerNode baseServerNode)
-            {
-                Type type = typeof(CVBaseServerNode);
-                TextboxPropertiesEditor textboxPropertiesEditor = new TextboxPropertiesEditor();
-
-                SignStackPanel.Children.Add(textboxPropertiesEditor.GenProperties(type.GetProperty("MaxTime"), baseServerNode));
-            }
-
-
-
+            SignStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode));
             SignStackPanel.Visibility = SignStackPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
 
@@ -741,6 +761,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
+                STNodeEditorMain_ActiveChanged(this,new EventArgs());
             };
 
             // Create a ToggleButton

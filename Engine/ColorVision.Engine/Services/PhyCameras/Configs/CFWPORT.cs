@@ -18,17 +18,22 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public bool IsUseCFW { get => _IsUseCFW; set { _IsUseCFW = value; OnPropertyChanged(); } }
         private bool _IsUseCFW;
 
-        public bool IsCOM { get => _IsCOM; set { _IsCOM = value; OnPropertyChanged(); } }
-        private bool _IsCOM;
-        [PropertyEditorType(typeof(TextCFWPropertiesEditor))]
+        public bool IsBingNDDevice { get => _IsBingNDDevice; set { _IsBingNDDevice = value; OnPropertyChanged(); } }
+        private bool _IsBingNDDevice = true;
+
+        [PropertyEditorType(typeof(TextCFWPropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice))]
         public string NDBindDeviceCode { get => _NDBindDeviceCode; set { _NDBindDeviceCode = value; OnPropertyChanged(); } }
         private string _NDBindDeviceCode = "";
 
-        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
+
+        public bool IsCOM { get => _IsCOM; set { _IsCOM = value; OnPropertyChanged(); } }
+        private bool _IsCOM;
+
+        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice), true)]
         public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
         private string _szComName = "COM1";
 
-        [PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
+        [PropertyEditorType(typeof(TextBaudRatePropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice),true)]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 115200;
 
@@ -67,12 +72,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         private List<ChannelCfg> _ChannelCfgs;
 
-
         public bool EnableResetND { get => _EnableResetND; set { _EnableResetND = value; OnPropertyChanged(); } }
         private bool _EnableResetND;
 
         public bool IsNDPort { get => _IsNDPort; set { _IsNDPort = value; OnPropertyChanged(); } }
         private bool _IsNDPort;
+
         public double NDMaxExpTime { get => _NDMaxExpTime; set { _NDMaxExpTime = value; OnPropertyChanged(); } }
         private double _NDMaxExpTime;
         public double NDMinExpTime { get => _NDMinExpTime; set { _NDMinExpTime = value; OnPropertyChanged(); } }

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI.CUDA;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -216,7 +217,20 @@ namespace ColorVision.UI.Configs
         private void TimeRun(object? state)
         {
             if (_isDisposed) return;
-            
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                var ts = SystemHelper.GetUptime();
+                if(ts.Days == 0)
+                {
+                    GetUptime = $"正常运行时间 {ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}";
+                }
+                else
+                {
+                    GetUptime = $"正常运行时间 {ts.Days}:{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}";
+                }
+            });
+
+
             if (PerformanceCounterIsOpen)
             {
                 try
@@ -267,6 +281,8 @@ namespace ColorVision.UI.Configs
         public string CurrentDiskTotalSize { get => _CurrentDiskTotalSize; set { _CurrentDiskTotalSize = value; OnPropertyChanged(); } }
         private string _CurrentDiskTotalSize = string.Empty;
 
+        public string GetUptime { get => _GetUptime; set { _GetUptime = value; OnPropertyChanged(); } }
+        private string _GetUptime = string.Empty;
 
         public string Time { get => _Time; set { _Time = value; OnPropertyChanged(); } }
         private string _Time = string.Empty;

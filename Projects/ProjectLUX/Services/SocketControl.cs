@@ -72,6 +72,7 @@ namespace ProjectLUX.Services
                             DeviceCamera deviceCamera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault();
                             DisplayCameraConfig displayCameraConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(deviceCamera.Config.Code);
 
+                            //这俩值还不一样，看看后面怎么优化一下
                             MsgRecord msgRecord = deviceCamera.DService.AutoFocus(TemplateAutoFocus.Params[displayCameraConfig.AutoFocusTemplateIndex].Value);
    
                             //MsgRecord msgRecord = deviceCamera.DService.GetPosition();

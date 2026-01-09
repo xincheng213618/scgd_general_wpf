@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
     public class ViewHanlePOIY : IResultHandleBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));
-        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.POI_Y};
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.POI, ViewResultAlgType.POI_Y};
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
             string fileName = Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
@@ -61,11 +61,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             else
             {
                 log.Info($"result.ViewResults.Count:{result.ViewResults.Count}");
-
-
-
-
-
             }
 
             if (view.ListView.View is GridView gridView)

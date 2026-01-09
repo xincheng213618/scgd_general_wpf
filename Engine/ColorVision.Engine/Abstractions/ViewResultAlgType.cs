@@ -64,6 +64,7 @@ namespace ColorVision.Engine
         CompoundImg =65,
         Math_DataConvert = 70,
         BlackMura_Calc = 80,
-        OLEDAOI = 81
+        OLEDAOI = 81,
+        CaliAngleShift =91
     }
 }

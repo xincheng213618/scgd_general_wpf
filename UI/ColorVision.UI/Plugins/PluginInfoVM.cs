@@ -36,8 +36,10 @@ namespace ColorVision.UI.Plugins
         public PluginInfo PluginInfo { get; set; }
 
 
-        public Version LastVersion { get => _LastVersion; set { _LastVersion = value; OnPropertyChanged(); } }
+        public Version LastVersion { get => _LastVersion; set { _LastVersion = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasUpdate)); } }
         private Version _LastVersion;
+
+        public bool HasUpdate => LastVersion != null && AssemblyVersion != null && LastVersion > AssemblyVersion;
 
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand UpdateCommand { get; set; }

@@ -14,7 +14,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
 {
 
-    [DisplayAlgorithm(53, "POI分析", "Json")]
+    [DisplayAlgorithm(53, "POI分析", "ARVR")]
     public class AlgorithmPoiAnalysis : DisplayAlgorithmBase
     {
 

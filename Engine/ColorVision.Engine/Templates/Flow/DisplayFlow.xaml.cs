@@ -114,7 +114,10 @@ namespace ColorVision.Engine.Templates.Flow
 
             this.AddViewConfig(View, ComboxView);
             View.DisplayFlow = this;
-
+            Unselected += (s, e) =>
+            {
+                View.STNodeEditorHelper.PropertyEditorWindow?.Hide();
+            };
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
@@ -136,6 +139,7 @@ namespace ColorVision.Engine.Templates.Flow
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
                 _=Refresh();
             };
+            
 
             MqttRCService.GetInstance().ServiceTokensUpdated += (s, e) =>
             {
@@ -255,7 +259,7 @@ namespace ColorVision.Engine.Templates.Flow
             ButtonStop.Visibility = Visibility.Collapsed;
             string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{Msg1}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
             View.logTextBox.Text = msg;
-            View.ProgressBar1.Value = 100;
+            FlowEngineManager.BatchProgress = 100;
             log.Info(msg);
 
             if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
@@ -265,27 +269,25 @@ namespace ColorVision.Engine.Templates.Flow
                     MarkColorProperty.SetValue(LastNode, System.Drawing.Color.Red);
                 }
             }
-            else if (FlowControlData.EventName == "Completed")
+
+            Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                Application.Current.Dispatcher.BeginInvoke(() =>
-                {
-                    Processing(FlowEngineManager.Batch);
-                });
-            }
+                Processing(FlowEngineManager.Batch);
+            });
         }
         
         private bool PreProcessing(string flowName, string serialNumber)
         {
             try
             {
-                // Find all matching PreProcessMeta entries for this flow template name
-                var matchingMetas = PreProcessManager.GetInstance().ProcessMetas
-                    .Where(m => string.Equals(m.TemplateName, flowName, StringComparison.OrdinalIgnoreCase) && m.PreProcess != null)
+                // Find all enabled pre-processors that apply to this flow template
+                var matchingProcessors = PreProcessManager.GetInstance().Processes
+                    .Where(p => IsValidEnabledPreProcessor(p, flowName))
                     .ToList();
 
-                if (matchingMetas.Count > 0)
+                if (matchingProcessors.Count > 0)
                 {
-                    log.Info($"匹配到 {matchingMetas.Count} 个预处理 {flowName}");
+                    log.Info($"匹配到 {matchingProcessors.Count} 个已启用的预处理 {flowName}");
                     
                     var ctx = new IPreProcessContext
                     {
@@ -294,21 +296,22 @@ namespace ColorVision.Engine.Templates.Flow
                     };
 
                     // Execute all matching pre-processors sequentially
-                    foreach (var meta in matchingMetas)
+                    foreach (var processor in matchingProcessors)
                     {
-                        log.Info($"执行预处理 {meta.Name} -> {meta.ProcessTypeName}");
+                        var metadata = PreProcessMetadata.FromProcess(processor);
+                        log.Info($"执行预处理 {metadata.DisplayName}");
                         try
                         {
-                            bool success = meta.PreProcess.PreProcess(ctx);
+                            bool success = processor.PreProcess(ctx);
                             if (!success)
                             {
-                                log.Warn($"预处理 {meta.Name} 执行返回失败");
+                                log.Warn($"预处理 {metadata.DisplayName} 执行返回失败");
                                 return false; // Abort flow if any pre-processor fails
                             }
                         }
                         catch (Exception ex)
                         {
-                            log.Error($"预处理 {meta.Name} 执行异常", ex);
+                            log.Error($"预处理 {metadata.DisplayName} 执行异常", ex);
                             return false; // Abort flow on exception
                         }
                     }
@@ -322,6 +325,19 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
         
+        /// <summary>
+        /// Checks if a pre-processor is valid and enabled for the given flow.
+        /// </summary>
+        private static bool IsValidEnabledPreProcessor(IPreProcess processor, string flowName)
+        {
+            var config = processor.GetConfig();
+            if (config is PreProcessConfigBase baseConfig)
+            {
+                return baseConfig.IsEnabled && baseConfig.AppliesToTemplate(flowName);
+            }
+            return false;
+        }
+        
         private void Processing(MeasureBatchModel batch)
         {
             try
@@ -330,6 +346,7 @@ namespace ColorVision.Engine.Templates.Flow
                 var matchingMetas = BatchManager.GetInstance().ProcessMetas
                     .Where(m => string.Equals(m.TemplateName, FlowName, StringComparison.OrdinalIgnoreCase) && m.BatchProcess != null)
                     .ToList();
+
 
                 if (matchingMetas.Count > 0)
                 {
@@ -398,7 +415,7 @@ namespace ColorVision.Engine.Templates.Flow
                     if (LastFlowTime != 0)
                     {
                         double perfect = (double) elapsedMilliseconds / (double)LastFlowTime * 100;
-                        View.ProgressBar1.Value = perfect >= 100 ?  99:perfect;
+                        FlowEngineManager.BatchProgress = perfect >= 100 ?  99:perfect;
                     }
                     View.logTextBox.Text = msg;
                 });
@@ -437,6 +454,8 @@ namespace ColorVision.Engine.Templates.Flow
             //DisPlayManager.GetInstance().DisableAllDisPlayControl();
             RunFlow();
         }
+
+
         string FlowName;
         public async void RunFlow()
         {
@@ -500,7 +519,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
-            View.ProgressBar1.Value = 0;
+            FlowEngineManager.BatchProgress = 0;
 
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

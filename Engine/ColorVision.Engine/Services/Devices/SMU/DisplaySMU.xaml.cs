@@ -191,11 +191,39 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         private void MeasureData_Click(object sender, RoutedEventArgs e)
         {
-            DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal, Config.Channel);
+            MsgRecord msgRecord = DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal, Config.Channel);
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Success)
+                {
+                    if (msgRecord.MsgReturn.Code != 0)
+                    {
+                        MessageBox.Show($"GetData Eorr Code{msgRecord.MsgReturn.Code}");
+                    }
+                }
+                else
+                {
+                    MessageBox.Show(e.ToString());
+                }
+            };
         }
         private void StepMeasureData_Click(object sender, RoutedEventArgs e)
         {
-            DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal, Config.Channel);
+            MsgRecord msgRecord = DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal, Config.Channel);
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Success)
+                {
+                    if (msgRecord.MsgReturn.Code != 0)
+                    {
+                        MessageBox.Show($"GetData Eorr Code{msgRecord.MsgReturn.Code}");
+                    }
+                }
+                else
+                {
+                    MessageBox.Show(e.ToString());
+                }
+            };
         }
         private void MeasureDataClose_Click(object sender, RoutedEventArgs e)
         {
@@ -206,16 +234,30 @@ namespace ColorVision.Engine.Services.Devices.SMU
         private void VIScan_Click(object sender, RoutedEventArgs e)
         {
             MsgRecord msgRecord = DService.Scan(Config.IsSourceV, Config.StartMeasureVal, Config.StopMeasureVal, Config.LimitVal, Config.Number, Config.Channel);
-            msgRecord.MsgSucessed += async (e) =>
+            msgRecord.MsgRecordStateChanged += async (e) =>
             {
-                log.Info("DelyaClose1000");
-                await Task.Delay(1000);
-                DService.CloseOutput();
-                Config.V = null;
-                Config.I = null;
-                log.Info("DelyaClose1000 1");
-                await Task.Delay(1000);
-                DService.CloseOutput();
+                if (e == MsgRecordState.Success)
+                {
+                    if (msgRecord.MsgReturn.Code != 0)
+                    {
+                        DService.CloseOutput();
+                        MessageBox.Show($"GetData Eorr Code{msgRecord.MsgReturn.Code}");
+                    }
+                    else
+                    {
+                        log.Info("DelyaClose1000");
+                        await Task.Delay(1000);
+                        DService.CloseOutput();
+                        Config.V = null;
+                        Config.I = null;
+                        log.Info("DelyaClose1000 1");
+                        await Task.Delay(1000);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show(e.ToString());
+                }
             };
         }
 

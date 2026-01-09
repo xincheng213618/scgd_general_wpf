@@ -6,12 +6,15 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 {
@@ -20,7 +23,25 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         CMvSpectra = 0,
         LightModule = 1,
     }
+    public class BoolToWidthConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            bool isVisible = (bool)value;
+            // If parameter is "Inverse", flip the logic
+            if (parameter != null && parameter.ToString() == "Inverse")
+            {
+                isVisible = !isVisible;
+            }
 
+            return isVisible ? double.NaN : 0.0; // double.NaN is equivalent to "Auto"
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
     public class TextSectrumSNPropertiesEditor : IPropertyEditor
     {
         public DockPanel GenProperties(PropertyInfo property, object obj)
@@ -47,11 +68,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         {
 
         }
-       
+      
 
         [PropertyEditorType(typeof(TextSectrumSNPropertiesEditor)), Category("Base")]
         public override string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
+
 
         [DisplayName("DeviceAutoConnect"), Category("Base")]
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
@@ -74,6 +96,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         [DisplayName("ConnectType"), Category("Base")]
         public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); if (value == SpectrometerType.CMvSpectra) _ComPort = "0"; OnPropertyChanged(nameof(ComPort)); } }
         private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
+
         [ Category("Base")]
         public string ComPort { get => _ComPort; set { _ComPort = value; OnPropertyChanged(); } }
         private string _ComPort = "0";
@@ -94,11 +117,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public int AutoTestTime { get => _AutoTestTime; set { _AutoTestTime = value; OnPropertyChanged(); } }
         private int _AutoTestTime = 100;
 
+
+
+
         [DisplayName("StartIntegrationTime_Ms"), Category("Base")]
         public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; OnPropertyChanged(); } }
         private float _TimeFrom = 10;
-        [DisplayName("StartIntegrationTime_Ms"), Category("Base")]
-        public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutterEnable = false; _IsAutoDark = value; OnPropertyChanged(); } }
+
+        [Category("Base")]
+        public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutter = false; _IsAutoDark = value; OnPropertyChanged(); } }
         private bool _IsAutoDark;
 
         public SelfAdaptionInitDark SelfAdaptionInitDark { get; set; } = new SelfAdaptionInitDark();
@@ -107,7 +134,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         public NDConfig NDConfig { get; set; } = new NDConfig();
 
-        public bool IsShutterEnable { get => _IsShutter; set { if (value) IsAutoDark = false; _IsShutter = value; OnPropertyChanged(); } }
+        public bool IsShutter { get => _IsShutter; set { if (value) IsAutoDark = false; _IsShutter = value; OnPropertyChanged(); } }
         private bool _IsShutter;
 
         public ShutterConfig ShutterCfg { get => _ShutterCfg; set { _ShutterCfg = value; OnPropertyChanged(); } }
@@ -121,23 +148,27 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
     public class NDConfig : ViewModelBase
     {
-        public bool EnableResetND { get => _EnableResetND; set { _EnableResetND = value; OnPropertyChanged(); } }
-        private bool _EnableResetND;
-
         public bool IsNDPort { get => _IsNDPort; set { _IsNDPort = value; OnPropertyChanged(); } }
         private bool _IsNDPort;
 
-        [PropertyEditorType(typeof(TextCFWPropertiesEditor))]
+        public bool IsBingNDDevice { get => _IsBingNDDevice; set { _IsBingNDDevice = value; OnPropertyChanged(); } }
+        private bool _IsBingNDDevice = true;
+
+
+        [PropertyEditorType(typeof(TextCFWPropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice))]
         public string NDBindDeviceCode { get => _NDBindDeviceCode; set { _NDBindDeviceCode = value; OnPropertyChanged(); } }
         private string _NDBindDeviceCode;
 
-        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]
+        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice),true)]
         public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
         private string _szComName = "COM1";
 
-        [PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
+        [PropertyEditorType(typeof(TextBaudRatePropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice), true)]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 115200;
+
+        public bool EnableResetND { get => _EnableResetND; set { _EnableResetND = value; OnPropertyChanged(); } }
+        private bool _EnableResetND;
 
         public double NDMaxExpTime { get => _NDMaxExpTime; set { _NDMaxExpTime = value; OnPropertyChanged(); } }
         private double _NDMaxExpTime;

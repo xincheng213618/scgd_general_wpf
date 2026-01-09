@@ -41,6 +41,8 @@ namespace ColorVision.ImageEditor.Utils
 
                     // Return color with full opacity
                     return ((int)red16,(int)green16,(int)blue16);
+                case PixelFormat fmt when fmt == PixelFormats.Rgb24:
+                    return ((int)pixelData[0], (int)pixelData[1], (int)pixelData[2]);
 
                 case PixelFormat fmt when fmt == PixelFormats.Bgr24:
 

@@ -1711,7 +1711,7 @@
     <value>絶対スペクトル</value>
   </data>
   <data name="I" xml:space="preserve">
-    <value>現在</value>
+    <value>現在(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
     <value>電圧</value>

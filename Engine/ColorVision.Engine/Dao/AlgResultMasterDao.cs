@@ -24,6 +24,9 @@ namespace ColorVision.Engine
         [SugarColumn(ColumnName ="version", IsNullable = true)]
         public string version { get; set; }
 
+        [SugarColumn(ColumnName = "nd_port", IsNullable = true, ColumnDescription = "ND滤轮")]
+        public bool? NDPort { get; set; }
+
         [SugarColumn(ColumnName ="batch_id", IsNullable = true)]
         public int? BatchId { get; set; }
 

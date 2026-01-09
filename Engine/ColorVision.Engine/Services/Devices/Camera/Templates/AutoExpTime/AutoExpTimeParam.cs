@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam
 
         [LocalizedDisplayName(typeof(Resources), "MaxPercent")]
         public double autoExpMaxPecentage { get => GetValue(_autoExpMaxPecentage); set { SetProperty(ref _autoExpMaxPecentage, value); } }
-        private double _autoExpMaxPecentage = 0.01;
+        private double _autoExpMaxPecentage = 0.0001;
 
         [LocalizedDisplayName(typeof(Resources), "SaturationDifference")]
         public int autoExpSatDev { get => GetValue(_autoExpSatDev); set { SetProperty(ref _autoExpSatDev, value); } }

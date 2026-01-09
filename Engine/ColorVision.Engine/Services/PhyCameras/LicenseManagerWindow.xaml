@@ -21,6 +21,8 @@
             <StackPanel Orientation="Horizontal">
                 <Button Content="GetCameraLicense" Command="{Binding GetCameraLicenseCommand}" Margin="0,0,5,0"/>
                 <Button Content="GetSpectrumLicense" Command="{Binding GetSpectrumLicenseCommand}" Margin="0,0,5,0"/>
+                <Button Content="SaveToLincense" Command="{Binding SaveToLincenseCommand}" Margin="0,0,5,0"/>
+                
                 <Button Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.ExportLicense}" Command="{Binding ExportSelectedCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.Delete}" Command="{Binding DeleteSelectedCommand}" Margin="0,0,5,0"/>
@@ -42,7 +44,7 @@
                 <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
                 <DataGridTextColumn Header="MAC/SN" Binding="{Binding MacAddress}" Width="180"/>
                 <DataGridTextColumn Header="{x:Static properties:Resources.Type}" Binding="{Binding LiceTypeString}" Width="100"/>
-                <DataGridTextColumn Header="{x:Static properties:Resources.Model}" Binding="{Binding Model}" Width="120"/>
+                <DataGridTextColumn Header="{x:Static properties:Resources.Model}" Binding="{Binding Model1}" Width="120"/>
                 <DataGridTextColumn Header="{x:Static properties:Resources.Customer}" Binding="{Binding CusTomerName}" Width="150"/>
                 <DataGridTextColumn Header="ExpiryDate" Binding="{Binding ExpiryDate, StringFormat=yyyy-MM-dd}" Width="120"/>
                 <DataGridTemplateColumn Header="{x:Static properties:Resources.Status}" Width="80">

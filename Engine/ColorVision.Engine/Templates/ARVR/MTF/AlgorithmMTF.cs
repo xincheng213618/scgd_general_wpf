@@ -13,7 +13,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.MTF
 {
 
-    [DisplayAlgorithm(50, "MTF", "MTF")]
+    [DisplayAlgorithm(50, "MTF1.0", "ARVR")]
     public class AlgorithmMTF : DisplayAlgorithmBase
     {
         public DeviceAlgorithm Device { get; set; }

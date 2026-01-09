@@ -165,8 +165,8 @@ public class LoopNode : CVCommonNode
 	{
 		if (HasData(e))
 		{
-			CVLoopCFC custom_item = (CVLoopCFC)e.TargetOption.Data;
-			LoopDataModel curLoop = getCurLoop(custom_item.SerialNumber);
+			CVLoopCFC cVLoopCFC = (CVLoopCFC)e.TargetOption.Data;
+			LoopDataModel curLoop = getCurLoop(cVLoopCFC.SerialNumber);
 			if (curLoop != null)
 			{
 				curLoop.Next();

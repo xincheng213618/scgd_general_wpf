@@ -615,7 +615,7 @@ COLORVISIONCORE_API int M_InvertImage(HImage img, HImage* outImage)
 }
 
 /// <summary>
-/// ��ֵ��
+/// 
 /// </summary>
 /// <param name="img"></param>
 /// <param name="outImage"></param>
