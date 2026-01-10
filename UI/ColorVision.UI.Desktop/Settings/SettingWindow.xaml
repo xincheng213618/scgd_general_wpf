@@ -1,13 +1,13 @@
-﻿<Window x:Class="ColorVision.Settings.SettingWindow"
+﻿<Window x:Class="ColorVision.UI.Desktop.Settings.SettingWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.Settings"
+        xmlns:local="clr-namespace:ColorVision.UI.Desktop.Settings"
         xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        xmlns:properties="clr-namespace:ColorVision.UI.Properties"
+        xmlns:properties="clr-namespace:ColorVision.UI.Properties;assembly=ColorVision.UI"
         mc:Ignorable="d"     
         Height="500" Title="{x:Static properties:Resources.Options}" WindowStartupLocation="CenterScreen"  Background="{DynamicResource GlobalBackground}" Width="650" Initialized="Window_Initialized">
     <Window.Resources>

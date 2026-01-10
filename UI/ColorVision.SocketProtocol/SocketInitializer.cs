@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI;
-using ColorVision.UI.CUDA;
 using log4net;
 
 namespace ColorVision.SocketProtocol
@@ -7,7 +6,7 @@ namespace ColorVision.SocketProtocol
 
     public class SocketInitializer : InitializerBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(SystemInitializer));
+        private static readonly ILog log = LogManager.GetLogger(typeof(SocketInitializer));
 
         public override string Name => nameof(SocketInitializer);
         public override int Order => 5;

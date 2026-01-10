@@ -141,9 +141,6 @@
   <data name="SoftwareVersion" xml:space="preserve">
     <value>소프트웨어 버전</value>
   </data>
-  <data name="Wizard" xml:space="preserve">
-    <value>마법사</value>
-  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>업데이트 확인</value>
   </data>
@@ -191,9 +188,6 @@
   </data>
   <data name="TimeLeft" xml:space="preserve">
     <value>남은 시간:</value>
-  </data>
-  <data name="SetupWizard" xml:space="preserve">
-    <value>구성 마법사</value>
   </data>
   <data name="Upgrade" xml:space="preserve">
     <value>업그레이드</value>
@@ -243,15 +237,6 @@
   <data name="Delete" xml:space="preserve">
     <value>삭제</value>
   </data>
-  <data name="Previous" xml:space="preserve">
-    <value>이전 단계</value>
-  </data>
-  <data name="Next" xml:space="preserve">
-    <value>다음 단계</value>
-  </data>
-  <data name="Finish" xml:space="preserve">
-    <value>마치다</value>
-  </data>
   <data name="DumpFileSettings" xml:space="preserve">
     <value>덤프 파일 설정</value>
   </data>
@@ -270,32 +255,11 @@
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>구성 관리 창</value>
   </data>
-  <data name="BlackMuraDetect" xml:space="preserve">
-    <value>BlackMura 감지</value>
-  </data>
-  <data name="KBDetect" xml:space="preserve">
-    <value>키보드 테스트</value>
-  </data>
-  <data name="SectionalDrawing" xml:space="preserve">
-    <value>횡단면</value>
-  </data>
   <data name="OpenConfigFolder" xml:space="preserve">
     <value>구성 폴더를 엽니다</value>
   </data>
-  <data name="singleChannel" xml:space="preserve">
-    <value>단일 채널</value>
-  </data>
-  <data name="threeChannles" xml:space="preserve">
-    <value>3채널</value>
-  </data>
-  <data name="Step11" xml:space="preserve">
-    <value>1단계 / 1</value>
-  </data>
   <data name="Step" xml:space="preserve">
     <value>단계</value>
-  </data>
-  <data name="SkipIncompleteConfigPrompt" xml:space="preserve">
-    <value>아직 완료되지 않은 구성이 몇 가지 있습니다. 건너뛰시겠습니까?</value>
   </data>
   <data name="UpdateFailed" xml:space="preserve">
     <value>업데이트에 실패했습니다</value>

@@ -3,7 +3,7 @@ using ColorVision.UI.Plugins;
 using log4net;
 using System.Windows;
 
-namespace ColorVision.Plugins
+namespace ColorVision.UI.Desktop.Plugins
 {
     public class PluginsUpdate : IMainWindowInitialized
     {

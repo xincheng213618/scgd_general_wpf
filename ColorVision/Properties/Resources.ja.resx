@@ -141,9 +141,6 @@
   <data name="SoftwareVersion" xml:space="preserve">
     <value>ソフトウェアバージョン</value>
   </data>
-  <data name="Wizard" xml:space="preserve">
-    <value>ウィザード</value>
-  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>アップデートを確認</value>
   </data>
@@ -191,9 +188,6 @@
   </data>
   <data name="TimeLeft" xml:space="preserve">
     <value>残り時間：</value>
-  </data>
-  <data name="SetupWizard" xml:space="preserve">
-    <value>構成ウィザード</value>
   </data>
   <data name="Upgrade" xml:space="preserve">
     <value>アップグレード</value>
@@ -243,15 +237,6 @@
   <data name="Delete" xml:space="preserve">
     <value>消去</value>
   </data>
-  <data name="Previous" xml:space="preserve">
-    <value>前のステップ</value>
-  </data>
-  <data name="Next" xml:space="preserve">
-    <value>次のステップ</value>
-  </data>
-  <data name="Finish" xml:space="preserve">
-    <value>仕上げる</value>
-  </data>
   <data name="DumpFileSettings" xml:space="preserve">
     <value>ダンプファイルの設定</value>
   </data>
@@ -270,32 +255,11 @@
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>構成管理ウィンドウ</value>
   </data>
-  <data name="BlackMuraDetect" xml:space="preserve">
-    <value>ブラックムラ検出</value>
-  </data>
-  <data name="KBDetect" xml:space="preserve">
-    <value>キーボードテスト</value>
-  </data>
-  <data name="SectionalDrawing" xml:space="preserve">
-    <value>断面</value>
-  </data>
   <data name="OpenConfigFolder" xml:space="preserve">
     <value>設定フォルダを開く</value>
   </data>
-  <data name="singleChannel" xml:space="preserve">
-    <value>シングルチャンネル</value>
-  </data>
-  <data name="threeChannles" xml:space="preserve">
-    <value>3チャンネル</value>
-  </data>
-  <data name="Step11" xml:space="preserve">
-    <value>ステップ1/1</value>
-  </data>
   <data name="Step" xml:space="preserve">
     <value>ステップ</value>
-  </data>
-  <data name="SkipIncompleteConfigPrompt" xml:space="preserve">
-    <value>まだ未完了の設定がいくつかあります。スキップしますか?</value>
   </data>
   <data name="UpdateFailed" xml:space="preserve">
     <value>更新に失敗しました</value>

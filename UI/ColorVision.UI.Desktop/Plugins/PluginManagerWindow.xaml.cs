@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
@@ -8,8 +7,11 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using ColorVision.UI.Desktop;
+using ColorVision.UI.Plugins;
+using ColorVision.UI.Desktop.NativeMethods;
 
-namespace ColorVision.UI.Plugins
+namespace ColorVision.UI.Desktop.Plugins
 {
 
     /// <summary>
@@ -157,7 +159,7 @@ namespace ColorVision.UI.Plugins
 
                                 string arguments = $"-feature {shortcutName}";
                                 if (shortcutName != null)
-                                    Common.NativeMethods.ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, GetExecutablePath, arguments);
+                                   ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, GetExecutablePath, arguments);
                             });
 
                             var button = new Button

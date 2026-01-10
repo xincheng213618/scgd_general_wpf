@@ -97,15 +97,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 BlackMura检测 的本地化字符串。
-        /// </summary>
-        public static string BlackMuraDetect {
-            get {
-                return ResourceManager.GetString("BlackMuraDetect", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 构建日期 的本地化字符串。
         /// </summary>
         public static string BuildDate {
@@ -286,15 +277,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 完成 的本地化字符串。
-        /// </summary>
-        public static string Finish {
-            get {
-                return ResourceManager.GetString("Finish", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 强制更新 的本地化字符串。
         /// </summary>
         public static string ForceUpdate {
@@ -309,15 +291,6 @@ namespace ColorVision.Properties {
         public static string Initializer {
             get {
                 return ResourceManager.GetString("Initializer", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 键盘测试 的本地化字符串。
-        /// </summary>
-        public static string KBDetect {
-            get {
-                return ResourceManager.GetString("KBDetect", resourceCulture);
             }
         }
         
@@ -394,15 +367,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 下一步 的本地化字符串。
-        /// </summary>
-        public static string Next {
-            get {
-                return ResourceManager.GetString("Next", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 打开BeyondCompare 的本地化字符串。
         /// </summary>
         public static string OpenBeyondCompare {
@@ -426,15 +390,6 @@ namespace ColorVision.Properties {
         public static string OpenConfigFolder {
             get {
                 return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 上一步 的本地化字符串。
-        /// </summary>
-        public static string Previous {
-            get {
-                return ResourceManager.GetString("Previous", resourceCulture);
             }
         }
         
@@ -493,47 +448,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 切面图 的本地化字符串。
-        /// </summary>
-        public static string SectionalDrawing {
-            get {
-                return ResourceManager.GetString("SectionalDrawing", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 服务协议 的本地化字符串。
         /// </summary>
         public static string ServiceAgreement {
             get {
                 return ResourceManager.GetString("ServiceAgreement", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 配置向导 的本地化字符串。
-        /// </summary>
-        public static string SetupWizard {
-            get {
-                return ResourceManager.GetString("SetupWizard", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 单通道 的本地化字符串。
-        /// </summary>
-        public static string singleChannel {
-            get {
-                return ResourceManager.GetString("singleChannel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 还有未完成的配置，是否跳过 的本地化字符串。
-        /// </summary>
-        public static string SkipIncompleteConfigPrompt {
-            get {
-                return ResourceManager.GetString("SkipIncompleteConfigPrompt", resourceCulture);
             }
         }
         
@@ -574,29 +493,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 步骤 1 / 1 的本地化字符串。
-        /// </summary>
-        public static string Step11 {
-            get {
-                return ResourceManager.GetString("Step11", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 开机启动(可能会不成功) 的本地化字符串。
         /// </summary>
         public static string TbSettingsStartBoot {
             get {
                 return ResourceManager.GetString("TbSettingsStartBoot", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 三通道 的本地化字符串。
-        /// </summary>
-        public static string threeChannles {
-            get {
-                return ResourceManager.GetString("threeChannles", resourceCulture);
             }
         }
         
@@ -669,15 +570,6 @@ namespace ColorVision.Properties {
         public static string Win10ClassicDesktopMenu {
             get {
                 return ResourceManager.GetString("Win10ClassicDesktopMenu", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 向导 的本地化字符串。
-        /// </summary>
-        public static string Wizard {
-            get {
-                return ResourceManager.GetString("Wizard", resourceCulture);
             }
         }
     }

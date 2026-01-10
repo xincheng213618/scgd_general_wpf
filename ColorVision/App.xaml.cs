@@ -1,19 +1,16 @@
 ﻿using ColorVision.Common.NativeMethods;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Desktop.Wizards;
 using ColorVision.UI.Languages;
 using ColorVision.UI.Plugins;
 using ColorVision.UI.Shell;
-using ColorVision.Wizards;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision
@@ -74,6 +71,8 @@ namespace ColorVision
                 Assembly.LoadFrom("ColorVision.SocketProtocol.dll"); ;
             if (File.Exists("ColorVision.Database.dll"))
                 Assembly.LoadFrom("ColorVision.Database.dll"); ;
+            if (File.Exists("ColorVision.UI.Desktop.dll"))
+                Assembly.LoadFrom("ColorVision.UI.Desktop.dll"); ;
 
 
             ConfigHandler.GetInstance();

@@ -6,7 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 
-namespace ColorVision.Settings
+namespace ColorVision.UI.Desktop.Settings
 {
     /// <summary>
     /// SettingWindow.xaml 的交互逻辑

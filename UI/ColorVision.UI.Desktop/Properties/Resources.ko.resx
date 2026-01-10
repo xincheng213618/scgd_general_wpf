@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -117,175 +117,34 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuUpdate" xml:space="preserve">
-    <value>Check For _Updates</value>
-  </data>
-  <data name="MenuViewSidebar" xml:space="preserve">
-    <value>Sidebar</value>
-  </data>
-  <data name="MenuViewStatusBar" xml:space="preserve">
-    <value>StatusBar</value>
-  </data>
-  <data name="MenuAbout" xml:space="preserve">
-    <value>_About</value>
-  </data>
-  <data name="About" xml:space="preserve">
-    <value>About</value>
-  </data>
-  <data name="TbSettingsStartBoot" xml:space="preserve">
-    <value>Start on boot</value>
-  </data>
-  <data name="StartRecoverUILayout" xml:space="preserve">
-    <value>Start recovery interface layout</value>
-  </data>
-  <data name="SoftwareVersion" xml:space="preserve">
-    <value>Software Version</value>
-  </data>
-  <data name="CheckForUpdates" xml:space="preserve">
-    <value>Check for updates</value>
-  </data>
-  <data name="CheckUpdatesOnStartup" xml:space="preserve">
-    <value>Detect updates when software starts</value>
-  </data>
-  <data name="Project" xml:space="preserve">
-    <value>Project</value>
-  </data>
-  <data name="Acquire" xml:space="preserve">
-    <value>Acquire</value>
-  </data>
-  <data name="LaunchSuccess" xml:space="preserve">
-    <value>Started successfully</value>
-  </data>
-  <data name="CurrentVersionIsUpToDate" xml:space="preserve">
-    <value>The current version is already the latest version</value>
-  </data>
-  <data name="ConfirmUpdate" xml:space="preserve">
-    <value>Update or not</value>
-  </data>
-  <data name="NewVersionFound" xml:space="preserve">
-    <value>New version found</value>
-  </data>
-  <data name="DownloadCancelled" xml:space="preserve">
-    <value>Download canceled</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>An error occurred</value>
-  </data>
-  <data name="ChangeLog" xml:space="preserve">
-    <value>Change log</value>
-  </data>
-  <data name="ColorVisionUpdater" xml:space="preserve">
-    <value>ColorVision Updater</value>
-  </data>
-  <data name="Loading" xml:space="preserve">
-    <value>Loading</value>
-  </data>
-  <data name="ConfigurationComplete" xml:space="preserve">
-    <value>Configuration completed</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>Current Speed:</value>
-  </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>Time Left:</value>
-  </data>
-  <data name="Upgrade" xml:space="preserve">
-    <value>Upgrade</value>
-  </data>
-  <data name="Duration" xml:space="preserve">
-    <value>Duration</value>
-  </data>
-  <data name="Update" xml:space="preserve">
-    <value>Update</value>
-  </data>
-  <data name="ServiceAgreement" xml:space="preserve">
-    <value>Service Agreement</value>
-  </data>
-  <data name="ApplicationExit" xml:space="preserve">
-    <value>Program closes</value>
-  </data>
-  <data name="Rollback" xml:space="preserve">
-    <value>Rollback</value>
-  </data>
-  <data name="Initializer" xml:space="preserve">
-    <value>Initialization module</value>
-  </data>
-  <data name="ForceUpdate" xml:space="preserve">
-    <value>_ForceUpdate</value>
-  </data>
-  <data name="UploadFile" xml:space="preserve">
-    <value>Upload files</value>
-  </data>
-  <data name="Version" xml:space="preserve">
-    <value>Version</value>
-  </data>
-  <data name="BuildDate" xml:space="preserve">
-    <value>BuildDate</value>
-  </data>
   <data name="Search" xml:space="preserve">
-    <value>Search</value>
-  </data>
-  <data name="Debugging" xml:space="preserve">
-    <value>Debugging</value>
-  </data>
-  <data name="Bit" xml:space="preserve">
-    <value>Bit</value>
-  </data>
-  <data name="ReleaseDate" xml:space="preserve">
-    <value>Release Date</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
-    <value>Delete</value>
-  </data>
-  <data name="DumpFileSettings" xml:space="preserve">
-    <value>Dump file settings</value>
-  </data>
-  <data name="OpenBeyondCompare" xml:space="preserve">
-    <value>Open BeyondCompare</value>
-  </data>
-  <data name="DownLoadBeyondCompare" xml:space="preserve">
-    <value>Download BeyondCompare</value>
-  </data>
-  <data name="Win10ClassicDesktopMenu" xml:space="preserve">
-    <value>Windows 10 desktop classic menu</value>
-  </data>
-  <data name="SaveConfiguration" xml:space="preserve">
-    <value>Save configuration</value>
+    <value>찾다</value>
   </data>
   <data name="ConfigurationManagement" xml:space="preserve">
-    <value>Configuration Management Window</value>
+    <value>구성 관리 창</value>
+  </data>
+  <data name="SaveConfiguration" xml:space="preserve">
+    <value>구성 저장</value>
   </data>
   <data name="OpenConfigFolder" xml:space="preserve">
-    <value>Open the configuration folder</value>
+    <value>구성 폴더를 엽니다</value>
   </data>
-  <data name="Step" xml:space="preserve">
-    <value>step</value>
+  <data name="SetupWizard" xml:space="preserve">
+    <value>구성 마법사</value>
   </data>
-  <data name="UpdateFailed" xml:space="preserve">
-    <value>Update failed</value>
+  <data name="Previous" xml:space="preserve">
+    <value>이전 단계</value>
   </data>
-  <data name="CheckUpdateOld" xml:space="preserve">
-    <value>Check for updates (old).</value>
+  <data name="Next" xml:space="preserve">
+    <value>다음 단계</value>
   </data>
-  <data name="DownloadLocal" xml:space="preserve">
-    <value>Local download</value>
+  <data name="Finish" xml:space="preserve">
+    <value>마치다</value>
   </data>
-  <data name="UpdateBaidu" xml:space="preserve">
-    <value>Baidu Cloud Download</value>
+  <data name="Wizard" xml:space="preserve">
+    <value>마법사</value>
   </data>
-  <data name="MenuUpdateReInstall_重新安装当前版本" xml:space="preserve">
-    <value>ReinstallCurrentVersion</value>
-  </data>
-  <data name="ClearPackageCache" xml:space="preserve">
-    <value>Clear installation package cache</value>
-  </data>
-  <data name="OpenCacheFolder" xml:space="preserve">
-    <value>Open the cache folder</value>
-  </data>
-  <data name="SoftwareVersionIdentical" xml:space="preserve">
-    <value>Same software version</value>
-  </data>
-  <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
-    <value>To roll back the software, you need to uninstall it first and then reinstall it, or reinstall the package after installation.</value>
+  <data name="SkipIncompleteConfigPrompt" xml:space="preserve">
+    <value>아직 완료되지 않은 구성이 몇 가지 있습니다. 건너뛰시겠습니까?</value>
   </data>
 </root>

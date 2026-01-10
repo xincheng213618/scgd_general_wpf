@@ -1,11 +1,11 @@
-﻿<Window x:Class="ColorVision.ConfigManagerWindow"
+﻿<Window x:Class="ColorVision.UI.Desktop.ConfigManagerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:local="clr-namespace:ColorVision"
-        xmlns:properties ="clr-namespace:ColorVision.Properties"
+        xmlns:local="clr-namespace:ColorVision.UI.Desktop"
+        xmlns:properties ="clr-namespace:ColorVision.UI.Desktop.Properties"
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.ConfigurationManagement}" Height="600" Width="1200" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>

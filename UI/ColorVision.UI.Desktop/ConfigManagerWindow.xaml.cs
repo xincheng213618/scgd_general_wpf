@@ -13,12 +13,12 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 
-namespace ColorVision
+namespace ColorVision.UI.Desktop
 {
     public class MenuConfigManagerWindow : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Help;
-        public override string Header => ColorVision.Properties.Resources.ConfigurationManagement;
+        public override string Header => Properties.Resources.ConfigurationManagement;
 
         public override int Order => 9009;
 

@@ -5,9 +5,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.UI;
 
-namespace ColorVision.Settings
+namespace ColorVision.UI.Desktop.Settings
 {
     public class MenuOptions : MenuItemBase, IHotKey
     {

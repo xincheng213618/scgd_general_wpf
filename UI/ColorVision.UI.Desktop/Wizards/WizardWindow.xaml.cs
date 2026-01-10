@@ -12,7 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 
-namespace ColorVision.Wizards
+namespace  ColorVision.UI.Desktop.Wizards
 {
     public sealed class BooleanToBrushConverter : IValueConverter
     {
@@ -88,9 +88,6 @@ namespace ColorVision.Wizards
         {
             if (_wizardSteps == null || _wizardSteps.Count == 0) return;
 
-            // Update step indicator
-            StepIndicator.Text = ColorVision.Properties.Resources.Step+$" {_currentStepIndex + 1} / {_wizardSteps.Count}";
-            
             // Update progress bar
             WizardProgress.Value = (_currentStepIndex + 1) * 100.0 / _wizardSteps.Count;
 
@@ -148,7 +145,7 @@ namespace ColorVision.Wizards
 
             if (!result)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Properties.Resources.SkipIncompleteConfigPrompt, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.SkipIncompleteConfigPrompt, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     if (Application.Current.MainWindow == this)
                     {
