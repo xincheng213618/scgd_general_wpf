@@ -4,6 +4,8 @@ namespace ColorVision.UI.Desktop.Settings.ExportAndImport
 {
     public class MenuConfigExport : MenuItemBase
     {
+        public override string OwnerGuid =>nameof(MenuConfigExportAndImport);
+
         public override int Order => 1;
         public override string Header => "导出设置";
         public override void Execute()

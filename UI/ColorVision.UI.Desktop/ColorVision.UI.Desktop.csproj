@@ -24,8 +24,6 @@
 	<ItemGroup>
 		<PackageReference Include="Markdig.Signed" Version="0.43.0" />
 		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3595.46" />
-		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
-		<PackageReference Include="WPFHexaEditor" Version="2.1.7" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="README.md">
