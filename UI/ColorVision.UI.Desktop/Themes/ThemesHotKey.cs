@@ -1,19 +1,20 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.Themes
+namespace ColorVision.UI.Desktop.Themes
 {
 
     public class MenuTheme:MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override int Order => 1000;
-        public override string Header => Properties.Resources.MenuTheme;
+        public override string Header => ColorVision.Themes.Properties.Resources.MenuTheme;
         public override string InputGestureText => "Ctrl + Shift + T";
     }
 
@@ -39,7 +40,7 @@ namespace ColorVision.Themes
                 {
                     OwnerGuid =nameof(MenuTheme),
                     GuidId = item.ToString(),
-                    Header = Themes.Properties.Resources.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "",
+                    Header = ColorVision.Themes.Properties.Resources.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "",
                     Icon = null, // Set your icon here if needed
                     Order = 1000 + (int)item, // Adjust order based on the enum value
                     Command = relayCommand,
@@ -54,7 +55,7 @@ namespace ColorVision.Themes
 
     public class ThemesHotKey :  IHotKey
     {
-        public HotKeys HotKeys => new(Themes.Properties.Resources.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
+        public HotKeys HotKeys => new(ColorVision.Themes.Properties.Resources.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
 
         private void Execute()
         {

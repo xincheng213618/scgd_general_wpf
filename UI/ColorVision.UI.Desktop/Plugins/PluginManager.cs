@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
+using ColorVision.UI.Plugins;
 using log4net;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
@@ -8,7 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 
-namespace ColorVision.UI.Plugins
+namespace ColorVision.UI.Desktop.Plugins
 {
     public class PluginWindowConfigProvider : IConfigSettingProvider
     {
@@ -18,8 +19,8 @@ namespace ColorVision.UI.Plugins
             {
                  new ConfigSettingMetadata
                 {
-                    Name = Properties.Resources.CheckPluginUpdates,
-                    Description = Properties.Resources.CheckPluginUpdates,
+                    Name = UI.Properties.Resources.CheckPluginUpdates,
+                    Description = UI.Properties.Resources.CheckPluginUpdates,
                     Order = 999,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(PluginWindowConfig.IsAutoUpdate),
@@ -66,7 +67,7 @@ namespace ColorVision.UI.Plugins
 
         public PluginManager()
         {
-            log.Info(Properties.Resources.CheckingForAdditionalProjects);
+            log.Info(UI.Properties.Resources.CheckingForAdditionalProjects);
 
             foreach (var item in UI.Plugins.PluginLoader.Config.Plugins)
             {
@@ -135,6 +136,7 @@ namespace ColorVision.UI.Plugins
 
         public void OpenViewDllViersion()
         {
+            new ViewDllVersionsWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public string SearchName { get => _SearchName; set { _SearchName = value; OnPropertyChanged(); }}
@@ -142,17 +144,17 @@ namespace ColorVision.UI.Plugins
         public async void DownloadPackage()
         {
             string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath + SearchName + "/LATEST_RELEASE";
-            DownloadFile.DownloadTile = Properties.Resources.Download + SearchName;
+            DownloadFile.DownloadTile = ColorVision.UI.Properties.Resources.Download + SearchName;
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             if (version == new Version())
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.ProjectNotFound, SearchName));
+                MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(UI.Properties.Resources.ProjectNotFound, SearchName));
                 return;
             }
             
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.FoundProjectDownloadConfirm, SearchName, $"{ColorVision.UI.Properties.Resources.Version}{version}"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(UI.Properties.Resources.FoundProjectDownloadConfirm, SearchName, $"{ColorVision.UI.Properties.Resources.Version}{version}"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.cvxp";
                     string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{SearchName}/{SearchName}-{version}.cvxp";

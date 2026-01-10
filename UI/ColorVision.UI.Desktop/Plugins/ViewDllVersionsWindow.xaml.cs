@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace ColorVision.UI.Plugins
+namespace ColorVision.UI.Desktop.Plugins
 {
     /// <summary>
     /// ViewDllVersionsWindow.xaml 的交互逻辑

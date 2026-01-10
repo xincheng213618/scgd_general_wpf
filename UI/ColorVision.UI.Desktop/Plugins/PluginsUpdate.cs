@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI;
-using ColorVision.UI.Plugins;
 using log4net;
 using System.Windows;
 
