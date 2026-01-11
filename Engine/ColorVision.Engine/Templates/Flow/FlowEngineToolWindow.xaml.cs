@@ -174,8 +174,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
-
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
 
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
@@ -210,7 +208,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             };
 
-            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain, STNodeTreeView1);
+            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
         }
         public void AutoAlignment()
         {

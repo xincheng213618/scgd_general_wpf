@@ -7,21 +7,20 @@
         xmlns:st="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
         mc:Ignorable="d"
         Title="属性编辑器" Height="450" Width="450"
-        WindowStyle="ToolWindow"
+        WindowStyle="None"
         ShowInTaskbar="False"
         Topmost="False"
         Background="{DynamicResource GlobalBackground}"
         Deactivated="Window_Deactivated"
         Activated="Window_Activated"
         Closed="Window_Closed">
-    <Grid Margin="5">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Toggle button between property editor and SignStackPanel -->
-        <ToggleButton x:Name="ToggleEditMode"  Content="切换编辑模式"  IsChecked="True"  Checked="ToggleEditMode_Checked" Unchecked="ToggleEditMode_Unchecked" HorizontalAlignment="Stretch"  Margin="0,0,0,5"/>
+        <Button x:Name="ToggleEditMode"  Content="切换编辑模式" Click="ToggleEditMode_Click" HorizontalAlignment="Stretch"  Margin="0,0,0,0"/>
 
         <Grid Grid.Row="1">
             <WindowsFormsHost x:Name="PropertyGridHost" 
@@ -30,7 +29,7 @@
             </WindowsFormsHost>
 
             <ScrollViewer x:Name="SignStackScrollViewer"  Visibility="Visible"  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                <StackPanel x:Name="SignStackPanelContainer"  Orientation="Vertical"/>
+                <StackPanel x:Name="SignStackPanelContainer"  Orientation="Vertical"  Margin="5"/>
             </ScrollViewer>
         </Grid>
     </Grid>
