@@ -58,6 +58,7 @@ using FlowEngineLib.Base;
 using FlowEngineLib.End;
 using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib.Start;
+using NPOI.SS.Formula.Functions;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
@@ -66,6 +67,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -658,7 +660,8 @@ namespace ColorVision.Engine.Templates.Flow
             }
             SignStackPanel.Children.Add(StackPanel);
             StackPanel.Children.Clear();
-            StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode));
+
+            StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
             SignStackPanel.Visibility = SignStackPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
         public StackPanel StackPanel { get; set; } = new StackPanel();
@@ -776,7 +779,7 @@ namespace ColorVision.Engine.Templates.Flow
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
                 StackPanel.Children.Clear();
-                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode));
+                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
                 STNodeEditorMain_ActiveChanged(this,new EventArgs());
             };
 
@@ -857,7 +860,7 @@ namespace ColorVision.Engine.Templates.Flow
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
                 StackPanel.Children.Clear();
-                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode));
+                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
             };
 
             dockPanel.Children.Add(comboBox);
@@ -893,7 +896,7 @@ namespace ColorVision.Engine.Templates.Flow
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
                 StackPanel.Children.Clear();
-                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode));
+                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
             };
 
 
@@ -1007,7 +1010,7 @@ namespace ColorVision.Engine.Templates.Flow
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
                 StackPanel.Children.Clear();
-                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode));
+                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
             };
 
             // 创建 TextBlock
@@ -1073,7 +1076,7 @@ namespace ColorVision.Engine.Templates.Flow
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
                 StackPanel.Children.Clear();
-                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode));
+                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
             };
 
 
