@@ -46,6 +46,7 @@ jobs:
         dotnet nuget push .\UI\ColorVision.ImageEditor\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\UI\ColorVision.SocketProtocol\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\UI\ColorVision.Database\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        dotnet nuget push .\UI\ColorVision.UI.Desktop\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\Engine\ColorVision.FileIO\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         dotnet nuget push .\Engine\cvColorVision\bin\x64\Release\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         

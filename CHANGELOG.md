@@ -1,6 +1,6 @@
 #   CHANGELOAG
 
-## [1.3.17.1] 2026.01.05
+## [1.3.17.1] 2026.01.12
 
 1.优化许可证配置
 
@@ -35,6 +35,10 @@
 16.更新流程以支持多种起始结点
 
 17.光谱仪勾选自动积分之后，积分应该应用回来
+
+18.增加ColorVision.UI.Desktop
+
+19.优化FLow
 
 
 ## [1.3.16.1] 2025.12.20
@@ -206,13 +210,6 @@
 47.优化属性编辑器
 
 48.PropertyEditor 集合类型支持扩展
-- 新增 ObservableCollection<T> 支持
-- 新增 Collection<T> 支持
-- 新增 IList<T>, ICollection<T>, IEnumerable<T> 接口支持
-- 新增 Dictionary<TKey, TValue> 和 IDictionary<TKey, TValue> 支持
-- 所有集合类型支持 JSON 文本编辑和可视化编辑器
-- 字典编辑器支持键唯一性验证
-- 详细文档：docs/PropertyEditor-Collection-Support.md
 
 49.隐藏关于里面logo抖动的效果，因为老板提到不够严肃
 

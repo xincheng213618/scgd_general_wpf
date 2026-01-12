@@ -135,7 +135,6 @@ namespace ColorVision.UI.Plugins
 
         public void OpenViewDllViersion()
         {
-            new ViewDllVersionsWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public string SearchName { get => _SearchName; set { _SearchName = value; OnPropertyChanged(); }}

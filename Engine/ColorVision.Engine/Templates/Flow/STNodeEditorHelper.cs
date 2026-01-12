@@ -58,6 +58,7 @@ using FlowEngineLib.Base;
 using FlowEngineLib.End;
 using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib.Start;
+using NPOI.SS.Formula.Functions;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
@@ -66,6 +67,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -84,13 +86,25 @@ namespace ColorVision.Engine.Templates.Flow
         public StackPanel SignStackPanel => PropertyEditorWindow?.SignStackPanel;
         public NodePropertyEditorWindow PropertyEditorWindow { get; set; }
 
-        public STNodeTreeView STNodeTreeView1 { get; set; }
 
-        public STNodeEditorHelper(Control Paraent,STNodeEditor sTNodeEditor, STNodeTreeView sTNodeTreeView1)
+        public static STNodeTreeView STNodeTreeView { get 
+            {
+                if (_STNodeTreeView == null)
+                {
+                    _STNodeTreeView = new STNodeTreeView();
+                    _STNodeTreeView.LoadAssembly("FlowEngineLib.dll");
+                }
+                return _STNodeTreeView;
+            }
+        }
+        private static STNodeTreeView _STNodeTreeView;
+
+        public STNodeEditorHelper(Control Paraent,STNodeEditor sTNodeEditor)
         {
+
+
             STNodeEditor = sTNodeEditor;
-            STNodeTreeView1 = sTNodeTreeView1;
-            
+
             STNodeEditor.NodeAdded += StNodeEditor1_NodeAdded;
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
 
@@ -644,10 +658,13 @@ namespace ColorVision.Engine.Templates.Flow
                 algComplianceMathNode.nodeEvent += (s, e) => Refesh();
                 Refesh();
             }
+            SignStackPanel.Children.Add(StackPanel);
+            StackPanel.Children.Clear();
 
-            SignStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode));
+            StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
             SignStackPanel.Visibility = SignStackPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
+        public StackPanel StackPanel { get; set; } = new StackPanel();
 
         void AddImagePath(Action<string> updateStorageAction, string filename,string Tag = "图像")
         {
@@ -761,6 +778,8 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
+                StackPanel.Children.Clear();
+                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
                 STNodeEditorMain_ActiveChanged(this,new EventArgs());
             };
 
@@ -840,6 +859,8 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
+                StackPanel.Children.Clear();
+                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
             };
 
             dockPanel.Children.Add(comboBox);
@@ -874,6 +895,8 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
+                StackPanel.Children.Clear();
+                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
             };
 
 
@@ -986,6 +1009,8 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
+                StackPanel.Children.Clear();
+                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
             };
 
             // 创建 TextBlock
@@ -1050,6 +1075,8 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
+                StackPanel.Children.Clear();
+                StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
             };
 
 
@@ -1145,7 +1172,7 @@ namespace ColorVision.Engine.Templates.Flow
         public void AddContentMenu()
         {
             STNodeEditor.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-            Type STNodeTreeViewtype = STNodeTreeView1.GetType();
+            Type STNodeTreeViewtype = STNodeTreeView.GetType();
 
             // 获取私有字段信息
             FieldInfo fieldInfo = STNodeTreeViewtype.GetField("m_dic_all_type", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -1153,7 +1180,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (fieldInfo != null)
             {
                 // 获取字段的值
-                var value = fieldInfo.GetValue(STNodeTreeView1);
+                var value = fieldInfo.GetValue(STNodeTreeView);
                 Dictionary<string, List<Type>> values = new Dictionary<string, List<Type>>();
                 if (value is Dictionary<Type, string> m_dic_all_type)
                 {

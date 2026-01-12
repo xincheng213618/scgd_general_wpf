@@ -131,7 +131,7 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected override string OnGetDrawTitle()
 	{
-		return $"{base.Title}\r\n{base.DeviceCode}";
+		return $"{base.Title}";
 	}
 
 	protected override void OnCreate()

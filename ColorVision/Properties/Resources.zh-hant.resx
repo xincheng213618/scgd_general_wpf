@@ -141,9 +141,6 @@
   <data name="SoftwareVersion" xml:space="preserve">
     <value>軟體版本</value>
   </data>
-  <data name="Wizard" xml:space="preserve">
-    <value>嚮導</value>
-  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>檢查更新</value>
   </data>
@@ -191,9 +188,6 @@
   </data>
   <data name="TimeLeft" xml:space="preserve">
     <value>剩餘時間：</value>
-  </data>
-  <data name="SetupWizard" xml:space="preserve">
-    <value>配置精靈</value>
   </data>
   <data name="Upgrade" xml:space="preserve">
     <value>升級</value>
@@ -243,15 +237,6 @@
   <data name="Delete" xml:space="preserve">
     <value>刪除</value>
   </data>
-  <data name="Previous" xml:space="preserve">
-    <value>上一步</value>
-  </data>
-  <data name="Next" xml:space="preserve">
-    <value>下一步</value>
-  </data>
-  <data name="Finish" xml:space="preserve">
-    <value>完成</value>
-  </data>
   <data name="DumpFileSettings" xml:space="preserve">
     <value>轉儲文件設定</value>
   </data>
@@ -270,32 +255,11 @@
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>配置管理視窗</value>
   </data>
-  <data name="BlackMuraDetect" xml:space="preserve">
-    <value>BlackMura檢測</value>
-  </data>
-  <data name="KBDetect" xml:space="preserve">
-    <value>鍵盤測試</value>
-  </data>
-  <data name="SectionalDrawing" xml:space="preserve">
-    <value>切割面圖</value>
-  </data>
   <data name="OpenConfigFolder" xml:space="preserve">
     <value>打開設定資料夾</value>
   </data>
-  <data name="singleChannel" xml:space="preserve">
-    <value>單通道</value>
-  </data>
-  <data name="threeChannles" xml:space="preserve">
-    <value>三通道</value>
-  </data>
-  <data name="Step11" xml:space="preserve">
-    <value>步驟 1 / 1</value>
-  </data>
   <data name="Step" xml:space="preserve">
     <value>步驟</value>
-  </data>
-  <data name="SkipIncompleteConfigPrompt" xml:space="preserve">
-    <value>還有未完成的配置，是否跳過</value>
   </data>
   <data name="UpdateFailed" xml:space="preserve">
     <value>更新失敗</value>
