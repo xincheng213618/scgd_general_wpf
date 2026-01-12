@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -11,7 +12,7 @@ namespace ColorVision.UI.PropertyEditor.Json
     /// </summary>
     public partial class JsonPropertyEditorControl : UserControl
     {
-        private object? _currentObject;
+        private JObject? _jObject;
         private string? _originalJson;
 
         public JsonPropertyEditorControl()
@@ -35,21 +36,11 @@ namespace ColorVision.UI.PropertyEditor.Json
                 ErrorBorder.Visibility = Visibility.Collapsed;
 
                 // Parse JSON to JObject
-                var jObject = JObject.Parse(json);
+                _jObject = JObject.Parse(json);
 
-                // Create wrapper that treats JObject like a class
-                _currentObject = new JObjectPropertyWrapper(jObject);
-
-                // Generate PropertyEditor controls using standard method
+                // Clear and generate UI directly from JObject
                 PropertyPanel.Children.Clear();
-                var control = PropertyEditorHelper.GenPropertyEditorControl(_currentObject);
-                PropertyPanel.Children.Add(control);
-
-                // Subscribe to property changes
-                if (_currentObject is System.ComponentModel.INotifyPropertyChanged notifyObj)
-                {
-                    notifyObj.PropertyChanged += (s, e) => OnJsonModified();
-                }
+                GeneratePropertiesFromJObject(_jObject);
             }
             catch (JsonException ex)
             {
@@ -62,8 +53,295 @@ namespace ColorVision.UI.PropertyEditor.Json
         }
 
         /// <summary>
-        /// Generates property editor controls for JsonObjectWrapper
+        /// Generates property editor controls directly from JObject
         /// </summary>
+        private void GeneratePropertiesFromJObject(JObject jObject)
+        {
+            if (jObject == null || jObject.Count == 0)
+            {
+                var noPropsText = new TextBlock
+                {
+                    Text = "没有可编辑的属性",
+                    Margin = new Thickness(10),
+                    FontStyle = FontStyles.Italic
+                };
+                PropertyPanel.Children.Add(noPropsText);
+                return;
+            }
+
+            // Create a border for all properties
+            var border = new Border
+            {
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(5),
+                Margin = new Thickness(0, 0, 0, 5)
+            };
+            border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
+            border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+
+            var stackPanel = new StackPanel { Margin = new Thickness(5) };
+
+            // Header
+            var header = new TextBlock
+            {
+                Text = "JSON Properties",
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, 0, 5)
+            };
+            header.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+            stackPanel.Children.Add(header);
+
+            // Generate control for each property
+            foreach (var prop in jObject.Properties())
+            {
+                try
+                {
+                    var control = GenerateControlForProperty(prop.Name, prop.Value);
+                    if (control != null)
+                        stackPanel.Children.Add(control);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error generating control for {prop.Name}: {ex.Message}");
+                }
+            }
+
+            border.Child = stackPanel;
+            PropertyPanel.Children.Add(border);
+        }
+
+        /// <summary>
+        /// Generates an editor control for a single JSON property
+        /// </summary>
+        private DockPanel? GenerateControlForProperty(string propertyName, JToken value)
+        {
+            var dockPanel = new DockPanel { Margin = new Thickness(0, 2, 0, 2) };
+
+            // Create label
+            var label = new TextBlock
+            {
+                Text = FormatPropertyName(propertyName),
+                Width = 120,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 5, 0)
+            };
+            dockPanel.Children.Add(label);
+            DockPanel.SetDock(label, Dock.Left);
+
+            // Create editor based on type
+            FrameworkElement? editor = null;
+            
+            switch (value.Type)
+            {
+                case JTokenType.Boolean:
+                    editor = CreateBoolEditor(propertyName, value);
+                    break;
+                    
+                case JTokenType.Integer:
+                case JTokenType.Float:
+                    editor = CreateNumericEditor(propertyName, value);
+                    break;
+                    
+                case JTokenType.String:
+                    editor = CreateStringEditor(propertyName, value);
+                    break;
+                    
+                case JTokenType.Array:
+                    editor = CreateArrayEditor(propertyName, value as JArray);
+                    break;
+                    
+                case JTokenType.Object:
+                    editor = CreateObjectEditor(propertyName, value as JObject);
+                    break;
+                    
+                default:
+                    editor = CreateDefaultEditor(propertyName, value);
+                    break;
+            }
+
+            if (editor != null)
+            {
+                dockPanel.Children.Add(editor);
+                return dockPanel;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Creates a boolean editor (CheckBox/ToggleSwitch)
+        /// </summary>
+        private FrameworkElement CreateBoolEditor(string propertyName, JToken value)
+        {
+            var checkBox = new CheckBox
+            {
+                IsChecked = value.Value<bool>(),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            checkBox.Checked += (s, e) => UpdateJsonValue(propertyName, true);
+            checkBox.Unchecked += (s, e) => UpdateJsonValue(propertyName, false);
+
+            return checkBox;
+        }
+
+        /// <summary>
+        /// Creates a numeric editor (TextBox with validation)
+        /// </summary>
+        private FrameworkElement CreateNumericEditor(string propertyName, JToken value)
+        {
+            var textBox = new TextBox
+            {
+                Text = value.ToString(),
+                MinWidth = 150
+            };
+            textBox.SetResourceReference(TextBox.StyleProperty, "TextBoxSmallStyle");
+
+            textBox.LostFocus += (s, e) =>
+            {
+                if (value.Type == JTokenType.Integer)
+                {
+                    if (int.TryParse(textBox.Text, out int intValue))
+                        UpdateJsonValue(propertyName, intValue);
+                }
+                else if (value.Type == JTokenType.Float)
+                {
+                    if (double.TryParse(textBox.Text, out double doubleValue))
+                        UpdateJsonValue(propertyName, doubleValue);
+                }
+            };
+
+            return textBox;
+        }
+
+        /// <summary>
+        /// Creates a string editor (TextBox)
+        /// </summary>
+        private FrameworkElement CreateStringEditor(string propertyName, JToken value)
+        {
+            var textBox = new TextBox
+            {
+                Text = value.Value<string>() ?? string.Empty,
+                MinWidth = 150
+            };
+            textBox.SetResourceReference(TextBox.StyleProperty, "TextBoxSmallStyle");
+
+            textBox.LostFocus += (s, e) => UpdateJsonValue(propertyName, textBox.Text);
+
+            return textBox;
+        }
+
+        /// <summary>
+        /// Creates an array editor (displays as JSON text for now)
+        /// </summary>
+        private FrameworkElement CreateArrayEditor(string propertyName, JArray? array)
+        {
+            var textBox = new TextBox
+            {
+                Text = array?.ToString(Formatting.None) ?? "[]",
+                MinWidth = 150
+            };
+            textBox.SetResourceReference(TextBox.StyleProperty, "TextBoxSmallStyle");
+
+            textBox.LostFocus += (s, e) =>
+            {
+                try
+                {
+                    var newArray = JArray.Parse(textBox.Text);
+                    UpdateJsonValue(propertyName, newArray);
+                }
+                catch
+                {
+                    // Invalid JSON, revert
+                    textBox.Text = array?.ToString(Formatting.None) ?? "[]";
+                }
+            };
+
+            return textBox;
+        }
+
+        /// <summary>
+        /// Creates an object editor (displays as JSON text for now)
+        /// </summary>
+        private FrameworkElement CreateObjectEditor(string propertyName, JObject? obj)
+        {
+            var textBox = new TextBox
+            {
+                Text = obj?.ToString(Formatting.None) ?? "{}",
+                MinWidth = 150
+            };
+            textBox.SetResourceReference(TextBox.StyleProperty, "TextBoxSmallStyle");
+
+            textBox.LostFocus += (s, e) =>
+            {
+                try
+                {
+                    var newObj = JObject.Parse(textBox.Text);
+                    UpdateJsonValue(propertyName, newObj);
+                }
+                catch
+                {
+                    // Invalid JSON, revert
+                    textBox.Text = obj?.ToString(Formatting.None) ?? "{}";
+                }
+            };
+
+            return textBox;
+        }
+
+        /// <summary>
+        /// Creates a default editor for unknown types
+        /// </summary>
+        private FrameworkElement CreateDefaultEditor(string propertyName, JToken value)
+        {
+            var textBlock = new TextBlock
+            {
+                Text = value.ToString(),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            return textBlock;
+        }
+
+        /// <summary>
+        /// Updates a value in the JObject and triggers change event
+        /// </summary>
+        private void UpdateJsonValue(string propertyName, object? value)
+        {
+            if (_jObject == null) return;
+
+            try
+            {
+                _jObject[propertyName] = value == null ? JValue.CreateNull() : JToken.FromObject(value);
+                OnJsonModified();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error updating {propertyName}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Formats property name for display (camelCase -> Title Case)
+        /// </summary>
+        private static string FormatPropertyName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return name;
+
+            var result = new System.Text.StringBuilder();
+            result.Append(char.ToUpper(name[0]));
+
+            for (int i = 1; i < name.Length; i++)
+            {
+                if (char.IsUpper(name[i]) && i > 0)
+                    result.Append(' ');
+                result.Append(name[i]);
+            }
+
+            return result.ToString();
+        }
+
         /// <summary>
         /// Gets the current JSON string
         /// </summary>
@@ -71,17 +349,10 @@ namespace ColorVision.UI.PropertyEditor.Json
         {
             try
             {
-                if (_currentObject == null)
+                if (_jObject == null)
                     return _originalJson;
 
-                // Get JObject from wrapper
-                if (_currentObject is JObjectPropertyWrapper wrapper)
-                {
-                    var jObject = wrapper.GetJObject();
-                    return jObject.ToString(Formatting.Indented);
-                }
-
-                return _originalJson;
+                return _jObject.ToString(Formatting.Indented);
             }
             catch (Exception ex)
             {
