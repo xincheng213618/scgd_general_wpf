@@ -237,7 +237,7 @@ namespace ColorVision.UI.PropertyEditor.Json
         }
 
         /// <summary>
-        /// Creates an array editor - recursively expands array elements
+        /// Creates an array editor - displays primitives inline, expands complex types
         /// </summary>
         private FrameworkElement CreateArrayEditor(string propertyPath, JArray? array)
         {
@@ -251,6 +251,92 @@ namespace ColorVision.UI.PropertyEditor.Json
                 return emptyText;
             }
 
+            // Check if all elements are primitive types (not objects or arrays)
+            bool allPrimitives = array.All(item => 
+                item.Type != JTokenType.Object && 
+                item.Type != JTokenType.Array);
+
+            if (allPrimitives)
+            {
+                // For primitive arrays, display as comma-separated inline text
+                return CreatePrimitiveArrayEditor(propertyPath, array);
+            }
+            else
+            {
+                // For complex arrays, use expander with recursive expansion
+                return CreateComplexArrayEditor(propertyPath, array);
+            }
+        }
+
+        /// <summary>
+        /// Creates an inline editor for arrays of primitive values
+        /// </summary>
+        private FrameworkElement CreatePrimitiveArrayEditor(string propertyPath, JArray array)
+        {
+            var textBox = new TextBox
+            {
+                Text = string.Join(", ", array.Select(item => item.ToString())),
+                MinWidth = 150
+            };
+            textBox.SetResourceReference(TextBox.StyleProperty, "TextBoxSmallStyle");
+
+            textBox.LostFocus += (s, e) =>
+            {
+                try
+                {
+                    // Parse comma-separated values back into array
+                    var values = textBox.Text.Split(',').Select(v => v.Trim()).ToList();
+                    
+                    // Try to infer the type from the first element in the original array
+                    if (array.Count > 0)
+                    {
+                        var newArray = new JArray();
+                        var firstType = array[0].Type;
+                        
+                        foreach (var val in values)
+                        {
+                            if (string.IsNullOrWhiteSpace(val))
+                                continue;
+                                
+                            switch (firstType)
+                            {
+                                case JTokenType.Integer:
+                                    if (int.TryParse(val, out int intVal))
+                                        newArray.Add(intVal);
+                                    break;
+                                case JTokenType.Float:
+                                    if (double.TryParse(val, out double doubleVal))
+                                        newArray.Add(doubleVal);
+                                    break;
+                                case JTokenType.Boolean:
+                                    if (bool.TryParse(val, out bool boolVal))
+                                        newArray.Add(boolVal);
+                                    break;
+                                case JTokenType.String:
+                                default:
+                                    newArray.Add(val);
+                                    break;
+                            }
+                        }
+                        
+                        UpdateJsonValue(propertyPath, newArray);
+                    }
+                }
+                catch
+                {
+                    // Invalid format, revert
+                    textBox.Text = string.Join(", ", array.Select(item => item.ToString()));
+                }
+            };
+
+            return textBox;
+        }
+
+        /// <summary>
+        /// Creates an expander for arrays of complex types (objects/arrays)
+        /// </summary>
+        private FrameworkElement CreateComplexArrayEditor(string propertyPath, JArray array)
+        {
             // Create an expander to show/hide array elements
             var expander = new System.Windows.Controls.Expander
             {
