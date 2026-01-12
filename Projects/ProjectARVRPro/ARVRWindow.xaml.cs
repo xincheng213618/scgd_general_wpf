@@ -771,7 +771,9 @@ namespace ProjectARVRPro
                     string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
                     linkPath = Path.Combine(linkPath, dateFolder);
                 }
-
+                //
+                if (!Directory.Exists(linkPath))
+                    Directory.CreateDirectory(linkPath);
 
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string filePath = Path.Combine(linkPath, $"TestResults_{SNtextBox.Text}_{timeStr}_.csv");
