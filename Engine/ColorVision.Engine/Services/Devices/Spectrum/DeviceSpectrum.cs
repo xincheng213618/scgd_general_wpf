@@ -32,6 +32,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     public class DisplaySpectrumConfig : IDisplayConfigBase
     {
+        /// <summary>
+        /// 是否光通量模式
+        /// </summary>
+        public bool IsLuminousFluxMode { get => _IsLuminousFluxMode; set { if (_IsLuminousFluxMode == value) return; _IsLuminousFluxMode = value; OnPropertyChanged(); IsIsLuminousFluxModeChanged?.Invoke(this, value); } }
+        private bool _IsLuminousFluxMode;
+
+        public event EventHandler<bool> IsIsLuminousFluxModeChanged;
+
+
         public double IntTime { get => _IntTime; set { _IntTime = value; OnPropertyChanged(); } }
         private double _IntTime = 100;
 
@@ -41,14 +50,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public int PortNum { get => _PortNum; set { _PortNum = value; OnPropertyChanged(); } }
         private int _PortNum = 1;
 
-        [DisplayName("自动积分"), Category("Base")]
-        public bool IsAutoIntTime { get => _IsAutoIntegra; set { _IsAutoIntegra = value; OnPropertyChanged(); } }
-        private bool _IsAutoIntegra;
+        [DisplayName("自动积分")]
+        public bool IsAutoIntTime { get => _IsAutoIntTime; set { _IsAutoIntTime = value; OnPropertyChanged(); } }
+        private bool _IsAutoIntTime;
 
         public double V { get => _V; set { _V = value; OnPropertyChanged(); } }
-        private double _V;
+        private double _V = 5;
         public double I { get => _I; set { _I = value; OnPropertyChanged(); } }
-        private double _I;
+        private double _I = 1;
+
+
     }
 
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>
@@ -72,6 +83,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         [CommandDisplay("EmissionSP100Set")]
         public RelayCommand EmissionSP100SettingCommand { get; set; }
+
         public event Action SelfAdaptionInitDarkStarted;
         public event Action SelfAdaptionInitDarkCompleted;
 
@@ -80,7 +92,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
-            View = new ViewSpectrum();
+            View = new ViewSpectrum(DisplayConfig);
             View.View.Title = ColorVision.Engine.Properties.Resources.SpectrumView+$" - {Config.Code}";
             this.SetIconResource("DISpectrumIcon", View.View);
 
@@ -109,8 +121,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             EmissionSP100SettingCommand = new RelayCommand(a => EmissionSP100Setting());
 
             GetSpectrSerialNumberCommand = new RelayCommand(a => GetSpectrSerialNumber());
-
+            EditDisplayConfigCommand = new RelayCommand(a => EditDisplayConfig());
         }
+
+        [CommandDisplay("编辑显示配置",Order =-1)]
+        public RelayCommand EditDisplayConfigCommand { get; set; }
+        public void EditDisplayConfig()
+        {
+            new PropertyEditorWindow(DisplayConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
         public int MyCallback(IntPtr strText, int nLen)
         {
             string text = Marshal.PtrToStringAnsi(strText, nLen);

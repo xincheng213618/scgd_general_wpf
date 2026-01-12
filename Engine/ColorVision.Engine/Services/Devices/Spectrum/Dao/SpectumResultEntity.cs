@@ -15,6 +15,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
     [SugarTable("t_scgd_measure_result_spectrometer")]
     public class SpectumResultEntity : EntityBase,IInitTables
     {
+        [SugarColumn(ColumnName = "data_type", IsNullable = false,DefaultValue ="0", Length = 1, ColumnDescription = "数据类型(0:光谱,1:EQE)")]
+        public bool DataType { get; set; } = false;
+
         [SugarColumn(ColumnName = "device_code", IsNullable = true, Length = 255)]
         public string? DeviceCode { get; set; }
 
@@ -26,6 +29,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 
         [SugarColumn(ColumnName = "smu_data_id", IsNullable = true, ColumnDescription = "SMU result ID")]
         public int? SmuDataId { get; set; }
+
+        [SugarColumn(ColumnName = "v_result", IsNullable = true, ColumnDescription = "源表电压")]
+        public float? VResult { get; set; }
+
+        [SugarColumn(ColumnName = "i_result", IsNullable = true, ColumnDescription = "源表电流")]
+        public float? IResult { get; set; }
 
         [SugarColumn(ColumnName = "fIntTime", IsNullable = true, ColumnDescription = "积分时间")]
         public float? IntTime { get; set; }
@@ -44,6 +53,25 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 
         [SugarColumn(ColumnName = "nd_port", IsNullable = true, ColumnDescription = "ND滤轮")]
         public bool? NDPort { get; set; }
+
+        [SugarColumn(ColumnName = "params", IsNullable = true, ColumnDataType = "json", ColumnDescription = "参数")]
+        public string? Params { get; set; }
+
+        [SugarColumn(ColumnName = "a_factor", IsNullable = true, ColumnDescription = "EQE修正系数")]
+        public float? AFactor { get; set; }
+
+        [SugarColumn(ColumnName = "eqe", IsNullable = true, ColumnDescription = "EQE")]
+        public double? Eqe { get; set; }
+
+        [SugarColumn(ColumnName = "luminous_flux", IsNullable = true, ColumnDescription = "光通量 (lm)")]
+        public float? LuminousFlux { get; set; }
+
+        [SugarColumn(ColumnName = "radiant_flux", IsNullable = true, ColumnDescription = "辐射通量 (W)")]
+        public double? RadiantFlux { get; set; }
+
+        [SugarColumn(ColumnName = "luminous_efficacy", IsNullable = true, ColumnDescription = "光效 (lm/W)")]
+        public double? LuminousEfficacy { get; set; }
+
 
         [SugarColumn(ColumnName = "fPL", IsNullable = true, IsJson = true, ColumnDataType = "json", ColumnDescription = "相对光谱数据")]
         public string? fPL { get; set; }
@@ -122,6 +150,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 
         [SugarColumn(ColumnName = "fInterval", IsNullable = true, ColumnDescription = "波长间隔")]
         public float? fInterval { get; set; }
+
 
         [SugarColumn(ColumnName = "result_code", IsNullable = true, ColumnDescription = "结果CODE")]
         public int? ResultCode { get; set; }

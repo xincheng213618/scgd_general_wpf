@@ -1,4 +1,5 @@
 using ColorVision.Database;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using System;
 using System.Collections.ObjectModel;
@@ -12,6 +13,8 @@ namespace ColorVision.Engine.Batch.Poi
         public bool Process(IBatchContext ctx)
         {
             if (ctx?.Batch == null) return false;
+            if (ctx?.Batch.FlowStatus != FlowStatus.Completed) return false;
+
             var config = ctx.Config;
             try
             {

@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Cache;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
@@ -83,6 +84,15 @@ namespace ColorVision.Engine.Services
         {
             return null;
         }
+
+
+        public event EventHandler<MsgRecord> MsgRecordChanged;
+
+        public virtual void SetMsgRecordChanged(MsgRecord msgRecord)
+        {
+            MsgRecordChanged?.Invoke(this, msgRecord);
+        }
+
         public virtual void Dispose()
         {
             GC.SuppressFinalize(this);
@@ -103,6 +113,8 @@ namespace ColorVision.Engine.Services
 
         public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; OnPropertyChanged(); } }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; OnPropertyChanged(); } }
+
+
 
 
         public DeviceService(SysResourceModel sysResourceModel) : base()

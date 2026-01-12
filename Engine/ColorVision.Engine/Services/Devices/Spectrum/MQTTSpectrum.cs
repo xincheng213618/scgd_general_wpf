@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Templates.Flow;
 using iText.Commons.Bouncycastle.Asn1.X509;
 using MQTTMessageLib;
 using MQTTMessageLib.Spectrum;
@@ -17,6 +18,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Interop;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
@@ -52,10 +54,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
-                log.Info(Msg);
+                log.Debug(Msg);
                 try
                 {
                     MsgReturn msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
+
+                    if (Config.Code != null && msg.DeviceCode != Config.Code) return Task.CompletedTask;
+
                     if (msg == null)
                         return Task.CompletedTask;
                     if (msg.Code == 0 || msg.Code == 102)
@@ -66,11 +71,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         else if (msg.EventName == "Open")
                         {
                         }
-                        else if (msg.EventName == "GetData")
+                        else if (msg.EventName == "GetData" || msg.EventName == "EQE.GetData")
                         {
                             if (msg !=null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
                             {
                                 int masterId = msg.Data?.MasterId;
+
                                 var DB = new SqlSugarClient(new ConnectionConfig
                                 {
                                     ConnectionString = MySqlControl.GetConnectionString(),
@@ -86,20 +92,74 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                     {
                                         ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                         Device.View.AddViewResultSpectrum(viewResultSpectrum);
+                                        try
+                                        {
+                                            double? IntegralTime = msg?.Data?.IntegralTime;
+                                            Device.DisplayConfig.IntTime = (float)IntegralTime;
+
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            log.Error(ex);
+                                        }
                                     });
                                 }
+
+      
                             }
                         }
-                        else if (msg.EventName == "GetDataAuto")
+                        else if (msg.EventName == "GetDataAuto" || msg.EventName == "EQE.GetDataAuto")
                         {
-                            JObject data = msg.Data;
-                            SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam.Data);
-                                Device.View.AddViewResultSpectrum(viewResultSpectrum);
-                            });
 
+                            //未来全面启用4.0之后移除
+                            log.Info(FlowEngineManager.GetInstance().ServiceVersion);
+                            if (FlowEngineManager.GetInstance().ServiceVersion> new Version(4, 0, 1, 104))
+                            {
+                                if (msg != null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
+                                {
+                                    int masterId = msg.Data?.MasterId;
+                                    var DB = new SqlSugarClient(new ConnectionConfig
+                                    {
+                                        ConnectionString = MySqlControl.GetConnectionString(),
+                                        DbType = SqlSugar.DbType.MySql,
+                                        IsAutoCloseConnection = true
+                                    });
+                                    SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().Where(x => x.Id == masterId).First();
+                                    DB.Dispose();
+                                    log.Info($"GetData MasterId:{masterId} ");
+                                    if (model != null)
+                                    {
+                                        Application.Current.Dispatcher.Invoke(() =>
+                                        {
+                                            ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
+                                            Device.View.AddViewResultSpectrum(viewResultSpectrum);
+
+                                            try
+                                            {
+                                                double? IntegralTime = msg?.Data?.IntegralTime;
+                                                Device.DisplayConfig.IntTime = (float)IntegralTime;
+
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                log.Error(ex);
+                                            }
+                                        });
+                                    }
+
+          
+                                }
+                            }
+                            else
+                            {
+                                JObject data = msg.Data;
+                                SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam.Data);
+                                    Device.View.AddViewResultSpectrum(viewResultSpectrum);
+                                });
+                            }
                         }
                         else if (msg.EventName == "Close")
                         {
@@ -168,17 +228,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             Param.Add("AutoInitDark", Config.IsAutoDark);
             Param.Add("SelfAdaptionInitDark", Config.IsShutter);
             Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
-            Param.Add("Divisor", ViewSpectrumConfig.Instance.divisor);
+            Param.Add("AFactor", ViewSpectrumConfig.Instance.divisor);
             Param.Add("OutputDataFilename", "EQEData.json");
 
-
             var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
             SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };
             int MasterId = DB.Insertable(sMUResultModel).ExecuteReturnIdentity();
             DB.Dispose();
-           
-            var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I },{ "Channel",-1 },{ "MasterId", MasterId },{ "MasterResultType", 200 } };
+
+            var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I },{ "Channel",0 },{ "MasterId", MasterId },{ "MasterResultType", 200 } };
             Param.Add("SMUData", SMUData);
             MsgRecord msgRecord = PublishAsyncClient(msg);
             return msgRecord;
@@ -200,19 +258,31 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public MsgRecord GetData()
         {
+            var Param = new Dictionary<string, object>();
             MsgSend msg = new()
             {
                 EventName = "GetData",
-                Params = new GetDataParam()
-                {
-                    IntTime = (float)Device.DisplayConfig.IntTime,
-                    AveNum = Device.DisplayConfig.AveNum,
-                    BUseAutoIntTime = Device.DisplayConfig.IsAutoIntTime,
-                    SelfAdaptionInitDark = Config.IsShutter,
-                    AutoInitDark = Config.IsAutoDark,
-                    IsWithND = Config.IsWithND
-                }
+                Params = Param
             };
+            Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
+            Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
+            Param.Add("AutoInitDark", Config.IsAutoDark);
+            Param.Add("SelfAdaptionInitDark", Config.IsShutter);
+            Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
+            Param.Add("IsWithND", Config.IsWithND);
+            if (Device.DisplayConfig.IsLuminousFluxMode)
+            {
+                msg.EventName = "EQE.GetData";
+                Param.Add("AFactor", ViewSpectrumConfig.Instance.divisor);
+                Param.Add("OutputDataFilename", "EQEData.json");
+                var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };
+                int MasterId = DB.Insertable(sMUResultModel).ExecuteReturnIdentity();
+                DB.Dispose();
+
+                var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I }, { "Channel", 0 }, { "MasterId", MasterId }, { "MasterResultType", 200 } };
+                Param.Add("SMUData", SMUData);
+            }
 
             MsgRecord msgRecord= PublishAsyncClient(msg);
             return msgRecord;
@@ -270,33 +340,46 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return PublishAsyncClient(msg);
         }
 
-        public void GetDataAuto()
+        public MsgRecord GetDataAuto()
         {
+            var Param = new Dictionary<string, object>();
             MsgSend msg = new()
             {
                 EventName = "GetDataAuto",
-                ServiceName = Config.Code,
-                Params = new GetDataParam()
-                {
-                    IntTime = (float)Device.DisplayConfig.IntTime,
-                    AveNum = Device.DisplayConfig.AveNum,
-                    BUseAutoIntTime = Device.DisplayConfig.IsAutoIntTime,
-                    SelfAdaptionInitDark = Config.IsShutter,
-                    AutoInitDark = Config.IsAutoDark,
-                    IsWithND = Config.IsWithND
-                }
+                Params = Param
             };
-            PublishAsyncClient(msg);
+            Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
+            Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
+            Param.Add("AutoInitDark", Config.IsAutoDark);
+            Param.Add("SelfAdaptionInitDark", Config.IsShutter);
+            Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
+            Param.Add("IsWithND", Config.IsWithND);
+
+            if (Device.DisplayConfig.IsLuminousFluxMode)
+            {
+                msg.EventName = "EQE.GetDataAuto";
+
+                Param.Add("AFactor", ViewSpectrumConfig.Instance.divisor);
+                Param.Add("OutputDataFilename", "EQEData.json");
+                var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };
+                int MasterId = DB.Insertable(sMUResultModel).ExecuteReturnIdentity();
+                DB.Dispose();
+
+                var SMUData = new Dictionary<string, object>() { { "V", Device.DisplayConfig.V }, { "I", Device.DisplayConfig.I }, { "Channel", 0 }, { "MasterId", MasterId }, { "MasterResultType", 200 } };
+                Param.Add("SMUData", SMUData);
+            }
+            return PublishAsyncClient(msg);
         }
 
-        public void GetDataAutoStop()
+        public MsgRecord GetDataAutoStop()
         {
             MsgSend msg = new()
             {
                 EventName = "GetDataAutoStop",
                 ServiceName = Config.Code,
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
 

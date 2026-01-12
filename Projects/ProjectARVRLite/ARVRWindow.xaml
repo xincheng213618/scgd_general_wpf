@@ -225,11 +225,11 @@
                             <hc:StepBarItem Content="初始化"/>
                             <hc:StepBarItem Content="W51"/>
                             <hc:StepBarItem Content="W255"/>
-                            <hc:StepBarItem Content="Black"/>
                             <hc:StepBarItem Content="W25"/>
                             <hc:StepBarItem Content="Chessboard"/>
                             <hc:StepBarItem Content="MTFHV"/>
                             <hc:StepBarItem Content="Distortion"/>
+                            <hc:StepBarItem Content="Ghost"/>
                             <hc:StepBarItem Content="OpticCenter"/>
                         </hc:StepBar>
                     </Border>
@@ -268,6 +268,9 @@
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="EditFix" Command="{Binding FixManager.EditCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="测试类型配置" Command="{Binding TestTypeConfigManager.EditCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>

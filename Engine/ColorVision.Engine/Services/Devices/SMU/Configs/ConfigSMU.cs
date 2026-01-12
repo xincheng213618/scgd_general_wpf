@@ -28,6 +28,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Configs
         private bool _IsSourceV = true;
 
         public string DevName { get => Id; set { Id = value; OnPropertyChanged(); } }
+
         public string DevType { get => _DevType; set { _DevType = value; OnPropertyChanged(); } }
         private string _DevType;
 

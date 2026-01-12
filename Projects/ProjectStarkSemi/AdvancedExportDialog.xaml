@@ -1,0 +1,129 @@
+<Window x:Class="ProjectStarkSemi.AdvancedExportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="高级导出设置" Height="600" Width="500"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource GlobalBackground}">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" Text="高级导出设置" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <!-- Settings -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- File Prefix -->
+                <GroupBox Header="文件设置" Margin="0,0,0,10">
+                    <StackPanel>
+                        <DockPanel Margin="5">
+                            <TextBlock Text="文件前缀:" Width="100" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txtFilePrefix" Text="Conoscope_Export" />
+                        </DockPanel>
+                        <TextBlock Text="提示: 导出的文件将使用 '前缀_通道_时间戳.csv' 格式命名" 
+                                   Margin="5" FontSize="11" Foreground="Gray"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Channel Selection -->
+                <GroupBox Header="通道选择 (可多选)" Margin="0,0,0,10">
+                    <StackPanel>
+                        <CheckBox x:Name="chkChannelR" Content="R 通道" IsChecked="False" Margin="5"/>
+                        <CheckBox x:Name="chkChannelG" Content="G 通道" IsChecked="False" Margin="5"/>
+                        <CheckBox x:Name="chkChannelB" Content="B 通道" IsChecked="False" Margin="5"/>
+                        <CheckBox x:Name="chkChannelX" Content="X 通道" IsChecked="False" Margin="5"/>
+                        <CheckBox x:Name="chkChannelY" Content="Y 通道" IsChecked="True" Margin="5"/>
+                        <CheckBox x:Name="chkChannelZ" Content="Z 通道" IsChecked="False" Margin="5"/>
+                        <TextBlock Text="提示: 每个选中的通道将生成一个单独的文件" 
+                                   Margin="5" FontSize="11" Foreground="Gray"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Export Mode -->
+                <GroupBox Header="导出模式" Margin="0,0,0,10">
+                    <StackPanel>
+                        <CheckBox x:Name="chkExportAzimuth" Content="方位角导出" IsChecked="True" Margin="5"/>
+                        <CheckBox x:Name="chkExportPolar" Content="极角导出" IsChecked="False" Margin="5"/>
+                        <TextBlock Text="提示: 可以同时选择两种模式导出" 
+                                   Margin="5" FontSize="11" Foreground="Gray"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Azimuth Settings -->
+                <GroupBox Header="方位角设置" Margin="0,0,0,10">
+                    <StackPanel>
+                        <DockPanel Margin="5">
+                            <TextBlock Text="方位角步进 (度):" Width="120" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txtAzimuthStep" Text="1" Width="60"/>
+                            <TextBlock Text="(0.01-180)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                        </DockPanel>
+                        <DockPanel Margin="5">
+                            <TextBlock Text="径向采样步进 (度):" Width="120" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txtRadialStep" Text="1" Width="60"/>
+                            <TextBlock Text="(0.01-80)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                        </DockPanel>
+                        <TextBlock Text="提示: 方位角步进控制角度方向采样密度，径向采样步进控制从中心到边缘的采样密度" 
+                                   Margin="5" FontSize="11" Foreground="Gray"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Polar Angle Settings -->
+                <GroupBox Header="极角设置" Margin="0,0,0,10">
+                    <StackPanel>
+                        <DockPanel Margin="5">
+                            <TextBlock Text="圆环步进 (度):" Width="120" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txtPolarStep" Text="1" Width="60"/>
+                            <TextBlock Text="(0.01-80)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                        </DockPanel>
+                        <DockPanel Margin="5">
+                            <TextBlock Text="圆周角步进 (度):" Width="120" VerticalAlignment="Center"/>
+                            <TextBox x:Name="txtCircumferentialStep" Text="1" Width="60"/>
+                            <TextBlock Text="(0.01-360)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                        </DockPanel>
+                        <TextBlock Text="提示: 圆环步进控制圆环数量（半径方向），圆周角步进控制每个圆环上的采样密度" 
+                                   Margin="5" FontSize="11" Foreground="Gray"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Cross-section Export -->
+                <GroupBox Header="截面导出 (可选)" Margin="0,0,0,10">
+                    <StackPanel>
+                        <CheckBox x:Name="chkEnableCrossSection" Content="启用截面导出" Margin="5" Checked="chkEnableCrossSection_Changed" Unchecked="chkEnableCrossSection_Changed"/>
+                        
+                        <StackPanel x:Name="panelCrossSection" IsEnabled="False" Margin="10,5,5,5">
+                            <RadioButton x:Name="rbCrossSectionAzimuth" Content="方位角截面" IsChecked="True" Margin="0,5"/>
+                            <DockPanel Margin="20,5">
+                                <TextBlock Text="方位角 (度):" Width="100" VerticalAlignment="Center"/>
+                                <TextBox x:Name="txtCrossSectionAzimuthAngle" Text="0" Width="60"/>
+                                <TextBlock Text="(0-180)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                            </DockPanel>
+                            
+                            <RadioButton x:Name="rbCrossSectionPolar" Content="极角截面" Margin="0,10,0,5"/>
+                            <DockPanel Margin="20,5">
+                                <TextBlock Text="极角 (度):" Width="100" VerticalAlignment="Center"/>
+                                <TextBox x:Name="txtCrossSectionPolarAngle" Text="45" Width="60"/>
+                                <TextBlock Text="(0-80)" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="Gray"/>
+                            </DockPanel>
+                        </StackPanel>
+                        
+                        <TextBlock Text="提示: 截面导出将仅导出指定角度的单一截面数据" 
+                                   Margin="5" FontSize="11" Foreground="Gray"/>
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button x:Name="btnExport" Content="导出" Width="80" Height="30" Margin="0,0,10,0" Click="btnExport_Click"/>
+            <Button x:Name="btnCancel" Content="取消" Width="80" Height="30" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

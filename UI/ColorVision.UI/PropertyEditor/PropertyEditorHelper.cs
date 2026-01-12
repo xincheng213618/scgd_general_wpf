@@ -162,30 +162,39 @@ namespace ColorVision.UI
         public static IValueConverter Enum2VisibilityReConverter => Resources.Value.Enum2VisibilityReConverter;
 
 
-        public static ResourceManager? GetResourceManager(object obj)
+        public static ResourceManager? GetResourceManager(object obj, ResourceManager resourceManager =null)
         {
             var type = obj.GetType();
-            var lazyResourceManager = ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
+            if (resourceManager == null)
             {
-                try
+                var lazyResourceManager = ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
                 {
-                    string namespaceName = t.Assembly.GetName().Name!;
-                    string resourceClassName = $"{namespaceName}.Properties.Resources";
-                    Type? resourceType = t.Assembly.GetType(resourceClassName);
-                    if (resourceType != null)
+                    try
                     {
-                        var rmProp = resourceType.GetProperty("ResourceManager", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                        if (rmProp?.GetValue(null) is ResourceManager rm)
-                            return rm;
+                        string namespaceName = t.Assembly.GetName().Name!;
+                        string resourceClassName = $"{namespaceName}.Properties.Resources";
+                        Type? resourceType = t.Assembly.GetType(resourceClassName);
+                        if (resourceType != null)
+                        {
+                            var rmProp = resourceType.GetProperty("ResourceManager", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                            if (rmProp?.GetValue(null) is ResourceManager rm)
+                                return rm;
+                        }
                     }
-                }
-                catch
-                {
-                    // ignore and fallback to null
-                }
-                return null;
-            }));
-            return lazyResourceManager.Value;
+                    catch
+                    {
+                        // ignore and fallback to null
+                    }
+                    return null;
+                }));
+                return lazyResourceManager.Value;
+
+            }
+            else
+            {
+                ResourceManagerCache.AddOrUpdate(type, new Lazy<ResourceManager?>(() => resourceManager), (_, __) => new Lazy<ResourceManager?>(() => resourceManager));
+                return resourceManager;
+            }
         }
 
         public static void GenCommand(object obj, UniformGrid uniformGrid)
@@ -290,9 +299,12 @@ namespace ColorVision.UI
             return comboBox;
         }
 
-        public static StackPanel GenPropertyEditorControl(object obj)
+        public static StackPanel GenPropertyEditorControl(object obj,ResourceManager resourceManager =null)
         {
             if (obj == null) return new StackPanel();
+
+            if (resourceManager != null) GetResourceManager(obj, resourceManager);
+
             var categoryGroups = new Dictionary<string, List<PropertyInfo>>(StringComparer.Ordinal);
 
             void CollectProperties(object source)

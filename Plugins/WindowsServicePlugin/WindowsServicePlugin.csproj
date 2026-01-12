@@ -13,15 +13,7 @@
 	</Target>
 
 	<ItemGroup>
-	  <None Remove="Assets\activate.ps1" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <EmbeddedResource Include="Assets\activate.ps1" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -49,6 +41,10 @@
 	  <None Update="README.md">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Assets\" />
 	</ItemGroup>
 
 </Project>

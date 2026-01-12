@@ -131,7 +131,7 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected override string OnGetDrawTitle()
 	{
-		return $"{base.Title}\r\n{base.DeviceCode}";
+		return $"{base.Title}";
 	}
 
 	protected override void OnCreate()
@@ -178,7 +178,7 @@ public class CVBaseServerNode : CVCommonNode
 				logger.InfoFormat("[{0}]OverTime => {1} ms", ToShortString(), maxDelay);
 			}
 			cVTransAction.NodeOverTime(GetFullNodeName());
-			Reset();
+			Reset(cVTransAction);
 			m_op_end.TransferData(cVTransAction.trans_action);
 		}
 		else
@@ -192,8 +192,12 @@ public class CVBaseServerNode : CVCommonNode
 		return _MaxTime;
 	}
 
-	protected virtual void Reset()
+	protected virtual void Reset(CVTransAction trans)
 	{
+		if (trans != null)
+		{
+			Reset(trans.trans_action);
+		}
 	}
 
 	private string GetFullNodeName()
@@ -294,6 +298,10 @@ public class CVBaseServerNode : CVCommonNode
 				string token = GetToken();
 				MQActionEvent act = new MQActionEvent(actionEvent.MsgID, m_nodeName, GetDeviceCode(), GetSendTopic(), actionEvent.EventName, message, token);
 				DoTransferToServer(cVTransAction, act, cmd);
+			}
+			else
+			{
+				cVTransAction.NodeFailed("Build MQTT Request failed", base.DeviceCode);
 			}
 		}
 	}
@@ -427,9 +435,9 @@ public class CVBaseServerNode : CVCommonNode
 		}
 		if (HasData(e))
 		{
-			if (e.TargetOption.Data is CVStartCFC cVStartCFC)
+			if (e.TargetOption.Data is CVStartCFC { SerialNumber: var serialNumber } cVStartCFC)
 			{
-				CVTransAction cVTransByEvent = GetCVTransByEvent(cVStartCFC.SerialNumber, string.Empty);
+				CVTransAction cVTransByEvent = GetCVTransByEvent(serialNumber, string.Empty);
 				if (logger.IsDebugEnabled)
 				{
 					logger.DebugFormat("[{0}]DoServerTransfer => {1}", ToShortString(), cVStartCFC.ToShortString());
@@ -443,7 +451,7 @@ public class CVBaseServerNode : CVCommonNode
 						{
 							foreach (CVBaseEventCmd value in cVTransByEvent.m_sever_actionEvent.Values)
 							{
-								if (value.cmd.SerialNumber.Equals(cVStartCFC.SerialNumber))
+								if (value.cmd.SerialNumber.Equals(serialNumber))
 								{
 									DoTransNodeEndOut(cVTransByEvent, value);
 									break;
@@ -474,9 +482,13 @@ public class CVBaseServerNode : CVCommonNode
 						logger.DebugFormat("[{0}]DoServerTransfer Cancel.", ToShortString());
 					}
 					cVTransByEvent.Cancel();
+					Reset(cVTransByEvent);
+				}
+				else
+				{
+					Reset(cVStartCFC);
 				}
 				m_op_end.TransferData(e.TargetOption.Data);
-				Reset();
 			}
 			else
 			{
@@ -491,6 +503,10 @@ public class CVBaseServerNode : CVCommonNode
 				m_op_svr_out_act.TransferData(null);
 			}
 		}
+	}
+
+	protected virtual void Reset(CVStartCFC action)
+	{
 	}
 
 	protected CVBaseEventCmd AddActionCmd(CVTransAction trans, CVMQTTRequest sendEvent)
@@ -564,9 +580,10 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected virtual void release(string serialNumber)
 	{
+		CVTransAction cVTransAction = null;
 		if (m_trans_action.ContainsKey(serialNumber))
 		{
-			CVTransAction cVTransAction = m_trans_action[serialNumber];
+			cVTransAction = m_trans_action[serialNumber];
 			if (logger.IsDebugEnabled)
 			{
 				logger.DebugFormat("{0} release => {1}", ToShortString(), cVTransAction.trans_action.SerialNumber);
@@ -577,7 +594,7 @@ public class CVBaseServerNode : CVCommonNode
 		{
 			m_op_svr_out_act.TransferData(null);
 		}
-		Reset();
+		Reset(cVTransAction);
 	}
 
 	protected virtual CVMQTTRequest getActionEvent(STNodeOptionEventArgs e)

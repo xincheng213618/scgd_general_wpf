@@ -1,8 +1,11 @@
 using System;
+using System.ComponentModel;
+
 
 namespace ST.Library.UI.NodeEditor;
 
-public class STNodePropertyAttribute : Attribute
+
+public class STNodePropertyAttribute : DisplayNameAttribute
 {
 	private string _Name;
 
@@ -65,7 +68,8 @@ public class STNodePropertyAttribute : Attribute
 
 	public STNodePropertyAttribute(string strKey, string strDesc, bool isEditEnable, bool isHide, bool isReadOnly)
 	{
-		_Name = strKey;
+        DisplayNameValue = strKey;
+        _Name = strKey;
 		_Description = strDesc;
 		_IsEditEnable = isEditEnable;
 		_IsHide = isHide;

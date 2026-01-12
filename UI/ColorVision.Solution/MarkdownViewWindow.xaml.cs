@@ -1,5 +1,6 @@
 using ColorVision.Solution;
 using ColorVision.Themes;
+using ColorVision.UI.Desktop;
 using System.Windows;
 
 namespace ColorVision.UI

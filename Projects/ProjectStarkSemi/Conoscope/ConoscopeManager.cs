@@ -1,11 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using log4net;
 using System.Windows;
 
 namespace ProjectStarkSemi.Conoscope
 {
+
     public class ConoscopeManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ConoscopeManager));
@@ -15,6 +17,7 @@ namespace ProjectStarkSemi.Conoscope
 
         public ConoscopeConfig Config { get; set; }
         public RelayCommand EditConoscopeConfigCommand { get; set; }
+        public FlowEngineManager FlowEngineManager => FlowEngineManager.GetInstance();
 
         public void EditConoscopeConfig()
         {
@@ -26,9 +29,6 @@ namespace ProjectStarkSemi.Conoscope
             Config =ConfigService.Instance.GetRequiredService<ConoscopeConfig>();
             EditConoscopeConfigCommand = new RelayCommand(a=> EditConoscopeConfig());
         }
-
-
-
 
     }
 }

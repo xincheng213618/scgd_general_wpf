@@ -153,7 +153,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     case DeviceStatusType.UnInit:
                         SetVisibility(ButtonInit, Visibility.Visible);
                         break;
-                    case DeviceStatusType.Closing:
                     case DeviceStatusType.Closed:
                         SetVisibility(ButtonOpen, Visibility.Visible);
                         break;
@@ -177,7 +176,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             }
                         }
                         break;
-                    case DeviceStatusType.Opening:
                     case DeviceStatusType.Opened:
                         SetVisibility(StackPanelOpen, Visibility.Visible);
                         SetVisibility(ButtonClose, Visibility.Visible);
@@ -403,9 +401,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ButtonProgressBarGetData.Start();
             ButtonProgressBarGetData.TargetTime = Device.Config.ExpTime + DisplayCameraConfig.TakePictureDelay;
             logger.Info($"正在取图：ExpTime{Device.Config.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
-
-
-
+            Device.SetMsgRecordChanged(msgRecord);
 
             ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
             msgRecord.MsgRecordStateChanged += (s) =>

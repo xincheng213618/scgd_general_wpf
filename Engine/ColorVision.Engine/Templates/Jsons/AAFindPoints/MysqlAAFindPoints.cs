@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 {
     public class MysqlAAFindPoints : IMysqlCommand
     {
-        public string GetMysqlCommandName() => "恢复AA发光区检测";
+        public string GetMysqlCommandName() => "恢复发光区定位检测";
 
         public string GetRecover()
         {

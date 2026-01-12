@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.Flow"
         xmlns:st="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
         mc:Ignorable="d"
-        Title="属性编辑器" Height="450" Width="300"
-        WindowStyle="ToolWindow"
+        Title="属性编辑器" Height="450" Width="450"
+        WindowStyle="None"
         ShowInTaskbar="False"
         Topmost="False"
         Background="{DynamicResource GlobalBackground}"
@@ -19,31 +19,17 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        
-        <!-- Toggle button between property editor and SignStackPanel -->
-        <ToggleButton x:Name="ToggleEditMode" 
-                      Grid.Row="0" 
-                      Margin="5"
-                      Content="切换编辑模式"
-                      IsChecked="False"
-                      Checked="ToggleEditMode_Checked"
-                      Unchecked="ToggleEditMode_Unchecked"/>
-        
+
+        <Button x:Name="ToggleEditMode"  Content="切换编辑模式" Click="ToggleEditMode_Click" HorizontalAlignment="Stretch"  Margin="0,0,0,0"/>
+
         <Grid Grid.Row="1">
-            <!-- Property Grid - shown when toggle is off -->
             <WindowsFormsHost x:Name="PropertyGridHost" 
-                              Visibility="Visible">
+                              Visibility="Collapsed">
                 <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
             </WindowsFormsHost>
-            
-            <!-- SignStackPanel - shown when toggle is on -->
-            <ScrollViewer x:Name="SignStackScrollViewer" 
-                          Visibility="Collapsed"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Auto">
-                <StackPanel x:Name="SignStackPanelContainer" 
-                            Orientation="Vertical" 
-                            Margin="5"/>
+
+            <ScrollViewer x:Name="SignStackScrollViewer"  Visibility="Visible"  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <StackPanel x:Name="SignStackPanelContainer"  Orientation="Vertical"  Margin="5"/>
             </ScrollViewer>
         </Grid>
     </Grid>

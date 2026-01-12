@@ -89,6 +89,8 @@ namespace ProjectARVRLite
 
         public static ObjectiveTestResultFix ObjectiveTestResultFix => FixManager.GetInstance().ObjectiveTestResultFix;
 
+        public static TestTypeConfigManager TestTypeConfigManager => TestTypeConfigManager.GetInstance();
+
         public ARVRWindow()
         {
             InitializeComponent();
@@ -116,7 +118,7 @@ namespace ProjectARVRLite
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ProjectARVRLiteConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
+                    ProjectARVRLiteConfig.Instance.SN = SN;
                 });
             }
         }
@@ -136,13 +138,16 @@ namespace ProjectARVRLite
                 log.Info("PG切换错误，正在执行流程");
                 return;
             }
-            var values = Enum.GetValues(typeof(ARVR1TestType));
-            int currentIndex = Array.IndexOf(values, CurrentTestType);
-            int nextIndex = (currentIndex + 1) % values.Length;
-            // 跳过 None（假设 None 是第一个）
-            if ((ARVR1TestType)values.GetValue(nextIndex) == ARVR1TestType.None)
-                nextIndex = (nextIndex + 1) % values.Length;
-            var TestType = (ARVR1TestType)values.GetValue(nextIndex);
+            
+            // Get next enabled test type from configuration
+            var TestType = TestTypeConfigManager.GetNextEnabledTestType(CurrentTestType);
+            
+            if (TestType == ARVR1TestType.None)
+            {
+                log.Info("没有找到下一个启用的测试类型");
+                IsSwitchRun = false;
+                return;
+            }
 
             try
             {
@@ -156,20 +161,20 @@ namespace ProjectARVRLite
                 if (TestType == ARVR1TestType.White)
                 {
                     ProjectConfig.StepIndex = 2;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White255")).Value;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White255_Ghost_Test")).Value;
                     CurrentTestType = TestType;
                     RunTemplate();
                 }
-                if (TestType == ARVR1TestType.Black)
-                {
-                    ProjectConfig.StepIndex = 3;
-                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Black")).Value;
-                    CurrentTestType = TestType;
-                    RunTemplate();
-                }
+                //if (TestType == ARVR1TestType.Black)
+                //{
+                //    ProjectConfig.StepIndex = 3;
+                //    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Black")).Value;
+                //    CurrentTestType = TestType;
+                //    RunTemplate();
+                //}
                 if (TestType == ARVR1TestType.W25)
                 {
-                    ProjectConfig.StepIndex = 4;
+                    ProjectConfig.StepIndex = 3;
 
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White25")).Value;
                     CurrentTestType = TestType;
@@ -177,7 +182,7 @@ namespace ProjectARVRLite
                 }
                 if (TestType == ARVR1TestType.Chessboard)
                 {
-                    ProjectConfig.StepIndex = 5;
+                    ProjectConfig.StepIndex = 4;
 
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Chessboard")).Value;
                     CurrentTestType = TestType;
@@ -185,7 +190,7 @@ namespace ProjectARVRLite
                 }
                 if (TestType == ARVR1TestType.MTFHV)
                 {
-                    ProjectConfig.StepIndex = 6;
+                    ProjectConfig.StepIndex = 5;
 
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_HV")).Value;
                     CurrentTestType = TestType;
@@ -193,9 +198,16 @@ namespace ProjectARVRLite
                 }
                 if (TestType == ARVR1TestType.Distortion)
                 {
-                    ProjectConfig.StepIndex = 7;
+                    ProjectConfig.StepIndex = 6;
 
                     FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Distortion")).Value;
+                    CurrentTestType = TestType;
+                    RunTemplate();
+                }
+                if (TestType == ARVR1TestType.Ghost)
+                {
+                    ProjectConfig.StepIndex = 7;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White_Ghost_Test")).Value;
                     CurrentTestType = TestType;
                     RunTemplate();
                 }
@@ -206,13 +218,6 @@ namespace ProjectARVRLite
                     CurrentTestType = TestType;
                     RunTemplate();
                 }
-                //if (TestType == ARVR1TestType.Ghost)
-                //{
-                //    ProjectConfig.StepIndex = 8;
-                //    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Ghost")).Value;
-                //    CurrentTestType = TestType;
-                //    RunTemplate();
-                //}
                 if (CurrentTestType != TestType)
                 {
                     log.Info("无法找到测试类型对应的测试模板,正在切换下一张图");
@@ -684,7 +689,7 @@ namespace ProjectARVRLite
                 }
             }
 
-            if (result.Model.Contains("White255"))
+            if (result.Model.Contains("White255_Ghost_Test"))
             {
                 log.Info("正在解析白画面的流程");
                 ObjectiveTestResult.FlowWhiteTestReslut = true;
@@ -701,104 +706,148 @@ namespace ProjectARVRLite
                 {
                     if (AlgResultMaster.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
-                        result.ViewResultWhite.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
-                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
-                        int id = 0;
-                        ObjectiveTestResult.W255PoixyuvDatas.Clear();
-                        foreach (var item in POIPointResultModels)
+                        if (AlgResultMaster.Zindex == 1)
                         {
-                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item) { Id = id++ };
-                            ObjectiveTestResult.W255PoixyuvDatas.Add(new PoixyuvData()
+                            if (AlgResultMaster.ImgFileType == ViewResultAlgType.POI_XYZ)
                             {
-                                Id = poiResultCIExyuvData.Id,
-                                Name = poiResultCIExyuvData.Name,
-                                CCT = poiResultCIExyuvData.CCT * ObjectiveTestResultFix.BlackCenterCorrelatedColorTemperature,
-                                X = poiResultCIExyuvData.X,
-                                Y = poiResultCIExyuvData.Y * ObjectiveTestResultFix.W255CenterLunimance,
-                                Z =poiResultCIExyuvData.Z,
-                                Wave =poiResultCIExyuvData.Wave,
-                                x = poiResultCIExyuvData.x * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesx,
-                                y = poiResultCIExyuvData.y * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesy,
-                                u = poiResultCIExyuvData.u * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesu,
-                                v = poiResultCIExyuvData.v * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesv
-                            });
-                            if (item.PoiName == "POI_5")
-                            {
-                                poiResultCIExyuvData.CCT = poiResultCIExyuvData.CCT * ObjectiveTestResultFix.BlackCenterCorrelatedColorTemperature;
-                                poiResultCIExyuvData.Y = poiResultCIExyuvData.Y * ObjectiveTestResultFix.W255CenterLunimance;
-                                poiResultCIExyuvData.x = poiResultCIExyuvData.x * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesx;
-                                poiResultCIExyuvData.y = poiResultCIExyuvData.y * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesy;
-                                poiResultCIExyuvData.u = poiResultCIExyuvData.u * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesu;
-                                poiResultCIExyuvData.v = poiResultCIExyuvData.v * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesv;
-
-
-
-                                var objectiveTestItem = new ObjectiveTestItem()
+                                List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                                int id = 0;
+                                List<double> points = new List<double>();
+                                foreach (var item in POIPointResultModels)
                                 {
-                                    Name = "CenterCorrelatedColorTemperature",
-                                    TestValue = poiResultCIExyuvData.CCT.ToString(),
-                                    Value = poiResultCIExyuvData.CCT,
-                                    LowLimit = recipeConfig.CenterCorrelatedColorTemperatureMin,
-                                    UpLimit = recipeConfig.CenterCorrelatedColorTemperatureMax
-                                };
-                                ObjectiveTestResult.BlackCenterCorrelatedColorTemperature = objectiveTestItem;
-                                result.ViewResultWhite.CenterCorrelatedColorTemperature = objectiveTestItem;
-                                result.Result = result.Result && objectiveTestItem.TestResult;
-
-
-                                ObjectiveTestResult.W255CenterLunimance = new ObjectiveTestItem()
+                                    PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item) { Id = id++ };
+                                    points.Add(poiResultCIExyuvData.Y);
+                                }
+                                points.Sort();
+                                log.Info($"Ghost Point Max Y: {points.Count}");
+                                if (points.Count >= 2)
                                 {
-                                    Name = "W255CenterLunimance",
-                                    LowLimit = recipeConfig.W255CenterLunimanceMin,
-                                    UpLimit = recipeConfig.W255CenterLunimanceMax,
-                                    Value = poiResultCIExyuvData.Y,
-                                    TestValue = poiResultCIExyuvData.Y.ToString("F3") + " nit"
-                                };
-                                ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem()
-                                {
-                                    Name = "W255CenterCIE1931ChromaticCoordinatesx",
-                                    LowLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesxMin,
-                                    UpLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesxMax,
-                                    Value = poiResultCIExyuvData.x,
-                                    TestValue = poiResultCIExyuvData.x.ToString("F3")
-                                };
-                                ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem()
-                                {
-                                    Name = "W255CenterCIE1931ChromaticCoordinatesy",
-                                    LowLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesyMin,
-                                    UpLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesyMax,
-                                    Value = poiResultCIExyuvData.y,
-                                    TestValue = poiResultCIExyuvData.y.ToString("F3")
-                                };
-                                ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem()
-                                {
-                                    Name = "W255CenterCIE1976ChromaticCoordinatesu",
-                                    LowLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesuMin,
-                                    UpLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesuMax,
-                                    Value = poiResultCIExyuvData.u,
-                                    TestValue = poiResultCIExyuvData.u.ToString("F3")
-                                };
-                                ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem()
-                                {
-                                    Name = "W255CenterCIE1976ChromaticCoordinatesv",
-                                    LowLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesvMin,
-                                    UpLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesvMax,
-                                    Value = poiResultCIExyuvData.v,
-                                    TestValue=poiResultCIExyuvData.v.ToString("F3")
-                                };
+                                    double maxY = points[^1];       // 最大亮度
+                                    double secondMaxY = points[^2]; // 次大亮度
 
+                                    // 比值（避免除零）
+                                    double ratio = maxY != 0 ? secondMaxY / maxY : double.PositiveInfinity;
+                                    // 差值
+                                    log.Info($"Max Y: {maxY}, Second Max Y: {secondMaxY}, Ratio: {ratio}");
+                                    ObjectiveTestResult.Ghost1 = new ObjectiveTestItem()
+                                    {
+                                        Name = "Ghost1",
+                                        LowLimit = recipeConfig.Ghost1Min,
+                                        UpLimit = recipeConfig.Ghost1Max,
+                                        Value = ratio,
+                                        TestValue = ratio.ToString("F4")
+                                    };
+                                    result.ViewResultWhite.Ghost = ObjectiveTestResult.Ghost1;
+                                    result.Result = result.Result && ObjectiveTestResult.Ghost1.TestResult;
 
-                                result.Result = result.Result && ObjectiveTestResult.W255CenterLunimance.TestResult;
-                                result.Result = result.Result && ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesx.TestResult;
-                                result.Result = result.Result && ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesy.TestResult;
-                                result.Result = result.Result && ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesu.TestResult;
-                                result.Result = result.Result && ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesv.TestResult;
-
-
+                                }
                             }
 
-                            result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                         }
+                        else
+                        {
+                            result.ViewResultWhite.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+                            List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                            int id = 0;
+                            ObjectiveTestResult.W255PoixyuvDatas.Clear();
+                            foreach (var item in POIPointResultModels)
+                            {
+                                PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item) { Id = id++ };
+                                ObjectiveTestResult.W255PoixyuvDatas.Add(new PoixyuvData()
+                                {
+                                    Id = poiResultCIExyuvData.Id,
+                                    Name = poiResultCIExyuvData.Name,
+                                    CCT = poiResultCIExyuvData.CCT * ObjectiveTestResultFix.BlackCenterCorrelatedColorTemperature,
+                                    X = poiResultCIExyuvData.X,
+                                    Y = poiResultCIExyuvData.Y * ObjectiveTestResultFix.W255CenterLunimance,
+                                    Z = poiResultCIExyuvData.Z,
+                                    Wave = poiResultCIExyuvData.Wave,
+                                    x = poiResultCIExyuvData.x * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesx,
+                                    y = poiResultCIExyuvData.y * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesy,
+                                    u = poiResultCIExyuvData.u * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesu,
+                                    v = poiResultCIExyuvData.v * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesv
+                                });
+                                if (item.PoiName == "POI_5")
+                                {
+                                    poiResultCIExyuvData.CCT = poiResultCIExyuvData.CCT * ObjectiveTestResultFix.BlackCenterCorrelatedColorTemperature;
+                                    poiResultCIExyuvData.Y = poiResultCIExyuvData.Y * ObjectiveTestResultFix.W255CenterLunimance;
+                                    poiResultCIExyuvData.x = poiResultCIExyuvData.x * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesx;
+                                    poiResultCIExyuvData.y = poiResultCIExyuvData.y * ObjectiveTestResultFix.W255CenterCIE1931ChromaticCoordinatesy;
+                                    poiResultCIExyuvData.u = poiResultCIExyuvData.u * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesu;
+                                    poiResultCIExyuvData.v = poiResultCIExyuvData.v * ObjectiveTestResultFix.W255CenterCIE1976ChromaticCoordinatesv;
+
+
+
+                                    var objectiveTestItem = new ObjectiveTestItem()
+                                    {
+                                        Name = "CenterCorrelatedColorTemperature",
+                                        TestValue = poiResultCIExyuvData.CCT.ToString(),
+                                        Value = poiResultCIExyuvData.CCT,
+                                        LowLimit = recipeConfig.CenterCorrelatedColorTemperatureMin,
+                                        UpLimit = recipeConfig.CenterCorrelatedColorTemperatureMax
+                                    };
+                                    ObjectiveTestResult.BlackCenterCorrelatedColorTemperature = objectiveTestItem;
+                                    result.ViewResultWhite.CenterCorrelatedColorTemperature = objectiveTestItem;
+                                    result.Result = result.Result && objectiveTestItem.TestResult;
+
+
+                                    ObjectiveTestResult.W255CenterLunimance = new ObjectiveTestItem()
+                                    {
+                                        Name = "W255CenterLunimance",
+                                        LowLimit = recipeConfig.W255CenterLunimanceMin,
+                                        UpLimit = recipeConfig.W255CenterLunimanceMax,
+                                        Value = poiResultCIExyuvData.Y,
+                                        TestValue = poiResultCIExyuvData.Y.ToString("F3") + " nit"
+                                    };
+                                    ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesx = new ObjectiveTestItem()
+                                    {
+                                        Name = "W255CenterCIE1931ChromaticCoordinatesx",
+                                        LowLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesxMin,
+                                        UpLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesxMax,
+                                        Value = poiResultCIExyuvData.x,
+                                        TestValue = poiResultCIExyuvData.x.ToString("F3")
+                                    };
+                                    ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesy = new ObjectiveTestItem()
+                                    {
+                                        Name = "W255CenterCIE1931ChromaticCoordinatesy",
+                                        LowLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesyMin,
+                                        UpLimit = recipeConfig.W255CenterCIE1931ChromaticCoordinatesyMax,
+                                        Value = poiResultCIExyuvData.y,
+                                        TestValue = poiResultCIExyuvData.y.ToString("F3")
+                                    };
+                                    ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesu = new ObjectiveTestItem()
+                                    {
+                                        Name = "W255CenterCIE1976ChromaticCoordinatesu",
+                                        LowLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesuMin,
+                                        UpLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesuMax,
+                                        Value = poiResultCIExyuvData.u,
+                                        TestValue = poiResultCIExyuvData.u.ToString("F3")
+                                    };
+                                    ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesv = new ObjectiveTestItem()
+                                    {
+                                        Name = "W255CenterCIE1976ChromaticCoordinatesv",
+                                        LowLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesvMin,
+                                        UpLimit = recipeConfig.W255CenterCIE1976ChromaticCoordinatesvMax,
+                                        Value = poiResultCIExyuvData.v,
+                                        TestValue = poiResultCIExyuvData.v.ToString("F3")
+                                    };
+
+
+                                    result.Result = result.Result && ObjectiveTestResult.W255CenterLunimance.TestResult;
+                                    result.Result = result.Result && ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesx.TestResult;
+                                    result.Result = result.Result && ObjectiveTestResult.W255CenterCIE1931ChromaticCoordinatesy.TestResult;
+                                    result.Result = result.Result && ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesu.TestResult;
+                                    result.Result = result.Result && ObjectiveTestResult.W255CenterCIE1976ChromaticCoordinatesv.TestResult;
+
+
+                                }
+
+                                result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                            }
+                        }
+
+
+      
                     }
                     if (AlgResultMaster.ImgFileType == ColorVision.Engine.ViewResultAlgType.PoiAnalysis)
                     {
@@ -1315,26 +1364,6 @@ namespace ProjectARVRLite
                             }
                             result.ViewRelsultMTFH.MTFDetailViewReslut = mtfresults;
                         }
-                        try
-                        {
-                            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                            string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"MTF_H_{timeStr}.csv");
-                            var csvBuilder = new StringBuilder();
-                            csvBuilder.AppendLine($"name,x,y,w,h,mtfValue");
-                            var mtfs = result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult?.result;
-                            if (mtfs != null)
-                            {
-                                foreach (var item in mtfs)
-                                {
-                                    csvBuilder.AppendLine($"{item.name},{item.x},{item.y},{item.w},{item.h},{item.mtfValue}");
-                                }
-                            }
-                            File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error(ex);
-                        }
 
                     }
                 }
@@ -1510,6 +1539,63 @@ namespace ProjectARVRLite
                 }
 
             }
+
+            else if (result.Model.Contains("White_Ghost_Test"))
+            {
+                log.Info("正在解析White_Ghost_Test的流程");
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                result.TestType = ARVR1TestType.Ghost;
+                if (values.Count > 0)
+                {
+                    result.FileName = values[0].FileUrl;
+                }
+                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+                log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
+                foreach (var AlgResultMaster in AlgResultMasterlists)
+                {
+                    if (AlgResultMaster.ImgFileType == ViewResultAlgType.POI_XYZ)
+                    {
+                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                        int id = 0;
+                        List<double> points = new List<double>();
+                        result.ViewResultWhite.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+
+                        foreach (var item in POIPointResultModels)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item) { Id = id++ };
+                            result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                            points.Add(poiResultCIExyuvData.Y);
+                        }
+                        points.Sort();
+                        log.Info($"Ghost Point Max Y: {points.Count}");
+                        if (points.Count >= 2)
+                        {
+                            double maxY = points[^1];       // 最大亮度
+                            double secondMaxY = points[^2]; // 次大亮度
+
+                            // 比值（避免除零）
+                            double ratio = maxY != 0 ? secondMaxY / maxY : double.PositiveInfinity;
+
+                            // 差值
+                            log.Info($"Max Y: {maxY}, Second Max Y: {secondMaxY}, Ratio: {ratio}");
+                            ObjectiveTestResult.Ghost = new ObjectiveTestItem()
+                            {
+                                Name = "Ghost",
+                                LowLimit = recipeConfig.GhostMin,
+                                UpLimit = recipeConfig.GhostMax,
+                                Value = ratio,
+                                TestValue = ratio.ToString("F4")
+                            };
+
+                            result.ViewResultWhite.Ghost = ObjectiveTestResult.Ghost1;
+                            result.Result = result.Result && ObjectiveTestResult.Ghost1.TestResult;
+                        }
+                    }
+
+                }
+
+
+            }
             else
             {
                 var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
@@ -1520,8 +1606,49 @@ namespace ProjectARVRLite
             }
 
             ViewResultManager.Save(result);
-
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
+
+
+            if (ViewResultManager.Config.IsSaveLink)
+            {
+                string linkPath = ViewResultManager.Config.CsvSavePath;
+                string sn = result.SN;
+
+                if (ViewResultManager.Config.SaveByDate)
+                {
+                    string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                    linkPath = Path.Combine(linkPath, dateFolder);
+                }
+
+                // 处理 SN 不为空的情况
+                if (!string.IsNullOrWhiteSpace(sn))
+                {
+                    // 移除 SN 中的非法文件名字符
+                    foreach (char c in Path.GetInvalidFileNameChars())
+                    {
+                        sn = sn.Replace(c.ToString(), "");
+                    }
+
+                    // 再次检查移除特殊字符后是否为空，如果不为空则组合路径
+                    if (!string.IsNullOrWhiteSpace(sn))
+                    {
+                        linkPath = Path.Combine(linkPath, sn);
+                    }
+                }
+                // 如果 sn 原本为空或清理后为空，linkPath 保持为 ViewResultManager.Config.CsvSavePath
+
+                // 注意：原始代码中是 if (Directory.Exists) Create... 
+                // 这里修正为如果目录不存在(!Exists)则创建，确保路径有效
+                if (!Directory.Exists(linkPath))
+                    Directory.CreateDirectory(linkPath);
+
+                string shortcutName = Path.GetFileNameWithoutExtension(result.FileName) + $"_{result.Model}";
+                string shortcutPath = linkPath;
+
+                if (shortcutName != null)
+                    ColorVision.Common.NativeMethods.ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, result.FileName, "");
+            }
+            IsSaveImageReuslt = ViewResultManager.Config.IsSaveImageReuslt;
 
             if (IsTestTypeCompleted())
             {
@@ -1531,15 +1658,7 @@ namespace ProjectARVRLite
 
         private bool IsTestTypeCompleted()
         {
-            var values = Enum.GetValues(typeof(ARVR1TestType));
-            int currentIndex = Array.IndexOf(values, CurrentTestType);
-            int nextIndex = (currentIndex + 1) % values.Length;
-            // 跳过 None（假设 None 是第一个）
-            if ((ARVR1TestType)values.GetValue(nextIndex) == ARVR1TestType.None)
-                nextIndex = (nextIndex + 1) % values.Length;
-            ARVR1TestType aRVRTestType = (ARVR1TestType)values.GetValue(nextIndex);
-
-            return aRVRTestType >= ProjectConfig.TestTypeCompleted;
+            return !TestTypeConfigManager.HasMoreEnabledTestTypes(CurrentTestType);
         }
 
         private void SwitchPG()
@@ -1551,13 +1670,7 @@ namespace ProjectARVRLite
             }
             log.Info("Socket已经链接 ");
 
-            var values = Enum.GetValues(typeof(ARVR1TestType));
-            int currentIndex = Array.IndexOf(values, CurrentTestType);
-            int nextIndex = (currentIndex + 1) % values.Length;
-            // 跳过 None（假设 None 是第一个）
-            if ((ARVR1TestType)values.GetValue(nextIndex) == ARVR1TestType.None)
-                nextIndex = (nextIndex + 1) % values.Length;
-            ARVR1TestType aRVRTestType = (ARVR1TestType)values.GetValue(nextIndex);
+            var aRVRTestType = TestTypeConfigManager.GetNextEnabledTestType(CurrentTestType);
 
             var response = new SocketResponse
             {
@@ -1588,24 +1701,37 @@ namespace ProjectARVRLite
             ObjectiveTestResult.TotalResult = true;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowW51TestReslut;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowWhiteTestReslut;
-            ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowBlackTestReslut;
+
+            //ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowBlackTestReslut;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowW25TestReslut;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowChessboardTestReslut;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowMTFHVTestReslut;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowDistortionTestReslut;
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && ObjectiveTestResult.FlowOpticCenterTestReslut;
+
             log.Info($"ARVR测试完成,TotalResult {ObjectiveTestResult.TotalResult}");
 
-            string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+            if (ViewResultManager.Config.IsSaveCsv)
+            {
+
+                string linkPath = ViewResultManager.Config.CsvSavePath;
+                if (ViewResultManager.Config.SaveByDate)
+                {
+                    string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                    linkPath = Path.Combine(linkPath, dateFolder);
+                }
 
 
+                string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string filePath = Path.Combine(linkPath, $"TestResults_{SNtextBox.Text}_{timeStr}_.csv");
+                List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
 
-            string filePath = Path.Combine(ViewResultManager.Config.CsvSavePath, $"ObjectiveTestResults_{timeStr}.csv");
+                objectiveTestResults.Add(ObjectiveTestResult);
+                ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
+            }
 
-            List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
 
-            objectiveTestResults.Add(ObjectiveTestResult);
-            ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
             var response = new SocketResponse
             {
                 Version = "1.0",
@@ -1663,30 +1789,13 @@ namespace ProjectARVRLite
                 {
                     if (File.Exists(result.FileName))
                     {
-                        try
-                        {
-                            var fileInfo = new FileInfo(result.FileName);
-                            log.Debug($"fileInfo.Length{fileInfo.Length}");
-                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                            {
-                                log.Debug("文件可以读取，没有被占用。");
-                            }
-                            if (fileInfo.Length > 0)
-                            {
-                                OpenImage(result);
-                            }
-                        }
-                        catch
-                        {
-                            log.Debug("文件还在写入");
-                            await Task.Delay(ViewResultManager.Config.ViewImageReadDelay);
-                            OpenImage(result);
-                        }
+                        OpenImage(result);
                     }
                 });
 
             }
         }
+        public bool IsSaveImageReuslt { get; set; }
 
         public void OpenImage(ProjectARVRReuslt result)
         {
@@ -1757,43 +1866,6 @@ namespace ProjectARVRLite
                 if (result.TestType == ARVR1TestType.W25)
                 {
                     foreach (var poiResultCIExyuvData in result.ViewResultW25.PoiResultCIExyuvDatas)
-                    {
-                        var item = poiResultCIExyuvData.Point;
-                        switch (item.PointType)
-                        {
-                            case POIPointTypes.Circle:
-                                DVCircleText Circle = new DVCircleText();
-                                Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                                Circle.Attribute.Radius = item.Radius;
-                                Circle.Attribute.Brush = Brushes.Transparent;
-                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                                Circle.Attribute.Id = item.Id ?? -1;
-                                Circle.Attribute.Text = item.Name;
-                                Circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
-                                Circle.Render();
-                                ImageView.AddVisual(Circle);
-                                break;
-                            case POIPointTypes.Rect:
-                                DVRectangleText Rectangle = new DVRectangleText();
-                                Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                                Rectangle.Attribute.Brush = Brushes.Transparent;
-                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                                Rectangle.Attribute.Id = item.Id ?? -1;
-                                Rectangle.Attribute.Text = item.Name;
-                                Rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
-                                Rectangle.Render();
-                                ImageView.AddVisual(Rectangle);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                }
-
-                if (result.TestType == ARVR1TestType.Black)
-                {
-
-                    foreach (var poiResultCIExyuvData in result.ViewResultBlack.PoiResultCIExyuvDatas)
                     {
                         var item = poiResultCIExyuvData.Point;
                         switch (item.PointType)
@@ -1906,6 +1978,96 @@ namespace ProjectARVRLite
                         }
                     }
                 }
+                if (result.TestType == ARVR1TestType.Ghost)
+                {
+                    if (result.ViewResultWhite == null || result.ViewResultWhite.PoiResultCIExyuvDatas == null) return;
+
+                    foreach (var poiResultCIExyuvData in result.ViewResultWhite.PoiResultCIExyuvDatas)
+                    {
+                        var item = poiResultCIExyuvData.Point;
+                        switch (item.PointType)
+                        {
+                            case POIPointTypes.Circle:
+                                DVCircleText Circle = new DVCircleText();
+                                Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                                Circle.Attribute.Radius = item.Radius;
+                                Circle.Attribute.Brush = Brushes.Transparent;
+                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Circle.Attribute.Id = item.Id ?? -1;
+                                Circle.Attribute.Text = item.Name;
+                                Circle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Circle.Render();
+                                ImageView.AddVisual(Circle);
+                                break;
+                            case POIPointTypes.Rect:
+                                DVRectangleText Rectangle = new DVRectangleText();
+                                Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                                Rectangle.Attribute.Brush = Brushes.Transparent;
+                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Rectangle.Attribute.Id = item.Id ?? -1;
+                                Rectangle.Attribute.Text = item.Name;
+                                Rectangle.Attribute.Msg = CVRawOpen.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Rectangle.Render();
+                                ImageView.AddVisual(Rectangle);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+
+
+
+                if (IsSaveImageReuslt)
+                {
+                    log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
+                    IsSaveImageReuslt = false;
+                    Task.Run(async () =>
+                    {
+                        await Task.Delay(ViewResultManager.Config.SaveImageReusltDelay);
+                        string linkPath = ViewResultManager.Config.CsvSavePath;
+                        string sn = result.SN;
+
+                        if (ViewResultManager.Config.SaveByDate)
+                        {
+                            string dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                            linkPath = Path.Combine(linkPath, dateFolder);
+                        }
+
+                        // 处理 SN 不为空的情况
+                        if (!string.IsNullOrWhiteSpace(sn))
+                        {
+                            // 移除 SN 中的非法文件名字符
+                            foreach (char c in Path.GetInvalidFileNameChars())
+                            {
+                                sn = sn.Replace(c.ToString(), "");
+                            }
+
+                            // 再次检查移除特殊字符后是否为空，如果不为空则组合路径
+                            if (!string.IsNullOrWhiteSpace(sn))
+                            {
+                                linkPath = Path.Combine(linkPath, sn);
+                            }
+                        }
+
+                        // 如果 sn 原本为空或清理后为空，linkPath 保持为 ViewResultManager.Config.CsvSavePath
+
+                        // 注意：原始代码中是 if (Directory.Exists) Create... 
+                        // 这里修正为如果目录不存在(!Exists)则创建，确保路径有效
+                        if (!Directory.Exists(linkPath))
+                            Directory.CreateDirectory(linkPath);
+
+                        string FileName = Path.GetFileNameWithoutExtension(result.FileName);
+
+                        string FilePath = Path.Combine(linkPath, $"{FileName}_{result.Model}result.png");
+                        log.Info(FilePath);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            ImageView.Save(FilePath);
+                        });
+                    });
+                }
+
 
             });
 
@@ -1946,7 +2108,7 @@ namespace ProjectARVRLite
                     outtext += $"VerticalFieldOfViewAngle:{result.ViewReslutW51.VerticalFieldOfViewAngle.TestValue} LowLimit:{result.ViewReslutW51.VerticalFieldOfViewAngle.LowLimit} UpLimit:{result.ViewReslutW51.VerticalFieldOfViewAngle.UpLimit},Rsult{(result.ViewReslutW51.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
                 case ARVR1TestType.White:
-                    outtext += $"白画面九点圆 测试项：关注点算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
+                    outtext += $"白画面九点Ghost" + Environment.NewLine;
 
                     if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
                     {
@@ -1959,19 +2121,7 @@ namespace ProjectARVRLite
                     outtext += $"CenterCorrelatedColorTemperature:{result.ViewResultWhite.CenterCorrelatedColorTemperature.TestValue}  LowLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.LowLimit} UpLimit:{result.ViewResultWhite.CenterCorrelatedColorTemperature.UpLimit},Rsult{(result.ViewResultWhite.CenterCorrelatedColorTemperature.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     outtext += $"Luminance_uniformity:{result.ViewResultWhite.W255LuminanceUniformity.TestValue} LowLimit:{result.ViewResultWhite.W255LuminanceUniformity.LowLimit}  UpLimit:{result.ViewResultWhite.W255LuminanceUniformity.UpLimit},Rsult{(result.ViewResultWhite.W255LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     outtext += $"Color_uniformity:{result.ViewResultWhite.W255ColorUniformity.TestValue} LowLimit:{result.ViewResultWhite.W255ColorUniformity.LowLimit} UpLimit:{result.ViewResultWhite.W255ColorUniformity.UpLimit},Rsult{(result.ViewResultWhite.W255ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
-
-                    break;
-                case ARVR1TestType.Black:
-                    outtext += $"黑画面 测试项：自动AA区域定位算法+关注点算法+序列对比度算法(中心亮度比值)" + Environment.NewLine;
-                    if (result.ViewResultBlack.PoiResultCIExyuvDatas != null)
-                    {
-                        foreach (var item in result.ViewResultBlack.PoiResultCIExyuvDatas)
-                        {
-                            outtext += $"{item.Name}  X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
-                        }
-                    }
-
-                    outtext += $"FOFOContrast:{result.ViewResultBlack.FOFOContrast.TestValue}  LowLimit:{result.ViewResultBlack.FOFOContrast.LowLimit} UpLimit:{result.ViewResultBlack.FOFOContrast.UpLimit},Rsult{(result.ViewResultBlack.FOFOContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    outtext += $"Ghost:{result.ViewResultWhite.Ghost.TestValue}  LowLimit:{result.ViewResultWhite.Ghost.LowLimit} UpLimit:{result.ViewResultWhite.Ghost.UpLimit},Rsult{(result.ViewResultWhite.Ghost.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
                     break;
                 case ARVR1TestType.W25:
                     outtext += $"W25 测试项：自动AA区域定位算法+关注点算法+序列对比度算法(中心亮度比值)" + Environment.NewLine;
@@ -2018,6 +2168,18 @@ namespace ProjectARVRLite
                         }
                     }
                     outtext += $"ChessboardContrast:{result.ViewReslutCheckerboard.ChessboardContrast.TestValue} LowLimit:{result.ViewReslutCheckerboard.ChessboardContrast.LowLimit}  UpLimit:{result.ViewReslutCheckerboard.ChessboardContrast.UpLimit},Rsult{(result.ViewReslutCheckerboard.ChessboardContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+                    break;
+                case ARVR1TestType.Ghost:
+                    outtext += $"鬼影 测试项：" + Environment.NewLine;
+                    if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
+                    {
+                        foreach (var item in result.ViewResultWhite.PoiResultCIExyuvDatas)
+                        {
+                            outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
+                        }
+                    }
+                    outtext += $"Ghost:{result.ViewResultWhite.Ghost.TestValue}  LowLimit:{result.ViewResultWhite.Ghost.LowLimit} UpLimit:{result.ViewResultWhite.Ghost.UpLimit},Rsult{(result.ViewResultWhite.Ghost.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+
                     break;
                 case ARVR1TestType.OpticCenter:
                     outtext += $"OpticCenter 测试项：" + Environment.NewLine;

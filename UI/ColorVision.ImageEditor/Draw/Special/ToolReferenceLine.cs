@@ -143,7 +143,7 @@ namespace ColorVision.ImageEditor.Draw.Special
             Attribute.Pen = new Pen(Attribute.Brush, 1);
             Attribute.PropertyChanged += (s, e) => Render();
         }
-        public double Ratio { get; set; }
+        public double Ratio { get; set; } = 1;
         public double ActualWidth { get; set; }
         public double ActualHeight { get; set; }
 
@@ -166,6 +166,7 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public override void Render()
         {
+
             using DrawingContext dc = RenderOpen();
             dc.DrawRectangle(SolidColorBrush, new Pen(Brushes.Transparent, 0), new Rect(0,0,ActualWidth,ActualHeight));
 
@@ -397,6 +398,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 
                 // 4. 显示文本信息
                 TextAttribute textAttribute = new();
+
                 textAttribute.FontSize = 15 / Ratio;
                 double a = 15 / Ratio;
                 

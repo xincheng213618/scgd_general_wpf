@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
+using ColorVision.Engine.Templates.Flow;
 using log4net;
 using SqlSugar;
 using System;
@@ -11,6 +12,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows.Xps;
 
 namespace ColorVision.Engine.Batch.IVL
 {
@@ -45,6 +47,8 @@ namespace ColorVision.Engine.Batch.IVL
         public override bool Process(IBatchContext ctx)
         {
             if (ctx?.Batch == null) return false;
+            if (ctx?.Batch.FlowStatus != FlowStatus.Completed) return false;
+
             var batchConfig = ctx.Config;
 
             try
@@ -90,7 +94,7 @@ namespace ColorVision.Engine.Batch.IVL
                     }
 
                     string csvFilePath = Path.Combine(batchConfig.SavePath, $"IV_Scan_{timeStr}.csv");
-                    SaveIVScanToCsv(viewResults, csvFilePath);
+                    SaveIVScanToCsv(viewResults,ctx.FlowName , csvFilePath);
                     log.Info($"IV Scan data saved to: {csvFilePath}");
                 }
 
@@ -120,21 +124,22 @@ namespace ColorVision.Engine.Batch.IVL
             }
         }
 
-        private void SaveIVScanToCsv(ObservableCollection<ViewResultSMU> viewResults, string csvFilePath)
+        private void SaveIVScanToCsv(ObservableCollection<ViewResultSMU> viewResults, string Recipe,string csvFilePath)
         {
             var csvBuilder = new StringBuilder();
 
             // Write header
-            csvBuilder.AppendLine("Time,ScanId,MeasurementType,SrcBegin,SrcEnd,Index,Voltage(V),Current(A)");
+            csvBuilder.AppendLine("Time,Index,Voltage(V),Current(mA),ScanId,SourceMeterType,Recipe,Channel,SrcBegin,SrcEnd");
 
+            int index = 0;
             foreach (var result in viewResults)
             {
                 string measurementTypeStr = result.MeasurementType == MeasurementType.Voltage ? "Voltage" : "Current";
                 string timeStr = result.CreateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "N/A";
-
+                index++;
                 for (int i = 0; i < result.SMUDatas.Count; i++)
                 {
-                    csvBuilder.AppendLine($"{timeStr},{result.Id},{measurementTypeStr},{result.LimitStart},{result.LimitEnd},{i + 1},{result.SMUDatas[i].Voltage},{result.SMUDatas[i].Current}");
+                    csvBuilder.AppendLine($"{timeStr},{index},{result.SMUDatas[i].Voltage},{result.SMUDatas[i].Current},{result.Id},{measurementTypeStr},{Recipe},{result.ChannelType},{result.LimitEnd}{result.LimitStart},{result.LimitEnd}");
                 }
             }
 

@@ -13,7 +13,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.SFR
 {
 
-    [DisplayAlgorithm(51, "SFR", "ARVR")]
+    [DisplayAlgorithm(51, "SFR1.0", "ARVR")]
     public class AlgorithmSFR : DisplayAlgorithmBase
     {
 

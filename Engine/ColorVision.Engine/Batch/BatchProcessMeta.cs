@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.ComponentModel;
@@ -7,6 +8,8 @@ using System.Windows;
 
 namespace ColorVision.Engine.Batch
 {
+
+
     public class BatchProcessMeta:ViewModelBase
     {
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }

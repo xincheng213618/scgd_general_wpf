@@ -141,9 +141,6 @@
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Une version de logiciel</value>
   </data>
-  <data name="Wizard" xml:space="preserve">
-    <value>magicien</value>
-  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Vérifier les mises à jour</value>
   </data>
@@ -191,9 +188,6 @@
   </data>
   <data name="TimeLeft" xml:space="preserve">
     <value>temps restant:</value>
-  </data>
-  <data name="SetupWizard" xml:space="preserve">
-    <value>Assistant de configuration</value>
   </data>
   <data name="Upgrade" xml:space="preserve">
     <value>mise à niveau</value>
@@ -243,15 +237,6 @@
   <data name="Delete" xml:space="preserve">
     <value>Supprimer</value>
   </data>
-  <data name="Previous" xml:space="preserve">
-    <value>Étape précédente</value>
-  </data>
-  <data name="Next" xml:space="preserve">
-    <value>Étape suivante</value>
-  </data>
-  <data name="Finish" xml:space="preserve">
-    <value>Finition</value>
-  </data>
   <data name="DumpFileSettings" xml:space="preserve">
     <value>Paramètres du fichier de sauvegarde</value>
   </data>
@@ -270,32 +255,11 @@
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>Fenêtre de gestion de la configuration</value>
   </data>
-  <data name="BlackMuraDetect" xml:space="preserve">
-    <value>Détection BlackMura</value>
-  </data>
-  <data name="KBDetect" xml:space="preserve">
-    <value>Test du clavier</value>
-  </data>
-  <data name="SectionalDrawing" xml:space="preserve">
-    <value>Coupe transversale</value>
-  </data>
   <data name="OpenConfigFolder" xml:space="preserve">
     <value>Ouvrez le dossier de configuration</value>
   </data>
-  <data name="singleChannel" xml:space="preserve">
-    <value>canal unique</value>
-  </data>
-  <data name="threeChannles" xml:space="preserve">
-    <value>Trois canaux</value>
-  </data>
-  <data name="Step11" xml:space="preserve">
-    <value>Étape 1 / 1</value>
-  </data>
   <data name="Step" xml:space="preserve">
     <value>étape</value>
-  </data>
-  <data name="SkipIncompleteConfigPrompt" xml:space="preserve">
-    <value>Certaines configurations sont encore incomplètes. Voulez-vous les ignorer ?</value>
   </data>
   <data name="UpdateFailed" xml:space="preserve">
     <value>Échec de la mise à jour</value>

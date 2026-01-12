@@ -122,21 +122,6 @@ namespace ColorVision.Engine.Templates.Flow
             _allowClose = true;
             Close();
         }
-
-        private void ToggleEditMode_Checked(object sender, RoutedEventArgs e)
-        {
-            // Show SignStackPanel, hide PropertyGrid
-            PropertyGridHost.Visibility = Visibility.Collapsed;
-            SignStackScrollViewer.Visibility = Visibility.Visible;
-        }
-
-        private void ToggleEditMode_Unchecked(object sender, RoutedEventArgs e)
-        {
-            // Show PropertyGrid, hide SignStackPanel
-            PropertyGridHost.Visibility = Visibility.Visible;
-            SignStackScrollViewer.Visibility = Visibility.Collapsed;
-        }
-
         /// <summary>
         /// Shows the property editor window and activates it
         /// </summary>
@@ -160,6 +145,13 @@ namespace ColorVision.Engine.Templates.Flow
                 // Window was closed, cannot reopen
                 // This should not happen with our Closing event handler, but just in case
             }
+        }
+        private bool IsPropertyGrid = false;
+        private void ToggleEditMode_Click(object sender, RoutedEventArgs e)
+        {
+            IsPropertyGrid = !IsPropertyGrid;
+            PropertyGridHost.Visibility = IsPropertyGrid? Visibility.Visible : Visibility.Collapsed;
+            SignStackScrollViewer.Visibility = IsPropertyGrid ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 }

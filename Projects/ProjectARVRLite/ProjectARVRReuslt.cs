@@ -64,10 +64,6 @@ namespace ProjectARVRLite
         /// </summary>
         White,
         /// <summary>
-        /// 黑画面25
-        /// </summary>
-        Black,
-        /// <summary>
         /// 25的图像
         /// </summary>
         W25,
@@ -83,11 +79,11 @@ namespace ProjectARVRLite
         /// 畸变，9点
         /// </summary>
         Distortion,
+        Ghost,
         /// <summary>
         /// 光轴偏角
         /// </summary>
         OpticCenter,
-        Ghost,
         /// <summary>
         /// 屏幕定位
         /// </summary>
@@ -393,6 +389,11 @@ namespace ProjectARVRLite
         /// 色彩均匀性 测试项
         /// </summary>
         public ObjectiveTestItem W255ColorUniformity { get; set; } = new ObjectiveTestItem();
+
+        /// <summary>
+        /// 鬼影(%) 测试项
+        /// </summary>
+        public ObjectiveTestItem Ghost { get; set; } = new ObjectiveTestItem();
 
     }
 

@@ -179,13 +179,10 @@ namespace ColorVision.Engine.Services.Flow
         public STNodeEditorHelper STNodeEditorHelper { get; set; }
 
         public FlowParam FlowParam { get; set; }
-
-        STNodeTreeView STNodeTreeView1 = new STNodeTreeView();
         
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this;
-            STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
@@ -234,7 +231,7 @@ namespace ColorVision.Engine.Services.Flow
                     );
                 }
             };
-            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain, STNodeTreeView1);
+            STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
         }
 
 
@@ -396,7 +393,6 @@ namespace ColorVision.Engine.Services.Flow
 
             STNodeEditorHelper?.PropertyEditorWindow?.CloseWindow();
             STNodeEditorMain?.Dispose();
-            STNodeTreeView1?.Dispose();
             winf1?.Dispose();
             GC.SuppressFinalize(this);
         }

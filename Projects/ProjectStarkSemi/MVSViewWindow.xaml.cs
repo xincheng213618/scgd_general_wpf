@@ -55,6 +55,11 @@ namespace ProjectStarkSemi
 
         public bool IsCoverBayer { get => _IsCoverBayer; set { _IsCoverBayer = value; OnPropertyChanged(); } }
         private bool _IsCoverBayer = true;
+
+
+        public double Exposure { get => _Exposure; set { _Exposure = value; OnPropertyChanged(); } }
+        private double _Exposure ;
+
     }
 
     public class MVSViewManager
@@ -66,12 +71,15 @@ namespace ProjectStarkSemi
 
         public MVSViewWindowConfig Config { get; set; }
         public RelayCommand EditMVSViewConfigCommand { get; set; }
+        public bool IsOpen { get; set; }
 
         public MVSViewManager() 
         {
             Config = MVSViewWindowConfig.Instance;
             EditMVSViewConfigCommand = new RelayCommand(a => EditMVSViewConfig());
         }
+
+
         public void EditMVSViewConfig()
         {
             new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
@@ -230,7 +238,6 @@ namespace ProjectStarkSemi
         {
             DeviceListAcq();
         }
-
         private void bnOpen_Click(object sender, RoutedEventArgs e)
         {
             writeableBitmap = null;
@@ -294,9 +301,7 @@ namespace ProjectStarkSemi
 
             bnGetParam_Click(null, null);
 
-            // ch:控件操作 | en:Control operation
             bnOpen.IsEnabled = false;
-
             bnClose.IsEnabled = true;
             bnStartGrab.IsEnabled = true;
             bnStopGrab.IsEnabled = false;
@@ -305,12 +310,12 @@ namespace ProjectStarkSemi
             bnTriggerMode.IsEnabled = true;
             cbSoftTrigger.IsEnabled = false;
             bnTriggerExec.IsEnabled = false;
-
-            tbExposure.IsEnabled = true;
             tbGain.IsEnabled = true;
             tbFrameRate.IsEnabled = true;
             bnGetParam.IsEnabled = true;
             bnSetParam.IsEnabled = true;
+
+            MVSViewManager.IsOpen = true;
         }
 
         private void bnClose_Click(object sender, RoutedEventArgs e)
@@ -335,12 +340,12 @@ namespace ProjectStarkSemi
             bnTriggerMode.IsEnabled = false;
             cbSoftTrigger.IsEnabled = false;
             bnTriggerExec.IsEnabled = false;
-
-            tbExposure.IsEnabled = false;
             tbGain.IsEnabled = false;
             tbFrameRate.IsEnabled = false;
             bnGetParam.IsEnabled = false;
             bnSetParam.IsEnabled = false;
+
+            MVSViewManager.IsOpen = false;
         }
 
         private void bnContinuesMode_Checked(object sender, RoutedEventArgs e)
@@ -577,15 +582,6 @@ namespace ProjectStarkSemi
                     }
                     ;
 
-
-                    //stDisplayInfo.hWnd = displayHandle;
-                    //stDisplayInfo.pData = stFrameInfo.pBufAddr;
-                    //stDisplayInfo.nDataLen = stFrameInfo.stFrameInfo.nFrameLen;
-                    //stDisplayInfo.nWidth = stFrameInfo.stFrameInfo.nWidth;
-                    //stDisplayInfo.nHeight = stFrameInfo.stFrameInfo.nHeight;
-                    //stDisplayInfo.enPixelType = stFrameInfo.stFrameInfo.enPixelType;
-                    //m_MyCamera.MV_CC_DisplayOneFrame_NET(ref stDisplayInfo);
-
                     m_MyCamera.MV_CC_FreeImageBuffer_NET(ref stFrameInfo);
                 }
             }
@@ -709,7 +705,7 @@ namespace ProjectStarkSemi
             int nRet = m_MyCamera.MV_CC_GetFloatValue_NET("ExposureTime", ref stParam);
             if (MyCamera.MV_OK == nRet)
             {
-                tbExposure.Text = stParam.fCurValue.ToString("F1");
+                MVSViewManager.Config.Exposure = stParam.fCurValue / 1000;
             }
 
             nRet = m_MyCamera.MV_CC_GetFloatValue_NET("Gain", ref stParam);
@@ -731,7 +727,6 @@ namespace ProjectStarkSemi
         {
             try
             {
-                float.Parse(tbExposure.Text);
                 float.Parse(tbGain.Text);
                 float.Parse(tbFrameRate.Text);
             }
@@ -742,7 +737,7 @@ namespace ProjectStarkSemi
             }
 
             m_MyCamera.MV_CC_SetEnumValue_NET("ExposureAuto", 0);
-            int nRet = m_MyCamera.MV_CC_SetFloatValue_NET("ExposureTime", float.Parse(tbExposure.Text));
+            int nRet = m_MyCamera.MV_CC_SetFloatValue_NET("ExposureTime", (float)MVSViewManager.Config.Exposure*1000);
             if (nRet != MyCamera.MV_OK)
             {
                 ShowErrorMsg("Set Exposure Time Fail!", nRet);
@@ -797,24 +792,17 @@ namespace ProjectStarkSemi
 
         private void tbExposure_TextChanged(object sender, TextChangedEventArgs e)
         {
-            try
+            if (MVSViewManager.IsOpen)
             {
-                float.Parse(tbExposure.Text);
-            }
-            catch
-            {
-                ShowErrorMsg("Please enter correct type!", 0);
-                return;
-            }
-
-            m_MyCamera.MV_CC_SetEnumValue_NET("ExposureAuto", 0);
-            int nRet = m_MyCamera.MV_CC_SetFloatValue_NET("ExposureTime", float.Parse(tbExposure.Text));
-            if (nRet != MyCamera.MV_OK)
-            {
-                ShowErrorMsg("Set Exposure Time Fail!", nRet);
+                m_MyCamera.MV_CC_SetEnumValue_NET("ExposureAuto", 0);
+                int nRet = m_MyCamera.MV_CC_SetFloatValue_NET("ExposureTime", (float)MVSViewManager.Config.Exposure * 1000);
+                if (nRet != MyCamera.MV_OK)
+                {
+                    ShowErrorMsg("Set Exposure Time Fail!", nRet);
+                }
+                UpdateStatusBar();
             }
 
-            UpdateStatusBar();
         }
 
         private void tbFrameRate_TextChanged(object sender, TextChangedEventArgs e)
@@ -884,10 +872,6 @@ namespace ProjectStarkSemi
         // Update status bar with current camera parameters
         private void UpdateStatusBar()
         {
-            if (StatusExposureText != null && !string.IsNullOrEmpty(tbExposure.Text))
-            {
-                StatusExposureText.Text = tbExposure.Text;
-            }
             if (StatusGainText != null && !string.IsNullOrEmpty(tbGain.Text))
             {
                 StatusGainText.Text = tbGain.Text;

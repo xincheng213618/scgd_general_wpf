@@ -141,9 +141,6 @@
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Software Version</value>
   </data>
-  <data name="Wizard" xml:space="preserve">
-    <value>Wizard</value>
-  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Check for updates</value>
   </data>
@@ -191,9 +188,6 @@
   </data>
   <data name="TimeLeft" xml:space="preserve">
     <value>Time Left:</value>
-  </data>
-  <data name="SetupWizard" xml:space="preserve">
-    <value>Configuration wizard</value>
   </data>
   <data name="Upgrade" xml:space="preserve">
     <value>Upgrade</value>
@@ -243,15 +237,6 @@
   <data name="Delete" xml:space="preserve">
     <value>Delete</value>
   </data>
-  <data name="Previous" xml:space="preserve">
-    <value>Previous step</value>
-  </data>
-  <data name="Next" xml:space="preserve">
-    <value>Next step</value>
-  </data>
-  <data name="Finish" xml:space="preserve">
-    <value>Finish</value>
-  </data>
   <data name="DumpFileSettings" xml:space="preserve">
     <value>Dump file settings</value>
   </data>
@@ -270,32 +255,11 @@
   <data name="ConfigurationManagement" xml:space="preserve">
     <value>Configuration Management Window</value>
   </data>
-  <data name="BlackMuraDetect" xml:space="preserve">
-    <value>BlackMura detection</value>
-  </data>
-  <data name="KBDetect" xml:space="preserve">
-    <value>Keyboard test</value>
-  </data>
-  <data name="SectionalDrawing" xml:space="preserve">
-    <value>Cross-section</value>
-  </data>
   <data name="OpenConfigFolder" xml:space="preserve">
     <value>Open the configuration folder</value>
   </data>
-  <data name="singleChannel" xml:space="preserve">
-    <value>single channel</value>
-  </data>
-  <data name="threeChannles" xml:space="preserve">
-    <value>Three-channel</value>
-  </data>
-  <data name="Step11" xml:space="preserve">
-    <value>Step 1 / 1</value>
-  </data>
   <data name="Step" xml:space="preserve">
     <value>step</value>
-  </data>
-  <data name="SkipIncompleteConfigPrompt" xml:space="preserve">
-    <value>There are still some incomplete configurations. Do you want to skip them?</value>
   </data>
   <data name="UpdateFailed" xml:space="preserve">
     <value>Update failed</value>

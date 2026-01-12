@@ -2,6 +2,7 @@
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -9,9 +10,10 @@ namespace ProjectStarkSemi.Conoscope
 {
     public class ConoscopeConfig : ViewModelBase, IConfig
     {
-        public ConoscopeModelType CurrentModel { get => _CurrentModel; set { _CurrentModel = value; OnPropertyChanged(); } }
+        public ConoscopeModelType CurrentModel { get => _CurrentModel; set { if (_CurrentModel == value) return;  _CurrentModel = value; OnPropertyChanged(); ModelTypeChanged?.Invoke(this, _CurrentModel); } }
         private ConoscopeModelType _CurrentModel = ConoscopeModelType.VA80;
 
+        public event EventHandler<ConoscopeModelType> ModelTypeChanged;
 
 
         public double ConoscopeCoefficient { get => _ConoscopeCoefficient; set { _ConoscopeCoefficient = value; OnPropertyChanged(); } }

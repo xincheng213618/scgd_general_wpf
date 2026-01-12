@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
             TextSerial.ItemsSource = Serials;
-            List<string> devTypes = new() { "Keithley_2400", "Keithley_2600", "Precise_S100" };
+            List<string> devTypes = new() { "Keithley_2400", "Keithley_2600", "Precise_S100" , "Vxi11Protocol", "VictualPss" };
             SMUType.ItemsSource = devTypes;
             DataContext = Device;
 

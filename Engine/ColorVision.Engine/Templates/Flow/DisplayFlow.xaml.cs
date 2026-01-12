@@ -114,7 +114,10 @@ namespace ColorVision.Engine.Templates.Flow
 
             this.AddViewConfig(View, ComboxView);
             View.DisplayFlow = this;
-
+            Unselected += (s, e) =>
+            {
+                View.STNodeEditorHelper.PropertyEditorWindow?.Hide();
+            };
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
@@ -136,6 +139,7 @@ namespace ColorVision.Engine.Templates.Flow
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
                 _=Refresh();
             };
+            
 
             MqttRCService.GetInstance().ServiceTokensUpdated += (s, e) =>
             {
@@ -255,7 +259,7 @@ namespace ColorVision.Engine.Templates.Flow
             ButtonStop.Visibility = Visibility.Collapsed;
             string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{Msg1}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
             View.logTextBox.Text = msg;
-            View.ProgressBar1.Value = 100;
+            FlowEngineManager.BatchProgress = 100;
             log.Info(msg);
 
             if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
@@ -265,13 +269,11 @@ namespace ColorVision.Engine.Templates.Flow
                     MarkColorProperty.SetValue(LastNode, System.Drawing.Color.Red);
                 }
             }
-            else if (FlowControlData.EventName == "Completed")
+
+            Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                Application.Current.Dispatcher.BeginInvoke(() =>
-                {
-                    Processing(FlowEngineManager.Batch);
-                });
-            }
+                Processing(FlowEngineManager.Batch);
+            });
         }
         
         private bool PreProcessing(string flowName, string serialNumber)
@@ -345,6 +347,7 @@ namespace ColorVision.Engine.Templates.Flow
                     .Where(m => string.Equals(m.TemplateName, FlowName, StringComparison.OrdinalIgnoreCase) && m.BatchProcess != null)
                     .ToList();
 
+
                 if (matchingMetas.Count > 0)
                 {
                     log.Info($"匹配到 {matchingMetas.Count} 个自定义流程处理 {FlowName}");
@@ -412,7 +415,7 @@ namespace ColorVision.Engine.Templates.Flow
                     if (LastFlowTime != 0)
                     {
                         double perfect = (double) elapsedMilliseconds / (double)LastFlowTime * 100;
-                        View.ProgressBar1.Value = perfect >= 100 ?  99:perfect;
+                        FlowEngineManager.BatchProgress = perfect >= 100 ?  99:perfect;
                     }
                     View.logTextBox.Text = msg;
                 });
@@ -451,6 +454,8 @@ namespace ColorVision.Engine.Templates.Flow
             //DisPlayManager.GetInstance().DisableAllDisPlayControl();
             RunFlow();
         }
+
+
         string FlowName;
         public async void RunFlow()
         {
@@ -514,7 +519,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
-            View.ProgressBar1.Value = 0;
+            FlowEngineManager.BatchProgress = 0;
 
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

@@ -24,23 +24,24 @@ public abstract class BaseStartNode : CVCommonNode
 
 	protected Dictionary<string, List<CVServiceProxy>> topicServerProxy;
 
+	protected int LoopNum = 2;
+
 	public bool Ready { get; set; }
 
 	public bool Running { get; set; }
 
 	public event FlowStartEventHandler Finished;
 
-	protected BaseStartNode(string title)
+	protected BaseStartNode(string title, int loopNum = 2)
 		: base(title, "StartNode", "S1", "DEV01")
 	{
+		LoopNum = loopNum;
 		topicServer = new Dictionary<string, List<CVBaseServerNode>>();
 		topicServerProxy = new Dictionary<string, List<CVServiceProxy>>();
 		startActions = new Dictionary<string, CVStartCFC>();
-		base.AutoSize = false;
 		base.Width = 170;
 		Ready = false;
 		Running = false;
-		base.Height = 80;
 	}
 
 	protected override void OnCreate()
@@ -49,15 +50,15 @@ public abstract class BaseStartNode : CVCommonNode
 		base.TitleColor = Color.FromArgb(200, Color.Goldenrod);
 		m_op_start = new STNodeOption("OUT_START", typeof(CVStartCFC), bSingle: false);
 		base.OutputOptions.Add(m_op_start);
-		m_op_loop = new STNodeOption[2];
-		m_op_loop[0] = base.OutputOptions.Add("OUT_LOOP1", typeof(CVLoopCFC), bSingle: false);
-		m_op_loop[1] = base.OutputOptions.Add("OUT_LOOP2", typeof(CVLoopCFC), bSingle: false);
+		m_op_loop = new STNodeOption[LoopNum];
+		for (int i = 0; i < LoopNum; i++)
+		{
+			m_op_loop[i] = base.OutputOptions.Add($"OUT_LOOP{i + 1}", typeof(CVLoopCFC), bSingle: false);
+			m_op_loop[i].Connected += m_op_loop_Connected;
+			m_op_loop[i].DisConnected += m_op_loop_DisConnected;
+		}
 		m_op_start.Connected += m_op_start_Connected;
 		m_op_start.DisConnected += m_op_start_DisConnected;
-		m_op_loop[0].Connected += m_op_loop_Connected;
-		m_op_loop[1].Connected += m_op_loop_Connected;
-		m_op_loop[0].DisConnected += m_op_loop_DisConnected;
-		m_op_loop[1].DisConnected += m_op_loop_DisConnected;
 		ThreadPool.SetMinThreads(1, 1);
 		ThreadPool.SetMaxThreads(5, 5);
 	}
@@ -191,7 +192,8 @@ public abstract class BaseStartNode : CVCommonNode
 		}
 		if (action != null)
 		{
-			if (!startActions.ContainsKey(action.SerialNumber))
+			string serialNumber = action.SerialNumber;
+			if (string.IsNullOrEmpty(serialNumber) || !startActions.ContainsKey(serialNumber))
 			{
 				if (action.IsRunning)
 				{
@@ -211,7 +213,7 @@ public abstract class BaseStartNode : CVCommonNode
 				DoStatusTransferData(action);
 				return;
 			}
-			CVStartCFC cVStartCFC = startActions[action.SerialNumber];
+			CVStartCFC cVStartCFC = startActions[serialNumber];
 			if (action.IsStop)
 			{
 				cVStartCFC.SetActionType(action.GetActionType());

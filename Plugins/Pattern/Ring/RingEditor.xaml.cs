@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using ColorVision.UI;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
@@ -21,8 +22,9 @@ namespace Pattern.Ring
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(Config));
         }
-		private void BtnPickMainColor_Click(object sender, RoutedEventArgs e)
+        private void BtnPickMainColor_Click(object sender, RoutedEventArgs e)
 		{
 			var ColorPicker1 = new HandyControl.Controls.ColorPicker();
 			ColorPicker1.SelectedBrush = (SolidColorBrush)rectMainColor.Fill;

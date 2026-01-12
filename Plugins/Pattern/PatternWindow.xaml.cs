@@ -252,10 +252,74 @@ namespace Pattern
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
-            Type type = PatternMeta.Pattern.GetType();
-            IPattern pattern = (IPattern)Activator.CreateInstance(type);
-            PatternMeta.Pattern.SetConfig(pattern.GetConfig().ToJsonN());
-            PatternEditorGrid.Child = PatternMeta.Pattern.GetPatternEditor();
+            if (PatternMeta == null) return;
+
+            try
+            {
+                Type type = PatternMeta.Pattern.GetType();
+                
+                // Try to load user default first
+                string userDefault = PatternUserDefaultManager.LoadUserDefault(type);
+                if (userDefault != null)
+                {
+                    // Reset to user default
+                    PatternMeta.Pattern.SetConfig(userDefault);
+                }
+                else
+                {
+                    // Reset to class default
+                    IPattern pattern = (IPattern)Activator.CreateInstance(type);
+                    if (pattern != null)
+                    {
+                        PatternMeta.Pattern.SetConfig(pattern.GetConfig().ToJsonN());
+                    }
+                }
+                
+                PatternEditorGrid.Child = PatternMeta.Pattern.GetPatternEditor();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Failed to reset pattern: {ex.Message}", ex);
+                MessageBox.Show($"重置失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private void ResetSaveAsDefault_Click(object sender, RoutedEventArgs e)
+        {                  
+            if (PatternMeta == null) return;
+
+            try
+            {
+                Type type = PatternMeta.Pattern.GetType();
+
+                // Reset to class default
+                IPattern pattern = (IPattern)Activator.CreateInstance(type);
+                if (pattern != null)
+                {
+                    PatternMeta.Pattern.SetConfig(pattern.GetConfig().ToJsonN());
+                }
+                PatternUserDefaultManager.SaveUserDefault(PatternMeta.Pattern);
+                PatternEditorGrid.Child = PatternMeta.Pattern.GetPatternEditor();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Failed to reset pattern: {ex.Message}", ex);
+                MessageBox.Show($"重置失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void SaveAsDefault_Click(object sender, RoutedEventArgs e)
+        {
+            if (PatternMeta == null) return;
+
+            try
+            {
+                PatternUserDefaultManager.SaveUserDefault(PatternMeta.Pattern);
+                MessageBox.Show("当前配置已保存为默认值", "保存成功", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"保存失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public void SetTemplatePattern(string templatePath)

@@ -86,6 +86,7 @@ namespace ColorVision.Engine.Templates.Flow
         private static readonly object _locker = new();
         public static FlowEngineManager GetInstance() { lock (_locker) { return _instance ??= new FlowEngineManager(); } }
 
+
         public static FlowEngineConfig Config => FlowEngineConfig.Instance;
         public ObservableCollection<TemplateModel<FlowParam>> FlowParams { get; set; } = TemplateFlow.Params;
 
@@ -102,10 +103,16 @@ namespace ColorVision.Engine.Templates.Flow
         public RelayCommand MeasureBatchManagerCommand { get; set; }
         public ViewFlow View { get; set; }
         public FlowEngineControl FlowEngineControl { get; set; }
-        public MeasureBatchModel Batch { get => _Batch; set { _Batch = value; OnPropertyChanged(); } }
+
+        public MeasureBatchModel Batch { get => _Batch; set { _Batch = value; OnPropertyChanged(); BatchRecord?.Invoke(this, _Batch); } }
         private MeasureBatchModel _Batch;
+        public event EventHandler<MeasureBatchModel> BatchRecord;
+
+        public double BatchProgress { get => _BatchProgress; set { _BatchProgress = value; OnPropertyChanged(); } }
+        private double _BatchProgress ;
 
         public ServiceConfig ServiceConfig { get; set; }
+
 
         public ObservableCollection<CVBaseServerNode> CVBaseServerNodes { get; set; } = new ObservableCollection<CVBaseServerNode>();
 
@@ -116,6 +123,8 @@ namespace ColorVision.Engine.Templates.Flow
         public WindowsServiceBase WindowsServiceDev { get; set; }
         public WindowsServiceBase WindowsServiceReg { get; set; }
         public RelayCommand OpenCameraLogCommand { get; set; }
+
+        public Version ServiceVersion => new Version(ServiceConfig.RegistrationCenterServiceInfo.FileVersion ?? string.Empty);
 
         public FlowEngineManager()
         {
