@@ -113,14 +113,19 @@ namespace ColorVision.UI.PropertyEditor.Json
         /// <summary>
         /// Generates an editor control for a single JSON property
         /// </summary>
-        private DockPanel? GenerateControlForProperty(string propertyName, JToken value)
+        private DockPanel? GenerateControlForProperty(string propertyPath, JToken value)
         {
             var dockPanel = new DockPanel { Margin = new Thickness(0, 2, 0, 2) };
+
+            // Extract just the property name (last part after dot) for display
+            var displayName = propertyPath.Contains('.') 
+                ? propertyPath.Substring(propertyPath.LastIndexOf('.') + 1)
+                : propertyPath;
 
             // Create label
             var label = new TextBlock
             {
-                Text = FormatPropertyName(propertyName),
+                Text = FormatPropertyName(displayName),
                 Width = 120,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 5, 0)
@@ -134,28 +139,28 @@ namespace ColorVision.UI.PropertyEditor.Json
             switch (value.Type)
             {
                 case JTokenType.Boolean:
-                    editor = CreateBoolEditor(propertyName, value);
+                    editor = CreateBoolEditor(propertyPath, value);
                     break;
                     
                 case JTokenType.Integer:
                 case JTokenType.Float:
-                    editor = CreateNumericEditor(propertyName, value);
+                    editor = CreateNumericEditor(propertyPath, value);
                     break;
                     
                 case JTokenType.String:
-                    editor = CreateStringEditor(propertyName, value);
+                    editor = CreateStringEditor(propertyPath, value);
                     break;
                     
                 case JTokenType.Array:
-                    editor = CreateArrayEditor(propertyName, value as JArray);
+                    editor = CreateArrayEditor(propertyPath, value as JArray);
                     break;
                     
                 case JTokenType.Object:
-                    editor = CreateObjectEditor(propertyName, value as JObject);
+                    editor = CreateObjectEditor(propertyPath, value as JObject);
                     break;
                     
                 default:
-                    editor = CreateDefaultEditor(propertyName, value);
+                    editor = CreateDefaultEditor(propertyPath, value);
                     break;
             }
 
@@ -232,32 +237,54 @@ namespace ColorVision.UI.PropertyEditor.Json
         }
 
         /// <summary>
-        /// Creates an array editor (displays as JSON text for now)
+        /// Creates an array editor - recursively expands array elements
         /// </summary>
-        private FrameworkElement CreateArrayEditor(string propertyName, JArray? array)
+        private FrameworkElement CreateArrayEditor(string propertyPath, JArray? array)
         {
-            var textBox = new TextBox
+            if (array == null || array.Count == 0)
             {
-                Text = array?.ToString(Formatting.None) ?? "[]",
-                MinWidth = 150
-            };
-            textBox.SetResourceReference(TextBox.StyleProperty, "TextBoxSmallStyle");
+                var emptyText = new TextBlock
+                {
+                    Text = "[]",
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                return emptyText;
+            }
 
-            textBox.LostFocus += (s, e) =>
+            // Create an expander to show/hide array elements
+            var expander = new System.Windows.Controls.Expander
+            {
+                Header = $"[{array.Count} items]",
+                IsExpanded = false,
+                Margin = new Thickness(0, 2, 0, 2)
+            };
+
+            // Create a stack panel for array elements
+            var elementsPanel = new StackPanel
+            {
+                Margin = new Thickness(20, 5, 0, 5) // Indent array elements
+            };
+
+            // Recursively generate controls for each array element
+            for (int i = 0; i < array.Count; i++)
             {
                 try
                 {
-                    var newArray = JArray.Parse(textBox.Text);
-                    UpdateJsonValue(propertyName, newArray);
+                    var elementControl = GenerateControlForProperty(
+                        $"{propertyPath}[{i}]",
+                        array[i]
+                    );
+                    if (elementControl != null)
+                        elementsPanel.Children.Add(elementControl);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Invalid JSON, revert
-                    textBox.Text = array?.ToString(Formatting.None) ?? "[]";
+                    System.Diagnostics.Debug.WriteLine($"Error generating control for array element {i}: {ex.Message}");
                 }
-            };
+            }
 
-            return textBox;
+            expander.Content = elementsPanel;
+            return expander;
         }
 
         /// <summary>
@@ -327,7 +354,7 @@ namespace ColorVision.UI.PropertyEditor.Json
 
         /// <summary>
         /// Updates a value in the JObject and triggers change event
-        /// Supports nested property paths like "parent.child"
+        /// Supports nested property paths like "parent.child" and array indices like "items[0]"
         /// </summary>
         private void UpdateJsonValue(string propertyPath, object? value)
         {
@@ -335,29 +362,88 @@ namespace ColorVision.UI.PropertyEditor.Json
 
             try
             {
-                // Split property path for nested properties
-                var parts = propertyPath.Split('.');
+                JToken current = _jObject;
                 
-                if (parts.Length == 1)
+                // Parse the path which can contain dots and array indices
+                // Examples: "config.timeout", "items[0]", "users[1].name"
+                var pathParts = new List<string>();
+                var currentPart = "";
+                
+                for (int i = 0; i < propertyPath.Length; i++)
                 {
-                    // Simple property
-                    _jObject[propertyPath] = value == null ? JValue.CreateNull() : JToken.FromObject(value);
+                    char c = propertyPath[i];
+                    if (c == '.')
+                    {
+                        if (!string.IsNullOrEmpty(currentPart))
+                        {
+                            pathParts.Add(currentPart);
+                            currentPart = "";
+                        }
+                    }
+                    else if (c == '[')
+                    {
+                        if (!string.IsNullOrEmpty(currentPart))
+                        {
+                            pathParts.Add(currentPart);
+                            currentPart = "";
+                        }
+                        // Find the closing bracket
+                        int closingBracket = propertyPath.IndexOf(']', i);
+                        if (closingBracket > i)
+                        {
+                            pathParts.Add(propertyPath.Substring(i, closingBracket - i + 1)); // Include [ and ]
+                            i = closingBracket;
+                        }
+                    }
+                    else
+                    {
+                        currentPart += c;
+                    }
+                }
+                
+                if (!string.IsNullOrEmpty(currentPart))
+                    pathParts.Add(currentPart);
+                
+                // Navigate to the parent of the property we want to update
+                for (int i = 0; i < pathParts.Count - 1; i++)
+                {
+                    var part = pathParts[i];
+                    if (part.StartsWith("[") && part.EndsWith("]"))
+                    {
+                        // Array index
+                        var indexStr = part.Substring(1, part.Length - 2);
+                        if (int.TryParse(indexStr, out int index))
+                        {
+                            current = current[index];
+                        }
+                    }
+                    else
+                    {
+                        // Object property
+                        current = current[part];
+                    }
+                    
+                    if (current == null)
+                        return; // Path doesn't exist
+                }
+                
+                // Update the final property
+                var lastPart = pathParts[pathParts.Count - 1];
+                if (lastPart.StartsWith("[") && lastPart.EndsWith("]"))
+                {
+                    // Array index
+                    var indexStr = lastPart.Substring(1, lastPart.Length - 2);
+                    if (int.TryParse(indexStr, out int index) && current is JArray arr)
+                    {
+                        arr[index] = value == null ? JValue.CreateNull() : JToken.FromObject(value);
+                    }
                 }
                 else
                 {
-                    // Nested property - navigate to parent
-                    JToken current = _jObject;
-                    for (int i = 0; i < parts.Length - 1; i++)
+                    // Object property
+                    if (current is JObject obj)
                     {
-                        current = current[parts[i]];
-                        if (current == null)
-                            return; // Path doesn't exist
-                    }
-                    
-                    // Set the final property
-                    if (current is JObject parentObj)
-                    {
-                        parentObj[parts[parts.Length - 1]] = value == null ? JValue.CreateNull() : JToken.FromObject(value);
+                        obj[lastPart] = value == null ? JValue.CreateNull() : JToken.FromObject(value);
                     }
                 }
                 
