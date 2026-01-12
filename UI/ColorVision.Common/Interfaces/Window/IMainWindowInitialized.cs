@@ -18,6 +18,7 @@ namespace ColorVision.UI
         public virtual string Name => GetType().Name;
 
         public virtual int Order { get; set; } = 1;
+
         public abstract Task Initialize();
     }
 

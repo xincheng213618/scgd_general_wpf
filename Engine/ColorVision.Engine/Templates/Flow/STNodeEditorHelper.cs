@@ -268,6 +268,9 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => oled.DeviceCode = name, oled.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddImagePath(name => oled.ImgFileName = name, oled.ImgFileName);
                 AddStackPanel(name => oled.TempName = name, oled.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
+                AddStackPanel(name => oled.OutputTemplateName = name, oled.TempName, "PoiOutPut", new TemplatePoiOutputParam());
+
+                
             }
 
 
