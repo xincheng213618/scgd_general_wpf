@@ -185,7 +185,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void RefreshEmptyCamera()
         {
-            Count = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count();
+            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            Count = db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count();
         }
 
 
@@ -386,8 +387,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             var phyCameraBackup = PhyCameras.ToDictionary(pc => pc.Id, pc => pc);
 
-          
-            var list = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(x => x.Type == (int)ServiceTypes.PhyCamera).ToList();
+            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            var list = db.Queryable<SysResourceModel>().Where(x => x.Type == (int)ServiceTypes.PhyCamera).ToList();
             foreach (var item in list)
             {
                 if (!string.IsNullOrWhiteSpace(item.Value))

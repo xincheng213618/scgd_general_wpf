@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ResultOLED_RebuildPixelsMem));
 
-        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.OLED_RebuildPixelsMem ,ViewResultAlgType.OLED_FindDotsArrayOutFile };
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.OLED_FindDotsArrayMem_File, ViewResultAlgType.OLED_FindDotsArrayMem, ViewResultAlgType.OLED_RebuildPixelsMem , ViewResultAlgType.OLED_FindDotsArrayByCornerPts_File, ViewResultAlgType.OLED_FindDotsArrayOutFile };
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
         {
@@ -71,7 +71,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
          
         public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
-            var AlgResultPoiCieFileModel = result.ViewResults.OfType<AlgResultPoiCieFileModel>().First(a => a.FileName.Contains("Y.tif"));
+            var AlgResultPoiCieFileModel = result.ViewResults.OfType<AlgResultPoiCieFileModel>().Where(a => a.FileName.Contains("Y.tif")).FirstOrDefault();
             if (AlgResultPoiCieFileModel != null)
             {
                 if (File.Exists(AlgResultPoiCieFileModel.FileUrl))
@@ -95,7 +95,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
                 foreach (var h in header)
                     gridView.Columns.Add(new GridViewColumn() { Header = h, DisplayMemberBinding = new Binding(h) });
 
-                view.ListView.ItemsSource = result.ViewResults.OfType<AlgResultPoiCieFileModel>();
+                view.ListView.ItemsSource = result.ViewResults.OfType<AlgResultPoiCieFileModel>().ToList();
             }
 
         }

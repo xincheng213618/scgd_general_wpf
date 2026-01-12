@@ -13,9 +13,11 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
     [SugarTable("t_scgd_algorithm_result_detail_poi_cie_file")]
     public class AlgResultPoiCieFileModel : EntityBase, IContextMenu, IViewResult
     {
+        [SugarColumn(IsIgnore =true)]
         public ContextMenu ContextMenu { get; set; }
-
+        [SugarColumn(IsIgnore = true)]
         public RelayCommand OpenFileCommand { get; set; }
+        [SugarColumn(IsIgnore = true)]
         public RelayCommand OpenFolderCommand { get; set; }
 
         public static void ExportCSV(IEnumerable<AlgResultPoiCieFileModel> algResultPoiCieFileModels)
