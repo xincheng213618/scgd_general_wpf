@@ -14,11 +14,16 @@ namespace ColorVision.Engine
         public static string FilePath { get; set; } 
     }
 
-    public class CVCalInitialized : IMainWindowInitialized
+    public class CVCalInitialized : MainWindowInitializedBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVCalInitialized));
 
-        public Task Initialize()
+        public CVCalInitialized()
+        {
+            Order = -1;
+        }
+
+        public override Task Initialize()
         {
             if (string.IsNullOrWhiteSpace(CVXFileProcess.FilePath)) return Task.CompletedTask;
             if (!File.Exists(CVXFileProcess.FilePath)) return Task.CompletedTask;

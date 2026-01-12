@@ -27,11 +27,11 @@ using System.Windows.Media;
 
 namespace ColorVision
 {
-    public class CommadnInitialized : IMainWindowInitialized
+    public class CommadnInitialized : MainWindowInitializedBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CommadnInitialized));
 
-        public Task Initialize()
+        public override Task Initialize()
         {
             log.Info("CommadnInitialized");
             try

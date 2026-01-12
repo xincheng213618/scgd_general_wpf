@@ -20,13 +20,14 @@ namespace ColorVision.Engine
         private Version _Version = new Version(0, 0, 0);
     }
 
-    public class SqlInitialized : IMainWindowInitialized
+    public class SqlInitialized : MainWindowInitializedBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SqlInitialized));
+        
 
         public static Version Version { get; set; } = new Version(4,0 , 1,103);
 
-        public Task Initialize()
+        public override Task Initialize()
         {
             SqlConfig sqlConfig = ConfigService.Instance.GetRequiredService<SqlConfig>();
             if (sqlConfig.Version  < Version)

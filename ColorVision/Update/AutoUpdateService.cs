@@ -11,11 +11,11 @@ using System.Windows;
 
 namespace ColorVision.Update
 {
-    public class AutoUpdateService : IMainWindowInitialized
+    public class AutoUpdateService : MainWindowInitializedBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdateService));
 
-        public Task Initialize() => Check();
+        public override Task Initialize() => Check();
 
         public static async Task Check()
         {
