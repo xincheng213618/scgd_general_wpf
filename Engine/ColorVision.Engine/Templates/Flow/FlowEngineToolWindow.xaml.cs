@@ -24,11 +24,13 @@ namespace ColorVision.Engine.Templates.Flow
           
         }
 
-        public void Process(string filePath)
+        public bool Process(string filePath)
         {
             FlowEngineToolWindow flowEngineToolWindow = new FlowEngineToolWindow();
             flowEngineToolWindow.OpenFlow(filePath);
             flowEngineToolWindow.Show();
+
+            return true;
         }
     }
 

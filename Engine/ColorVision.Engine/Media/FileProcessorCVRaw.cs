@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Impl.SolutionImpl
             new ExportCVCIE(vie).Show();
         }
 
-        public void Process(string filePath)
+        public bool Process(string filePath)
         {
             ImageView imageView = new();
             Window window = new Window() { Title = filePath };
@@ -90,6 +90,8 @@ namespace ColorVision.Engine.Impl.SolutionImpl
             }
             window.ApplyCaption();
             window.Show();
+
+            return true;
         }
     }
 

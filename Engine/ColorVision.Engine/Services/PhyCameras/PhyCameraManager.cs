@@ -41,19 +41,20 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         }
 
-        public void Process(string filePath)
+        public bool Process(string filePath)
         {
-            if (!File.Exists(filePath)) return;
+            if (!File.Exists(filePath)) return false;
             string content = File.ReadAllText(filePath);
-            if (string.IsNullOrWhiteSpace(content)) return;
+            if (string.IsNullOrWhiteSpace(content)) return false;
             string LicenseValue = Tool.Base64Decode(content);
             ColorVisionLicense colorVisionLicense =  JsonConvert.DeserializeObject<ColorVisionLicense>(LicenseValue);
-            if (colorVisionLicense == null) return;
+            if (colorVisionLicense == null) return false;
 
-            if (MessageBox.Show("是否导入许可证" + colorVisionLicense.DeviceMode, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+            if (MessageBox.Show("是否导入许可证" + colorVisionLicense.DeviceMode, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.No) return false;
             LicenseModel licenseModel = PhyLicenseDao.Instance.GetByMAC(Path.GetFileNameWithoutExtension(filePath)) ?? new LicenseModel();
             licenseModel.LicenseValue = content;
             PhyLicenseDao.Instance.Save(licenseModel);
+            return true;
         }
     }
 

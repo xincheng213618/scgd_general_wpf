@@ -129,8 +129,8 @@ namespace ColorVision.UI
             var processor = GetFileProcessor(filePath);
             if (processor != null)
             {
-                processor.Process(filePath);
-                return true;
+                bool result = processor.Process(filePath);
+                return result;
             }
             return false;
         }
