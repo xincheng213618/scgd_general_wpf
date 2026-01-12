@@ -261,32 +261,54 @@ namespace ColorVision.UI.PropertyEditor.Json
         }
 
         /// <summary>
-        /// Creates an object editor (displays as JSON text for now)
+        /// Creates an object editor - recursively expands nested properties
         /// </summary>
         private FrameworkElement CreateObjectEditor(string propertyName, JObject? obj)
         {
-            var textBox = new TextBox
+            if (obj == null || obj.Count == 0)
             {
-                Text = obj?.ToString(Formatting.None) ?? "{}",
-                MinWidth = 150
-            };
-            textBox.SetResourceReference(TextBox.StyleProperty, "TextBoxSmallStyle");
+                var emptyText = new TextBlock
+                {
+                    Text = "{}",
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                return emptyText;
+            }
 
-            textBox.LostFocus += (s, e) =>
+            // Create an expander to show/hide nested properties
+            var expander = new System.Windows.Controls.Expander
+            {
+                Header = $"({obj.Count} properties)",
+                IsExpanded = false,
+                Margin = new Thickness(0, 2, 0, 2)
+            };
+
+            // Create a stack panel for nested properties
+            var nestedPanel = new StackPanel
+            {
+                Margin = new Thickness(20, 5, 0, 5) // Indent nested properties
+            };
+
+            // Recursively generate controls for nested properties
+            foreach (var nestedProp in obj.Properties())
             {
                 try
                 {
-                    var newObj = JObject.Parse(textBox.Text);
-                    UpdateJsonValue(propertyName, newObj);
+                    var nestedControl = GenerateControlForProperty(
+                        $"{propertyName}.{nestedProp.Name}", 
+                        nestedProp.Value
+                    );
+                    if (nestedControl != null)
+                        nestedPanel.Children.Add(nestedControl);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Invalid JSON, revert
-                    textBox.Text = obj?.ToString(Formatting.None) ?? "{}";
+                    System.Diagnostics.Debug.WriteLine($"Error generating nested control for {nestedProp.Name}: {ex.Message}");
                 }
-            };
+            }
 
-            return textBox;
+            expander.Content = nestedPanel;
+            return expander;
         }
 
         /// <summary>
@@ -305,19 +327,45 @@ namespace ColorVision.UI.PropertyEditor.Json
 
         /// <summary>
         /// Updates a value in the JObject and triggers change event
+        /// Supports nested property paths like "parent.child"
         /// </summary>
-        private void UpdateJsonValue(string propertyName, object? value)
+        private void UpdateJsonValue(string propertyPath, object? value)
         {
             if (_jObject == null) return;
 
             try
             {
-                _jObject[propertyName] = value == null ? JValue.CreateNull() : JToken.FromObject(value);
+                // Split property path for nested properties
+                var parts = propertyPath.Split('.');
+                
+                if (parts.Length == 1)
+                {
+                    // Simple property
+                    _jObject[propertyPath] = value == null ? JValue.CreateNull() : JToken.FromObject(value);
+                }
+                else
+                {
+                    // Nested property - navigate to parent
+                    JToken current = _jObject;
+                    for (int i = 0; i < parts.Length - 1; i++)
+                    {
+                        current = current[parts[i]];
+                        if (current == null)
+                            return; // Path doesn't exist
+                    }
+                    
+                    // Set the final property
+                    if (current is JObject parentObj)
+                    {
+                        parentObj[parts[parts.Length - 1]] = value == null ? JValue.CreateNull() : JToken.FromObject(value);
+                    }
+                }
+                
                 OnJsonModified();
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error updating {propertyName}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error updating {propertyPath}: {ex.Message}");
             }
         }
 
