@@ -134,8 +134,14 @@ namespace ColorVision.UI.PropertyEditor.Json
                 {
                     try
                     {
+                        // Debug: Log property type
+                        System.Diagnostics.Debug.WriteLine($"Property: {prop.Name}, Type: {prop.PropertyType.FullName}");
+                        
                         // Get the appropriate editor for this property type
                         var editorType = PropertyEditorHelper.GetEditorTypeForPropertyType(prop.PropertyType);
+                        
+                        System.Diagnostics.Debug.WriteLine($"  EditorType found: {editorType?.FullName ?? "NULL"}");
+                        
                         if (editorType != null)
                         {
                             var editor = PropertyEditorHelper.GetOrCreateEditor(editorType);
@@ -150,7 +156,7 @@ namespace ColorVision.UI.PropertyEditor.Json
                             
                             var label = new TextBlock
                             {
-                                Text = prop.Name,
+                                Text = $"{prop.Name} ({prop.PropertyType.Name})",
                                 Width = 120,
                                 VerticalAlignment = VerticalAlignment.Center
                             };

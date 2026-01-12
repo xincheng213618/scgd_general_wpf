@@ -10,7 +10,7 @@ namespace ColorVision.UI.PropertyEditor.Json
     /// <summary>
     /// Wrapper class for dynamic JSON objects that provides WPF property binding support
     /// </summary>
-    public class JsonObjectWrapper : INotifyPropertyChanged
+    public class JsonObjectWrapper : INotifyPropertyChanged, ICustomTypeDescriptor
     {
         private readonly Dictionary<string, object?> _values = new Dictionary<string, object?>();
         private readonly Dictionary<string, PropertyDescriptor> _propertyDescriptors = new Dictionary<string, PropertyDescriptor>();
@@ -195,5 +195,69 @@ namespace ColorVision.UI.PropertyEditor.Json
                 return GetCustomAttributes(attributeType, inherit).Length > 0;
             }
         }
+
+        #region ICustomTypeDescriptor Implementation
+
+        AttributeCollection ICustomTypeDescriptor.GetAttributes()
+        {
+            return AttributeCollection.Empty;
+        }
+
+        string? ICustomTypeDescriptor.GetClassName()
+        {
+            return nameof(JsonObjectWrapper);
+        }
+
+        string? ICustomTypeDescriptor.GetComponentName()
+        {
+            return null;
+        }
+
+        TypeConverter? ICustomTypeDescriptor.GetConverter()
+        {
+            return null;
+        }
+
+        EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent()
+        {
+            return null;
+        }
+
+        PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty()
+        {
+            return null;
+        }
+
+        object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
+        {
+            return null;
+        }
+
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
+        {
+            return EventDescriptorCollection.Empty;
+        }
+
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes)
+        {
+            return EventDescriptorCollection.Empty;
+        }
+
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
+        {
+            return new PropertyDescriptorCollection(_propertyDescriptors.Values.ToArray());
+        }
+
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
+        {
+            return new PropertyDescriptorCollection(_propertyDescriptors.Values.ToArray());
+        }
+
+        object? ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
+        {
+            return this;
+        }
+
+        #endregion
     }
 }
