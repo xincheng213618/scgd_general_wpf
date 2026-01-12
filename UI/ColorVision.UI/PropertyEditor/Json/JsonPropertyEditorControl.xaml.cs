@@ -1,8 +1,11 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.UI.PropertyEditor.Json
 {
@@ -42,8 +45,17 @@ namespace ColorVision.UI.PropertyEditor.Json
 
                 // Generate PropertyEditor controls
                 PropertyPanel.Children.Clear();
-                var control = PropertyEditorHelper.GenPropertyEditorControl(_currentObject);
-                PropertyPanel.Children.Add(control);
+                
+                // Special handling for JsonObjectWrapper - use its GetProperties method
+                if (_currentObject is JsonObjectWrapper wrapper)
+                {
+                    GeneratePropertiesForJsonWrapper(wrapper);
+                }
+                else
+                {
+                    var control = PropertyEditorHelper.GenPropertyEditorControl(_currentObject);
+                    PropertyPanel.Children.Add(control);
+                }
 
                 // Subscribe to property changes
                 if (_currentObject is System.ComponentModel.INotifyPropertyChanged notifyObj)
@@ -58,6 +70,109 @@ namespace ColorVision.UI.PropertyEditor.Json
             catch (Exception ex)
             {
                 ShowError($"加载错误: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Generates property editor controls for JsonObjectWrapper
+        /// </summary>
+        private void GeneratePropertiesForJsonWrapper(JsonObjectWrapper wrapper)
+        {
+            var properties = wrapper.GetProperties().ToList();
+            
+            if (properties.Count == 0)
+            {
+                var noPropsText = new TextBlock
+                {
+                    Text = "没有可编辑的属性",
+                    Margin = new Thickness(10),
+                    FontStyle = FontStyles.Italic,
+                    Foreground = Brushes.Gray
+                };
+                PropertyPanel.Children.Add(noPropsText);
+                return;
+            }
+
+            // Group properties by category
+            var categoryGroups = new Dictionary<string, List<System.Reflection.PropertyInfo>>();
+            foreach (var prop in properties)
+            {
+                var categoryAttr = prop.GetCustomAttributes(typeof(System.ComponentModel.CategoryAttribute), true)
+                    .FirstOrDefault() as System.ComponentModel.CategoryAttribute;
+                string category = categoryAttr?.Category ?? "JSON Properties";
+
+                if (!categoryGroups.ContainsKey(category))
+                    categoryGroups[category] = new List<System.Reflection.PropertyInfo>();
+                    
+                categoryGroups[category].Add(prop);
+            }
+
+            // Generate UI for each category
+            foreach (var categoryGroup in categoryGroups)
+            {
+                // Category header border
+                var categoryBorder = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromArgb(40, 128, 128, 128)),
+                    Padding = new Thickness(5),
+                    Margin = new Thickness(0, 5, 0, 2),
+                    CornerRadius = new CornerRadius(3)
+                };
+
+                var categoryText = new TextBlock
+                {
+                    Text = categoryGroup.Key,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = Brushes.White
+                };
+
+                categoryBorder.Child = categoryText;
+                PropertyPanel.Children.Add(categoryBorder);
+
+                // Generate controls for each property
+                foreach (var prop in categoryGroup.Value)
+                {
+                    try
+                    {
+                        // Get the appropriate editor for this property type
+                        var editorType = PropertyEditorHelper.GetEditorTypeForPropertyType(prop.PropertyType);
+                        if (editorType != null)
+                        {
+                            var editor = PropertyEditorHelper.GetOrCreateEditor(editorType);
+                            var control = editor.GenProperties(prop, wrapper);
+                            if (control != null)
+                                PropertyPanel.Children.Add(control);
+                        }
+                        else
+                        {
+                            // Fallback to default rendering
+                            var dockPanel = new DockPanel { Margin = new Thickness(0, 2, 0, 2) };
+                            
+                            var label = new TextBlock
+                            {
+                                Text = prop.Name,
+                                Width = 120,
+                                VerticalAlignment = VerticalAlignment.Center
+                            };
+                            dockPanel.Children.Add(label);
+                            DockPanel.SetDock(label, Dock.Left);
+                            
+                            var valueText = new TextBlock
+                            {
+                                Text = prop.GetValue(wrapper)?.ToString() ?? "(null)",
+                                VerticalAlignment = VerticalAlignment.Center
+                            };
+                            dockPanel.Children.Add(valueText);
+                            
+                            PropertyPanel.Children.Add(dockPanel);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error but continue with other properties
+                        System.Diagnostics.Debug.WriteLine($"Error generating control for property {prop.Name}: {ex.Message}");
+                    }
+                }
             }
         }
 
