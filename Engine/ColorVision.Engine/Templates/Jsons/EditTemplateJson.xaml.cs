@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Templates.Jsons
         public double Width { get => _Width; set { _Width = value; } }
         private double _Width = double.NaN;
 
-        public bool UsePropertyEditor { get; set; } = false;
+        public bool UsePropertyEditor { get; set; } = false; // Default to text editor mode
     }
 
     public partial class EditTemplateJson : UserControl, ITemplateUserControl
@@ -82,6 +82,18 @@ namespace ColorVision.Engine.Templates.Jsons
                 textEditor.TextChanged -= TextEditor_TextChanged;
                 textEditor.TextChanged += TextEditor_TextChanged;
 
+                // If in property editor mode, refresh the property editor with new data
+                if (_isInPropertyEditorMode)
+                {
+                    try
+                    {
+                        propertyEditor.SetJson(IEditTemplateJson.JsonValue);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error refreshing property editor: {ex.Message}");
+                    }
+                }
             }
             DescriptionButton.IsChecked = false;
         }

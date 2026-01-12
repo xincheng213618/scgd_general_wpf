@@ -341,7 +341,7 @@ namespace ColorVision.UI.PropertyEditor.Json
             var expander = new System.Windows.Controls.Expander
             {
                 Header = $"[{array.Count} items]",
-                IsExpanded = false,
+                IsExpanded = true, // Expanded by default
                 Margin = new Thickness(0, 2, 0, 2)
             };
 
@@ -392,7 +392,7 @@ namespace ColorVision.UI.PropertyEditor.Json
             var expander = new System.Windows.Controls.Expander
             {
                 Header = $"({obj.Count} properties)",
-                IsExpanded = false,
+                IsExpanded = true, // Expanded by default
                 Margin = new Thickness(0, 2, 0, 2)
             };
 
