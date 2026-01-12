@@ -11,7 +11,7 @@ using System.Windows;
 namespace WindowsServicePlugin.CVWinSMS
 {
 
-    public class InstallTool : MenuItemBase, IWizardStep, IMainWindowInitialized
+    public class InstallTool : MenuItemBase, IWizardStep
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(InstallTool));
 

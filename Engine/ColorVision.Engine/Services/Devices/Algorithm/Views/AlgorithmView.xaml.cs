@@ -4,6 +4,7 @@ using ColorVision.ImageEditor;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using log4net;
+using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -339,7 +340,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private void Inquire_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            var query = MySqlControl.GetInstance().DB.Queryable<AlgResultMasterModel>();
+            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            var query = db.Queryable<AlgResultMasterModel>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
