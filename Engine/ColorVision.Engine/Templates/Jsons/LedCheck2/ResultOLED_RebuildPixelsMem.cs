@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
          
         public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
-            var AlgResultPoiCieFileModel = result.ViewResults.OfType<AlgResultPoiCieFileModel>().Where(a => a.FileName.Contains("Y.tif")).FirstOrDefault();
+            var AlgResultPoiCieFileModel = result.ViewResults.OfType<AlgResultPoiCieFileModel>().Where(a => a.FileUrl.Contains("Y.tif")).FirstOrDefault();
             if (AlgResultPoiCieFileModel != null && AlgResultPoiCieFileModel.FileUrl !=null)
             {
                 string originalPath = AlgResultPoiCieFileModel.FileUrl;
@@ -84,7 +84,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
                 {
                     if (!src.Empty())
                     {
-                        if (src.Depth() == MatType.CV_16U || src.Depth() == MatType.CV_16S)
+                        if (src.Depth() == MatType.CV_32F || src.Depth() == MatType.CV_16U || src.Depth() == MatType.CV_16S)
                         {
                             src.ConvertTo(dst8Bit, MatType.CV_8U, 1.0 / 256.0);
                         }
@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
                         {
                             src.ConvertTo(dst8Bit, MatType.CV_8U);
                         }
-                        view.ImageView.SetImageSource(src.ToWriteableBitmap());
+                        view.ImageView.SetImageSource(dst8Bit.ToWriteableBitmap());
                     }
                 }
             }
