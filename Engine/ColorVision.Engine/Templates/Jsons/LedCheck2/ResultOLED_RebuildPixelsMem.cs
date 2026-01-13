@@ -71,7 +71,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
             }
         }
          
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext context, ViewResultAlg result)
         {
             var AlgResultPoiCieFileModel = result.ViewResults.OfType<AlgResultPoiCieFileModel>().Where(a => a.FileUrl.Contains("Y.tif")).FirstOrDefault();
             if (AlgResultPoiCieFileModel != null && AlgResultPoiCieFileModel.FileUrl !=null)
@@ -92,26 +92,28 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
                         {
                             src.ConvertTo(dst8Bit, MatType.CV_8U);
                         }
-                        view.ImageView.SetImageSource(dst8Bit.ToWriteableBitmap());
+                        context.ImageView.Config.AddProperties("FilePath", originalPath);
+                        context.ImageView.SetImageSource(dst8Bit.ToWriteableBitmap());
+                        context.ImageView.UpdateZoomAndScale();
                     }
                 }
             }
             else
             {
                 if (File.Exists(result.FilePath))
-                    view.ImageView.OpenImage(result.FilePath);
+                    context.ImageView.OpenImage(result.FilePath);
 
             }
 
             List<string> header = new() { "FileUrl", "FileName"};
-            if (view.ListView.View is GridView gridView)
+            if (context.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                context.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 foreach (var h in header)
                     gridView.Columns.Add(new GridViewColumn() { Header = h, DisplayMemberBinding = new Binding(h) });
 
-                view.ListView.ItemsSource = result.ViewResults.OfType<AlgResultPoiCieFileModel>().ToList();
+                context.ListView.ItemsSource = result.ViewResults.OfType<AlgResultPoiCieFileModel>().ToList();
             }
 
         }

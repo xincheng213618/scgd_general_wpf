@@ -38,7 +38,7 @@ namespace ColorVision.Engine
         /// <summary>
         /// 处理算法结果
         /// </summary>
-        void Handle(ViewResultContext ctx, ViewResultAlg result);
+        void Handle(ViewResultContext context, ViewResultAlg result);
 
         /// <summary>
         /// 保存侧边栏数据
