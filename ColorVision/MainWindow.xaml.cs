@@ -14,6 +14,7 @@ using Microsoft.Xaml.Behaviors.Layout;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -208,22 +209,29 @@ namespace ColorVision
 
         public static async void LoadIMainWindowInitialized() 
         {
+            List<IMainWindowInitialized> IMainWindowInitializeds = new List<IMainWindowInitialized>();
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IMainWindowInitialized).IsAssignableFrom(t) && !t.IsAbstract))
                 {
                     if (Activator.CreateInstance(type) is IMainWindowInitialized componentInitialize)
                     {
-                        try
-                        {
-                            await componentInitialize.Initialize();
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error(ex);
-                        }
+                        IMainWindowInitializeds .Add(componentInitialize);
+  
                     }
                 }
+            }
+            foreach (var componentInitialize in IMainWindowInitializeds.OrderBy(a => a.Order))
+            {
+                try
+                {
+                    await componentInitialize.Initialize();
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
+
             }
         }
 
