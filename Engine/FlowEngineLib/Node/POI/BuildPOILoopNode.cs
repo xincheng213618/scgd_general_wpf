@@ -34,7 +34,10 @@ public class BuildPOILoopNode : CVBaseLoopServerNode<POINodeProperty>
 			Width = 0f,
 			Height = 0f
 		};
-		BuildPOIData buildPOIData = new BuildPOIData(property.ImgFileName, -1, property.TempName, property.POIOutput, property.OutputFileName, string.Empty, POIBuildType.Common, poiData, string.Empty, string.Empty, 1024);
+		_ImgFileName = property.ImgFileName;
+		_TempName = property.TempName;
+		BuildPOIData buildPOIData = new BuildPOIData(property.POIOutput, property.OutputFileName, string.Empty, POIBuildType.Common, poiData, string.Empty, string.Empty, 1024);
+		BuildImageParam(buildPOIData);
 		getPreStepParam(start, buildPOIData);
 		return buildPOIData;
 	}

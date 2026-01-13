@@ -1,4 +1,3 @@
-using System.IO;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
@@ -10,12 +9,6 @@ public class OLEDImageCroppingNode : CVBaseServerNodeIn2Hub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDImageCroppingNode));
 
-	private string _TempName;
-
-	private string _ImgFileName;
-
-	private STNodeEditText<string> m_ctrl_temp;
-
 	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TempName
 	{
@@ -25,8 +18,7 @@ public class OLEDImageCroppingNode : CVBaseServerNodeIn2Hub
 		}
 		set
 		{
-			_TempName = value;
-			m_ctrl_temp.Value = value;
+			setTempName(value);
 		}
 	}
 
@@ -50,46 +42,22 @@ public class OLEDImageCroppingNode : CVBaseServerNodeIn2Hub
 		operatorCode = "OLED.GetRIAand";
 		m_in_text = "IN_IMG";
 		m_in2_text = "IN_ROI";
-		_TempName = "";
 	}
 
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", _TempName);
+		CreateTempControl(m_custom_item);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-		OLEDImageCroppingParam oLEDImageCroppingParam = new OLEDImageCroppingParam(_TempName, _ImgFileName);
-		if (!string.IsNullOrEmpty(_ImgFileName) && File.Exists(_ImgFileName))
-		{
-			string text = Path.GetExtension(_ImgFileName).ToLower();
-			if (text.Contains("tif"))
-			{
-				oLEDImageCroppingParam.FileType = FileExtType.Tif;
-			}
-			else if (text.Contains("cvraw"))
-			{
-				oLEDImageCroppingParam.FileType = FileExtType.Raw;
-			}
-			else if (text.Contains("cvcie"))
-			{
-				oLEDImageCroppingParam.FileType = FileExtType.CIE;
-			}
-			else
-			{
-				oLEDImageCroppingParam.FileType = FileExtType.Tif;
-			}
-		}
-		else
-		{
-			oLEDImageCroppingParam.FileType = FileExtType.None;
-		}
+		OLEDImageCroppingParam oLEDImageCroppingParam = new OLEDImageCroppingParam();
 		getPreStepParam(0, oLEDImageCroppingParam);
 		getPreStepParam(1, algorithmPreStepParam);
 		oLEDImageCroppingParam.ROI_MasterId = algorithmPreStepParam.MasterId;
+		BuildImageParam(oLEDImageCroppingParam);
 		return oLEDImageCroppingParam;
 	}
 }

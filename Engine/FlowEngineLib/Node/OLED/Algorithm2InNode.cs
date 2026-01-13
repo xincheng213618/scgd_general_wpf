@@ -12,17 +12,11 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 
 	private int _OrderIndex;
 
-	private string _TempName;
-
-	private int _TempId;
-
 	private Algorithm2Type _Algorithm;
 
 	private int _BufferLen;
 
 	private bool _IsAdd;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<Algorithm2Type> m_ctrl_editText;
 
@@ -35,22 +29,7 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 		}
 		set
 		{
-			_TempName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -94,11 +73,6 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
-	}
-
 	public Algorithm2InNode()
 		: base("AI算法2", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
@@ -119,7 +93,7 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 		base.OnCreate();
 		m_ctrl_editText = CreateControl(typeof(STNodeEditText<Algorithm2Type>), m_custom_item, "算子:", _Algorithm);
 		m_custom_item.Y += 25;
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
+		CreateTempControl(m_custom_item);
 	}
 
 	private void setAlgorithmType()
@@ -158,10 +132,11 @@ public class Algorithm2InNode : CVBaseServerNodeIn2Hub
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-		Algorithm2InParam algorithm2InParam = new Algorithm2InParam(_TempName, _IsAdd, -1, _OrderIndex, _BufferLen);
+		Algorithm2InParam algorithm2InParam = new Algorithm2InParam(_IsAdd, -1, _OrderIndex, _BufferLen);
 		getPreStepParam(0, algorithm2InParam);
 		getPreStepParam(1, algorithmPreStepParam);
 		algorithm2InParam.POI_MasterId = algorithmPreStepParam.MasterId;
+		algorithm2InParam.TemplateParam = BuildTemp();
 		algorithm2InParam.SMUData = GetSMUResult(start);
 		return algorithm2InParam;
 	}

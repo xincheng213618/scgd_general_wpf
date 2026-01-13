@@ -10,10 +10,6 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(BuildPOI2Node));
 
-	private string _TemplateName;
-
-	private int _TempId;
-
 	private POIBuildType _BuildType;
 
 	private string _PrefixName;
@@ -23,8 +19,6 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 	private int _POIHeight;
 
 	private int _POIWidth;
-
-	private string _ImgFileName;
 
 	private POIStorageModel _POIOutput;
 
@@ -36,8 +30,6 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 
 	private STNodeEditText<POIBuildType> m_ctrl_type;
 
-	private STNodeEditText<string> m_ctrl_temp;
-
 	private STNodeEditText<string> m_ctrl_poi_type;
 
 	private STNodeEditText<string> m_ctrl_out;
@@ -47,26 +39,11 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 	{
 		get
 		{
-			return _TemplateName;
+			return _TempName;
 		}
 		set
 		{
-			_TemplateName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -190,11 +167,6 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TemplateName}";
-	}
-
 	private void setPOIType(POIPointTypes value)
 	{
 		_POIType = value;
@@ -210,8 +182,6 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 		_OutputFileName = "pos.csv";
 		_BuildType = POIBuildType.CADMapping;
 		_POIType = POIPointTypes.None;
-		_TemplateName = string.Empty;
-		_TempId = -1;
 		_PrefixName = string.Empty;
 		_SavePOITempName = string.Empty;
 		_BufferLen = 1024;
@@ -223,11 +193,11 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 		base.OnCreate();
 		m_ctrl_type = CreateControl(typeof(STNodeEditText<POIBuildType>), m_custom_item, "类别:", _BuildType);
 		m_custom_item.Y += 25;
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TemplateName}");
+		CreateTempControl(m_custom_item);
 		m_custom_item.Y += 25;
-		m_ctrl_poi_type = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "点类型:", getTypeSize());
+		m_ctrl_poi_type = CreateStringControl(m_custom_item, "点类型:", getTypeSize());
 		m_custom_item.Y += 25;
-		m_ctrl_out = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "P/O:", getOutputPre());
+		m_ctrl_out = CreateStringControl(m_custom_item, "P/O:", getOutputPre());
 	}
 
 	private void setBuildType()
@@ -266,7 +236,8 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 			Width = _POIWidth,
 			Height = _POIHeight
 		};
-		BuildPOIData buildPOIData = new BuildPOIData(_ImgFileName, new CADMappingParam(algorithmPreStepParam.MasterId), _TempId, _TemplateName, _POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, string.Empty, _BufferLen);
+		BuildPOIData buildPOIData = new BuildPOIData(new CADMappingParam(algorithmPreStepParam.MasterId), _POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, string.Empty, _BufferLen);
+		BuildImageParam(buildPOIData);
 		getPreStepParam(0, buildPOIData);
 		return buildPOIData;
 	}
@@ -279,7 +250,8 @@ public class BuildPOI2Node : CVBaseServerNodeIn2Hub
 			Width = _POIWidth,
 			Height = _POIHeight
 		};
-		BuildPOIData buildPOIData = new BuildPOIData(_ImgFileName, _TempId, _TemplateName, _POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, string.Empty, _BufferLen);
+		BuildPOIData buildPOIData = new BuildPOIData(_POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, string.Empty, _BufferLen);
+		BuildImageParam(buildPOIData);
 		getPreStepParam(start, buildPOIData);
 		return buildPOIData;
 	}

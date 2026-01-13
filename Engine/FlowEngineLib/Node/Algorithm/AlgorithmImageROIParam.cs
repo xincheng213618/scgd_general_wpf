@@ -2,11 +2,11 @@ using FlowEngineLib.Algorithm;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-public class AlgorithmCaliParam : AlgorithmImageParam
+public class AlgorithmImageROIParam : AlgorithmImageParam
 {
 	public string ResultDataFileName { get; set; }
 
-	public AlgorithmCaliParam(string outputImgFile)
+	public AlgorithmImageROIParam(string outputImgFile)
 	{
 		ResultDataFileName = outputImgFile;
 	}

@@ -14,21 +14,13 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 
 	private CVOLED_COLOR _Color;
 
-	private string _TempName;
-
-	private int _TempId;
-
 	private CVOLED_FDAType _FDAType;
 
 	private PointFloat[] _FixedLEDPoint;
 
-	private string _ImgFileName;
-
 	private string _OutputFileName;
 
 	private string _ImgPosResultFile;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<AlgorithmOLEDType> m_ctrl_editText;
 
@@ -72,21 +64,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		set
 		{
 			_TempName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -155,11 +133,6 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
-	}
-
 	public AlgorithmOLEDNode()
 		: base("OLED算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
@@ -199,7 +172,7 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 		base.OnCreate();
 		m_ctrl_editText = CreateControl(typeof(STNodeEditText<AlgorithmOLEDType>), m_custom_item, "算法:", _Algorithm);
 		m_custom_item.Y += 25;
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
+		CreateTempControl(m_custom_item);
 		m_custom_item.Y += 25;
 		m_ctrl_color = CreateControl(typeof(STNodeEditText<CVOLED_COLOR>), m_custom_item, "颜色:", _Color);
 	}
@@ -212,19 +185,9 @@ public class AlgorithmOLEDNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		AlgorithmOLEDParam algorithmOLEDParam = null;
-		algorithmOLEDParam = new AlgorithmOLEDParam(_Color, _OutputFileName);
-		algorithmOLEDParam.ImgPosResultFile = _ImgPosResultFile;
-		algorithmOLEDParam.ImgFileName = _ImgFileName;
-		algorithmOLEDParam.FileType = GetImageFileType(_ImgFileName);
-		algorithmOLEDParam.FixedLEDPoint = _FixedLEDPoint;
-		algorithmOLEDParam.TemplateParam = new CVTemplateParam
-		{
-			ID = _TempId,
-			Name = _TempName
-		};
+		AlgorithmOLEDParam algorithmOLEDParam = new AlgorithmOLEDParam(_OutputFileName, _FDAType, _ImgPosResultFile, _FixedLEDPoint);
 		getPreStepParam(start, algorithmOLEDParam);
-		algorithmOLEDParam.FDAType = _FDAType;
+		BuildImageParam(_Color, algorithmOLEDParam);
 		return algorithmOLEDParam;
 	}
 }

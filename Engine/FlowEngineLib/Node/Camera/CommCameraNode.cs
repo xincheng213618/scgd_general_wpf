@@ -18,8 +18,6 @@ public class CommCameraNode : CVBaseServerNode
 
 	protected bool _IsAutoExp;
 
-	private string _TempName;
-
 	private bool _IsWithND;
 
 	protected bool _IsAutoFocus;

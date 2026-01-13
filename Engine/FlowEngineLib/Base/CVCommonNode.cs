@@ -114,19 +114,31 @@ public class CVCommonNode : STNode
 
 	protected STNodeEditText<T> CreateControl<T>(Type clsType, Rectangle rect, string text, T value)
 	{
+		if (clsType == null)
+		{
+			throw new ArgumentNullException("clsType");
+		}
 		STNodeEditText<T> sTNodeEditText = (STNodeEditText<T>)Activator.CreateInstance(clsType);
-		if (text.EndsWith(":"))
-		{
-			sTNodeEditText.Text = Lang.Get(text.Substring(0, text.Length - 1)) + ":";
-		}
-		else
-		{
-			sTNodeEditText.Text = Lang.Get(text);
-		}
+		sTNodeEditText.Text = GetLocalizedText(text);
 		sTNodeEditText.DisplayRectangle = rect;
 		sTNodeEditText.Value = value;
 		base.Controls.Add(sTNodeEditText);
 		return sTNodeEditText;
+	}
+
+	private string GetLocalizedText(string text)
+	{
+		string text2 = text;
+		if (text.EndsWith(":"))
+		{
+			return Lang.Get(text.Substring(0, text.Length - 1)) + ":";
+		}
+		return Lang.Get(text);
+	}
+
+	protected STNodeEditText<string> CreateStringControl(Rectangle rect, string text, string value)
+	{
+		return CreateControl(typeof(STNodeEditText<string>), rect, text, value);
 	}
 
 	protected STNodeDevText CreateTextControl(Rectangle rect, string value)

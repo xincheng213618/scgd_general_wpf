@@ -7,13 +7,7 @@ namespace FlowEngineLib.Node.Algorithm;
 [STNode("/09 合规验证")]
 public class AlgComplianceMathNode : CVBaseServerNode
 {
-	private string _TempName;
-
-	private int _TempId;
-
 	private ComplianceMathType _ComplianceMath;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<ComplianceMathType> m_ctrl_type;
 
@@ -27,21 +21,7 @@ public class AlgComplianceMathNode : CVBaseServerNode
 		set
 		{
 			_TempName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -58,11 +38,6 @@ public class AlgComplianceMathNode : CVBaseServerNode
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
-	}
-
 	public AlgComplianceMathNode()
 		: base("合规算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
@@ -75,7 +50,7 @@ public class AlgComplianceMathNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", _TempName);
+		m_ctrl_temp = CreateTempControl(m_custom_item);
 		m_custom_item.Y += 25;
 		m_ctrl_type = CreateControl(typeof(STNodeEditText<ComplianceMathType>), m_custom_item, "类别:", _ComplianceMath);
 	}
@@ -89,8 +64,9 @@ public class AlgComplianceMathNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		ComplianceMathParam complianceMathParam = new ComplianceMathParam(-1, _TempName, _ComplianceMath);
+		ComplianceMathParam complianceMathParam = new ComplianceMathParam(_ComplianceMath);
 		getPreStepParam(start, complianceMathParam);
+		complianceMathParam.TemplateParam = BuildTemp();
 		return complianceMathParam;
 	}
 }

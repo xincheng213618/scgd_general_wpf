@@ -38,6 +38,14 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected string operatorCode;
 
+	protected string _TempName;
+
+	protected int _TempId;
+
+	protected STNodeEditText<string> m_ctrl_temp;
+
+	protected string _ImgFileName;
+
 	protected bool m_has_svr_item;
 
 	protected Rectangle m_custom_item;
@@ -98,6 +106,8 @@ public class CVBaseServerNode : CVCommonNode
 		}
 	}
 
+	public string TempDisName => _TempName;
+
 	public string DefaultPublishTopic => m_nodeType + "/CMD/" + m_nodeName;
 
 	public string DefaultSubscribeTopic => m_nodeType + "/STATUS/" + m_nodeName;
@@ -120,8 +130,10 @@ public class CVBaseServerNode : CVCommonNode
 		m_has_svr_item = false;
 		m_is_out_release = true;
 		_MinTime = -1;
+		_TempId = -1;
 		_MaxTime = 5000;
 		_IsPublishStatus = false;
+		_TempName = "";
 		base.AutoSize = false;
 		base.Width = 150;
 		base.Height = 85;
@@ -151,8 +163,64 @@ public class CVBaseServerNode : CVCommonNode
 		m_trans_action = new Dictionary<string, CVTransAction>();
 	}
 
-    private async void WaitingOverTime(CVBaseEventCmd cmd)
+	public STNodeEditText<string> CreateTempControl(Rectangle rect, string text = "模板:")
 	{
+		m_ctrl_temp = CreateStringControl(rect, text, TempDisName);
+		return m_ctrl_temp;
+	}
+
+	public CVTemplateParam BuildTemp()
+	{
+		return new CVTemplateParam
+		{
+			ID = _TempId,
+			Name = _TempName
+		};
+	}
+
+	public CVTemplateParam BuildTemp(AlgorithmBaseParam param)
+	{
+		param.TemplateParam = BuildTemp();
+		return param.TemplateParam;
+	}
+
+	public void BuildImageParam(string _ImgFileName, CVOLED_COLOR _Color, AlgorithmImageParam _param)
+	{
+		_param.Color = _Color;
+		if (!string.IsNullOrEmpty(_ImgFileName))
+		{
+			_param.ImgFileName = _ImgFileName;
+			_param.FileType = GetImageFileType(_ImgFileName);
+		}
+		BuildTemp(_param);
+	}
+
+	public void BuildImageParam(string _ImgFileName, AlgorithmImageParam _param)
+	{
+		BuildImageParam(_ImgFileName, CVOLED_COLOR.GREEN, _param);
+	}
+
+	public void BuildImageParam(AlgorithmImageParam _param)
+	{
+		BuildImageParam(_ImgFileName, CVOLED_COLOR.GREEN, _param);
+	}
+
+	public void BuildImageParam(CVOLED_COLOR _Color, AlgorithmImageParam _param)
+	{
+		BuildImageParam(_ImgFileName, _Color, _param);
+	}
+
+	protected void setTempName(string name)
+	{
+		_TempName = name;
+		if (m_ctrl_temp != null)
+		{
+			m_ctrl_temp.Value = TempDisName;
+		}
+	}
+
+    private async void WaitingOverTime(CVBaseEventCmd cmd)
+    {
 		CVMQTTRequest cmd2 = cmd.cmd;
 		int maxDelay = GetMaxDelay();
 
@@ -740,19 +808,27 @@ public class CVBaseServerNode : CVCommonNode
 		return false;
 	}
 
-	protected void getPreStepParam(int idx, AlgorithmPreStepParam param)
+	protected bool getPreStepParam(int idx, AlgorithmPreStepParam param)
 	{
-		GetInputOpOwnerSvrNode(idx)?.GetRecvMasterResult(param);
+		CVBaseServerNode inputOpOwnerSvrNode = GetInputOpOwnerSvrNode(idx);
+		if (inputOpOwnerSvrNode != null)
+		{
+			inputOpOwnerSvrNode.GetRecvMasterResult(param);
+			return true;
+		}
+		return false;
 	}
 
 	protected void getPreStepParam(CVStartCFC start, AlgorithmPreStepParam param)
 	{
-		CVBaseServerNode inputOpOwnerSvrNode = GetInputOpOwnerSvrNode(0);
-		if (inputOpOwnerSvrNode != null)
+		if (!getPreStepParam(0, param))
 		{
-			inputOpOwnerSvrNode.GetRecvMasterResult(param);
-			return;
+			_getPreStepParam(start, param);
 		}
+	}
+
+	protected void _getPreStepParam(CVStartCFC start, AlgorithmPreStepParam param)
+	{
 		int value = -1;
 		int masterResultType = -1;
 		string key = "MasterResultType";

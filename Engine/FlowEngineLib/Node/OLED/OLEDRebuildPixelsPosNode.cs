@@ -9,13 +9,7 @@ public class OLEDRebuildPixelsPosNode : CVBaseServerNodeIn2Hub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDRebuildPixelsPosNode));
 
-	private string _TempName;
-
-	private string _ImgFileName;
-
 	private string _OutputTemplateName;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<string> m_ctrl_outtemp;
 
@@ -28,8 +22,7 @@ public class OLEDRebuildPixelsPosNode : CVBaseServerNodeIn2Hub
 		}
 		set
 		{
-			_TempName = value;
-			m_ctrl_temp.Value = value;
+			setTempName(value);
 		}
 	}
 
@@ -67,7 +60,6 @@ public class OLEDRebuildPixelsPosNode : CVBaseServerNodeIn2Hub
 		m_in_text = "IN_IMG";
 		m_in2_text = "IN_POI";
 		_OutputTemplateName = string.Empty;
-		_TempName = string.Empty;
 		_ImgFileName = string.Empty;
 		base.Height += 25;
 	}
@@ -75,18 +67,19 @@ public class OLEDRebuildPixelsPosNode : CVBaseServerNodeIn2Hub
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_outtemp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "输出:", _TempName);
+		m_ctrl_outtemp = CreateStringControl(m_custom_item, "输出:", _OutputTemplateName);
 		m_custom_item.Y += 25;
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", _TempName);
+		CreateTempControl(m_custom_item);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-		OLEDRebuildPixelsParam oLEDRebuildPixelsParam = new OLEDRebuildPixelsParam(_OutputTemplateName, _TempName, _ImgFileName);
+		OLEDRebuildPixelsParam oLEDRebuildPixelsParam = new OLEDRebuildPixelsParam(_OutputTemplateName);
 		getPreStepParam(0, oLEDRebuildPixelsParam);
 		getPreStepParam(1, algorithmPreStepParam);
 		oLEDRebuildPixelsParam.POI_MasterId = algorithmPreStepParam.MasterId;
+		BuildImageParam(oLEDRebuildPixelsParam);
 		return oLEDRebuildPixelsParam;
 	}
 }

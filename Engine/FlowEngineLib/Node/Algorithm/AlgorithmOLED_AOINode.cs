@@ -12,13 +12,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 
 	private AlgorithmOLED_AOIType _Algorithm;
 
-	private CVOLED_COLOR _Color;
-
-	private string _TempName;
-
-	private int _TempId;
-
-	private string _ImgFileName;
+	private CVOLED_COLOR _Color = CVOLED_COLOR.GREEN;
 
 	private string _OutputFileName;
 
@@ -27,8 +21,6 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 	private bool _PixelDefectEnable;
 
 	private bool _MuraEnable;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<AlgorithmOLED_AOIType> m_ctrl_editText;
 
@@ -56,21 +48,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		set
 		{
 			_TempName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -139,11 +117,6 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
-	}
-
 	public AlgorithmOLED_AOINode()
 		: base("OLED.AOI", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
@@ -163,7 +136,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		base.OnCreate();
 		m_ctrl_editText = CreateControl(typeof(STNodeEditText<AlgorithmOLED_AOIType>), m_custom_item, "算子:", _Algorithm);
 		m_custom_item.Y += 25;
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
+		CreateTempControl(m_custom_item);
 	}
 
 	private void setAlgorithmType()
@@ -191,15 +164,8 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		AlgorithmOLEDAOIParam algorithmOLEDAOIParam = null;
-		algorithmOLEDAOIParam = new AlgorithmOLEDAOIParam(_Color, _OutputFileName, _VhLineEnable, _MuraEnable, _PixelDefectEnable);
-		algorithmOLEDAOIParam.ImgFileName = _ImgFileName;
-		algorithmOLEDAOIParam.FileType = GetImageFileType(_ImgFileName);
-		algorithmOLEDAOIParam.TemplateParam = new CVTemplateParam
-		{
-			ID = _TempId,
-			Name = _TempName
-		};
+		AlgorithmOLEDAOIParam algorithmOLEDAOIParam = new AlgorithmOLEDAOIParam(_OutputFileName, _VhLineEnable, _MuraEnable, _PixelDefectEnable);
+		BuildImageParam(_ImgFileName, _Color, algorithmOLEDAOIParam);
 		getPreStepParam(start, algorithmOLEDAOIParam);
 		algorithmOLEDAOIParam.SMUData = GetSMUResult(start);
 		return algorithmOLEDAOIParam;

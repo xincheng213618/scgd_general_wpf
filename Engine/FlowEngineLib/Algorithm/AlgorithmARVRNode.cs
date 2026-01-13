@@ -10,19 +10,11 @@ public class AlgorithmARVRNode : CVBaseServerNode
 
 	private AlgorithmARVRType _Algorithm;
 
-	private string _TempName;
-
-	private int _TempId;
-
 	private string _POITempName;
-
-	private string _ImgFileName;
 
 	private CVOLED_COLOR _Color;
 
 	private int _BufferLen;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<AlgorithmARVRType> m_ctrl_editText;
 
@@ -52,21 +44,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		set
 		{
 			_TempName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -123,17 +101,10 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
-	}
-
 	public AlgorithmARVRNode()
 		: base("ARVR算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "MTF";
-		_TempName = "";
-		_TempId = -1;
 		base.Height += 50;
 		_OrderIndex = -1;
 		_BufferLen = 1024;
@@ -145,7 +116,7 @@ public class AlgorithmARVRNode : CVBaseServerNode
 		base.OnCreate();
 		m_ctrl_editText = CreateControl(typeof(STNodeEditText<AlgorithmARVRType>), m_custom_item, "算子:", _Algorithm);
 		m_custom_item.Y += 25;
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
+		CreateTempControl(m_custom_item);
 		m_custom_item.Y += 25;
 		m_ctrl_color = CreateControl(typeof(STNodeEditText<CVOLED_COLOR>), m_custom_item, "颜色:", _Color);
 	}
@@ -189,17 +160,10 @@ public class AlgorithmARVRNode : CVBaseServerNode
 			ID = -1,
 			Name = _POITempName
 		};
-		algorithmParam_ROI.Color = _Color;
-		algorithmParam_ROI.ImgFileName = _ImgFileName;
-		algorithmParam_ROI.FileType = GetImageFileType(_ImgFileName);
 		algorithmParam_ROI.IsInversion = false;
 		algorithmParam_ROI.BufferLen = _BufferLen;
-		algorithmParam_ROI.TemplateParam = new CVTemplateParam
-		{
-			ID = _TempId,
-			Name = _TempName
-		};
 		getPreStepParam(start, algorithmParam_ROI);
+		BuildImageParam(_Color, algorithmParam_ROI);
 		algorithmParam_ROI.SMUData = GetSMUResult(start);
 		return algorithmParam_ROI;
 	}

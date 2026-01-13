@@ -7,10 +7,6 @@ namespace FlowEngineLib;
 [STNode("/03_1 关注点")]
 public class BuildPOINode : CVBaseServerNode
 {
-	private string _TemplateName;
-
-	private int _TempId;
-
 	private string _RePOITemplateName;
 
 	private string _LayoutROITemplate;
@@ -25,8 +21,6 @@ public class BuildPOINode : CVBaseServerNode
 
 	private int _POIWidth;
 
-	private string _ImgFileName;
-
 	private string _CAD_PosFileName;
 
 	private POIStorageModel _POIOutput;
@@ -36,8 +30,6 @@ public class BuildPOINode : CVBaseServerNode
 	private string _SavePOITempName;
 
 	private int _BufferLen;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<POIBuildType> m_ctrl_type;
 
@@ -50,26 +42,11 @@ public class BuildPOINode : CVBaseServerNode
 	{
 		get
 		{
-			return _TemplateName;
+			return _TempName;
 		}
 		set
 		{
-			_TemplateName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -245,11 +222,6 @@ public class BuildPOINode : CVBaseServerNode
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TemplateName}";
-	}
-
 	private void setPOIType(POIPointTypes value)
 	{
 		_POIType = value;
@@ -260,10 +232,8 @@ public class BuildPOINode : CVBaseServerNode
 		: base("关注点布点", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "BuildPOI";
-		_TemplateName = "";
 		_LayoutROITemplate = "";
 		_RePOITemplateName = "";
-		_TempId = -1;
 		_POIWidth = 0;
 		_POIHeight = 0;
 		_POIType = POIPointTypes.None;
@@ -279,11 +249,11 @@ public class BuildPOINode : CVBaseServerNode
 		base.OnCreate();
 		m_ctrl_type = CreateControl(typeof(STNodeEditText<POIBuildType>), m_custom_item, "类别:", _BuildType);
 		m_custom_item.Y += 25;
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TemplateName}");
+		m_ctrl_temp = CreateStringControl(m_custom_item, "模板:", base.TempDisName);
 		m_custom_item.Y += 25;
-		m_ctrl_poi_type = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "点类型:", getTypeSize());
+		m_ctrl_poi_type = CreateStringControl(m_custom_item, "点类型:", getTypeSize());
 		m_custom_item.Y += 25;
-		m_ctrl_out = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "P/O:", getOutputPre());
+		m_ctrl_out = CreateStringControl(m_custom_item, "P/O:", getOutputPre());
 	}
 
 	private void setBuildType()
@@ -305,7 +275,7 @@ public class BuildPOINode : CVBaseServerNode
 	{
 		return buildCommonParam(start);
 	}
-	//这里在8月版本里会是int,所以之前的版本无法使用这个，之后的版本可以使用，非兼容
+
 	private object buildCommonParam(CVStartCFC start)
 	{
 		BuildPOIData buildPOIData = null;
@@ -317,13 +287,14 @@ public class BuildPOINode : CVBaseServerNode
 		};
 		buildPOIData = _BuildType switch
 		{
-			POIBuildType.Common => new BuildPOIData(_ImgFileName, _TempId, _TemplateName, _POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, _LayoutROITemplate, _BufferLen), 
-			POIBuildType.CADMapping => new BuildPOIData(_ImgFileName, new CADMappingParam(_CAD_PosFileName), _TempId, _TemplateName, _POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, _LayoutROITemplate, _BufferLen), 
-			POIBuildType.ReMapping => new BuildPOIData(_ImgFileName, _TempId, _TemplateName, _POIOutput, _OutputFileName, _PrefixName, _BuildType, _RePOITemplateName, poiData, _SavePOITempName, _LayoutROITemplate, _BufferLen), 
-			_ => new BuildPOIData(_ImgFileName, _TempId, _TemplateName, _POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, _LayoutROITemplate, _BufferLen), 
+			POIBuildType.Common => new BuildPOIData(_POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, _LayoutROITemplate, _BufferLen), 
+			POIBuildType.CADMapping => new BuildPOIData(new CADMappingParam(_CAD_PosFileName), _POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, _LayoutROITemplate, _BufferLen), 
+			POIBuildType.ReMapping => new BuildPOIData(_POIOutput, _OutputFileName, _PrefixName, _BuildType, _RePOITemplateName, poiData, _SavePOITempName, _LayoutROITemplate, _BufferLen), 
+			_ => new BuildPOIData(_POIOutput, _OutputFileName, _PrefixName, _BuildType, poiData, _SavePOITempName, _LayoutROITemplate, _BufferLen), 
 		};
 		if (buildPOIData != null)
 		{
+			BuildImageParam(buildPOIData);
 			getPreStepParam(start, buildPOIData);
 		}
 		return buildPOIData;

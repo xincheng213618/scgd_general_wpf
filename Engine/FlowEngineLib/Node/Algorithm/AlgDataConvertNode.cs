@@ -10,13 +10,9 @@ public class AlgDataConvertNode : CVBaseServerNode
 
 	private CVDataConvertMethodType _MethodType;
 
-	private string _TempName;
-
 	private CVDataConvertInputType _InType;
 
 	private CVDataConvertOutputType _OutType;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<CVDataConvertMethodType> m_ctrl_medType;
 
@@ -43,8 +39,7 @@ public class AlgDataConvertNode : CVBaseServerNode
 		}
 		set
 		{
-			_TempName = value;
-			m_ctrl_temp.Value = value;
+			setTempName(value);
 		}
 	}
 
@@ -90,13 +85,14 @@ public class AlgDataConvertNode : CVBaseServerNode
 		base.OnCreate();
 		m_ctrl_medType = CreateControl(typeof(STNodeEditText<CVDataConvertMethodType>), m_custom_item, "类型:", _MethodType);
 		m_custom_item.Y += 25;
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", _TempName);
+		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", base.TempDisName);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		DataConvertData dataConvertData = new DataConvertData(_MethodType, _TempName, _InType, _OutType);
+		DataConvertData dataConvertData = new DataConvertData(_MethodType, _InType, _OutType);
 		getPreStepParam(start, dataConvertData);
+		dataConvertData.TemplateParam = BuildTemp();
 		return dataConvertData;
 	}
 }

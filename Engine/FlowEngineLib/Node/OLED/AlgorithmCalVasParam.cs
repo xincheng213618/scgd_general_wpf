@@ -14,12 +14,12 @@ public class AlgorithmCalVasParam : AlgorithmPreStepParam
 
 	public int BufferLen { get; set; }
 
-	public AlgorithmCalVasParam(string tempName, bool isAdd, int poi_mid, int orderIndex, int bufferLen)
+	public AlgorithmCalVasParam(int tempId, string tempName, bool isAdd, int poi_mid, int orderIndex, int bufferLen)
 	{
 		POI_MasterId = poi_mid;
 		TemplateParam = new CVTemplateParam
 		{
-			ID = -1,
+			ID = tempId,
 			Name = tempName
 		};
 		IsAdd = isAdd;

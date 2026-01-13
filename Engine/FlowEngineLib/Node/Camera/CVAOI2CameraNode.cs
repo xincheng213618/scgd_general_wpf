@@ -19,13 +19,9 @@ public class CVAOI2CameraNode : CVBaseServerNodeIn2Hub
 
 	protected bool _IsAutoExp;
 
-	private string _TempName;
-
 	private bool _IsWithND;
 
 	protected bool _IsAutoFocus;
-
-	private string _FocusTempName;
 
 	protected string _CalibTempName;
 
@@ -197,14 +193,12 @@ public class CVAOI2CameraNode : CVBaseServerNodeIn2Hub
 		_MaxTime = 60000;
 		_AlgTempName = "";
 		_CamTempName = "";
-		_TempName = "";
 		_CalibTempName = "";
 		_FlipMode = CVImageFlipMode.None;
 		_IsWithND = false;
 		_IsAutoExp = false;
 		_IsAutoFocus = false;
 		_IsSaveRawImg = false;
-		_FocusTempName = string.Empty;
 		base.Width = 180;
 		m_custom_item.Width += 30;
 		base.Height += 100;

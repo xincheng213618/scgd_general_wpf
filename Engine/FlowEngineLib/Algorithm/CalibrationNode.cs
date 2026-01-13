@@ -1,4 +1,3 @@
-using System.IO;
 using FlowEngineLib.Base;
 using ST.Library.UI.NodeEditor;
 
@@ -11,21 +10,13 @@ public class CalibrationNode : CVBaseServerNode
 
 	private int _OrderIndex;
 
-	private string _TempName;
-
-	private int _TempId;
-
 	private string _ExpTempName;
-
-	private string _ImgFileName;
 
 	private string _POITempName;
 
 	protected string _POIFilterTempName;
 
 	protected string _POIReviseTempName;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<string> m_ctrl_temp_exp;
 
@@ -38,22 +29,7 @@ public class CalibrationNode : CVBaseServerNode
 		}
 		set
 		{
-			_TempName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -126,17 +102,10 @@ public class CalibrationNode : CVBaseServerNode
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
-	}
-
 	public CalibrationNode()
 		: base("校正", "Calibration", "SVR.Calibration.Default", "DEV.Calibration.Default")
 	{
 		operatorCode = "Calibration";
-		_TempName = "";
-		_TempId = -1;
 		_ExpTempName = "";
 		_POITempName = "";
 		_POIFilterTempName = "";
@@ -149,9 +118,9 @@ public class CalibrationNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "校正:", $"{_TempId}:{_TempName}");
+		CreateTempControl(m_custom_item, "校正:");
 		m_custom_item.Y += 25;
-		m_ctrl_temp_exp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "曝光:", _ExpTempName);
+		m_ctrl_temp_exp = CreateStringControl(m_custom_item, "曝光:", _ExpTempName);
 	}
 
 	private void setPOITemp()
@@ -171,27 +140,8 @@ public class CalibrationNode : CVBaseServerNode
 	{
 		AlgorithmPreStepParam param = new AlgorithmPreStepParam();
 		getPreStepParam(start, param);
-		CalibrationData calibrationData = new CalibrationData(_ImgFileName, _TempId, _TempName, _ExpTempName, param, _GlobalVariableName, _OrderIndex);
-		if (!string.IsNullOrEmpty(_ImgFileName))
-		{
-			string text = Path.GetExtension(_ImgFileName).ToLower();
-			if (text.Contains("tif"))
-			{
-				calibrationData.FileType = FileExtType.Tif;
-			}
-			else if (text.Contains("cvraw"))
-			{
-				calibrationData.FileType = FileExtType.Raw;
-			}
-			else if (text.Contains("cvcie"))
-			{
-				calibrationData.FileType = FileExtType.CIE;
-			}
-			else
-			{
-				calibrationData.FileType = FileExtType.Tif;
-			}
-		}
+		CalibrationData calibrationData = new CalibrationData(_ExpTempName, param, _GlobalVariableName, _OrderIndex);
+		BuildImageParam(calibrationData);
 		if (!string.IsNullOrEmpty(_POITempName))
 		{
 			POITemplateParam pOIParam = new POITemplateParam(_POITempName, _POIFilterTempName, _POIReviseTempName);

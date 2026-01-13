@@ -16,14 +16,9 @@ public class Algorithm2InParam : AlgorithmPreStepParam
 
 	public SMUResultData SMUData { get; set; }
 
-	public Algorithm2InParam(string tempName, bool isAdd, int poi_mid, int orderIndex, int bufferLen)
+	public Algorithm2InParam(bool isAdd, int poi_mid, int orderIndex, int bufferLen)
 	{
 		POI_MasterId = poi_mid;
-		TemplateParam = new CVTemplateParam
-		{
-			ID = -1,
-			Name = tempName
-		};
 		IsAdd = isAdd;
 		OrderIndex = orderIndex;
 		BufferLen = bufferLen;

@@ -3,21 +3,17 @@ using FlowEngineLib.Node.POI;
 
 namespace FlowEngineLib;
 
-public class BuildPOIData : AlgorithmPreStepParam
+public class BuildPOIData : AlgorithmImageParam
 {
 	public POIBuildType BuildType { get; set; }
 
 	public POIPointTypes POILayoutReq { get; set; }
-
-	public CVTemplateParam TemplateParam { get; set; }
 
 	public CVTemplateParam POITemplateParam { get; set; }
 
 	public CVTemplateParam RePOITemplateParam { get; set; }
 
 	public CADMappingParam CADMappingParam { get; set; }
-
-	public string ImgFileName { get; set; }
 
 	public string PrefixName { get; set; }
 
@@ -31,14 +27,8 @@ public class BuildPOIData : AlgorithmPreStepParam
 
 	public CVTemplateParam SavePOITemplate { get; set; }
 
-	public BuildPOIData(string imgFile, int tempId, string tempName, POIStorageModel POIOutput, string outputFileName, string prefixName, POIBuildType buildType, POITypeData poiData, string poiSaveTempName, string layoutROITemplate, int bufLen)
+	public BuildPOIData(POIStorageModel POIOutput, string outputFileName, string prefixName, POIBuildType buildType, POITypeData poiData, string poiSaveTempName, string layoutROITemplate, int bufLen)
 	{
-		ImgFileName = imgFile;
-		TemplateParam = new CVTemplateParam
-		{
-			ID = tempId,
-			Name = tempName
-		};
 		POILayoutReq = POIPointTypes.None;
 		POIStorageType = POIOutput;
 		OutputFileName = outputFileName;
@@ -58,14 +48,14 @@ public class BuildPOIData : AlgorithmPreStepParam
 		BufferLen = bufLen;
 	}
 
-	public BuildPOIData(string imgFile, CADMappingParam cad, int tempId, string tempName, POIStorageModel POIOutput, string outputFileName, string prefixName, POIBuildType buildType, POITypeData poiData, string poiSaveTempName, string layoutROITemplate, int bufLen)
-		: this(imgFile, tempId, tempName, POIOutput, outputFileName, prefixName, buildType, poiData, poiSaveTempName, layoutROITemplate, bufLen)
+	public BuildPOIData(CADMappingParam cad, POIStorageModel POIOutput, string outputFileName, string prefixName, POIBuildType buildType, POITypeData poiData, string poiSaveTempName, string layoutROITemplate, int bufLen)
+		: this(POIOutput, outputFileName, prefixName, buildType, poiData, poiSaveTempName, layoutROITemplate, bufLen)
 	{
 		CADMappingParam = cad;
 	}
 
-	public BuildPOIData(string imgFile, int tempId, string tempName, POIStorageModel POIOutput, string outputFileName, string prefixName, POIBuildType buildType, string poiReTempName, POITypeData poiData, string poiSaveTempName, string layoutROITemplate, int bufLen)
-		: this(imgFile, tempId, tempName, POIOutput, outputFileName, prefixName, buildType, poiData, poiSaveTempName, layoutROITemplate, bufLen)
+	public BuildPOIData(POIStorageModel POIOutput, string outputFileName, string prefixName, POIBuildType buildType, string poiReTempName, POITypeData poiData, string poiSaveTempName, string layoutROITemplate, int bufLen)
+		: this(POIOutput, outputFileName, prefixName, buildType, poiData, poiSaveTempName, layoutROITemplate, bufLen)
 	{
 		RePOITemplateParam = new CVTemplateParam
 		{

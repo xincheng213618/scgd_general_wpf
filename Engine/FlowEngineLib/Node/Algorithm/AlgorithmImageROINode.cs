@@ -3,8 +3,8 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-[STNode("/03_3 校正")]
-public class AlgorithmCaliNode : CVBaseServerNode
+[STNode("/03_3 Image")]
+public class AlgorithmImageROINode : CVBaseServerNode
 {
 	private string _OutputFileName;
 
@@ -47,12 +47,11 @@ public class AlgorithmCaliNode : CVBaseServerNode
 		}
 	}
 
-	public AlgorithmCaliNode()
-		: base("色差校正", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
+	public AlgorithmImageROINode()
+		: base("图像裁剪", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
-		operatorCode = "CaliAngleShift";
-		_OutputFileName = "result.cvraw";
-		base.MaxTime = 30000;
+		operatorCode = "Image.ROI";
+		_OutputFileName = "imgROI.cvraw";
 	}
 
 	protected override void OnCreate()
@@ -63,9 +62,9 @@ public class AlgorithmCaliNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		AlgorithmCaliParam algorithmCaliParam = new AlgorithmCaliParam(_OutputFileName);
-		BuildImageParam(algorithmCaliParam);
-		getPreStepParam(start, algorithmCaliParam);
-		return algorithmCaliParam;
+		AlgorithmImageROIParam algorithmImageROIParam = new AlgorithmImageROIParam(_OutputFileName);
+		BuildImageParam(algorithmImageROIParam);
+		getPreStepParam(start, algorithmImageROIParam);
+		return algorithmImageROIParam;
 	}
 }

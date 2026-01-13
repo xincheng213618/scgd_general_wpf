@@ -8,7 +8,7 @@ public class AlgComplianceJudgmentNode : CVBaseServerNode
 {
 	private bool _IsBreak;
 
-	private STNodeEditText<bool> m_ctrl_temp;
+	private STNodeEditText<bool> m_ctrl_break;
 
 	[STNodeProperty("是否中断", "是否中断", true)]
 	public bool IsBreak
@@ -34,12 +34,12 @@ public class AlgComplianceJudgmentNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<bool>), m_custom_item, "中断:", _IsBreak);
+		m_ctrl_break = CreateControl(typeof(STNodeEditText<bool>), m_custom_item, "中断:", _IsBreak);
 	}
 
 	private void setBreak()
 	{
-		m_ctrl_temp.Value = _IsBreak;
+		m_ctrl_break.Value = _IsBreak;
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)

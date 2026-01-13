@@ -6,15 +6,7 @@ namespace FlowEngineLib.Node.Algorithm;
 [STNode("/03_2 Algorithm")]
 public class AlgorithmTMNode : CVBaseServerNode
 {
-	private string _TempName;
-
-	private int _TempId;
-
 	private string _TemplateFile;
-
-	private string _ImgFileName;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TempName
@@ -26,21 +18,7 @@ public class AlgorithmTMNode : CVBaseServerNode
 		set
 		{
 			_TempName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -70,11 +48,6 @@ public class AlgorithmTMNode : CVBaseServerNode
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
-	}
-
 	public AlgorithmTMNode()
 		: base("模板匹配", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
@@ -86,13 +59,14 @@ public class AlgorithmTMNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
+		CreateTempControl(m_custom_item);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		TMParam tMParam = new TMParam(_TempId, _TempName, _ImgFileName, GetImageFileType(_ImgFileName), _TemplateFile);
+		TMParam tMParam = new TMParam(_TemplateFile);
 		getPreStepParam(start, tMParam);
+		BuildImageParam(tMParam);
 		return tMParam;
 	}
 }

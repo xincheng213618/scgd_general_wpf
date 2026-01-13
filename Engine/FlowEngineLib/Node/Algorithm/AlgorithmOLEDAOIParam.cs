@@ -12,9 +12,8 @@ public class AlgorithmOLEDAOIParam : AlgorithmParam
 
 	public string ResultDataFileName { get; set; }
 
-	public AlgorithmOLEDAOIParam(CVOLED_COLOR color, string outputFileName, bool vhLineEnable, bool muraEnable, bool pixelDefectEnable)
+	public AlgorithmOLEDAOIParam(string outputFileName, bool vhLineEnable, bool muraEnable, bool pixelDefectEnable)
 	{
-		base.Color = color;
 		ResultDataFileName = outputFileName;
 		VhLineEnable = vhLineEnable;
 		MuraEnable = muraEnable;

@@ -16,13 +16,13 @@ public class AlgorithmCompoundImgParam
 
 	public int BufferLen { get; set; }
 
-	public AlgorithmCompoundImgParam(string tempName, AlgorithmPreStepParam img1_mid, AlgorithmPreStepParam img2_mid, int orderIndex, int bufferLen, string outputImgFile)
+	public AlgorithmCompoundImgParam(int tempId, string tempName, AlgorithmPreStepParam img1_mid, AlgorithmPreStepParam img2_mid, int orderIndex, int bufferLen, string outputImgFile)
 	{
 		IMG1_Master = img1_mid;
 		IMG2_Master = img2_mid;
 		TemplateParam = new CVTemplateParam
 		{
-			ID = -1,
+			ID = tempId,
 			Name = tempName
 		};
 		OrderIndex = orderIndex;
