@@ -9,6 +9,8 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.Solution.Editor.AvalonEditor;
 using log4net;
 using Newtonsoft.Json;
+using OpenCvSharp;
+using OpenCvSharp.WpfExtensions;
 using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -72,13 +74,27 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         public override void Handle(ViewResultContext view, ViewResultAlg result)
         {
             var AlgResultPoiCieFileModel = result.ViewResults.OfType<AlgResultPoiCieFileModel>().Where(a => a.FileName.Contains("Y.tif")).FirstOrDefault();
-            if (AlgResultPoiCieFileModel != null)
+            if (AlgResultPoiCieFileModel != null && AlgResultPoiCieFileModel.FileUrl !=null)
             {
-                if (File.Exists(AlgResultPoiCieFileModel.FileUrl))
-                    view.ImageView.OpenImage(AlgResultPoiCieFileModel.FileUrl);
+                string originalPath = AlgResultPoiCieFileModel.FileUrl;
 
-
-
+                // 1. 读取图像 (使用 AnyDepth 确保能读取 16位 TIF, 使用 Grayscale 确保按灰度读取)
+                using (Mat src = Cv2.ImRead(originalPath, ImreadModes.Unchanged))
+                using (Mat dst8Bit = new Mat())
+                {
+                    if (!src.Empty())
+                    {
+                        if (src.Depth() == MatType.CV_16U || src.Depth() == MatType.CV_16S)
+                        {
+                            src.ConvertTo(dst8Bit, MatType.CV_8U, 1.0 / 256.0);
+                        }
+                        else
+                        {
+                            src.ConvertTo(dst8Bit, MatType.CV_8U);
+                        }
+                        view.ImageView.SetImageSource(src.ToWriteableBitmap());
+                    }
+                }
             }
             else
             {
