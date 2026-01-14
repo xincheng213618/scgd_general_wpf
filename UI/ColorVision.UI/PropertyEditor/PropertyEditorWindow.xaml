@@ -39,7 +39,7 @@
                        Padding="20,1,2,1" BorderThickness="1" 
                        hc:InfoElement.Placeholder="搜索属性..." 
                        BorderBrush="#CCCEDB" VerticalContentAlignment="Center" 
-                       TextChanged="SearchBox_TextChanged" Margin="0,0,5,0" />
+                       TextChanged="SearchBox_TextChanged" Margin="0,0,0,0" />
             <Viewbox Width="12" Height="12" HorizontalAlignment="Left" Margin="4,0,0,0" Grid.Column="0">
                 <Rectangle Width="16" Height="16">
                     <Rectangle.Resources>
@@ -61,7 +61,7 @@
                 </Rectangle>
             </Viewbox>
             
-            <ComboBox x:Name="SortComboBox" Grid.Column="1" Width="150" 
+            <ComboBox x:Name="SortComboBox" Grid.Column="1" Width="150"  Visibility="Collapsed"
                      Style="{DynamicResource ComboBox.Small}"
                      SelectionChanged="SortComboBox_SelectionChanged"/>
         </Grid>
@@ -167,13 +167,16 @@
 
         </Grid>
 
-        <Grid Grid.Row="2">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
-                <Button Content="恢复出厂" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="ResetToFactory_Click" ToolTip="重置到类默认值" />
+        <Grid Grid.Row="2" Margin="5">
+            <DockPanel>
                 <Button Content="{x:Static properties:Resources.Reset}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Reset_Click" Margin="5,0,0,0" />
-                <Button Content="{x:Static properties:Resources.OK}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="OK_Click" Margin="5,0,0,0"/>
-                <Button Content="{x:Static properties:Resources.Cancel}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Cancel_Click" Margin="5,0,0,0"/>
-            </StackPanel>
+                <Button Content="恢复到默认" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="ResetToFactory_Click" ToolTip="重置到类默认值" Margin="5,0,0,0"/>
+                <StackPanel  Orientation="Horizontal" HorizontalAlignment="Right" >
+                    <Button Content="{x:Static properties:Resources.OK}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="OK_Click" Margin="5,0,0,0"/>
+                    <Button Content="{x:Static properties:Resources.Cancel}" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Cancel_Click" Margin="5,0,0,0"/>
+                </StackPanel>
+            </DockPanel>
+
         </Grid>
     </Grid>
 
