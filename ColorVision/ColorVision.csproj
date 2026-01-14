@@ -72,8 +72,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-    <ProjectReference Include="..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" Condition="Exists('..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" />
-	  <PackageReference Include="ColorVision.UI.Desktop" Version="*" Condition="!Exists(..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj')" />
+	  <ProjectReference Include="..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" Condition="Exists('..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj')" />
+	  <PackageReference Include="ColorVision.UI.Desktop" Version="*" Condition="!Exists('..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj')" />
   </ItemGroup>
 
   <ItemGroup>
