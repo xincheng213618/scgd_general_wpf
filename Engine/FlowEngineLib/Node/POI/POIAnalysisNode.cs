@@ -28,13 +28,14 @@ public class POIAnalysisNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", base.TempDisName);
+		CreateTempControl(m_custom_item);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		PoiAnalysisParam poiAnalysisParam = new PoiAnalysisParam(_TempId, _TempName);
+		PoiAnalysisParam poiAnalysisParam = new PoiAnalysisParam();
 		getPreStepParam(start, poiAnalysisParam);
+		BuildTemp(poiAnalysisParam);
 		return poiAnalysisParam;
 	}
 }
