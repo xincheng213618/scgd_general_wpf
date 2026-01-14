@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.FOV
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.FOV };
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -30,22 +30,22 @@ namespace ColorVision.Engine.Templates.FOV
         }
 
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
             List<string> header =  new() { "Pattern", "Type", "Degrees" };
             List<string> bdHeader = new() { "Pattern", "Type", "Degrees" };
 
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

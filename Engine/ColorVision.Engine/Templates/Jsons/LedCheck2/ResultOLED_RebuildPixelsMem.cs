@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         }
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -71,7 +71,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
             }
         }
          
-        public override void Handle(ViewResultContext context, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             var AlgResultPoiCieFileModel = result.ViewResults.OfType<AlgResultPoiCieFileModel>().Where(a => a.FileUrl.Contains("Y.tif")).FirstOrDefault();
             if (AlgResultPoiCieFileModel != null && AlgResultPoiCieFileModel.FileUrl !=null)
@@ -92,28 +92,28 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
                         {
                             src.ConvertTo(dst8Bit, MatType.CV_8U);
                         }
-                        context.ImageView.Config.AddProperties("FilePath", originalPath);
-                        context.ImageView.SetImageSource(dst8Bit.ToWriteableBitmap());
-                        context.ImageView.UpdateZoomAndScale();
+                        ctx.ImageView.Config.AddProperties("FilePath", originalPath);
+                        ctx.ImageView.SetImageSource(dst8Bit.ToWriteableBitmap());
+                        ctx.ImageView.UpdateZoomAndScale();
                     }
                 }
             }
             else
             {
                 if (File.Exists(result.FilePath))
-                    context.ImageView.OpenImage(result.FilePath);
+                    ctx.ImageView.OpenImage(result.FilePath);
 
             }
 
             List<string> header = new() { "FileUrl", "FileName"};
-            if (context.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                context.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 foreach (var h in header)
                     gridView.Columns.Add(new GridViewColumn() { Header = h, DisplayMemberBinding = new Binding(h) });
 
-                context.ListView.ItemsSource = result.ViewResults.OfType<AlgResultPoiCieFileModel>().ToList();
+                ctx.ListView.ItemsSource = result.ViewResults.OfType<AlgResultPoiCieFileModel>().ToList();
             }
 
         }

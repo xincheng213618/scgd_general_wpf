@@ -1,4 +1,5 @@
-﻿using cvColorVision;
+﻿#pragma warning disable
+using cvColorVision;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

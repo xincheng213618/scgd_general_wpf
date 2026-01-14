@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
         public ViewResultContext AlgorithmView { get; set; }
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -55,25 +55,25 @@ namespace ColorVision.Engine.Templates.ImageCropping
             }
         }
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            AlgorithmView = view;
+            AlgorithmView = ctx;
 
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
             List<string> header = new() { "file_name", "order_index", "FileInfo" };
             List<string> bdHeader = new() { "FileName", "OrderIndex", "FileInfo" };
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
 

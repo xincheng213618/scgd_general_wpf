@@ -59,7 +59,7 @@ namespace ColorVision.Engine
         public virtual bool CanHandle1(ViewResultAlg result) => CanHandle.Contains(result.ResultType);
 
 
-        public abstract void Handle(ViewResultContext ctx, ViewResultAlg result);
+        public abstract void Handle(ViewResultContext context, ViewResultAlg result);
 
         public virtual void Load(ViewResultContext ctx, ViewResultAlg result)
         {

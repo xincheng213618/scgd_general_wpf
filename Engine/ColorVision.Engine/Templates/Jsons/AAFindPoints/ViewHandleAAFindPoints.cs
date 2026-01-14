@@ -113,7 +113,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
         }
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -147,16 +147,16 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
             }
         }
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
             if (result.ViewResults.FirstOrDefault() is AAFindPointsViewReslut viewResult)
             {
 
                 DVDatumPolygon Polygon = new() { IsComple = true };
-                Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
+                Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / ctx.ImageView.Zoombox1.ContentMatrix.M11);
                 Polygon.Attribute.Brush = Brushes.Transparent;
 
                 foreach (var item in viewResult.AAFindPoint.Corner)
@@ -165,27 +165,27 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
                 }
                 Polygon.IsComple = true;
                 Polygon.Render();
-                view.ImageView.AddVisual(Polygon);
+                ctx.ImageView.AddVisual(Polygon);
 
                 List<string> header = new() { "ID", "X", "Y" };
                 List<string> bdHeader = new() { "Id", "X", "Y" };
-                if (view.ListView.View is GridView gridView)
+                if (ctx.ListView.View is GridView gridView)
                 {
-                    view.LeftGridViewColumnVisibilitys.Clear();
+                    ctx.LeftGridViewColumnVisibilitys.Clear();
                     gridView.Columns.Clear();
                     for (int i = 0; i < header.Count; i++)
                         gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
 
-                    view.ListView.ItemsSource = new ObservableCollection<Corner>(viewResult.AAFindPoint.Corner);
+                    ctx.ListView.ItemsSource = new ObservableCollection<Corner>(viewResult.AAFindPoint.Corner);
                 }
             }
             else
             {
-                if (view.ListView.View is GridView gridView)
+                if (ctx.ListView.View is GridView gridView)
                 {
                     gridView.Columns.Clear();
                 }
-                view.ListView.ItemsSource = null;
+                ctx.ListView.ItemsSource = null;
             }
         }
     }

@@ -128,7 +128,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         }
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -143,21 +143,21 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
             }
         }
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
             List<string> header = new() { "D_Fov", "H_Fov", "V_FOV", "ClolorVisionH_Fov", "ClolorVisionV_Fov", "LeftDownToRightUp", "LeftUpToRightDown" };
             List<string> bdHeader = new() { "D_Fov", "H_Fov", "V_FOV", "ClolorVisionH_Fov", "ClolorVisionV_Fov", "LeftDownToRightUp" , "LeftUpToRightDown" };
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
 

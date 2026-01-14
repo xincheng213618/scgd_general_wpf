@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras.Licenses
 {
     /// <summary>
     /// 许可证检查初始化器 - 在应用程序启动时检查所有物理相机的许可证状态
@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                     if (expiryDate < DateTime.Now)
                     {
-                        // License has expired
+                        // Licenses has expired
                         var info = new LicenseExpiryInfo
                         {
                             Camera = camera,
@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     }
                     else if (daysRemaining <= config.WarningDaysBeforeExpiry)
                     {
-                        // License is expiring soon
+                        // Licenses is expiring soon
                         var info = new LicenseExpiryInfo
                         {
                             Camera = camera,

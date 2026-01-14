@@ -2,7 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras.Licenses
 {
     /// <summary>
     /// 许可证通知配置

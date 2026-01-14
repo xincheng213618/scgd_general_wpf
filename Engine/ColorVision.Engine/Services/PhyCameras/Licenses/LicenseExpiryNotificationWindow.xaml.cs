@@ -6,7 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras.Licenses
 {
     public class LicenseExpiryInfo
     {

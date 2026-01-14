@@ -1,6 +1,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -18,10 +19,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras.Licenses
 {
     /// <summary>
-    /// Menu item to open License Manager
+    /// Menu item to open Licenses Manager
     /// </summary>
     public class ExportLicenseManager : MenuItemBase
     {

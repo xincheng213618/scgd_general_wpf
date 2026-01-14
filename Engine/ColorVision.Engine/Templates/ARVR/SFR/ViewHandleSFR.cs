@@ -106,7 +106,7 @@ namespace ColorVision.Engine.Templates.SFR
         }
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -130,10 +130,10 @@ namespace ColorVision.Engine.Templates.SFR
             }
         }
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
 
             foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultSFRModel>())
@@ -144,21 +144,21 @@ namespace ColorVision.Engine.Templates.SFR
                 Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                 Rectangle.Attribute.Id = item.Id;
                 Rectangle.Render();
-                view.ImageView.AddVisual(Rectangle);
+                ctx.ImageView.AddVisual(Rectangle);
             }
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
             List<string> header = new() { "RoiX", "RoiY", "RoiWidth", "RoiHeight", "Pdfrequency", "PdomainSamplingData" };
             List<string> bdHeader = new() { "RoiX", "RoiY", "RoiWidth", "RoiHeight", "Pdfrequency", "PdomainSamplingData" };
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.ListView.ItemsSource = null;
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.ListView.ItemsSource = null;
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

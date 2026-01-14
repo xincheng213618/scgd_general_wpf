@@ -1,4 +1,5 @@
-﻿namespace cvColorVision
+﻿#pragma warning disable
+namespace cvColorVision
 {
     public enum CVOLED_ERROR
     {

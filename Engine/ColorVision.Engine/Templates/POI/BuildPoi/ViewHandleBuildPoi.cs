@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
     {
         public override List<ViewResultAlgType> CanHandle { get;  } = new List<ViewResultAlgType>() { ViewResultAlgType.BuildPOI};
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -31,10 +31,10 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
         }
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
 
             List<POIPoint> DrawPoiPoint = new();
@@ -43,20 +43,20 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 if (item is PoiResultData poiResultData)
                     DrawPoiPoint.Add(poiResultData.Point);
             }
-            AddPOIPoint(view.ImageView, DrawPoiPoint);
+            AddPOIPoint(ctx.ImageView, DrawPoiPoint);
 
             List<string> header;
             List<string> bdHeader;
             header = new() { "Name", "位置", "大小", "形状" };
             bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes" };
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
         }
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -54,19 +54,19 @@ namespace ColorVision.Engine.Templates.Jsons.CompoundImg
             }
         }
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             var values = result.ViewResults.ToSpecificViewResults<AlgResultImageModel>();
             if (values.Count == 1)
             {
                 AlgResultImageModel algResultImageModel = values[0];
                 if (File.Exists(algResultImageModel.FileName))
-                    view.ImageView.OpenImage(algResultImageModel.FileName);
+                    ctx.ImageView.OpenImage(algResultImageModel.FileName);
             }
             else
             {
                 if (File.Exists(result.FilePath))
-                    view.ImageView.OpenImage(result.FilePath);
+                    ctx.ImageView.OpenImage(result.FilePath);
             }
         }
     }

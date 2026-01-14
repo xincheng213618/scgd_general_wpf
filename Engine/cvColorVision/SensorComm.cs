@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable
+using System;
 using System.Runtime.InteropServices;
 
 namespace cvColorVision
