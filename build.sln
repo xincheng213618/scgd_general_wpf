@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.6.33617.297
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11312.210 d18.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "解决方案项", "解决方案项", "{61C6DABF-289A-41CD-B85D-F0AA9D8C6947}"
 	ProjectSection(SolutionItems) = preProject
@@ -55,6 +55,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlowEngineLib", "Engine\FlowEngineLib\FlowEngineLib.csproj", "{8C3BDD69-584C-3C95-6157-1EA50C7B1CD6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ST.Library.UI", "Engine\ST.Library.UI\ST.Library.UI.csproj", "{4B33902B-4B3B-C996-E3A1-70FAF9CA5511}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.UI.Desktop", "UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj", "{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -356,6 +358,22 @@ Global
 		{4B33902B-4B3B-C996-E3A1-70FAF9CA5511}.Release|x64.Build.0 = Release|x64
 		{4B33902B-4B3B-C996-E3A1-70FAF9CA5511}.Release|x86.ActiveCfg = Release|x64
 		{4B33902B-4B3B-C996-E3A1-70FAF9CA5511}.Release|x86.Build.0 = Release|x64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Debug|Any CPU.Build.0 = Debug|x64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Debug|ARM64.Build.0 = Debug|ARM64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Debug|x64.ActiveCfg = Debug|x64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Debug|x64.Build.0 = Debug|x64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Debug|x86.ActiveCfg = Debug|x64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Debug|x86.Build.0 = Debug|x64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Release|Any CPU.ActiveCfg = Release|x64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Release|Any CPU.Build.0 = Release|x64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Release|ARM64.ActiveCfg = Release|ARM64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Release|ARM64.Build.0 = Release|ARM64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Release|x64.ActiveCfg = Release|x64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Release|x64.Build.0 = Release|x64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Release|x86.ActiveCfg = Release|x64
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -378,9 +396,9 @@ Global
 		{44CA6B5C-6BB5-0003-6D7B-3A021B63494A} = {CC28D563-3E82-4852-82C0-A06609BB416C}
 		{8C3BDD69-584C-3C95-6157-1EA50C7B1CD6} = {9A311925-FBEF-4A49-A392-9CA8DDAF4F40}
 		{4B33902B-4B3B-C996-E3A1-70FAF9CA5511} = {9A311925-FBEF-4A49-A392-9CA8DDAF4F40}
+		{5B3FAF15-D0A1-81B8-82B4-6C1EE465D76C} = {CC28D563-3E82-4852-82C0-A06609BB416C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
-		RESX_PrefixTranslations = False
 	EndGlobalSection
 EndGlobal
