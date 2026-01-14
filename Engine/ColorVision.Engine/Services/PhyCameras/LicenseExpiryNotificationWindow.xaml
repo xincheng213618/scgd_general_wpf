@@ -1,0 +1,162 @@
+<Window x:Class="ColorVision.Engine.Services.PhyCameras.LicenseExpiryNotificationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="许可证过期提醒" Height="400" Width="600"
+        WindowStartupLocation="CenterScreen" 
+        ResizeMode="NoResize"
+        ShowInTaskbar="True">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <Border Grid.Row="0" Background="#FFF9E6" BorderBrush="Orange" BorderThickness="0,0,0,1" Padding="15,10">
+            <StackPanel>
+                <TextBlock FontSize="16" FontWeight="Bold" Foreground="DarkOrange">
+                    <Run Text="⚠ 许可证过期提醒"/>
+                </TextBlock>
+                <TextBlock x:Name="TextBlockSummary" FontSize="12" Foreground="#666" Margin="0,5,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Camera List -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="15,10">
+            <ItemsControl x:Name="CameraListControl">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="White" BorderBrush="#DDD" BorderThickness="1" 
+                                Margin="0,0,0,10" Padding="12" CornerRadius="4">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Status Icon -->
+                                <Ellipse Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" 
+                                         Width="40" Height="40" 
+                                         Fill="{Binding StatusColor}"
+                                         Margin="0,0,15,0" VerticalAlignment="Top"/>
+                                <TextBlock Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" 
+                                          Text="⚠" FontSize="24" 
+                                          Foreground="White"
+                                          HorizontalAlignment="Center" 
+                                          VerticalAlignment="Center"/>
+
+                                <!-- Camera Name -->
+                                <TextBlock Grid.Row="0" Grid.Column="1" 
+                                          Text="{Binding CameraName}" 
+                                          FontSize="14" FontWeight="Bold"
+                                          Foreground="#333"/>
+
+                                <!-- License Status -->
+                                <TextBlock Grid.Row="1" Grid.Column="1" 
+                                          Text="{Binding StatusMessage}" 
+                                          FontSize="12" 
+                                          Foreground="{Binding StatusTextColor}"
+                                          Margin="0,4,0,0"/>
+
+                                <!-- License Info -->
+                                <TextBlock Grid.Row="2" Grid.Column="1" 
+                                          Text="{Binding LicenseInfo}" 
+                                          FontSize="11" 
+                                          Foreground="#666"
+                                          TextWrapping="Wrap"
+                                          Margin="0,4,0,0"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Don't Show Again Checkbox -->
+        <CheckBox x:Name="CheckBoxDontShowAgain" 
+                  Grid.Row="2" 
+                  Content="不再提示此类警告" 
+                  Margin="15,0,15,10"
+                  VerticalAlignment="Center"/>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="3" Background="#F5F5F5" Height="60">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,15,0">
+                <Button x:Name="ButtonGoToManager" 
+                        Content="前往相机管理器" 
+                        Width="120" Height="32"
+                        Margin="0,0,10,0"
+                        Click="ButtonGoToManager_Click"
+                        Background="#FF5722" 
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand"
+                        FontWeight="SemiBold">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#FF5722"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" 
+                                                CornerRadius="4" 
+                                                Padding="10,5">
+                                            <ContentPresenter HorizontalAlignment="Center" 
+                                                            VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#E64A19"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button x:Name="ButtonClose" 
+                        Content="关闭" 
+                        Width="80" Height="32"
+                        Click="ButtonClose_Click"
+                        Background="#607D8B" 
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Background" Value="#607D8B"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" 
+                                                CornerRadius="4" 
+                                                Padding="10,5">
+                                            <ContentPresenter HorizontalAlignment="Center" 
+                                                            VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#546E7A"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
