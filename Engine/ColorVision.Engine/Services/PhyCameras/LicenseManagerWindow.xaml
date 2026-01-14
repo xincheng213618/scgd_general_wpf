@@ -26,7 +26,9 @@
                 <Button Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.ExportLicense}" Command="{Binding ExportSelectedCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.Delete}" Command="{Binding DeleteSelectedCommand}" Margin="0,0,5,0"/>
-                <Button Content="{x:Static properties:Resources.Refresh}" Command="{Binding RefreshCommand}"/>
+                <Button Content="{x:Static properties:Resources.Refresh}" Command="{Binding RefreshCommand}"  Margin="0,0,5,0"/>
+                <Button Content="EditLicenseNotificationConfig" Command="{Binding EditLicenseNotificationConfigCommand}"  Margin="0,0,5,0"/>
+
             </StackPanel>
         </Grid>
         

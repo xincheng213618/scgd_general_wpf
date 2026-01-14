@@ -14,7 +14,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid Margin="5,0,0,5">
-            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Margin="0,5,0,0">
+            <DockPanel>
                 <hc:Badge Value="{Binding Count}" BadgeMargin="0,-14,-10,0"  Style="{StaticResource BadgeDanger}" Margin="0,0,10,0">
                     <Button Content="{x:Static properties:Resources.AddUncreatedCamera}" Command="{Binding CreateCommand}" />
                 </hc:Badge>
@@ -22,24 +22,27 @@
                 <Button Content="{x:Static properties:Resources.LicenseManager}" Command="{Binding OpenLicenseManagerCommand}" Margin="0,0,5,0"/>
                 <Button Content="{x:Static properties:Resources.OpenDeviceManager}" Command="{Binding OpenDeviceManagerCommand}" Margin="0,0,5,0"/>
                 <Button Content="OpenMVSLogViewer" Command="{Binding OpenMVSLogViewerCommand}" Margin="0,0,5,0"/>
+                <Button Content="EditLicenseNotificationConfig" Command="{Binding EditLicenseNotificationConfigCommand}"  Margin="0,0,5,0"/>
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Margin="0,5,0,0">
+                    <Button  Command="{Binding EditCofigCommand}" Padding="2" Height="27" Width="27" >
+                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5"  FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform x:Name="rotateTransform21"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <Button.Triggers>
+                            <EventTrigger RoutedEvent="Button.Click">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Button.Triggers>
+                    </Button>
+                </StackPanel>
 
-                <Button  Command="{Binding EditCofigCommand}" Padding="2" Height="27" Width="27" >
-                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5"  FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">
-                        <TextBlock.RenderTransform>
-                            <RotateTransform x:Name="rotateTransform21"/>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
-                    <Button.Triggers>
-                        <EventTrigger RoutedEvent="Button.Click">
-                            <BeginStoryboard>
-                                <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </Button.Triggers>
-                </Button>
-            </StackPanel>
+            </DockPanel>
         </Grid>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>

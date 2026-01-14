@@ -80,6 +80,9 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public PhyCameraManagerConfig Config { get; set; } = ConfigService.Instance.GetRequiredService<PhyCameraManagerConfig>();
 
+        public RelayCommand EditLicenseNotificationConfigCommand { get; set; }
+        public LicenseNotificationConfig LicenseNotificationConfig { get; set; }
+
         public PhyCameraManager()
         {
             CreateCommand = new RelayCommand(a => Create());
@@ -100,6 +103,21 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
 
             OpenMVSLogViewerCommand = new RelayCommand(a => OpenMVSLogViewer(), a => File.Exists("C:\\Program Files (x86)\\MVS\\Applications\\Win64\\LogViewer.exe"));
+
+            LicenseNotificationConfig = ConfigService.Instance.GetRequiredService<LicenseNotificationConfig>();
+
+            EditLicenseNotificationConfigCommand = new RelayCommand(a =>
+            {
+                var window = new PropertyEditorWindow(LicenseNotificationConfig)
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen
+                };
+                if (window.ShowDialog() == true)
+                {
+                    ConfigService.Instance.SaveConfigs();
+                }
+            });
         }
 
         public RelayCommand OpenMVSLogViewerCommand { get; set; }

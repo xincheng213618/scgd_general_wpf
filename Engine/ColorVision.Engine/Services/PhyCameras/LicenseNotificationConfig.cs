@@ -19,14 +19,14 @@ namespace ColorVision.Engine.Services.PhyCameras
         /// <summary>
         /// 是否不再显示过期许可证提示
         /// </summary>
-        [Browsable(false)]
+        [Category("许可证通知"), DisplayName("是否不再显示过期许可证提示")]
         public bool DontShowExpiredAgain { get => _DontShowExpiredAgain; set { _DontShowExpiredAgain = value; OnPropertyChanged(); } }
         private bool _DontShowExpiredAgain = false;
 
         /// <summary>
         /// 是否不再显示即将过期许可证提示
         /// </summary>
-        [Browsable(false)]
+        [Category("许可证通知"), DisplayName("是否不再显示即将过期许可证提示")]
         public bool DontShowExpiringAgain { get => _DontShowExpiringAgain; set { _DontShowExpiringAgain = value; OnPropertyChanged(); } }
         private bool _DontShowExpiringAgain = false;
     }
