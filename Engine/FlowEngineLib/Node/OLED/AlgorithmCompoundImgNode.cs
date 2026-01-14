@@ -5,22 +5,16 @@ using ST.Library.UI.NodeEditor;
 
 namespace FlowEngineLib.Node.OLED;
 
-[STNode("/03_2 Algorithm")]
+[STNode("/03_3 Image")]
 public class AlgorithmCompoundImgNode : CVBaseServerNodeIn2Hub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmCompoundImgNode));
 
 	private int _OrderIndex;
 
-	private string _TempName;
-
-	private int _TempId;
-
 	private string _OutputFileName;
 
 	private int _BufferLen;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TempName
@@ -31,22 +25,7 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeIn2Hub
 		}
 		set
 		{
-			_TempName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -76,20 +55,13 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeIn2Hub
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
-	}
-
 	public AlgorithmCompoundImgNode()
 		: base("图像拼接", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "CompoundImg";
-		_TempName = "";
-		_TempId = -1;
 		m_in_text = "IN_IMG1";
 		m_in2_text = "IN_IMG2";
-		_OutputFileName = "result.tif";
+		_OutputFileName = "result.cvraw";
 		_OrderIndex = -1;
 		_BufferLen = 1024;
 	}
@@ -97,7 +69,7 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeIn2Hub
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
+		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", base.TempDisName);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
@@ -106,6 +78,6 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeIn2Hub
 		AlgorithmPreStepParam algorithmPreStepParam2 = new AlgorithmPreStepParam();
 		getPreStepParam(0, algorithmPreStepParam);
 		getPreStepParam(1, algorithmPreStepParam2);
-		return new AlgorithmCompoundImgParam(_TempName, algorithmPreStepParam, algorithmPreStepParam2, _OrderIndex, _BufferLen, _OutputFileName);
+		return new AlgorithmCompoundImgParam(_TempId, _TempName, algorithmPreStepParam, algorithmPreStepParam2, _OrderIndex, _BufferLen, _OutputFileName);
 	}
 }

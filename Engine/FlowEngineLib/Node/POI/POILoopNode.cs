@@ -31,6 +31,10 @@ public class POILoopNode : CVBaseLoopServerNode<POINodeProperty>
 	{
 		AlgorithmPreStepParam param = new AlgorithmPreStepParam();
 		getPreStepParam(start, param);
-		return new POIDataParam(property.ImgFileName, -1, property.TempName, property.FilterTempName, property.ReviseTempName, property.OutputTempName, param, isSubPixel: false, isCCTWave: true);
+		_ImgFileName = property.ImgFileName;
+		_TempName = property.TempName;
+		POIDataParam pOIDataParam = new POIDataParam(property.FilterTempName, property.ReviseTempName, property.OutputTempName, param, isSubPixel: false, isCCTWave: true);
+		BuildImageParam(pOIDataParam);
+		return pOIDataParam;
 	}
 }

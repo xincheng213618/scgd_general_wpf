@@ -19,13 +19,14 @@ namespace ColorVision.Update
         {
 
         }
-        public void Process(string filePath)
+        public bool Process(string filePath)
         {
-            if (!File.Exists(filePath)) return;
+            if (!File.Exists(filePath)) return false;
 
             string fileName = Path.GetFileName(filePath);
 
             AutoUpdater.RestartIsIncrementApplication(filePath);
+            return true;
         }
     }
 
@@ -40,11 +41,12 @@ namespace ColorVision.Update
 
         }
 
-        public void Process(string filePath)
+        public bool Process(string filePath)
         {
-            if (!File.Exists(filePath)) return;
+            if (!File.Exists(filePath)) return false;
             string fileName = Path.GetFileName(filePath);
             PluginUpdater.UpdatePlugin(filePath);
+            return true;
         }
     }
 
@@ -60,16 +62,16 @@ namespace ColorVision.Update
 
         }
 
-        public void Process(string filePath)
+        public bool Process(string filePath)
         {
-            if (!File.Exists(filePath)) return;
+            if (!File.Exists(filePath)) return false;
 
             string fileName = Path.GetFileName(filePath);
 
             if (Regex.IsMatch(fileName, @"^ColorVision-Update-\[.*\]\.zip$", RegexOptions.IgnoreCase))
             {
                 AutoUpdater.RestartIsIncrementApplication(filePath);
-                return; // Assuming we stop here if A is executed. Remove return if flow should continue.
+                return false; // Assuming we stop here if A is executed. Remove return if flow should continue.
             }
             if (Path.GetExtension(filePath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
             {
@@ -88,15 +90,15 @@ namespace ColorVision.Update
                 {
                     // Handle invalid zip files or permission errors
                     Console.WriteLine($"Error reading zip file: {ex.Message}");
-                    return;
+                    return false;
                 }
                 if (hasManifest)
                 {
                     PluginUpdater.UpdatePlugin(filePath);
-                    return;
+                    return true;
                 }
             }
-
+            return false;
 
 
         }

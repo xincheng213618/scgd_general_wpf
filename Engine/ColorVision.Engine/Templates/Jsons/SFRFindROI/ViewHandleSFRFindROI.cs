@@ -104,7 +104,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             File.WriteAllText(fileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults ==null)
             {
@@ -150,10 +150,10 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 
         }
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
             foreach (var item in result.ViewResults)
             {
@@ -171,7 +171,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                             Circle.Attribute.Text = poiResultData.PoiName;
                             Circle.Attribute.Msg = $"Angle:{poiResultData.Value.Angle}{Environment.NewLine}";
                             Circle.Render();
-                            view.ImageView.AddVisual(Circle);
+                            ctx.ImageView.AddVisual(Circle);
                             break;
                         case POIPointTypes.Rect:
                             DVRectangleText Rectangle = new();
@@ -182,7 +182,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                             Rectangle.Attribute.Text = poiResultData.PoiName;
                             Rectangle.Attribute.Msg = $"Angle:{poiResultData.Value.Angle}{Environment.NewLine}";
                             Rectangle.Render();
-                            view.ImageView.AddVisual(Rectangle);
+                            ctx.ImageView.AddVisual(Rectangle);
                             break;
                         default:
                             break;
@@ -196,13 +196,13 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             header = new() { "Name", "PoiX", "PoiY", "PoiWidth", "PoiHeight", "形状" ,"angle","Center"};
             bdHeader = new() { "PoiName", "PoiX", "PoiY", "PoiWidth", "PoiHeight", "PoiType", "Value.Angle", "Value.Center" };
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
 

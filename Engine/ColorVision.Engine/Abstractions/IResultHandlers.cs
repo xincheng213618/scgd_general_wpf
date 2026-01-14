@@ -6,6 +6,7 @@ using ColorVision.UI.Sorts;
 using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -37,7 +38,7 @@ namespace ColorVision.Engine
         /// <summary>
         /// 处理算法结果
         /// </summary>
-        void Handle(ViewResultContext ctx, ViewResultAlg result);
+        void Handle(ViewResultContext context, ViewResultAlg result);
 
         /// <summary>
         /// 保存侧边栏数据
@@ -55,16 +56,10 @@ namespace ColorVision.Engine
         /// </summary>
         public abstract List<ViewResultAlgType> CanHandle { get; }
 
-        public virtual bool CanHandle1(ViewResultAlg result)
-        {
-            if (CanHandle.Contains(result.ResultType))
-            {
-                return true;
-            }
-            return false;
-        }
+        public virtual bool CanHandle1(ViewResultAlg result) => CanHandle.Contains(result.ResultType);
 
-        public abstract void Handle(ViewResultContext ctx, ViewResultAlg result);
+
+        public abstract void Handle(ViewResultContext context, ViewResultAlg result);
 
         public virtual void Load(ViewResultContext ctx, ViewResultAlg result)
         {

@@ -11,20 +11,13 @@ namespace ColorVision.Solution.FileMeta
     {
         public int Order => 1;
 
-        public bool CanProcess(string filePath)
-        {
-            return true;
-        }
         public void Export(string filePath)
         {
 
         }
-        public bool CanExport(string filePath)
-        {
-            return true;
-        }
 
-        public void Process(string filePath)
+
+        public bool Process(string filePath)
         {
             var control = new AvalonEditControll(filePath);
             Window window = new() { };
@@ -34,6 +27,8 @@ namespace ColorVision.Solution.FileMeta
             }
             window.Content = control;
             window.Show();
+
+            return true;
         }
     }
 

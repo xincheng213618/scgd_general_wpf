@@ -4,11 +4,11 @@ using System.Windows;
 
 namespace ColorVision.UI.Desktop.Plugins
 {
-    public class PluginsUpdate : IMainWindowInitialized
+    public class PluginsUpdate : MainWindowInitializedBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginsUpdate));
 
-        public async Task Initialize()
+        public override async Task Initialize()
         {
             if (!PluginWindowConfig.Instance.IsAutoUpdate) return;        
             log.Info("PluginsInitializedCheck");

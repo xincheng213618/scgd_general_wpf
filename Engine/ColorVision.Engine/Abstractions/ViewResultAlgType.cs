@@ -1,3 +1,5 @@
+#pragma warning disable
+
 namespace ColorVision.Engine
 {
     /// <summary>

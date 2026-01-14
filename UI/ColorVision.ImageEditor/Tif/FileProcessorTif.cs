@@ -13,7 +13,7 @@ namespace ColorVision.ImageEditor.Tif
         {
         }
 
-        public void Process(string filePath)
+        public bool Process(string filePath)
         {
             ImageView imageView = new ImageView();
             Window window = new() { Title = filePath };
@@ -37,6 +37,8 @@ namespace ColorVision.ImageEditor.Tif
                 }));
             }
             window.Show();
+
+            return true;
 
         }
     }

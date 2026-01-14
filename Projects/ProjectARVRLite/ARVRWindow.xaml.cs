@@ -3,6 +3,7 @@ using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Batch;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
@@ -430,12 +431,13 @@ namespace ProjectARVRLite
             CurrentFlowResult = new ProjectARVRReuslt();
             CurrentFlowResult.SN = ProjectARVRLiteConfig.Instance.SN;
             CurrentFlowResult.Model = FlowTemplate.Text;
-            ;
 
             CurrentFlowResult.TestType = CurrentTestType;
 
             FlowName = FlowTemplate.Text;
-            CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+
+            string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRLiteConfig.Instance.SN + "_" : "";
+            CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
 
             await Refresh();
 
@@ -458,9 +460,73 @@ namespace ProjectARVRLite
             int id = MySqlControl.GetInstance().DB.Insertable(measureBatchModel).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = id;
 
+            PreProcessing(FlowName, sn);
+
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
         }
+        /// <summary>
+        /// Checks if a pre-processor is valid and enabled for the given flow.
+        /// </summary>
+        private static bool IsValidEnabledPreProcessor(IPreProcess processor, string flowName)
+        {
+            var config = processor.GetConfig();
+            if (config is PreProcessConfigBase baseConfig)
+            {
+                return baseConfig.IsEnabled && baseConfig.AppliesToTemplate(flowName);
+            }
+            return false;
+        }
+
+        private bool PreProcessing(string flowName, string serialNumber)
+        {
+            try
+            {
+                // Find all enabled pre-processors that apply to this flow template
+                var matchingProcessors = PreProcessManager.GetInstance().Processes
+                    .Where(p => IsValidEnabledPreProcessor(p, flowName))
+                    .ToList();
+
+                if (matchingProcessors.Count > 0)
+                {
+                    log.Info($"匹配到 {matchingProcessors.Count} 个已启用的预处理 {flowName}");
+
+                    var ctx = new IPreProcessContext
+                    {
+                        FlowName = flowName,
+                        SerialNumber = serialNumber,
+                    };
+
+                    // Execute all matching pre-processors sequentially
+                    foreach (var processor in matchingProcessors)
+                    {
+                        var metadata = PreProcessMetadata.FromProcess(processor);
+                        log.Info($"执行预处理 {metadata.DisplayName}");
+                        try
+                        {
+                            bool success = processor.PreProcess(ctx);
+                            if (!success)
+                            {
+                                log.Warn($"预处理 {metadata.DisplayName} 执行返回失败");
+                                return false; // Abort flow if any pre-processor fails
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error($"预处理 {metadata.DisplayName} 执行异常", ex);
+                            return false; // Abort flow on exception
+                        }
+                    }
+                }
+                return true; // All pre-processors succeeded or none configured
+            }
+            catch (Exception ex)
+            {
+                log.Error("匹配/执行预处理出错", ex);
+                return false;
+            }
+        }
+
 
 
 

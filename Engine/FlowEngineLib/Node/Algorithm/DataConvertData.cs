@@ -12,15 +12,10 @@ public class DataConvertData : AlgorithmPreStepParam
 
 	public CVTemplateParam TemplateParam { get; set; }
 
-	public DataConvertData(CVDataConvertMethodType methodType, string tempName, CVDataConvertInputType inType, CVDataConvertOutputType outType)
+	public DataConvertData(CVDataConvertMethodType methodType, CVDataConvertInputType inType, CVDataConvertOutputType outType)
 	{
 		MethodType = methodType;
 		InType = inType;
 		OutType = outType;
-		TemplateParam = new CVTemplateParam
-		{
-			ID = -1,
-			Name = tempName
-		};
 	}
 }

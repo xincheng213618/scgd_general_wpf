@@ -11,12 +11,6 @@ public class AlgComplianceContrastNode : CVBaseServerNodeIn2Hub
 
 	private OperationType _Operation;
 
-	private string _TempName;
-
-	private int _TempId;
-
-	private STNodeEditText<string> m_ctrl_temp;
-
 	private STNodeEditText<OperationType> m_ctrl_editText;
 
 	[STNodeProperty("运算", "运算", true)]
@@ -43,27 +37,8 @@ public class AlgComplianceContrastNode : CVBaseServerNodeIn2Hub
 		set
 		{
 			_TempName = value;
-			setTempName();
+			setTempName(value);
 		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
-		}
-	}
-
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
 	}
 
 	public AlgComplianceContrastNode()
@@ -71,7 +46,6 @@ public class AlgComplianceContrastNode : CVBaseServerNodeIn2Hub
 	{
 		base.Height += 25;
 		operatorCode = "Compliance_Contrast";
-		_TempName = "";
 	}
 
 	protected override void OnCreate()
@@ -79,7 +53,7 @@ public class AlgComplianceContrastNode : CVBaseServerNodeIn2Hub
 		base.OnCreate();
 		m_ctrl_editText = CreateControl(typeof(STNodeEditText<OperationType>), m_custom_item, "运算:", _Operation);
 		m_custom_item.Y += 25;
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", _TempName);
+		CreateTempControl(m_custom_item);
 	}
 
 	private void setOperationType()
@@ -96,6 +70,8 @@ public class AlgComplianceContrastNode : CVBaseServerNodeIn2Hub
 			getPreStepParam(i, algorithmPreStepParam);
 			array[i] = algorithmPreStepParam;
 		}
-		return new ComplianceContrastParam(_TempName, (int)_Operation, array[0].MasterId, array[1].MasterId);
+		ComplianceContrastParam complianceContrastParam = new ComplianceContrastParam((int)_Operation, array[0].MasterId, array[1].MasterId);
+		BuildTemp(complianceContrastParam);
+		return complianceContrastParam;
 	}
 }

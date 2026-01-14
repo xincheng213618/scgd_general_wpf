@@ -14,8 +14,8 @@ public class POIDataParam : AlgorithmParam
 
 	public bool IsCCTWave { get; set; }
 
-	public POIDataParam(string imgFile, int tempId, string tempName, string filterTempName, string reviseTempName, string outTempName, AlgorithmPreStepParam param, bool isSubPixel, bool isCCTWave)
-		: base(imgFile, tempId, tempName, param, string.Empty)
+	public POIDataParam(string filterTempName, string reviseTempName, string outTempName, AlgorithmPreStepParam param, bool isSubPixel, bool isCCTWave)
+		: base(param, string.Empty)
 	{
 		FilterTemplate = new CVTemplateParam
 		{

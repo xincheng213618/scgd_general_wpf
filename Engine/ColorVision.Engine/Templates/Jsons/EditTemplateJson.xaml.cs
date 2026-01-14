@@ -15,12 +15,17 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public double Width { get => _Width; set { _Width = value; } }
         private double _Width = double.NaN;
+
+        public bool UsePropertyEditor { get; set; } = false; // Default to text editor mode
     }
 
     public partial class EditTemplateJson : UserControl, ITemplateUserControl
     {
 
         private string Description { get; set; }
+        private bool _isInPropertyEditorMode = false;
+        private bool _isSyncingFromPropertyEditor = false;
+
         public EditTemplateJson(string description)
         {
             Description = description;
@@ -34,6 +39,13 @@ namespace ColorVision.Engine.Templates.Jsons
             textEditor.ShowLineNumbers = true;
             textEditor.TextChanged += TextEditor_TextChanged;
 
+            // Set initial mode from config
+            _isInPropertyEditorMode = EditTemplateJsonConfig.Instance.UsePropertyEditor;
+            EditorModeToggle.IsChecked = _isInPropertyEditorMode;
+            UpdateEditorMode();
+
+            // Subscribe to property editor changes
+            propertyEditor.JsonValueChanged += PropertyEditor_JsonValueChanged;
         }
 
         private void TextEditor_TextChanged(object? sender, EventArgs e)
@@ -70,6 +82,18 @@ namespace ColorVision.Engine.Templates.Jsons
                 textEditor.TextChanged -= TextEditor_TextChanged;
                 textEditor.TextChanged += TextEditor_TextChanged;
 
+                // If in property editor mode, refresh the property editor with new data
+                if (_isInPropertyEditorMode)
+                {
+                    try
+                    {
+                        propertyEditor.SetJson(IEditTemplateJson.JsonValue);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error refreshing property editor: {ex.Message}");
+                    }
+                }
             }
             DescriptionButton.IsChecked = false;
         }
@@ -109,6 +133,117 @@ namespace ColorVision.Engine.Templates.Jsons
                 UseShellExecute = true
             });
             Common.NativeMethods.Clipboard.SetText(IEditTemplateJson.JsonValue);
+        }
+
+        private void EditorModeToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggleButton)
+            {
+                _isInPropertyEditorMode = toggleButton.IsChecked == true;
+                EditTemplateJsonConfig.Instance.UsePropertyEditor = _isInPropertyEditorMode;
+
+                if (_isInPropertyEditorMode)
+                {
+                    // Switch to property editor mode
+                    SwitchToPropertyEditorMode();
+                }
+                else
+                {
+                    // Switch back to text mode
+                    SwitchToTextMode();
+                }
+            }
+        }
+
+        private void SwitchToPropertyEditorMode()
+        {
+            try
+            {
+                // Load current JSON into property editor
+                propertyEditor.SetJson(textEditor.Text);
+
+                // Show property editor, hide text editor
+                textEditor.Visibility = Visibility.Collapsed;
+                propertyEditor.Visibility = Visibility.Visible;
+
+                // Update toggle button text
+                EditorModeToggle.Content = "文本编辑";
+                EditorModeToggle.ToolTip = "切换到文本编辑器模式";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"切换到属性编辑器失败: {ex.Message}\n\n请检查 JSON 格式是否正确。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                
+                // Revert toggle state
+                EditorModeToggle.IsChecked = false;
+                _isInPropertyEditorMode = false;
+            }
+        }
+
+        private void SwitchToTextMode()
+        {
+            try
+            {
+                // Get JSON from property editor
+                var json = propertyEditor.GetJson();
+                if (!string.IsNullOrEmpty(json))
+                {
+                    // Update text editor
+                    textEditor.TextChanged -= TextEditor_TextChanged;
+                    textEditor.Text = json;
+                    textEditor.TextChanged += TextEditor_TextChanged;
+                }
+
+                // Show text editor, hide property editor
+                textEditor.Visibility = Visibility.Visible;
+                propertyEditor.Visibility = Visibility.Collapsed;
+
+                // Update toggle button text
+                EditorModeToggle.Content = "属性编辑";
+                EditorModeToggle.ToolTip = "切换到属性编辑器模式";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"切换到文本编辑器失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void UpdateEditorMode()
+        {
+            if (_isInPropertyEditorMode)
+            {
+                textEditor.Visibility = Visibility.Collapsed;
+                propertyEditor.Visibility = Visibility.Visible;
+                EditorModeToggle.Content = "文本编辑";
+                EditorModeToggle.ToolTip = "切换到文本编辑器模式";
+            }
+            else
+            {
+                textEditor.Visibility = Visibility.Visible;
+                propertyEditor.Visibility = Visibility.Collapsed;
+                EditorModeToggle.Content = "属性编辑";
+                EditorModeToggle.ToolTip = "切换到属性编辑器模式";
+            }
+        }
+
+        private void PropertyEditor_JsonValueChanged(object? sender, string json)
+        {
+            if (_isSyncingFromPropertyEditor)
+                return;
+
+            _isSyncingFromPropertyEditor = true;
+            try
+            {
+                // Update the IEditTemplateJson value when property editor changes
+                if (IEditTemplateJson != null)
+                {
+                    IEditTemplateJson.JsonValue = json;
+                }
+            }
+            finally
+            {
+                _isSyncingFromPropertyEditor = false;
+            }
         }
     }
 }

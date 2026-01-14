@@ -1,4 +1,3 @@
-using System.Drawing;
 using FlowEngineLib.Base;
 using log4net;
 using ST.Library.UI.NodeEditor;
@@ -8,8 +7,6 @@ namespace FlowEngineLib.Node.POI;
 public class POICADMappingNode : CVBaseServerNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(POICADMappingNode));
-
-	protected string _GlobalVariableName;
 
 	private string _TemplateName;
 
@@ -21,22 +18,7 @@ public class POICADMappingNode : CVBaseServerNode
 
 	private STNodeEditText<POIBuildType> m_ctrl_type;
 
-	private STNodeEditText<string> m_ctrl_temp;
-
 	private STNodeEditText<string> m_ctrl_prefix;
-
-	[STNodeProperty("全局变量", "全局变量", true)]
-	public string GlobalVariableName
-	{
-		get
-		{
-			return _GlobalVariableName;
-		}
-		set
-		{
-			_GlobalVariableName = value;
-		}
-	}
 
 	[STNodeProperty("模板名称", "模板名称", true)]
 	public string TemplateName
@@ -105,27 +87,18 @@ public class POICADMappingNode : CVBaseServerNode
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_type = new STNodeEditText<POIBuildType>();
-		m_ctrl_type.Text = "类型:";
-		m_ctrl_type.DisplayRectangle = m_custom_item;
-		m_ctrl_type.Value = _MappingType;
-		base.Controls.Add(m_ctrl_type);
-		m_ctrl_temp = new STNodeEditText<string>();
-		m_ctrl_temp.Text = "模板:";
-		m_ctrl_temp.DisplayRectangle = new Rectangle(m_custom_item.X, m_custom_item.Y + 25, m_custom_item.Width, m_custom_item.Height);
-		m_ctrl_temp.Value = _TemplateName;
-		base.Controls.Add(m_ctrl_temp);
-		m_ctrl_prefix = new STNodeEditText<string>();
-		m_ctrl_prefix.Text = "前缀:";
-		m_ctrl_prefix.DisplayRectangle = new Rectangle(m_custom_item.X, m_custom_item.Y + 50, m_custom_item.Width, m_custom_item.Height);
-		m_ctrl_prefix.Value = _PrefixName;
-		base.Controls.Add(m_ctrl_prefix);
+		m_ctrl_type = CreateControl(typeof(STNodeEditText<POIBuildType>), m_custom_item, "类型:", _MappingType);
+		m_custom_item.Y += 25;
+		CreateTempControl(m_custom_item);
+		m_custom_item.Y += 25;
+		m_ctrl_prefix = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "前缀:", _PrefixName);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		POICADMappingData pOICADMappingData = new POICADMappingData(_TemplateName, _PrefixName, _CADFileName, _MappingType);
+		POICADMappingData pOICADMappingData = new POICADMappingData(_PrefixName, _CADFileName, _MappingType);
 		getPreStepParam(start, pOICADMappingData);
+		pOICADMappingData.TemplateParam = BuildTemp();
 		return pOICADMappingData;
 	}
 }

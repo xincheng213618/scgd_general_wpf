@@ -7,15 +7,7 @@ namespace FlowEngineLib.Node.Algorithm;
 [STNode("/03_2 Algorithm")]
 public class AlgorithmGhostV2Node : CVBaseServerNodeIn2Hub
 {
-	private string _TempName;
-
-	private int _TempId;
-
-	private string _ImgFileName;
-
 	private int _BufferLen;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TempName
@@ -26,22 +18,7 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeIn2Hub
 		}
 		set
 		{
-			_TempName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -71,19 +48,12 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeIn2Hub
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
-	}
-
 	public AlgorithmGhostV2Node()
 		: base("ARVR.Ghost算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "Ghost";
 		m_in_text = "IN_IMG";
 		m_in2_text = "IN_CIE";
-		_TempName = "";
-		_TempId = -1;
 		_BufferLen = 1024;
 		base.MaxTime = 15000;
 	}
@@ -91,18 +61,17 @@ public class AlgorithmGhostV2Node : CVBaseServerNodeIn2Hub
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
+		CreateTempControl(m_custom_item);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		AlgorithmGhostInputParam algorithmGhostInputParam = new AlgorithmGhostInputParam(_TempId, _TempName, _BufferLen);
+		AlgorithmGhostInputParam algorithmGhostInputParam = new AlgorithmGhostInputParam(_BufferLen);
 		getPreStepParam(0, algorithmGhostInputParam);
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
 		getPreStepParam(1, algorithmPreStepParam);
 		algorithmGhostInputParam.CIE_MasterId = algorithmPreStepParam.MasterId;
-		algorithmGhostInputParam.FileType = GetImageFileType(_ImgFileName);
-		algorithmGhostInputParam.ImgFileName = _ImgFileName;
+		BuildImageParam(algorithmGhostInputParam);
 		algorithmGhostInputParam.SMUData = GetSMUResult(start);
 		return algorithmGhostInputParam;
 	}

@@ -1,6 +1,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -18,10 +19,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras.Licenses
 {
     /// <summary>
-    /// Menu item to open License Manager
+    /// Menu item to open Licenses Manager
     /// </summary>
     public class ExportLicenseManager : MenuItemBase
     {
@@ -54,6 +55,9 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public RelayCommand SaveToLincenseCommand { get; set; }
 
+        public RelayCommand EditLicenseNotificationConfigCommand { get; set; }
+
+        public LicenseNotificationConfig LicenseNotificationConfig { get; set; }
 
         public LicenseManagerViewModel()
         {
@@ -66,8 +70,24 @@ namespace ColorVision.Engine.Services.PhyCameras
             GetSpectrumLicenseCommand = new RelayCommand(a => GetSpectrumLicense());
 
             SaveToLincenseCommand = new RelayCommand(a=> SaveToLincense());
+
+            LicenseNotificationConfig = ConfigService.Instance.GetRequiredService<LicenseNotificationConfig>();
+
+            EditLicenseNotificationConfigCommand = new RelayCommand(a =>
+            {
+                var window = new PropertyEditorWindow(LicenseNotificationConfig)
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen
+                };
+                if (window.ShowDialog() == true)
+                {
+                    ConfigService.Instance.SaveConfigs();
+                }
+            });
             LoadLicenses();
         }
+
 
         public void SaveToLincense()
         {

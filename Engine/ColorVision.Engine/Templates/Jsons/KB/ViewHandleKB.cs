@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         }
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -74,7 +74,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             }
         }
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.ResultImagFile))
             {
@@ -83,13 +83,16 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 					BitmapDecoder decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
 					BitmapSource bitmapSource = decoder.Frames[0];
 					WriteableBitmap writeableBitmap = new WriteableBitmap(bitmapSource);
-					view.ImageView.OpenImage(writeableBitmap); // 你的方法如果支持这样调用
-				}
+
+                    ctx.ImageView.Config.AddProperties("FilePath", result.ResultImagFile);
+                    ctx.ImageView.OpenImage(writeableBitmap); // 你的方法如果支持这样调用
+                    ctx.ImageView.UpdateZoomAndScale();
+                }
 			}
             else
             {
                 if (File.Exists(result.FilePath))
-                    view.ImageView.OpenImage(result.FilePath);
+                    ctx.ImageView.OpenImage(result.FilePath);
             }
 
             List<POIPoint> DrawPoiPoint = new();
@@ -102,20 +105,20 @@ namespace ColorVision.Engine.Templates.Jsons.KB
                 }
 
             }
-            AddPOIPoint(view.ImageView, DrawPoiPoint);
+            AddPOIPoint(ctx.ImageView, DrawPoiPoint);
 
             List<string> header;
             List<string> bdHeader;
             header = new() { "PoiName", "Value" };
             bdHeader = new() { "PoiName", "Value" };
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

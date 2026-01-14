@@ -11,9 +11,7 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(OLEDCombineQuaterImages_4In1Node));
 
-	private CVOLED_COLOR _Color;
-
-	private string _TempName;
+	private CVOLED_COLOR _Color = CVOLED_COLOR.GREEN;
 
 	private string _ImgFileName1;
 
@@ -24,8 +22,6 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNode
 	private string _ImgFileName4;
 
 	private string _OutputFileName;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	protected CVStartCFC[] masterInput;
 
@@ -98,11 +94,6 @@ public class OLEDCombineQuaterImages_4In1Node : CVBaseServerNode
 		{
 			_OutputFileName = value;
 		}
-	}
-
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = _TempName;
 	}
 
 	public OLEDCombineQuaterImages_4In1Node()

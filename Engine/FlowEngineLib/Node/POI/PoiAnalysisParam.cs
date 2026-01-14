@@ -2,7 +2,6 @@ using FlowEngineLib.Algorithm;
 
 namespace FlowEngineLib.Node.POI;
 
-public class PoiAnalysisParam : AlgorithmPreStepParam
+public class PoiAnalysisParam : AlgorithmBaseParam
 {
-	public CVTemplateParam TemplateParam { get; set; }
 }

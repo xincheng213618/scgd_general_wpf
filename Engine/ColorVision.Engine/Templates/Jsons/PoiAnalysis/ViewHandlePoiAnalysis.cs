@@ -87,7 +87,7 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
         }
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -118,10 +118,10 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
             }
         }
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
             if (result.ViewResults.Count == 1)
             {
@@ -129,13 +129,13 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
                 List<string> header = new() { "Content", "Value" };
                 List<string> bdHeader = new() { "PoiAnalysisResult.result.Content", "PoiAnalysisResult.result.Value", };
 
-                if (view.ListView.View is GridView gridView)
+                if (ctx.ListView.View is GridView gridView)
                 {
-                    view.LeftGridViewColumnVisibilitys.Clear();
+                    ctx.LeftGridViewColumnVisibilitys.Clear();
                     gridView.Columns.Clear();
                     for (int i = 0; i < header.Count; i++)
                         gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                    view.ListView.ItemsSource = result.ViewResults;
+                    ctx.ListView.ItemsSource = result.ViewResults;
                 }
             }
             else

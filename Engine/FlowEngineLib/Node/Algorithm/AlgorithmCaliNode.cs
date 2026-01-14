@@ -6,13 +6,7 @@ namespace FlowEngineLib.Node.Algorithm;
 [STNode("/03_3 校正")]
 public class AlgorithmCaliNode : CVBaseServerNode
 {
-	private string _TempName;
-
-	private int _TempId;
-
-	private string _ImgFileName;
-
-	private STNodeEditText<string> m_ctrl_temp;
+	private string _OutputFileName;
 
 	[STNodeProperty("参数模板", "参数模板", true)]
 	public string TempName
@@ -23,8 +17,7 @@ public class AlgorithmCaliNode : CVBaseServerNode
 		}
 		set
 		{
-			_TempName = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -41,42 +34,38 @@ public class AlgorithmCaliNode : CVBaseServerNode
 		}
 	}
 
-	private void setTempName()
+	[STNodeProperty("输出文件", "输出文件", true)]
+	public string OutputFileName
 	{
-		m_ctrl_temp.Value = _TempName;
+		get
+		{
+			return _OutputFileName;
+		}
+		set
+		{
+			_OutputFileName = value;
+		}
 	}
 
 	public AlgorithmCaliNode()
 		: base("色差校正", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
 		operatorCode = "CaliAngleShift";
-		_TempName = "";
-		_TempId = -1;
+		_OutputFileName = "result.cvraw";
 		base.MaxTime = 30000;
 	}
 
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", _TempName);
-	}
-
-	private void setAlgorithmType()
-	{
+		CreateTempControl(m_custom_item);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		AlgorithmCaliParam algorithmCaliParam = new AlgorithmCaliParam(_TempName);
-		if (!string.IsNullOrEmpty(_ImgFileName))
-		{
-			algorithmCaliParam.ImgFileName = _ImgFileName;
-			algorithmCaliParam.FileType = GetImageFileType(_ImgFileName);
-		}
-		else
-		{
-			getPreStepParam(start, algorithmCaliParam);
-		}
+		AlgorithmCaliParam algorithmCaliParam = new AlgorithmCaliParam(_OutputFileName);
+		BuildImageParam(algorithmCaliParam);
+		getPreStepParam(start, algorithmCaliParam);
 		return algorithmCaliParam;
 	}
 }

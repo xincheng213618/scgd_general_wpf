@@ -10,16 +10,10 @@ public class ComplianceMathParam : AlgorithmParam
 	{
 	}
 
-	public ComplianceMathParam(string tempName)
+	public ComplianceMathParam(ComplianceMathType _ComplianceMath)
 		: this()
 	{
-		base.TemplateParam.Name = tempName;
-	}
-
-	public ComplianceMathParam(int masterId, string tempName, ComplianceMathType _ComplianceMath)
-		: this(tempName)
-	{
-		base.MasterId = masterId;
+		base.MasterId = -1;
 		ComplianceType = _ComplianceMath;
 	}
 }

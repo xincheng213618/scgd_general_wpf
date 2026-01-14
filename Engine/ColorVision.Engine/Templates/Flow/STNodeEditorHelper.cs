@@ -35,6 +35,7 @@ using ColorVision.Engine.Templates.Jsons.FindCross;
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.Ghost2;
 using ColorVision.Engine.Templates.Jsons.HDR;
+using ColorVision.Engine.Templates.Jsons.ImageROI;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2;
@@ -250,6 +251,8 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 AddStackPanel(name => SpectrumEQENode.DeviceCode = name, SpectrumEQENode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().ToList());
             }
+
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Spectrum.SpectrumNode SpectrumNode)
             {
                 AddStackPanel(name => SpectrumNode.DeviceCode = name, SpectrumNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().ToList());
@@ -268,6 +271,9 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => oled.DeviceCode = name, oled.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddImagePath(name => oled.ImgFileName = name, oled.ImgFileName);
                 AddStackPanel(name => oled.TempName = name, oled.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
+                AddStackPanel(name => oled.OutputTemplateName = name, oled.OutputTemplateName, "PoiOutPut", new TemplatePoiOutputParam());
+
+                
             }
 
 
@@ -594,7 +600,7 @@ namespace ColorVision.Engine.Templates.Flow
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.POIAnalysisNode PoiAnalysis)
             {
                 AddStackPanel(name => PoiAnalysis.DeviceCode = name, PoiAnalysis.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-                AddStackPanel(name => PoiAnalysis.TemplateName = name, PoiAnalysis.TemplateName, "PoiAnalysis", new TemplatePoiAnalysis());
+                AddStackPanel(name => PoiAnalysis.TempName = name, PoiAnalysis.TempName, "PoiAnalysis", new TemplatePoiAnalysis());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.BuildPOINode buidpoi)
@@ -619,12 +625,19 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => OLEDImageCroppingNode.DeviceCode = name, OLEDImageCroppingNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => OLEDImageCroppingNode.TempName = name, OLEDImageCroppingNode.TempName, "参数模板", new TemplateImageCropping());
             }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.OLED.AlgorithmCompoundImgNode AlgorithmCompoundImgNode)
+            {
+                AddStackPanel(name => AlgorithmCompoundImgNode.DeviceCode = name, AlgorithmCompoundImgNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddStackPanel(name => AlgorithmCompoundImgNode.TempName = name, AlgorithmCompoundImgNode.TempName, "参数模板", new TemplateCompoundImg());
+            }
+
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.POINode poinode)
             {
                 AddStackPanel(name => poinode.DeviceCode = name, poinode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                 AddImagePath(name => poinode.ImgFileName = name, poinode.ImgFileName);
-                AddStackPanel(name => poinode.TemplateName = name, poinode.TemplateName, "POI模板", new TemplatePoi());
+                AddStackPanel(name => poinode.TempName = name, poinode.TempName, "POI模板", new TemplatePoi());
                 AddStackPanel(name => poinode.FilterTemplateName = name, poinode.FilterTemplateName, "POI过滤", new TemplatePoiFilterParam());
                 AddStackPanel(name => poinode.ReviseTemplateName = name, poinode.ReviseTemplateName, "POI修正", new TemplatePoiReviseParam());
                 AddStackPanel(name => poinode.OutputTemplateName = name, poinode.OutputTemplateName, "文件输出模板", new TemplatePoiOutputParam());
@@ -633,9 +646,18 @@ namespace ColorVision.Engine.Templates.Flow
             if (STNodeEditor.ActiveNode is FlowEngineLib.CommonSensorNode commonsendorNode)
             {
                 AddStackPanel(name => commonsendorNode.DeviceCode = name, commonsendorNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
-
                 AddStackPanel(name => commonsendorNode.TempName = name, commonsendorNode.TempName, "模板名称", TemplateSensor.AllParams);
             }
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmImageROINode AlgorithmImageROINode)
+            {
+                AddStackPanel(name => AlgorithmImageROINode.DeviceCode = name, AlgorithmImageROINode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddImagePath(name => AlgorithmImageROINode.ImgFileName = name, AlgorithmImageROINode.ImgFileName);
+                AddStackPanel(name => AlgorithmImageROINode.TempName = name, AlgorithmImageROINode.TempName, "模板名称", new TemplateImageROI());
+            }
+
+
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgComplianceMathNode algComplianceMathNode)
             {
                 void Refesh()

@@ -4,9 +4,9 @@ using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
-    public class CommadnInitialized : IMainWindowInitialized
+    public class CommadnInitialized : MainWindowInitializedBase
     {
-        public Task Initialize()
+        public override Task Initialize()
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
             {

@@ -88,8 +88,8 @@ namespace ColorVision.ImageEditor
 
 
         [JsonIgnore]
-        public string FilePath { get => _FilePath; set { _FilePath = value; OnPropertyChanged(); } }
-        private string _FilePath;
+        public string FilePath { get => GetProperties<string>("FilePath"); set { AddProperties("FilePath", value) ; OnPropertyChanged(); } }
+
 
         public event EventHandler ColormapTypesChanged;
 

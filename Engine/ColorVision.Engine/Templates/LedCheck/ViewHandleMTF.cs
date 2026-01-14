@@ -43,9 +43,9 @@ namespace ColorVision.Engine.Templates.LedCheck
 
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
-            base.Load(view, result);
+            base.Load(ctx, result);
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -61,11 +61,11 @@ namespace ColorVision.Engine.Templates.LedCheck
         }
 
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
 
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
             var header = new List<string> { "坐标", "半径" };
             var bdHeader = new List<string> { "Point", "Radius" };
@@ -99,26 +99,26 @@ namespace ColorVision.Engine.Templates.LedCheck
                 int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, (int)radius, ints, ints.Length, 1);
                 if (ret == 0)
                 {
-                    if (!HImageExtension.UpdateWriteableBitmap(view.ImageView.FunctionImage, hImageProcessed))
+                    if (!HImageExtension.UpdateWriteableBitmap(ctx.ImageView.FunctionImage, hImageProcessed))
                     {
                         var image = hImageProcessed.ToWriteableBitmap();
 
                         hImageProcessed.Dispose();
 
-                        view.ImageView.FunctionImage = image;
+                        ctx.ImageView.FunctionImage = image;
                     }
-                    view.ImageView.ImageShow.Source = view.ImageView.FunctionImage;
+                    ctx.ImageView.ImageShow.Source = ctx.ImageView.FunctionImage;
                 }
                 hImage.Dispose();
             });
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
 

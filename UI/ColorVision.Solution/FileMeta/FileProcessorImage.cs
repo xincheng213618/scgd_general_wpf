@@ -17,7 +17,7 @@ namespace ColorVision.Solution.FileMeta
 
         }
 
-        public void Process(string filePath)
+        public bool Process(string filePath)
         {
             ImageView imageView = new();
             Window window = new() { Title =filePath };
@@ -32,6 +32,9 @@ namespace ColorVision.Solution.FileMeta
                 window.Title = $"{filePath} - {imageView.ImageShow.Source.Width}x{imageView.ImageShow.Source.Height}";
             };
             window.Show();
+
+            return true;
+
         }
     }
 

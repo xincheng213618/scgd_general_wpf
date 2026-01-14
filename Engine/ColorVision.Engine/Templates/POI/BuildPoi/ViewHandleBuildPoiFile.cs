@@ -108,7 +108,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             return poiInfo;
         }
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -124,10 +124,10 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         }
 
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
             if (result.ViewResults.Count > 0 && result.ViewResults[0] is PoiCieFileModel model)
             {
@@ -136,8 +136,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 if (File.Exists(result.FilePath))
                 {
                     // 2. 获取全局画布尺寸（假设 DrawCanvas.ActualWidth/ActualHeight）
-                    int canvasWidth = (int)Math.Ceiling(view.ImageView.ActualWidth);
-                    int canvasHeight = (int)Math.Ceiling(view.ImageView.ActualHeight);
+                    int canvasWidth = (int)Math.Ceiling(ctx.ImageView.ActualWidth);
+                    int canvasHeight = (int)Math.Ceiling(ctx.ImageView.ActualHeight);
                     if (canvasWidth == 0 || canvasHeight == 0) return;
                     var fullRect = new Rect(0, 0, canvasWidth, canvasHeight);
                     // 3. 新建全局大图
@@ -164,20 +164,20 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                     rtb.Render(dv);
                     var rasterVisual = new RasterizedSelectVisual(rtb, fullRect);
                     rasterVisual.Attribute.Tag = pointinfo.Positions;
-                    view.ImageView.ImageShow.AddVisualCommand(rasterVisual);
+                    ctx.ImageView.ImageShow.AddVisualCommand(rasterVisual);
                 }
 
             }
 
             var header = new List<string> { "id", "file_name", "file_url", "fileType" };
             var bdHeader = new List<string> { "Id", "FileName", "FileUrl", "file_type" };
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
 
         }

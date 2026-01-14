@@ -11,15 +11,11 @@ public class POIReviseNode : CVBaseServerNodeIn2Hub
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(POIReviseNode));
 
-	private string _TemplateName;
-
 	protected string _Output;
 
 	private string _POIPointName;
 
 	private bool _IsSelfResultRevise;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<string> m_ctrl_out_temp;
 
@@ -30,12 +26,11 @@ public class POIReviseNode : CVBaseServerNodeIn2Hub
 	{
 		get
 		{
-			return _TemplateName;
+			return _TempName;
 		}
 		set
 		{
-			_TemplateName = value;
-			m_ctrl_temp.Value = value;
+			setTempName(value);
 		}
 	}
 
@@ -87,7 +82,6 @@ public class POIReviseNode : CVBaseServerNodeIn2Hub
 		operatorCode = "POIReviseGen";
 		m_in_text = "IN_POI";
 		m_in2_text = "IN_SPE";
-		_TemplateName = "";
 		_Output = "";
 		_POIPointName = "";
 	}
@@ -95,7 +89,7 @@ public class POIReviseNode : CVBaseServerNodeIn2Hub
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", _TemplateName);
+		CreateTempControl(m_custom_item);
 		m_custom_item.Y += 25;
 		m_ctrl_out_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "输出:", _Output);
 		m_custom_item.Y += 25;
@@ -115,6 +109,9 @@ public class POIReviseNode : CVBaseServerNodeIn2Hub
 		{
 			logger.DebugFormat("PreStepParams => {0}", JsonConvert.SerializeObject(array));
 		}
-		return new POIReviseData(array[1].MasterId, array[0].MasterId, _TemplateName, _Output, _POIPointName, _IsSelfResultRevise);
+		return new POIReviseData(array[1].MasterId, array[0].MasterId, _Output, _POIPointName, _IsSelfResultRevise)
+		{
+			TemplateParam = BuildTemp()
+		};
 	}
 }

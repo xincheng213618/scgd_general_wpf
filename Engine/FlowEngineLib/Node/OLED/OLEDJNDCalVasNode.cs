@@ -8,15 +8,11 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeIn2Hub
 {
 	private int _OrderIndex;
 
-	private string _TempName;
-
 	private Algorithm2Type _Algorithm;
 
 	private int _BufferLen;
 
 	private bool _IsAdd;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<Algorithm2Type> m_ctrl_editText;
 
@@ -42,8 +38,7 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeIn2Hub
 		}
 		set
 		{
-			_TempName = value;
-			m_ctrl_temp.Value = value;
+			setTempName(value);
 		}
 	}
 
@@ -107,7 +102,7 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeIn2Hub
 		m_custom_item.Y += 15;
 		m_ctrl_editText = CreateControl(typeof(STNodeEditText<Algorithm2Type>), m_custom_item, "算法:", _Algorithm);
 		m_custom_item.Y += 25;
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", _TempName);
+		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", base.TempDisName);
 	}
 
 	private void setAlgorithmType()
@@ -133,7 +128,7 @@ public class OLEDJNDCalVasNode : CVBaseServerNodeIn2Hub
 	protected override object getBaseEventData(CVStartCFC start)
 	{
 		AlgorithmPreStepParam algorithmPreStepParam = new AlgorithmPreStepParam();
-		AlgorithmCalVasParam algorithmCalVasParam = new AlgorithmCalVasParam(_TempName, _IsAdd, -1, _OrderIndex, _BufferLen);
+		AlgorithmCalVasParam algorithmCalVasParam = new AlgorithmCalVasParam(_TempId, _TempName, _IsAdd, -1, _OrderIndex, _BufferLen);
 		getPreStepParam(0, algorithmCalVasParam);
 		getPreStepParam(1, algorithmPreStepParam);
 		algorithmCalVasParam.POI_MasterId = algorithmPreStepParam.MasterId;

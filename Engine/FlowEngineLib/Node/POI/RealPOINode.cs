@@ -32,8 +32,6 @@ public class RealPOINode : CVBaseServerNodeIn2Hub
 
 	private bool _IsCCTWave;
 
-	private STNodeEditText<string> m_ctrl_temp;
-
 	private STNodeEditText<string> m_ctrl_type;
 
 	private STNodeEditText<string> m_ctrl_outtemp;

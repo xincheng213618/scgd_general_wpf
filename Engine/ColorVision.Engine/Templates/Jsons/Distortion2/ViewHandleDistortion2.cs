@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             return value;
         }
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -107,13 +107,13 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             }
         }
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             void OpenSource()
             {
-                view.ImageView.ImageShow.Clear();
+                ctx.ImageView.ImageShow.Clear();
                 if (File.Exists(result.FilePath))
-                    view.ImageView.OpenImage(result.FilePath);
+                    ctx.ImageView.OpenImage(result.FilePath);
                 log.Info(result.FilePath);
             }
 
@@ -129,14 +129,14 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                         {
                             CircleProperties circleProperties = new CircleProperties();
                             circleProperties.Center = new System.Windows.Point(points.X, points.Y);
-                            circleProperties.Radius = 20 / view.ImageView.Zoombox1.ContentMatrix.M11;
+                            circleProperties.Radius = 20 / ctx.ImageView.Zoombox1.ContentMatrix.M11;
                             circleProperties.Brush = Brushes.Transparent;
-                            circleProperties.Pen = new Pen(Brushes.Red, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
+                            circleProperties.Pen = new Pen(Brushes.Red, 1 / ctx.ImageView.Zoombox1.ContentMatrix.M11);
                             circleProperties.Id = -1;
 
                             DVCircle Circle = new DVCircle(circleProperties);
                             Circle.Render();
-                            view.ImageView.AddVisual(Circle);
+                            ctx.ImageView.AddVisual(Circle);
                         }
                     }
                 }
@@ -145,17 +145,17 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             List<string> header = new() { "Point9Distortion", "TVDistortion", "OpticDistortion" };
             List<string> bdHeader = new() { "DistortionReslut.Point9Distortion", "DistortionReslut.TVDistortion", "DistortionReslut.OpticDistortion" };
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
 
-            view.SideTextBox.Visibility = System.Windows.Visibility.Visible;
-            view.SideTextBox.Text = result.ViewResults.ToSpecificViewResults<Distortion2View>()[0].DistortionReslut.ToJsonN();
+            ctx.SideTextBox.Visibility = System.Windows.Visibility.Visible;
+            ctx.SideTextBox.Text = result.ViewResults.ToSpecificViewResults<Distortion2View>()[0].DistortionReslut.ToJsonN();
         }
 
 

@@ -171,19 +171,19 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         }
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
                 void OpenSource()
                 {
-                    view.ImageView.ImageShow.Clear();
+                    ctx.ImageView.ImageShow.Clear();
                     foreach (var item in result.ViewResults)
                     {
                         if (item is BlackMuraView blackMuraModel)
                         {
                             if (File.Exists(result.FilePath))
-                                view.ImageView.OpenImage(result.FilePath);
+                                ctx.ImageView.OpenImage(result.FilePath);
                             log.Info(result.FilePath);
 
                             if (!string.IsNullOrEmpty(blackMuraModel.AreaJsonVal))
@@ -198,12 +198,12 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                                     dVPolygon.Points.Add(item1.ToPoint());
                                 }
                                 dVPolygon.IsComple = true;
-                                view.ImageView.AddVisual(dVPolygon);
+                                ctx.ImageView.AddVisual(dVPolygon);
                                 log.Info(dVPolygon);
                             }
                             Application.Current.Dispatcher.BeginInvoke(() =>
                             {
-                                view.ImageView.Zoombox1.ZoomUniform();
+                                ctx.ImageView.Zoombox1.ZoomUniform();
                             });
                         }
                     }
@@ -212,14 +212,14 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
                 void OpenAA()
                 {
-                    view.ImageView.ImageShow.Clear();
+                    ctx.ImageView.ImageShow.Clear();
                     foreach (var item in result.ViewResults)
                     {
                         if (item is BlackMuraView blackMuraModel)
                         {
                             Outputfile outputfile = blackMuraModel.Outputfile;
                             if (File.Exists(outputfile.AAPath))
-                                view.ImageView.OpenImage(outputfile.AAPath);
+                                ctx.ImageView.OpenImage(outputfile.AAPath);
 
 
                             ResultJson lvDetails = blackMuraModel.ResultJson;
@@ -232,7 +232,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                             maxcirle.Attribute.Text = string.Empty;
                             maxcirle.Attribute.Msg = $"Max({lvDetails.MaxPtX},{lvDetails.MaxPtY}) Lv:{lvDetails.LvMax}";
                             maxcirle.Render();
-                            view.ImageView.AddVisual(maxcirle);
+                            ctx.ImageView.AddVisual(maxcirle);
 
                             DVCircleText mincirle = new();    
                             mincirle.Attribute.Center = new System.Windows.Point(lvDetails.MinPtX, lvDetails.MinPtY);
@@ -243,13 +243,13 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                             mincirle.Attribute.Text = string.Empty;
                             mincirle.Attribute.Msg = $"Min({lvDetails.MinPtX},{lvDetails.MinPtY}) Lv:{lvDetails.LvMin}";
                             mincirle.Render();
-                            view.ImageView.AddVisual(mincirle);
+                            ctx.ImageView.AddVisual(mincirle);
                         }
                     }
 
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
-                        view.ImageView.Zoombox1.ZoomUniform();
+                        ctx.ImageView.Zoombox1.ZoomUniform();
                     });
                 }
 
@@ -277,17 +277,17 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             }
         }
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             void OpenSource()
             {
-                view.ImageView.ImageShow.Clear();
+                ctx.ImageView.ImageShow.Clear();
                 foreach (var item in result.ViewResults)
                 {
                     if (item is BlackMuraView blackMuraModel)
                     {
                         if (File.Exists(result.FilePath))
-                            view.ImageView.OpenImage(result.FilePath);
+                            ctx.ImageView.OpenImage(result.FilePath);
                         log.Info(result.FilePath);
 
                         if (!string.IsNullOrEmpty(blackMuraModel.AreaJsonVal))
@@ -302,12 +302,12 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                                 dVPolygon.Points.Add(item1.ToPoint());
                             }
                             dVPolygon.IsComple = true;
-                            view.ImageView.AddVisual(dVPolygon);
+                            ctx.ImageView.AddVisual(dVPolygon);
                             log.Info(dVPolygon);
                         }
                         Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            view.ImageView.Zoombox1.ZoomUniform();
+                            ctx.ImageView.Zoombox1.ZoomUniform();
                         });
                     }
                 }
@@ -317,17 +317,17 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             List<string> header = new() { "LvAvg", "LvMax", "LvMin", "Uniformity(%)", "ZaRelMax", "AreaJsonVal" };
             List<string> bdHeader = new() { "ResultJson.LvAvg", "ResultJson.LvMax", "ResultJson.LvMin", "ResultJson.Uniformity", "ResultJson.ZaRelMax", "AreaJsonVal" };
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
 
-            view.SideTextBox.Visibility = System.Windows.Visibility.Visible;
-            view.SideTextBox.Text = result.ViewResults.ToSpecificViewResults<BlackMuraView>()[0].ToJsonN();
+            ctx.SideTextBox.Visibility = System.Windows.Visibility.Visible;
+            ctx.SideTextBox.Text = result.ViewResults.ToSpecificViewResults<BlackMuraView>()[0].ToJsonN();
         }
 
 

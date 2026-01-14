@@ -2,20 +2,12 @@ using FlowEngineLib.Algorithm;
 
 namespace FlowEngineLib.Node.Algorithm;
 
-public class AlgorithmCaliParam : AlgorithmPreStepParam
+public class AlgorithmCaliParam : AlgorithmImageParam
 {
-	public string ImgFileName { get; set; }
+	public string ResultDataFileName { get; set; }
 
-	public FileExtType FileType { get; set; }
-
-	public CVTemplateParam TemplateParam { get; set; }
-
-	public AlgorithmCaliParam(string tempName)
+	public AlgorithmCaliParam(string outputImgFile)
 	{
-		TemplateParam = new CVTemplateParam
-		{
-			ID = -1,
-			Name = tempName
-		};
+		ResultDataFileName = outputImgFile;
 	}
 }

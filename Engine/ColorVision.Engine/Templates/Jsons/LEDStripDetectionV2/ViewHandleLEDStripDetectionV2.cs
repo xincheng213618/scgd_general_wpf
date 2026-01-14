@@ -115,7 +115,7 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
         }
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
             if (result.ViewResults == null)
             {
@@ -144,10 +144,10 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
             }
         }
          
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
 
             if (result.ViewResults.Count == 1)
@@ -167,18 +167,18 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
                             LineProperties lineProperties = new LineProperties();
                             lineProperties.Points.Add(new Point(ep1.X, ep1.Y));
                             lineProperties.Points.Add(new Point(ep2.X, ep2.Y));
-                            lineProperties.Pen = new Pen(Brushes.Red, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
+                            lineProperties.Pen = new Pen(Brushes.Red, 1 / ctx.ImageView.Zoombox1.ContentMatrix.M11);
 
                             var line = new DVLine(lineProperties);
                             line.Render();
-                            view.ImageView.AddVisual(line);
+                            ctx.ImageView.AddVisual(line);
                         }
                     }
 
                     List<string> header = new() { "name", "physicalLength", "pixLength", "x1", "y1", "x2", "y2" };
-                    if (view.ListView.View is GridView gridView)
+                    if (ctx.ListView.View is GridView gridView)
                     {
-                        view.LeftGridViewColumnVisibilitys.Clear();
+                        ctx.LeftGridViewColumnVisibilitys.Clear();
                         gridView.Columns.Clear();
                         foreach (var h in header)
                             gridView.Columns.Add(new GridViewColumn() { Header = h, DisplayMemberBinding = new Binding(h) });
@@ -198,7 +198,7 @@ namespace ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2
                                 y2 = item.EndPoints[1].Y
                             });
                         }
-                        view.ListView.ItemsSource = displayList;
+                        ctx.ListView.ItemsSource = displayList;
                     }
                 }
             }

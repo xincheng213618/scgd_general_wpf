@@ -9,14 +9,6 @@ public class TPAlgorithmNode : CVBaseServerNode
 {
 	private TPAlgorithmType _Algorithm;
 
-	private string _TempName;
-
-	private int _TempId;
-
-	private string _ImgFileName;
-
-	private STNodeEditText<string> m_ctrl_temp;
-
 	private STNodeEditText<TPAlgorithmType> m_ctrl_editText;
 
 	private STNodeEditText<string> m_ctrl_op;
@@ -59,21 +51,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 		set
 		{
 			_TempName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -88,11 +66,6 @@ public class TPAlgorithmNode : CVBaseServerNode
 		{
 			_ImgFileName = value;
 		}
-	}
-
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
 	}
 
 	public TPAlgorithmNode()
@@ -112,7 +85,7 @@ public class TPAlgorithmNode : CVBaseServerNode
 		m_custom_item.Y += 25;
 		m_ctrl_op = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "算子:", operatorCode);
 		m_custom_item.Y += 25;
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
+		CreateTempControl(m_custom_item);
 	}
 
 	private void setAlgorithmType()
@@ -131,7 +104,8 @@ public class TPAlgorithmNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		TPAlgorithmInputParam tPAlgorithmInputParam = new TPAlgorithmInputParam(_TempId, _TempName, 1);
+		TPAlgorithmInputParam tPAlgorithmInputParam = new TPAlgorithmInputParam(1);
+		BuildTemp(tPAlgorithmInputParam);
 		if (!string.IsNullOrEmpty(_ImgFileName))
 		{
 			tPAlgorithmInputParam.InputParam = _ImgFileName;

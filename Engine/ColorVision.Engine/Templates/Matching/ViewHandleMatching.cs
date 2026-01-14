@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Templates.Matching
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.AOI};
 
 
-        public override void Load(ViewResultContext view, ViewResultAlg result)
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
         {
            if (result.ViewResults != null)
             {
@@ -26,11 +26,11 @@ namespace ColorVision.Engine.Templates.Matching
             }
         }
 
-        public override void Handle(ViewResultContext view, ViewResultAlg result)
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
 
             if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+                ctx.ImageView.OpenImage(result.FilePath);
 
             foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultAoiModel>())
             {
@@ -50,20 +50,20 @@ namespace ColorVision.Engine.Templates.Matching
                 polygon.Attribute.Id = -1;
                 polygon.IsComple = true;
                 polygon.Render();
-                view.ImageView.AddVisual(polygon);
+                ctx.ImageView.AddVisual(polygon);
 
             }
 
             List<string> header =  new() { "分数", "角度", "中心点x" , "中心点y", "左上点x" , "左上点y" , "右上点x" , "右上点y" , "右下点x", "右下点y", "左下点x", "左下点x" };
             List<string> bdHeader = new() { "Score", "Angle", "CenterX", "CenterY", "LeftTopX", "LeftTopY" , "RightTopX", "RightTopY", "RightBottomX", "RightBottomY" , "LeftBottomX", "LeftBottomY" };
 
-            if (view.ListView.View is GridView gridView)
+            if (ctx.ListView.View is GridView gridView)
             {
-                view.LeftGridViewColumnVisibilitys.Clear();
+                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                view.ListView.ItemsSource = result.ViewResults;
+                ctx.ListView.ItemsSource = result.ViewResults;
             }
         }
     }

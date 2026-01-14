@@ -345,7 +345,7 @@ namespace ColorVision.ImageEditor
         public void OpenImage(string? filePath)
         {
             //如果文件已经打开，不会重复打开
-            if (filePath == null || filePath.Equals(Config.FilePath, StringComparison.Ordinal)) return;
+            if (filePath == null || filePath.Equals(Config.GetProperties<string>("FilePath"), StringComparison.Ordinal)) return;
 
             if (Config.Properties.Count > 0)
             {

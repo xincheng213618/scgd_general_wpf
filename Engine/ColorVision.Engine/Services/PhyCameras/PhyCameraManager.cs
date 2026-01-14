@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
@@ -41,19 +42,20 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         }
 
-        public void Process(string filePath)
+        public bool Process(string filePath)
         {
-            if (!File.Exists(filePath)) return;
+            if (!File.Exists(filePath)) return false;
             string content = File.ReadAllText(filePath);
-            if (string.IsNullOrWhiteSpace(content)) return;
+            if (string.IsNullOrWhiteSpace(content)) return false;
             string LicenseValue = Tool.Base64Decode(content);
             ColorVisionLicense colorVisionLicense =  JsonConvert.DeserializeObject<ColorVisionLicense>(LicenseValue);
-            if (colorVisionLicense == null) return;
+            if (colorVisionLicense == null) return false;
 
-            if (MessageBox.Show("是否导入许可证" + colorVisionLicense.DeviceMode, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+            if (MessageBox.Show("是否导入许可证" + colorVisionLicense.DeviceMode, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.No) return false;
             LicenseModel licenseModel = PhyLicenseDao.Instance.GetByMAC(Path.GetFileNameWithoutExtension(filePath)) ?? new LicenseModel();
             licenseModel.LicenseValue = content;
             PhyLicenseDao.Instance.Save(licenseModel);
+            return true;
         }
     }
 
@@ -79,6 +81,9 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public PhyCameraManagerConfig Config { get; set; } = ConfigService.Instance.GetRequiredService<PhyCameraManagerConfig>();
 
+        public RelayCommand EditLicenseNotificationConfigCommand { get; set; }
+        public LicenseNotificationConfig LicenseNotificationConfig { get; set; }
+
         public PhyCameraManager()
         {
             CreateCommand = new RelayCommand(a => Create());
@@ -99,6 +104,21 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
 
             OpenMVSLogViewerCommand = new RelayCommand(a => OpenMVSLogViewer(), a => File.Exists("C:\\Program Files (x86)\\MVS\\Applications\\Win64\\LogViewer.exe"));
+
+            LicenseNotificationConfig = ConfigService.Instance.GetRequiredService<LicenseNotificationConfig>();
+
+            EditLicenseNotificationConfigCommand = new RelayCommand(a =>
+            {
+                var window = new PropertyEditorWindow(LicenseNotificationConfig)
+                {
+                    Owner = Application.Current.GetActiveWindow(),
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen
+                };
+                if (window.ShowDialog() == true)
+                {
+                    ConfigService.Instance.SaveConfigs();
+                }
+            });
         }
 
         public RelayCommand OpenMVSLogViewerCommand { get; set; }
@@ -184,7 +204,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void RefreshEmptyCamera()
         {
-            Count = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count();
+            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            Count = db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count();
         }
 
 
@@ -385,8 +406,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             var phyCameraBackup = PhyCameras.ToDictionary(pc => pc.Id, pc => pc);
 
-          
-            var list = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(x => x.Type == (int)ServiceTypes.PhyCamera).ToList();
+            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            var list = db.Queryable<SysResourceModel>().Where(x => x.Type == (int)ServiceTypes.PhyCamera).ToList();
             foreach (var item in list)
             {
                 if (!string.IsNullOrWhiteSpace(item.Value))

@@ -19,7 +19,7 @@ public class CVAOICameraNode : CVBaseServerNode
 
 	protected bool _IsAutoExp;
 
-	private string _TempName;
+	private new string _TempName;
 
 	private bool _IsWithND;
 
@@ -123,7 +123,7 @@ public class CVAOICameraNode : CVBaseServerNode
 		}
 		set
 		{
-			_TempName = value;
+			setTempName(value);
 		}
 	}
 

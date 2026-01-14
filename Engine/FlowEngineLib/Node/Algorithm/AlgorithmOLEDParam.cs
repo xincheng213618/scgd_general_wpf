@@ -10,9 +10,11 @@ public class AlgorithmOLEDParam : AlgorithmParam
 
 	public string ImgPosResultFile { get; set; }
 
-	public AlgorithmOLEDParam(CVOLED_COLOR color, string outputFileName)
+	public AlgorithmOLEDParam(string outputFileName, CVOLED_FDAType _FDAType, string _ImgPosResultFile, PointFloat[] _FixedLEDPoint)
 	{
-		base.Color = color;
 		base.OutputFileName = outputFileName;
+		FDAType = _FDAType;
+		ImgPosResultFile = _ImgPosResultFile;
+		FixedLEDPoint = _FixedLEDPoint;
 	}
 }

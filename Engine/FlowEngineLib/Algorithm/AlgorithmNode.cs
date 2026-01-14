@@ -13,23 +13,15 @@ public class AlgorithmNode : CVBaseServerNode
 
 	private AlgorithmType _Algorithm;
 
-	private string _TempName;
-
-	private int _TempId;
-
 	private string _POITempName;
 
 	private int _POITempId;
-
-	private string _ImgFileName;
 
 	private CVOLED_COLOR _Color;
 
 	private bool _IsInversion;
 
 	private int _BufferLen;
-
-	private STNodeEditText<string> m_ctrl_temp;
 
 	private STNodeEditText<AlgorithmType> m_ctrl_editText;
 
@@ -58,22 +50,7 @@ public class AlgorithmNode : CVBaseServerNode
 		}
 		set
 		{
-			_TempName = value;
-			setTempName();
-		}
-	}
-
-	[STNodeProperty("参数模板ID", "参数模板ID", true)]
-	public int TempId
-	{
-		get
-		{
-			return _TempId;
-		}
-		set
-		{
-			_TempId = value;
-			setTempName();
+			setTempName(value);
 		}
 	}
 
@@ -130,11 +107,6 @@ public class AlgorithmNode : CVBaseServerNode
 		}
 	}
 
-	private void setTempName()
-	{
-		m_ctrl_temp.Value = $"{_TempId}:{_TempName}";
-	}
-
 	public AlgorithmNode()
 		: base("AI算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
 	{
@@ -154,7 +126,7 @@ public class AlgorithmNode : CVBaseServerNode
 		base.OnCreate();
 		m_ctrl_editText = CreateControl(typeof(STNodeEditText<AlgorithmType>), m_custom_item, "算子:", _Algorithm);
 		m_custom_item.Y += 25;
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", $"{_TempId}:{_TempName}");
+		CreateTempControl(m_custom_item);
 		m_custom_item.Y += 25;
 		m_ctrl_color = CreateControl(typeof(STNodeEditText<CVOLED_COLOR>), m_custom_item, "颜色:", _Color);
 	}
@@ -244,16 +216,9 @@ public class AlgorithmNode : CVBaseServerNode
 			algorithmParam = new AlgorithmParam();
 			break;
 		}
-		algorithmParam.Color = _Color;
-		algorithmParam.ImgFileName = _ImgFileName;
-		algorithmParam.FileType = GetImageFileType(_ImgFileName);
 		algorithmParam.IsInversion = _IsInversion;
 		algorithmParam.BufferLen = _BufferLen;
-		algorithmParam.TemplateParam = new CVTemplateParam
-		{
-			ID = _TempId,
-			Name = _TempName
-		};
+		BuildImageParam(_ImgFileName, _Color, algorithmParam);
 		getPreStepParam(start, algorithmParam);
 		algorithmParam.SMUData = GetSMUResult(start);
 		return algorithmParam;
