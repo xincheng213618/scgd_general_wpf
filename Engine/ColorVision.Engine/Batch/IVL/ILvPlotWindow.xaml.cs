@@ -24,7 +24,8 @@ namespace ColorVision.Engine.Batch.IVL
     {
         IL,  // Current (I) vs Luminance (Lv)
         VL,  // Voltage (V) vs Luminance (Lv)
-        IV   // Current (I) vs Voltage (V)
+        IV,  // Current (I) vs Voltage (V)
+        PL   // Power (P) vs Luminance (Lv)
     }
 
     /// <summary>
@@ -214,6 +215,7 @@ namespace ColorVision.Engine.Batch.IVL
                     ILvDisplayMode.IL => "I-Lv",
                     ILvDisplayMode.VL => "V-Lv",
                     ILvDisplayMode.IV => "I-V",
+                    ILvDisplayMode.PL => "P-Lv",
                     _ => "I-Lv"
                 };
                 wpfPlot.Plot.Title($"{modeText} Curve (No Data)");
@@ -229,6 +231,7 @@ namespace ColorVision.Engine.Batch.IVL
                 ILvDisplayMode.IL => "I-Lv",
                 ILvDisplayMode.VL => "V-Lv",
                 ILvDisplayMode.IV => "I-V",
+                ILvDisplayMode.PL => "P-Lv",
                 _ => "I-Lv"
             };
             string xLabel = _displayMode switch
@@ -236,6 +239,7 @@ namespace ColorVision.Engine.Batch.IVL
                 ILvDisplayMode.IL => "Current (mA)",
                 ILvDisplayMode.VL => "Voltage (V)",
                 ILvDisplayMode.IV => "Current (mA)",
+                ILvDisplayMode.PL => "Power (mW)",
                 _ => "Current (mA)"
             };
             string yLabel = _displayMode switch
@@ -243,6 +247,7 @@ namespace ColorVision.Engine.Batch.IVL
                 ILvDisplayMode.IL => "Luminance (cd/m²)",
                 ILvDisplayMode.VL => "Luminance (cd/m²)",
                 ILvDisplayMode.IV => "Voltage (V)",
+                ILvDisplayMode.PL => "Luminance (cd/m²)",
                 _ => "Luminance (cd/m²)"
             };
 
@@ -320,6 +325,9 @@ namespace ColorVision.Engine.Batch.IVL
                         case ILvDisplayMode.VL:
                             sortedData.Sort((a, b) => a.Voltage.CompareTo(b.Voltage));
                             break;
+                        case ILvDisplayMode.PL:
+                            sortedData.Sort((a, b) => a.Power.CompareTo(b.Power));
+                            break;
                     }
                 }
                 else
@@ -344,6 +352,10 @@ namespace ColorVision.Engine.Batch.IVL
                     case ILvDisplayMode.IV:
                         x = sortedData.Select(p => p.Current).ToArray();
                         y = sortedData.Select(p => p.Voltage).ToArray();
+                        break;
+                    case ILvDisplayMode.PL:
+                        x = sortedData.Select(p => p.Power).ToArray();
+                        y = sortedData.Select(p => p.Luminance).ToArray();
                         break;
                     default:
                         x = sortedData.Select(p => p.Current).ToArray();
@@ -423,7 +435,8 @@ namespace ColorVision.Engine.Batch.IVL
                             Index = i + 1,
                             Current = dataPoints[i].Current,
                             Voltage = dataPoints[i].Voltage,
-                            Luminance = dataPoints[i].Luminance
+                            Luminance = dataPoints[i].Luminance,
+                            Power = dataPoints[i].Power
                         });
                     }
                 }
@@ -469,6 +482,12 @@ namespace ColorVision.Engine.Batch.IVL
                     yAxisLabel = "V";
                     yAxisUnit = "V";
                     break;
+                case ILvDisplayMode.PL:
+                    xAxisLabel = "P";
+                    xAxisUnit = "mW";
+                    yAxisLabel = "Lv";
+                    yAxisUnit = "cd/m²";
+                    break;
                 default:
                     xAxisLabel = "I";
                     xAxisUnit = "mA";
@@ -497,12 +516,16 @@ namespace ColorVision.Engine.Batch.IVL
                             case ILvDisplayMode.VL:
                                 info.AppendLine($"  {xAxisLabel}: {data.Min(p => p.Voltage):F2} - {data.Max(p => p.Voltage):F2} {xAxisUnit}");
                                 break;
+                            case ILvDisplayMode.PL:
+                                info.AppendLine($"  {xAxisLabel}: {data.Min(p => p.Power):F2} - {data.Max(p => p.Power):F2} {xAxisUnit}");
+                                break;
                         }
 
                         switch (_displayMode)
                         {
                             case ILvDisplayMode.IL:
                             case ILvDisplayMode.VL:
+                            case ILvDisplayMode.PL:
                                 info.AppendLine($"  {yAxisLabel}: {data.Min(p => p.Luminance):F2} - {data.Max(p => p.Luminance):F2} {yAxisUnit}");
                                 break;
                             case ILvDisplayMode.IV:
@@ -539,6 +562,8 @@ namespace ColorVision.Engine.Batch.IVL
                 _displayMode = ILvDisplayMode.VL;
             else if (RbIV.IsChecked == true)
                 _displayMode = ILvDisplayMode.IV;
+            else if (RbPLv.IsChecked == true)
+                _displayMode = ILvDisplayMode.PL;
 
             // Re-initialize the plot with new mode
             InitializePlot();
@@ -564,6 +589,7 @@ namespace ColorVision.Engine.Batch.IVL
                 ILvDisplayMode.IL => "ILv",
                 ILvDisplayMode.VL => "VLv",
                 ILvDisplayMode.IV => "IV",
+                ILvDisplayMode.PL => "PLv",
                 _ => "ILv"
             };
             SaveFileDialog saveFileDialog = new SaveFileDialog
@@ -588,6 +614,7 @@ namespace ColorVision.Engine.Batch.IVL
                 ILvDisplayMode.IL => "ILv",
                 ILvDisplayMode.VL => "VLv",
                 ILvDisplayMode.IV => "IV",
+                ILvDisplayMode.PL => "PLv",
                 _ => "ILv"
             };
             SaveFileDialog saveFileDialog = new SaveFileDialog
@@ -604,7 +631,7 @@ namespace ColorVision.Engine.Batch.IVL
                     var csv = new StringBuilder();
 
                     // Add header
-                    csv.AppendLine("Series,Index,Current (mA),Voltage (V),Luminance (cd/m²)");
+                    csv.AppendLine("Series,Index,Current (mA),Voltage (V),Luminance (cd/m²),Power (mW)");
 
                     // Add data from selected series
                     foreach (var item in PoiSeriesList.SelectedItems)
@@ -615,7 +642,7 @@ namespace ColorVision.Engine.Batch.IVL
                             var dataPoints = _groupedData[seriesName];
                             for (int i = 0; i < dataPoints.Count; i++)
                             {
-                                csv.AppendLine($"{seriesName},{i + 1},{dataPoints[i].Current:F4},{dataPoints[i].Voltage:F4},{dataPoints[i].Luminance:F2}");
+                                csv.AppendLine($"{seriesName},{i + 1},{dataPoints[i].Current:F4},{dataPoints[i].Voltage:F4},{dataPoints[i].Luminance:F2},{dataPoints[i].Power:F4}");
                             }
                         }
                     }
@@ -710,6 +737,10 @@ namespace ColorVision.Engine.Batch.IVL
                             x = point.Current;
                             y = point.Voltage;
                             break;
+                        case ILvDisplayMode.PL:
+                            x = point.Power;
+                            y = point.Luminance;
+                            break;
                         default:
                             x = point.Current;
                             y = point.Luminance;
@@ -748,6 +779,10 @@ namespace ColorVision.Engine.Batch.IVL
                         x = nearestPoint.Current;
                         y = nearestPoint.Voltage;
                         break;
+                    case ILvDisplayMode.PL:
+                        x = nearestPoint.Power;
+                        y = nearestPoint.Luminance;
+                        break;
                     default:
                         x = nearestPoint.Current;
                         y = nearestPoint.Luminance;
@@ -778,6 +813,12 @@ namespace ColorVision.Engine.Batch.IVL
                         xUnit = "mA";
                         yLabel = "V";
                         yUnit = "V";
+                        break;
+                    case ILvDisplayMode.PL:
+                        xLabel = "P";
+                        xUnit = "mW";
+                        yLabel = "Lv";
+                        yUnit = "cd/m²";
                         break;
                     default:
                         xLabel = "I";
@@ -818,6 +859,7 @@ namespace ColorVision.Engine.Batch.IVL
             public double Current { get; set; }
             public double Luminance { get; set; }
             public double Voltage { get; set; }
+            public double Power => Voltage * Current; // P = U * I (Power = Voltage * Current in mW)
         }
 
         private class DataTableRow
@@ -827,6 +869,7 @@ namespace ColorVision.Engine.Batch.IVL
             public double Current { get; set; }
             public double Voltage { get; set; }
             public double Luminance { get; set; }
+            public double Power { get; set; }
         }
     }
 }
