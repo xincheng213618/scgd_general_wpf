@@ -118,14 +118,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                 if (msg != null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
                                 {
                                     int masterId = msg.Data?.MasterId;
-                                    var DB = new SqlSugarClient(new ConnectionConfig
-                                    {
-                                        ConnectionString = MySqlControl.GetConnectionString(),
-                                        DbType = SqlSugar.DbType.MySql,
-                                        IsAutoCloseConnection = true
-                                    });
+                                    using var DB = new SqlSugarClient(new ConnectionConfig  { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                                     SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().Where(x => x.Id == masterId).First();
-                                    DB.Dispose();
+
                                     log.Info($"GetData MasterId:{masterId} ");
                                     if (model != null)
                                     {

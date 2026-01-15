@@ -5,6 +5,9 @@ using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Templates.Flow;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using SqlSugar;
@@ -83,13 +86,40 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     else if (msg.EventName == "Scan")
                     {
                         Configs.SMUScanResultData data = JsonConvert.DeserializeObject<Configs.SMUScanResultData>(JsonConvert.SerializeObject(msg.Data));
-                        Application.Current.Dispatcher.Invoke(() =>
+
+                        //未来全面启用4.0之后移除
+                        log.Info(FlowEngineManager.GetInstance().ServiceVersion);
+                        if (FlowEngineManager.GetInstance().ServiceVersion >= new Version(4, 0, 2, 115))
                         {
-                            ViewResultSMU viewResultSMU = new ViewResultSMU(Config.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current, (float)Config.StopMeasureVal, data.VList, data.IList);
-                            viewResultSMU.CreateTime = DateTime.Now;
-                            viewResultSMU.Id = -1;
-                            DeviceSMU.View.AddViewResultSMU(viewResultSMU);
-                        });
+                            if (msg != null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
+                            {
+                                int masterId = msg.Data?.MasterId;
+                                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                                SmuScanModel model = DB.Queryable<SmuScanModel>().Where(x => x.Id == masterId).First();
+                                log.Info($"GetData MasterId:{masterId} ");
+                                if (model != null)
+                                {
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        ViewResultSMU viewResultSpectrum = new ViewResultSMU(model);
+                                        DeviceSMU.View.AddViewResultSMU(viewResultSpectrum);
+                                    });
+                                }
+
+
+                            }
+                        }
+                        else
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                ViewResultSMU viewResultSMU = new ViewResultSMU(Config.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current, (float)Config.StopMeasureVal, data.VList, data.IList);
+                                viewResultSMU.CreateTime = DateTime.Now;
+                                viewResultSMU.Id = -1;
+                                DeviceSMU.View.AddViewResultSMU(viewResultSMU);
+                            });
+                        }
+
                     }
                 }
                 catch(Exception ex)
