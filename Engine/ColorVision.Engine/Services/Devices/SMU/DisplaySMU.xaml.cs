@@ -93,7 +93,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                         break;
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        SetVisibility(StackPanelOpen, Visibility.Visible);
                         ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Close;
                         break;
                     case DeviceStatusType.Closing:

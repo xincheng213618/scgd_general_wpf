@@ -1714,7 +1714,7 @@
     <value>Current(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
-    <value>Voltage</value>
+    <value>Voltage(_V)</value>
   </data>
   <data name="HalfBandwidth" xml:space="preserve">
     <value>FWHM</value>

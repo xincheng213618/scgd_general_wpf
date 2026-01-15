@@ -1714,7 +1714,7 @@
     <value>現在(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
-    <value>電圧</value>
+    <value>電圧(_V)</value>
   </data>
   <data name="HalfBandwidth" xml:space="preserve">
     <value>半波長</value>

@@ -51,20 +51,20 @@
                 <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="{x:Static properties:Resources.UnauthorizedOrLicenseExpired}" Command="{Binding EditCommand}"/>
                 <TextBlock x:Name="TextBlockOffLine" Text="OffLine"  HorizontalAlignment="Center"/>
-                <StackPanel x:Name="StackPanelContent">
-                    <DockPanel Margin="0,0,0,3" >
-                        <CheckBox IsChecked="{Binding Config.IsNet}" VerticalAlignment="Center" Content="{x:Static properties:Resources.Network}" DockPanel.Dock="Right" IsEnabled="False"/>
-                        <Button x:Name="ButtonSourceMeter1" Margin="10,0" DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}"  Click="ButtonSourceMeter1_Click"/>
-                        <TextBox x:Name="TextSourceMeterIP" Text="{Binding Config.Id}" BorderThickness="0,0,0,1" IsEnabled="False" />
-                    </DockPanel>
+                <DockPanel x:Name="StackPanelContent" Margin="0,0,0,3" >
+                    <CheckBox IsChecked="{Binding Config.IsNet}" VerticalAlignment="Center" Content="{x:Static properties:Resources.Network}" DockPanel.Dock="Right" IsEnabled="False"/>
+                    <Button x:Name="ButtonSourceMeter1" Margin="10,0" DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}"  Click="ButtonSourceMeter1_Click"/>
+                    <TextBox x:Name="TextSourceMeterIP" Text="{Binding Config.Id}" BorderThickness="0,0,0,1" IsEnabled="False" />
+                </DockPanel>
+                <StackPanel  x:Name="StackPanelOpen" >
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,3" >
                         <RadioButton Content="{x:Static properties:Resources.V}" IsChecked="{Binding Config.IsSourceV}"  Margin="0,0,5,0"  />
                         <RadioButton Content="{x:Static properties:Resources.I}" IsChecked="{Binding Config.IsSourceV,Converter={StaticResource inverseBooleanConverter}}" Margin="0,0,5,0"/>
-                        <ComboBox Name="CbChannel" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.Channel}"   />
+                        <ComboBox Name="CbChannel" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.Channel}"   Width="50" />
                     </StackPanel>
 
-                    <StackPanel  Margin="0,0,0,3" Visibility="{Binding Dis}">
+                    <StackPanel Margin="0,0,0,3">
 
                         <DockPanel  Margin="0,0,0,3" >
                             <TextBlock Text="{x:Static properties:Resources.SourceValue}" Margin="0,0,5,0" />
@@ -85,14 +85,12 @@
                             <Button Content="{x:Static properties:Resources.Extinguish}" Click="MeasureDataClose_Click" />
                         </UniformGrid>
                         <UniformGrid Columns="2"  Margin="0,0,0,3">
-                            <DockPanel >
+                            <DockPanel  Margin="0,0,5,0" >
                                 <TextBlock  Text="{x:Static properties:Resources.V}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                <TextBlock  DockPanel.Dock="Right" Text="V" Width="30" Block.TextAlignment="Center"/>
                                 <TextBox x:Name="TextSourceMeterV" Text="{Binding Config.V, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
                             </DockPanel>
-                            <DockPanel>
+                            <DockPanel Margin="0,0,5,0" >
                                 <TextBlock  Text="{x:Static properties:Resources.I}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                                <TextBlock  DockPanel.Dock="Right" Text="mA" Width="30" Block.TextAlignment="Center"/>
                                 <TextBox x:Name="TextSourceMeterI" Text="{Binding Config.I, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
                             </DockPanel>
                         </UniformGrid>
@@ -140,7 +138,6 @@
                     </StackPanel>
 
                 </StackPanel>
-
 
 
                 <DockPanel Margin="0,5,0,0">

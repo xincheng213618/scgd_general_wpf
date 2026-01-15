@@ -1714,7 +1714,7 @@
     <value>電流(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
-    <value>電壓</value>
+    <value>電壓(_V)</value>
   </data>
   <data name="HalfBandwidth" xml:space="preserve">
     <value>半波寬</value>

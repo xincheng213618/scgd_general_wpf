@@ -1714,7 +1714,7 @@
     <value>Текущий(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
-    <value>Напряжение</value>
+    <value>Напряжение(_V)</value>
   </data>
   <data name="HalfBandwidth" xml:space="preserve">
     <value>Ширина полуволны</value>

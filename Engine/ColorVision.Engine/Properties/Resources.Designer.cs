@@ -7081,7 +7081,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 电压 的本地化字符串。
+        ///   查找类似 电压(_V) 的本地化字符串。
         /// </summary>
         public static string V {
             get {

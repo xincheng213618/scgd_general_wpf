@@ -1714,7 +1714,7 @@
     <value>현재의(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
-    <value>전압</value>
+    <value>전압(_V)</value>
   </data>
   <data name="HalfBandwidth" xml:space="preserve">
     <value>반파장</value>

@@ -1714,7 +1714,7 @@
     <value>Actuel(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
-    <value>Tension</value>
+    <value>Tension(_V)</value>
   </data>
   <data name="HalfBandwidth" xml:space="preserve">
     <value>largeur de demi-onde</value>
