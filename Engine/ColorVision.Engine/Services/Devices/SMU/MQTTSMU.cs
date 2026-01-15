@@ -5,8 +5,6 @@ using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.Spectrum;
-using ColorVision.Engine.Services.Devices.Spectrum.Dao;
-using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.Flow;
 using MQTTnet.Client;
 using Newtonsoft.Json;

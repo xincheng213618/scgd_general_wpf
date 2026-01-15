@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ScottPlot;
-using ScottPlot.Plottables;
 using System;
 using System.Linq;
 using System.Windows;

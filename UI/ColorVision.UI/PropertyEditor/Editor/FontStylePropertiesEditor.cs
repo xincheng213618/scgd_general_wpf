@@ -1,6 +1,4 @@
 ﻿using ColorVision.UI;
-using log4net;
-using log4net.Core;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;

@@ -19,7 +19,6 @@ using System.Windows.Controls;
 using System.IO;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
 using ColorVision.Database;
-using ColorVision.Engine.Services.RC;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {

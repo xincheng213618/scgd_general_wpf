@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using Spectrum.Properties;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;

@@ -4,7 +4,6 @@ using log4net;
 using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
-using System.Windows;
 
 namespace ColorVision.Engine
 {

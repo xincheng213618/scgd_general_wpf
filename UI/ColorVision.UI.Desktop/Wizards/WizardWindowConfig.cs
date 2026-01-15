@@ -1,6 +1,4 @@
-﻿using ColorVision.UI;
-
- 
+﻿
 namespace ColorVision.UI.Desktop.Wizards
 {
     public class WizardWindowConfig:WindowConfig 

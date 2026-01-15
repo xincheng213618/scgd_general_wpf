@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
-using System.Windows;
 
 namespace ColorVision.Engine.Templates.SFR
 {

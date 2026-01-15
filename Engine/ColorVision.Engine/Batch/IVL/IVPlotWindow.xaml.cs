@@ -4,7 +4,6 @@ using Microsoft.Win32;
 using ScottPlot;
 using ScottPlot.DataSources;
 using ScottPlot.Plottables;
-using ScottPlot.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

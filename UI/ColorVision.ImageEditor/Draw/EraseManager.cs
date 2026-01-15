@@ -1,7 +1,5 @@
 ﻿#pragma warning disable CS0414,CS8625
-using ColorVision.Common.MVVM;
 using System;
-using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;

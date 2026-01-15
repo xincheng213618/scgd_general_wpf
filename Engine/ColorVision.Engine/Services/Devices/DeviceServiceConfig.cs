@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras;
-using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using System.ComponentModel;
 using System.Reflection;

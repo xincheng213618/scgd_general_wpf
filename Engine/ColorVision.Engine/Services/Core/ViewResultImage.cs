@@ -6,7 +6,6 @@ using ColorVision.Engine.Templates.POI;
 using ColorVision.FileIO;
 using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
-using ColorVision.UI.Sorts;
 using MQTTMessageLib.Camera;
 using System;
 using System.ComponentModel;

@@ -1,7 +1,6 @@
 #pragma warning disable CS8618
 using ColorVision.Database;
 using SqlSugar;
-using System;
 using System.ComponentModel;
 
 namespace ColorVision.SocketProtocol

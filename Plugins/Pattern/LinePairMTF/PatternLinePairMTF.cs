@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 using OpenCvSharp;
 using System.ComponentModel;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Media;
 
 namespace Pattern.LinePairMTF

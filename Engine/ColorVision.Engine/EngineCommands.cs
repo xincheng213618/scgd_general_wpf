@@ -1,6 +1,4 @@
-﻿using ColorVision.UI.Menus;
-using ColorVision.UI.Menus.Base;
-using System.Windows.Input;
+﻿using System.Windows.Input;
 
 namespace ColorVision.Engine
 {

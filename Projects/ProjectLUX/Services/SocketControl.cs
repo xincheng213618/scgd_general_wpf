@@ -1,20 +1,15 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Messages;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
-using ColorVision.Engine.Templates.Flow;
 using ColorVision.SocketProtocol;
 using Dm.util;
 using log4net;
 using ProjectLUX.PluginConfig;
 using ProjectLUX.Process.VID;
-using SQLitePCL;
-using SqlSugar;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
-using System.Windows;
 
 namespace ProjectLUX.Services
 {

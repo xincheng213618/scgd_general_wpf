@@ -7,7 +7,6 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
-using ProjectLUX.Process.Green;
 using System.Windows;
 using System.Windows.Media;
 

@@ -1,9 +1,6 @@
-using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Draw;
-using ColorVision.UI;
 using log4net;
-using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

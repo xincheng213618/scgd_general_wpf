@@ -1,7 +1,6 @@
 ﻿
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ProjectARVRPro.Process.W255;
 
 namespace ProjectARVRPro.Process.Black
 {

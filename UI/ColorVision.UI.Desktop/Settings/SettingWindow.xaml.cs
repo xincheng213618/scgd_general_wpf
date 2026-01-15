@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
-using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;

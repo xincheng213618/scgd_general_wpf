@@ -1,6 +1,5 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;

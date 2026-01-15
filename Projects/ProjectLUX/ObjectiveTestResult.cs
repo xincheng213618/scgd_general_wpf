@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using NetTaste;
 using ProjectLUX.Process.AR.W51AR;
 using ProjectLUX.Process.Blue;
 using ProjectLUX.Process.Chessboard;
@@ -16,7 +15,6 @@ using ProjectLUX.Process.W255AR;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
-using System.Text;
 
 namespace ProjectLUX
 {

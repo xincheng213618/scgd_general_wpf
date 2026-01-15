@@ -6,7 +6,6 @@ using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using System.Windows;
 using System.Windows.Media;
-using static HelixToolkit.Wpf.Viewport3DHelper;
 
 namespace ProjectLUX.Process.MTFHVAR
 {

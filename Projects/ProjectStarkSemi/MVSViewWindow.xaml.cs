@@ -1,27 +1,17 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
 using MvCamCtrl.NET;
-using ProjectStarkSemi.Conoscope;
-using ScottPlot.AxisLimitManagers;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using static MvCamCtrl.NET.MyCamera;
 
 namespace ProjectStarkSemi

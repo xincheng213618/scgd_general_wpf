@@ -4,7 +4,6 @@ using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;

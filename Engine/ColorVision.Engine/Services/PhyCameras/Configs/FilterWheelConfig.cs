@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
 {

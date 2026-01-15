@@ -1,13 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Batch;
-using ColorVision.Engine.Batch.IVL;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Solution.Workspace;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
-using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;

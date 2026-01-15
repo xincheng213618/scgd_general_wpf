@@ -1,7 +1,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using log4net;
-using System;
 using System.Windows;
 using System.Windows.Media;
 

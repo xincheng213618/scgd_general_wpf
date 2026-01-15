@@ -1,27 +1,18 @@
 ﻿#pragma warning disable CS8602
 
-using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor.Draw;
-using ColorVision.Solution.Editor.AvalonEditor;
 using log4net;
-using Newtonsoft.Json;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
 using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.IO.Pipelines;
 using System.Linq;
-using System.Text;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {

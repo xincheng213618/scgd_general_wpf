@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.UI.Sorts;
 using SqlSugar;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi

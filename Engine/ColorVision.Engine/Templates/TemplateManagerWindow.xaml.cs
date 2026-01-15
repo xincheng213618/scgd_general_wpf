@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.Menus;
-using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;

@@ -1,5 +1,4 @@
 ﻿using System.Windows.Controls;
-using System.Windows.Data;
 namespace ColorVision.UI
 {
     public static class ConfigSettingConstants

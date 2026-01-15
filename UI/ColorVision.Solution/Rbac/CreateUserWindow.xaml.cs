@@ -1,6 +1,4 @@
 ﻿using ColorVision.UI.Authorizations;
-using System;
-using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Rbac

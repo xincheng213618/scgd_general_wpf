@@ -1,23 +1,13 @@
 #pragma warning disable CS8602
 
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Database;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.ImageEditor;
-using ColorVision.ImageEditor.Draw;
-using ColorVision.Solution.Editor.AvalonEditor;
 using log4net;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
 {

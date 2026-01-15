@@ -6,7 +6,6 @@ using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.Flow;
-using iText.Commons.Bouncycastle.Asn1.X509;
 using MQTTMessageLib;
 using MQTTMessageLib.Spectrum;
 using MQTTnet.Client;
@@ -18,7 +17,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Interop;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {

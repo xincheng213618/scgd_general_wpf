@@ -1,14 +1,9 @@
 using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;
-using Microsoft.Win32;
-using System;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Windows;
-using System.Windows.Forms;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ImageProjector

@@ -1,11 +1,6 @@
-﻿using ColorVision.Themes.Controls;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using log4net;
-using System;
 using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 

@@ -5,7 +5,6 @@ using ColorVision.Engine.Extension;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
-using ColorVision.ImageEditor;
 using ColorVision.Scheduler;
 using ColorVision.SocketProtocol;
 using ColorVision.UI;
@@ -25,8 +24,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Effects;
-using YamlDotNet.Core.Tokens;
 
 
 namespace ColorVision.Engine.Templates.Flow

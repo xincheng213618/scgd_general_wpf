@@ -1,6 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.UI.Authorizations;
-using ColorVision.UI.Menus;
+﻿using ColorVision.UI.Menus;
 using System;
 using System.Diagnostics;
 using System.IO;

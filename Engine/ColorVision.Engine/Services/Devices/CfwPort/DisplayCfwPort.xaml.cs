@@ -1,7 +1,6 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.UI;
-using CVCommCore;
 using System;
 using System.Collections.Generic;
 using System.Windows;

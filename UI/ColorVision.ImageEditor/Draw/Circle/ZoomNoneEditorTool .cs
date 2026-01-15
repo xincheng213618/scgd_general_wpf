@@ -1,8 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using System.Windows.Input;
-
-namespace ColorVision.ImageEditor.Draw.Circle
+﻿namespace ColorVision.ImageEditor.Draw.Circle
 {
     //public record class ZoomNoneEditorTool(EditorContext EditorContext) : IEditorTool
     //{

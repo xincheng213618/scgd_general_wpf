@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using ColorVision.UI;
 
 namespace ColorVision.UI.Tests;
 

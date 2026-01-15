@@ -1,7 +1,5 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Services.PhyCameras.Licenses;
-using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -12,7 +10,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;

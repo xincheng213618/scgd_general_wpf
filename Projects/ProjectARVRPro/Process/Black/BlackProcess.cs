@@ -2,13 +2,10 @@ using ColorVision.Database;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
-using Dm.util;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
-using ProjectARVRPro.Process.W255;
 using System.Windows;
 using System.Windows.Media;
 

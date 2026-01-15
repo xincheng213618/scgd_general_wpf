@@ -1,4 +1,3 @@
-using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using System.Windows;
 

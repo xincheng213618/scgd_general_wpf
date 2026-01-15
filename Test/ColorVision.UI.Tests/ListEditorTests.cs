@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.ComponentModel;
-using ColorVision.UI;
 using ColorVision.UI.PropertyEditor.Editor.List;
 
 namespace ColorVision.UI.Tests;

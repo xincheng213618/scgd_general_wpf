@@ -1,12 +1,7 @@
-﻿using ColorVision.Database;
-using ColorVision.Engine.Batch.Eqe;
-using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI;
-using SqlSugar;
 using System;
-using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 

@@ -6,7 +6,6 @@ using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
-using HandyControl.Controls;
 using log4net;
 using MQTTMessageLib.Camera;
 using System;

@@ -1,5 +1,3 @@
-using System;
-
 namespace ColorVision.Rbac.Exceptions
 {
     /// <summary>

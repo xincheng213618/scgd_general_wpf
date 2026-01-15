@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.PropertyEditor;
-using ColorVision.Engine.Services.Devices;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.ComponentModel;
 

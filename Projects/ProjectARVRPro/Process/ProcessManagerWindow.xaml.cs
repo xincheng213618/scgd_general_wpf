@@ -1,7 +1,5 @@
 ﻿using ColorVision.UI;
 using Newtonsoft.Json;
-using ProjectARVRPro.Fix;
-using System;
 using System.ComponentModel;
 using System.Globalization;
 using System.Windows;

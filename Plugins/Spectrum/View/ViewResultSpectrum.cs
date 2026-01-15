@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Sorts;
 using cvColorVision;
 using Newtonsoft.Json;
 using ScottPlot;

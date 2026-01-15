@@ -1,5 +1,4 @@
-﻿using ColorVision.UI;
-using log4net;
+﻿using log4net;
 using System.Windows;
 
 namespace ColorVision.UI.Desktop.Plugins

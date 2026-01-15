@@ -2,15 +2,12 @@
 using ColorVision.Database;
 using ColorVision.Engine.Cache;
 using ColorVision.Engine.PropertyEditor;
-using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.UI;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;

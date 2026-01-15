@@ -1,7 +1,6 @@
 ﻿using ColorVision.Engine.Templates.SFR;
 using Microsoft.Win32;
 using Newtonsoft.Json;
-using ScottPlot;
 using ScottPlot.Plottables;
 using System;
 using System.Collections.Generic;

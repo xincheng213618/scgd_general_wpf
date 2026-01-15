@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI.Menus;
-using System.IO;
 using System.Reflection;
 
 namespace ColorVision.UI.Desktop.Settings.ExportAndImport

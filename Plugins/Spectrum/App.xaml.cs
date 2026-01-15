@@ -6,7 +6,6 @@ using log4net;
 using log4net.Config;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Threading;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace Spectrum

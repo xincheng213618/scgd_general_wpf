@@ -2,7 +2,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
-using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.DataSources;

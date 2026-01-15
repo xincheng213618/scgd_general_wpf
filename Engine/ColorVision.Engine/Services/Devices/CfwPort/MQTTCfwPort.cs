@@ -1,7 +1,5 @@
 ﻿using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.RC;
 using System.Collections.Generic;
-using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.CfwPort
 {

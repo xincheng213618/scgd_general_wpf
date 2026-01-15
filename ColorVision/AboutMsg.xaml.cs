@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor;
 using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
