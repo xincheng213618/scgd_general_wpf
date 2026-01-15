@@ -5,7 +5,7 @@ using ColorVision.Engine.Extension;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
-using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;

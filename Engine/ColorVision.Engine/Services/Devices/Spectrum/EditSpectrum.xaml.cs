@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
-using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Themes;
 using ColorVision.UI;
 using System;

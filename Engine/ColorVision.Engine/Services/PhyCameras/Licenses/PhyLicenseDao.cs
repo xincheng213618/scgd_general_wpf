@@ -5,8 +5,7 @@ using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
-
-namespace ColorVision.Engine.Services.PhyCameras.Dao
+namespace ColorVision.Engine.Services.PhyCameras.Licenses
 {
     public class ColorVisionLicense
     {

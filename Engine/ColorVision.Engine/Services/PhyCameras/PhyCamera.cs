@@ -6,7 +6,7 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
-using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
