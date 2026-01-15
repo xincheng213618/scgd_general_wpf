@@ -21,7 +21,6 @@ namespace ColorVision.Engine.Batch
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         [DisplayName("监控文件夹")]
         [Description("要监控的文件夹路径")]
-        [PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public  List<string> FolderPaths { get => _FolderPath; set { _FolderPath = value; OnPropertyChanged(); } }
         private List<string> _FolderPath = new List<string>() { "D:\\CVTest\\DEV.Camera.Default"};
 
