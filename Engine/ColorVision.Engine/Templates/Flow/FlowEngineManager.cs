@@ -108,6 +108,9 @@ namespace ColorVision.Engine.Templates.Flow
         private MeasureBatchModel _Batch;
         public event EventHandler<MeasureBatchModel> BatchRecord;
 
+        public FlowParam SlectFlowParam { get => _SlectFlowParam; set { _SlectFlowParam = value; OnPropertyChanged(); } }
+        private FlowParam _SlectFlowParam;
+
         public double BatchProgress { get => _BatchProgress; set { _BatchProgress = value; OnPropertyChanged(); } }
         private double _BatchProgress ;
 

@@ -26,6 +26,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
+using YamlDotNet.Core.Tokens;
 
 
 namespace ColorVision.Engine.Templates.Flow
@@ -122,6 +123,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
                 {
+                    FlowEngineManager.GetInstance().SlectFlowParam = flowParam;
                     FlowEngineConfig.Instance.LastSelectFlow = flowParam.Id;
                     if (FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowParam.Name, out long time))
                         LastFlowTime = time;
@@ -199,7 +201,7 @@ namespace ColorVision.Engine.Templates.Flow
 
 
 
-                View.FlowParam = flowParam;
+                FlowEngineManager.GetInstance().SlectFlowParam = flowParam;
 
 
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())

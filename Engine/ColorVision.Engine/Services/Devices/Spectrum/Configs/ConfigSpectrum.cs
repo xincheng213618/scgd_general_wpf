@@ -142,9 +142,35 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
+        [DisplayName("GetData配置")]
+        public GetDataConfig GetDataConfig { get; set; } = new GetDataConfig(); 
+
     }
 
+    public class GetDataConfig : ViewModelBase, IConfig
+    {
+        [DisplayName("是否开启同步频率")]
+        public bool IsSyncFrequencyEnabled { get => _IsSyncFrequencyEnabled; set { _IsSyncFrequencyEnabled = value; OnPropertyChanged(); } }
+        private bool _IsSyncFrequencyEnabled;
 
+        [DisplayName("同步频率")]
+        public double Syncfreq { get => _Syncfreq; set { _Syncfreq = value; OnPropertyChanged(); } }
+        private double _Syncfreq = 1000;
+
+        [DisplayName("同步频率系数")]
+        public int SyncfreqFactor { get => _SyncfreqFactor; set { _SyncfreqFactor = value; OnPropertyChanged(); } }
+        private int _SyncfreqFactor = 10;
+
+        [DisplayName("滤波宽度")]
+        public int FilterBW { get => _FilterBW; set { _FilterBW = value; OnPropertyChanged(); } }
+        private int _FilterBW = 5;
+
+        public float SetWL1 { get => _SetWL1; set { _SetWL1 = value; OnPropertyChanged(); } }
+        private float _SetWL1 = 380;
+        public float SetWL2 { get => _SetWL2; set { _SetWL2 = value; OnPropertyChanged(); } }
+        private float _SetWL2 = 780;
+
+    }
 
     public class NDConfig : ViewModelBase
     {

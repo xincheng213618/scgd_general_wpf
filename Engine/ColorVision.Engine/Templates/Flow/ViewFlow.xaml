@@ -40,6 +40,9 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Row="0"  Width="220" >
+                        <StackPanel Margin="0,0,0,5">
+                            <TextBox Text="{Binding FlowEngineManager.SlectFlowParam.Name}" Style="{DynamicResource TextBox.Small}"/>
+                        </StackPanel>
                         <UniformGrid  Columns="6" Margin="0,0,0,5">
                             <Button Command="{Binding SaveCommand}" Height="30" Width="30"  Margin="0,0,5,0" Padding="2">
                                 <Image Source="{DynamicResource DrawingImageSave}" Height="20" />
@@ -95,6 +98,7 @@
                                 <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1" Margin="0,0,5,0"/>
                                 <Button Content="预处理管理" Click="Button_Click_PreProcess"/>
                             </StackPanel>
+                 
                             <StackPanel Margin="0,0,0,5"  Orientation="Horizontal">
                                 <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
                                     <Button Content="x64" Command="{Binding FlowEngineManager.WindowsServiceX64.OpenLogCommand}"/>
@@ -111,7 +115,7 @@
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                    <ListView x:Name="NodeListView" Grid.Column="1"  Background="Transparent" Height="120" SelectionChanged="NodeListView_SelectionChanged" ItemsSource="{Binding FlowEngineManager.CVBaseServerNodes}">
+                    <ListView x:Name="NodeListView" Grid.Column="1"  Background="Transparent"  SelectionChanged="NodeListView_SelectionChanged" ItemsSource="{Binding FlowEngineManager.CVBaseServerNodes}">
                         <ListView.ItemContainerStyle>
                             <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
                             </Style>

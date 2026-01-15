@@ -162,8 +162,8 @@ namespace ColorVision.Engine.Services.Flow
         public void Save()
         {
             if (!STNodeEditorHelper.CheckFlow()) return;
-            FlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData());
-            TemplateFlow.Save2DB(FlowParam);
+            FlowEngineManager.GetInstance().SlectFlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData());
+            TemplateFlow.Save2DB(FlowEngineManager.GetInstance().SlectFlowParam);
         }
 
 
@@ -178,7 +178,6 @@ namespace ColorVision.Engine.Services.Flow
 
         public STNodeEditorHelper STNodeEditorHelper { get; set; }
 
-        public FlowParam FlowParam { get; set; }
         
         private void UserControl_Initialized(object sender, EventArgs e)
         {
