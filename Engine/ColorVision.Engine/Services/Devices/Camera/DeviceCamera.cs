@@ -274,98 +274,37 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void RefreshDeviceId()
         {
-            if (EngineCongig.Instance.SuperMode)
+            if (_isRefreshing)
             {
-                if (_isRefreshing)
+                MessageBox.Show("正在遍历支持的相机模式", "ColorVision");
+                return; // 防止重复点击
+            }
+            _isRefreshing = true;
+
+
+            // 异步执行，避免阻塞UI线程
+            Task.Run(() =>
+            {
+                int bufferLength = 1024;
+                StringBuilder snBuilder = new StringBuilder(bufferLength);
+
+                int ret = cvCameraCSLib.GetAllCameraIDMD5(snBuilder, bufferLength);
+                _isRefreshing = false;
+                // 回到UI线程
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show("正在遍历支持的相机模式","ColorVision");
-                    return; // 防止重复点击
-                }
-                _isRefreshing = true;
-                //string strPathSysCfg = "cfg\\sys.cfg";
-                //IntPtr m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(CameraModel.QHY_USB, CameraMode.BV_MODE, strPathSysCfg);
-
-                //// 获取所有相机ID
-                //int ret = cvCameraCSLib.GetAllCameraID(snBuilder, bufferLength);
-                //log.Info($"GetAllCameraID 返回值: {ret}");
-                //if (ret != 1)
-                //{
-                //    MessageBox.Show("获取相机ID失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
-                //    return;
-                //}
-
-                //string cameraIds = snBuilder.ToString();
-                //// 获取所有相机ID的MD5
-                //snBuilder.Clear();
-
-                // 异步执行，避免阻塞UI线程
-                Task.Run(() =>
-                {
-                    int bufferLength = 1024;
-                    StringBuilder snBuilder = new StringBuilder(bufferLength);
-
-                    int ret = cvCameraCSLib.GetAllCameraIDMD5(snBuilder, bufferLength);
-                    _isRefreshing = false;
-                    // 回到UI线程
-                    Application.Current.Dispatcher.Invoke(() =>
+                    log.Info($"GetAllCameraIDMD5 返回值: {ret}");
+                    if (ret == 1)
                     {
-                        log.Info($"GetAllCameraIDMD5 返回值: {ret}");
-                        if (ret == 1)
-                        {
-                            string cameraIdsMd5 = snBuilder.ToString();
-                            MessageBox1.Show(cameraIdsMd5, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
-                        }
-                        else
-                        {
-                            MessageBox1.Show("获取相机ID MD5失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        }
-                    });
+                        string cameraIdsMd5 = snBuilder.ToString();
+                        MessageBox1.Show(cameraIdsMd5, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox1.Show("获取相机ID MD5失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
                 });
-                return;
-            }
-            if (PhyCamera !=null && PhyCamera.LicenseState != LicenseState.Licensed)
-            {
-                if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt, "ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                {
-                    Config.CameraCode = string.Empty;
-                    Save();
-                    return;
-                }
-                else
-                {
-                    return;
-                }
-            }
-
-            if (DService.DeviceStatus == DeviceStatusType.OffLine)
-            {
-                if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.LogicalCameraOffline_ClearBindingsAndRetryPromp, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                {
-                    Config.CameraCode = string.Empty;
-                    Save();
-                    return;
-                }
-                else
-                {
-                    return;
-                }
-            }
-
-            MsgRecord msgRecord =  DService.GetAllCameraID();
-            msgRecord.MsgRecordStateChanged += (e) =>
-            {
-                if (e == MsgRecordState.Success)
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.CurrentDeviceCameraInfo + Environment.NewLine + msgRecord.MsgReturn.Data);
-                    PhyCameraManager.GetInstance().LoadPhyCamera();
-                    PhyCameraManager.GetInstance().RefreshEmptyCamera();
-                }
-                else
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.RefreshDeviceListFailed, " ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-
-                }
-            };
+            });
         }
 
         public void SaveDis()

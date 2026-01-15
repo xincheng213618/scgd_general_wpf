@@ -85,9 +85,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         [CommandDisplay("EditFilterWheelConfig", Order = 103)]
         public RelayCommand FilterWheelEditCommand { get; set; }
 
-
-        public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; OnPropertyChanged(); } }
-        private ImageSource? _QRIcon;
         public ImageSource Icon { get => _Icon; set{ _Icon = value; OnPropertyChanged(); } }
         private ImageSource _Icon;
 
@@ -133,7 +130,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             CopyLicenseCommand = new RelayCommand(a => CopyLicense(), a => CameraLicenseModel != null && !string.IsNullOrEmpty(CameraLicenseModel.LicenseValue));
             ExportLicenseCommand = new RelayCommand(a => ExportLicense(), a => CameraLicenseModel != null && !string.IsNullOrEmpty(CameraLicenseModel.LicenseValue));
             RefreshLicense();
-            QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
 
             Name = Code ?? string.Empty;
 
