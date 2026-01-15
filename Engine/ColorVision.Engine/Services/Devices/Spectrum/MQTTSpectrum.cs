@@ -88,10 +88,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                 {
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
-                                        ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
-                                        Device.View.AddViewResultSpectrum(viewResultSpectrum);
                                         try
                                         {
+                                            ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
+                                            Device.View.AddViewResultSpectrum(viewResultSpectrum);
                                             double? IntegralTime = msg?.Data?.IntegralTime;
                                             Device.DisplayConfig.IntTime = (float)IntegralTime;
 
