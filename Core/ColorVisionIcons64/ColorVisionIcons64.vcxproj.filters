@@ -60,5 +60,11 @@
     <Image Include="cvxp.ico">
       <Filter>资源文件</Filter>
     </Image>
+    <Image Include="Paomedia-Small-N-Flat-Key.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="cvcal.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

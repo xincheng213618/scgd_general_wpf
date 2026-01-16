@@ -104,7 +104,7 @@ namespace ColorVision.Update.Export
 
                 // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.lic\\DefaultIcon]");
-                sb.AppendLine($"@=\"{escapedIconPath},6\"");
+                sb.AppendLine($"@=\"{escapedIconPath},7\"");
                 sb.AppendLine();
 
                 // 双击打开行为 (Open) -> 传入 -i 参数
