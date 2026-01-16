@@ -74,6 +74,13 @@ namespace ColorVision.Engine.Templates.Flow
         [JsonIgnore,Browsable(false)]
         public bool IsReady { get => _IsReady; set { if (value == _IsReady) return; _IsReady = value; OnPropertyChanged(); } }
         private bool _IsReady;
+
+
+        public int horizontalSpacing { get => _horizontalSpacing; set { _horizontalSpacing = value; OnPropertyChanged(); } }
+        private int _horizontalSpacing = 200;
+
+        public int verticalSpacing { get => _verticalSpacing; set { _verticalSpacing = value; OnPropertyChanged(); } }   
+        private int _verticalSpacing = 170;
     }
 
 
@@ -143,7 +150,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             FlowEngineControl = new FlowEngineControl(false);
 
-            View = new ViewFlow(FlowEngineControl);
+            View = new ViewFlow(this);
             View.View.Title = ColorVision.Engine.Properties.Resources.Flow;
             ServiceConfig = ServiceConfig.Instance;
             OpenServiceCommand = new RelayCommand(a => ColorVision.Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(ServiceConfig.RegistrationCenterService),a=>File.Exists(ServiceConfig.RegistrationCenterService));
