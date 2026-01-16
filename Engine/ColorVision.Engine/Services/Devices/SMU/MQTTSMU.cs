@@ -176,6 +176,9 @@ namespace ColorVision.Engine.Services.Devices.SMU
             double I = isSourceV ? lmtVal : measureVal;
             I /= 1000;
 
+            V = Math.Abs(V);
+            I = Math.Abs(I);
+
             if (Device.Config.DevType == "Keithley_2400")
             {
                 if (V > 200)
@@ -262,10 +265,13 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 Params = Params,
             };
 
-
             double V = isSourceV ? stopMeasureVal : lmtVal;
             double I = isSourceV ? lmtVal : stopMeasureVal;
             I /= 1000;
+
+            V = Math.Abs(V);
+            I = Math.Abs(I);
+
             if (Device.Config.DevType == "Keithley_2400")
             {
                 if (V > 200)
