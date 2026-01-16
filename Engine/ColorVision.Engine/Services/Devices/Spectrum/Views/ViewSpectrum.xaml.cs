@@ -95,7 +95,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             wpfplot1.Plot.Axes.Left.Max = 1;
             string titleAbsolute = ColorVision.Engine.Properties.Resources.AbsoluteSpectrumCurve;
             wpfplot2.Plot.XLabel(ColorVision.Engine.Properties.Resources.WavelengthNm);
-            wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum);
+            wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum + "W/nm");
             wpfplot2.Plot.Axes.Title.Label.Text = titleAbsolute;
             wpfplot2.Plot.Axes.Title.Label.FontName = Fonts.Detect(titleAbsolute);
             wpfplot2.Plot.Axes.Left.Label.FontName = Fonts.Detect(titleAbsolute);
@@ -141,6 +141,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             if (DisplayConfig.IsLuminousFluxMode)
             {
+                wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum + "W/nm");
                 foreach (var item in GridViewColumnVisibilitys)
                 {
                     if (EQE.Contains(item.ColumnName))
@@ -156,6 +157,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
             else
             {
+                wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum + "w/sr·m^2·nm");
+
                 foreach (var item in GridViewColumnVisibilitys)
                 {
                     if (EQE.Contains(item.ColumnName))
