@@ -3,8 +3,13 @@ using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Configs
 {
+
+
     public class ConfigSMU : DeviceServiceConfig
     {
+
+
+
         [DisplayName("Is4Wire")]
         public bool Is4Wire { get => _Is4Wire; set { _Is4Wire = value; OnPropertyChanged(); } }
         private bool _Is4Wire;
@@ -31,6 +36,9 @@ namespace ColorVision.Engine.Services.Devices.SMU.Configs
 
         public string DevType { get => _DevType; set { _DevType = value; OnPropertyChanged(); } }
         private string _DevType;
+
+
+
 
         public double StartMeasureVal { get => _startMeasureVal; set { _startMeasureVal = value; OnPropertyChanged(); } }
         private double _startMeasureVal;

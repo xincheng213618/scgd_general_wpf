@@ -1,27 +1,34 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Database;
+using ColorVision.Engine.Extension;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Views;
+using ColorVision.Engine.Templates;
+using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.ComponentModel;
-using ColorVision.Database;
-using ColorVision.Themes.Controls;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Extension;
 
 namespace ColorVision.Engine.Services.Devices.SMU
 {
+    public class DisplaySMUConfig : IDisplayConfigBase
+    {
+        public bool IsUseLimitSigned { get => _IsUseLimitSigned; set { _IsUseLimitSigned = value; OnPropertyChanged(); } }
+        private bool _IsUseLimitSigned = true;
+    }
+
     public class DeviceSMU : DeviceService<ConfigSMU>
     {
         public MQTTSMU DService { get; set; }
 
         public ViewSMU View { get; set; }
-        public IDisplayConfigBase DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<IDisplayConfigBase>(Config.Code);
+        public DisplaySMUConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySMUConfig>(Config.Code);
 
         public DeviceSMU(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DService = new MQTTSMU(this,Config);
+            DService = new MQTTSMU(this);
             View = new ViewSMU();
             View.View.Title = ColorVision.Engine.Properties.Resources.SMUView+$" - {Config.Code}";
             this.SetIconResource("SMUDrawingImage", View.View);
@@ -37,6 +44,15 @@ namespace ColorVision.Engine.Services.Devices.SMU
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
             EditSMUTemplateCommand = new RelayCommand(a => EditSMUTemplate());
+
+            EditDisplayConfigCommand =new RelayCommand(a => EditDisplayConfig());   
+        }
+
+        [CommandDisplay("编辑显示配置", Order = -1)]
+        public RelayCommand EditDisplayConfigCommand { get; set; }
+        public void EditDisplayConfig()
+        {
+            new PropertyEditorWindow(DisplayConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
 
