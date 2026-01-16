@@ -90,10 +90,6 @@ namespace ColorVision.Update.Export
                 // ------------------------------------------------------
                 //  3. 注册 .lic 
                 // ------------------------------------------------------
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcal]");
-                sb.AppendLine($"@=\"ColorVision.Launcher.lic\"");
-                sb.AppendLine();
-
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\.lic]");
                 sb.AppendLine($"@=\"ColorVision.Launcher.lic\"");
                 sb.AppendLine();
@@ -104,7 +100,7 @@ namespace ColorVision.Update.Export
 
                 // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.lic\\DefaultIcon]");
-                sb.AppendLine($"@=\"{escapedIconPath},7\"");
+                sb.AppendLine($"@=\"{escapedIconPath},6\"");
                 sb.AppendLine();
 
                 // 双击打开行为 (Open) -> 传入 -i 参数
@@ -113,6 +109,25 @@ namespace ColorVision.Update.Export
                 sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
                 sb.AppendLine();
 
+
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcal]");
+                sb.AppendLine($"@=\"ColorVision.Launcher.cvcal\"");
+                sb.AppendLine();
+
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcal]");
+                sb.AppendLine($"@=\"ColorVision Launcher Package\"");
+                sb.AppendLine();
+
+                // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcal\\DefaultIcon]");
+                sb.AppendLine($"@=\"{escapedIconPath},7\"");
+                sb.AppendLine();
+
+                // 双击打开行为 (Open) -> 传入 -i 参数
+                // 注意：如果想区分逻辑，代码里解析 -i 后判断文件后缀即可
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcal\\shell\\open\\command]");
+                sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
+                sb.AppendLine();
 
                 // ------------------------------------------------------
                 //  4. 注册 .cvraw 
