@@ -20,10 +20,10 @@ namespace ColorVision.Engine.Services.Devices.SMU
 {
     public class MQTTSMU : MQTTDeviceService<ConfigSMU>
     {
-        public DeviceSMU DeviceSMU { get; set; }
+        public DeviceSMU Device { get; set; }
         public MQTTSMU(DeviceSMU deviceSMU, ConfigSMU sMUConfig) : base(sMUConfig)
         {
-            DeviceSMU = deviceSMU;
+            Device = deviceSMU;
             Config = sMUConfig;
 
             SendTopic = sMUConfig.SendTopic;
@@ -66,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                                 ViewResultSMU viewResultSpectrum = new ViewResultSMU(model);
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    DeviceSMU.View.AddViewResultSMU(viewResultSpectrum);
+                                    Device.View.AddViewResultSMU(viewResultSpectrum);
                                     Config.I = model.IResult;
                                     Config.V = model.VResult;
 
@@ -100,7 +100,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         ViewResultSMU viewResultSpectrum = new ViewResultSMU(model);
-                                        DeviceSMU.View.AddViewResultSMU(viewResultSpectrum);
+                                        Device.View.AddViewResultSMU(viewResultSpectrum);
                                     });
                                 }
 
@@ -114,7 +114,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                                 ViewResultSMU viewResultSMU = new ViewResultSMU(Config.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current, (float)Config.StopMeasureVal, data.VList, data.IList);
                                 viewResultSMU.CreateTime = DateTime.Now;
                                 viewResultSMU.Id = -1;
-                                DeviceSMU.View.AddViewResultSMU(viewResultSMU);
+                                Device.View.AddViewResultSMU(viewResultSMU);
                             });
                         }
 
@@ -156,7 +156,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
 
 
-        public MsgRecord GetData(bool isSourceV, double measureVal, double lmtVal, SMUChannelType channel)
+        public MsgRecord? GetData(bool isSourceV, double measureVal, double lmtVal, SMUChannelType channel)
         {
             var Params = new Dictionary<string, object>();
             MsgSend msg = new()
@@ -169,6 +169,63 @@ namespace ColorVision.Engine.Services.Devices.SMU
             Params.Add("MeasureValue", measureVal);
             Params.Add("LimitValue", lmtVal);
             Params.Add("Channel", channel);
+
+
+
+            double V = isSourceV ? measureVal : lmtVal;
+            double I = isSourceV ? lmtVal : measureVal;
+            I /= 1000;
+
+            if (Device.Config.DevType == "Keithley_2400")
+            {
+                if (V > 200)
+                {
+                    MessageBox.Show("Keithley 2450最大输出电压为200V，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+                if ((V > 20  && V <= 200) && (I > 0.1))
+                {
+                    MessageBox.Show("Keithley 2450在输出电压大于20V时，最大输出电流为100mA，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+                if (V <= 20 && I > 1)
+                {
+                    MessageBox.Show("Keithley 2450在输出电压小于20V时，最大输出电流为1A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+            }
+            else if (Device.Config.DevType == "Keithley_2600")
+            {
+                if (V > 40)
+                {
+                    MessageBox.Show("Keithley 2604B最大输出电压为40V，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+                if ((V > 6 && V <= 40) && (I > 1))
+                {
+                    MessageBox.Show("Keithley 2604B在输出电压大于6V时，最大输出电流为1A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+                if (V <= 6 && I > 3)
+                {
+                    MessageBox.Show("Keithley 2604B在输出电压小于6V时，最大输出电流为3A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+            }
+            else if (Device.Config.DevType == "Precise_S100")
+            {
+                if (V > 30)
+                {
+                    MessageBox.Show("Precise_S100最大输出电压为30V，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+                if (V <= 30 && I > 1)
+                {
+                    MessageBox.Show("Precise_S100在输出电压小于30V时，最大输出电流为1A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+            }
+
             return PublishAsyncClient(msg);
         }
 
@@ -193,7 +250,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             public SMUChannelType Channel { get; set; }
 
         }
-        public MsgRecord Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number, SMUChannelType channel)
+        public MsgRecord? Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number, SMUChannelType channel)
         {
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Params = new Dictionary<string, object>();
@@ -204,6 +261,62 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 SerialNumber = sn,
                 Params = Params,
             };
+
+
+            double V = isSourceV ? stopMeasureVal : lmtVal;
+            double I = isSourceV ? lmtVal : stopMeasureVal;
+            I /= 1000;
+            if (Device.Config.DevType == "Keithley_2400")
+            {
+                if (V > 200)
+                {
+                    MessageBox.Show("Keithley 2450最大输出电压为200V，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+                if ((V > 20 && V <= 200) && (I > 0.1))
+                {
+                    MessageBox.Show("Keithley 2450在输出电压大于20V时，最大输出电流为100mA，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+                if (V <= 20 && I > 1)
+                {
+                    MessageBox.Show("Keithley 2450在输出电压小于20V时，最大输出电流为1A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+            }
+            else if (Device.Config.DevType == "Keithley_2600")
+            {
+                if (V > 40)
+                {
+                    MessageBox.Show("Keithley 2600最大输出电压为40V，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+                if ((V > 6 && V <= 40) && (I > 1))
+                {
+                    MessageBox.Show("Keithley 2600在输出电压大于6V时，最大输出电流为1A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+                if (V <= 6 && I > 3)
+                {
+                    MessageBox.Show("Keithley 2600在输出电压小于6V时，最大输出电流为3A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+            }
+            else if (Device.Config.DevType == "Precise_S100")
+            {
+                if (V > 30)
+                {
+                    MessageBox.Show("Precise_S100最大输出电压为30V，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+                if (V <= 30 && I > 1)
+                {
+                    MessageBox.Show("Precise_S100在输出电压小于30V时，最大输出电流为1A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return null;
+                }
+            }
+
+
             return PublishAsyncClient(msg);
         }
 
