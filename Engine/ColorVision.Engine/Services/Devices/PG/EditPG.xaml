@@ -63,6 +63,10 @@
                                 <TextBlock  x:Name="TextBlockPGPort"   Text="端口" Width="120"/>
                                 <TextBox Text="{Binding Port}"/>
                             </DockPanel>
+                            <DockPanel x:Name="RegisterAddressDockPanel" Margin="0,2" >
+                                <TextBlock  Text="寄存器地址" Width="120"/>
+                                <TextBox Text="{Binding RegisterAddress}"/>
+                            </DockPanel>
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>

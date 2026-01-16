@@ -37,6 +37,21 @@ namespace ColorVision.Engine.Services.Devices.PG
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             Device.DService.ReLoadCategoryLib();
+
+            pgCategory.SelectionChanged += (s, e) =>
+            {
+                if (pgCategory.SelectedIndex == 4)
+                {
+                    EditConfig.Addr = "0";
+                    EditConfig.Port = 0x08;
+                    RegisterAddressDockPanel.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    RegisterAddressDockPanel.Visibility = Visibility.Collapsed;
+                }
+            };
+
             pgCategory.ItemsSource = Device.DService.PGCategoryLib;
 
             foreach (var item in Device.DService.PGCategoryLib)
@@ -47,6 +62,9 @@ namespace ColorVision.Engine.Services.Devices.PG
                     break;
                 }
             }
+
+
+
 
             IsComm.Checked += (s,e)=>
             {

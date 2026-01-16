@@ -114,12 +114,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public int AutoTestTime { get => _AutoTestTime; set { _AutoTestTime = value; OnPropertyChanged(); } }
         private int _AutoTestTime = 100;
 
-
-
-
         [DisplayName("StartIntegrationTime_Ms"), Category("Base")]
         public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; OnPropertyChanged(); } }
         private float _TimeFrom = 10;
+
+        [DisplayName("黑暗校零ND配置")]
+        public int DarkNDPort { get => _DarkNDPort; set { _DarkNDPort = value; OnPropertyChanged(); } }
+        private int _DarkNDPort = -1;
 
         [Category("Base")]
         public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutter = false; _IsAutoDark = value; OnPropertyChanged(); } }
