@@ -36,6 +36,11 @@ namespace ColorVision.Engine.Services.Devices.PG
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            DataContext = Device;
+
+            EditConfig = Device.Config.Clone();
+            EditContent.DataContext = EditConfig;
+
             Device.DService.ReLoadCategoryLib();
 
             pgCategory.SelectionChanged += (s, e) =>
@@ -78,10 +83,7 @@ namespace ColorVision.Engine.Services.Devices.PG
             };
 
 
-            DataContext = Device;
 
-            EditConfig = Device.Config.Clone();
-            EditContent.DataContext = EditConfig;
 
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
             CameraPhyID.DisplayMemberPath = "Code";
