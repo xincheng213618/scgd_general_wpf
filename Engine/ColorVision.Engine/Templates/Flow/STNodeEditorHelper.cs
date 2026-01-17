@@ -9,6 +9,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Services.Devices.SMU;
@@ -221,7 +222,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.PG.PGNode pgnode)
             {
-                AddStackPanel(name => pgnode.DeviceCode = name, pgnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
+                AddStackPanel(name => pgnode.DeviceCode = name, pgnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DevicePG>().ToList());
             }
             if (STNodeEditor.ActiveNode is FlowEngineLib.FWNode fwnode)
             {
