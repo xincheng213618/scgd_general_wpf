@@ -72,7 +72,11 @@ namespace ColorVision.Engine.Services.Devices.PG
             }
 
 
-
+            if(EditConfig.Category == "CH431.I2C")
+            {
+                TextBlockPGIP.Text = "串口id";
+                TextBlockPGPort.Text = "设备地址";
+            }
 
             IsComm.Checked += (s,e)=>
             {
