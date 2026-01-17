@@ -28,38 +28,6 @@ namespace ColorVision.Engine.Services.Devices.PG
             this.ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
 
-            PGService.DeviceStatusChanged += (e) =>
-            {
-                switch (e)
-                {
-                    case DeviceStatusType.Unknown:
-                        break;
-                    case DeviceStatusType.OffLine:
-                        break;
-                    case DeviceStatusType.Closed:
-                        btn_open.Content = "打开";
-                        break;
-                    case DeviceStatusType.Closing:
-                        btn_open.Content = "关闭中";
-                        break;
-                    case DeviceStatusType.Opened:
-                        btn_open.Content = "关闭";
-                        break;
-                    case DeviceStatusType.Opening:
-                        btn_open.Content = "打开中";
-                        break;
-                    case DeviceStatusType.Busy:
-                        break;
-                    case DeviceStatusType.Free:
-                        break;
-                    case DeviceStatusType.LiveOpened:
-                        break;
-                    default:
-                        break;
-                }
-            };
-
-
             void UpdateUI(DeviceStatusType status)
             {
                 void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
@@ -95,6 +63,7 @@ namespace ColorVision.Engine.Services.Devices.PG
                         SetVisibility(StackPanelContent, Visibility.Visible);
                         break;
                     default:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         break;
                 }
             }
