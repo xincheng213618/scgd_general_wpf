@@ -50,6 +50,9 @@ namespace ColorVision.Engine.Services.Devices.PG
                     EditConfig.Addr = "0";
                     EditConfig.Port = 0x08;
                     RegisterAddressDockPanel.Visibility = Visibility.Visible;
+
+                    TextBlockPGIP.Text = "串口id";
+                    TextBlockPGPort.Text = "设备地址";
                 }
                 else
                 {

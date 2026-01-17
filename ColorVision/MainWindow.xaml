@@ -8,6 +8,7 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:input ="clr-namespace:System.Windows.Input;assembly=netstandard"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
         Title="" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -18,7 +19,7 @@
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" WindowChrome.IsHitTestVisibleInChrome="True" Background="{DynamicResource GlobalBackground}" >
-            <DockPanel>
+            <DockPanel >
                 <StackPanel x:Name="RightMenuItemPanel" Orientation="Horizontal" DockPanel.Dock="Right"/>
                 
                 <Menu x:Name="Menu1" Background="Transparent" HorizontalAlignment="Left" Padding="2"/>

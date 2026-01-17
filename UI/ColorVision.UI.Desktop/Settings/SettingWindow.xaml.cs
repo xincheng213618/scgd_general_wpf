@@ -37,7 +37,7 @@ namespace ColorVision.UI.Desktop.Settings
                 if (configSetting.Type == ConfigSettingType.Bool)
                 {
                     DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
-                    Wpf.Ui.Controls.ToggleSwitch toggleSwitch = new() { ToolTip = configSetting.Description };
+                    Wpf.Ui.Controls.ToggleSwitch toggleSwitch = new() { ToolTip = configSetting.Description ,Background = Brushes.DodgerBlue };
                     toggleSwitch.SetBinding(System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty, new Binding(configSetting.BindingName));
                     toggleSwitch.DataContext = configSetting.Source;
                     DockPanel.SetDock(toggleSwitch, Dock.Right);
