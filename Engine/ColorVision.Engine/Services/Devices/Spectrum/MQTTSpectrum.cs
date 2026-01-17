@@ -92,8 +92,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                         {
                                             ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                             Device.View.AddViewResultSpectrum(viewResultSpectrum);
-                                            double? IntegralTime = msg?.Data?.IntegralTime;
-                                            Device.DisplayConfig.IntTime = (float)IntegralTime;
+                                            Device.DisplayConfig.IntTime = model.IntTime ??0;
 
                                         }
                                         catch (Exception ex)
@@ -126,17 +125,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                         {
                                             ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                             Device.View.AddViewResultSpectrum(viewResultSpectrum);
-
-                                            try
-                                            {
-                                                double? IntegralTime = msg?.Data?.IntegralTime;
-                                                Device.DisplayConfig.IntTime = (float)IntegralTime;
-
-                                            }
-                                            catch (Exception ex)
-                                            {
-                                                log.Error(ex);
-                                            }
+                                            Device.DisplayConfig.IntTime = model.IntTime ?? 0;
                                         });
                                     }
 

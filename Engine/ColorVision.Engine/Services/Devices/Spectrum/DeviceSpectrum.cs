@@ -91,7 +91,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
-            View = new ViewSpectrum(DisplayConfig);
+            View = new ViewSpectrum(this);
             View.View.Title = ColorVision.Engine.Properties.Resources.SpectrumView+$" - {Config.Code}";
             this.SetIconResource("DISpectrumIcon", View.View);
 
