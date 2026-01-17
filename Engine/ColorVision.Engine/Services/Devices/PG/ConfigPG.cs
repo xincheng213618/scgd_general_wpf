@@ -4,6 +4,9 @@ namespace ColorVision.Engine.Services.Devices.PG
 {
     public class ConfigPG : DeviceServiceConfig
     {
+        public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
+        private bool _IsAutoOpen = true;
+
         public string Category { get => _Category; set { _Category = value; OnPropertyChanged(); } }
         private string _Category;
 
@@ -21,7 +24,6 @@ namespace ColorVision.Engine.Services.Devices.PG
 
 
 
-        public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
-        private bool _IsAutoOpen = true;
+
     }
 }

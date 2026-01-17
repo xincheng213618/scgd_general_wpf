@@ -298,7 +298,16 @@ namespace ColorVision.UI
             comboBox.SetBinding(Selector.SelectedItemProperty, binding);
             return comboBox;
         }
-
+        static int GetInheritanceDepth(Type t)
+        {
+            int depth = 0;
+            while (t != null)
+            {
+                t = t.BaseType;
+                depth++;
+            }
+            return depth;
+        }
         public static StackPanel GenPropertyEditorControl(object obj,ResourceManager resourceManager =null)
         {
             if (obj == null) return new StackPanel();
@@ -311,10 +320,21 @@ namespace ColorVision.UI
             {
                 var t = source.GetType();
 
-                var props = t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                             .Where(p => p.CanRead && p.CanWrite);
+                // 1. 获取属性
+                var allProps = t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                .Where(p => p.CanRead && p.CanWrite);
 
-                foreach (var prop in props)
+                // 2. 【关键修改】进行排序
+                // GetInheritanceDepth 越小，说明越靠近基类 (object -> BaseConfig -> DeviceServiceConfig -> ConfigPG)
+                // 如果您想要“原始信息”（基类）在最前面，请使用 OrderBy
+                // 如果您想要“最上层”（派生类）在最前面，请使用 OrderByDescending
+                var sortedProps = allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType));
+
+                // 如果希望同一类中的属性按元数据Token（近似代码声明顺序）排序，可以再接一个 ThenBy
+                //var sortedProps = allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType))
+                //                          .ThenBy(p => p.MetadataToken);
+
+                foreach (var prop in sortedProps)
                 {
                     var browsableAttr = prop.GetCustomAttribute<BrowsableAttribute>();
                     if (!(browsableAttr?.Browsable ?? true))

@@ -22,27 +22,7 @@
         </Grid.RowDefinitions>
         <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance local:ConfigPG}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
-                <StackPanel >
-                    <GroupBox Header="资源信息" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="界面展示名称" Width="120"/>
-                                <TextBox Text="{Binding Name}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="心跳时间"  Width="120"/>
-                                <TextBox Text="{Binding HeartbeatTime}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5" >
-                                <TextBlock Text="SN" Width="120"/>
-                                <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Text="{Binding SN}" hc:InfoElement.ShowClearButton="True"  />
-                            </DockPanel>
-                            <DockPanel >
-                                <TextBlock Text="设备自动连接" Width="120"/>
-                                <CheckBox Content="启用" IsChecked="{Binding IsAutoOpen}"/>
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
+                <StackPanel x:Name="EditStackPanel">
 
                     <GroupBox Header="配置信息" Margin="0,5">
                         <StackPanel Margin="5">
@@ -51,12 +31,11 @@
                                 <ComboBox x:Name="pgCategory" DisplayMemberPath="Key" Text="{Binding Category}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2" >
-                                <TextBlock Text="通讯方式" Width="120"/>
-                                <RadioButton x:Name="IsNet" Content="TCP/IP" IsChecked="{Binding  IsNet}"/>
-                                <RadioButton x:Name="IsComm" Content="串口" IsChecked="{Binding IsNet,Converter={StaticResource Boolean2BooleanReConverter}}"/>
+                                <TextBlock Text="IsNet" Width="120"/>
+                                <ui:ToggleSwitch x:Name="IsNet"  IsChecked="{Binding  IsNet}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2" >
-                                <TextBlock  x:Name="TextBlockPGIP"   Text="IP地址" Width="120"/>
+                                <TextBlock  x:Name="TextBlockPGIP"  Text="IP地址" Width="120"/>
                                 <TextBox Text="{Binding Addr}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2" >
