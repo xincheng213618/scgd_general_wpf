@@ -48,6 +48,7 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="0">
+                <TextBlock Text="{Binding DService.DeviceStatus}"/>
                 <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
                 <TextBlock x:Name="TextBlockOffLine" Text="{x:Static properties:Resources.offline}"  HorizontalAlignment="Center"/>
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="{x:Static properties:Resources.Unregistered}" Command="{Binding EditCommand}"/>
