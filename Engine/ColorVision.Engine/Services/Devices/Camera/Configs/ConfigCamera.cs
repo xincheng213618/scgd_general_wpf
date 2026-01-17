@@ -6,6 +6,7 @@ using cvColorVision;
 using FlowEngineLib.Algorithm;
 using Newtonsoft.Json;
 using System;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Configs
 {
@@ -14,6 +15,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
     /// </summary>
     public class ConfigCamera : DeviceServiceConfig, IFileServerCfg
     {
+
+        [PropertyEditorType(typeof(TextSNPropertiesEditor))]
         public string? CameraCode { get => _CameraCode; set { _CameraCode = value; OnPropertyChanged();  } }
         private string? _CameraCode;
 

@@ -10,32 +10,30 @@ namespace ColorVision.Engine.Services.Devices
 {
     public class BaseConfig: ViewModelBase, IServiceConfig
     {
-        [Category("Base")]
         public string Name { get => _Name; set { _Name = value; OnPropertyChanged(); } }
         private string _Name;
 
-        [Category("Base"), Browsable(false)]
+        [Browsable(false)]
         public string Code { get => _Code; set { _Code = value; OnPropertyChanged(); } }
         private string _Code;
 
         /// <summary>
         /// 心跳时间
         /// </summary>
-        [Category("Base")]
         public int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; OnPropertyChanged(); } }
         private int _HeartbeatTime = 5000;
 
 
-        [Category("Base"),Browsable(false)]
+        [Browsable(false)]
         public string SubscribeTopic { get => _SubscribeTopic; set { _SubscribeTopic = value; OnPropertyChanged(); } }
         private string _SubscribeTopic;
 
-        [Category("Base"), Browsable(false)]
+        [Browsable(false)]
         public string SendTopic { get => _SendTopic; set { _SendTopic = value; OnPropertyChanged(); } }
         private string _SendTopic;
 
         //Token
-        [Category("Base"), Browsable(false)]
+        [ Browsable(false)]
         public string ServiceToken { get => _ServiceToken; set { _ServiceToken = value; OnPropertyChanged(); } }
         private string _ServiceToken;
 
@@ -59,7 +57,7 @@ namespace ColorVision.Engine.Services.Devices
         /// <summary>
         /// 许可
         /// </summary>
-        [PropertyEditorType(typeof(TextSNPropertiesEditor)),Category("Base")]
+        [PropertyEditorType(typeof(TextSNPropertiesEditor))]
         public virtual string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
     }

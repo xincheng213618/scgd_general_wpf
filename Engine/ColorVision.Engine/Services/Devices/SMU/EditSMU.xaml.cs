@@ -45,9 +45,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
 
-            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
-            CameraPhyID.DisplayMemberPath = "Code";
-
             EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig));
         }
 

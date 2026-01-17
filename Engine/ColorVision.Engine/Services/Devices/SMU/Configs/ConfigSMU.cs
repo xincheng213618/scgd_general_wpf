@@ -7,6 +7,15 @@ namespace ColorVision.Engine.Services.Devices.SMU.Configs
 
     public class ConfigSMU : DeviceServiceConfig
     {
+        public bool IsAutoStart { get => _IsAutoStart; set { _IsAutoStart = value; OnPropertyChanged(); } }
+        private bool _IsAutoStart;
+
+        public string DevType { get => _DevType; set { _DevType = value; OnPropertyChanged(); } }
+        private string _DevType;
+        public bool IsNet { get => _IsNet; set { _IsNet = value; OnPropertyChanged(); } }
+        private bool _IsNet;
+        public string DevName { get => Id; set { Id = value; OnPropertyChanged(); } }
+
         [DisplayName("Is4Wire")]
         public bool Is4Wire { get => _Is4Wire; set { _Is4Wire = value; OnPropertyChanged(); } }
         private bool _Is4Wire;
@@ -19,16 +28,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Configs
         public bool IsSrcA { get => _IsSrcA; set { _IsSrcA = value; OnPropertyChanged(); } }
         private bool _IsSrcA;
 
-        public bool IsNet { get => _IsNet; set { _IsNet = value; OnPropertyChanged(); } }
-        private bool _IsNet;
 
-        public bool IsAutoStart { get => _IsAutoStart; set { _IsAutoStart = value; OnPropertyChanged(); } }
-        private bool _IsAutoStart;
-
-        public string DevName { get => Id; set { Id = value; OnPropertyChanged(); } }
-
-        public string DevType { get => _DevType; set { _DevType = value; OnPropertyChanged(); } }
-        private string _DevType;
 
 
     }
