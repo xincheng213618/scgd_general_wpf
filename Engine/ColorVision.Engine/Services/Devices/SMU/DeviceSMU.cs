@@ -2,6 +2,7 @@
 using ColorVision.Database;
 using ColorVision.Engine.Extension;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
@@ -17,6 +18,35 @@ namespace ColorVision.Engine.Services.Devices.SMU
     {
         public bool IsUseLimitSigned { get => _IsUseLimitSigned; set { _IsUseLimitSigned = value; OnPropertyChanged(); } }
         private bool _IsUseLimitSigned = true;
+
+        public double MeasureVal { get => _MeasureVal; set { _MeasureVal = value; OnPropertyChanged(); } }
+        private double _MeasureVal = 5;
+
+        public double LmtVal { get => _lmtVal; set { _lmtVal = value; OnPropertyChanged(); } }
+        private double _lmtVal = 5;
+
+
+        public bool IsSourceV { get => _IsSourceV; set { _IsSourceV = value; OnPropertyChanged(); } }
+        private bool _IsSourceV = true;
+
+
+        public double StartMeasureVal { get => _startMeasureVal; set { _startMeasureVal = value; OnPropertyChanged(); } }
+        private double _startMeasureVal;
+        public double StopMeasureVal { get => _stopMeasureVal; set { _stopMeasureVal = value; OnPropertyChanged(); } }
+        private double _stopMeasureVal;
+
+        public int Number { get => _number; set { _number = value; OnPropertyChanged(); } }
+        private int _number;
+        public double LimitVal { get => _limitVal; set { _limitVal = value; OnPropertyChanged(); } }
+        private double _limitVal = 5;
+
+        public SMUChannelType Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); } }
+        private SMUChannelType _Channel = SMUChannelType.A;
+
+        public double? V { get => _V; set { _V = value; OnPropertyChanged(); } }
+        private double? _V;
+        public double? I { get => _I; set { _I = value; OnPropertyChanged(); } }
+        private double? _I;
     }
 
     public class DeviceSMU : DeviceService<ConfigSMU>

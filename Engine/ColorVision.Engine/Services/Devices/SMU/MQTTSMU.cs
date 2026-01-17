@@ -67,13 +67,13 @@ namespace ColorVision.Engine.Services.Devices.SMU
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
                                     Device.View.AddViewResultSMU(viewResultSpectrum);
-                                    Config.I = model.IResult;
-                                    Config.V = model.VResult;
+                                    Device.DisplayConfig.I = model.IResult;
+                                    Device.DisplayConfig.V = model.VResult;
 
                                     foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>())
                                     {
-                                        item.DisplayConfig.V = Config.V ??0;
-                                        item.DisplayConfig.I = Config.I ?? 0;
+                                        item.DisplayConfig.V = Device.DisplayConfig.V ??0;
+                                        item.DisplayConfig.I = Device.DisplayConfig.I ?? 0;
                                     }
                                 });
                             }
@@ -111,7 +111,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                         {
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                ViewResultSMU viewResultSMU = new ViewResultSMU(Config.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current, (float)Config.StopMeasureVal, data.VList, data.IList);
+                                ViewResultSMU viewResultSMU = new ViewResultSMU(Device.DisplayConfig.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current, (float)Device.DisplayConfig.StopMeasureVal, data.VList, data.IList);
                                 viewResultSMU.CreateTime = DateTime.Now;
                                 viewResultSMU.Id = -1;
                                 Device.View.AddViewResultSMU(viewResultSMU);
@@ -151,7 +151,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             };
             Params.Add("DevName",devName);
             Params.Add("IsNet", isNet);
-            Params.Add("Channel", Config.Channel);
+            Params.Add("Channel", Device.DisplayConfig.Channel);
             return PublishAsyncClient(msg);
         }
 
@@ -286,7 +286,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 EventName = "CloseOutput",
                 Params = Params,
             };
-            Params.Add("Channel",Config.Channel);
+            Params.Add("Channel", Device.DisplayConfig.Channel);
 
             return PublishAsyncClient(msg);
         }

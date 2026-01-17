@@ -43,16 +43,16 @@ namespace ColorVision.Engine.Services.Devices.SMU
             DataContext = Device;
 
             // When switching between voltage and current modes, swap the source and limit values so that the numbers follow the semantic meaning instead of the textbox position
-            if (Config is INotifyPropertyChanged npc)
+            if (Device.DisplayConfig is INotifyPropertyChanged npc)
             {
                 npc.PropertyChanged += (s, ev) =>
                 {
-                    if (ev.PropertyName == nameof(ConfigSMU.IsSourceV))
+                    if (ev.PropertyName == nameof(Device.DisplayConfig.IsSourceV))
                     {
                         // Swap MeasureVal (source) and LmtVal (limit)
-                        double oldMeasure = Config.MeasureVal;
-                        Config.MeasureVal = Config.LmtVal;
-                        Config.LmtVal = oldMeasure;
+                        double oldMeasure = Device.DisplayConfig.MeasureVal;
+                        Device.DisplayConfig.MeasureVal = Device.DisplayConfig.LmtVal;
+                        Device.DisplayConfig.LmtVal = oldMeasure;
                     }
                 };
             }
@@ -117,11 +117,11 @@ namespace ColorVision.Engine.Services.Devices.SMU
             {
                 if (ComboxVITemplate.SelectedItem is TemplateModel<SMUParam> KeyValue && KeyValue.Value is SMUParam SxParm)
                 {
-                    Config.StartMeasureVal = SxParm.StartMeasureVal;
-                    Config.StopMeasureVal = SxParm.StopMeasureVal;
-                    Config.IsSourceV = SxParm.IsSourceV;
-                    Config.LimitVal = SxParm.LmtVal;
-                    Config.Number = SxParm.Number;
+                    Device.DisplayConfig.StartMeasureVal = SxParm.StartMeasureVal;
+                    Device.DisplayConfig.StopMeasureVal = SxParm.StopMeasureVal;
+                    Device.DisplayConfig.IsSourceV = SxParm.IsSourceV;
+                    Device.DisplayConfig.LimitVal = SxParm.LmtVal;
+                    Device.DisplayConfig.Number = SxParm.Number;
                 }
             };
             ComboxVITemplate.SelectedIndex = 0;
@@ -192,7 +192,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         private void MeasureData_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal, Config.Channel);
+            MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.MeasureVal, Device.DisplayConfig.LmtVal, Device.DisplayConfig.Channel);
             if(msgRecord != null)
             {
                 msgRecord.MsgRecordStateChanged += (e) =>
@@ -214,7 +214,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
         private void StepMeasureData_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal, Config.Channel);
+            MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.MeasureVal, Device.DisplayConfig.LmtVal, Device.DisplayConfig.Channel);
             if (msgRecord != null)
             {
                 msgRecord.MsgRecordStateChanged += (e) =>
@@ -237,12 +237,12 @@ namespace ColorVision.Engine.Services.Devices.SMU
         private void MeasureDataClose_Click(object sender, RoutedEventArgs e)
         {
             DService.CloseOutput();
-            Config.V = null;
-            Config.I = null;
+            Device.DisplayConfig.V = null;
+            Device.DisplayConfig.I = null;
         }
         private void VIScan_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.Scan(Config.IsSourceV, Config.StartMeasureVal, Config.StopMeasureVal, Config.LimitVal, Config.Number, Config.Channel);
+            MsgRecord msgRecord = DService.Scan(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.StartMeasureVal, Device.DisplayConfig.StopMeasureVal, Device.DisplayConfig.LimitVal, Device.DisplayConfig.Number, Device.DisplayConfig.Channel);
             if (msgRecord != null)
             {
                 msgRecord.MsgRecordStateChanged += async (e) =>
@@ -259,8 +259,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
                             log.Info("DelyaClose1000");
                             await Task.Delay(1000);
                             DService.CloseOutput();
-                            Config.V = null;
-                            Config.I = null;
+                            Device.DisplayConfig.V = null;
+                            Device.DisplayConfig.I = null;
                             log.Info("DelyaClose1000 1");
                             await Task.Delay(1000);
                         }

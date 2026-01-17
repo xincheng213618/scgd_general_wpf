@@ -21,8 +21,8 @@ namespace ColorVision.Engine.Batch.SMU
                     //关闭显示
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        item.Config.V = null;
-                        item.Config.I = null;
+                        item.DisplayConfig.V = null;
+                        item.DisplayConfig.I = null;
                     });
                     await Task.Delay(500);
                     item.DService.CloseOutput();

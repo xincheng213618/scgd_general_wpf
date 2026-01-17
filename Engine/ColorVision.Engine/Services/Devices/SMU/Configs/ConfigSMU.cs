@@ -7,9 +7,6 @@ namespace ColorVision.Engine.Services.Devices.SMU.Configs
 
     public class ConfigSMU : DeviceServiceConfig
     {
-
-
-
         [DisplayName("Is4Wire")]
         public bool Is4Wire { get => _Is4Wire; set { _Is4Wire = value; OnPropertyChanged(); } }
         private bool _Is4Wire;
@@ -28,41 +25,11 @@ namespace ColorVision.Engine.Services.Devices.SMU.Configs
         public bool IsAutoStart { get => _IsAutoStart; set { _IsAutoStart = value; OnPropertyChanged(); } }
         private bool _IsAutoStart;
 
-
-        public bool IsSourceV { get => _IsSourceV; set { _IsSourceV = value; OnPropertyChanged(); } }
-        private bool _IsSourceV = true;
-
         public string DevName { get => Id; set { Id = value; OnPropertyChanged(); } }
 
         public string DevType { get => _DevType; set { _DevType = value; OnPropertyChanged(); } }
         private string _DevType;
 
-
-
-
-        public double StartMeasureVal { get => _startMeasureVal; set { _startMeasureVal = value; OnPropertyChanged(); } }
-        private double _startMeasureVal;
-        public double StopMeasureVal { get => _stopMeasureVal; set { _stopMeasureVal = value; OnPropertyChanged(); } }
-        private double _stopMeasureVal;
-        public int Number { get => _number; set { _number = value; OnPropertyChanged(); } }
-        private int _number;
-
-        public double LimitVal { get => _limitVal; set { _limitVal = value; OnPropertyChanged(); } }
-        private double _limitVal;
-
-        public double MeasureVal { get => _MeasureVal; set { _MeasureVal = value; OnPropertyChanged(); } }
-        private double _MeasureVal;
-
-        public double LmtVal { get => _lmtVal; set { _lmtVal = value; OnPropertyChanged(); } }
-        private double _lmtVal;
-
-        public SMUChannelType Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); } }
-        private SMUChannelType _Channel = SMUChannelType.A;
-
-        public double? V { get => _V; set { _V = value; OnPropertyChanged(); } }
-        private double? _V;
-        public double? I { get => _I; set { _I = value; OnPropertyChanged(); } }
-        private double? _I;
 
     }
 }
