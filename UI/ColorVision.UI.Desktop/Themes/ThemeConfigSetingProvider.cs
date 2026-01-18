@@ -31,14 +31,6 @@ namespace ColorVision.UI.Desktop.Themes
                     BindingName = nameof(ThemeConfig.Theme),
                     Source = ThemeConfig.Instance,
                     ComboBox = cmtheme
-                },
-                new ConfigSettingMetadata
-                {
-                    Name = Resources.TransparentWindow,
-                    Description = Resources.TransparentWindow,
-                    Type = ConfigSettingType.Bool,
-                    BindingName = nameof(ThemeConfig.TransparentWindow),
-                    Source = ThemeConfig.Instance,
                 }
             };
         }

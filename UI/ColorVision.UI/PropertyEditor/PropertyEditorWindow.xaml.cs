@@ -63,7 +63,6 @@ namespace ColorVision.UI
         public event EventHandler Submited;
         public object Config { get; set; }
         public object EditConfig { get; set; }
-        public bool IsEdit { get; set; } = true;
 
         public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
         
@@ -80,7 +79,6 @@ namespace ColorVision.UI
         public PropertyEditorWindow(object config ,bool isEdit = true)
         {
             Type type = config.GetType();
-            IsEdit = isEdit;
             Config = config;
             InitializeComponent();
             this.ApplyCaption();
@@ -97,20 +95,12 @@ namespace ColorVision.UI
             SortComboBox.Items.Add(new ComboBoxItem { Content = "按分类排序 (降序)", Tag = PropertySortMode.CategoryDescending });
             SortComboBox.SelectedIndex = 0;
 
-            if (IsEdit)
-            {
-                DisplayProperties(Config);
-            }
-            else
-            {
-                EditConfig = Config.Clone();
-                DisplayProperties(EditConfig);
-            }
+            EditConfig = Config.Clone();
+            DisplayProperties(EditConfig);
         }
         private void OK_Click(object sender, RoutedEventArgs e)
         {
-            if (!IsEdit)
-                EditConfig.CopyTo(Config);
+            EditConfig.CopyTo(Config);
             Submited?.Invoke(sender, new EventArgs());
             this.Close();
         }
@@ -122,36 +112,19 @@ namespace ColorVision.UI
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
-            if (!IsEdit)
-            {
-                Config.CopyTo(EditConfig);
-                PropertyPanel.Children.Clear();
-                SearchBox.Text = string.Empty;  // Clear search when resetting
-                DisplayProperties(EditConfig);
-            }
-            else
-            {
-                SearchBox.Text = string.Empty;  // Clear search when resetting
-                Config.Reset();
-            }
+            SearchBox.Text = string.Empty;  // Clear search when resetting
+            Config.CopyTo(EditConfig);
+            PropertyPanel.Children.Clear();
+            SearchBox.Text = string.Empty;  // Clear search when resetting
+            DisplayProperties(EditConfig);
         }
 
         private void ResetToFactory_Click(object sender, RoutedEventArgs e)
         {
             SearchBox.Text = string.Empty;  // Clear search when resetting
-            
-            if (!IsEdit)
-            {
-                // Reset EditConfig to class default
-                EditConfig.Reset();
-                PropertyPanel.Children.Clear();
-                DisplayProperties(EditConfig);
-            }
-            else
-            {
-                // Reset Config to class default
-                Config.Reset();
-            }
+            EditConfig.Reset();
+            PropertyPanel.Children.Clear();
+            DisplayProperties(EditConfig);       
         }
 
 
@@ -617,7 +590,7 @@ namespace ColorVision.UI
                     PropertyPanel.Children.Clear();
                     TreeNodes.Clear();
                     nestedPropertiesMap.Clear();
-                    DisplayProperties(IsEdit ? Config : EditConfig);
+                    DisplayProperties(EditConfig);
                     ApplySearchFilter();
                     return;
             }
@@ -661,7 +634,7 @@ namespace ColorVision.UI
             TreeNodes.Clear();
             nestedPropertiesMap.Clear();
 
-            var source = IsEdit ? Config : EditConfig;
+            var source = EditConfig;
 
             foreach (var categoryGroup in categoryGroups)
             {
