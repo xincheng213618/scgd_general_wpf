@@ -133,9 +133,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 MessageBox.Show("SelectDataFirst");
                 return;
             }
+
+            var selectedItemsCopy = new List<object>();
+            foreach (var item in listView1.SelectedItems)
+            {
+                selectedItemsCopy.Add(item);
+            }
+
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
-            dialog.FileName = "SpectrometerExport" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            dialog.FileName = "EQEExport" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
@@ -175,11 +182,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
             csvBuilder.AppendLine();
 
-            var selectedItemsCopy = new List<object>();
-            foreach (var item in listView1.SelectedItems)
-            {
-                selectedItemsCopy.Add(item);
-            }
+
 
             foreach (var item in selectedItemsCopy)
             {
