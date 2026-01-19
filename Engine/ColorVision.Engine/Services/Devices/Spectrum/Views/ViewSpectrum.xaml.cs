@@ -362,7 +362,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
                 foreach (var item in selectedItemsCopy)
                 {
-                    if (item is ViewResultEqe result)
+                    if (item is ViewResultSpectrum result)
                     {
                         csvBuilder.Append(result.Id + ",");
                         csvBuilder.Append(result.BatchID + ",");
