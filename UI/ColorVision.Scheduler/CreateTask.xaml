@@ -8,7 +8,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SchedulerInfo}"
-        Title="{x:Static properties:Resources.Create}" Background="{DynamicResource GlobalBackground}" Height="400" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.Create}" Background="{DynamicResource GlobalBackground}" Height="600" Width="500" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -83,6 +83,9 @@
                         <ComboBox  Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
                         <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
                     </DockPanel>
+                </StackPanel>
+                <StackPanel x:Name="StackPanelConfig">
+                    
                 </StackPanel>
 
                 <!-- 第三阶段新增：优先级和超时设置 -->
