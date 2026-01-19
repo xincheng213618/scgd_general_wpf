@@ -1,11 +1,14 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using log4net;
+using Newtonsoft.Json;
 using Quartz;
 using Quartz.Impl;
 using System.Collections.ObjectModel;
-using System.Windows;
+using System.ComponentModel;
 using System.IO;
-using Newtonsoft.Json;
+using System.Reflection;
+using System.Windows;
 
 namespace ColorVision.Scheduler
 {
@@ -32,12 +35,13 @@ namespace ColorVision.Scheduler
 
     public class QuartzSchedulerManager : ISchedulerService
     {
+        private static readonly ILog _logger = LogManager.GetLogger(typeof(QuartzSchedulerManager));
         private static QuartzSchedulerManager _instance;
         private static readonly object _locker = new();
         public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
         private static readonly string ConfigFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"ColorVision", "scheduler_tasks.json");
-        private readonly SchedulerLogger _logger;
-        
+       
+
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; } = new ObservableCollection<SchedulerInfo>();
 
         public IScheduler Scheduler { get; set; }
@@ -50,8 +54,6 @@ namespace ColorVision.Scheduler
 
         public QuartzSchedulerManager()
         {
-            _logger = new SchedulerLogger("QuartzSchedulerManager");
-            _logger.LogInformation("Initializing QuartzSchedulerManager");
             Load();
             Task.Run(() => Start());
         }
@@ -60,14 +62,14 @@ namespace ColorVision.Scheduler
         {
             try
             {
-                _logger.LogDebug($"Saving {TaskInfos.Count} tasks to {ConfigFile}");
+                _logger.Debug($"Saving {TaskInfos.Count} tasks to {ConfigFile}");
                 var json = JsonConvert.SerializeObject(TaskInfos, Formatting.Indented, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
                 File.WriteAllText(ConfigFile, json);
-                _logger.LogInformation("Tasks saved successfully");
+                _logger.Info("Tasks saved successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogError("Failed to save tasks", ex);
+                _logger.Error("Failed to save tasks", ex);
                 MessageBox.Show($"保存任务配置失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -78,7 +80,7 @@ namespace ColorVision.Scheduler
             {
                 if (File.Exists(ConfigFile))
                 {
-                    _logger.LogInformation($"Loading tasks from {ConfigFile}");
+                    _logger.Info($"Loading tasks from {ConfigFile}");
                     var json = File.ReadAllText(ConfigFile);
                     var list = JsonConvert.DeserializeObject<ObservableCollection<SchedulerInfo>>(json, new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All });
                     if (list != null)
@@ -86,21 +88,21 @@ namespace ColorVision.Scheduler
                         TaskInfos.Clear();
                         foreach (var item in list)
                             TaskInfos.Add(item);
-                        _logger.LogInformation($"Loaded {TaskInfos.Count} tasks successfully");
+                        _logger.Info($"Loaded {TaskInfos.Count} tasks successfully");
                     }
                     else
                     {
-                        _logger.LogWarning("Deserialized task list is null");
+                        _logger.Warn("Deserialized task list is null");
                     }
                 }
                 else
                 {
-                    _logger.LogInformation($"Config file not found: {ConfigFile}");
+                    _logger.Info($"Config file not found: {ConfigFile}");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("Failed to load tasks", ex);
+                _logger.Error("Failed to load tasks", ex);
                 MessageBox.Show($"加载任务配置失败: {ex.Message}\n将使用空配置启动。", "警告", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
@@ -154,7 +156,7 @@ namespace ColorVision.Scheduler
         {
             try
             {
-                _logger.LogInformation("Starting Quartz Scheduler");
+                _logger.Info("Starting Quartz Scheduler");
                 Scheduler = await StdSchedulerFactory.GetDefaultScheduler();
                 PauseAllCommand = new RelayCommand(async a => await PauseAll(), a => Scheduler.IsStarted);
                 ResumeAllCommand = new RelayCommand(async a => await ResumeAll(), a => Scheduler.IsStarted);
@@ -163,31 +165,32 @@ namespace ColorVision.Scheduler
 
                 // 创建调度器
                 await Scheduler.Start();
-                _logger.LogInformation("Scheduler started successfully");
+                _logger.Info("Scheduler started successfully");
 
                 Listener = new TaskExecutionListener(this);
                 Scheduler.ListenerManager.AddJobListener(Listener);
                 Jobs = new Dictionary<string, Type>();
 
-                _logger.LogDebug("Discovering job types from assemblies");
+                _logger.Debug("Discovering job types from assemblies");
                 foreach (var assembly in AssemblyService.Instance.GetAssemblies())
                 {
                     foreach (var type in assembly.GetTypes())
                     {
                         if (typeof(IJob).IsAssignableFrom(type) && !type.IsInterface)
                         {
-                            Jobs[type.Name] = type;
+                            string name = type.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? type.Name;
+                            Jobs[name] = type;
                         }
                     }
                 }
-                _logger.LogInformation($"Discovered {Jobs.Count} job types");
+                _logger.Info($"Discovered {Jobs.Count} job types");
 
                 //5s 后恢复任务
-                _logger.LogDebug("Waiting 5 seconds before recovering tasks");
+                _logger.Debug("Waiting 5 seconds before recovering tasks");
                 await Task.Delay(5000);
                 
                 var failedJobs = new List<string>();
-                _logger.LogInformation($"Recovering {TaskInfos.Count} tasks");
+                _logger.Info($"Recovering {TaskInfos.Count} tasks");
                 foreach (var item in TaskInfos)
                 {
                     try
@@ -195,35 +198,35 @@ namespace ColorVision.Scheduler
                         if (item.JobType != null)
                         {
                             await CreateJob(item);
-                            _logger.LogDebug($"Recovered task: {item.JobName}({item.GroupName})");
+                            _logger.Debug($"Recovered task: {item.JobName}({item.GroupName})");
                         }
                         else
                         {
                             var errorMsg = $"{item.JobName}({item.GroupName}) 类型丢失";
                             failedJobs.Add(errorMsg);
-                            _logger.LogWarning(errorMsg);
+                            _logger.Warn(errorMsg);
                         }
                     }
                     catch (Exception ex)
                     {
                         var errorMsg = $"{item.JobName}({item.GroupName}): {ex.Message}";
                         failedJobs.Add(errorMsg);
-                        _logger.LogError($"Failed to recover task: {item.JobName}({item.GroupName})", ex);
+                        _logger.Error($"Failed to recover task: {item.JobName}({item.GroupName})", ex);
                     }
                 }
                 if (failedJobs.Count > 0)
                 {
-                    _logger.LogWarning($"{failedJobs.Count} tasks failed to recover");
+                    _logger.Warn($"{failedJobs.Count} tasks failed to recover");
                     MessageBox.Show("以下任务未能恢复：\n" + string.Join("\n", failedJobs), "任务恢复警告");
                 }
                 else
                 {
-                    _logger.LogInformation("All tasks recovered successfully");
+                    _logger.Info("All tasks recovered successfully");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("Failed to start scheduler", ex);
+                _logger.Error("Failed to start scheduler", ex);
                 MessageBox.Show($"调度器启动失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
             }
@@ -232,21 +235,21 @@ namespace ColorVision.Scheduler
         {
             try
             {
-                _logger.LogInformation($"Stopping job: {jobName}({groupName})");
+                _logger.Info($"Stopping job: {jobName}({groupName})");
                 JobKey jobKey = new JobKey(jobName, groupName);
                 if (await Scheduler.CheckExists(jobKey))
                 {
                     await Scheduler.PauseJob(jobKey);
-                    _logger.LogInformation($"Job stopped: {jobName}({groupName})");
+                    _logger.Info($"Job stopped: {jobName}({groupName})");
                 }
                 else
                 {
-                    _logger.LogWarning($"Job not found: {jobName}({groupName})");
+                    _logger.Warn($"Job not found: {jobName}({groupName})");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to stop job: {jobName}({groupName})", ex);
+                _logger.Error($"Failed to stop job: {jobName}({groupName})", ex);
                 throw;
             }
         }
@@ -255,7 +258,7 @@ namespace ColorVision.Scheduler
         {
             try
             {
-                _logger.LogInformation($"Removing job: {jobName}({groupName})");
+                _logger.Info($"Removing job: {jobName}({groupName})");
                 JobKey jobKey = new JobKey(jobName, groupName);
                 if (await Scheduler.CheckExists(jobKey))
                 {
@@ -266,16 +269,16 @@ namespace ColorVision.Scheduler
                 {
                     TaskInfos.Remove(info);
                     SaveTasks();
-                    _logger.LogInformation($"Job removed: {jobName}({groupName})");
+                    _logger.Info($"Job removed: {jobName}({groupName})");
                 }
                 else
                 {
-                    _logger.LogWarning($"Job not found in TaskInfos: {jobName}({groupName})");
+                    _logger.Warn($"Job not found in TaskInfos: {jobName}({groupName})");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to remove job: {jobName}({groupName})", ex);
+                _logger.Error($"Failed to remove job: {jobName}({groupName})", ex);
                 throw;
             }
         }
@@ -284,21 +287,21 @@ namespace ColorVision.Scheduler
         {
             try
             {
-                _logger.LogInformation($"Resuming job: {jobName}({groupName})");
+                _logger.Info($"Resuming job: {jobName}({groupName})");
                 JobKey jobKey = new JobKey(jobName, groupName);
                 if (await Scheduler.CheckExists(jobKey))
                 {
                     await Scheduler.ResumeJob(jobKey);
-                    _logger.LogInformation($"Job resumed: {jobName}({groupName})");
+                    _logger.Info($"Job resumed: {jobName}({groupName})");
                 }
                 else
                 {
-                    _logger.LogWarning($"Job not found: {jobName}({groupName})");
+                    _logger.Warn($"Job not found: {jobName}({groupName})");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to resume job: {jobName}({groupName})", ex);
+                _logger.Error($"Failed to resume job: {jobName}({groupName})", ex);
                 throw;
             }
         }
@@ -307,12 +310,12 @@ namespace ColorVision.Scheduler
         {
             try
             {
-                _logger.LogInformation($"Creating job: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
+                _logger.Info($"Creating job: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
                 
                 // 参数校验
                 if (!ValidateSchedulerInfo(schedulerInfo, out string errorMsg))
                 {
-                    _logger.LogWarning($"Job validation failed: {errorMsg}");
+                    _logger.Warn($"Job validation failed: {errorMsg}");
                     MessageBox.Show(errorMsg, "参数错误", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
@@ -321,7 +324,7 @@ namespace ColorVision.Scheduler
                 var scheduler = Scheduler;
                 if (scheduler == null)
                 {
-                    _logger.LogError("Scheduler is null");
+                    _logger.Error("Scheduler is null");
                     MessageBox.Show("调度器未初始化", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
@@ -339,17 +342,17 @@ namespace ColorVision.Scheduler
                         TaskInfos.Add(schedulerInfo);
                         SaveTasks();
                     }
-                    _logger.LogInformation($"Job created successfully: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
+                    _logger.Info($"Job created successfully: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
                 }
                 else
                 {
-                    _logger.LogError($"Failed to build trigger for job: {schedulerInfo.JobName}");
+                    _logger.Error($"Failed to build trigger for job: {schedulerInfo.JobName}");
                     MessageBox.Show("创建触发器失败", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to create job: {schedulerInfo.JobName}({schedulerInfo.GroupName})", ex);
+                _logger.Error($"Failed to create job: {schedulerInfo.JobName}({schedulerInfo.GroupName})", ex);
                 MessageBox.Show($"创建任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
             }
@@ -359,15 +362,15 @@ namespace ColorVision.Scheduler
         {
             try
             {
-                _logger.LogInformation($"Updating job: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
+                _logger.Info($"Updating job: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
                 // 先删除原任务，再创建新任务
                 await RemoveJob(schedulerInfo.JobName, schedulerInfo.GroupName);
                 await CreateJob(schedulerInfo);
-                _logger.LogInformation($"Job updated successfully: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
+                _logger.Info($"Job updated successfully: {schedulerInfo.JobName}({schedulerInfo.GroupName})");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Failed to update job: {schedulerInfo.JobName}({schedulerInfo.GroupName})", ex);
+                _logger.Error($"Failed to update job: {schedulerInfo.JobName}({schedulerInfo.GroupName})", ex);
                 MessageBox.Show($"更新任务失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
             }

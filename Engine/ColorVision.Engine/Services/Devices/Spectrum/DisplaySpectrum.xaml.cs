@@ -1,13 +1,43 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Templates.Flow;
+using ColorVision.Scheduler;
 using ColorVision.UI;
+using Quartz;
 using System;
+using System.ComponentModel;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
+    [DisplayName("光谱仪单次测试")]
+    public class SpectrumGetDataJob : IJob
+    {
+
+
+        public  Task Execute(IJobExecutionContext context)
+        {
+            var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                schedulerInfo.Status = SchedulerStatus.Running;
+            });
+
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                DeviceSpectrum deviceSpectrum = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().LastOrDefault();
+                deviceSpectrum?.DService.GetData();
+                schedulerInfo.Status = SchedulerStatus.Ready;
+            });
+            return Task.CompletedTask;
+        }
+    }
+
+
     /// <summary>
     /// DisplaySpectrum.xaml 的交互逻辑
     /// </summary>

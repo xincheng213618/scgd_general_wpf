@@ -333,7 +333,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public override UserControl GetDeviceInfo() => new InfoSpectrum(this);
 
-        readonly Lazy<DisplaySpectrum> DisplayLazy;
+        public Lazy<DisplaySpectrum> DisplayLazy { get; set; }
         public override UserControl GetDisplayControl() => DisplayLazy.Value;
         public override MQTTServiceBase? GetMQTTService()
         {
