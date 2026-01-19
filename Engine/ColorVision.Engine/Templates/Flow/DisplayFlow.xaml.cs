@@ -11,7 +11,6 @@ using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
-using Quartz;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Diagnostics;
@@ -28,23 +27,6 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-    public class FlowJob : IJob
-    {
-        public Task Execute(IJobExecutionContext context)
-        {
-            var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                schedulerInfo.Status = SchedulerStatus.Running;
-            });
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                DisplayFlow.GetInstance().RunFlow();
-                schedulerInfo.Status = SchedulerStatus.Ready;
-            });
-            return Task.CompletedTask;
-        }
-    }
 
     public class FlowSocketMsgHandle : ISocketJsonHandler
     {
@@ -448,7 +430,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
 
 
-        private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
+        private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
             //DisPlayManager.GetInstance().DisableAllDisPlayControl();
             RunFlow();
@@ -456,7 +438,7 @@ namespace ColorVision.Engine.Templates.Flow
 
 
         string FlowName;
-        public async void RunFlow()
+        public async Task RunFlow()
         {
             if (MarkColorProperty == null)
             {

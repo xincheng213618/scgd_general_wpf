@@ -65,7 +65,7 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock>
-                                    <Run Text="{Binding SuccessCount, Mode=OneWay}" Foreground="Green"/>
+                                    <Run Text="{Binding SuccessCount, Mode=OneWay}" />
                                     <Run Text="/"/>
                                     <Run Text="{Binding FailureCount, Mode=OneWay}" Foreground="Red"/>
                                 </TextBlock>

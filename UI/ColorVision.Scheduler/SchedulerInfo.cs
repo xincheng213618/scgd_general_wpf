@@ -74,7 +74,7 @@ namespace ColorVision.Scheduler
         public bool IsSimple => _Mode == JobExecutionMode.Simple;
         public bool IsJobInterval => _Mode == JobExecutionMode.Interval;
         public TimeSpan Interval { get => _Interval; set { _Interval = value; OnPropertyChanged(); } }
-        private TimeSpan _Interval;
+        private TimeSpan _Interval = new TimeSpan(0,0,10);
 
         public bool IsCron => _Mode == JobExecutionMode.Cron;
 

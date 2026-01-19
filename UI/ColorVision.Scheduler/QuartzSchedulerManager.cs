@@ -41,7 +41,6 @@ namespace ColorVision.Scheduler
         public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
         private static readonly string ConfigFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"ColorVision", "scheduler_tasks.json");
        
-
         public ObservableCollection<SchedulerInfo> TaskInfos { get; set; } = new ObservableCollection<SchedulerInfo>();
 
         public IScheduler Scheduler { get; set; }
@@ -332,6 +331,7 @@ namespace ColorVision.Scheduler
                 var job = JobBuilder.Create(selectedJobType)
                     .WithIdentity(schedulerInfo.JobName, schedulerInfo.GroupName)
                     .Build();
+                job.JobDataMap["SchedulerInfo"] = schedulerInfo;
                 ITrigger trigger = BuildTrigger(schedulerInfo);
                 if (trigger != null)
                 {

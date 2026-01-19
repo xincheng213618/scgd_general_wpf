@@ -239,4 +239,8 @@
 		</Page>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Services\Devices\SMU\Job\" />
+	</ItemGroup>
+
 </Project>

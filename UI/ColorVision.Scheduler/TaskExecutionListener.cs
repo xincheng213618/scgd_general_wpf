@@ -46,10 +46,12 @@ namespace ColorVision.Scheduler
         public override Task JobWasExecuted(IJobExecutionContext context, JobExecutionException? jobException, CancellationToken cancellationToken = default)
         {
             base.JobWasExecuted(context, jobException, cancellationToken);
-            
-            // 更新任务执行次数和状态
+
             var jobKey = context.JobDetail.Key;
-            var taskInfo = _schedulerManager.TaskInfos.FirstOrDefault(t => t.JobName == jobKey.Name && t.GroupName == jobKey.Group);
+
+            // 优化：尝试直接从 JobDataMap 获取 SchedulerInfo
+            SchedulerInfo? taskInfo = context.JobDetail.JobDataMap["SchedulerInfo"] as SchedulerInfo;
+
             if (taskInfo != null)
             {
                 taskInfo.RunCount++;

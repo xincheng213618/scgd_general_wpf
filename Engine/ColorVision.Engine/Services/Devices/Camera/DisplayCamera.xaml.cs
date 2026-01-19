@@ -458,19 +458,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        public void GetData()
+        public MsgRecord? GetData()
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
-            if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param) return;
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return null;
+            if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param) return null;
 
             double[] expTime = null;
             if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
             else expTime = new double[] { Device.Config.ExpTime };
 
 
-            if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return;
+            if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return null;
 
-            MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
+            return DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);       
         }
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)

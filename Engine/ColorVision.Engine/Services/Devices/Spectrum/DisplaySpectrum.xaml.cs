@@ -2,101 +2,15 @@
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Scheduler;
 using ColorVision.UI;
-using Quartz;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
-    public class TextSectrumPropertiesEditor : IPropertyEditor
-    {
-        public DockPanel GenProperties(PropertyInfo property, object obj)
-        {
-            var rm = PropertyEditorHelper.GetResourceManager(obj);
-            var dockPanel = new DockPanel();
-            var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
-            dockPanel.Children.Add(textBlock);
-
-            var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = PropertyEditorHelper.ComboBoxSmallStyle, IsEditable = true };
-            HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
-            combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
-
-            combo.ItemsSource = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>();
-            combo.DisplayMemberPath = "Name";
-            dockPanel.Children.Add(combo);
-            return dockPanel;
-        }
-    }
-    /// <summary>
-    /// Configuration for spectrum data acquisition job
-    /// </summary>
-    public class SpectrumGetDataJobConfig : JobConfigBase
-    {
-        [Category("光谱仪设置")]
-        [DisplayName("光谱仪设备名称")]
-        [Description("输入要使用的光谱仪设备名称")]
-        [PropertyEditorType(typeof(TextSectrumPropertiesEditor))]
-        public string DeviceSpectrumName { get => _DeviceSpectrumName; set { _DeviceSpectrumName = value; OnPropertyChanged(); } }
-        private string _DeviceSpectrumName;
-    }
-
-    [DisplayName("光谱仪单次测试")]
-    public class SpectrumGetDataJob : IJob, IConfigurableJob
-    {
-        public Type ConfigType => typeof(SpectrumGetDataJobConfig);
-
-        public IJobConfig CreateDefaultConfig()
-        {
-            var config = new SpectrumGetDataJobConfig();
-            // Set default to first available device
-            var firstDevice = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();
-            if (firstDevice != null)
-            {
-                config.DeviceSpectrumName = firstDevice.Config.Name;
-            }
-            return config;
-        }
-
-        public Task Execute(IJobExecutionContext context)
-        {
-            var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                schedulerInfo.Status = SchedulerStatus.Running;
-            });
-
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                DeviceSpectrum deviceSpectrum = null;
-                
-                // Try to get device from config
-                if (schedulerInfo.Config is SpectrumGetDataJobConfig config && !string.IsNullOrEmpty(config.DeviceSpectrumName))
-                {
-                    deviceSpectrum = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>()
-                        .FirstOrDefault(d => d.Config.Name == config.DeviceSpectrumName);
-                }
-                
-                // Fallback to last device if config not found
-                if (deviceSpectrum == null)
-                {
-                    deviceSpectrum = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().LastOrDefault();
-                }
-                
-                deviceSpectrum?.DService.GetData();
-                schedulerInfo.Status = SchedulerStatus.Ready;
-            });
-            return Task.CompletedTask;
-        }
-    }
 
 
     /// <summary>

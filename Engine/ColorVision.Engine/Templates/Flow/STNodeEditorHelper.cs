@@ -692,16 +692,14 @@ namespace ColorVision.Engine.Templates.Flow
             dockPanel.Children.Add(new TextBlock
             {
                 Text = Tag,
-                Width = 50,
+                Width = 70,
                 Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
             });
 
             // 文本框
             var textBox = new TextBox
             {
-                Width = 150,
                 Margin = new Thickness(0, 0, 0, 0),
-                HorizontalAlignment =HorizontalAlignment.Left,
                 Style = (Style)Application.Current.FindResource("TextBox.Small"),
                 Text = filename
             };
@@ -781,12 +779,6 @@ namespace ColorVision.Engine.Templates.Flow
             Grid myGrid = new Grid();
             myGrid.DataContext = selectedItem;
 
-            // Create a Button
-            var button = new Button
-            {
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0),
-            };
             comboBox.SelectionChanged += (s, e) =>
             {
                 string selectedName = string.Empty;
@@ -803,6 +795,11 @@ namespace ColorVision.Engine.Templates.Flow
                 STNodeEditorMain_ActiveChanged(this,new EventArgs());
             };
 
+            var button = new Button
+            {
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+            };
             // Create a ToggleButton
             var toggleButton = new ToggleButton
             {

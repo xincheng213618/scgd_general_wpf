@@ -239,7 +239,6 @@ namespace ColorVision.Scheduler
                 {
                     var jobKey = new Quartz.JobKey(info.JobName, info.GroupName);
                     await QuartzSchedulerManager.Scheduler.TriggerJob(jobKey);
-                    MessageBox.Show($"任务 {info.JobName} 已触发执行", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
