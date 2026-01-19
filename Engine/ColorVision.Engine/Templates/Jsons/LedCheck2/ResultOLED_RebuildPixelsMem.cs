@@ -16,7 +16,34 @@ using System.Windows.Data;
 
 namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
- 
+    public class Compliance_Math: IResultHandleBase
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(Compliance_Math));
+        public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.Compliance_Math };
+        public override void Load(ViewResultContext ctx, ViewResultAlg result)
+        {
+            if (result.ViewResults == null)
+            {
+                //result.ViewResults = new ObservableCollection<IViewResult>();
+                //using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                //var list = db.Queryable<AlgResultPoiCieFileModel>().Where(it => it.Pid == result.Id).ToList();
+
+                //foreach (var item in list)
+                //{
+                //    result.ViewResults.Add(item);
+                //}
+            }
+        }
+
+        public override void Handle(ViewResultContext ctx, ViewResultAlg result)
+        {
+            if (File.Exists(result.ResultImagFile))
+                ctx.ImageView.OpenImage(result.ResultImagFile);
+
+        }
+    }
+
+
 
     public class ResultOLED_RebuildPixelsMem : IResultHandleBase
     {
@@ -64,36 +91,43 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
          
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-            var AlgResultPoiCieFileModel = result.ViewResults.OfType<AlgResultPoiCieFileModel>().Where(a => a.FileUrl.Contains("Y.tif")).FirstOrDefault();
+
+            var AlgResultPoiCieFileModel = result.ViewResults.OfType<AlgResultPoiCieFileModel>().FirstOrDefault();
             if (AlgResultPoiCieFileModel != null && AlgResultPoiCieFileModel.FileUrl !=null)
             {
                 string originalPath = AlgResultPoiCieFileModel.FileUrl;
 
-                // 1. 读取图像 (使用 AnyDepth 确保能读取 16位 TIF, 使用 Grayscale 确保按灰度读取)
-                using (Mat src = Cv2.ImRead(originalPath, ImreadModes.Unchanged))
-                using (Mat dst8Bit = new Mat())
+                if (originalPath.Contains("Y.tif"))
                 {
-                    if (!src.Empty())
+                    // 1. 读取图像 (使用 AnyDepth 确保能读取 16位 TIF, 使用 Grayscale 确保按灰度读取)
+                    using (Mat src = Cv2.ImRead(originalPath, ImreadModes.Unchanged))
+                    using (Mat dst8Bit = new Mat())
                     {
-                        if (src.Depth() == MatType.CV_32F || src.Depth() == MatType.CV_16U || src.Depth() == MatType.CV_16S)
+                        if (!src.Empty())
                         {
-                            src.ConvertTo(dst8Bit, MatType.CV_8U, 1.0 / 256.0);
+                            if (src.Depth() == MatType.CV_32F || src.Depth() == MatType.CV_16U || src.Depth() == MatType.CV_16S)
+                            {
+                                src.ConvertTo(dst8Bit, MatType.CV_8U, 1.0 / 256.0);
+                            }
+                            else
+                            {
+                                src.ConvertTo(dst8Bit, MatType.CV_8U);
+                            }
+                            ctx.ImageView.Config.AddProperties("FilePath", originalPath);
+                            ctx.ImageView.SetImageSource(dst8Bit.ToWriteableBitmap());
+                            ctx.ImageView.UpdateZoomAndScale();
                         }
-                        else
-                        {
-                            src.ConvertTo(dst8Bit, MatType.CV_8U);
-                        }
-                        ctx.ImageView.Config.AddProperties("FilePath", originalPath);
-                        ctx.ImageView.SetImageSource(dst8Bit.ToWriteableBitmap());
-                        ctx.ImageView.UpdateZoomAndScale();
                     }
+                }
+                else
+                {
+                    ctx.ImageView.OpenImage(originalPath);
                 }
             }
             else
             {
                 if (File.Exists(result.FilePath))
                     ctx.ImageView.OpenImage(result.FilePath);
-
             }
 
             List<string> header = new() { "FileUrl", "FileName"};
