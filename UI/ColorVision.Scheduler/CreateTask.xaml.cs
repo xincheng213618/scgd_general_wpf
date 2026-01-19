@@ -66,7 +66,7 @@ namespace ColorVision.Scheduler
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Failed to create job configuration: {ex.Message}");
+                        MessageBox.Show($"Failed to create configuration for job type '{SchedulerInfo.JobType.Name}': {ex.Message}\n\nThe job will be created without custom configuration.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 }
             }
