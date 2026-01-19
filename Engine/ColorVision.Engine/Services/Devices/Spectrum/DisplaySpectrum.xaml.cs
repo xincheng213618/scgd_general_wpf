@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Scheduler;
 using ColorVision.UI;
@@ -8,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,6 +17,25 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
+    public class TextSectrumPropertiesEditor : IPropertyEditor
+    {
+        public DockPanel GenProperties(PropertyInfo property, object obj)
+        {
+            var rm = PropertyEditorHelper.GetResourceManager(obj);
+            var dockPanel = new DockPanel();
+            var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
+            dockPanel.Children.Add(textBlock);
+
+            var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = PropertyEditorHelper.ComboBoxSmallStyle, IsEditable = true };
+            HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
+            combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
+
+            combo.ItemsSource = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>();
+            combo.DisplayMemberPath = "Name";
+            dockPanel.Children.Add(combo);
+            return dockPanel;
+        }
+    }
     /// <summary>
     /// Configuration for spectrum data acquisition job
     /// </summary>
@@ -23,6 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [Category("光谱仪设置")]
         [DisplayName("光谱仪设备名称")]
         [Description("输入要使用的光谱仪设备名称")]
+        [PropertyEditorType(typeof(TextSectrumPropertiesEditor))]
         public string DeviceSpectrumName { get => _DeviceSpectrumName; set { _DeviceSpectrumName = value; OnPropertyChanged(); } }
         private string _DeviceSpectrumName;
     }
