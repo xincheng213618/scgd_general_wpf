@@ -92,6 +92,7 @@ namespace ColorVision.Engine.Templates.Flow
         private static readonly object _locker = new();
         public static FlowEngineManager GetInstance() { lock (_locker) { return _instance ??= new FlowEngineManager(); } }
 
+        public FlowControl FlowControl { get; set; }
 
         public static FlowEngineConfig Config => FlowEngineConfig.Instance;
         public ObservableCollection<TemplateModel<FlowParam>> FlowParams { get; set; } = TemplateFlow.Params;
@@ -151,6 +152,9 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineControl = new FlowEngineControl(false);
 
             View = new ViewFlow(this);
+
+            FlowControl = new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
+
             View.View.Title = ColorVision.Engine.Properties.Resources.Flow;
             ServiceConfig = ServiceConfig.Instance;
             OpenServiceCommand = new RelayCommand(a => ColorVision.Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(ServiceConfig.RegistrationCenterService),a=>File.Exists(ServiceConfig.RegistrationCenterService));
@@ -158,9 +162,12 @@ namespace ColorVision.Engine.Templates.Flow
             WindowsServiceX64 = new WindowsServiceBase(ServiceConfig.CVMainService_x64Info);
             WindowsServiceDev = new WindowsServiceBase(ServiceConfig.CVMainService_devInfo);
             WindowsServiceReg = new WindowsServiceBase(ServiceConfig.RegistrationCenterServiceInfo);
-            OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog()); 
+            OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
+
+            DisplayFlow = new DisplayFlow(this);
         }
 
+        public DisplayFlow DisplayFlow { get; set; }
 
         public void OpenCameraLog()
         {

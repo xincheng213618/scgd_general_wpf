@@ -75,13 +75,13 @@ namespace ColorVision.Engine.Services.Flow
             this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
             CommandBindings.Add(new CommandBinding(EngineCommands.StartExecutionCommand, (s, e) => DisplayFlow.RunFlow(), (s, e) =>
             {
-                if (DisplayFlow.flowControl != null)
-                    e.CanExecute = !DisplayFlow.flowControl.IsFlowRun;
+                if (DisplayFlow.FlowControl != null)
+                    e.CanExecute = !DisplayFlow.FlowControl.IsFlowRun;
             }));
             CommandBindings.Add(new CommandBinding(EngineCommands.StopExecutionCommand, (s, e) => DisplayFlow.StopFlow(), (s, e) =>
             {
-                if (DisplayFlow.flowControl != null)
-                    e.CanExecute = DisplayFlow.flowControl.IsFlowRun;
+                if (DisplayFlow.FlowControl != null)
+                    e.CanExecute = DisplayFlow.FlowControl.IsFlowRun;
             }));
 
             ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
@@ -426,6 +426,18 @@ namespace ColorVision.Engine.Services.Flow
             STNodeEditorMain?.Dispose();
             winf1?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
+        {
+            FlowEngineManager.DisplayFlow.RunFlow();
+
+        }
+
+        private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
+        {
+            FlowEngineManager.DisplayFlow.StopFlow();
+
         }
     }
 

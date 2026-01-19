@@ -82,7 +82,7 @@ namespace ColorVision.Engine.Services
             var nameToIndexMap = DisPlayManagerConfig.Instance.StoreIndex;
 
             DisPlayManager.GetInstance().IDisPlayControls.Clear();
-            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, DisplayFlow.GetInstance());
+            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, FlowEngineManager.GetInstance().DisplayFlow);
             foreach (var item in MQTTDevices)
             {
                 if (item is DeviceService device)
@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Services
         {
             LastGenControl = new ObservableCollection<DeviceService>();
             DisPlayManager.GetInstance().IDisPlayControls.Clear();
-            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, DisplayFlow.GetInstance());
+            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, FlowEngineManager.GetInstance().DisplayFlow);
             foreach (var serviceKind in TypeServices)
             {
                 foreach (var service in serviceKind.VisualChildren)

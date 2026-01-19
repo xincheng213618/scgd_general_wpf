@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Templates.Flow.Job
     {
         public  Task Execute(IJobExecutionContext context)
         {
-            Application.Current.Dispatcher.Invoke(() => DisplayFlow.GetInstance().RunFlow());
+            Application.Current.Dispatcher.Invoke(() => FlowEngineManager.GetInstance().DisplayFlow.RunFlow());
             return Task.CompletedTask;
         }
     }

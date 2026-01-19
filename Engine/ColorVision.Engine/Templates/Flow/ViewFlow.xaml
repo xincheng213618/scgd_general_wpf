@@ -143,7 +143,10 @@
                     </Grid.RowDefinitions>
                     <ProgressBar  Maximum="100" Value="{Binding FlowEngineManager.BatchProgress}"/>
                     <TextBox x:FieldModifier="public" x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True"/>
-
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Height="35">
+                        <Button Content="{x:Static properties:Resources.ExecutionProcess}"  x:Name="ButtonRun" Visibility="{Binding FlowEngineManager.FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter1}}" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
+                        <Button Content="{x:Static properties:Resources.StopProcess}"  x:Name="ButtonStop" Visibility="{Binding FlowEngineManager.FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter}}" FontWeight="Bold" FontSize="16" Click="Button_FlowStop_Click" />
+                    </StackPanel>
                 </Grid>
 
             </Grid>

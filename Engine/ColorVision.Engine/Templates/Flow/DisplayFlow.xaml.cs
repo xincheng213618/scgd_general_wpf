@@ -37,8 +37,8 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    DisplayFlow.GetInstance().ComboBoxFlow.SelectedValue = flowParam;
-                    DisplayFlow.GetInstance().RunFlow();
+                    FlowEngineManager.GetInstance().DisplayFlow.ComboBoxFlow.SelectedValue = flowParam;
+                    FlowEngineManager.GetInstance().DisplayFlow.RunFlow();
                 });
                 return new SocketResponse { Code = 200, Msg = $"Run {request.Params}", EventName = EventName };
             }
@@ -53,14 +53,10 @@ namespace ColorVision.Engine.Templates.Flow
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DisplayFlow));
 
-        private static DisplayFlow _instance;
-        private static readonly object _locker = new();
+        public ViewFlow View => FlowEngineManager.View;
 
-        public static DisplayFlow GetInstance() { lock (_locker) { return _instance ??= new DisplayFlow(); } }
-
-        public static ViewFlow View => FlowEngineManager.GetInstance().View;
-
-        public static FlowEngineManager FlowEngineManager => FlowEngineManager.GetInstance();  
+        public FlowEngineManager FlowEngineManager { get; set; }
+        public FlowControl FlowControl => FlowEngineManager.FlowControl;
 
         public string DisPlayName => "Flow";
         public static FlowEngineConfig Config => FlowEngineConfig.Instance;
@@ -68,20 +64,21 @@ namespace ColorVision.Engine.Templates.Flow
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
 
-        public DisplayFlow()
+        public DisplayFlow(FlowEngineManager flowEngineManager)
         {
+            FlowEngineManager = flowEngineManager;
             InitializeComponent();
             CommandBindings.Add(new CommandBinding(EngineCommands.StartExecutionCommand, (s, e) => RunFlow(), (s, e) =>
             {
                
-                if (flowControl != null)
-                    e.CanExecute = !flowControl.IsFlowRun;
+                if (FlowControl != null)
+                    e.CanExecute = !FlowControl.IsFlowRun;
             }));
             CommandBindings.Add(new CommandBinding(EngineCommands.StopExecutionCommand, (s, e) => StopFlow(), (s, e) =>
             {
                
-                if (flowControl != null)
-                    e.CanExecute = flowControl.IsFlowRun;
+                if (FlowControl != null)
+                    e.CanExecute = FlowControl.IsFlowRun;
                 
             })); 
         }
@@ -89,7 +86,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = FlowEngineManager.GetInstance();
+            this.DataContext = FlowEngineManager;
             this.SetIconResource("DrawingImageFlow", View.View);
 
             this.AddViewConfig(View, ComboxView);
@@ -102,7 +99,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
                 {
-                    FlowEngineManager.GetInstance().SlectFlowParam = flowParam;
+                    FlowEngineManager.SlectFlowParam = flowParam;
                     FlowEngineConfig.Instance.LastSelectFlow = flowParam.Id;
                     if (FlowEngineConfig.Instance.FlowRunTime.TryGetValue(flowParam.Name, out long time))
                         LastFlowTime = time;
@@ -121,14 +118,7 @@ namespace ColorVision.Engine.Templates.Flow
                 _=Refresh();
             };
             
-
-            MqttRCService.GetInstance().ServiceTokensUpdated += (s, e) =>
-            {
-                FlowNodeManager.Instance.UpdateDevice(MqttRCService.GetInstance().ServiceTokens);
-            };
-
-            flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
-
+            MqttRCService.GetInstance().ServiceTokensUpdated += (s, e) => FlowNodeManager.Instance.UpdateDevice(MqttRCService.GetInstance().ServiceTokens);
             timer = new Timer(UpdateMsg, null, 0, 100);
             timer.Change(Timeout.Infinite, 100); // 停止定时器
 
@@ -180,7 +170,7 @@ namespace ColorVision.Engine.Templates.Flow
 
 
 
-                FlowEngineManager.GetInstance().SlectFlowParam = flowParam;
+                FlowEngineManager.SlectFlowParam = flowParam;
 
 
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
@@ -220,7 +210,6 @@ namespace ColorVision.Engine.Templates.Flow
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        public FlowControl flowControl { get; set; } 
 
 
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
@@ -234,10 +223,8 @@ namespace ColorVision.Engine.Templates.Flow
             MySqlControl.GetInstance().DB.Updateable(FlowEngineManager.Batch).ExecuteReturnEntity();
 
             FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
-            flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+            FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
 
-            ButtonRun.Visibility = Visibility.Visible;
-            ButtonStop.Visibility = Visibility.Collapsed;
             string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{Msg1}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
             View.logTextBox.Text = msg;
             FlowEngineManager.BatchProgress = 100;
@@ -373,7 +360,7 @@ namespace ColorVision.Engine.Templates.Flow
         string Msg1;
         private void UpdateMsg(object? sender)
         {
-            if (flowControl.IsFlowRun)
+            if (FlowControl.IsFlowRun)
             {
                 long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
                 TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
@@ -422,6 +409,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (sender is CVCommonNode algorithmNode)
             {
+ 
                 LastNode = algorithmNode;
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
@@ -432,7 +420,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
-            //DisPlayManager.GetInstance().DisableAllDisPlayControl();
             RunFlow();
         }
 
@@ -452,7 +439,7 @@ namespace ColorVision.Engine.Templates.Flow
                 return;
             }
 
-            if (flowControl.IsFlowRun)
+            if (FlowControl.IsFlowRun)
             {
                 log.Info("流程正在运行");
                 return;
@@ -502,10 +489,9 @@ namespace ColorVision.Engine.Templates.Flow
             View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
             FlowEngineManager.BatchProgress = 0;
 
-            flowControl.FlowCompleted += FlowControl_FlowCompleted;
+            FlowControl.FlowCompleted += FlowControl_FlowCompleted;
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            ButtonRun.Visibility = Visibility.Collapsed;
-            ButtonStop.Visibility = Visibility.Visible;
+
             stopwatch.Restart();
             stopwatch.Start();
 
@@ -516,9 +502,6 @@ namespace ColorVision.Engine.Templates.Flow
             // Execute pre-processors before flow starts
             if (!PreProcessing(FlowName, sn))
             {
-                // Pre-processing failed, abort flow execution
-                ButtonRun.Visibility = Visibility.Visible;
-                ButtonStop.Visibility = Visibility.Collapsed;
                 stopwatch.Stop();
                 timer.Change(Timeout.Infinite, 500);
                 View.logTextBox.Text = "预处理失败，流程取消执行";
@@ -526,20 +509,17 @@ namespace ColorVision.Engine.Templates.Flow
                 return;
             }
 
-            flowControl.Start(sn);
+            FlowControl.Start(sn);
         }
 
         private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
         {
-            DisPlayManager.GetInstance().EnableAllDisPlayControl();
             StopFlow();
         }
 
         public void StopFlow()
         {
-            ButtonRun.Visibility = Visibility.Visible;
-            ButtonStop.Visibility = Visibility.Collapsed;
-            flowControl?.Stop();
+            FlowControl?.Stop();
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
