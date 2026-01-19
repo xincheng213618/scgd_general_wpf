@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
+using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -36,6 +37,38 @@ namespace ColorVision.Scheduler
                 SchedulerInfo.GroupName = QuartzSchedulerManager.GetInstance().GetNewGroupName(SchedulerInfo.JobType.Name);
 
                 StackPanelConfig.Children.Clear();
+                
+                // Check if job supports configuration
+                if (typeof(IConfigurableJob).IsAssignableFrom(SchedulerInfo.JobType))
+                {
+                    try
+                    {
+                        // Create an instance to get config type
+                        var jobInstance = Activator.CreateInstance(SchedulerInfo.JobType) as IConfigurableJob;
+                        if (jobInstance != null)
+                        {
+                            // Create or reuse config
+                            if (SchedulerInfo.Config == null || SchedulerInfo.Config.GetType() != jobInstance.ConfigType)
+                            {
+                                SchedulerInfo.Config = jobInstance.CreateDefaultConfig();
+                            }
+                            
+                            // Generate UI for config
+                            if (SchedulerInfo.Config != null)
+                            {
+                                var configPanel = PropertyEditorHelper.GenPropertyEditorControl(SchedulerInfo.Config);
+                                if (configPanel != null)
+                                {
+                                    StackPanelConfig.Children.Add(configPanel);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to create job configuration: {ex.Message}");
+                    }
+                }
             }
 
         }

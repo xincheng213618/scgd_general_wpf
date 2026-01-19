@@ -5,6 +5,7 @@ using ColorVision.Scheduler;
 using ColorVision.UI;
 using Quartz;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,12 +15,36 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
-    [DisplayName("光谱仪单次测试")]
-    public class SpectrumGetDataJob : IJob
+    /// <summary>
+    /// Configuration for spectrum data acquisition job
+    /// </summary>
+    public class SpectrumGetDataJobConfig : JobConfigBase
     {
+        [Category("光谱仪设置")]
+        [DisplayName("光谱仪设备名称")]
+        [Description("输入要使用的光谱仪设备名称")]
+        public string DeviceSpectrumName { get => _DeviceSpectrumName; set { _DeviceSpectrumName = value; OnPropertyChanged(); } }
+        private string _DeviceSpectrumName;
+    }
 
+    [DisplayName("光谱仪单次测试")]
+    public class SpectrumGetDataJob : IJob, IConfigurableJob
+    {
+        public Type ConfigType => typeof(SpectrumGetDataJobConfig);
 
-        public  Task Execute(IJobExecutionContext context)
+        public IJobConfig CreateDefaultConfig()
+        {
+            var config = new SpectrumGetDataJobConfig();
+            // Set default to first available device
+            var firstDevice = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();
+            if (firstDevice != null)
+            {
+                config.DeviceSpectrumName = firstDevice.Config.Name;
+            }
+            return config;
+        }
+
+        public Task Execute(IJobExecutionContext context)
         {
             var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
             Application.Current.Dispatcher.BeginInvoke(() =>
@@ -29,7 +54,21 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                DeviceSpectrum deviceSpectrum = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().LastOrDefault();
+                DeviceSpectrum deviceSpectrum = null;
+                
+                // Try to get device from config
+                if (schedulerInfo.Config is SpectrumGetDataJobConfig config && !string.IsNullOrEmpty(config.DeviceSpectrumName))
+                {
+                    deviceSpectrum = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>()
+                        .FirstOrDefault(d => d.Config.Name == config.DeviceSpectrumName);
+                }
+                
+                // Fallback to last device if config not found
+                if (deviceSpectrum == null)
+                {
+                    deviceSpectrum = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().LastOrDefault();
+                }
+                
                 deviceSpectrum?.DService.GetData();
                 schedulerInfo.Status = SchedulerStatus.Ready;
             });
