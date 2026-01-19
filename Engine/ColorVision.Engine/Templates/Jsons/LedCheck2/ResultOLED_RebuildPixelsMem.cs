@@ -91,44 +91,58 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
          
         public override void Handle(ViewResultContext ctx, ViewResultAlg result)
         {
-
-            var AlgResultPoiCieFileModel = result.ViewResults.OfType<AlgResultPoiCieFileModel>().FirstOrDefault();
-            if (AlgResultPoiCieFileModel != null && AlgResultPoiCieFileModel.FileUrl !=null)
+            if(result.ResultType == ViewResultAlgType.OLED_FindDotsArrayOutFile)
             {
-                string originalPath = AlgResultPoiCieFileModel.FileUrl;
-
-                if (originalPath.Contains("Y.tif"))
+                string filename = "D:\\CvMainwindows\\CVWindowsService\\debug\\position.tif";
+                if (File.Exists(filename))
                 {
-                    // 1. 读取图像 (使用 AnyDepth 确保能读取 16位 TIF, 使用 Grayscale 确保按灰度读取)
-                    using (Mat src = Cv2.ImRead(originalPath, ImreadModes.Unchanged))
-                    using (Mat dst8Bit = new Mat())
-                    {
-                        if (!src.Empty())
-                        {
-                            if (src.Depth() == MatType.CV_32F || src.Depth() == MatType.CV_16U || src.Depth() == MatType.CV_16S)
-                            {
-                                src.ConvertTo(dst8Bit, MatType.CV_8U, 1.0 / 256.0);
-                            }
-                            else
-                            {
-                                src.ConvertTo(dst8Bit, MatType.CV_8U);
-                            }
-                            ctx.ImageView.Config.AddProperties("FilePath", originalPath);
-                            ctx.ImageView.SetImageSource(dst8Bit.ToWriteableBitmap());
-                            ctx.ImageView.UpdateZoomAndScale();
-                        }
-                    }
-                }
-                else
-                {
-                    ctx.ImageView.OpenImage(originalPath);
+                    ctx.ImageView.OpenImage(filename);
                 }
             }
             else
             {
-                if (File.Exists(result.FilePath))
-                    ctx.ImageView.OpenImage(result.FilePath);
+                var AlgResultPoiCieFileModel = result.ViewResults.OfType<AlgResultPoiCieFileModel>().FirstOrDefault();
+                if (AlgResultPoiCieFileModel != null && AlgResultPoiCieFileModel.FileUrl != null)
+                {
+                    string originalPath = AlgResultPoiCieFileModel.FileUrl;
+
+                    if (originalPath.Contains("Y.tif"))
+                    {
+                        // 1. 读取图像 (使用 AnyDepth 确保能读取 16位 TIF, 使用 Grayscale 确保按灰度读取)
+                        using (Mat src = Cv2.ImRead(originalPath, ImreadModes.Unchanged))
+                        using (Mat dst8Bit = new Mat())
+                        {
+                            if (!src.Empty())
+                            {
+                                if (src.Depth() == MatType.CV_32F || src.Depth() == MatType.CV_16U || src.Depth() == MatType.CV_16S)
+                                {
+                                    src.ConvertTo(dst8Bit, MatType.CV_8U, 1.0 / 256.0);
+                                }
+                                else
+                                {
+                                    src.ConvertTo(dst8Bit, MatType.CV_8U);
+                                }
+                                ctx.ImageView.Config.AddProperties("FilePath", originalPath);
+                                ctx.ImageView.SetImageSource(dst8Bit.ToWriteableBitmap());
+                                ctx.ImageView.UpdateZoomAndScale();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ctx.ImageView.OpenImage(originalPath);
+                        result.FilePath = originalPath;
+                    }
+                }
+                else
+                {
+                    if (File.Exists(result.FilePath))
+                        ctx.ImageView.OpenImage(result.FilePath);
+                }
             }
+
+
+
 
             List<string> header = new() { "FileUrl", "FileName"};
             if (ctx.ListView.View is GridView gridView)
