@@ -103,6 +103,9 @@ namespace ColorVision.Scheduler
         public Type JobType { get => _JobType; set { _JobType = value; OnPropertyChanged(); } }
         private Type _JobType;
 
+        public IJobConfig Config { get => _Config; set { _Config = value; OnPropertyChanged(); } }
+        private IJobConfig _Config;
+
         public string NextFireTime { get => _NextFireTime; set { _NextFireTime = value; OnPropertyChanged(); } }
         private string _NextFireTime;
         public string PreviousFireTime { get => _PreviousFireTime; set { _PreviousFireTime = value; OnPropertyChanged(); } }
