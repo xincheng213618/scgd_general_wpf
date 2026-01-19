@@ -330,7 +330,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 properties.Add("No");
                 properties.Add("Lot");
                 properties.Add("IP");
-                properties.Add("Luminace（Lv）(cd/m²)");
                 properties.Add("EQE");
                 properties.Add("LuminousFlux(lm)");
                 properties.Add("RadiantFlux(W)");
@@ -367,7 +366,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                         csvBuilder.Append(result.Id + ",");
                         csvBuilder.Append(result.BatchID + ",");
                         csvBuilder.Append(result.IP + ",");
-                        csvBuilder.Append(result.Lv + ",");
                         csvBuilder.Append(result.Eqe + ",");
                         csvBuilder.Append(result.LuminousFlux + ",");
                         csvBuilder.Append(result.RadiantFlux + ",");
