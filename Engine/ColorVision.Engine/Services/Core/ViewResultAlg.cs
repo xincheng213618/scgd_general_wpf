@@ -36,9 +36,10 @@ namespace ColorVision.Engine.Services
         {
 
         }
-
+        public AlgResultMasterModel AlgResultMasterModel { get; set; }
         public ViewResultAlg(AlgResultMasterModel item)
         {
+            AlgResultMasterModel = item;
             Id = item.Id;
             Batch = BatchResultMasterDao.Instance.GetById(item.BatchId)?.Code;
             FilePath = item.ImgFile;

@@ -85,7 +85,20 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
                 {
                     result.ViewResults.Add(item);
                 }
+                if(list.Count == 1)
+                {
+                    if (list[0].FileUrl.Contains("Y.tif"))
+                    {
 
+
+                    }
+                    else
+                    {
+                        result.FilePath = list[0].FileUrl;
+                        result.AlgResultMasterModel.ImgFile = list[0].FileUrl;
+                        db.Updateable(result.AlgResultMasterModel).ExecuteCommand();
+                    }
+                }
             }
         }
          

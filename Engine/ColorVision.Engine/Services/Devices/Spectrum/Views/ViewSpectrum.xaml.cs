@@ -219,6 +219,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 return;
             }
 
+
+            var selectedItemsCopy = new List<object>();
+            foreach (var item in listView1.SelectedItems)
+            {
+                selectedItemsCopy.Add(item);
+            }
+
             if (!DisplayConfig.IsLuminousFluxMode)
             {
                 using var dialog = new System.Windows.Forms.SaveFileDialog();
@@ -270,11 +277,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 csvBuilder.AppendLine();
 
 
-                var selectedItemsCopy = new List<object>();
-                foreach (var item in listView1.SelectedItems)
-                {
-                    selectedItemsCopy.Add(item);
-                }
+
 
                 foreach (var item in selectedItemsCopy)
                 {
@@ -357,12 +360,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                         csvBuilder.Append(',');
                 }
                 csvBuilder.AppendLine();
-
-                var selectedItemsCopy = new List<object>();
-                foreach (var item in listView1.SelectedItems)
-                {
-                    selectedItemsCopy.Add(item);
-                }
 
                 foreach (var item in selectedItemsCopy)
                 {
