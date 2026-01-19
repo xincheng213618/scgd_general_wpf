@@ -36,7 +36,6 @@ namespace ColorVision.Scheduler
                 SchedulerInfo.GroupName = QuartzSchedulerManager.GetInstance().GetNewGroupName(SchedulerInfo.JobType.Name);
 
                 StackPanelConfig.Children.Clear();
-                StackPanelConfig.Children.Add();
             }
 
         }
