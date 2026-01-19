@@ -125,6 +125,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, Button_Click,(s, e) => e.CanExecute = true));
 
             DisplayConfig_IsIsLuminousFluxModeChanged();
             DisplayConfig.IsIsLuminousFluxModeChanged +=(s,e) => DisplayConfig_IsIsLuminousFluxModeChanged();
@@ -275,8 +276,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 }
                 // 添加换行符
                 csvBuilder.AppendLine();
-
-
 
 
                 foreach (var item in selectedItemsCopy)
