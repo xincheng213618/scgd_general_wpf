@@ -232,9 +232,6 @@
   <data name="General" xml:space="preserve">
     <value>Универсальный</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>ОкноМенеджераПлагинов</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>название плагина</value>
   </data>

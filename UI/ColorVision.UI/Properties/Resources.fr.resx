@@ -232,9 +232,6 @@
   <data name="General" xml:space="preserve">
     <value>Universel</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>FenêtreGestionnaireDePlugins</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>Nom du plugin</value>
   </data>

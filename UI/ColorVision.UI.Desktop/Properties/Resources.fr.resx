@@ -127,7 +127,7 @@
     <value>Enregistrer la configuration</value>
   </data>
   <data name="OpenConfigFolder" xml:space="preserve">
-    <value>Ouvrez le dossier de configuration</value>
+    <value>Ouvrir le dossier de configuration</value>
   </data>
   <data name="SetupWizard" xml:space="preserve">
     <value>Assistant de configuration</value>
@@ -146,5 +146,473 @@
   </data>
   <data name="SkipIncompleteConfigPrompt" xml:space="preserve">
     <value>Certaines configurations sont encore incomplètes. Voulez-vous les ignorer ?</value>
+  </data>
+  <data name="ExportSettings" xml:space="preserve">
+    <value>Paramètres d'exportation</value>
+  </data>
+  <data name="ImportExportSettings" xml:space="preserve">
+    <value>Paramètres d'importation/exportation</value>
+  </data>
+  <data name="ImportSettings" xml:space="preserve">
+    <value>Paramètres d'importation</value>
+  </data>
+  <data name="OpenStore" xml:space="preserve">
+    <value>OpenStore</value>
+  </data>
+  <data name="InstallPackage" xml:space="preserve">
+    <value>Installer le package</value>
+  </data>
+  <data name="OpenViewDllViersion" xml:space="preserve">
+    <value>Version OpenViewDll</value>
+  </data>
+  <data name="Restart" xml:space="preserve">
+    <value>Redémarrage</value>
+  </data>
+  <data name="UpdateAll" xml:space="preserve">
+    <value>Tout mettre à jour</value>
+  </data>
+  <data name="PluginManagerWindow" xml:space="preserve">
+    <value>FenêtreGestionnaireDePlugins</value>
+  </data>
+  <data name="SelectExtractFolder" xml:space="preserve">
+    <value>Sélectionnez le dossier cible à partir duquel vous souhaitez extraire le plugin.</value>
+  </data>
+  <data name="ExtractPlugin" xml:space="preserve">
+    <value>Plugin d'extraction</value>
+  </data>
+  <data name="PluginExtractSuccess" xml:space="preserve">
+    <value>Plugin extrait avec succès : {0}</value>
+  </data>
+  <data name="PluginExtractFailed" xml:space="preserve">
+    <value>L'extraction du plugin a échoué.</value>
+  </data>
+  <data name="Install" xml:space="preserve">
+    <value>Installer</value>
+  </data>
+  <data name="SortByColumn" xml:space="preserve">
+    <value>Trier par {0}</value>
+  </data>
+  <data name="zh-Hant" xml:space="preserve">
+    <value>繁體中文 (Chinois traditionnel)</value>
+  </data>
+  <data name="zh-Hans" xml:space="preserve">
+    <value>简体中文 (Chinois simplifié)</value>
+  </data>
+  <data name="WriteConfigFileFailed" xml:space="preserve">
+    <value>Échec de l'écriture du fichier de configuration {0}</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>fenêtre indépendante</value>
+  </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>cacher</value>
+  </data>
+  <data name="ViewMode9" xml:space="preserve">
+    <value>Mode Vue 9</value>
+  </data>
+  <data name="ViewMode4" xml:space="preserve">
+    <value>Mode Vue 4</value>
+  </data>
+  <data name="ViewMode2" xml:space="preserve">
+    <value>Mode Vue 2</value>
+  </data>
+  <data name="ViewMode1" xml:space="preserve">
+    <value>Mode Vue 1</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="UseSystem" xml:space="preserve">
+    <value>Suivez le système</value>
+  </data>
+  <data name="UpdateLog4NetLevel" xml:space="preserve">
+    <value>Mise à jour du niveau de journal Log4Net</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>renouveler</value>
+  </data>
+  <data name="UnsupportedFileFormat" xml:space="preserve">
+    <value>Format de fichier non pris en charge</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>temps restant:</value>
+  </data>
+  <data name="SortOptions" xml:space="preserve">
+    <value>Options de tri</value>
+  </data>
+  <data name="SortDefault" xml:space="preserve">
+    <value>Tri par défaut</value>
+  </data>
+  <data name="SortByName" xml:space="preserve">
+    <value>Trier par nom</value>
+  </data>
+  <data name="SortByCategory" xml:space="preserve">
+    <value>Trier par catégorie</value>
+  </data>
+  <data name="SocketManagementWindow" xml:space="preserve">
+    <value>Fenêtre de gestion des sockets</value>
+  </data>
+  <data name="SocketBufferSize" xml:space="preserve">
+    <value>taille du tampon</value>
+  </data>
+  <data name="SmartSortDescending" xml:space="preserve">
+    <value>Tri intelligent (décroissant)</value>
+  </data>
+  <data name="SmartSortAscending" xml:space="preserve">
+    <value>Tri intelligent (croissant)</value>
+  </data>
+  <data name="SaveSingleConfigFailed" xml:space="preserve">
+    <value>Échec de l'enregistrement de la configuration unique {0}</value>
+  </data>
+  <data name="ru" xml:space="preserve">
+    <value>Русский (Russe)</value>
+  </data>
+  <data name="RestoreConfigFileFailed" xml:space="preserve">
+    <value>Échec de la restauration du fichier de configuration</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>réinitialiser</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Rebaptiser</value>
+  </data>
+  <data name="RemStagePointsToTemp" xml:space="preserve">
+    <value>rem STAGE pointe vers la racine du contenu ColorVision dans le répertoire temporaire</value>
+  </data>
+  <data name="RemRobocopySuccess" xml:space="preserve">
+    <value>  rem Robocopy 0-7 considéré comme succès</value>
+  </data>
+  <data name="ProjectSolution_P" xml:space="preserve">
+    <value>Projet/Solution (P)...</value>
+  </data>
+  <data name="ProjectNotFound" xml:space="preserve">
+    <value>Projet {0} introuvable</value>
+  </data>
+  <data name="PluginName" xml:space="preserve">
+    <value>Nom du plugin</value>
+  </data>
+  <data name="PluginMissingId" xml:space="preserve">
+    <value>Plugin {0} ID unique manquant, ignoré</value>
+  </data>
+  <data name="PluginLoadError" xml:space="preserve">
+    <value>Erreur de chargement du plugin ou du manifeste : {0}</value>
+  </data>
+  <data name="PluginDllNotFound" xml:space="preserve">
+    <value>DLL du plugin introuvable : {0}</value>
+  </data>
+  <data name="Options" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="OpenLogFolder" xml:space="preserve">
+    <value>Dossier OpenLog</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Ouvrir le dossier</value>
+  </data>
+  <data name="OpenContainingFolder" xml:space="preserve">
+    <value>Ouvrir le dossier contenant</value>
+  </data>
+  <data name="OpenConfigFile" xml:space="preserve">
+    <value>Ouvrir le fichier de configuration</value>
+  </data>
+  <data name="OnlineCronGenerator" xml:space="preserve">
+    <value>Générateur d'expressions Cron en ligne</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="NoLocalLog4Output" xml:space="preserve">
+    <value>Aucune sortie log4 locale configurée</value>
+  </data>
+  <data name="MysqlTool" xml:space="preserve">
+    <value>Outils MySQL</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>Fenêtre de journalisation des messages</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>Vue(V)</value>
+  </data>
+  <data name="MenuUndo" xml:space="preserve">
+    <value>Annuler (U)</value>
+  </data>
+  <data name="MenuTool" xml:space="preserve">
+    <value>Outil(T)</value>
+  </data>
+  <data name="MenuTemplate" xml:space="preserve">
+    <value>_Modèle</value>
+  </data>
+  <data name="MenuRename" xml:space="preserve">
+    <value>Renommer(M)</value>
+  </data>
+  <data name="MenuRedo" xml:space="preserve">
+    <value>Refaire</value>
+  </data>
+  <data name="MenuPrint" xml:space="preserve">
+    <value>Imprimer</value>
+  </data>
+  <data name="MenuPaste" xml:space="preserve">
+    <value>Coller(_P)</value>
+  </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>_Option</value>
+  </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>Ouvert(O)</value>
+  </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>Nouveau(N)</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>Langue(L)</value>
+  </data>
+  <data name="MenuHelp" xml:space="preserve">
+    <value>Aide(H)</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>Fichier(F)</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>Quitter (X)</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>Modifier(E)</value>
+  </data>
+  <data name="MenuDelete" xml:space="preserve">
+    <value>Supprimer(D)</value>
+  </data>
+  <data name="MenuCut" xml:space="preserve">
+    <value>Couper(_T)</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>Copie(C)</value>
+  </data>
+  <data name="MenuClose" xml:space="preserve">
+    <value>_Fermer</value>
+  </data>
+  <data name="MaxBackupCount" xml:space="preserve">
+    <value>Nombre maximum de sauvegardes</value>
+  </data>
+  <data name="LogLevel" xml:space="preserve">
+    <value>Niveau de journalisation</value>
+  </data>
+  <data name="Log" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="LoadingPlugin" xml:space="preserve">
+    <value>Chargement du plugin : {0}</value>
+  </data>
+  <data name="LoadedPluginWithoutManifest" xml:space="preserve">
+    <value>Plugin chargé sans manifeste : {0}</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>Vous devez redémarrer pour utiliser les nouveaux paramètres de langue</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>langue de l'interface utilisateur</value>
+  </data>
+  <data name="ko" xml:space="preserve">
+    <value>한국어 (Coréen)</value>
+  </data>
+  <data name="ja" xml:space="preserve">
+    <value>日本語 (Japonais)</value>
+  </data>
+  <data name="IsAutoSelect" xml:space="preserve">
+    <value>SélectionAutomatique</value>
+  </data>
+  <data name="HotKeySet2" xml:space="preserve">
+    <value>Cliquez pour définir les touches de raccourci</value>
+  </data>
+  <data name="HotKeySet1" xml:space="preserve">
+    <value>Définir des raccourcis clavier</value>
+  </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>touche de raccourci</value>
+  </data>
+  <data name="HotkeyNormal" xml:space="preserve">
+    <value>normale</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>conflit</value>
+  </data>
+  <data name="GlobalMode" xml:space="preserve">
+    <value>situation globale</value>
+  </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>Réglages généraux</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>Universel</value>
+  </data>
+  <data name="fr" xml:space="preserve">
+    <value>Français</value>
+  </data>
+  <data name="FoundProjectDownloadConfirm" xml:space="preserve">
+    <value>Projet trouvé {0}, {1}, télécharger?</value>
+  </data>
+  <data name="FilterSupportsRegex" xml:space="preserve">
+    <value>Le filtre prend en charge les expressions régulières</value>
+  </data>
+  <data name="ExeNameCannotBeEmpty" xml:space="preserve">
+    <value>exeName ne peut pas être vide</value>
+  </data>
+  <data name="Execute" xml:space="preserve">
+    <value>Exécuter</value>
+  </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>Une erreur s'est produite</value>
+  </data>
+  <data name="EnableScheduledBackup" xml:space="preserve">
+    <value>Activer la sauvegarde programmée</value>
+  </data>
+  <data name="EnableCUDA" xml:space="preserve">
+    <value>Activer CUDA</value>
+  </data>
+  <data name="en" xml:space="preserve">
+    <value>English (Anglais)</value>
+  </data>
+  <data name="EchoXCOPYFailed" xml:space="preserve">
+    <value>  echo Échec de la copie XCOPY, mise à jour annulée.</value>
+  </data>
+  <data name="EchoUsingXCOPY" xml:space="preserve">
+    <value>echo Utilisation du repli XCOPY...</value>
+  </data>
+  <data name="EchoUpdateComplete" xml:space="preserve">
+    <value>echo Mise à jour terminée. (Nettoyage en cours en arrière-plan)</value>
+  </data>
+  <data name="EchoTerminatingProcess" xml:space="preserve">
+    <value>echo Arrêt du processus : {0}</value>
+  </data>
+  <data name="EchoTargetDirNotExist" xml:space="preserve">
+    <value>  echo Le répertoire cible n'existe pas, sauvegarde ignorée.</value>
+  </data>
+  <data name="EchoStartCopyingFiles" xml:space="preserve">
+    <value>echo Début de la copie des nouveaux fichiers de version...</value>
+  </data>
+  <data name="EchoSchedulingCleanup" xml:space="preserve">
+    <value>echo Planification du nettoyage différé du répertoire temporaire et du script...</value>
+  </data>
+  <data name="EchoRobocopyNotFound" xml:space="preserve">
+    <value>  echo Robocopy introuvable, repli vers XCOPY...</value>
+  </data>
+  <data name="EchoRobocopyFailed" xml:space="preserve">
+    <value>     echo Échec de Robocopy, code d'erreur !RC!, tentative de repli XCOPY...</value>
+  </data>
+  <data name="EchoRestartingProgram" xml:space="preserve">
+    <value>echo Redémarrage du programme...</value>
+  </data>
+  <data name="EchoCopyComplete" xml:space="preserve">
+    <value>echo Copie terminée.</value>
+  </data>
+  <data name="EchoBackupTo" xml:space="preserve">
+    <value>  echo Sauvegarde vers : %BKDIR%</value>
+  </data>
+  <data name="EchoBackupComplete" xml:space="preserve">
+    <value>  echo Sauvegarde terminée.</value>
+  </data>
+  <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
+    <value>echo Sauvegarde de la version actuelle...</value>
+  </data>
+  <data name="DownLoadMySql" xml:space="preserve">
+    <value>Télécharger MySQL</value>
+  </data>
+  <data name="DownLoadMQTT" xml:space="preserve">
+    <value>Télécharger MQTT</value>
+  </data>
+  <data name="Download" xml:space="preserve">
+    <value>Télécharger</value>
+  </data>
+  <data name="Descending" xml:space="preserve">
+    <value>Décroissant</value>
+  </data>
+  <data name="DependencyVersionInsufficient" xml:space="preserve">
+    <value>Version de dépendance {0} insuffisante, requise : {1}, actuelle : {2}</value>
+  </data>
+  <data name="DependencyDllNotFound" xml:space="preserve">
+    <value>DLL de dépendance {0} introuvable : {1}</value>
+  </data>
+  <data name="DependencyCheckException" xml:space="preserve">
+    <value>Exception lors de la vérification de la version de dépendance {0} : {1}</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>Vitesse actuelle:</value>
+  </data>
+  <data name="ConfirmUpdate" xml:space="preserve">
+    <value>Mettre à jour</value>
+  </data>
+  <data name="ConfirmDeletePlugin" xml:space="preserve">
+    <value>Confirmer la suppression du plugin {0}?</value>
+  </data>
+  <data name="ConfigurationParameters" xml:space="preserve">
+    <value>Paramètres de configuration</value>
+  </data>
+  <data name="ConfigFileRestored" xml:space="preserve">
+    <value>Fichier de configuration restauré depuis la sauvegarde récente</value>
+  </data>
+  <data name="ConfigFileResetDueToError" xml:space="preserve">
+    <value>Erreur du fichier de configuration, réinitialisé</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>fermeture</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clair</value>
+  </data>
+  <data name="CleanupBackupFailed" xml:space="preserve">
+    <value>Échec du nettoyage des fichiers de sauvegarde</value>
+  </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>Vérifier les mises à jour des plugins</value>
+  </data>
+  <data name="CheckingForAdditionalProjects" xml:space="preserve">
+    <value>Vérification des projets supplémentaires</value>
+  </data>
+  <data name="CheckingCUDASupport" xml:space="preserve">
+    <value>Vérification du support CUDA</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
+    <value>Ressource bool2VisibilityConverter introuvable</value>
+  </data>
+  <data name="BatchFilePathCannotBeEmpty" xml:space="preserve">
+    <value>batchFilePath ne peut pas être vide</value>
+  </data>
+  <data name="BaseDirCannotBeEmpty" xml:space="preserve">
+    <value>baseDir ne peut pas être vide</value>
+  </data>
+  <data name="BackupConfigFileFailed" xml:space="preserve">
+    <value>Échec de la sauvegarde du fichier de configuration</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>Changer automatiquement les vues sélectionnées</value>
+  </data>
+  <data name="AutoScrollToEnd" xml:space="preserve">
+    <value>Faire défiler automatiquement vers le bas</value>
+  </data>
+  <data name="AutoRefresh" xml:space="preserve">
+    <value>Actualisation automatique</value>
+  </data>
+  <data name="AutoCleanOldBackups" xml:space="preserve">
+    <value>Nettoyer automatiquement les anciennes sauvegardes si dépassé</value>
+  </data>
+  <data name="AutoAdjustColumnWidth" xml:space="preserve">
+    <value>Ajuster automatiquement la largeur des colonnes</value>
+  </data>
+  <data name="Ascending" xml:space="preserve">
+    <value>Croissant</value>
+  </data>
+  <data name="ApplicationCurrentNotInitialized" xml:space="preserve">
+    <value>Application.Current non initialisé</value>
+  </data>
+  <data name="AllFiles" xml:space="preserve">
+    <value>Tous les fichiers (*.*)|*.*</value>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>charger</value>
   </data>
 </root>

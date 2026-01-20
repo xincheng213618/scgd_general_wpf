@@ -3,7 +3,8 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
-using ColorVision.UI.Properties;
+using ColorVision.UI.Desktop.Properties;
+using ColorVision.UI.Plugins;
 using log4net;
 using System.IO;
 using System.Windows;
@@ -12,7 +13,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.UI.Plugins
+namespace ColorVision.UI.Desktop.Plugins
 {
     public class PluginInfoVM:ViewModelBase
     {
@@ -192,7 +193,7 @@ namespace ColorVision.UI.Plugins
 
         public void Delete()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.ConfirmDeletePlugin, Name), Resources.PluginManagerWindow, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(Properties.Resources.ConfirmDeletePlugin, Name),"ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.No) return;
 
             PluginUpdater.DeletePlugin(PackageName);
         }

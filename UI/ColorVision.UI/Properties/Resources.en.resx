@@ -232,9 +232,6 @@
   <data name="General" xml:space="preserve">
     <value>Universal</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>PluginManagerWindow</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>Name</value>
   </data>
@@ -492,17 +489,5 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>Cancel</value>
-  </data>
-  <data name="ExtractPlugin" xml:space="preserve">
-    <value>Extract Plugin</value>
-  </data>
-  <data name="SelectExtractFolder" xml:space="preserve">
-    <value>Select target folder to extract plugin</value>
-  </data>
-  <data name="PluginExtractSuccess" xml:space="preserve">
-    <value>Plugin extracted successfully to: {0}</value>
-  </data>
-  <data name="PluginExtractFailed" xml:space="preserve">
-    <value>Plugin extraction failed</value>
   </data>
 </root>

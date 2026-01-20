@@ -232,9 +232,6 @@
   <data name="General" xml:space="preserve">
     <value>一般</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>插件管理器視窗</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>插件名稱</value>
   </data>

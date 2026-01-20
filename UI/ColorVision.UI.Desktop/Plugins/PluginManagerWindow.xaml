@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.UI.Plugins;assembly=ColorVision.UI"
-        xmlns:properties="clr-namespace:ColorVision.UI.Properties;assembly=ColorVision.UI"
+        xmlns:local="clr-namespace:ColorVision.UI.Desktop.Plugins"
+        xmlns:properties="clr-namespace:ColorVision.UI.Desktop.Properties"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         d:DataContext="{d:DesignInstance local:PluginManager}"
         xmlns:pl="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
@@ -26,16 +26,16 @@
             <Grid>
                 <StackPanel Margin="5,5,0,0">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5" Height="20">
-                        <Button Content="访问仓库" Command="{Binding OpenStoreCommand}" Margin="0,0,5,0"/>
-                        <Button Content="安装包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
-                        <Button Content="DLL版本" Command="{Binding OpenViewDllViersionCommand}" Margin="0,0,5,0"/>
-                        <Button Content="重启" Command="{Binding RestartCommand}" Margin="0,0,5,0"/>
+                        <Button Content="{x:Static properties:Resources.OpenStore}" Command="{Binding OpenStoreCommand}" Margin="0,0,5,0"/>
+                        <Button Content="{x:Static properties:Resources.InstallPackage}" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
+                        <Button Content="{x:Static properties:Resources.OpenViewDllViersion}" Command="{Binding OpenViewDllViersionCommand}" Margin="0,0,5,0"/>
+                        <Button Content="{x:Static properties:Resources.Restart}" Command="{Binding RestartCommand}" Margin="0,0,5,0"/>
                         <Button Margin="0,0,5,0">
                             <Button.Command>
                                 <Binding Path="UpdateAllCommand"/>
                             </Button.Command>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="一键更新" VerticalAlignment="Center"/>
+                                <TextBlock Text="{x:Static properties:Resources.UpdateAll}" VerticalAlignment="Center"/>
                                 <Border Background="#FF5252" CornerRadius="8" Padding="4,0" Margin="5,0,0,0" MinWidth="16" Visibility="{Binding UpdateAvailableCount, Converter={StaticResource int2VisibilityConverter}}">
                                     <TextBlock Text="{Binding UpdateAvailableCount}" Foreground="White" FontSize="10" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/>
                                 </Border>
@@ -71,7 +71,7 @@
                                 </Rectangle>
                             </Viewbox>
                         </Grid>
-                        <Button Content="安装" Command="{Binding DownloadPackageCommand}" Margin="5,0,5,0"/>
+                        <Button Content="{x:Static properties:Resources.Install}" Command="{Binding DownloadPackageCommand}" Margin="5,0,5,0"/>
                     </StackPanel>
 
 
@@ -134,7 +134,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="加载" Width="190">
+                        <GridViewColumn Header="{x:Static properties:Resources.Loading}" Width="190">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
                                     <StackPanel Orientation="Horizontal">
@@ -195,14 +195,14 @@
                     <TabItem Header="CHANGELOG" > 
                         <wv2:WebView2 Name="webViewChangeLog"  Grid.Row="1" />
                     </TabItem>
-                    <TabItem Header="接口管理">
+                    <TabItem Header="DetailInfo">
                         <ScrollViewer>
                             <StackPanel  x:Name="DetailInfo">
                                 
                             </StackPanel>
                         </ScrollViewer>
                     </TabItem>
-                    <TabItem Header="依赖项">
+                    <TabItem Header="Dependents">
                         <ScrollViewer>
                             <StackPanel  x:Name="Dependents">
                                 <ListView  x:Name="DependentsListView">

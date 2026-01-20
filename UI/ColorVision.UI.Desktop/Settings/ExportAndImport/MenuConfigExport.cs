@@ -7,7 +7,7 @@ namespace ColorVision.UI.Desktop.Settings.ExportAndImport
         public override string OwnerGuid =>nameof(MenuConfigExportAndImport);
 
         public override int Order => 1;
-        public override string Header => "导出设置";
+        public override string Header => ColorVision.UI.Desktop.Properties.Resources.ExportSettings;
         public override void Execute()
         {
             string defaultFileName = $"Exported-{DateTime.Now:yyyy-MM-dd}.cvsettings";

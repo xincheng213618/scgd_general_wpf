@@ -6,6 +6,6 @@ namespace ColorVision.UI.Desktop.Settings.ExportAndImport
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override int Order => 99998;
-        public override string Header => "导入和导出设置";
+        public override string Header => ColorVision.UI.Desktop.Properties.Resources.ImportExportSettings;
     }
 }
