@@ -2553,4 +2553,16 @@
   <data name="EditDisplayConfig" xml:space="preserve">
     <value>ディスプレイ設定の編集</value>
   </data>
+  <data name="OpenEditTool" xml:space="preserve">
+    <value>編集ツール</value>
+  </data>
+  <data name="Annotation" xml:space="preserve">
+    <value>注記</value>
+  </data>
+  <data name="PropertyEdit" xml:space="preserve">
+    <value>属性編集</value>
+  </data>
+  <data name="TextEdit" xml:space="preserve">
+    <value>テキスト編集</value>
+  </data>
 </root>

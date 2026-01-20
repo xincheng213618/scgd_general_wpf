@@ -349,6 +349,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 注释 的本地化字符串。
+        /// </summary>
+        public static string Annotation {
+            get {
+                return ResourceManager.GetString("Annotation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 自适应校零设置 的本地化字符串。
         /// </summary>
         public static string ApaptivezeroCaliSet {
@@ -3679,7 +3688,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 灯条检测模板管理&quot; 的本地化字符串。
+        ///   查找类似 灯条检测模板管理 的本地化字符串。
         /// </summary>
         public static string LedBandDetectorManagement {
             get {
@@ -4795,6 +4804,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 编辑工具 的本地化字符串。
+        /// </summary>
+        public static string OpenEditTool {
+            get {
+                return ResourceManager.GetString("OpenEditTool", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 打开失败 的本地化字符串。
         /// </summary>
         public static string OpenFailed {
@@ -5313,6 +5331,15 @@ namespace ColorVision.Engine.Properties {
         public static string Property {
             get {
                 return ResourceManager.GetString("Property", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 属性编辑 的本地化字符串。
+        /// </summary>
+        public static string PropertyEdit {
+            get {
+                return ResourceManager.GetString("PropertyEdit", resourceCulture);
             }
         }
         
@@ -6780,6 +6807,15 @@ namespace ColorVision.Engine.Properties {
         public static string TesConnection {
             get {
                 return ResourceManager.GetString("TesConnection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文本编辑 的本地化字符串。
+        /// </summary>
+        public static string TextEdit {
+            get {
+                return ResourceManager.GetString("TextEdit", resourceCulture);
             }
         }
         

@@ -2553,4 +2553,16 @@
   <data name="EditDisplayConfig" xml:space="preserve">
     <value>EditDisplayConfig</value>
   </data>
+  <data name="OpenEditTool" xml:space="preserve">
+    <value>편집 도구</value>
+  </data>
+  <data name="Annotation" xml:space="preserve">
+    <value>메모</value>
+  </data>
+  <data name="PropertyEdit" xml:space="preserve">
+    <value>속성 편집</value>
+  </data>
+  <data name="TextEdit" xml:space="preserve">
+    <value>텍스트 편집</value>
+  </data>
 </root>

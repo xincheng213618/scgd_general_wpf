@@ -2553,4 +2553,16 @@
   <data name="EditDisplayConfig" xml:space="preserve">
     <value>Modifier la configuration d'affichage</value>
   </data>
+  <data name="OpenEditTool" xml:space="preserve">
+    <value>Outils d'édition</value>
+  </data>
+  <data name="Annotation" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="PropertyEdit" xml:space="preserve">
+    <value>Édition des attributs</value>
+  </data>
+  <data name="TextEdit" xml:space="preserve">
+    <value>édition de texte</value>
+  </data>
 </root>

@@ -2062,7 +2062,7 @@
     <value>POI过滤模板设置</value>
   </data>
   <data name="LedBandDetectorManagement" xml:space="preserve">
-    <value>灯条检测模板管理"</value>
+    <value>灯条检测模板管理</value>
   </data>
   <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
     <value>SFR寻边模板管理</value>
@@ -2552,5 +2552,17 @@
   </data>
   <data name="EditDisplayConfig" xml:space="preserve">
     <value>编辑显示配置</value>
+  </data>
+  <data name="OpenEditTool" xml:space="preserve">
+    <value>编辑工具</value>
+  </data>
+  <data name="Annotation" xml:space="preserve">
+    <value>注释</value>
+  </data>
+  <data name="PropertyEdit" xml:space="preserve">
+    <value>属性编辑</value>
+  </data>
+  <data name="TextEdit" xml:space="preserve">
+    <value>文本编辑</value>
   </data>
 </root>

@@ -20,9 +20,17 @@ namespace ColorVision.Engine.Services
             new WindowService() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
-    public class ServicesConfig : ViewModelBase, IConfig
+    public class WindowServiceConfig : ViewModelBase, IConfig
     {
-        public static ServicesConfig Instance => ConfigService.Instance.GetRequiredService<ServicesConfig>();
+        public static WindowServiceConfig Instance => ConfigService.Instance.GetRequiredService<WindowServiceConfig>();
+        /// <summary>
+        /// 获取用于编辑属性的命令
+        /// </summary>
+        public RelayCommand EditCommand { get; set; }
+        public WindowServiceConfig()
+        {
+            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+        }
 
         public int ShowType { get; set; }
 
@@ -38,9 +46,13 @@ namespace ColorVision.Engine.Services
             InitializeComponent();
             this.ApplyCaption();
         }
+        public WindowServiceConfig WindowServiceConfig { get; set; }
+
         private void Window_Initialized(object sender, EventArgs e)
         {
-            int i = ServicesConfig.Instance.ShowType;
+            WindowServiceConfig = WindowServiceConfig.Instance;
+            this.DataContext = this;
+            int i = WindowServiceConfig.Instance.ShowType;
             switch (i % 3)
             {
                 case 0:
@@ -80,16 +92,10 @@ namespace ColorVision.Engine.Services
         }
 
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MqttRCService.GetInstance().RestartServices();
-            MessageBox.Show(Application.Current.GetActiveWindow(),ColorVision.Engine.Properties.Resources.CmdSendAlready,"ColorVision");
-        }
-
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            ServicesConfig.Instance.ShowType = (ServicesConfig.Instance.ShowType +1) % 3;
-            switch (ServicesConfig.Instance.ShowType)
+            WindowServiceConfig.Instance.ShowType = (WindowServiceConfig.Instance.ShowType +1) % 3;
+            switch (WindowServiceConfig.Instance.ShowType)
             {
                 case 0:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().TypeServices;

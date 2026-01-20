@@ -167,8 +167,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 propertyEditor.Visibility = Visibility.Visible;
 
                 // Update toggle button text
-                EditorModeToggle.Content = "文本编辑";
-                EditorModeToggle.ToolTip = "切换到文本编辑器模式";
+                EditorModeToggle.Content = ColorVision.Engine.Properties.Resources.TextEdit;
             }
             catch (Exception ex)
             {
@@ -199,8 +198,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 propertyEditor.Visibility = Visibility.Collapsed;
 
                 // Update toggle button text
-                EditorModeToggle.Content = "属性编辑";
-                EditorModeToggle.ToolTip = "切换到属性编辑器模式";
+                EditorModeToggle.Content = ColorVision.Engine.Properties.Resources.PropertyEdit;
             }
             catch (Exception ex)
             {
