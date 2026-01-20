@@ -10,7 +10,7 @@ namespace WindowsServicePlugin
     {
 
         public override int Order => 99;
-        public override string Header => ColorVision.UI.Properties.Resources.DownLoadMySql;
+        public override string Header => "DownLoadMySql";
 
         public override string Description => "Download mysql-5.7.37-winx64.ziplocally to install later through management tools";
 

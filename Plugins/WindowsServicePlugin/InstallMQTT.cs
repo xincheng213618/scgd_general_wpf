@@ -17,7 +17,7 @@ namespace WindowsServicePlugin
         public InstallMQTT()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = ColorVision.UI.Properties.Resources.DownLoadMQTT;
+            DownloadFile.DownloadTile = "DownLoadMQTT";
         }
 
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/MQTT/mosquitto-2.0.18-install-windows-x64.exe";
