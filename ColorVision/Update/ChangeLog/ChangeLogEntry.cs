@@ -29,8 +29,6 @@ namespace ColorVision.Update
         private string _ChangeLog;
         public RelayCommand UpdateCommand { get; set; }
 
-        public bool IsUpdateAvailable => AutoUpdater.IsUpdateAvailable(Version);
-
         public bool IsCurrentVision  =>  Version.Trim() == AutoUpdater.CurrentVersion?.ToString();
 
         public string UpdateString => new Version(Version) > AutoUpdater.CurrentVersion ? Properties.Resources.Update : Properties.Resources.Rollback;
@@ -68,7 +66,7 @@ namespace ColorVision.Update
                 Version version = new Version(Version);
                 if (version > AutoUpdater.CurrentVersion)
                 {
-                    AutoUpdater.GetInstance().Update(Version, Path.GetTempPath());
+                    AutoUpdater.GetInstance().Update(Version, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"));
                 }
                 else if (version == AutoUpdater.CurrentVersion)
                 {

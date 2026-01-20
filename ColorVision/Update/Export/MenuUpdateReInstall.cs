@@ -6,8 +6,6 @@ using System.Reflection;
 
 namespace ColorVision.Update
 {
-
-
     public class MenuUpdateReInstall : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuUpdate);
@@ -25,6 +23,7 @@ namespace ColorVision.Update
             }
             else
             {
+                
                 AutoUpdater.GetInstance().Update(Assembly.GetExecutingAssembly().GetName().Version, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AssemblyCompany), false);
             }
         }
