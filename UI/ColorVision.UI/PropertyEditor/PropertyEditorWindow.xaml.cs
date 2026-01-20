@@ -114,8 +114,8 @@ namespace ColorVision.UI
             if (!isEdit)
             {
                 EditConfig.CopyTo(Config);
-                Submited?.Invoke(sender, new EventArgs());
             }
+            Submited?.Invoke(sender, new EventArgs());
             this.Close();
         }
 

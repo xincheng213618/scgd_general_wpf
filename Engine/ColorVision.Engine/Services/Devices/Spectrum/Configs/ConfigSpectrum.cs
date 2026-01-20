@@ -91,7 +91,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         private bool _IsWithND;
 
         [DisplayName("ConnectType")]
-        public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); if (value == SpectrometerType.CMvSpectra) _ComPort = "0"; OnPropertyChanged(nameof(ComPort)); } }
+        public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged();} }
         private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
 
         public string ComPort { get => _ComPort; set { _ComPort = value; OnPropertyChanged(); } }
