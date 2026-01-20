@@ -57,6 +57,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditConfig = DeviceCamera.Config.Clone();
             DataContext = DeviceCamera;
             EditContent.DataContext = EditConfig;
+
             EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.VideoConfig));
             EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.ZBDebayer));
             EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
@@ -68,8 +69,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditConfig.CopyTo(DeviceCamera.Config);
             if (DeviceCamera.PhyCamera != null)
                 DeviceCamera.PhyCamera.ConfigChanged += DeviceCamera.PhyCameraConfigChanged;
-
-
             Close();
         }
 

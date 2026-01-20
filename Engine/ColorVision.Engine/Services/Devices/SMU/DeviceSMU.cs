@@ -78,7 +78,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             EditDisplayConfigCommand =new RelayCommand(a => EditDisplayConfig());   
         }
 
-        [CommandDisplay("编辑显示配置", Order = -1)]
+        [CommandDisplay("EditDisplayConfig", Order = -1)]
         public RelayCommand EditDisplayConfigCommand { get; set; }
         public void EditDisplayConfig()
         {
