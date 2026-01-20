@@ -1642,7 +1642,7 @@
     <value>左</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>右:</value>
+    <value>右</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
     <value>显示</value>
@@ -1756,7 +1756,7 @@
     <value>电流曲线</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
-    <value>电流(A)</value>
+    <value>电流(mA)</value>
   </data>
   <data name="Voltage" xml:space="preserve">
     <value>电压(V)</value>
@@ -2379,9 +2379,6 @@
   <data name="ClearDatabaseOnly" xml:space="preserve">
     <value>仅清除数据库</value>
   </data>
-  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
-    <value>删除本地文件</value>
-  </data>
   <data name="DeleteLocalFiles" xml:space="preserve">
     <value>删除本地文件</value>
   </data>
@@ -2564,5 +2561,14 @@
   </data>
   <data name="TextEdit" xml:space="preserve">
     <value>文本编辑</value>
+  </data>
+  <data name="PreprocessManager" xml:space="preserve">
+    <value>预处理管理</value>
+  </data>
+  <data name="CurrentVoltageV" xml:space="preserve">
+    <value>当前电压(V)</value>
+  </data>
+  <data name="CurrentCurrentMA" xml:space="preserve">
+    <value>当前电流(mA)</value>
   </data>
 </root>

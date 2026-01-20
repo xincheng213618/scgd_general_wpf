@@ -91,11 +91,11 @@
                         </UniformGrid>
                         <UniformGrid Columns="2"  Margin="0,0,0,3">
                             <DockPanel  Margin="0,0,5,0" >
-                                <TextBlock  Text="当前电压(V)" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                <TextBlock  Text="{x:Static properties:Resources.CurrentVoltageV}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                                 <TextBox x:Name="TextSourceMeterV" Text="{Binding DisplayConfig.V, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
                             </DockPanel>
                             <DockPanel Margin="0,0,5,0" >
-                                <TextBlock  Text="当前电流(mA)" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                                <TextBlock  Text="{x:Static properties:Resources.CurrentCurrentMA}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                                 <TextBox x:Name="TextSourceMeterI" Text="{Binding DisplayConfig.I, StringFormat={}{0:F4}}" BorderThickness="0,0,0,1" IsEnabled="False" />
                             </DockPanel>
                         </UniformGrid>

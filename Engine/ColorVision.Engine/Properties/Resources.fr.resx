@@ -1642,7 +1642,7 @@
     <value>Gauche</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>droite:</value>
+    <value>droite</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
     <value>montrer</value>
@@ -1756,7 +1756,7 @@
     <value>Courbe de courant</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
-    <value>Courant (A)</value>
+    <value>Courant (mA)</value>
   </data>
   <data name="Voltage" xml:space="preserve">
     <value>Tension (V)</value>
@@ -2379,9 +2379,6 @@
   <data name="ClearDatabaseOnly" xml:space="preserve">
     <value>Effacer uniquement la base de données</value>
   </data>
-  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
-    <value>Supprimer les fichiers locaux</value>
-  </data>
   <data name="DeleteLocalFiles" xml:space="preserve">
     <value>Supprimer les fichiers locaux</value>
   </data>
@@ -2564,5 +2561,14 @@
   </data>
   <data name="TextEdit" xml:space="preserve">
     <value>édition de texte</value>
+  </data>
+  <data name="PreprocessManager" xml:space="preserve">
+    <value>Gestion du prétraitement</value>
+  </data>
+  <data name="CurrentVoltageV" xml:space="preserve">
+    <value>Tension actuelle (V)</value>
+  </data>
+  <data name="CurrentCurrentMA" xml:space="preserve">
+    <value>Courant (mA)</value>
   </data>
 </root>

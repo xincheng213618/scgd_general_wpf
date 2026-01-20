@@ -1348,15 +1348,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 删除本地文件 的本地化字符串。
-        /// </summary>
-        public static string ConfigArchivedModel_删除本地文件 {
-            get {
-                return ResourceManager.GetString("ConfigArchivedModel_删除本地文件", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 需要配置关注点 的本地化字符串。
         /// </summary>
         public static string ConfigePOINeed {
@@ -1672,6 +1663,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 当前电流(mA) 的本地化字符串。
+        /// </summary>
+        public static string CurrentCurrentMA {
+            get {
+                return ResourceManager.GetString("CurrentCurrentMA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 电流曲线 的本地化字符串。
         /// </summary>
         public static string CurrentCurve {
@@ -1731,6 +1731,15 @@ namespace ColorVision.Engine.Properties {
         public static string CurrentVersionIsUpToDate {
             get {
                 return ResourceManager.GetString("CurrentVersionIsUpToDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前电压(V) 的本地化字符串。
+        /// </summary>
+        public static string CurrentVoltageV {
+            get {
+                return ResourceManager.GetString("CurrentVoltageV", resourceCulture);
             }
         }
         
@@ -2401,7 +2410,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 电流(A) 的本地化字符串。
+        ///   查找类似 电流(mA) 的本地化字符串。
         /// </summary>
         public static string ElectricCurrent {
             get {
@@ -5254,6 +5263,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 预处理管理 的本地化字符串。
+        /// </summary>
+        public static string PreprocessManager {
+            get {
+                return ResourceManager.GetString("PreprocessManager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 仅处理IVL批次中的Camera数据并导出 的本地化字符串。
         /// </summary>
         public static string ProcessAndExportCameraDataFromIvlBatchOnly {
@@ -5704,7 +5722,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 右: 的本地化字符串。
+        ///   查找类似 右 的本地化字符串。
         /// </summary>
         public static string Right {
             get {

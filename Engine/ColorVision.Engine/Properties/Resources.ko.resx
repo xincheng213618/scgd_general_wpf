@@ -1642,7 +1642,7 @@
     <value>왼쪽</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>오른쪽:</value>
+    <value>오른쪽</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
     <value>보여주다</value>
@@ -1756,7 +1756,7 @@
     <value>전류 곡선</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
-    <value>전류(A)</value>
+    <value>전류(mA)</value>
   </data>
   <data name="Voltage" xml:space="preserve">
     <value>전압(V)</value>
@@ -2379,9 +2379,6 @@
   <data name="ClearDatabaseOnly" xml:space="preserve">
     <value>데이터베이스만 지우기</value>
   </data>
-  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
-    <value>로컬 파일 삭제</value>
-  </data>
   <data name="DeleteLocalFiles" xml:space="preserve">
     <value>로컬 파일 삭제</value>
   </data>
@@ -2564,5 +2561,14 @@
   </data>
   <data name="TextEdit" xml:space="preserve">
     <value>텍스트 편집</value>
+  </data>
+  <data name="PreprocessManager" xml:space="preserve">
+    <value>전처리 관리</value>
+  </data>
+  <data name="CurrentVoltageV" xml:space="preserve">
+    <value>현재 전압(V)</value>
+  </data>
+  <data name="CurrentCurrentMA" xml:space="preserve">
+    <value>현재 전류(mA)</value>
   </data>
 </root>

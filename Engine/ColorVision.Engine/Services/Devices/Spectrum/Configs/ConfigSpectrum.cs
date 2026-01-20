@@ -198,7 +198,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         public List<string> NDCaliNameGroups { get; set; } = new List<string>();
 
-        [DisplayName("黑暗校零ND配置")]
+        [DisplayName("DarkNDPort")]
         public int DarkNDPort { get => _DarkNDPort; set { _DarkNDPort = value; OnPropertyChanged(); } }
         private int _DarkNDPort = -1;
     }

@@ -1642,7 +1642,7 @@
     <value>左</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>右:</value>
+    <value>右</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
     <value>顯示</value>
@@ -1756,7 +1756,7 @@
     <value>電流曲線</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
-    <value>電流(A)</value>
+    <value>電流(mA)</value>
   </data>
   <data name="Voltage" xml:space="preserve">
     <value>電壓(V)</value>
@@ -2379,9 +2379,6 @@
   <data name="ClearDatabaseOnly" xml:space="preserve">
     <value>僅清除資料庫</value>
   </data>
-  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
-    <value>刪除本機文件</value>
-  </data>
   <data name="DeleteLocalFiles" xml:space="preserve">
     <value>刪除本機文件</value>
   </data>
@@ -2564,5 +2561,14 @@
   </data>
   <data name="TextEdit" xml:space="preserve">
     <value>文字編輯</value>
+  </data>
+  <data name="PreprocessManager" xml:space="preserve">
+    <value>預處理管理</value>
+  </data>
+  <data name="CurrentVoltageV" xml:space="preserve">
+    <value>當前電壓(V)</value>
+  </data>
+  <data name="CurrentCurrentMA" xml:space="preserve">
+    <value>當前電流(mA)</value>
   </data>
 </root>

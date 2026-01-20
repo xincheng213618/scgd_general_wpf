@@ -1642,7 +1642,7 @@
     <value>左</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>右：</value>
+    <value>右</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
     <value>見せる</value>
@@ -1756,7 +1756,7 @@
     <value>現在の曲線</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
-    <value>電流（A）</value>
+    <value>電流（mA）</value>
   </data>
   <data name="Voltage" xml:space="preserve">
     <value>電圧（V）</value>
@@ -2379,9 +2379,6 @@
   <data name="ClearDatabaseOnly" xml:space="preserve">
     <value>データベースのみをクリアする</value>
   </data>
-  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
-    <value>ローカルファイルを削除する</value>
-  </data>
   <data name="DeleteLocalFiles" xml:space="preserve">
     <value>ローカルファイルを削除する</value>
   </data>
@@ -2564,5 +2561,14 @@
   </data>
   <data name="TextEdit" xml:space="preserve">
     <value>テキスト編集</value>
+  </data>
+  <data name="PreprocessManager" xml:space="preserve">
+    <value>前処理管理</value>
+  </data>
+  <data name="CurrentVoltageV" xml:space="preserve">
+    <value>電流電圧（V）</value>
+  </data>
+  <data name="CurrentCurrentMA" xml:space="preserve">
+    <value>電流（mA）</value>
   </data>
 </root>

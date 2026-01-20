@@ -94,7 +94,7 @@
                         </StackPanel>
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
                             <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1" Margin="0,0,5,0"/>
-                            <Button Content="预处理管理" Click="Button_Click_PreProcess"/>
+                            <Button Content="{x:Static properties:Resources.PreprocessManager}" Click="Button_Click_PreProcess"/>
                         </StackPanel>
 
                         <StackPanel Margin="0,0,0,5"  Orientation="Horizontal">
