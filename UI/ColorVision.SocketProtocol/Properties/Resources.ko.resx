@@ -129,4 +129,79 @@
   <data name="IsServerEnabled" xml:space="preserve">
     <value>서버 활성화됨</value>
   </data>
+  <data name="SocketManagementWindow" xml:space="preserve">
+    <value>소켓 연결 관리자</value>
+  </data>
+  <data name="Query" xml:space="preserve">
+    <value>질문</value>
+  </data>
+  <data name="AdvancedQuery" xml:space="preserve">
+    <value>고급 쿼리</value>
+  </data>
+  <data name="OpenDb" xml:space="preserve">
+    <value>열려 있는</value>
+  </data>
+  <data name="ClearMessages" xml:space="preserve">
+    <value>명확한 메시지</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>설정</value>
+  </data>
+  <data name="ConnectedClients" xml:space="preserve">
+    <value>고객 연결</value>
+  </data>
+  <data name="LocalEndPoint" xml:space="preserve">
+    <value>현지 주소</value>
+  </data>
+  <data name="RemoteEndPoint" xml:space="preserve">
+    <value>원격 주소</value>
+  </data>
+  <data name="ConnectionStatus" xml:space="preserve">
+    <value>연결 상태</value>
+  </data>
+  <data name="MessageLog" xml:space="preserve">
+    <value>메시지 로그</value>
+  </data>
+  <data name="Time" xml:space="preserve">
+    <value>시간</value>
+  </data>
+  <data name="Direction" xml:space="preserve">
+    <value>방향</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>고객</value>
+  </data>
+  <data name="EventName" xml:space="preserve">
+    <value>이벤트 이름</value>
+  </data>
+  <data name="Content" xml:space="preserve">
+    <value>콘텐츠</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>복사</value>
+  </data>
+  <data name="Resend" xml:space="preserve">
+    <value>다시 보내기</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>삭제</value>
+  </data>
+  <data name="MessageDetail" xml:space="preserve">
+    <value>메시지 세부 정보</value>
+  </data>
+  <data name="ResponseCode" xml:space="preserve">
+    <value>응답 코드:</value>
+  </data>
+  <data name="CopyFormatted" xml:space="preserve">
+    <value>서식이 지정된 사본</value>
+  </data>
+  <data name="ResendSuccess" xml:space="preserve">
+    <value>메시지가 성공적으로 재전송되었습니다.</value>
+  </data>
+  <data name="ResendFailed" xml:space="preserve">
+    <value>메시지 재전송 실패: {0}</value>
+  </data>
+  <data name="ClientNotConnected" xml:space="preserve">
+    <value>대상 클라이언트가 연결되지 않았습니다.</value>
+  </data>
 </root>

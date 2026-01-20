@@ -129,4 +129,79 @@
   <data name="IsServerEnabled" xml:space="preserve">
     <value>伺服器啟用狀態</value>
   </data>
+  <data name="SocketManagementWindow" xml:space="preserve">
+    <value>Socket 連線管理器</value>
+  </data>
+  <data name="Query" xml:space="preserve">
+    <value>查詢</value>
+  </data>
+  <data name="AdvancedQuery" xml:space="preserve">
+    <value>進階查詢</value>
+  </data>
+  <data name="OpenDb" xml:space="preserve">
+    <value>打開</value>
+  </data>
+  <data name="ClearMessages" xml:space="preserve">
+    <value>清空訊息</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>設定</value>
+  </data>
+  <data name="ConnectedClients" xml:space="preserve">
+    <value>連接的客戶端</value>
+  </data>
+  <data name="LocalEndPoint" xml:space="preserve">
+    <value>本地地址</value>
+  </data>
+  <data name="RemoteEndPoint" xml:space="preserve">
+    <value>遠端位址</value>
+  </data>
+  <data name="ConnectionStatus" xml:space="preserve">
+    <value>連線狀態</value>
+  </data>
+  <data name="MessageLog" xml:space="preserve">
+    <value>訊息日誌</value>
+  </data>
+  <data name="Time" xml:space="preserve">
+    <value>時間</value>
+  </data>
+  <data name="Direction" xml:space="preserve">
+    <value>方向</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>客戶端</value>
+  </data>
+  <data name="EventName" xml:space="preserve">
+    <value>事件名</value>
+  </data>
+  <data name="Content" xml:space="preserve">
+    <value>內容</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>複製</value>
+  </data>
+  <data name="Resend" xml:space="preserve">
+    <value>重發</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>刪除</value>
+  </data>
+  <data name="MessageDetail" xml:space="preserve">
+    <value>訊息詳情</value>
+  </data>
+  <data name="ResponseCode" xml:space="preserve">
+    <value>回應碼:</value>
+  </data>
+  <data name="CopyFormatted" xml:space="preserve">
+    <value>格式化複製</value>
+  </data>
+  <data name="ResendSuccess" xml:space="preserve">
+    <value>訊息重發成功</value>
+  </data>
+  <data name="ResendFailed" xml:space="preserve">
+    <value>訊息重發失敗: {0}</value>
+  </data>
+  <data name="ClientNotConnected" xml:space="preserve">
+    <value>目標客戶端未連接</value>
+  </data>
 </root>

@@ -129,4 +129,79 @@
   <data name="ServerPort" xml:space="preserve">
     <value>ServerPort</value>
   </data>
+  <data name="SocketManagementWindow" xml:space="preserve">
+    <value>Socket Connection Manager</value>
+  </data>
+  <data name="Query" xml:space="preserve">
+    <value>Query</value>
+  </data>
+  <data name="AdvancedQuery" xml:space="preserve">
+    <value>AdvancedQuery</value>
+  </data>
+  <data name="OpenDb" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="ClearMessages" xml:space="preserve">
+    <value>ClearMessages</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="ConnectedClients" xml:space="preserve">
+    <value>Connecting clients</value>
+  </data>
+  <data name="LocalEndPoint" xml:space="preserve">
+    <value>LocalEndPoint</value>
+  </data>
+  <data name="RemoteEndPoint" xml:space="preserve">
+    <value>RemoteEndPoint</value>
+  </data>
+  <data name="ConnectionStatus" xml:space="preserve">
+    <value>ConnectionStatus</value>
+  </data>
+  <data name="MessageLog" xml:space="preserve">
+    <value>MessageLog</value>
+  </data>
+  <data name="Time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="Direction" xml:space="preserve">
+    <value>Direction</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="EventName" xml:space="preserve">
+    <value>Event Name</value>
+  </data>
+  <data name="Content" xml:space="preserve">
+    <value>Content</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Resend" xml:space="preserve">
+    <value>Resend</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="MessageDetail" xml:space="preserve">
+    <value>Message Details</value>
+  </data>
+  <data name="ResponseCode" xml:space="preserve">
+    <value>Response code:</value>
+  </data>
+  <data name="CopyFormatted" xml:space="preserve">
+    <value>Formatted copy</value>
+  </data>
+  <data name="ResendSuccess" xml:space="preserve">
+    <value>Message resent successfully</value>
+  </data>
+  <data name="ResendFailed" xml:space="preserve">
+    <value>Message resending failed: {0}</value>
+  </data>
+  <data name="ClientNotConnected" xml:space="preserve">
+    <value>Target client not connected</value>
+  </data>
 </root>

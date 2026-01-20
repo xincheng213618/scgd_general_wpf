@@ -129,4 +129,79 @@
   <data name="IsServerEnabled" xml:space="preserve">
     <value>サーバーが有効</value>
   </data>
+  <data name="SocketManagementWindow" xml:space="preserve">
+    <value>ソケット接続マネージャー</value>
+  </data>
+  <data name="Query" xml:space="preserve">
+    <value>クエリ</value>
+  </data>
+  <data name="AdvancedQuery" xml:space="preserve">
+    <value>高度なクエリ</value>
+  </data>
+  <data name="OpenDb" xml:space="preserve">
+    <value>開ける</value>
+  </data>
+  <data name="ClearMessages" xml:space="preserve">
+    <value>明確なメッセージ</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>設定</value>
+  </data>
+  <data name="ConnectedClients" xml:space="preserve">
+    <value>クライアントの接続</value>
+  </data>
+  <data name="LocalEndPoint" xml:space="preserve">
+    <value>ローカルアドレス</value>
+  </data>
+  <data name="RemoteEndPoint" xml:space="preserve">
+    <value>リモートアドレス</value>
+  </data>
+  <data name="ConnectionStatus" xml:space="preserve">
+    <value>接続ステータス</value>
+  </data>
+  <data name="MessageLog" xml:space="preserve">
+    <value>メッセージログ</value>
+  </data>
+  <data name="Time" xml:space="preserve">
+    <value>時間</value>
+  </data>
+  <data name="Direction" xml:space="preserve">
+    <value>方向</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>クライアント</value>
+  </data>
+  <data name="EventName" xml:space="preserve">
+    <value>イベント名</value>
+  </data>
+  <data name="Content" xml:space="preserve">
+    <value>コンテンツ</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>コピー</value>
+  </data>
+  <data name="Resend" xml:space="preserve">
+    <value>再送信</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>消去</value>
+  </data>
+  <data name="MessageDetail" xml:space="preserve">
+    <value>メッセージの詳細</value>
+  </data>
+  <data name="ResponseCode" xml:space="preserve">
+    <value>応答コード:</value>
+  </data>
+  <data name="CopyFormatted" xml:space="preserve">
+    <value>フォーマットされたコピー</value>
+  </data>
+  <data name="ResendSuccess" xml:space="preserve">
+    <value>メッセージの再送信に成功しました</value>
+  </data>
+  <data name="ResendFailed" xml:space="preserve">
+    <value>メッセージの再送信に失敗しました: {0}</value>
+  </data>
+  <data name="ClientNotConnected" xml:space="preserve">
+    <value>対象クライアントが接続されていません</value>
+  </data>
 </root>
