@@ -163,29 +163,50 @@ namespace ColorVision.UI
   
         }
 
+        static int GetInheritanceDepth(Type t)
+        {
+            int depth = 0;
+            while (t != null)
+            {
+                t = t.BaseType;
+                depth++;
+            }
+            return depth;
+        }
 
         public void GenCategoryGroups(object source)
         {
-            Type type = source.GetType();
-            var title = type.GetCustomAttribute<DisplayNameAttribute>();
-            if (title != null)
-                this.Title = title.DisplayName;
+            var t = source.GetType();
 
-            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                  .Where(p => p.CanRead && p.CanWrite);
+            // 1. 获取属性
+            var allProps = t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                            .Where(p => p.CanRead && p.CanWrite);
 
-            foreach (PropertyInfo property in properties)
+            // 2. 【关键修改】进行排序
+            // GetInheritanceDepth 越小，说明越靠近基类 (object -> BaseConfig -> DeviceServiceConfig -> ConfigPG)
+            // 如果您想要“原始信息”（基类）在最前面，请使用 OrderBy
+            // 如果您想要“最上层”（派生类）在最前面，请使用 OrderByDescending
+            var sortedProps = allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType));
+
+            // 如果希望同一类中的属性按元数据Token（近似代码声明顺序）排序，可以再接一个 ThenBy
+            //var sortedProps = allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType))
+            //                          .ThenBy(p => p.MetadataToken);
+
+            foreach (var prop in sortedProps)
             {
-                var categoryAttr = property.GetCustomAttribute<CategoryAttribute>();
-                string category = categoryAttr?.Category ?? type.Name;
-                if (!categoryGroups.TryGetValue(category, out List<PropertyInfo>? value))
+                var browsableAttr = prop.GetCustomAttribute<BrowsableAttribute>();
+                if (!(browsableAttr?.Browsable ?? true))
+                    continue;
+
+                var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
+                string category = categoryAttr?.Category ?? t.Name;
+
+                if (!categoryGroups.TryGetValue(category, out var list))
                 {
-                    categoryGroups.Add(category, new List<PropertyInfo>() { property });
+                    list = new List<PropertyInfo>();
+                    categoryGroups[category] = list;
                 }
-                else
-                {
-                    value.Add(property);
-                }
+                list.Add(prop);
             }
         }
 

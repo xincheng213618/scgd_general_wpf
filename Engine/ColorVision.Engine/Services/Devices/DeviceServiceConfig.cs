@@ -66,6 +66,29 @@ namespace ColorVision.Engine.Services.Devices
         private string _SN;
     }
 
+    // 新增：状态转中文文本转换器
+    public class StatusToTextConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string status = value as string;
+            if (string.IsNullOrEmpty(status)) return "未知";
+
+            switch (status.ToLower())
+            {
+                case "online": return "在线";
+                case "offline":
+                case "offine": return "离线";
+                default: return status;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public class StatusToColorConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -99,14 +122,14 @@ namespace ColorVision.Engine.Services.Devices
             {
                 Content = "编辑",
                 Margin = new Thickness(5, 0, 0, 0),
-                MinWidth = 70, 
+                MinWidth = 70,
             };
             RelayCommand relayCommand = new RelayCommand((o) =>
             {
                 PhyCameraManagerWindow phyCameraManager = new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 phyCameraManager.ShowDialog();
             });
-            button.Command =relayCommand;
+            button.Command = relayCommand;
             DockPanel.SetDock(button, Dock.Right);
             dockPanel.Children.Add(button);
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
@@ -117,24 +140,45 @@ namespace ColorVision.Engine.Services.Devices
             combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
             combo.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
 
-            // 1. 设置 TextSearch.TextPath，保证选中项在编辑框中显示正确的文本（替代 DisplayMemberPath）
+            // 1. 设置 TextSearch.TextPath
             System.Windows.Controls.TextSearch.SetTextPath(combo, "Code");
 
-            // 3. 定义样式和触发器来实现颜色变化
-            // 创建 ItemTemplate
+            // 2. 创建 ItemTemplate
             DataTemplate itemTemplate = new DataTemplate();
-            FrameworkElementFactory textBlockFactory = new FrameworkElementFactory(typeof(TextBlock));
 
-            // 绑定显示文本
-            textBlockFactory.SetBinding(TextBlock.TextProperty, new Binding("Code"));
+            // 创建根布局 StackPanel (Horizontal)
+            FrameworkElementFactory stackPanelFactory = new FrameworkElementFactory(typeof(StackPanel));
+            stackPanelFactory.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
 
-            // 直接绑定 Foreground 颜色，使用转换器
-            // 假设状态在 "SysResourceModel.Remark" 属性中
+            // --- 第一部分：Code (颜色绑定 LicenseExpiryColor 表示过期状态) ---
+            FrameworkElementFactory codeBlock = new FrameworkElementFactory(typeof(TextBlock));
+            codeBlock.SetBinding(TextBlock.TextProperty, new Binding("Code"));
+            // 绑定到 PhyCamera.LicenseExpiryColor
+            codeBlock.SetBinding(TextBlock.ForegroundProperty, new Binding("LicenseExpiryColor"));
+            stackPanelFactory.AppendChild(codeBlock);
+
+            // --- 第二部分：空格分隔符 ---
+            FrameworkElementFactory spaceBlock = new FrameworkElementFactory(typeof(TextBlock));
+            spaceBlock.SetValue(TextBlock.TextProperty, " ");
+            stackPanelFactory.AppendChild(spaceBlock);
+
+            // --- 第三部分：在线状态 (中文文本，颜色绑定 Online/Offline) ---
+            FrameworkElementFactory statusBlock = new FrameworkElementFactory(typeof(TextBlock));
+
+            // 文本绑定：使用 StatusToTextConverter 转中文
+            Binding textBinding = new Binding("SysResourceModel.Remark");
+            textBinding.Converter = new StatusToTextConverter();
+            statusBlock.SetBinding(TextBlock.TextProperty, textBinding);
+
+            // 颜色绑定：使用 StatusToColorConverter 转颜色
             Binding colorBinding = new Binding("SysResourceModel.Remark");
-            colorBinding.Converter = new StatusToColorConverter(); // 使用上面定义的转换器
-            textBlockFactory.SetBinding(TextBlock.ForegroundProperty, colorBinding);
+            colorBinding.Converter = new StatusToColorConverter();
+            statusBlock.SetBinding(TextBlock.ForegroundProperty, colorBinding);
 
-            itemTemplate.VisualTree = textBlockFactory;
+            stackPanelFactory.AppendChild(statusBlock);
+
+            // 设置 VisualTree
+            itemTemplate.VisualTree = stackPanelFactory;
             combo.ItemTemplate = itemTemplate;
 
             dockPanel.Children.Add(combo);
