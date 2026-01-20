@@ -2365,6 +2365,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 编辑显示配置 的本地化字符串。
+        /// </summary>
+        public static string EditDisplayConfig {
+            get {
+                return ResourceManager.GetString("EditDisplayConfig", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 编辑滤光轮配置 的本地化字符串。
         /// </summary>
         public static string EditFilterWheelConfig {
@@ -2797,6 +2806,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 滤波宽度 的本地化字符串。
+        /// </summary>
+        public static string FilterBW {
+            get {
+                return ResourceManager.GetString("FilterBW", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 滤色轮 的本地化字符串。
         /// </summary>
         public static string FilterWheel {
@@ -3063,6 +3081,15 @@ namespace ColorVision.Engine.Properties {
         public static string Gain {
             get {
                 return ResourceManager.GetString("Gain", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 获取光谱序列号 的本地化字符串。
+        /// </summary>
+        public static string GetSpectrSerialNumber {
+            get {
+                return ResourceManager.GetString("GetSpectrSerialNumber", resourceCulture);
             }
         }
         
@@ -3517,7 +3544,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 是否启用ND 的本地化字符串。
+        ///   查找类似 启用ND 的本地化字符串。
         /// </summary>
         public static string IsEnableNd {
             get {
@@ -3549,6 +3576,15 @@ namespace ColorVision.Engine.Properties {
         public static string IsShowListView {
             get {
                 return ResourceManager.GetString("IsShowListView", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 是否开启同步频率 的本地化字符串。
+        /// </summary>
+        public static string IsSyncFrequencyEnabled {
+            get {
+                return ResourceManager.GetString("IsSyncFrequencyEnabled", resourceCulture);
             }
         }
         
@@ -6600,6 +6636,24 @@ namespace ColorVision.Engine.Properties {
         public static string Symbol {
             get {
                 return ResourceManager.GetString("Symbol", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 同步频率 的本地化字符串。
+        /// </summary>
+        public static string Syncfreq {
+            get {
+                return ResourceManager.GetString("Syncfreq", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 同步频率系数 的本地化字符串。
+        /// </summary>
+        public static string SyncfreqFactor {
+            get {
+                return ResourceManager.GetString("SyncfreqFactor", resourceCulture);
             }
         }
         

@@ -288,4 +288,7 @@
   <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
     <value>Pour annuler la modification du logiciel, vous devez d'abord le désinstaller puis le réinstaller, ou réinstaller le package après l'installation.</value>
   </data>
+  <data name="FullScreen" xml:space="preserve">
+    <value>plein écran</value>
+  </data>
 </root>

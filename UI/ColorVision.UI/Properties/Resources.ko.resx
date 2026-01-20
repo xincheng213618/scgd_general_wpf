@@ -451,12 +451,6 @@
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter 리소스를 찾을 수 없습니다</value>
   </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>MQTT 다운로드</value>
-  </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>MySQL 다운로드</value>
-  </data>
   <data name="Install" xml:space="preserve">
     <value>설치하다</value>
   </data>

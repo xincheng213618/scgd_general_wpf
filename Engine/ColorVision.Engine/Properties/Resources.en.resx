@@ -1912,7 +1912,7 @@
     <value>Amplitude file</value>
   </data>
   <data name="IsEnableNd" xml:space="preserve">
-    <value>Enable ND?</value>
+    <value>Enable ND</value>
   </data>
   <data name="ConnectType" xml:space="preserve">
     <value>ConnectType</value>
@@ -2534,5 +2534,23 @@
   </data>
   <data name="Online" xml:space="preserve">
     <value>Online</value>
+  </data>
+  <data name="Syncfreq" xml:space="preserve">
+    <value>Syncfreq</value>
+  </data>
+  <data name="SyncfreqFactor" xml:space="preserve">
+    <value>Syncfreq</value>
+  </data>
+  <data name="FilterBW" xml:space="preserve">
+    <value>FilterBW</value>
+  </data>
+  <data name="IsSyncFrequencyEnabled" xml:space="preserve">
+    <value>IsSyncFrequencyEnabled</value>
+  </data>
+  <data name="GetSpectrSerialNumber" xml:space="preserve">
+    <value>GetSpectrSerialNumber</value>
+  </data>
+  <data name="EditDisplayConfig" xml:space="preserve">
+    <value>EditDisplayConfig</value>
   </data>
 </root>

@@ -310,75 +310,6 @@
   <data name="MsgList" xml:space="preserve">
     <value>消息日志窗口</value>
   </data>
-  <data name="MenuView" xml:space="preserve">
-    <value>视图(_V)</value>
-  </data>
-  <data name="MenuUndo" xml:space="preserve">
-    <value>撤销(_U)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>工具(_T)</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>模板(_M)</value>
-  </data>
-  <data name="MenuRename" xml:space="preserve">
-    <value>重命名(_M)</value>
-  </data>
-  <data name="MenuRedo" xml:space="preserve">
-    <value>重做(_R)</value>
-  </data>
-  <data name="MenuPrint" xml:space="preserve">
-    <value>打印(_P)</value>
-  </data>
-  <data name="MenuPaste" xml:space="preserve">
-    <value>粘贴(_P)</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>选项(_O)</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>打开(_O)</value>
-  </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>新建(_N)</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>语言(_L)</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>帮助(_H)</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>文件(_F)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>退出(_X)</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>编辑(_E)</value>
-  </data>
-  <data name="MenuDelete" xml:space="preserve">
-    <value>删除(_D)</value>
-  </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>剪切(_T)</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>复制(_C)</value>
-  </data>
-  <data name="MenuClose" xml:space="preserve">
-    <value>关闭(_C)</value>
-  </data>
-  <data name="MaxBackupCount" xml:space="preserve">
-    <value>最大备份数量</value>
-  </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>日志级别</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>日志</value>
-  </data>
   <data name="LoadingPlugin" xml:space="preserve">
     <value>加载插件: {0}</value>
   </data>
@@ -388,44 +319,8 @@
   <data name="LanguageResartSign" xml:space="preserve">
     <value>您必须重新启动才能使用新的语言设置</value>
   </data>
-  <data name="Language" xml:space="preserve">
-    <value>用户界面语言</value>
-  </data>
-  <data name="ko" xml:space="preserve">
-    <value>한국어（韩语）</value>
-  </data>
-  <data name="ja" xml:space="preserve">
-    <value>日本語（日语）</value>
-  </data>
   <data name="IsAutoSelect" xml:space="preserve">
     <value>自动选择</value>
-  </data>
-  <data name="HotKeySet2" xml:space="preserve">
-    <value>点击设置快捷键</value>
-  </data>
-  <data name="HotKeySet1" xml:space="preserve">
-    <value>按键盘设置快捷键</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>快捷键</value>
-  </data>
-  <data name="HotkeyNormal" xml:space="preserve">
-    <value>正常</value>
-  </data>
-  <data name="HotkeyConflict" xml:space="preserve">
-    <value>冲突</value>
-  </data>
-  <data name="GlobalMode" xml:space="preserve">
-    <value>全局</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>通用设置</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>通用</value>
-  </data>
-  <data name="fr" xml:space="preserve">
-    <value>Français（法语）</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>找到项目{0}，{1}，是否下载</value>
@@ -441,15 +336,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>发生错误</value>
-  </data>
-  <data name="EnableScheduledBackup" xml:space="preserve">
-    <value>是否启用定时备份</value>
-  </data>
-  <data name="EnableCUDA" xml:space="preserve">
-    <value>是否启用CUDA</value>
-  </data>
-  <data name="en" xml:space="preserve">
-    <value>English（英语）</value>
   </data>
   <data name="EchoXCOPYFailed" xml:space="preserve">
     <value>  echo XCOPY 复制失败，更新中止。</value>
@@ -493,12 +379,6 @@
   <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
     <value>echo 正在备份当前版本...</value>
   </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>下载MySql</value>
-  </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>下载MQTT</value>
-  </data>
   <data name="Download" xml:space="preserve">
     <value>下载</value>
   </data>
@@ -526,15 +406,6 @@
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>是否确认删除插件{0}</value>
   </data>
-  <data name="ConfigurationParameters" xml:space="preserve">
-    <value>配置相关参数</value>
-  </data>
-  <data name="ConfigFileRestored" xml:space="preserve">
-    <value>配置文件已从最近备份恢复</value>
-  </data>
-  <data name="ConfigFileResetDueToError" xml:space="preserve">
-    <value>配置文件异常,已经重置</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>关闭</value>
   </data>
@@ -550,9 +421,6 @@
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>正在检索是否存在附加项目</value>
   </data>
-  <data name="CheckingCUDASupport" xml:space="preserve">
-    <value>正在检测是否支持CUDA</value>
-  </data>
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
   </data>
@@ -564,24 +432,6 @@
   </data>
   <data name="BaseDirCannotBeEmpty" xml:space="preserve">
     <value>baseDir 不能为空</value>
-  </data>
-  <data name="BackupConfigFileFailed" xml:space="preserve">
-    <value>备份配置文件失败</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>自动切换选中视图</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
-    <value>自动滚动到底部</value>
-  </data>
-  <data name="AutoRefresh" xml:space="preserve">
-    <value>自动刷新</value>
-  </data>
-  <data name="AutoCleanOldBackups" xml:space="preserve">
-    <value>超过则自动清理旧备份</value>
-  </data>
-  <data name="AutoAdjustColumnWidth" xml:space="preserve">
-    <value>自动调整列宽</value>
   </data>
   <data name="Ascending" xml:space="preserve">
     <value>升序</value>

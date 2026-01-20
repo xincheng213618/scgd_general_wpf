@@ -330,75 +330,6 @@
   <data name="MsgList" xml:space="preserve">
     <value>메시지 로그 창</value>
   </data>
-  <data name="MenuView" xml:space="preserve">
-    <value>보기 (_V)</value>
-  </data>
-  <data name="MenuUndo" xml:space="preserve">
-    <value>취소 (_U)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>도구 (_T)</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>템플릿(_M)</value>
-  </data>
-  <data name="MenuRename" xml:space="preserve">
-    <value>이름 바꾸기(_M)</value>
-  </data>
-  <data name="MenuRedo" xml:space="preserve">
-    <value>다시 하기</value>
-  </data>
-  <data name="MenuPrint" xml:space="preserve">
-    <value>인쇄(_P)</value>
-  </data>
-  <data name="MenuPaste" xml:space="preserve">
-    <value>페이스트(_P)</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>옵션 (_O)</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>열기 (_O)</value>
-  </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>새로 만들기 (_N)</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>언어(_L)</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>도움 (_H)</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>파일 (_F)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>종료 (_X)</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>편집 (_E)</value>
-  </data>
-  <data name="MenuDelete" xml:space="preserve">
-    <value>삭제 (_D)</value>
-  </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>잘라내기 (_T)</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>복사 (_C)</value>
-  </data>
-  <data name="MenuClose" xml:space="preserve">
-    <value>닫기_C)</value>
-  </data>
-  <data name="MaxBackupCount" xml:space="preserve">
-    <value>최대 백업 수</value>
-  </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>로그 수준</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>통나무</value>
-  </data>
   <data name="LoadingPlugin" xml:space="preserve">
     <value>플러그인 로드 중: {0}</value>
   </data>
@@ -408,44 +339,8 @@
   <data name="LanguageResartSign" xml:space="preserve">
     <value>새로운 언어 설정을 적용하려면 재시작해야 합니다</value>
   </data>
-  <data name="Language" xml:space="preserve">
-    <value>UI 언어</value>
-  </data>
-  <data name="ko" xml:space="preserve">
-    <value>한국어</value>
-  </data>
-  <data name="ja" xml:space="preserve">
-    <value>日本語 (일본어)</value>
-  </data>
   <data name="IsAutoSelect" xml:space="preserve">
     <value>자동 선택 여부</value>
-  </data>
-  <data name="HotKeySet2" xml:space="preserve">
-    <value>클릭하여 핫키 설정하기</value>
-  </data>
-  <data name="HotKeySet1" xml:space="preserve">
-    <value>Set Hotkeys by Pressing Keys</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>키보드 단축키</value>
-  </data>
-  <data name="HotkeyNormal" xml:space="preserve">
-    <value>정상</value>
-  </data>
-  <data name="HotkeyConflict" xml:space="preserve">
-    <value>충돌</value>
-  </data>
-  <data name="GlobalMode" xml:space="preserve">
-    <value>글로벌</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>일반 설정</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>만능인</value>
-  </data>
-  <data name="fr" xml:space="preserve">
-    <value>Français (프랑스어)</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>프로젝트 {0}, {1}을(를) 찾았습니다. 다운로드하시겠습니까?</value>
@@ -461,15 +356,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>에러 발생됨</value>
-  </data>
-  <data name="EnableScheduledBackup" xml:space="preserve">
-    <value>예약된 백업 활성화</value>
-  </data>
-  <data name="EnableCUDA" xml:space="preserve">
-    <value>CUDA 활성화</value>
-  </data>
-  <data name="en" xml:space="preserve">
-    <value>English (영어)</value>
   </data>
   <data name="EchoXCOPYFailed" xml:space="preserve">
     <value>  echo XCOPY 복사 실패, 업데이트 중단됨.</value>
@@ -513,12 +399,6 @@
   <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
     <value>echo 현재 버전 백업 중...</value>
   </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>MySQL 다운로드</value>
-  </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>MQTT 다운로드</value>
-  </data>
   <data name="Download" xml:space="preserve">
     <value>다운로드</value>
   </data>
@@ -546,15 +426,6 @@
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>플러그인 {0}을(를) 삭제하시겠습니까?</value>
   </data>
-  <data name="ConfigurationParameters" xml:space="preserve">
-    <value>구성 매개변수</value>
-  </data>
-  <data name="ConfigFileRestored" xml:space="preserve">
-    <value>최근 백업에서 구성 파일을 복원했습니다</value>
-  </data>
-  <data name="ConfigFileResetDueToError" xml:space="preserve">
-    <value>구성 파일 오류, 재설정되었습니다</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>폐쇄</value>
   </data>
@@ -570,9 +441,6 @@
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>추가 프로젝트 확인 중</value>
   </data>
-  <data name="CheckingCUDASupport" xml:space="preserve">
-    <value>CUDA 지원 확인 중</value>
-  </data>
   <data name="Cancel" xml:space="preserve">
     <value>취소</value>
   </data>
@@ -584,24 +452,6 @@
   </data>
   <data name="BaseDirCannotBeEmpty" xml:space="preserve">
     <value>baseDir는 비워 둘 수 없습니다</value>
-  </data>
-  <data name="BackupConfigFileFailed" xml:space="preserve">
-    <value>구성 파일 백업 실패</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>선택한 보기를 자동으로 전환</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
-    <value>자동으로 아래쪽으로 스크롤</value>
-  </data>
-  <data name="AutoRefresh" xml:space="preserve">
-    <value>자동 새로고침</value>
-  </data>
-  <data name="AutoCleanOldBackups" xml:space="preserve">
-    <value>초과 시 이전 백업 자동 정리</value>
-  </data>
-  <data name="AutoAdjustColumnWidth" xml:space="preserve">
-    <value>열 너비 자동 조정</value>
   </data>
   <data name="Ascending" xml:space="preserve">
     <value>오름차순</value>

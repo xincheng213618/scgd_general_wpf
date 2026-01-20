@@ -288,4 +288,7 @@
   <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
     <value>Чтобы откатить программное обеспечение, вам необходимо сначала удалить его, а затем переустановить, или переустановить пакет после установки.</value>
   </data>
+  <data name="FullScreen" xml:space="preserve">
+    <value>полноэкранный</value>
+  </data>
 </root>

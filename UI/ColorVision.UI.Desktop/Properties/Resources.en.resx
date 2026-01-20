@@ -330,75 +330,6 @@
   <data name="MsgList" xml:space="preserve">
     <value>Message Log Window</value>
   </data>
-  <data name="MenuView" xml:space="preserve">
-    <value>_View</value>
-  </data>
-  <data name="MenuUndo" xml:space="preserve">
-    <value>_Undo</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>_Tool</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>Te_mplate</value>
-  </data>
-  <data name="MenuRename" xml:space="preserve">
-    <value>Rena_me</value>
-  </data>
-  <data name="MenuRedo" xml:space="preserve">
-    <value>_Redo</value>
-  </data>
-  <data name="MenuPrint" xml:space="preserve">
-    <value>_Print</value>
-  </data>
-  <data name="MenuPaste" xml:space="preserve">
-    <value>_Paste</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>_Options</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>_Open</value>
-  </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>_New</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>_Language</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>_Help</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>_File</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>E_xit</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>_Edit</value>
-  </data>
-  <data name="MenuDelete" xml:space="preserve">
-    <value>_Delete</value>
-  </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>Cu_t</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>_Copy</value>
-  </data>
-  <data name="MenuClose" xml:space="preserve">
-    <value>_Close</value>
-  </data>
-  <data name="MaxBackupCount" xml:space="preserve">
-    <value>Maximum Backup Count</value>
-  </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>Log level</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>_Log</value>
-  </data>
   <data name="LoadingPlugin" xml:space="preserve">
     <value>Loading plugin: {0}</value>
   </data>
@@ -408,44 +339,8 @@
   <data name="LanguageResartSign" xml:space="preserve">
     <value>You must restart to apply your new language settings</value>
   </data>
-  <data name="Language" xml:space="preserve">
-    <value>Language</value>
-  </data>
-  <data name="ko" xml:space="preserve">
-    <value>한국어 (Korean)</value>
-  </data>
-  <data name="ja" xml:space="preserve">
-    <value>日本語 (Japanese)</value>
-  </data>
   <data name="IsAutoSelect" xml:space="preserve">
     <value>IsAutoSelect</value>
-  </data>
-  <data name="HotKeySet2" xml:space="preserve">
-    <value>Click to Set Hotkeys</value>
-  </data>
-  <data name="HotKeySet1" xml:space="preserve">
-    <value>Set Hotkeys by Pressing Keys</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>HotKeys</value>
-  </data>
-  <data name="HotkeyNormal" xml:space="preserve">
-    <value>HotkeyNormal</value>
-  </data>
-  <data name="HotkeyConflict" xml:space="preserve">
-    <value>Hotkey Conflict</value>
-  </data>
-  <data name="GlobalMode" xml:space="preserve">
-    <value>GlobalMode</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>General</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>Universal</value>
-  </data>
-  <data name="fr" xml:space="preserve">
-    <value>Français (French)</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>Found project {0}, {1}, download?</value>
@@ -461,15 +356,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>An error occurred</value>
-  </data>
-  <data name="EnableScheduledBackup" xml:space="preserve">
-    <value>Enable Scheduled Backup</value>
-  </data>
-  <data name="EnableCUDA" xml:space="preserve">
-    <value>Enable CUDA</value>
-  </data>
-  <data name="en" xml:space="preserve">
-    <value>English</value>
   </data>
   <data name="EchoXCOPYFailed" xml:space="preserve">
     <value>  echo XCOPY copy failed, update aborted.</value>
@@ -513,12 +399,6 @@
   <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
     <value>echo Backing up current version...</value>
   </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>Download MySQL</value>
-  </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>Download MQTT</value>
-  </data>
   <data name="Download" xml:space="preserve">
     <value>Download</value>
   </data>
@@ -546,15 +426,6 @@
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>Confirm delete plugin {0}?</value>
   </data>
-  <data name="ConfigurationParameters" xml:space="preserve">
-    <value>Configuration Parameters</value>
-  </data>
-  <data name="ConfigFileRestored" xml:space="preserve">
-    <value>Configuration file restored from recent backup</value>
-  </data>
-  <data name="ConfigFileResetDueToError" xml:space="preserve">
-    <value>Configuration file error, has been reset</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>
@@ -570,9 +441,6 @@
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Checking for additional projects</value>
   </data>
-  <data name="CheckingCUDASupport" xml:space="preserve">
-    <value>Checking CUDA support</value>
-  </data>
   <data name="Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
@@ -584,24 +452,6 @@
   </data>
   <data name="BaseDirCannotBeEmpty" xml:space="preserve">
     <value>baseDir cannot be empty</value>
-  </data>
-  <data name="BackupConfigFileFailed" xml:space="preserve">
-    <value>Failed to backup configuration file</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>Automatically switch selected views</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
-    <value>Automatically scroll to the bottom</value>
-  </data>
-  <data name="AutoRefresh" xml:space="preserve">
-    <value>Auto Refresh</value>
-  </data>
-  <data name="AutoCleanOldBackups" xml:space="preserve">
-    <value>Automatically clean old backups when exceeded</value>
-  </data>
-  <data name="AutoAdjustColumnWidth" xml:space="preserve">
-    <value>Auto Adjust Column Width</value>
   </data>
   <data name="Ascending" xml:space="preserve">
     <value>Ascending</value>

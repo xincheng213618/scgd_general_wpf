@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public event Action SelfAdaptionInitDarkStarted;
         public event Action SelfAdaptionInitDarkCompleted;
 
-        [CommandDisplay("获取当前SN")]
+        [CommandDisplay("GetSpectrSerialNumber")]
         public RelayCommand GetSpectrSerialNumberCommand { get; set; }
         public DeviceSpectrum(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
@@ -123,7 +123,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             EditDisplayConfigCommand = new RelayCommand(a => EditDisplayConfig());
         }
 
-        [CommandDisplay("编辑显示配置",Order =-1)]
+        [CommandDisplay("EditDisplayConfig", Order =-1)]
         public RelayCommand EditDisplayConfigCommand { get; set; }
         public void EditDisplayConfig()
         {

@@ -286,6 +286,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 全屏 的本地化字符串。
+        /// </summary>
+        public static string FullScreen {
+            get {
+                return ResourceManager.GetString("FullScreen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 初始化模块 的本地化字符串。
         /// </summary>
         public static string Initializer {

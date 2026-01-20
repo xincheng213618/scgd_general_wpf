@@ -330,75 +330,6 @@
   <data name="MsgList" xml:space="preserve">
     <value>Окно журнала сообщений</value>
   </data>
-  <data name="MenuView" xml:space="preserve">
-    <value>Посмотреть(В)</value>
-  </data>
-  <data name="MenuUndo" xml:space="preserve">
-    <value>Отменить(U)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>Инструмент(Т)</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>Шаблон(_M)</value>
-  </data>
-  <data name="MenuRename" xml:space="preserve">
-    <value>Переименовать(_М)</value>
-  </data>
-  <data name="MenuRedo" xml:space="preserve">
-    <value>Повторить</value>
-  </data>
-  <data name="MenuPrint" xml:space="preserve">
-    <value>Печать(_P)</value>
-  </data>
-  <data name="MenuPaste" xml:space="preserve">
-    <value>Вставить(_P)</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>Вариант(О)</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>_Открыть</value>
-  </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>Новый(Н)</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>Язык(Л)</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>помощь</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>Файл(Ф)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>Выход(Х)</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>Изменить (Е)</value>
-  </data>
-  <data name="MenuDelete" xml:space="preserve">
-    <value>Удалить(Д)</value>
-  </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>Вырезать(Т)</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>Копировать (С)</value>
-  </data>
-  <data name="MenuClose" xml:space="preserve">
-    <value>Закрыть(_C)</value>
-  </data>
-  <data name="MaxBackupCount" xml:space="preserve">
-    <value>Максимальное количество резервных копий</value>
-  </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>Уровень журнала</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>Бревно</value>
-  </data>
   <data name="LoadingPlugin" xml:space="preserve">
     <value>Загрузка плагина: {0}</value>
   </data>
@@ -408,44 +339,8 @@
   <data name="LanguageResartSign" xml:space="preserve">
     <value>Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки</value>
   </data>
-  <data name="Language" xml:space="preserve">
-    <value>язык пользовательского интерфейса</value>
-  </data>
-  <data name="ko" xml:space="preserve">
-    <value>한국어 (Корейский)</value>
-  </data>
-  <data name="ja" xml:space="preserve">
-    <value>日本語 (Японский)</value>
-  </data>
   <data name="IsAutoSelect" xml:space="preserve">
     <value>АвтоВыбор</value>
-  </data>
-  <data name="HotKeySet2" xml:space="preserve">
-    <value>Нажмите, чтобы установить сочетания клавиш</value>
-  </data>
-  <data name="HotKeySet1" xml:space="preserve">
-    <value>Нажмите сочетание клавиш настройки клавиатуры</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>быстрая клавиша</value>
-  </data>
-  <data name="HotkeyNormal" xml:space="preserve">
-    <value>нормальный</value>
-  </data>
-  <data name="HotkeyConflict" xml:space="preserve">
-    <value>конфликт</value>
-  </data>
-  <data name="GlobalMode" xml:space="preserve">
-    <value>общая ситуация</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>Общие настройки</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>Универсальный</value>
-  </data>
-  <data name="fr" xml:space="preserve">
-    <value>Français (Французский)</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>Найден проект {0}, {1}, скачать?</value>
@@ -461,15 +356,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>Произошла ошибка</value>
-  </data>
-  <data name="EnableScheduledBackup" xml:space="preserve">
-    <value>Включить запланированное резервное копирование</value>
-  </data>
-  <data name="EnableCUDA" xml:space="preserve">
-    <value>Включить CUDA</value>
-  </data>
-  <data name="en" xml:space="preserve">
-    <value>English (Английский)</value>
   </data>
   <data name="EchoXCOPYFailed" xml:space="preserve">
     <value>  echo Копирование XCOPY не удалось, обновление прервано.</value>
@@ -513,12 +399,6 @@
   <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
     <value>echo Резервное копирование текущей версии...</value>
   </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>Загрузить MySQL</value>
-  </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>Загрузить MQTT</value>
-  </data>
   <data name="Download" xml:space="preserve">
     <value>Скачать</value>
   </data>
@@ -546,15 +426,6 @@
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>Подтвердить удаление плагина {0}?</value>
   </data>
-  <data name="ConfigurationParameters" xml:space="preserve">
-    <value>Параметры конфигурации</value>
-  </data>
-  <data name="ConfigFileRestored" xml:space="preserve">
-    <value>Файл конфигурации восстановлен из недавней резервной копии</value>
-  </data>
-  <data name="ConfigFileResetDueToError" xml:space="preserve">
-    <value>Ошибка файла конфигурации, сброшен</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>закрытие</value>
   </data>
@@ -570,9 +441,6 @@
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Проверка дополнительных проектов</value>
   </data>
-  <data name="CheckingCUDASupport" xml:space="preserve">
-    <value>Проверка поддержки CUDA</value>
-  </data>
   <data name="Cancel" xml:space="preserve">
     <value>Отмена</value>
   </data>
@@ -584,24 +452,6 @@
   </data>
   <data name="BaseDirCannotBeEmpty" xml:space="preserve">
     <value>baseDir не может быть пустым</value>
-  </data>
-  <data name="BackupConfigFileFailed" xml:space="preserve">
-    <value>Не удалось создать резервную копию файла конфигурации</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>Автоматически переключать выбранные представления</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
-    <value>Автоматически прокручивать вниз</value>
-  </data>
-  <data name="AutoRefresh" xml:space="preserve">
-    <value>Автоматическое обновление</value>
-  </data>
-  <data name="AutoCleanOldBackups" xml:space="preserve">
-    <value>Автоматически очищать старые резервные копии при превышении</value>
-  </data>
-  <data name="AutoAdjustColumnWidth" xml:space="preserve">
-    <value>Автоматически регулировать ширину столбцов</value>
   </data>
   <data name="Ascending" xml:space="preserve">
     <value>По возрастанию</value>

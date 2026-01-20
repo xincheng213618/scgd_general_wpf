@@ -1915,7 +1915,7 @@
     <value>幅值文件</value>
   </data>
   <data name="IsEnableNd" xml:space="preserve">
-    <value>是否启用ND</value>
+    <value>启用ND</value>
   </data>
   <data name="ConnectType" xml:space="preserve">
     <value>连接方式</value>
@@ -2534,5 +2534,23 @@
   </data>
   <data name="Online" xml:space="preserve">
     <value>在线</value>
+  </data>
+  <data name="Syncfreq" xml:space="preserve">
+    <value>同步频率</value>
+  </data>
+  <data name="SyncfreqFactor" xml:space="preserve">
+    <value>同步频率系数</value>
+  </data>
+  <data name="FilterBW" xml:space="preserve">
+    <value>滤波宽度</value>
+  </data>
+  <data name="IsSyncFrequencyEnabled" xml:space="preserve">
+    <value>是否开启同步频率</value>
+  </data>
+  <data name="GetSpectrSerialNumber" xml:space="preserve">
+    <value>获取光谱序列号</value>
+  </data>
+  <data name="EditDisplayConfig" xml:space="preserve">
+    <value>编辑显示配置</value>
   </data>
 </root>

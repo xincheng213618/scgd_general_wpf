@@ -2535,4 +2535,22 @@
   <data name="Online" xml:space="preserve">
     <value>在線</value>
   </data>
+  <data name="Syncfreq" xml:space="preserve">
+    <value>同步頻率</value>
+  </data>
+  <data name="SyncfreqFactor" xml:space="preserve">
+    <value>同步頻率</value>
+  </data>
+  <data name="FilterBW" xml:space="preserve">
+    <value>FilterBW</value>
+  </data>
+  <data name="IsSyncFrequencyEnabled" xml:space="preserve">
+    <value>IsSyncFrequencyEnabled</value>
+  </data>
+  <data name="GetSpectrSerialNumber" xml:space="preserve">
+    <value>取得光譜序號</value>
+  </data>
+  <data name="EditDisplayConfig" xml:space="preserve">
+    <value>編輯顯示配置</value>
+  </data>
 </root>

@@ -288,4 +288,7 @@
   <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
     <value>To roll back the software, you need to uninstall it first and then reinstall it, or reinstall the package after installation.</value>
   </data>
+  <data name="FullScreen" xml:space="preserve">
+    <value>FullScreen</value>
+  </data>
 </root>

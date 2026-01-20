@@ -67,59 +67,57 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         }
       
 
-        [PropertyEditorType(typeof(TextSectrumSNPropertiesEditor)), Category("Base")]
+        [PropertyEditorType(typeof(TextSectrumSNPropertiesEditor))]
         public override string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
 
 
-        [DisplayName("DeviceAutoConnect"), Category("Base")]
+        [DisplayName("DeviceAutoConnect")]
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
         private bool _IsAutoOpen;
 
         [DisplayName("WaveLengthFile")]
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor)), Category("Base")]
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string WavelengthFile { get => _WavelengthFile; set { _WavelengthFile = value; OnPropertyChanged(); } }
         private string _WavelengthFile;
 
         [DisplayName("AmplitudeFile")]
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor)), Category("Base")]
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile;
 
-        [DisplayName("IsEnableNd"), Category("Base")]
+        [DisplayName("IsEnableNd")]
         public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
         private bool _IsWithND;
 
-        [DisplayName("ConnectType"), Category("Base")]
+        [DisplayName("ConnectType")]
         public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); if (value == SpectrometerType.CMvSpectra) _ComPort = "0"; OnPropertyChanged(nameof(ComPort)); } }
         private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
 
-        [ Category("Base")]
         public string ComPort { get => _ComPort; set { _ComPort = value; OnPropertyChanged(); } }
         private string _ComPort = "0";
 
-        [DisplayName("BaudRate"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor)), Category("Base")]
+        [DisplayName("BaudRate"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 9600;
 
-        [DisplayName("Saturation"), Category("Base")]
+        [DisplayName("Saturation")]
         public int Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
         private int _Saturation = 80;
 
-        [DisplayName("MaxIntegrationTime_Ms"), Category("Base")]
+        [DisplayName("MaxIntegrationTime_Ms")]
         public int MaxIntegralTime { get => _TimeLimit; set { _TimeLimit = value; OnPropertyChanged(); } }
         private int _TimeLimit = 60000;
 
-        [DisplayName("AutoTestInterval_Ms"),Category("Base")]
+        [DisplayName("AutoTestInterval_Ms")]
         public int AutoTestTime { get => _AutoTestTime; set { _AutoTestTime = value; OnPropertyChanged(); } }
         private int _AutoTestTime = 100;
 
-        [DisplayName("StartIntegrationTime_Ms"), Category("Base")]
+        [DisplayName("StartIntegrationTime_Ms")]
         public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; OnPropertyChanged(); } }
         private float _TimeFrom = 10;
 
 
-        [Category("Base")]
         public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutter = false; _IsAutoDark = value; OnPropertyChanged(); } }
         private bool _IsAutoDark;
 
@@ -137,26 +135,25 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
-        [DisplayName("GetData配置")]
         public GetDataConfig GetDataConfig { get; set; } = new GetDataConfig(); 
 
     }
 
     public class GetDataConfig : ViewModelBase, IConfig
     {
-        [DisplayName("是否开启同步频率")]
+        [DisplayName("IsSyncFrequencyEnabled")]
         public bool IsSyncFrequencyEnabled { get => _IsSyncFrequencyEnabled; set { _IsSyncFrequencyEnabled = value; OnPropertyChanged(); } }
         private bool _IsSyncFrequencyEnabled;
 
-        [DisplayName("同步频率")]
+        [DisplayName("Syncfreq")]
         public double Syncfreq { get => _Syncfreq; set { _Syncfreq = value; OnPropertyChanged(); } }
         private double _Syncfreq = 1000;
 
-        [DisplayName("同步频率系数")]
+        [DisplayName("SyncfreqFactor")]
         public int SyncfreqFactor { get => _SyncfreqFactor; set { _SyncfreqFactor = value; OnPropertyChanged(); } }
         private int _SyncfreqFactor = 10;
 
-        [DisplayName("滤波宽度")]
+        [DisplayName("FilterBW")]
         public int FilterBW { get => _FilterBW; set { _FilterBW = value; OnPropertyChanged(); } }
         private int _FilterBW = 5;
 

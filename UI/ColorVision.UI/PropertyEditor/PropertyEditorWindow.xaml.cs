@@ -363,15 +363,6 @@ namespace ColorVision.UI
                     PropertyPanel.Children.Add(border);
                 }
             }
-
-            if (TreeNodes.Count == 1)
-            {
-                treeView.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                treeView.Visibility = Visibility.Visible;
-            }
         }
 
 

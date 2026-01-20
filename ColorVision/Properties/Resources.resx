@@ -288,4 +288,7 @@
   <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
     <value>回退软件需要先卸载在安装，或者是安装后重新运行安装包；</value>
   </data>
+  <data name="FullScreen" xml:space="preserve">
+    <value>全屏</value>
+  </data>
 </root>

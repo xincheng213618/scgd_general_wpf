@@ -499,12 +499,6 @@
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter 资源未找到</value>
   </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>下载MQTT</value>
-  </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>下载MySql</value>
-  </data>
   <data name="Install" xml:space="preserve">
     <value>安装</value>
   </data>

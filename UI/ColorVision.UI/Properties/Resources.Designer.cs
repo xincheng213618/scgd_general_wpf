@@ -340,24 +340,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 下载MQTT 的本地化字符串。
-        /// </summary>
-        public static string DownLoadMQTT {
-            get {
-                return ResourceManager.GetString("DownLoadMQTT", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 下载MySql 的本地化字符串。
-        /// </summary>
-        public static string DownLoadMySql {
-            get {
-                return ResourceManager.GetString("DownLoadMySql", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 echo 正在备份当前版本... 的本地化字符串。
         /// </summary>
         public static string EchoBackingUpCurrentVersion {

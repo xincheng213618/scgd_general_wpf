@@ -288,4 +288,7 @@
   <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
     <value>소프트웨어를 롤백하려면 먼저 소프트웨어를 제거한 다음 다시 설치하거나, 설치 후 패키지를 다시 설치해야 합니다.</value>
   </data>
+  <data name="FullScreen" xml:space="preserve">
+    <value>전체 화면</value>
+  </data>
 </root>

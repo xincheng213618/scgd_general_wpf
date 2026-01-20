@@ -1915,7 +1915,7 @@
     <value>진폭 파일</value>
   </data>
   <data name="IsEnableNd" xml:space="preserve">
-    <value>ND를 활성화하시겠습니까?</value>
+    <value>ND를 활성화하시겠습니까</value>
   </data>
   <data name="ConnectType" xml:space="preserve">
     <value>연결 방법</value>
@@ -2534,5 +2534,23 @@
   </data>
   <data name="Online" xml:space="preserve">
     <value>온라인</value>
+  </data>
+  <data name="Syncfreq" xml:space="preserve">
+    <value>싱크프리크</value>
+  </data>
+  <data name="SyncfreqFactor" xml:space="preserve">
+    <value>싱크프리크</value>
+  </data>
+  <data name="FilterBW" xml:space="preserve">
+    <value>필터BW</value>
+  </data>
+  <data name="IsSyncFrequencyEnabled" xml:space="preserve">
+    <value>동기화 주파수 활성화됨</value>
+  </data>
+  <data name="GetSpectrSerialNumber" xml:space="preserve">
+    <value>GetSpectrSerialNumber</value>
+  </data>
+  <data name="EditDisplayConfig" xml:space="preserve">
+    <value>EditDisplayConfig</value>
   </data>
 </root>

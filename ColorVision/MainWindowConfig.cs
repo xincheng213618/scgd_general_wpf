@@ -122,7 +122,7 @@ namespace ColorVision
     public class ExportMenuViewMax :MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => ColorVision.ImageEditor.Properties.Resources.FullScreen;
+        public override string Header => ColorVision.Properties.Resources.FullScreen;
 
         public override void Execute()
         {

@@ -1915,7 +1915,7 @@
     <value>Fichier d'amplitude</value>
   </data>
   <data name="IsEnableNd" xml:space="preserve">
-    <value>Activer ND ?</value>
+    <value>Activer ND</value>
   </data>
   <data name="ConnectType" xml:space="preserve">
     <value>Méthode de connexion</value>
@@ -2534,5 +2534,23 @@
   </data>
   <data name="Online" xml:space="preserve">
     <value>En ligne</value>
+  </data>
+  <data name="Syncfreq" xml:space="preserve">
+    <value>Fréquence de synchronisation</value>
+  </data>
+  <data name="SyncfreqFactor" xml:space="preserve">
+    <value>Fréquence de synchronisation</value>
+  </data>
+  <data name="FilterBW" xml:space="preserve">
+    <value>FiltreBW</value>
+  </data>
+  <data name="IsSyncFrequencyEnabled" xml:space="preserve">
+    <value>IsSyncFrequencyEnabled</value>
+  </data>
+  <data name="GetSpectrSerialNumber" xml:space="preserve">
+    <value>GetSpectrSerialNuméro</value>
+  </data>
+  <data name="EditDisplayConfig" xml:space="preserve">
+    <value>Modifier la configuration d'affichage</value>
   </data>
 </root>

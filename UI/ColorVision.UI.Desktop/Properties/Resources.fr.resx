@@ -330,75 +330,6 @@
   <data name="MsgList" xml:space="preserve">
     <value>Fenêtre de journalisation des messages</value>
   </data>
-  <data name="MenuView" xml:space="preserve">
-    <value>Vue(V)</value>
-  </data>
-  <data name="MenuUndo" xml:space="preserve">
-    <value>Annuler (U)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>Outil(T)</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>_Modèle</value>
-  </data>
-  <data name="MenuRename" xml:space="preserve">
-    <value>Renommer(M)</value>
-  </data>
-  <data name="MenuRedo" xml:space="preserve">
-    <value>Refaire</value>
-  </data>
-  <data name="MenuPrint" xml:space="preserve">
-    <value>Imprimer</value>
-  </data>
-  <data name="MenuPaste" xml:space="preserve">
-    <value>Coller(_P)</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>_Option</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>Ouvert(O)</value>
-  </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>Nouveau(N)</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>Langue(L)</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>Aide(H)</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>Fichier(F)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>Quitter (X)</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>Modifier(E)</value>
-  </data>
-  <data name="MenuDelete" xml:space="preserve">
-    <value>Supprimer(D)</value>
-  </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>Couper(_T)</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>Copie(C)</value>
-  </data>
-  <data name="MenuClose" xml:space="preserve">
-    <value>_Fermer</value>
-  </data>
-  <data name="MaxBackupCount" xml:space="preserve">
-    <value>Nombre maximum de sauvegardes</value>
-  </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>Niveau de journalisation</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>Enregistrer</value>
-  </data>
   <data name="LoadingPlugin" xml:space="preserve">
     <value>Chargement du plugin : {0}</value>
   </data>
@@ -408,44 +339,8 @@
   <data name="LanguageResartSign" xml:space="preserve">
     <value>Vous devez redémarrer pour utiliser les nouveaux paramètres de langue</value>
   </data>
-  <data name="Language" xml:space="preserve">
-    <value>langue de l'interface utilisateur</value>
-  </data>
-  <data name="ko" xml:space="preserve">
-    <value>한국어 (Coréen)</value>
-  </data>
-  <data name="ja" xml:space="preserve">
-    <value>日本語 (Japonais)</value>
-  </data>
   <data name="IsAutoSelect" xml:space="preserve">
     <value>SélectionAutomatique</value>
-  </data>
-  <data name="HotKeySet2" xml:space="preserve">
-    <value>Cliquez pour définir les touches de raccourci</value>
-  </data>
-  <data name="HotKeySet1" xml:space="preserve">
-    <value>Définir des raccourcis clavier</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>touche de raccourci</value>
-  </data>
-  <data name="HotkeyNormal" xml:space="preserve">
-    <value>normale</value>
-  </data>
-  <data name="HotkeyConflict" xml:space="preserve">
-    <value>conflit</value>
-  </data>
-  <data name="GlobalMode" xml:space="preserve">
-    <value>situation globale</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>Réglages généraux</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>Universel</value>
-  </data>
-  <data name="fr" xml:space="preserve">
-    <value>Français</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>Projet trouvé {0}, {1}, télécharger?</value>
@@ -461,15 +356,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>Une erreur s'est produite</value>
-  </data>
-  <data name="EnableScheduledBackup" xml:space="preserve">
-    <value>Activer la sauvegarde programmée</value>
-  </data>
-  <data name="EnableCUDA" xml:space="preserve">
-    <value>Activer CUDA</value>
-  </data>
-  <data name="en" xml:space="preserve">
-    <value>English (Anglais)</value>
   </data>
   <data name="EchoXCOPYFailed" xml:space="preserve">
     <value>  echo Échec de la copie XCOPY, mise à jour annulée.</value>
@@ -513,12 +399,6 @@
   <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
     <value>echo Sauvegarde de la version actuelle...</value>
   </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>Télécharger MySQL</value>
-  </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>Télécharger MQTT</value>
-  </data>
   <data name="Download" xml:space="preserve">
     <value>Télécharger</value>
   </data>
@@ -546,15 +426,6 @@
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>Confirmer la suppression du plugin {0}?</value>
   </data>
-  <data name="ConfigurationParameters" xml:space="preserve">
-    <value>Paramètres de configuration</value>
-  </data>
-  <data name="ConfigFileRestored" xml:space="preserve">
-    <value>Fichier de configuration restauré depuis la sauvegarde récente</value>
-  </data>
-  <data name="ConfigFileResetDueToError" xml:space="preserve">
-    <value>Erreur du fichier de configuration, réinitialisé</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>fermeture</value>
   </data>
@@ -570,9 +441,6 @@
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Vérification des projets supplémentaires</value>
   </data>
-  <data name="CheckingCUDASupport" xml:space="preserve">
-    <value>Vérification du support CUDA</value>
-  </data>
   <data name="Cancel" xml:space="preserve">
     <value>Annuler</value>
   </data>
@@ -584,24 +452,6 @@
   </data>
   <data name="BaseDirCannotBeEmpty" xml:space="preserve">
     <value>baseDir ne peut pas être vide</value>
-  </data>
-  <data name="BackupConfigFileFailed" xml:space="preserve">
-    <value>Échec de la sauvegarde du fichier de configuration</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>Changer automatiquement les vues sélectionnées</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
-    <value>Faire défiler automatiquement vers le bas</value>
-  </data>
-  <data name="AutoRefresh" xml:space="preserve">
-    <value>Actualisation automatique</value>
-  </data>
-  <data name="AutoCleanOldBackups" xml:space="preserve">
-    <value>Nettoyer automatiquement les anciennes sauvegardes si dépassé</value>
-  </data>
-  <data name="AutoAdjustColumnWidth" xml:space="preserve">
-    <value>Ajuster automatiquement la largeur des colonnes</value>
   </data>
   <data name="Ascending" xml:space="preserve">
     <value>Croissant</value>

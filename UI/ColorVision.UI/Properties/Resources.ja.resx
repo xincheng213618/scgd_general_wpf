@@ -451,12 +451,6 @@
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverterリソースが見つかりません</value>
   </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>MQTTをダウンロード</value>
-  </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>MySQLをダウンロード</value>
-  </data>
   <data name="Install" xml:space="preserve">
     <value>インストール</value>
   </data>

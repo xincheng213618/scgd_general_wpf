@@ -330,75 +330,6 @@
   <data name="MsgList" xml:space="preserve">
     <value>メッセージログウィンドウ</value>
   </data>
-  <data name="MenuView" xml:space="preserve">
-    <value>表示 (_V)</value>
-  </data>
-  <data name="MenuUndo" xml:space="preserve">
-    <value>取り消す (_U)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>ツール (_T)</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>テンプレート(_M)</value>
-  </data>
-  <data name="MenuRename" xml:space="preserve">
-    <value>名前を変更(_M)</value>
-  </data>
-  <data name="MenuRedo" xml:space="preserve">
-    <value>やり直し</value>
-  </data>
-  <data name="MenuPrint" xml:space="preserve">
-    <value>印刷(_P)</value>
-  </data>
-  <data name="MenuPaste" xml:space="preserve">
-    <value>ペースト(_P)</value>
-  </data>
-  <data name="MenuOptions" xml:space="preserve">
-    <value>オプション (_O)</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>開く (_O)</value>
-  </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>新規作成 (_N)</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>言語(_L)</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>ヘルプ (_H)</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>ファイル (_F)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>終了する (_X)</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>編集する (_E)</value>
-  </data>
-  <data name="MenuDelete" xml:space="preserve">
-    <value>削除する (_D)</value>
-  </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>切り取る (_T)</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>コピーする (_C)</value>
-  </data>
-  <data name="MenuClose" xml:space="preserve">
-    <value>閉じる_C)</value>
-  </data>
-  <data name="MaxBackupCount" xml:space="preserve">
-    <value>最大バックアップ数</value>
-  </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>ログレベル</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>ログ</value>
-  </data>
   <data name="LoadingPlugin" xml:space="preserve">
     <value>プラグインを読み込み中: {0}</value>
   </data>
@@ -408,44 +339,8 @@
   <data name="LanguageResartSign" xml:space="preserve">
     <value>新しい言語設定を使用するためには、再起動が必要です</value>
   </data>
-  <data name="Language" xml:space="preserve">
-    <value>言語</value>
-  </data>
-  <data name="ko" xml:space="preserve">
-    <value>한국어 (韓国語)</value>
-  </data>
-  <data name="ja" xml:space="preserve">
-    <value>日本語</value>
-  </data>
   <data name="IsAutoSelect" xml:space="preserve">
     <value>自動選択かどうか</value>
-  </data>
-  <data name="HotKeySet2" xml:space="preserve">
-    <value>クリックしてホットキーを設定する</value>
-  </data>
-  <data name="HotKeySet1" xml:space="preserve">
-    <value>Set Hotkeys by Pressing Keys</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>ショートカットキー</value>
-  </data>
-  <data name="HotkeyNormal" xml:space="preserve">
-    <value>正常</value>
-  </data>
-  <data name="HotkeyConflict" xml:space="preserve">
-    <value>衝突</value>
-  </data>
-  <data name="GlobalMode" xml:space="preserve">
-    <value>グローバル</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>一般設定</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>ユニバーサル</value>
-  </data>
-  <data name="fr" xml:space="preserve">
-    <value>Français (フランス語)</value>
   </data>
   <data name="FoundProjectDownloadConfirm" xml:space="preserve">
     <value>プロジェクト{0}、{1}が見つかりました。ダウンロードしますか？</value>
@@ -461,15 +356,6 @@
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
     <value>エラーが発生しました</value>
-  </data>
-  <data name="EnableScheduledBackup" xml:space="preserve">
-    <value>スケジュールバックアップを有効にする</value>
-  </data>
-  <data name="EnableCUDA" xml:space="preserve">
-    <value>CUDAを有効にする</value>
-  </data>
-  <data name="en" xml:space="preserve">
-    <value>English (英語)</value>
   </data>
   <data name="EchoXCOPYFailed" xml:space="preserve">
     <value>  echo XCOPYコピーが失敗しました、更新が中止されました。</value>
@@ -513,12 +399,6 @@
   <data name="EchoBackingUpCurrentVersion" xml:space="preserve">
     <value>echo 現在のバージョンをバックアップ中...</value>
   </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>MySQLをダウンロード</value>
-  </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>MQTTをダウンロード</value>
-  </data>
   <data name="Download" xml:space="preserve">
     <value>ダウンロード</value>
   </data>
@@ -546,15 +426,6 @@
   <data name="ConfirmDeletePlugin" xml:space="preserve">
     <value>プラグイン{0}を削除しますか？</value>
   </data>
-  <data name="ConfigurationParameters" xml:space="preserve">
-    <value>構成パラメータ</value>
-  </data>
-  <data name="ConfigFileRestored" xml:space="preserve">
-    <value>最近のバックアップから構成ファイルを復元しました</value>
-  </data>
-  <data name="ConfigFileResetDueToError" xml:space="preserve">
-    <value>構成ファイルエラー、リセットされました</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>閉鎖</value>
   </data>
@@ -570,9 +441,6 @@
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>追加プロジェクトを確認中</value>
   </data>
-  <data name="CheckingCUDASupport" xml:space="preserve">
-    <value>CUDAサポートを確認中</value>
-  </data>
   <data name="Cancel" xml:space="preserve">
     <value>キャンセル</value>
   </data>
@@ -584,24 +452,6 @@
   </data>
   <data name="BaseDirCannotBeEmpty" xml:space="preserve">
     <value>baseDirを空にすることはできません</value>
-  </data>
-  <data name="BackupConfigFileFailed" xml:space="preserve">
-    <value>構成ファイルのバックアップに失敗しました</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>選択したビューを自動的に切り替える</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
-    <value>自動的に一番下までスクロールします</value>
-  </data>
-  <data name="AutoRefresh" xml:space="preserve">
-    <value>自動更新</value>
-  </data>
-  <data name="AutoCleanOldBackups" xml:space="preserve">
-    <value>超過時に古いバックアップを自動的にクリーンアップ</value>
-  </data>
-  <data name="AutoAdjustColumnWidth" xml:space="preserve">
-    <value>列幅を自動的に調整する</value>
   </data>
   <data name="Ascending" xml:space="preserve">
     <value>昇順</value>
