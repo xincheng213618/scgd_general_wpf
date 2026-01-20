@@ -2523,4 +2523,16 @@
   <data name="ExportLicenseFailed" xml:space="preserve">
     <value>라이선스 내보내기 실패</value>
   </data>
+  <data name="Customer" xml:space="preserve">
+    <value>고객</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>유형</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>모델</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>온라인</value>
+  </data>
 </root>

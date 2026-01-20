@@ -2,10 +2,37 @@
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
+using System.Globalization;
 using System.Windows;
+using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
+    public class StatusToTextConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string status = value as string;
+            if (string.IsNullOrEmpty(status))
+                return "未知";
+
+            // 统一转为小写比较，防止大小写问题
+            switch (status.ToLower())
+            {
+                case "online":
+                    return ColorVision.Engine.Properties.Resources.Online;
+                case "offline": // 兼容你的拼写错误
+                    return ColorVision.Engine.Properties.Resources.offline;
+                default:
+                    return status; // 如果是其他状态，直接显示原文本
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
     public class ExportPhyCamerManager : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;

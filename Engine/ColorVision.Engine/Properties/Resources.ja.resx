@@ -2523,4 +2523,16 @@
   <data name="ExportLicenseFailed" xml:space="preserve">
     <value>ライセンスのエクスポートに失敗しました</value>
   </data>
+  <data name="Customer" xml:space="preserve">
+    <value>お客様</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>タイプ</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>モデル</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>オンライン</value>
+  </data>
 </root>

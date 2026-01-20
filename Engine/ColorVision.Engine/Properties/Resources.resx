@@ -2532,4 +2532,7 @@
   <data name="Model" xml:space="preserve">
     <value>型号</value>
   </data>
+  <data name="Online" xml:space="preserve">
+    <value>在线</value>
+  </data>
 </root>

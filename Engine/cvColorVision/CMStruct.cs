@@ -125,9 +125,9 @@ namespace cvColorVision
 
     public enum ImageChannel
     {
-        [Description("singleChannel")]
+        [Description("1")]
         One = 1,
-        [Description("threeChannels")]
+        [Description("3")]
         Three = 3
     }
 

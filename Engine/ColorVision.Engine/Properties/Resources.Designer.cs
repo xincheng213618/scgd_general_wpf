@@ -4714,6 +4714,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 在线 的本地化字符串。
+        /// </summary>
+        public static string Online {
+            get {
+                return ResourceManager.GetString("Online", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 打开 的本地化字符串。
         /// </summary>
         public static string Open {

@@ -2523,4 +2523,16 @@
   <data name="ExportLicenseFailed" xml:space="preserve">
     <value>匯出許可證失敗</value>
   </data>
+  <data name="Customer" xml:space="preserve">
+    <value>顧客</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>類型</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>模型</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>在線</value>
+  </data>
 </root>

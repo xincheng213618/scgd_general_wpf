@@ -1,10 +1,14 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.UI;
+using System;
 using System.ComponentModel;
+using System.Globalization;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices
 {
@@ -62,6 +66,28 @@ namespace ColorVision.Engine.Services.Devices
         private string _SN;
     }
 
+    public class StatusToColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string status = value as string;
+            if (string.IsNullOrEmpty(status)) return Brushes.Gray;
+
+            switch (status.ToLower())
+            {
+                case "online": return Brushes.Green;
+                case "offline":
+                case "offine": return Brushes.Red;
+                default: return Brushes.Gray;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public class TextSNPropertiesEditor : IPropertyEditor
     {
         public DockPanel GenProperties(PropertyInfo property, object obj)
@@ -90,7 +116,27 @@ namespace ColorVision.Engine.Services.Devices
             HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
             combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
             combo.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
-            combo.DisplayMemberPath = "Code";
+
+            // 1. 设置 TextSearch.TextPath，保证选中项在编辑框中显示正确的文本（替代 DisplayMemberPath）
+            System.Windows.Controls.TextSearch.SetTextPath(combo, "Code");
+
+            // 3. 定义样式和触发器来实现颜色变化
+            // 创建 ItemTemplate
+            DataTemplate itemTemplate = new DataTemplate();
+            FrameworkElementFactory textBlockFactory = new FrameworkElementFactory(typeof(TextBlock));
+
+            // 绑定显示文本
+            textBlockFactory.SetBinding(TextBlock.TextProperty, new Binding("Code"));
+
+            // 直接绑定 Foreground 颜色，使用转换器
+            // 假设状态在 "SysResourceModel.Remark" 属性中
+            Binding colorBinding = new Binding("SysResourceModel.Remark");
+            colorBinding.Converter = new StatusToColorConverter(); // 使用上面定义的转换器
+            textBlockFactory.SetBinding(TextBlock.ForegroundProperty, colorBinding);
+
+            itemTemplate.VisualTree = textBlockFactory;
+            combo.ItemTemplate = itemTemplate;
+
             dockPanel.Children.Add(combo);
             return dockPanel;
         }
