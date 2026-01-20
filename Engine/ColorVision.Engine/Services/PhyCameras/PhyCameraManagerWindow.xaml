@@ -61,7 +61,23 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="{Binding Id}"/>
                                     <TextBlock Text="  "/>
-                                    <TextBlock Text="{Binding SysResourceModel.Remark}"/>
+                                    <TextBlock Text="{Binding SysResourceModel.Remark}" FontWeight="Bold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SysResourceModel.Remark}" Value="online">
+                                                        <Setter Property="Foreground" Value="Green"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding SysResourceModel.Remark}" Value="offine">
+                                                        <Setter Property="Foreground" Value="Red"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding SysResourceModel.Remark}" Value="offline">
+                                                        <Setter Property="Foreground" Value="Red"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </StackPanel>
                                 <TextBlock Text="{Binding Code}"/>
                                 <TextBlock Text="{Binding CameraLicenseModel.ColorVisionLicense.DeviceMode}"/>
