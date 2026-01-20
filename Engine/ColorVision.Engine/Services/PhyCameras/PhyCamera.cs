@@ -6,8 +6,8 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
-using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates;
@@ -20,6 +20,7 @@ using ColorVision.UI.Extension;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -366,6 +367,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 this.VisualChildren.Clear();
                 Task.Run(() =>
                 {
+                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
                     Db.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
                     var ModMasterModels = Db.Queryable<ModMasterModel>().Where(x => x.ResourceId == Id).ToList();
                     foreach (var item in ModMasterModels)
@@ -383,6 +385,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             CalibrationParams.Clear();
             this.VisualChildren.Clear();
 
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
             Db.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
 
             var ModMasterModels = Db.Queryable<ModMasterModel>().Where(x => x.ResourceId == Id).ToList();
@@ -1008,6 +1011,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                     GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
                                     if (groupResource != null)
                                     {
+                                        using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
                                         foreach (var item1 in zipCalibrationGroup.List)
                                         {
                                             if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))

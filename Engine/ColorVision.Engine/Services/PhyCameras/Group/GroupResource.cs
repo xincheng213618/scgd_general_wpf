@@ -3,6 +3,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using SqlSugar;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -139,6 +140,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public override void Delete()
         {
             this.Parent?.RemoveChild(this);
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
             Db.Deleteable<SysResourceModel>().Where(a => a.Id == this.Id).ExecuteCommand();
         }
 
@@ -148,7 +150,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             SysResourceDao.Instance.Save(SysResourceModel);
 
-            ///这里后面再优化，r
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
             Db.Deleteable<SysResourceGoupModel>().Where(x => x.GroupId == SysResourceModel.Id).ExecuteCommand();
 
             VisualChildren.Clear();
