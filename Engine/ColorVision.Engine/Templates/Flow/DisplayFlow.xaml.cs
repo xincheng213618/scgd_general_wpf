@@ -11,6 +11,7 @@ using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Diagnostics;
@@ -220,7 +221,9 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineManager.Batch.FlowStatus = FlowControlData.FlowStatus;
             FlowEngineManager.Batch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
             FlowEngineManager.Batch.Result = FlowControlData.Params;
-            MySqlControl.GetInstance().DB.Updateable(FlowEngineManager.Batch).ExecuteReturnEntity();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            Db.Updateable(FlowEngineManager.Batch).ExecuteReturnEntity();
 
             FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
             FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
@@ -497,7 +500,9 @@ namespace ColorVision.Engine.Templates.Flow
 
             timer.Change(0, 100); // 启动定时器
             FlowEngineManager.Batch = new MeasureBatchModel() { TId = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Id, Name = sn, Code = sn };
-            FlowEngineManager.Batch.Id = MySqlControl.GetInstance().DB.Insertable(FlowEngineManager.Batch).ExecuteReturnIdentity();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            FlowEngineManager.Batch.Id = Db.Insertable(FlowEngineManager.Batch).ExecuteReturnIdentity();
 
             // Execute pre-processors before flow starts
             if (!PreProcessing(FlowName, sn))
@@ -525,7 +530,8 @@ namespace ColorVision.Engine.Templates.Flow
 
             FlowEngineManager.Batch.FlowStatus = FlowStatus.Canceled;
             FlowEngineManager.Batch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
-            MySqlControl.GetInstance().DB.Updateable(FlowEngineManager.Batch);
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            Db.Updateable(FlowEngineManager.Batch);
 
             View.logTextBox.Text = ColorVision.Engine.Properties.Resources.ExecutionCancelled;
 

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Database;
+using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -64,6 +65,8 @@ namespace ColorVision.Engine.Templates.Validate
 
             void DeleteSingle(int id)
             {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
                 Db.Deleteable<SysDictionaryModItemValidateModel>().Where(x => x.Pid == id).ExecuteCommand();
                 Db.Deleteable<SysDictionaryModModel>().Where(x => x.Id == id).ExecuteCommand();
                 TemplateParams.RemoveAt(index);

@@ -67,8 +67,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         private static PhyCameraManager _instance;
         private static readonly object Locker = new();
         public static PhyCameraManager GetInstance() { lock (Locker) { return _instance ??= new PhyCameraManager(); } }
-        public static SqlSugar.SqlSugarClient Db => MySqlControl.GetInstance().DB;
-
         public RelayCommand CreateCommand { get; set; }
 
         public RelayCommand ImportCommand { get; set; }
@@ -213,7 +211,9 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void Create()
         {
-            if (MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count() <= 0)
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            if (Db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count() <= 0)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到未创建的相机,请插上相机后在尝试",nameof(PhyCameraManager));
                 foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>())
@@ -447,6 +447,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private static void LoadPhyCameraResources(PhyCamera phyCamera)
         {
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
             var sysResourceModels =  Db.Queryable<SysResourceModel>().Where(it => it.Pid == phyCamera.SysResourceModel.Id && it.IsDelete == false && it.IsEnable == true).ToList();
             foreach (var sysResourceModel in sysResourceModels)
             {

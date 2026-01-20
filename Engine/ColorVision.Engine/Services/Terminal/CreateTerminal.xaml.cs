@@ -19,6 +19,7 @@ using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Linq;
 using System.Windows;
@@ -57,7 +58,9 @@ namespace ColorVision.Engine.Services.Terminal
                 deviceConfig.SendTopic = TerminalService.Config.SendTopic;
                 deviceConfig.SubscribeTopic = TerminalService.Config.SubscribeTopic;
                 sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
-                int pkId = MySqlControl.GetInstance().DB.Insertable(sysResource).ExecuteReturnIdentity();
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+                int pkId = Db.Insertable(sysResource).ExecuteReturnIdentity();
                 sysResource.Id = pkId;
                 return sysResource;
             }
@@ -245,9 +248,10 @@ namespace ColorVision.Engine.Services.Terminal
             {
                 TerminalService.AddChild(deviceService);
                 ServiceManager.GetInstance().DeviceServices.Add(deviceService);
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-                string TypeCode = MySqlControl.GetInstance().DB.Queryable<SysDictionaryModel>().Where(x => x.Pid == 1 && x.Value == sysDevModel.Pid).First().Key;
-                string PCode = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().InSingle(sysDevModel.Type).Code;
+                string TypeCode = Db.Queryable<SysDictionaryModel>().Where(x => x.Pid == 1 && x.Value == sysDevModel.Pid).First().Key;
+                string PCode = Db.Queryable<SysResourceModel>().InSingle(sysDevModel.Type).Code;
 
                 RC.MqttRCService.GetInstance().RestartServices(TypeCode, PCode, sysDevModel.Code);
                 Close();

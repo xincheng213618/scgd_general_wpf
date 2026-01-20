@@ -56,8 +56,6 @@ namespace ColorVision.Engine.Services
         private static ServiceManager _instance;
         private static readonly object _locker = new();
         public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
-        public static SqlSugarClient Db => MySqlControl.GetInstance().DB;
-
         public ObservableCollection<TypeService> TypeServices { get; set; } = new ObservableCollection<TypeService>();
         public ObservableCollection<TerminalService> TerminalServices { get; set; } = new ObservableCollection<TerminalService>();
         public ObservableCollection<DeviceService> DeviceServices { get; set; } = new ObservableCollection<DeviceService>();
@@ -159,6 +157,7 @@ namespace ColorVision.Engine.Services
             }
 
             DeviceServices.Clear();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             foreach (var terminalService in TerminalServices)
             {
@@ -253,8 +252,6 @@ namespace ColorVision.Engine.Services
 
         public void LoadgroupResource(GroupResource groupResource)
         {
-            Db.CodeFirst.InitTables<SysResourceGoupModel>();
-
             List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetGroupResourceItems(groupResource.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
             {

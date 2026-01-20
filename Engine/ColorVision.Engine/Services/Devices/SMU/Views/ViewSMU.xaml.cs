@@ -6,6 +6,7 @@ using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using ScottPlot;
 using ScottPlot.Plottables;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -460,13 +461,15 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         private void Search_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            foreach (var item in MySqlControl.GetInstance().DB.Queryable<SMUResultModel>().ToList())
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            foreach (var item in Db.Queryable<SMUResultModel>().ToList())
             {
                 ViewResultSMU viewResultSMU = new ViewResultSMU(item);
                 ViewResults.Add(viewResultSMU);
             }
 
-            foreach (var item in MySqlControl.GetInstance().DB.Queryable<SmuScanModel>().ToList())
+            foreach (var item in Db.Queryable<SmuScanModel>().ToList())
             {
                 ViewResultSMU viewResultSMU = new ViewResultSMU(item);
                 ViewResults.Add(viewResultSMU);

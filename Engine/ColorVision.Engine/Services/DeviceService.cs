@@ -101,8 +101,6 @@ namespace ColorVision.Engine.Services
 
     public class DeviceService<T> : DeviceService where T : DeviceServiceConfig, new()
     {
-
-        public SqlSugarClient Db => MySqlControl.GetInstance().DB;
         public T Config { get; set; }
 
         public override ImageSource Icon { get => _Icon; set { _Icon = value; OnPropertyChanged(); } }
@@ -221,7 +219,9 @@ namespace ColorVision.Engine.Services
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            MySqlControl.GetInstance().DB.Updateable(SysResourceModel).ExecuteCommand();
+            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            DB.Updateable(SysResourceModel).ExecuteCommand();
         }
 
         public override void Save()
@@ -242,8 +242,10 @@ namespace ColorVision.Engine.Services
 
         public void RestartRCService()
         {
-            string TypeCode =MySqlControl.GetInstance().DB.Queryable<SysDictionaryModel>().Where(x=>x.Pid ==1 && x.Value ==SysResourceModel.Type).First().Key;
-            string PCode = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().InSingle(SysResourceModel.Pid).Code;
+            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            string TypeCode =DB.Queryable<SysDictionaryModel>().Where(x=>x.Pid ==1 && x.Value ==SysResourceModel.Type).First().Key;
+            string PCode = DB.Queryable<SysResourceModel>().InSingle(SysResourceModel.Pid).Code;
 
             MqttRCService.GetInstance().RestartServices(TypeCode, PCode, Config.Code);
         }
@@ -258,7 +260,11 @@ namespace ColorVision.Engine.Services
 
             //删除数据库
             if (SysResourceModel != null)
-                 Db.Deleteable<SysResourceModel>().Where(it => it.Id == SysResourceModel.Id).ExecuteCommand();
+            {
+                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                DB.Deleteable<SysResourceModel>().Where(it => it.Id == SysResourceModel.Id).ExecuteCommand();
+
+            }
 
             //删除设备服务
             ServiceManager.GetInstance().DeviceServices.Remove(this);

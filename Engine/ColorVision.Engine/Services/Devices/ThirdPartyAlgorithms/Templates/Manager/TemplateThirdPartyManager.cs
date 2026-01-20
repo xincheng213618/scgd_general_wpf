@@ -1,12 +1,13 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
+using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Windows.Controls;
-using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager
 {
@@ -96,6 +97,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
 
             void DeleteSingle(int id)
             {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 Db.Deleteable<ThirdPartyAlgorithmsModel>().Where(it => it.Id == id).ExecuteCommand();
                 TemplateParams.RemoveAt(index);
             }

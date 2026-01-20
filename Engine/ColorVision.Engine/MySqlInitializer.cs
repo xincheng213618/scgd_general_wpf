@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.UI;
 using log4net;
+using SqlSugar;
 using System;
 using System.IO;
 using System.Linq;
@@ -37,6 +38,8 @@ namespace ColorVision.Engine
                 log.Info($"SqlConfig 版本更新到 {Version}");
                 Thread thread = new Thread(() =>
                 {
+                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
                     foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
                     {
                         foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitTables).IsAssignableFrom(t) && !t.IsAbstract))
@@ -44,7 +47,7 @@ namespace ColorVision.Engine
                             try
                             {
                                 log.Info($"正在初始化表：{type.Name}");
-                                MySqlControl.GetInstance().DB.CodeFirst.InitTables(type);
+                                Db.CodeFirst.InitTables(type);
                             }
                             catch (Exception ex)
                             {

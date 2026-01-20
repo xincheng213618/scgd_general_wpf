@@ -2,6 +2,7 @@
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -169,13 +170,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             {
                 // Create a SysDictionaryModDetaiModels to hold the items to be removed
                 List<GroupResource> itemsToRemove = new List<GroupResource>();
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
                 foreach (var selectedItem in ListView1.SelectedItems)
                 {
                     GroupResource groupResource = selectedItem as GroupResource;
                     if (groupResource != null)
                     {
-                        MySqlControl.GetInstance().DB.Deleteable<SysResourceModel>().Where(it => it.Id == groupResource.SysResourceModel.Id).ExecuteCommand();
+                        Db.Deleteable<SysResourceModel>().Where(it => it.Id == groupResource.SysResourceModel.Id).ExecuteCommand();
                         itemsToRemove.Add(groupResource);
                     }
                 }

@@ -2019,7 +2019,7 @@ namespace ProjectStarkSemi
         }
         private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
-            DisplayFlow.GetInstance().RunFlow();
+            FlowEngineManager.GetInstance().DisplayFlow.RunFlow();
         }
 
         /// <summary>

@@ -6,6 +6,7 @@ using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using ScottPlot;
 using ScottPlot.Plottables;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -713,8 +714,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             ViewResults.Clear();
             ScatterPlots.Clear();
             AbsoluteScatterPlots.Clear();
+            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultEntity>().Where(x => x.DataType == DisplayConfig.IsLuminousFluxMode);
+            var query = DB.Queryable<SpectumResultEntity>().Where(x => x.DataType == DisplayConfig.IsLuminousFluxMode);
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
@@ -729,7 +731,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         }
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<SpectumResultEntity, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultSpectrum>(MySqlControl.GetInstance().DB, ViewResults, 
+            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            GenericQuery<SpectumResultEntity, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultSpectrum>(DB, ViewResults, 
                 t =>
                 {
                     ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(t);
@@ -755,7 +759,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             };
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
-
+            DB.Dispose();
 
         }
 

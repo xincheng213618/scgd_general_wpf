@@ -6,6 +6,7 @@ using ColorVision.Engine.Templates.SysDictionary;
 using log4net;
 using log4net.Util;
 using MQTTMessageLib.Sensor;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -67,6 +68,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             SensorParam? AddParamMode()
             {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
                 ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name =templateName, TenantId = 0};
                 int id = Db.Insertable(modMaster).ExecuteReturnIdentity();
                 modMaster.Id = id;
@@ -125,6 +128,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public override void Save()
         {
             if (SaveIndex.Count == 0) return;
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             foreach (var index in SaveIndex)
             {

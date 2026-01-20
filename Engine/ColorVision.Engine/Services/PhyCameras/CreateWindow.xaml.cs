@@ -41,7 +41,9 @@ namespace ColorVision.Engine.Services.PhyCameras
                 CFW = new CFWPORT() { BaudRate = 9600, CFWNum = 1, ChannelCfgs = new List<Configs.ChannelCfg>() },
 
             };
-            var list = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).ToList();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            var list = Db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).ToList();
 
             if (list != null)
             {
@@ -182,8 +184,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (CreateConfig.CFW.CFWNum == 3)
                 CreateConfig.CFW.ChannelCfgs = CreateConfig.CFW.ChannelCfgs.GetRange(0, 9);
 
-
-            var sysResourceModel = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(x => x.Code == CreateConfig.Code) .First();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            var sysResourceModel = Db.Queryable<SysResourceModel>().Where(x => x.Code == CreateConfig.Code) .First();
             // 不存在则新建
             if (sysResourceModel == null)
             {
@@ -203,11 +205,11 @@ namespace ColorVision.Engine.Services.PhyCameras
             int ret;
             if (sysResourceModel.Id > 0)
             {
-                ret = MySqlControl.GetInstance().DB.Updateable(sysResourceModel).ExecuteCommand();
+                ret = Db.Updateable(sysResourceModel).ExecuteCommand();
             }
             else
             {
-                ret = MySqlControl.GetInstance().DB.Insertable(sysResourceModel).ExecuteCommand();
+                ret = Db.Insertable(sysResourceModel).ExecuteCommand();
             }
 
             PhyCameraManager.CreatePhysicalCameraFloder(CreateConfig.Code);

@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -127,7 +128,9 @@ namespace ColorVision.Engine
         public void Load()
         {
             ViewResults.Clear();
-            var BatchResultMasterModels = MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).OrderBy(x => x.Id, Config.OrderByType).Take(Config.Count).ToList();
+            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            var BatchResultMasterModels = DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).OrderBy(x => x.Id, Config.OrderByType).Take(Config.Count).ToList();
             foreach (var item in BatchResultMasterModels)
             {
                 ViewResults.Add(new ViewBatchResult(item));
@@ -136,9 +139,12 @@ namespace ColorVision.Engine
 
         public void GenericQuery()
         {
-            GenericQuery<MeasureBatchModel, ViewBatchResult> genericQuery = new GenericQuery<MeasureBatchModel, ViewBatchResult>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewBatchResult(t));
+            var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            GenericQuery<MeasureBatchModel, ViewBatchResult> genericQuery = new GenericQuery<MeasureBatchModel, ViewBatchResult>(DB, ViewResults, t => new ViewBatchResult(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
+            DB.Dispose();
         }
 
     }
@@ -195,7 +201,8 @@ namespace ColorVision.Engine
             ViewResults.Clear();
             if (string.IsNullOrWhiteSpace(SearchBox.Text))
             {
-                var BatchResultMasterModels = MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).OrderBy(x => x.Id, MeasureBatchManager.Config.OrderByType).Take(MeasureBatchManager.Config.Count).ToList();
+                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                var BatchResultMasterModels = DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).OrderBy(x => x.Id, MeasureBatchManager.Config.OrderByType).Take(MeasureBatchManager.Config.Count).ToList();
                 foreach (var item in BatchResultMasterModels)
                 {
                     ViewResults.Add(new ViewBatchResult(item));
@@ -203,7 +210,9 @@ namespace ColorVision.Engine
             }
             else
             {
-                foreach (var item in MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
+                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+                foreach (var item in DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
                 {
                     ViewResults.Add(new ViewBatchResult(item));
                 }
@@ -214,10 +223,11 @@ namespace ColorVision.Engine
         private void Query_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
+            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             if (string.IsNullOrWhiteSpace(SearchBox.Text))
             {
-                var BatchResultMasterModels = MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).OrderBy(x => x.Id, MeasureBatchManager.Config.OrderByType).Take(MeasureBatchManager.Config.Count).ToList();
+                var BatchResultMasterModels = DB.Queryable<MeasureBatchModel>().OrderByDescending(x => x.Id).OrderBy(x => x.Id, MeasureBatchManager.Config.OrderByType).Take(MeasureBatchManager.Config.Count).ToList();
                 foreach (var item in BatchResultMasterModels)
                 {
                     ViewResults.Add(new ViewBatchResult(item));
@@ -225,7 +235,7 @@ namespace ColorVision.Engine
             }
             else
             {
-                foreach (var item in MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
+                foreach (var item in DB.Queryable<MeasureBatchModel>().Where(x => x.Code == SearchBox.Text).ToList())
                 {
                     ViewResults.Add(new ViewBatchResult(item));
                 }
@@ -465,9 +475,12 @@ namespace ColorVision.Engine
 
         private void AdvanceQuery_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<MeasureBatchModel, ViewBatchResult> genericQuery = new GenericQuery<MeasureBatchModel, ViewBatchResult>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewBatchResult(t));
+            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            GenericQuery<MeasureBatchModel, ViewBatchResult> genericQuery = new GenericQuery<MeasureBatchModel, ViewBatchResult>(DB, ViewResults, t => new ViewBatchResult(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
+            DB.Dispose();
         }
     }
 }

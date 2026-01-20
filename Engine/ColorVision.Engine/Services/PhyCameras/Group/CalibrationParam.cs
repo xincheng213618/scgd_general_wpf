@@ -3,6 +3,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates;
 using cvColorVision;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -228,12 +229,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             if (!MySqlSetting.IsConnect)
                 return;
             var existingParams = ResourceParams.ToDictionary(rp => rp.Id, rp => rp);
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            List<ModMasterModel> smus = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x=>x.Pid ==2).Where(x => x.ResourceId == resourceId).Where(x=>x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
+            List<ModMasterModel> smus = Db.Queryable<ModMasterModel>().Where(x=>x.Pid ==2).Where(x => x.ResourceId == resourceId).Where(x=>x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
             foreach (var dbModel in smus)
             {
 
-                List<ModDetailModel> smuDetails = MySqlControl.GetInstance().DB.Queryable<ModDetailModel>() .Where(x => x.Pid == dbModel.Id).ToList();
+                List<ModDetailModel> smuDetails = Db.Queryable<ModDetailModel>() .Where(x => x.Pid == dbModel.Id).ToList();
                 foreach (var dbDetail in smuDetails)
                 {
                     dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");

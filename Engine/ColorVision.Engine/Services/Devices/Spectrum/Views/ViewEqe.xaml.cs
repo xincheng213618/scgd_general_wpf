@@ -6,6 +6,7 @@ using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using ScottPlot;
 using ScottPlot.Plottables;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -583,8 +584,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             ViewResults.Clear();
             ScatterPlots.Clear();
             AbsoluteScatterPlots.Clear();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultEntity>();
+            var query = Db.Queryable<SpectumResultEntity>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
@@ -599,7 +601,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         }
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<SpectumResultEntity, ViewResultEqe> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultEqe>(MySqlControl.GetInstance().DB, ViewResults,
+            var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            GenericQuery<SpectumResultEntity, ViewResultEqe> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultEqe>(Db, ViewResults,
                 t =>
                 {
                     ViewResultEqe viewResultSpectrum = new ViewResultEqe(t);
@@ -625,7 +629,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             };
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
-
+            Db.Dispose();
 
         }
     }

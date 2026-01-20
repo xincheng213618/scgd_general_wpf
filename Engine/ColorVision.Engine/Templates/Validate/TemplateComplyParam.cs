@@ -1,4 +1,5 @@
 ﻿using ColorVision.Database;
+using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -97,6 +98,7 @@ namespace ColorVision.Engine.Templates.Validate
             if (index >= 0 && index < TemplateParams.Count)
             {
                 int id = TemplateParams[index].Value.Id;
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
                 Db.Deleteable<ValidateTemplateDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
                 Db.Deleteable<ValidateTemplateMasterModel>().Where(x => x.Id == id).ExecuteCommand();

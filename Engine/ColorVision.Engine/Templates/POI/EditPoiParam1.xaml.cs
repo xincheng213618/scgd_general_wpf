@@ -1025,7 +1025,9 @@ namespace ColorVision.Engine.Templates.POI
                 }
             }
             TemplateJsonKBParam.JsonValue = JsonConvert.SerializeObject(KBJson);
-            MySqlControl.GetInstance().DB.Updateable(TemplateJsonKBParam.TemplateJsonModel).ExecuteCommand();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            Db.Updateable(TemplateJsonKBParam.TemplateJsonModel).ExecuteCommand();
 
             MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
         }
@@ -1036,9 +1038,9 @@ namespace ColorVision.Engine.Templates.POI
         }
         private void Service_Click(object sender, RoutedEventArgs e)
         {
-            var db = MySqlControl.GetInstance().DB;
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            var recentItems = db.Queryable<MeasureResultImgModel>()
+            var recentItems = Db.Queryable<MeasureResultImgModel>()
                    .OrderBy(it => it.CreateDate, OrderByType.Desc)
                    .Take(6)
                    .ToList();

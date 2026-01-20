@@ -339,6 +339,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             try
             {
+                var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
                 var list = Db.Queryable<CameraTempModel>()
                     .Where(x => x.RescourceId == SysResourceModel.Id)
                     .OrderBy(x => x.CreateDate, OrderByType.Desc)

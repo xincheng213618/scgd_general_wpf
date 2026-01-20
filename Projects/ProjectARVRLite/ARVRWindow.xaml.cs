@@ -29,6 +29,7 @@ using Newtonsoft.Json;
 using ProjectARVRLite.PluginConfig;
 using ProjectARVRLite.Services;
 using Quartz;
+using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -311,7 +312,8 @@ namespace ProjectARVRLite
             if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除 {item.SN} 测试结果？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 ViewResluts.Remove(item);
-                MySqlControl.GetInstance().DB.Deleteable<MeasureBatchModel>().Where(it => it.Id == item.Id).ExecuteCommand();
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                Db.Deleteable<MeasureBatchModel>().Where(it => it.Id == item.Id).ExecuteCommand();
                 log.Info($"删除测试结果 {item.SN}");
             }
         }
@@ -457,7 +459,9 @@ namespace ProjectARVRLite
             stopwatch.Start();
 
             MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
-            int id = MySqlControl.GetInstance().DB.Insertable(measureBatchModel).ExecuteReturnIdentity();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = id;
 
             PreProcessing(FlowName, sn);

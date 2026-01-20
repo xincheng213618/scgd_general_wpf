@@ -1,7 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Terminal;
 using Newtonsoft.Json;
-using ColorVision.Database;
+using SqlSugar;
 
 namespace ColorVision.Engine.Services
 {
@@ -49,8 +50,10 @@ namespace ColorVision.Engine.Services
                     return true;
                 }
             }
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
             //这里追加一个规则，所有Code均不允许相同 2024.04.19
-            var exists = MySqlControl.GetInstance().DB.Queryable<SysResourceModel>() .Any(x => x.Code == Code);
+            var exists = Db.Queryable<SysResourceModel>() .Any(x => x.Code == Code);
 
             return exists;
         }

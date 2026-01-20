@@ -10,6 +10,7 @@ using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using log4net;
 using MQTTMessageLib.Calibration;
+using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -203,7 +204,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            var query = MySqlControl.GetInstance().DB.Queryable<MeasureResultImgModel>();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            var query = Db.Queryable<MeasureResultImgModel>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
@@ -216,9 +219,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<MeasureResultImgModel, ViewResultImage> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultImage>(MySqlControl.GetInstance().DB, ViewResults, t => new ViewResultImage(t));
+            var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            GenericQuery<MeasureResultImgModel, ViewResultImage> genericQuery = new GenericQuery<MeasureResultImgModel, ViewResultImage>(Db, ViewResults, t => new ViewResultImage(t));
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
+            Db.Dispose();
         }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)

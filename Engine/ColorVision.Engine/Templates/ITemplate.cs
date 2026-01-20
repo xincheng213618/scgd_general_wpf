@@ -20,7 +20,6 @@ namespace ColorVision.Engine.Templates
 {
     public class ITemplate
     {
-        public static SqlSugarClient Db => MySqlControl.GetInstance().DB;
         public ITemplate()
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
@@ -236,6 +235,8 @@ namespace ColorVision.Engine.Templates
 
         public virtual void Save(TemplateModel<T> item)
         {
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
             item.Value.ModMaster.Name = item.Value.Name;
             Db.Updateable(item.Value.ModMaster).ExecuteCommand();
             var details = new List<ModDetailModel>();
@@ -246,6 +247,7 @@ namespace ColorVision.Engine.Templates
         public override void Save()
         {
             if (SaveIndex.Count == 0) return;
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             foreach (var index in SaveIndex)
             {
@@ -270,6 +272,8 @@ namespace ColorVision.Engine.Templates
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
                 List<ModMasterModel> smus = Db.Queryable<ModMasterModel>().Where(x => x.Pid == TemplateDicId).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
                 foreach (var dbModel in smus)
                 {
@@ -302,6 +306,7 @@ namespace ColorVision.Engine.Templates
 
             void DeleteSingle(int id)
             {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 List<ModDetailModel> de = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id).ToList();
                 int ret = Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
                 Db.Deleteable<ModDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
@@ -436,6 +441,8 @@ namespace ColorVision.Engine.Templates
 
         public T? AddParamMode(string Name, int resourceId = -1)
         {
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
             ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name = Name, TenantId = 0};
             if (resourceId > 0)
                 modMaster.ResourceId = resourceId;
@@ -465,6 +472,8 @@ namespace ColorVision.Engine.Templates
         {
             T? AddParamMode()
             {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
                 ModMasterModel modMaster = new ModMasterModel() { Pid = TemplateDicId, Name = templateName, TenantId = 0};
                 int id = Db.Insertable(modMaster).ExecuteReturnIdentity();
                 modMaster.Id = id;
@@ -524,6 +533,7 @@ namespace ColorVision.Engine.Templates
 
             try
             {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 var template1 = TemplateParams[index1];
                 var template2 = TemplateParams[index2];
 

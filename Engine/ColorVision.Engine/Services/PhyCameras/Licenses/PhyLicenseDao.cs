@@ -66,7 +66,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
     {
         public static PhyLicenseDao Instance { get; set; } = new PhyLicenseDao();
 
-        public LicenseModel? GetByMAC(string Code) => Db.Queryable<LicenseModel>().Where(x => x.MacAddress == Code).First();
+        public LicenseModel? GetByMAC(string Code) 
+        {
+           using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+           return  Db.Queryable<LicenseModel>().Where(x => x.MacAddress == Code).First();
+        }
 
     }
 

@@ -12,7 +12,6 @@ namespace ColorVision.Database
 {
     public class BaseTableDao<T> where T : class, IEntity, new()
     {
-        public SqlSugarClient Db => MySqlControl.GetInstance().DB;
     }
 
     public static class BaseTableDaoExtensions
