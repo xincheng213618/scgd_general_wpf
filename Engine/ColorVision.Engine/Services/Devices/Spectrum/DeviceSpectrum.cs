@@ -104,6 +104,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.Submited +=(s,e)=>
                 {
+                    //2026.01.21 增加逻辑，如果切换了ND模式，则清空对应的绑定信息
+                    if (Config.NDConfig.IsBingNDDevice)
+                    {
+                        Config.NDConfig.SzComName = string.Empty;
+                    }
+                    else
+                    {
+                        Config.NDConfig.NDBindDeviceCode = string.Empty;
+                    }
+
                     Save();
                 };
                 window.ShowDialog();
