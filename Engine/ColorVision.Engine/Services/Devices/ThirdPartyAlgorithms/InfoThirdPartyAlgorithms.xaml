@@ -89,36 +89,6 @@
                             </UniformGrid>
                         </Grid>
                     </TabItem>
-                    <TabItem Header="{x:Static properties:Resources.Info}">
-                        <StackPanel Margin="5,0">
-                            <GroupBox Header="{x:Static properties:Resources.BasicInformation}" Margin="0,5">
-                                <StackPanel Margin="5">
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="SN" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.SN}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.DataDirectory}" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.FileServerCfg.DataBasePath}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.PortAddress}" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.FileServerCfg.Endpoint}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="{x:Static properties:Resources.PortRange}" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.FileServerCfg.PortRange}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,5">
-                                        <TextBlock  Text="{x:Static properties:Resources.RetentionDays}" Width="120"/>
-                                        <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.SaveDays}"/>
-                                    </DockPanel>
-                                </StackPanel>
-                            </GroupBox>
-                        </StackPanel>
-
-
-                    </TabItem>
                 </TabControl>
 
             </Border>
