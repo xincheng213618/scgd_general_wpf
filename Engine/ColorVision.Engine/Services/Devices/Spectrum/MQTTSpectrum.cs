@@ -313,12 +313,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public MsgRecord InitDark()
         {
+            var Param = new Dictionary<string, object>();
             MsgSend msg = new()
             {
                 EventName = "InitDark",
-                Params = new Dictionary<string, object>() { { "IntegralTime", Device.DisplayConfig.IntTime }, { "NumberOfAverage", Device.DisplayConfig.AveNum } }
-
+                Params = Param
             };
+            Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
+            Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
+            Param.Add("AutoInitDark", Config.IsAutoDark);
             return PublishAsyncClient(msg);
         }
 
