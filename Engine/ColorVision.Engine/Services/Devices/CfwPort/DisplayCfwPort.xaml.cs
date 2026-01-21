@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
     /// <summary>
     /// DisplayCfwPort.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayCfwPort : UserControl,IDisPlayControl
+    public partial class DisplayCfwPort : UserControl,IDisPlayControl,IDisposable
     {
 
         public DeviceCfwPort Device { get; set; }
@@ -38,54 +38,54 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 CombPort.DisplayMemberPath = "HoleName";
             };
 
-            void UpdateUI(DeviceStatusType status)
+            DService_DeviceStatusChanged(sender,DService.DeviceStatus);
+            DService.DeviceStatusChanged += DService_DeviceStatusChanged; ;
+
+
+        }
+
+        private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
+        {
+            void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
+            void HideAllButtons()
             {
-                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
-                ;
-                void HideAllButtons()
-                {
-                    SetVisibility(ButtonOpen, Visibility.Collapsed);
-                    SetVisibility(ButtonClose, Visibility.Collapsed);
-                    SetVisibility(ButtonInit, Visibility.Collapsed);
-                    SetVisibility(ButtonOffline, Visibility.Collapsed);
-                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
-                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
-                    SetVisibility(StackPanelOpen, Visibility.Collapsed);
-                }
-                HideAllButtons();
-
-                switch (status)
-                {
-                    case DeviceStatusType.Unauthorized:
-                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Unknown:
-                        SetVisibility(TextBlockUnknow, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.OffLine:
-                        SetVisibility(ButtonOffline, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.UnInit:
-                        SetVisibility(ButtonInit, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Closing:
-                    case DeviceStatusType.Closed:
-                        SetVisibility(ButtonOpen, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.LiveOpened:
-                    case DeviceStatusType.Opening:
-                    case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelOpen, Visibility.Visible);
-                        SetVisibility(ButtonClose, Visibility.Visible);                
-                        break;
-                    default:
-                        break;
-                }
+                SetVisibility(ButtonOpen, Visibility.Collapsed);
+                SetVisibility(ButtonClose, Visibility.Collapsed);
+                SetVisibility(ButtonInit, Visibility.Collapsed);
+                SetVisibility(ButtonOffline, Visibility.Collapsed);
+                SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                SetVisibility(StackPanelOpen, Visibility.Collapsed);
             }
-            UpdateUI(DService.DeviceStatus);
-            DService.DeviceStatusChanged += UpdateUI;
+            HideAllButtons();
 
-
+            switch (e)
+            {
+                case DeviceStatusType.Unauthorized:
+                    SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Unknown:
+                    SetVisibility(TextBlockUnknow, Visibility.Visible);
+                    break;
+                case DeviceStatusType.OffLine:
+                    SetVisibility(ButtonOffline, Visibility.Visible);
+                    break;
+                case DeviceStatusType.UnInit:
+                    SetVisibility(ButtonInit, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Closing:
+                case DeviceStatusType.Closed:
+                    SetVisibility(ButtonOpen, Visibility.Visible);
+                    break;
+                case DeviceStatusType.LiveOpened:
+                case DeviceStatusType.Opening:
+                case DeviceStatusType.Opened:
+                    SetVisibility(StackPanelOpen, Visibility.Visible);
+                    SetVisibility(ButtonClose, Visibility.Visible);
+                    break;
+                default:
+                    break;
+            }
         }
 
         public event RoutedEventHandler Selected;
@@ -161,6 +161,11 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 }
             };
 
+        }
+
+        public void Dispose()
+        {
+            DService.DeviceStatusChanged -= DService_DeviceStatusChanged; ;
         }
     }
 }

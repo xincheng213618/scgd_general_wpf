@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
     /// <summary>
     /// DisplayAlgorithm.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayThirdPartyAlgorithms : UserControl,IDisPlayControl
+    public partial class DisplayThirdPartyAlgorithms : UserControl,IDisPlayControl,IDisposable
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayThirdPartyAlgorithms));
 
@@ -44,71 +44,9 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             InitializeComponent();
 
         }
-
-
-
-
-        private void Service_OnAlgorithmEvent(MsgReturn arg)
-        {
-
-            switch (arg.EventName)
-            {
-                case MQTTFileServerEventEnum.Event_File_List_All:
-                    DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
-                    switch (data.FileExtType)
-                    {
-                        case FileExtType.Raw:
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                data.Files.Reverse();
-                                CB_RawImageFiles.ItemsSource = data.Files;
-                                CB_RawImageFiles.SelectedIndex = 0;
-                            });
-                            break;
-                        case FileExtType.Src:
-                            break;
-                        case FileExtType.CIE:
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                data.Files.Reverse();
-                                CB_RawImageFiles.ItemsSource = data.Files;
-                                CB_RawImageFiles.SelectedIndex = 0;
-                            });
-                            break;
-                        case FileExtType.Calibration:
-                            break;
-                        case FileExtType.Tif:
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                case MQTTFileServerEventEnum.Event_File_Download:
-                    break;
-                default:
-                    List<AlgResultMasterModel> resultMaster = null;
-                    if (arg.Data.MasterId > 0)
-                    {
-                        resultMaster = new List<AlgResultMasterModel>();
-                        int MasterId = arg.Data.MasterId;
-                        AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
-                        resultMaster.Add(model);
-                    }
-                    foreach (AlgResultMasterModel result in resultMaster)
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            Device.View.AlgResultMasterModelDataDraw(result);
-                        });
-                    }
-                    break;
-            }
-        }
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-
 
             this.ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
@@ -140,37 +78,36 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 CB_SourceImageFiles.SelectedIndex = 0;
             }
             ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
-
             UpdateCB_SourceImageFiles();
-            DService.MsgReturnReceived += Service_OnAlgorithmEvent;
 
-            void UpdateUI(DeviceStatusType status)
+            DService_DeviceStatusChanged(sender,Device.DService.DeviceStatus);
+            Device.DService.DeviceStatusChanged += DService_DeviceStatusChanged;
+        }
+
+        private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
+        {
+            void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
+            void HideAllButtons()
             {
-                void SetVisibility(UIElement element, Visibility visibility){ if (element.Visibility != visibility) element.Visibility = visibility; };
-                void HideAllButtons()
-                {
-                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
-                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
-                    SetVisibility(StackPanelContent, Visibility.Collapsed);
-                }
-                // Default state
-                HideAllButtons();
-
-                switch (status)
-                {
-                    case DeviceStatusType.Unauthorized:
-                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Unknown:
-                        SetVisibility(TextBlockUnknow, Visibility.Visible);
-                        break;
-                    default:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        break;
-                }
+                SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                SetVisibility(StackPanelContent, Visibility.Collapsed);
             }
-            UpdateUI(Device.DService.DeviceStatus);
-            Device.DService.DeviceStatusChanged += UpdateUI;
+            // Default state
+            HideAllButtons();
+
+            switch (e)
+            {
+                case DeviceStatusType.Unauthorized:
+                    SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Unknown:
+                    SetVisibility(TextBlockUnknow, Visibility.Visible);
+                    break;
+                default:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    break;
+            }
         }
 
         public event RoutedEventHandler Selected;
@@ -343,6 +280,11 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 return;
             }
             Device.View.ImageView.OpenImage(ImageFile.Text);
+        }
+
+        public void Dispose()
+        {
+            Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
         }
     }
 }

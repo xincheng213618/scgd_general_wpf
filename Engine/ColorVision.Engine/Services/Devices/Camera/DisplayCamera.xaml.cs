@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
-    public partial class DisplayCamera : UserControl,IDisPlayControl
+    public partial class DisplayCamera : UserControl,IDisPlayControl,IDisposable
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCamera));
         public DeviceCamera Device { get; set; }
@@ -121,73 +121,74 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                               select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
 
-            void UpdateUI(DeviceStatusType status)
-            {
-                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
-                void HideAllButtons()
-                {
-                    SetVisibility(ButtonOpen, Visibility.Collapsed);
-                    SetVisibility(ButtonInit, Visibility.Collapsed);
-                    SetVisibility(ButtonOffline, Visibility.Collapsed);
-                    SetVisibility(ButtonClose, Visibility.Collapsed);
-                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
-                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
-                    SetVisibility(StackPanelOpen, Visibility.Collapsed);
-                }
-                // Default state
-                HideAllButtons();
-
-                switch (status)
-                {
-                    case DeviceStatusType.Unauthorized:
-                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Unknown:
-                        SetVisibility(TextBlockUnknow, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.OffLine:
-                        SetVisibility(ButtonOffline, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.UnInit:
-                        SetVisibility(ButtonInit, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Closed:
-                        SetVisibility(ButtonOpen, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.LiveOpened:
-                        SetVisibility(StackPanelOpen, Visibility.Visible);
-                        SetVisibility(ButtonClose, Visibility.Visible);
-
-                        Device.CameraVideoControl ??= new VideoReader();
-                        if (!DService.IsVideoOpen)
-                        {
-                            DService.CurrentTakeImageMode = TakeImageMode.Live;
-                            string host = Device.Config.VideoConfig.Host;
-                            int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
-                            if (port > 0)
-                            {
-                                View.ImageView.ImageShow.Source = null;
-                            }
-                            else
-                            {
-                                Device.CameraVideoControl.Close();
-                            }
-                        }
-                        break;
-                    case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelOpen, Visibility.Visible);
-                        SetVisibility(ButtonClose, Visibility.Visible);
-                        TakePhotoButton.Visibility = Visibility.Visible;
-                        break;
-                    default:
-                        // No specific action needed
-                        break;
-                }
-            }
-            UpdateUI(DService.DeviceStatus);
-            DService.DeviceStatusChanged += UpdateUI;
+            DService_DeviceStatusChanged(sender,DService.DeviceStatus);
+            DService.DeviceStatusChanged += DService_DeviceStatusChanged;
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
+        }
+
+        private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
+        {
+            void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
+            void HideAllButtons()
+            {
+                SetVisibility(ButtonOpen, Visibility.Collapsed);
+                SetVisibility(ButtonInit, Visibility.Collapsed);
+                SetVisibility(ButtonOffline, Visibility.Collapsed);
+                SetVisibility(ButtonClose, Visibility.Collapsed);
+                SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                SetVisibility(StackPanelOpen, Visibility.Collapsed);
+            }
+            // Default state
+            HideAllButtons();
+
+            switch (e)
+            {
+                case DeviceStatusType.Unauthorized:
+                    SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Unknown:
+                    SetVisibility(TextBlockUnknow, Visibility.Visible);
+                    break;
+                case DeviceStatusType.OffLine:
+                    SetVisibility(ButtonOffline, Visibility.Visible);
+                    break;
+                case DeviceStatusType.UnInit:
+                    SetVisibility(ButtonInit, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Closed:
+                    SetVisibility(ButtonOpen, Visibility.Visible);
+                    break;
+                case DeviceStatusType.LiveOpened:
+                    SetVisibility(StackPanelOpen, Visibility.Visible);
+                    SetVisibility(ButtonClose, Visibility.Visible);
+
+                    Device.CameraVideoControl ??= new VideoReader();
+                    if (!DService.IsVideoOpen)
+                    {
+                        DService.CurrentTakeImageMode = TakeImageMode.Live;
+                        string host = Device.Config.VideoConfig.Host;
+                        int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
+                        if (port > 0)
+                        {
+                            View.ImageView.ImageShow.Source = null;
+                        }
+                        else
+                        {
+                            Device.CameraVideoControl.Close();
+                        }
+                    }
+                    break;
+                case DeviceStatusType.Opened:
+                    SetVisibility(StackPanelOpen, Visibility.Visible);
+                    SetVisibility(ButtonClose, Visibility.Visible);
+                    TakePhotoButton.Visibility = Visibility.Visible;
+                    break;
+                default:
+                    // No specific action needed
+                    break;
+            }
         }
 
         public event RoutedEventHandler Selected;
@@ -725,6 +726,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
                 }
             };
+        }
+
+        public void Dispose()
+        {
+            DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
         }
     }
 }

@@ -40,11 +40,7 @@ namespace ColorVision.Engine.Services.Devices
         [ Browsable(false)]
         public string ServiceToken { get => _ServiceToken; set { _ServiceToken = value; OnPropertyChanged(); } }
         private string _ServiceToken;
-
-
-
     }
-    public delegate void DeviceStatusChangedHandler(DeviceStatusType deviceStatus);
 
     /// <summary>
     /// 基础硬件配置信息
@@ -72,13 +68,12 @@ namespace ColorVision.Engine.Services.Devices
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             string status = value as string;
-            if (string.IsNullOrEmpty(status)) return "未知";
+            if (string.IsNullOrEmpty(status)) return "";
 
             switch (status.ToLower())
             {
-                case "online": return "在线";
-                case "offline":
-                case "offine": return "离线";
+                case "online": return ColorVision.Engine.Properties.Resources.Online;
+                case "offline": return ColorVision.Engine.Properties.Resources.offline;
                 default: return status;
             }
         }
@@ -120,7 +115,7 @@ namespace ColorVision.Engine.Services.Devices
 
             Button button = new Button
             {
-                Content = "编辑",
+                Content = ColorVision.Engine.Properties.Resources.Edit,
                 Margin = new Thickness(5, 0, 0, 0),
                 MinWidth = 70,
             };

@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
     /// <summary>
     /// DisplayMotor.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayMotor : UserControl, IDisPlayControl
+    public partial class DisplayMotor : UserControl, IDisPlayControl,IDisposable
     {
 
         public DeviceMotor Device { get; set; }
@@ -28,19 +28,14 @@ namespace ColorVision.Engine.Services.Devices.Motor
             this.ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
 
+            DeviceService_DeviceStatusChanged(sender, DeviceService.DeviceStatus);
             DeviceService.DeviceStatusChanged += DeviceService_DeviceStatusChanged;
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
-        public event RoutedEventHandler Selected;
-        public event RoutedEventHandler Unselected;
-        public event EventHandler SelectChanged;
-        private bool _IsSelected;
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
-
-        private void DeviceService_DeviceStatusChanged(DeviceStatusType deviceStatus)
+        private void DeviceService_DeviceStatusChanged(object? sender, DeviceStatusType e)
         {
-            switch (deviceStatus)
+            switch (e)
             {
                 case DeviceStatusType.Closed:
                     ButtonSwitch.Content = "连接";
@@ -50,6 +45,12 @@ namespace ColorVision.Engine.Services.Devices.Motor
                     break;
             }
         }
+
+        public event RoutedEventHandler Selected;
+        public event RoutedEventHandler Unselected;
+        public event EventHandler SelectChanged;
+        private bool _IsSelected;
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
@@ -129,6 +130,11 @@ namespace ColorVision.Engine.Services.Devices.Motor
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
+        }
+
+        public void Dispose()
+        {
+            DeviceService.DeviceStatusChanged -= DeviceService_DeviceStatusChanged;
         }
     }
 }

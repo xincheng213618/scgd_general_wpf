@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
     /// <summary>
     /// DisplayAlgorithm.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayAlgorithm : UserControl,IDisPlayControl
+    public partial class DisplayAlgorithm : UserControl,IDisPlayControl,IDisposable
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayAlgorithm));
         public DeviceAlgorithm Device { get; set; }
@@ -63,10 +63,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-
-            this.ContextMenu = Device.ContextMenu;
-
-
+            ContextMenu = Device.ContextMenu;
             List<DisplayAlgorithmMeta> algorithmMetas = new List<DisplayAlgorithmMeta>();
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
@@ -190,9 +187,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             CB_AlgorithmTypes.SelectionChanged += (s, e) => CB_AlgorithmTypesChanged();
             CB_AlgorithmTypesChanged();
 
-
-
-
             // 默认选中 "All Algorithms" 组
 
 
@@ -200,35 +194,40 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
 
-            void UpdateUI(DeviceStatusType status)
-            {
-                void SetVisibility(UIElement element, Visibility visibility){ if (element.Visibility != visibility) element.Visibility = visibility; };
-                void HideAllButtons()
-                {
-                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
-                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
-                    SetVisibility(StackPanelContent, Visibility.Collapsed);
-                }
-                // Default state
-                HideAllButtons();
-
-                switch (status)
-                {
-                    case DeviceStatusType.Unauthorized:
-                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Unknown:
-                        SetVisibility(TextBlockUnknow, Visibility.Visible);
-                        break;
-                    default:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        break;
-                }
-            }
             UpdateUI(Device.DService.DeviceStatus);
-            Device.DService.DeviceStatusChanged += UpdateUI;
+            Device.DService.DeviceStatusChanged += DService_DeviceStatusChanged;
+        }
+        void UpdateUI(DeviceStatusType status)
+        {
+            void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
+            ;
+            void HideAllButtons()
+            {
+                SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                SetVisibility(StackPanelContent, Visibility.Collapsed);
+            }
+            // Default state
+            HideAllButtons();
+
+            switch (status)
+            {
+                case DeviceStatusType.Unauthorized:
+                    SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Unknown:
+                    SetVisibility(TextBlockUnknow, Visibility.Visible);
+                    break;
+                default:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    break;
+            }
         }
 
+        private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
+        {
+            UpdateUI(e);
+        }
 
         public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;
@@ -239,6 +238,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
+        }
+
+        public void Dispose()
+        {
+            Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
         }
     }
 }

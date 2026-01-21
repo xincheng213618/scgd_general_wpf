@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     /// <summary>
     /// DisplayCalibrationControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayCalibrationControl : UserControl, IDisPlayControl
+    public partial class DisplayCalibrationControl : UserControl, IDisPlayControl,IDisposable
     {
 
         public DeviceCalibration Device { get; set; }
@@ -80,48 +80,48 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
 
-            void UpdateUI(DeviceStatusType status)
+            DService_DeviceStatusChanged(sender,Device.DService.DeviceStatus);
+            Device.DService.DeviceStatusChanged += DService_DeviceStatusChanged; ;
+        }
+
+        private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
+        {
+            void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
+
+            void HideAllButtons()
             {
-                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
-
-                void HideAllButtons()
-                {
-                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
-                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
-                    SetVisibility(StackPanelContent, Visibility.Collapsed);
-                    SetVisibility(TextBlockUnInit, Visibility.Collapsed);
-                }
-                // Default state
-                HideAllButtons();
-
-                switch (status)
-                {
-                    case DeviceStatusType.Unauthorized:
-                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Unknown:
-                        SetVisibility(TextBlockUnknow, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.OffLine:
-                        break;
-                    case DeviceStatusType.UnInit:
-                        SetVisibility(TextBlockUnInit, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Closed:
-                        break;
-                    case DeviceStatusType.LiveOpened:
-                    case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Closing:
-                    case DeviceStatusType.Opening:
-                    default:
-                        // No specific action needed
-                        break;
-                }
+                SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                SetVisibility(StackPanelContent, Visibility.Collapsed);
+                SetVisibility(TextBlockUnInit, Visibility.Collapsed);
             }
-            UpdateUI(Device.DService.DeviceStatus);
-            Device.DService.DeviceStatusChanged += UpdateUI;
+            // Default state
+            HideAllButtons();
+            switch (e)
+            {
+                case DeviceStatusType.Unauthorized:
+                    SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Unknown:
+                    SetVisibility(TextBlockUnknow, Visibility.Visible);
+                    break;
+                case DeviceStatusType.OffLine:
+                    break;
+                case DeviceStatusType.UnInit:
+                    SetVisibility(TextBlockUnInit, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Closed:
+                    break;
+                case DeviceStatusType.LiveOpened:
+                case DeviceStatusType.Opened:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Closing:
+                case DeviceStatusType.Opening:
+                default:
+                    // No specific action needed
+                    break;
+            }
         }
 
         public event RoutedEventHandler Selected;
@@ -330,6 +330,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 return;
             }
             Device.View.ImageView.OpenImage(ImageFile.Text);
+        }
+
+        public void Dispose()
+        {
+            Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged; ;
         }
     }
 }

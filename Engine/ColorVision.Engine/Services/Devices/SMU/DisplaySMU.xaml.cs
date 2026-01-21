@@ -59,58 +59,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
             this.ContextMenu = Device.ContextMenu;
 
-
-            void UpdateUI(DeviceStatusType status)
-            {
-                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
-                void HideAllButtons()
-                {
-                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
-                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
-                    SetVisibility(StackPanelContent, Visibility.Collapsed);
-                    SetVisibility(TextBlockOffLine, Visibility.Collapsed);
-                }
-                // Default state
-                HideAllButtons();
-
-                switch (status)
-                {
-                    case DeviceStatusType.Unauthorized:
-                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Unknown:
-                        SetVisibility(TextBlockUnknow, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.OffLine:
-                        SetVisibility(TextBlockOffLine, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.UnInit:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Closed:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Open;
-                        break;
-                    case DeviceStatusType.LiveOpened:
-                    case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelOpen, Visibility.Visible);
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Close;
-                        break;
-                    case DeviceStatusType.Closing:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Closing;
-                        break;
-                    case DeviceStatusType.Opening:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Opening;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            UpdateUI(DService.DeviceStatus);
-            DService.DeviceStatusChanged += UpdateUI;
+            DService_DeviceStatusChanged(sender,DService.DeviceStatus);
+            DService.DeviceStatusChanged += DService_DeviceStatusChanged;
 
             ComboxVITemplate.ItemsSource = TemplateSMUParam.Params;
             ComboxVITemplate.SelectionChanged += (s, e) =>
@@ -129,6 +79,56 @@ namespace ColorVision.Engine.Services.Devices.SMU
             CbChannel.ItemsSource = Enum.GetValues(typeof(SMUChannelType));
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
+        }
+
+        private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
+        {
+            void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
+            void HideAllButtons()
+            {
+                SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(StackPanelContent, Visibility.Collapsed);
+                SetVisibility(TextBlockOffLine, Visibility.Collapsed);
+            }
+            // Default state
+            HideAllButtons();
+
+            switch (e)
+            {
+                case DeviceStatusType.Unauthorized:
+                    SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Unknown:
+                    SetVisibility(TextBlockUnknow, Visibility.Visible);
+                    break;
+                case DeviceStatusType.OffLine:
+                    SetVisibility(TextBlockOffLine, Visibility.Visible);
+                    break;
+                case DeviceStatusType.UnInit:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Closed:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Open;
+                    break;
+                case DeviceStatusType.LiveOpened:
+                case DeviceStatusType.Opened:
+                    SetVisibility(StackPanelOpen, Visibility.Visible);
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Close;
+                    break;
+                case DeviceStatusType.Closing:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Closing;
+                    break;
+                case DeviceStatusType.Opening:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Opening;
+                    break;
+                default:
+                    break;
+            }
         }
 
         public event RoutedEventHandler Selected;
