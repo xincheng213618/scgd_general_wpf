@@ -2,13 +2,11 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Extension;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
-using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Utilities;
@@ -45,6 +43,52 @@ namespace ColorVision.Engine.Services.PhyCameras
         Licensed,
         Expired,
         Invalid
+    }
+
+    public static class ZIPHelper
+    {
+        public static bool ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)
+        {
+            Directory.CreateDirectory(extractPath);
+            try
+            {
+                using ZipArchive archive = ZipFile.Open(zipPath, ZipArchiveMode.Read);
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    // 获取在目标路径中的完整路径
+                    string destinationPath = Path.GetFullPath(Path.Combine(extractPath, entry.FullName));
+
+                    // 确保文件不会解压到目录外面去
+                    if (!destinationPath.StartsWith(Path.GetFullPath(extractPath), StringComparison.Ordinal))
+                    {
+                        throw new IOException("试图解压缩到目录外的文件.");
+                    }
+
+                    // 如果文件已存在，删除它
+                    if (File.Exists(destinationPath))
+                    {
+                        File.Delete(destinationPath);
+                    }
+                    else if (!Directory.Exists(Path.GetDirectoryName(destinationPath)))
+                    {
+                        if (Path.GetDirectoryName(destinationPath) is string die)
+                            Directory.CreateDirectory(die);
+                    }
+                    // 解压缩文件
+                    if (entry.Length != 0)
+                    {
+                        entry.ExtractToFile(destinationPath);
+                    }
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
     }
 
     public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg, IIcon
@@ -140,7 +184,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             CalibrationTemplateOpenCommand = new RelayCommand(CalibrationTemplateOpen);
 
             UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()),a=> AccessControl.Check(PermissionMode.SuperAdministrator));
-            OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
+            OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code)));
             CreatResotreCommand = new RelayCommand(a => CreatResotre());
             LoadResotreCommand = new RelayCommand(a => LoadResotre());
 
@@ -732,50 +776,25 @@ namespace ColorVision.Engine.Services.PhyCameras
         #endregion
 
 
-        public static bool ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)
-        {
-            Directory.CreateDirectory(extractPath);
-            try
-            {
-                using ZipArchive archive = ZipFile.Open(zipPath, ZipArchiveMode.Read);
-                foreach (ZipArchiveEntry entry in archive.Entries)
-                {
-                    // 获取在目标路径中的完整路径
-                    string destinationPath = Path.GetFullPath(Path.Combine(extractPath, entry.FullName));
-
-                    // 确保文件不会解压到目录外面去
-                    if (!destinationPath.StartsWith(Path.GetFullPath(extractPath), StringComparison.Ordinal))
-                    {
-                        throw new IOException("试图解压缩到目录外的文件.");
-                    }
-
-                    // 如果文件已存在，删除它
-                    if (File.Exists(destinationPath))
-                    {
-                        File.Delete(destinationPath);
-                    }
-                    else if (!Directory.Exists(Path.GetDirectoryName(destinationPath)))
-                    {
-                        if (Path.GetDirectoryName(destinationPath) is string die)
-                            Directory.CreateDirectory(die);
-                    }
-                    // 解压缩文件
-                    if (entry.Length != 0)
-                    {
-                        entry.ExtractToFile(destinationPath);
-                    }
-                }
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
 
         public void UploadCalibration(object sender)
         {
+            string DesPath = Path.Combine(Config.FileServerCfg.FileBasePath, Code, "cfg");
+            if (!Directory.Exists(DesPath))
+            {
+                try
+                {
+                    Directory.CreateDirectory(DesPath);
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                    MessageBox.Show(ex.Message);
+                    return;
+                }
+            }
+
+
             UploadList.Clear();
             UploadWindow uploadwindow = new UploadWindow("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
@@ -783,7 +802,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 UploadMsg uploadMsg = new UploadMsg(this);
                 uploadMsg.Show();
                 string uploadfilepath = e.UploadFilePath;
-                Task.Run(() => UploadData(uploadfilepath));
+                Task.Run(() => UploadData(DesPath, uploadfilepath));
             };
             uploadwindow.ShowDialog();
         }
@@ -794,7 +813,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public event EventHandler UploadClosed;
         public ObservableCollection<FileUploadInfo> UploadList { get; set; } = new ObservableCollection<FileUploadInfo>();
 
-        public async void UploadData(string UploadFilePath)
+        public async void UploadData(string DesPath, string UploadFilePath)
         {
             Msg = "正在解压文件：" + " 请稍后...";
             await Task.Delay(10);
@@ -804,9 +823,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                 if (Directory.Exists(path))
                     Directory.Delete(path, true);
                 Directory.CreateDirectory(path);
-                await Task.Delay(10);
                 Msg = "正在解析校正文件：" + " 请稍后...";
-                bool sss = ExtractToDirectoryWithOverwrite(UploadFilePath, path);
+                bool sss = ZIPHelper.ExtractToDirectoryWithOverwrite(UploadFilePath, path);
                 if (!sss)
                 {
                     Msg = "解压失败";
@@ -818,156 +836,135 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                 try
                 {
-                    string Cameracfg = path + "\\Camera.cfg";
                     string Calibrationcfg = path + "\\Calibration.cfg";
 
                     Dictionary<string, List<ZipCalibrationItem>> AllCalFiles = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
 
                     Dictionary<string, CalibrationResource> keyValuePairs2 = new();
 
-                    if (AllCalFiles != null)
+                    var uniqueItems = AllCalFiles.SelectMany(item => item.Value)
+                             .GroupBy(x => new { x.CalibrationType, x.Title })
+                             .Select(g => g.First());
+
+                    foreach (var item in uniqueItems)
                     {
-                        foreach (var item in AllCalFiles)
+                        Application.Current.Dispatcher.Invoke(() =>
                         {
-                            foreach (var item1 in item.Value)
+                            UploadList.Add(new FileUploadInfo() { FileName = item.Title });
+                        });
+                    }
+
+                    foreach (var item in uniqueItems)
+                    {
+                        string FilePath = string.Empty;
+                        switch (item.CalibrationType)
+                        {
+                            case CalibrationType.DarkNoise:
+                                FilePath = path + "\\Calibration\\" + "DarkNoise\\" + item.FileName;
+                                break;
+                            case CalibrationType.DefectWPoint:
+                                FilePath = path + "\\Calibration\\" + "DefectPoint\\" + item.FileName;
+                                break;
+                            case CalibrationType.DefectBPoint:
+                                FilePath = path + "\\Calibration\\" + "DefectPoint\\" + item.FileName;
+                                break;
+                            case CalibrationType.DefectPoint:
+                                FilePath = path + "\\Calibration\\" + "DefectPoint\\" + item.FileName;
+                                break;
+                            case CalibrationType.DSNU:
+                                FilePath = path + "\\Calibration\\" + "DSNU\\" + item.FileName;
+                                break;
+                            case CalibrationType.Uniformity:
+                                FilePath = path + "\\Calibration\\" + "Uniformity\\" + item.FileName;
+                                break;
+                            case CalibrationType.Luminance:
+                                FilePath = path + "\\Calibration\\" + "Luminance\\" + item.FileName;
+                                break;
+                            case CalibrationType.LumOneColor:
+                                FilePath = path + "\\Calibration\\" + "LumOneColor\\" + item.FileName;
+                                break;
+                            case CalibrationType.LumFourColor:
+                                FilePath = path + "\\Calibration\\" + "LumFourColor\\" + item.FileName;
+                                break;
+                            case CalibrationType.LumMultiColor:
+                                FilePath = path + "\\Calibration\\" + "LumMultiColor\\" + item.FileName;
+                                break;
+                            case CalibrationType.LumColor:
+                                break;
+                            case CalibrationType.Distortion:
+                                FilePath = path + "\\Calibration\\" + "Distortion\\" + item.FileName;
+                                break;
+                            case CalibrationType.ColorShift:
+                                FilePath = path + "\\Calibration\\" + "ColorShift\\" + item.FileName;
+                                break;
+                            case CalibrationType.ColorDiff:
+                                FilePath = path + "\\Calibration\\" + "ColorDiff\\" + item.FileName;
+                                break;
+                            case CalibrationType.LineArity:
+                                FilePath = path + "\\Calibration\\" + "LineArity\\" + item.FileName;
+                                break;
+                            case CalibrationType.Empty_Num:
+                                break;
+                            default:
+                                break;
+                        }
+
+                        FileUploadInfo uploadMeta = UploadList.First(a => a.FileName == item.Title);
+                        uploadMeta.FilePath = FilePath;
+                        uploadMeta.FileSize = MemorySize.MemorySizeText(MemorySize.FileSize(FilePath));
+                        uploadMeta.UploadStatus = UploadStatus.CheckingMD5;
+                        await Task.Delay(1);
+                        string md5 = Tool.CalculateMD5(FilePath);
+                        bool isExist = false;
+                        using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                        db.Queryable<SysResourceModel>().Where(a => a.Pid == SysResourceModel.Id && a.Name == item.Title && a.Code != null && a.Code.Contains(md5)).ToList().ForEach(a =>
+                        {
+                            keyValuePairs2.TryAdd(item.Title, CalibrationResource.EnsureInstance(a));
+                            isExist = true;
+                        });
+
+                        if (isExist)
+                        {
+                            uploadMeta.UploadStatus = UploadStatus.Completed;
+                            continue;
+                        }
+
+                        uploadMeta.UploadStatus = UploadStatus.Uploading;
+                        Msg = "正在上传校正文件：" + item.Title + " 请稍后...";
+                        await Task.Delay(10);
+
+                        try
+                        {
+                            string FileName = Path.GetFileName(FilePath);
+                            string DesFilePath = Path.Combine(DesPath, FileName);
+                            File.Copy(FilePath, DesFilePath, true);
+                            File.Delete(FilePath);
+                            SysResourceModel sysResourceModel = new();
+                            sysResourceModel.Name = item.Title;
+                            sysResourceModel.Code = Id + md5 + item.Title;
+                            sysResourceModel.Type = (int)item.CalibrationType.ToResouceType();
+                            sysResourceModel.Pid = SysResourceModel.Id;
+                            sysResourceModel.Value = Path.GetFileName(FileName);
+                            sysResourceModel.CreateDate = DateTime.Now;
+                            sysResourceModel.Remark = item.ToJsonN(new JsonSerializerSettings());
+                            int ret = SysResourceDao.Instance.Save(sysResourceModel);
+
+                            if (sysResourceModel != null)
                             {
+                                CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    UploadList.Add(new FileUploadInfo() { FileName = item1.Title });
+                                    AddChild(calibrationResource);
                                 });
+                                keyValuePairs2.TryAdd(item.Title, calibrationResource);
                             }
+                            uploadMeta.UploadStatus = UploadStatus.Completed;
                         }
-
-                        foreach (var CalFile in AllCalFiles)
+                        catch (Exception ex)
                         {
-                            foreach (var calzzom in CalFile.Value)
-                            {
-                                MsgRecord msgRecord = null;
-                                string FilePath = string.Empty;
-                                switch (calzzom.CalibrationType)
-                                {
-                                    case CalibrationType.DarkNoise:
-                                        FilePath = path + "\\Calibration\\" + "DarkNoise\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.DefectWPoint:
-                                        FilePath = path + "\\Calibration\\" + "DefectPoint\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.DefectBPoint:
-                                        FilePath = path + "\\Calibration\\" + "DefectPoint\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.DefectPoint:
-                                        FilePath = path + "\\Calibration\\" + "DefectPoint\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.DSNU:
-                                        FilePath = path + "\\Calibration\\" + "DSNU\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.Uniformity:
-                                        FilePath = path + "\\Calibration\\" + "Uniformity\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.Luminance:
-                                        FilePath = path + "\\Calibration\\" + "Luminance\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.LumOneColor:
-                                        FilePath = path + "\\Calibration\\" + "LumOneColor\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.LumFourColor:
-                                        FilePath = path + "\\Calibration\\" + "LumFourColor\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.LumMultiColor:
-                                        FilePath = path + "\\Calibration\\" + "LumMultiColor\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.LumColor:
-                                        break;
-                                    case CalibrationType.Distortion:
-                                        FilePath = path + "\\Calibration\\" + "Distortion\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.ColorShift:
-                                        FilePath = path + "\\Calibration\\" + "ColorShift\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.ColorDiff:
-                                        FilePath = path + "\\Calibration\\" + "ColorDiff\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.LineArity:
-                                        FilePath = path + "\\Calibration\\" + "LineArity\\" + calzzom.FileName;
-                                        break;
-                                    case CalibrationType.Empty_Num:
-                                        break;
-                                    default:
-                                        break;
-                                }
-
-                                FileUploadInfo uploadMeta = UploadList.First(a => a.FileName == calzzom.Title);
-                                uploadMeta.FilePath = FilePath;
-                                if (!File.Exists(FilePath))
-                                {
-                                    uploadMeta.UploadStatus = UploadStatus.Failed;
-                                    Msg = "找不到校正文件：" + calzzom.Title;
-                                    continue;
-
-                                }
-                                uploadMeta.FileSize = MemorySize.MemorySizeText(MemorySize.FileSize(FilePath));
-                                uploadMeta.UploadStatus = UploadStatus.CheckingMD5;
-                                await Task.Delay(1);
-                                string md5 = Tool.CalculateMD5(FilePath);
-                                if (string.IsNullOrWhiteSpace(md5))
-                                    continue;
-
-                                bool isExist = false;
-
-                                foreach (var item2 in VisualChildren)
-                                {
-                                    if (item2 is CalibrationResource CalibrationResource)
-                                    {
-                                        if (CalibrationResource.SysResourceModel.Code != null && CalibrationResource.SysResourceModel.Code.Contains(md5) && CalibrationResource.Name ==calzzom.Title)
-                                        {
-                                            keyValuePairs2.TryAdd(calzzom.Title, CalibrationResource);
-                                            isExist = true;
-                                            continue;
-                                        }
-                                    }
-                                }
-                                if (isExist)
-                                {
-                                    uploadMeta.UploadStatus = UploadStatus.Completed;
-                                    await Task.Delay(10);
-                                    continue;
-                                }
-                                uploadMeta.UploadStatus = UploadStatus.Uploading;
-                                Msg = "正在上传校正文件：" + calzzom.Title + " 请稍后...";
-                                await Task.Delay(10);
-                                msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, calzzom.Title, FilePath);
-                                if (msgRecord != null && msgRecord.MsgRecordState == MsgRecordState.Success)
-                                {
-                                    uploadMeta.UploadStatus = UploadStatus.Completed;
-                                    string FileName = msgRecord.MsgReturn.Data.FileName;
-
-                                    SysResourceModel sysResourceModel = new();
-                                    sysResourceModel.Name = calzzom.Title;
-                                    sysResourceModel.Code = Id + md5 + calzzom.Title;
-                                    sysResourceModel.Type = (int)calzzom.CalibrationType.ToResouceType();
-                                    sysResourceModel.Pid = SysResourceModel.Id;
-                                    sysResourceModel.Value = Path.GetFileName(FileName);
-                                    sysResourceModel.CreateDate = DateTime.Now;
-                                    sysResourceModel.Remark = calzzom.ToJsonN(new JsonSerializerSettings());
-                                    int ret = SysResourceDao.Instance.Save(sysResourceModel);
-                                    log.Info(sysResourceModel.Code + $"Ret:{ret} id {sysResourceModel.Id}");
-                                    if (sysResourceModel != null)
-                                    {
-                                        CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
-                                        Application.Current.Dispatcher.Invoke(() =>
-                                        {
-                                            AddChild(calibrationResource);
-                                        });
-                                        keyValuePairs2.TryAdd(calzzom.Title, calibrationResource);
-                                    }
-                                }
-                                else
-                                {
-                                    uploadMeta.UploadStatus = UploadStatus.Failed;
-                                }
-                            }
+                            uploadMeta.UploadStatus = UploadStatus.Failed;
+                            log.Error(ex);
                         }
-
                     }
 
 
@@ -985,9 +982,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                             }
                             catch (Exception ex)
                             {
-                                log.Warn(ex);
                                 log.Info("校正组解析失败，使用旧版的解析方案");
-
                                 zipCalibrationGroup = JsonConvert.DeserializeObject<ZipCalibrationGroup>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
                             }
 
@@ -1042,15 +1037,11 @@ namespace ColorVision.Engine.Services.PhyCameras
                     if (UploadList.Any(a => a.UploadStatus == UploadStatus.Failed))
                     {
                         SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
-                        if (Directory.Exists(path))
-                            Directory.Delete(path, true);
                     }
                     else
                     {
                         await Task.Delay(500);
                         SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/success.wav");
-                        if (Directory.Exists(path))
-                            Directory.Delete(path, true);
                         Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
                     }
                 }
@@ -1059,8 +1050,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     log.Error(ex);
                     Msg = ex.Message;
                     SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
-                    if (Directory.Exists(path))
-                        Directory.Delete(path, true);
+
                     Application.Current.Dispatcher.Invoke(() => 
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");

@@ -93,7 +93,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return new List<T>();
             return ExecuteSafe(() =>
             {
-                var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 var query = db.Queryable<T>();
                 if (limit > 0) query = query.Take(limit);
                 return query.ToList();
@@ -105,7 +105,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return Task.FromResult(new List<T>());
             return ExecuteSafeAsync(async () =>
             {
-                var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 var query = db.Queryable<T>();
                 if (limit > 0) query = query.Take(limit);
                 token.ThrowIfCancellationRequested();
@@ -245,7 +245,7 @@ namespace ColorVision.Database
             if (!EnsureConnected()) return -1;
             return ExecuteSafe(() =>
             {
-                var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 if (item.Id <= 0)
                 {
                     var newId = db.Insertable(item).ExecuteReturnIdentity();
