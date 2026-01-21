@@ -45,53 +45,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         Invalid
     }
 
-    public static class ZIPHelper
-    {
-        public static bool ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)
-        {
-            Directory.CreateDirectory(extractPath);
-            try
-            {
-                using ZipArchive archive = ZipFile.Open(zipPath, ZipArchiveMode.Read);
-                foreach (ZipArchiveEntry entry in archive.Entries)
-                {
-                    // 获取在目标路径中的完整路径
-                    string destinationPath = Path.GetFullPath(Path.Combine(extractPath, entry.FullName));
-
-                    // 确保文件不会解压到目录外面去
-                    if (!destinationPath.StartsWith(Path.GetFullPath(extractPath), StringComparison.Ordinal))
-                    {
-                        throw new IOException("试图解压缩到目录外的文件.");
-                    }
-
-                    // 如果文件已存在，删除它
-                    if (File.Exists(destinationPath))
-                    {
-                        File.Delete(destinationPath);
-                    }
-                    else if (!Directory.Exists(Path.GetDirectoryName(destinationPath)))
-                    {
-                        if (Path.GetDirectoryName(destinationPath) is string die)
-                            Directory.CreateDirectory(die);
-                    }
-                    // 解压缩文件
-                    if (entry.Length != 0)
-                    {
-                        entry.ExtractToFile(destinationPath);
-                    }
-                }
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-
-    }
-
-    public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg, IIcon
+    public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PhyCamera));
 
@@ -130,9 +84,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         [CommandDisplay("EditFilterWheelConfig", Order = 103)]
         public RelayCommand FilterWheelEditCommand { get; set; }
 
-        public ImageSource Icon { get => _Icon; set{ _Icon = value; OnPropertyChanged(); } }
-        private ImageSource _Icon;
-
         public ContextMenu ContextMenu { get; set; }
 
         public bool IsExpanded { get; set; }
@@ -144,9 +95,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
 
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
-        {
-            this.SetIconResource("DrawingImageCamera");
-            
+        {            
             Config = ServiceObjectBaseExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
             DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a =>
@@ -404,8 +353,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             new TemplateEditorWindow(ITemplate) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
-
-
         public void Reset()
         {
             if (MessageBox.Show(Application.Current.GetActiveWindow(),"是否清除数据库相关项","ColorVision",MessageBoxButton.YesNoCancel) == MessageBoxResult.Yes)
@@ -483,20 +430,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
         }
         public DeviceCalibration? DeviceCalibration { get; set; }
-
-        public void ReleaseCalibration() 
-        {
-            DeviceCalibration = null;
-
-            if (CameraLicenseModel != null)
-            {
-                CameraLicenseModel.DevCaliId = null;
-                PhyLicenseDao.Instance.Save(CameraLicenseModel);
-                RefreshLicense();
-            }
-        }
-
-
 
         public void SetCalibration(DeviceCalibration deviceCalibration)
         {
@@ -1061,16 +994,9 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
         }
 
-        public UserControl UserControl { get; set; }
-
         public UserControl GetDeviceInfo()
         {
-            if (UserControl !=null &&UserControl.Parent is Grid grid)
-            {
-                grid.Children.Remove(UserControl);
-            }
-            UserControl ??= new InfoPhyCamera(this);
-            return UserControl;
+            return new InfoPhyCamera(this);
         }
 
         public void ContentInit()
