@@ -99,8 +99,7 @@ namespace ColorVision.Engine.Services.Devices
             switch (status.ToLower())
             {
                 case "online": return Brushes.Green;
-                case "offline":
-                case "offine": return Brushes.Red;
+                case "offline": return Brushes.Red;
                 default: return Brushes.Gray;
             }
         }
