@@ -97,6 +97,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
         public string Code => SysResourceModel.Code ?? string.Empty;
+
+
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
         {
             this.SetIconResource("DrawingImageCamera");
@@ -110,6 +112,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             },a => AccessControl.Check(PermissionMode.Administrator));
+
 
             CopyConfigCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(Config.ToJsonN()));
             ContentInit();
@@ -1012,6 +1015,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                     if (groupResource != null)
                                     {
                                         using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
+
                                         foreach (var item1 in zipCalibrationGroup.List)
                                         {
                                             if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
