@@ -40,7 +40,7 @@
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
-            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
+            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Tag="{Binding DService.DeviceStatus}" Content="{Binding Config.Name}"  FontSize="15" IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
             <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0"/>
         </DockPanel>
         <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >

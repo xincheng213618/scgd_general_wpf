@@ -20,7 +20,7 @@
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
     </UserControl.Resources>
     <StackPanel Margin="0,3">
-        <DockPanel Margin="0,0,5,0">
+        <DockPanel Margin="0,0,5,0" ToolTip="{Binding DService.DeviceStatus}">
             <Grid DockPanel.Dock="Right" >
                 <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  DService.IsAlive,Mode=OneWay}" IsEnabled="False" />
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
@@ -42,13 +42,13 @@
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
+            
 
             <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
             <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0"/>
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="0">
-                <TextBlock Text="{Binding DService.DeviceStatus}"/>
                 <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
                 <TextBlock x:Name="TextBlockOffLine" Text="{x:Static properties:Resources.offline}"  HorizontalAlignment="Center"/>
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="{x:Static properties:Resources.Unregistered}" Command="{Binding EditCommand}"/>

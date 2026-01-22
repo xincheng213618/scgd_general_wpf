@@ -30,27 +30,6 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services
 {
 
-    public class TextCFWPropertiesEditor : IPropertyEditor
-    {
-        public DockPanel GenProperties(PropertyInfo property, object obj)
-        {
-            var rm = PropertyEditorHelper.GetResourceManager(obj);
-            var dockPanel = new DockPanel();
-
-
-
-            var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
-            dockPanel.Children.Add(textBlock);
-
-            var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = PropertyEditorHelper.ComboBoxSmallStyle, IsEditable = true };
-            HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
-            combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
-            combo.ItemsSource = ServiceManager.GetInstance().DeviceServices.Where(item => item is DeviceCfwPort).Select(item => item.Code).ToList();
-            dockPanel.Children.Add(combo);
-            return dockPanel;
-        }
-    }
-
     public class ServiceManager
     {
         private static ServiceManager _instance;

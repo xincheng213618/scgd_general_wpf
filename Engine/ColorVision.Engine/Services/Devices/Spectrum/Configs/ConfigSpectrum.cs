@@ -2,6 +2,7 @@
 using ColorVision.Database;
 using ColorVision.Engine.Cache;
 using ColorVision.Engine.PropertyEditor;
+using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.UI;
 using System;
@@ -65,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         {
 
         }
-      
+
 
         [PropertyEditorType(typeof(TextSectrumSNPropertiesEditor))]
         public override string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
@@ -94,8 +95,32 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged();} }
         private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
 
-        public string ComPort { get => _ComPort; set { _ComPort = value; OnPropertyChanged(); } }
+        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor)),DisplayName(nameof(ComPort))]
+        public string ComPortView
+        {
+            get => "COM" + ComPort;
+            set
+            {
+                // 1. 处理输入值，去掉 "COM"
+                string newPortValue = value;
+                if (!string.IsNullOrEmpty(value) && value.StartsWith("COM", StringComparison.OrdinalIgnoreCase))
+                {
+                    newPortValue = value.Substring(3);
+                }
+
+                // 2. 【关键】在赋值给 ComPort 之前，先判断值是否真的变了
+                // 如果当前 ComPort 已经是 "1"，而你又传入 "1"，就直接 return，切断循环
+                if (ComPort != newPortValue)
+                {
+                    ComPort = newPortValue;
+                    OnPropertyChanged(); // 通知 ComPortView 变了
+                }
+            }
+        }
+        [Browsable(false)]
+        public string ComPort { get => _ComPort; set { _ComPort = value; OnPropertyChanged(); OnPropertyChanged(nameof(ComPortView)); } }
         private string _ComPort = "0";
+
 
         [DisplayName("BaudRate"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
@@ -120,6 +145,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutter = false; _IsAutoDark = value; OnPropertyChanged(); } }
         private bool _IsAutoDark;
+
+        public DisplaySpectrumConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySpectrumConfig>(Code);
+
 
         public SelfAdaptionInitDark SelfAdaptionInitDark { get; set; } = new SelfAdaptionInitDark();
 
@@ -173,7 +201,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         private bool _IsBingNDDevice = true;
 
 
-        [PropertyEditorType(typeof(TextCFWPropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice))]
+        [PropertyEditorType(typeof(DeviceNameEditor)), DeviceSourceType(typeof(DeviceCfwPort)),PropertyVisibility(nameof(IsBingNDDevice))]
         public string NDBindDeviceCode { get => _NDBindDeviceCode; set { _NDBindDeviceCode = value; OnPropertyChanged(); } }
         private string _NDBindDeviceCode;
 
