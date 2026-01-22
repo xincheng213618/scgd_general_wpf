@@ -101,6 +101,13 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             {
                 var msgRecord = DService.Open();
                 ServicesHelper.SendCommand(button, msgRecord);
+                msgRecord.MsgRecordStateChanged += (e) =>
+                {
+                    if (e == MsgRecordState.Fail)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                    }
+                };
             }
 
         }
@@ -110,6 +117,13 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             {
                 var msgRecord = DService.Clsoe();
                 ServicesHelper.SendCommand(button, msgRecord);
+                msgRecord.MsgRecordStateChanged += (e) =>
+                {
+                    if (e == MsgRecordState.Fail)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                    }
+                };
             }
         }
         private void SetPort_Click(object sender, RoutedEventArgs e)
@@ -125,7 +139,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                     }
                     else
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                     }
                 };
             }
@@ -142,6 +156,13 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             {
                 var msgRecord = DService.Open();
                 ServicesHelper.SendCommand(button, msgRecord);
+                msgRecord.MsgRecordStateChanged += (e) =>
+                {
+                    if (e == MsgRecordState.Fail)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                    }
+                };
             }
         }
 
@@ -157,7 +178,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                 }
             };
 

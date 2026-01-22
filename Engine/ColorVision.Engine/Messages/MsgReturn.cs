@@ -24,6 +24,10 @@ namespace ColorVision.Engine.Messages
         [JsonProperty("data")]
         public dynamic Data { get; set; }
         
+        public string Message { get; set; }
+
+        public int ZIndex { get; set; } = -1;
+
         public override string ToString() => JsonConvert.SerializeObject(this, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
     }
 }

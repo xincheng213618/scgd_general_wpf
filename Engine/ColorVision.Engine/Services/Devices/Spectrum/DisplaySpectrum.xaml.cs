@@ -134,12 +134,26 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 {
                     btn_connect.Content = ColorVision.Engine.Properties.Resources.Opening;
                     MsgRecord msgRecord = DService.Open();
+                    msgRecord.MsgRecordStateChanged += (e) =>
+                    {
+                        if (e == MsgRecordState.Fail)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                        }
+                    };
 
                 }
                 else
                 {
                     btn_connect.Content = ColorVision.Engine.Properties.Resources.Closing;
                     MsgRecord msgRecord = DService.Close();
+                    msgRecord.MsgRecordStateChanged += (e) =>
+                    {
+                        if (e == MsgRecordState.Fail)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                        }
+                    };
                 }
             }
         }
@@ -148,12 +162,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             MsgRecord msgRecord = DService.GetData();
             msgRecord.MsgRecordStateChanged += (e) =>
             {
-                if (e == MsgRecordState.Success)
+                if (e == MsgRecordState.Fail)
                 {
-                }
-                else
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                 }
             };
         }
@@ -163,12 +174,26 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             string btnTitle = btn_autoTest.Content.ToString();
             if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals(ColorVision.Engine.Properties.Resources.ContinuousMeasurement, StringComparison.Ordinal))
             {
-                DService.GetDataAuto();
+                MsgRecord msgRecord = DService.GetDataAuto();
                 btn_autoTest.Content = ColorVision.Engine.Properties.Resources.CancelAutoTest;
+                msgRecord.MsgRecordStateChanged += (e) =>
+                {
+                    if (e == MsgRecordState.Fail)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                    }
+                };
             }
             else
             {
-                DService.GetDataAutoStop();
+                MsgRecord msgRecord = DService.GetDataAutoStop();
+                msgRecord.MsgRecordStateChanged += (e) =>
+                {
+                    if (e == MsgRecordState.Fail)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                    }
+                };
                 btn_autoTest.Content = ColorVision.Engine.Properties.Resources.ContinuousMeasurement;
             }
         }
@@ -183,7 +208,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                 }
             };
         }
@@ -192,17 +217,39 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private void Button_Click_Shutter_Connect(object sender, RoutedEventArgs e)
         {
-            DService.ShutterConnect();
+            MsgRecord msgRecord = DService.ShutterConnect();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Fail)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                }
+            };
+
         }
 
         private void Button_Click_Shutter_Doopen(object sender, RoutedEventArgs e)
         {
-            DService.ShutterDoopen();
+            MsgRecord msgRecord = DService.ShutterDoopen();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Fail)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                }
+            };
         }
 
         private void Button_Click_Shutter_Doclose(object sender, RoutedEventArgs e)
         {
-            DService.ShutterDoclose();
+            MsgRecord msgRecord = DService.ShutterDoclose();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Fail)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                }
+            };
         }
 
         private void NDport_Click(object sender, RoutedEventArgs e)
@@ -210,12 +257,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             MsgRecord msgRecord = DService.SetPort();
             msgRecord.MsgRecordStateChanged += (e) =>
             {
-                if (e == MsgRecordState.Success)
+                if (e == MsgRecordState.Fail)
                 {
-                }
-                else
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                 }
             };
         }
@@ -232,7 +276,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                 }
             };
         }

@@ -368,44 +368,44 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
 
 
-        public void ShutterConnect()
+        public MsgRecord ShutterConnect()
         {
             MsgSend msg = new()
             {
                 EventName = MQTTSpectrumEventEnum.Event_Shutter_Connect,
                 ServiceName = Config.Code,
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
-        public void ShutterDisconnect()
+        public MsgRecord ShutterDisconnect()
         {
             MsgSend msg = new()
             {
                 EventName = MQTTSpectrumEventEnum.Event_Shutter_Disconnect,
                 ServiceName = Config.Code,
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
-        public void ShutterDoopen()
+        public MsgRecord ShutterDoopen()
         {
             MsgSend msg = new()
             {
                 EventName = MQTTSpectrumEventEnum.Event_Shutter_Doopen,
                 ServiceName = Config.Code,
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
-        public void ShutterDoclose()
+        public MsgRecord ShutterDoclose()
         {
             MsgSend msg = new()
             {
                 EventName = MQTTSpectrumEventEnum.Event_Shutter_Doclose,
                 ServiceName = Config.Code,
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
     }
 }

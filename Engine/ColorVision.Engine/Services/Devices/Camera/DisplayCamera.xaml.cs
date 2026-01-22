@@ -516,6 +516,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         {
                             if (s == MsgRecordState.Fail)
                             {
+
+                                MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                                 Device.CameraVideoControl.Close();
                                 DService.Close();
                                 DService.IsVideoOpen = false;
@@ -548,8 +550,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
             if (ComboxAutoFocus.SelectedValue is not AutoFocusParam param) return;
-            MsgRecord msg = DService.AutoFocus(param);
-            ServicesHelper.SendCommand(sender, msg);
+            MsgRecord msgRecord = DService.AutoFocus(param);
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Fail)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                }
+            };
+            ServicesHelper.SendCommand(sender, msgRecord);
+
         }
 
 

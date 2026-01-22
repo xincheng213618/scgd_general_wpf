@@ -137,55 +137,35 @@ namespace ColorVision.Engine.Services.Devices.SMU
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-
-
-
-        PassSxSource passSxSource = new();
-
-        private void DoOpenByDll(Button button)
-        {
-            if (!passSxSource.IsOpen)
-            {
-                button.Content = ColorVision.Engine.Properties.Resources.Opening;
-                Task.Run(() =>
-                {
-                    if (passSxSource.Open(Config.IsNet, Config.DevName))
-                    {
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-                        {
-                            button.Content = ColorVision.Engine.Properties.Resources.Close;
-                        }));
-                    }
-                    else
-                    {
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-                        {
-                            button.Content = ColorVision.Engine.Properties.Resources.OpenFailed;
-                        }));
-                    }
-                });
-            }
-            else
-            {
-                passSxSource.Close();
-                button.Content = ColorVision.Engine.Properties.Resources.Open;
-            }
-        }
-
-
-
-
         private void ButtonSourceMeter1_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
                 if (DService.DeviceStatus != DeviceStatusType.Opened)
                 {
-                    ServicesHelper.SendCommand(button, DService.Open(Config.IsNet, Config.DevName));
+                    MsgRecord msgRecord = DService.Open(Config.IsNet, Config.DevName);
+                    ServicesHelper.SendCommand(button, msgRecord);
+                    msgRecord.MsgRecordStateChanged += (e) =>
+                    {
+                        if (e == MsgRecordState.Fail)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                        }
+                    };
+
                 }
                 else
                 {
+
+                    MsgRecord msgRecord = DService.Close();
                     ServicesHelper.SendCommand(button, DService.Close());
+                    msgRecord.MsgRecordStateChanged += (e) =>
+                    {
+                        if (e == MsgRecordState.Fail)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                        }
+                    };
                 }
             }
         }
@@ -197,16 +177,9 @@ namespace ColorVision.Engine.Services.Devices.SMU
             {
                 msgRecord.MsgRecordStateChanged += (e) =>
                 {
-                    if (e == MsgRecordState.Success)
+                    if (e == MsgRecordState.Fail)
                     {
-                        if (msgRecord.MsgReturn.Code != 0)
-                        {
-                            MessageBox.Show($"GetData Eorr Code{msgRecord.MsgReturn.Code}");
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show(e.ToString());
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                     }
                 };
             }
@@ -219,16 +192,9 @@ namespace ColorVision.Engine.Services.Devices.SMU
             {
                 msgRecord.MsgRecordStateChanged += (e) =>
                 {
-                    if (e == MsgRecordState.Success)
+                    if (e == MsgRecordState.Fail)
                     {
-                        if (msgRecord.MsgReturn.Code != 0)
-                        {
-                            MessageBox.Show($"GetData Eorr Code{msgRecord.MsgReturn.Code}");
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show(e.ToString());
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                     }
                 };
             }
@@ -267,7 +233,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     }
                     else
                     {
-                        MessageBox.Show(e.ToString());
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                     }
                 };
             }
