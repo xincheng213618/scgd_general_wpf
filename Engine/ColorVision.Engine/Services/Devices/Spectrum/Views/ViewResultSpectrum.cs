@@ -329,8 +329,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             Gen();
 
             RelayCommand relayCommand = new RelayCommand(a => CalculateEqe());
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header ="计算EQE",Command = relayCommand });
+            //ContextMenu = new ContextMenu();
+            //ContextMenu.Items.Add(new MenuItem() { Header ="计算EQE",Command = relayCommand });
         }
 
         private void CalculateEqe()

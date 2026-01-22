@@ -401,21 +401,29 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ButtonProgressBarGetData.TargetTime = Device.Config.ExpTime + DisplayCameraConfig.TakePictureDelay;
             logger.Info($"正在取图：ExpTime{Device.Config.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
             Device.SetMsgRecordChanged(msgRecord);
-
-            ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
             msgRecord.MsgRecordStateChanged += (s) =>
             {
                 ButtonProgressBarGetData.Stop();
                 DisplayCameraConfig.TakePictureDelay = ButtonProgressBarGetData.Elapsed - Device.Config.ExpTime;
                 if (s == MsgRecordState.Timeout)
                 {
-                    MessageBox1.Show("取图超时,请重设超时时间或者是否为物理相机配置校正");
+                    if (param.Id > 0 && Device?.PhyCamera?.DeviceCalibration ==null)
+                    {
+                        MessageBox1.Show("取图超时,是否为物理相机配置校正");
+                    }
+                    else
+                    {
+                        MessageBox1.Show("取图超时,请重设超时时间");
+                    }
                 }
-                if (s== MsgRecordState.Fail)
+                if (s == MsgRecordState.Fail)
                 {
                     View.SearchAll();
+                    MessageBox.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn.Message + Environment.NewLine + "重启服务试试","ColorVisoin");
                 }
             };
+            ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
+
         }
 
         public MsgRecord? TakePhoto(double exp =0)

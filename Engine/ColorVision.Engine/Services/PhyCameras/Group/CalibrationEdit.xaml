@@ -9,7 +9,7 @@
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         d:DataContext="{d:DesignInstance phy:PhyCamera}"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.CalibrationFileManagement}"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="600" Width="1000" Initialized="Window_Initialized" >
+        Title="{x:Static properties:Resources.CalibrationFileManagement}"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="720" Width="1280" Initialized="Window_Initialized" >
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -32,7 +32,7 @@
         </StackPanel>
         <Grid  Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="200"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid Grid.Row="0" Margin="0,0,5,0">
