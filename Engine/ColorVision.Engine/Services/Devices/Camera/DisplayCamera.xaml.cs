@@ -511,8 +511,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
                     if (port > 0)
                     {
-                        MsgRecord msg = DService.OpenVideo(host, port);
-                        msg.MsgRecordStateChanged += (s) =>
+                        MsgRecord msgRecord = DService.OpenVideo(host, port);
+                        msgRecord.MsgRecordStateChanged += (s) =>
                         {
                             if (s == MsgRecordState.Fail)
                             {
@@ -524,7 +524,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             }
                             else
                             {
-                                DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msg.MsgReturn.Data));
+                                DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msgRecord.MsgReturn.Data));
                                 string mapName = Device.Code;
                                 if (pm_live.IsLocal) mapName = pm_live.MapName;
                                 Device.CameraVideoControl.Startup(mapName, View.ImageView);
@@ -535,7 +535,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 StackPanelOpen.Visibility = Visibility.Visible;
                             }
                         };
-                        ServicesHelper.SendCommand(button, msg);
+                        ServicesHelper.SendCommand(button, msgRecord);
                     }
                     else
                     {
