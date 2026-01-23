@@ -1,5 +1,7 @@
-﻿using ColorVision.Engine.Services.PhyCameras;
+﻿using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.UI;
+using CVCommCore.CVCamera;
 using log4net;
 using Newtonsoft.Json; // 引入 Json
 using System;
@@ -39,16 +41,49 @@ namespace ColorVision.Engine.CalFile
                 {
                     string jsonContent = null;
 
+                    ConfigCamera configCamera = null;
+
                     // 1. 解压读取 JSON 字符串
                     using (ZipArchive archive = ZipFile.OpenRead(targetFile))
                     {
-                        var entry = archive.GetEntry("cvCameraInfo.json");
+                        
+                        var entry = archive.GetEntry("CameraConfig.cfg");
                         if (entry != null)
                         {
                             using (var stream = entry.Open())
                             using (var reader = new StreamReader(stream, Encoding.UTF8))
                             {
                                 jsonContent = reader.ReadToEnd();
+                                try
+                                {
+                                    configCamera = JsonConvert.DeserializeObject<ConfigCamera>(jsonContent);
+                                }
+                                catch (Exception jsonEx)
+                                {
+                                    MessageBox.Show($"配置文件格式错误: {jsonEx.Message}", "解析错误");
+                                    return;
+                                }
+
+                                PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configCamera);
+                                propertyEditorWindow.Submited += (s, e) =>
+                                {
+                                    PhyCameraManagerWindow phyCameraManagerWindow = new PhyCameraManagerWindow();
+                                    phyCameraManagerWindow.Show();
+                                };
+                                propertyEditorWindow.ShowDialog();
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            entry = archive.GetEntry("cvCameraInfo.json");
+                            if (entry != null)
+                            {
+                                using (var stream = entry.Open())
+                                using (var reader = new StreamReader(stream, Encoding.UTF8))
+                                {
+                                    jsonContent = reader.ReadToEnd();
+                                }
                             }
                         }
                     }

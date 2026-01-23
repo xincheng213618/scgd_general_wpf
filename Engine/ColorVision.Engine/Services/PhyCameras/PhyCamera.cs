@@ -134,7 +134,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()),a=> AccessControl.Check(PermissionMode.SuperAdministrator));
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code)));
-            CreatResotreCommand = new RelayCommand(a => CreatResotre());
+            CreatResotreCommand = new RelayCommand(a => CreateRestore());
             LoadResotreCommand = new RelayCommand(a => LoadResotre());
 
             FilterWheelEditCommand = new RelayCommand(a =>
@@ -150,97 +150,167 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         }
 
-        public void CreatResotre()
+        bool IsCreateRestore ;
+        public async void CreateRestore()
         {
-            string ResotrePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            ResotrePath = Path.Combine(ResotrePath, "Restore",Code);
-
-            if (!Directory.Exists(ResotrePath))
+            if (IsCreateRestore)
             {
-                Directory.CreateDirectory(ResotrePath);
+                MessageBox.Show("IsCreateRestore");
+                return;
             }
-            string CameraConfigPath = Path.Combine(ResotrePath, "CameraConfig.cfg");
-
-            Config.ToJsonNFile(CameraConfigPath);
-            if (CameraLicenseModel != null)
+            IsCreateRestore = true;
+            // 1. 设置最终保存路径 (.cvcal 文件路径)
+            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string restoreDir = Path.Combine(desktopPath, "Restore");
+            if (!Directory.Exists(restoreDir))
             {
-                string LicPath = Path.Combine(ResotrePath, $"{Code}.lic");
-                File.WriteAllText(LicPath, CameraLicenseModel.LicenseValue);
+                Directory.CreateDirectory(restoreDir);
             }
+            // 最终文件：Desktop\Restore\{Code}.cvcal
+            string finalZipPath = Path.Combine(restoreDir, $"{Code}.cvcal");
 
+            // 2. 创建临时目录用于构建文件结构
+            // 使用 GUID 防止临时文件夹重名冲突
+            string tempRootPath = Path.Combine(Path.GetTempPath(), "ColorVisionTemp", Guid.NewGuid().ToString());
+            Directory.CreateDirectory(tempRootPath);
 
-            string CalibrationPath = Path.Combine(ResotrePath, "Calibration");
-            if (!Directory.Exists(CalibrationPath))
+            try
             {
-                Directory.CreateDirectory(CalibrationPath);
-            }
+                // --- 原有逻辑开始 (路径改为 tempRootPath) ---
 
+                // 注意：原逻辑是在文件夹下又建了一层 Code，通常作为单文件格式，建议直接把内容放在根目录下
+                // 如果你坚持要有一层文件夹，可以保留下面这行，否则建议直接用 tempRootPath
+                // string workingPath = Path.Combine(tempRootPath, Code); 
+                string workingPath = tempRootPath; // 这里我选择直接放在压缩包根目录，这样打开更清爽
 
-            Dictionary<string, List<ZipCalibrationItem>> keyValuePairs = new Dictionary<string, List<ZipCalibrationItem>>();
-            List<ZipCalibrationItem> calibrationItems = new List<ZipCalibrationItem>();
-            keyValuePairs.Add("Calibration", calibrationItems);
-            foreach (var item in VisualChildren)
-            {
-                if (item is CalibrationResource calibrationResource)
+                if (!Directory.Exists(workingPath)) Directory.CreateDirectory(workingPath);
+
+                // 保存相机配置
+                string cameraConfigPath = Path.Combine(workingPath, "CameraConfig.cfg");
+                Config.ToJsonNFile(cameraConfigPath);
+
+                // 保存 License
+                if (CameraLicenseModel != null)
                 {
-                    ZipCalibrationItem zipCalibrationItem = new ZipCalibrationItem();
-                    zipCalibrationItem.CalibrationType = ((ServiceTypes)calibrationResource.SysResourceModel.Type).ToCalibrationType();
-                    zipCalibrationItem.Title = calibrationResource.Config.Title;
-                    zipCalibrationItem.FileName = calibrationResource.Config.FileName;
-                    calibrationItems.Add(zipCalibrationItem);
+                    string licPath = Path.Combine(workingPath, $"{Code}.lic");
+                    File.WriteAllText(licPath, CameraLicenseModel.LicenseValue);
+                }
 
-                    var serviceType = (ServiceTypes)calibrationResource.SysResourceModel.Type;
-                    if (calibrationResource.GetAncestor<PhyCamera>() is PhyCamera phyCamera)
+                // 创建 Calibration 文件夹
+                string calibrationPath = Path.Combine(workingPath, "Calibration");
+                if (!Directory.Exists(calibrationPath))
+                {
+                    Directory.CreateDirectory(calibrationPath);
+                }
+
+                Dictionary<string, List<ZipCalibrationItem>> keyValuePairs = new Dictionary<string, List<ZipCalibrationItem>>();
+                List<ZipCalibrationItem> calibrationItems = new List<ZipCalibrationItem>();
+                keyValuePairs.Add("Calibration", calibrationItems);
+
+                // 遍历 VisualChildren
+                foreach (var item in VisualChildren)
+                {
+                    if (item is CalibrationResource calibrationResource)
                     {
-                        if (Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
+                        ZipCalibrationItem zipCalibrationItem = new ZipCalibrationItem();
+                        zipCalibrationItem.CalibrationType = ((ServiceTypes)calibrationResource.SysResourceModel.Type).ToCalibrationType();
+                        zipCalibrationItem.Title = calibrationResource.Config.Title;
+                        zipCalibrationItem.FileName = calibrationResource.Config.FileName;
+                        calibrationItems.Add(zipCalibrationItem);
+
+                        var serviceType = (ServiceTypes)calibrationResource.SysResourceModel.Type;
+
+                        // 查找父级 PhyCamera 并复制文件
+                        if (calibrationResource.GetAncestor<PhyCamera>() is PhyCamera phyCamera)
                         {
-                            string path = calibrationResource.SysResourceModel.Value ?? string.Empty;
-                            string filepath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg", path);
-
-                            // 确保文件存在
-                            if (File.Exists(filepath))
+                            if (Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
                             {
-                                string sre = Path.Combine(CalibrationPath, serviceType.ToString());
-                                if (!Directory.Exists(sre))
-                                    Directory.CreateDirectory(sre); 
+                                string path = calibrationResource.SysResourceModel.Value ?? string.Empty;
+                                string filepath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg", path);
 
-                                string entryPath = Path.Combine(sre, calibrationResource.Config.FileName);
-                                File.Copy(filepath,entryPath,true);
+                                // 确保源文件存在
+                                if (File.Exists(filepath))
+                                {
+                                    // 在临时目录中建立分类文件夹
+                                    string typeDir = Path.Combine(calibrationPath, serviceType.ToString());
+                                    if (!Directory.Exists(typeDir))
+                                        Directory.CreateDirectory(typeDir);
+
+                                    string entryPath = Path.Combine(typeDir, calibrationResource.Config.FileName);
+                                    File.Copy(filepath, entryPath, true);
+                                }
                             }
                         }
                     }
-                }
 
-                if (item is GroupResource groupResource)
-                {
-                    List<ZipCalibrationItem> zipCalibrationItems = new List<ZipCalibrationItem>();
-                    foreach (var cc in groupResource.VisualChildren)
+                    if (item is GroupResource groupResource)
                     {
-                        if (cc is CalibrationResource caesource)
+                        List<ZipCalibrationItem> zipCalibrationItems = new List<ZipCalibrationItem>();
+                        foreach (var cc in groupResource.VisualChildren)
                         {
-                            ZipCalibrationItem zipCalibrationItem = new ZipCalibrationItem();
-                            zipCalibrationItem.CalibrationType = ((ServiceTypes)caesource.SysResourceModel.Type).ToCalibrationType();
-                            zipCalibrationItem.Title = caesource.Config.Title;
-                            zipCalibrationItem.FileName = caesource.Config.FileName;
-                            zipCalibrationItems.Add(zipCalibrationItem);
+                            if (cc is CalibrationResource caesource)
+                            {
+                                ZipCalibrationItem zipCalibrationItem = new ZipCalibrationItem();
+                                zipCalibrationItem.CalibrationType = ((ServiceTypes)caesource.SysResourceModel.Type).ToCalibrationType();
+                                zipCalibrationItem.Title = caesource.Config.Title;
+                                zipCalibrationItem.FileName = caesource.Config.FileName;
+                                zipCalibrationItems.Add(zipCalibrationItem);
+                            }
                         }
+
+                        // 序列化 Group JSON
+                        string json = JsonConvert.SerializeObject(zipCalibrationItems, Formatting.Indented);
+                        string groupPath = Path.Combine(calibrationPath, $"{groupResource.Name}.cfg");
+                        File.WriteAllText(groupPath, json);
                     }
-
-                    // 序列化为 JSON 使用 Newtonsoft.Json
-                    string json = JsonConvert.SerializeObject(zipCalibrationItems, Formatting.Indented);
-
-                    // 添加 JSON 到 ZIP
-                    string  groupPath = Path.Combine(CalibrationPath, $"{groupResource.Name}.cfg");
-                    File.WriteAllText(groupPath, json);
-
                 }
+
+                // 保存主索引 JSON
+                string mainJson = JsonConvert.SerializeObject(keyValuePairs, Formatting.Indented);
+                string mainJsonPath = Path.Combine(workingPath, "Calibration.cfg");
+                File.WriteAllText(mainJsonPath, mainJson);
+
+                // --- 原有逻辑结束 ---
+
+                // 3. 打包压缩为 .cvcal
+
+                // 如果目标文件已存在，先删除
+                if (File.Exists(finalZipPath))
+                {
+                    File.Delete(finalZipPath);
+                }
+
+                await Task.Run(async () => 
+                {
+                    // 核心压缩代码
+                    ZipFile.CreateFromDirectory(workingPath, finalZipPath, CompressionLevel.NoCompression, false);
+                }
+                );
+
+
+
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.RestorePointCreatedSuccessfully);
             }
-
-            string json1 = JsonConvert.SerializeObject(keyValuePairs, Formatting.Indented);
-            string entryName1 = Path.Combine(ResotrePath, "Calibration.cfg");
-            File.WriteAllText(entryName1, json1);
-
-            MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.RestorePointCreatedSuccessfully);
+            catch (Exception ex)
+            {
+                MessageBox.Show($"创建 Restore 文件失败: {ex.Message}");
+            }
+            finally
+            {
+                // 4. 清理临时文件
+                if (Directory.Exists(tempRootPath))
+                {
+                    try
+                    {
+                        Directory.Delete(tempRootPath, true);
+                    }
+                    catch
+                    {
+                        // 忽略清理临时文件时的错误，不影响主流程
+                    }
+                }
+                IsCreateRestore = false;
+            }
         }
 
         public void LoadResotre()
@@ -273,9 +343,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                         RefreshLicense();
                     }
                 }
-
-
-
                 SaveConfig();
                 MessageBox.Show(Application.Current.GetActiveWindow(),"还原成功");
             }
