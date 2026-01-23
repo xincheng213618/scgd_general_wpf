@@ -2,6 +2,7 @@
 
 namespace ColorVision.Engine.ToolPlugins
 {
+
     public class USBtool : MenuItemBase
     {
 
@@ -18,10 +19,20 @@ namespace ColorVision.Engine.ToolPlugins
     {
         public override string OwnerGuid => MenuItemConstants.View;
         public override string Header => ColorVision.Engine.Properties.Resources.SSCOMTool;
-        public override int Order => 100;
+        public override int Order => 101;
         public override void Execute()
         {
             Common.Utilities.PlatformHelper.Open("Assets\\Tool\\sscom5.13.1.exe");
+        }
+    }
+    public class CommMonitortool : MenuItemBase
+    {
+        public override string OwnerGuid => MenuItemConstants.View;
+        public override string Header => "CommMonitor";
+        public override int Order => 101;
+        public override void Execute()
+        {
+            Common.Utilities.PlatformHelper.Open("Assets\\Tool\\CommMonitor.exe");
         }
     }
 

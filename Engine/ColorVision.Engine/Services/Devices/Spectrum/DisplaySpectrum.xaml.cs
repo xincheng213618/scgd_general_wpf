@@ -52,8 +52,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 });
             };
             this.AddViewConfig(View,ComboxView);
-            this.ContextMenu = Device.ContextMenu;
-
             DService_DeviceStatusChanged(sender,DService.DeviceStatus);
             DService.DeviceStatusChanged += DService_DeviceStatusChanged;
 

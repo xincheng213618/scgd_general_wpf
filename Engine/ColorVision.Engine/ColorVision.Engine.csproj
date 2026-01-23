@@ -173,6 +173,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Update="Assets\Tool\CommMonitor.exe">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="Assets\Tool\EditJson\Editjson.html">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>

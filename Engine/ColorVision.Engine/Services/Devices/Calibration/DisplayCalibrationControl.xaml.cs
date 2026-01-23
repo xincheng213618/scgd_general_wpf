@@ -52,8 +52,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-            this.ContextMenu = Device.ContextMenu;
-
 
             ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;

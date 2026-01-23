@@ -6,10 +6,14 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.ToolPlugins;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.LogImp;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -131,6 +135,27 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             GetSpectrSerialNumberCommand = new RelayCommand(a => GetSpectrSerialNumber());
             EditDisplayConfigCommand = new RelayCommand(a => EditDisplayConfig());
+
+            OpenSpectrumLogCommand = new RelayCommand(a => OpenSpectrumLog());
+
+            RelayCommand OpenSSCOMToolCommand = new RelayCommand(a => new SSCOMTool());
+            ContextMenu.Items.Add(new MenuItem() { Header = "SSCOM5.3.1", Command = OpenSSCOMToolCommand });
+            RelayCommand OpenCommMonitortoolCommand = new RelayCommand(a => new CommMonitortool());
+            ContextMenu.Items.Add(new MenuItem() { Header = "CommMonitor", Command = OpenCommMonitortoolCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "SpectrumLog", Command = OpenSpectrumLogCommand });
+        }
+
+        [CommandDisplay("SpectrumLog")]
+        public RelayCommand OpenSpectrumLogCommand { get; set; }
+        public void OpenSpectrumLog()
+        {
+            string baseDir = Directory.GetParent(ServiceConfig.Instance.CVMainService_x64).FullName;
+            string latestLogPath = LogFileHelper.GetMostRecentLogFile(Path.Combine(baseDir, "log"), "CVMainWindowsService_x64_Spectrum");
+            if (!string.IsNullOrEmpty(latestLogPath))
+            {
+                WindowLogLocal windowLogLocal = new WindowLogLocal(latestLogPath, Encoding.GetEncoding("GB2312"));
+                windowLogLocal.Show();
+            }
         }
 
         [CommandDisplay("EditDisplayConfig", Order =-1)]

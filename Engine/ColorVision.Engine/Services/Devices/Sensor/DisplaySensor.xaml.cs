@@ -33,10 +33,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         {
             DataContext = Device;
 
-            this.ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new SSCOMTool().ToMenuItem());
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
-
             void Update()
             {
                 var list = new TemplateSensor(Device.Config.Category);

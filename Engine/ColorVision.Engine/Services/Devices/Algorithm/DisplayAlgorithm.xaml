@@ -7,7 +7,7 @@
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              d:DataContext="{d:DesignInstance local:DeviceAlgorithm}"
              mc:Ignorable="d" 
-             d:DesignHeight="1000" d:DesignWidth="300" Width="300" Initialized="UserControl_Initialized"  >
+             d:DesignHeight="1000" d:DesignWidth="300" Width="300"  ContextMenu="{Binding ContextMenu}"  Initialized="UserControl_Initialized"  >
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

@@ -56,9 +56,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     }
                 };
             }
-
-            this.ContextMenu = Device.ContextMenu;
-
             DService_DeviceStatusChanged(sender,DService.DeviceStatus);
             DService.DeviceStatusChanged += DService_DeviceStatusChanged;
 

@@ -63,7 +63,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-            ContextMenu = Device.ContextMenu;
             List<DisplayAlgorithmMeta> algorithmMetas = new List<DisplayAlgorithmMeta>();
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())

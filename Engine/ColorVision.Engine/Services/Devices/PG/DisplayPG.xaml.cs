@@ -24,10 +24,6 @@ namespace ColorVision.Engine.Services.Devices.PG
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-
-            this.ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
-
             PGService_DeviceStatusChanged(sender,PGService.DeviceStatus);
             PGService.DeviceStatusChanged += PGService_DeviceStatusChanged;
             if (PGService.Config.IsNet)

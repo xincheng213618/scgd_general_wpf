@@ -82,10 +82,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             DataContext = Device;
             this.AddViewConfig(View, ComboxView);
-
-            this.ContextMenu = Device.ContextMenu;
-
-
             ButtonProgressBarGetData = new ButtonProgressBar(ProgressBar, TakePhotoButton);
             ButtonProgressBarOpen = new ButtonProgressBar(ProgressBarOpen, OpenButton);
             ButtonProgressBarClose = new ButtonProgressBar(ProgressBarClose, CloseButton);
