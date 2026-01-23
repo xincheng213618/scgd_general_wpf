@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.UI;
 using log4net;
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json; // 引入 Json
 using System;
 using System.ComponentModel;
 using System.IO;
@@ -10,12 +10,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Engine
+namespace ColorVision.Engine.CalFile
 {
-
     public static class CVXFileProcess
     {
-        public static string FilePath { get; set; } 
+        public static string FilePath { get; set; }
     }
 
     public class CVCalInitialized : MainWindowInitializedBase
@@ -31,19 +30,16 @@ namespace ColorVision.Engine
         {
             if (string.IsNullOrWhiteSpace(CVXFileProcess.FilePath)) return Task.CompletedTask;
             if (!File.Exists(CVXFileProcess.FilePath)) return Task.CompletedTask;
-            if (string.IsNullOrWhiteSpace(CVXFileProcess.FilePath)) return Task.CompletedTask;
-            if (!File.Exists(CVXFileProcess.FilePath)) return Task.CompletedTask;
 
             string targetFile = CVXFileProcess.FilePath;
 
-            // 切换到 UI 线程执行窗口操作
             Application.Current.Dispatcher.Invoke(() =>
             {
                 try
                 {
                     string jsonContent = null;
 
-                    // 1. 读取 Zip 中的 json 文件
+                    // 1. 解压读取 JSON 字符串
                     using (ZipArchive archive = ZipFile.OpenRead(targetFile))
                     {
                         var entry = archive.GetEntry("cvCameraInfo.json");
@@ -59,38 +55,63 @@ namespace ColorVision.Engine
 
                     if (string.IsNullOrEmpty(jsonContent))
                     {
-                        MessageBox.Show("无法在文件中找到 cvCameraInfo.json", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show("配置信息读取为空。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
 
-                    // 2. 弹出自定义确认窗口
-                    CVFileImportWindow importWindow = new CVFileImportWindow(jsonContent);
+                    // 2. 反序列化为对象 (关键步骤)
+                    CvCameraInfoModel cameraInfo = null;
+                    try
+                    {
+                        cameraInfo = JsonConvert.DeserializeObject<CvCameraInfoModel>(jsonContent);
+                    }
+                    catch (Exception jsonEx)
+                    {
+                        MessageBox.Show($"配置文件格式错误: {jsonEx.Message}", "解析错误");
+                        return;
+                    }
+
+                    // 3. 打开确认窗口，传入对象
+                    CVFileImportWindow importWindow = new CVFileImportWindow(cameraInfo);
                     bool? result = importWindow.ShowDialog();
 
-                    // 3. 如果用户点击"导入相机" (DialogResult == true)
+                    // 4. 用户确认导入
                     if (result == true)
                     {
-                        // TODO: 在这里执行实际的导入逻辑，例如将配置反序列化并保存到系统配置中
-                        // ProcessCameraImport(jsonContent); 
+                        // ---------------------------------------------------------
+                        // 在这里使用 cameraInfo 对象进行后续处理
+                        // ---------------------------------------------------------
+                        ImportCameraConfig(cameraInfo);
 
-                        // 打开相机管理器窗口
+                        // 打开 PhyCameraManagerWindow
                         PhyCameraManagerWindow phyCameraManagerWindow = new PhyCameraManagerWindow();
                         phyCameraManagerWindow.Show();
                     }
                 }
                 catch (Exception ex)
                 {
-                    log.Error($"处理 .cvcal 文件出错: {ex.Message}");
-                    MessageBox.Show($"文件处理出错: {ex.Message}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                    log.Error($"导入流程异常: {ex.Message}");
+                    MessageBox.Show($"处理文件时发生错误: {ex.Message}");
                 }
                 finally
                 {
-                    // 处理完毕后清空路径，防止重复触发
                     CVXFileProcess.FilePath = null;
                 }
             });
 
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 实际的导入逻辑方法
+        /// </summary>
+        private void ImportCameraConfig(CvCameraInfoModel info)
+        {
+            // 示例：打印日志或存入数据库
+            log.Info($"正在导入相机: {info.CameraModel} (SN: {info.CameraSn})");
+
+            // TODO: 这里写你具体的业务逻辑，比如：
+            // CameraService.Add(info); 
         }
     }
 
@@ -98,11 +119,7 @@ namespace ColorVision.Engine
     public class CVCalFileProcess : IFileProcessor
     {
         public int Order => 1;
-
-        public void Export(string filePath)
-        {
-
-        }
+        public void Export(string filePath) { }
         public bool Process(string filePath)
         {
             CVXFileProcess.FilePath = filePath;
