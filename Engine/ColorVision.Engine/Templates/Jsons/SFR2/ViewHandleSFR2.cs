@@ -48,7 +48,10 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
     {
         public DetailCommonModel DetailCommonModel { get; set; }
 
-        public SFRDetailViewReslut() { }
+        public SFRDetailViewReslut() 
+        {
+
+        }
 
         public SFRDetailViewReslut(DetailCommonModel detailCommonModel)
         {
