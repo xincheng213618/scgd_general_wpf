@@ -42,6 +42,7 @@ namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
 
                 using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 var detailImageEntities = db.Queryable<DetailImageEntity>().Where(x => x.PId == result.Id).ToList();
+                
 
                 foreach (var detailImage in detailImageEntities)
                 {
@@ -59,7 +60,6 @@ namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
             {
                 var detailImage = detailImageEntities.First();
                 ctx.ImageView.OpenImage(detailImage.FileName);
-                return;
             }
             else
             {
@@ -71,10 +71,11 @@ namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
             List<string> header = new() { "FileName", "FileInfo", "OrderIndex" };
             List<string> bdHeader = new() { "FileName", "FileInfo", "OrderIndex"};
 
+            ctx.LeftGridViewColumnVisibilitys.Clear();
             if (ctx.ListView.View is GridView gridView)
             {
-                ctx.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
+
                 for (int i = 0; i < header.Count; i++)
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
                 ctx.ListView.ItemsSource = result.ViewResults;
