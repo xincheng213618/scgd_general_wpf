@@ -5,8 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Rbac"
         xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
         mc:Ignorable="d"
-        Title="权限管理" Height="650" Width="950" 
+        Title="{x:Static properties:Resources.PermissionManagement}" Height="650" Width="950" 
         Background="{DynamicResource GlobalBackground}"
         WindowStartupLocation="CenterOwner"
         Initialized="Window_Initialized">
@@ -115,7 +116,7 @@
                     </Grid.RowDefinitions>
                     
                     <TextBlock Grid.Row="0" 
-                               Text="角色列表" 
+                               Text=""{x:Static properties:Resources.RoleList}" 
                                FontSize="15" 
                                FontWeight="SemiBold"
                                Margin="0,0,0,10"/>

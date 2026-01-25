@@ -333,4 +333,13 @@
   <data name="NoAccountYet" xml:space="preserve">
     <value>Don't have an account yet?</value>
   </data>
+  <data name="UserId" xml:space="preserve">
+    <value>User ID</value>
+  </data>
+  <data name="PermissionManagement" xml:space="preserve">
+    <value>Access Management</value>
+  </data>
+  <data name="RoleList" xml:space="preserve">
+    <value>Character List</value>
+  </data>
 </root>

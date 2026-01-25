@@ -333,4 +333,13 @@
   <data name="NoAccountYet" xml:space="preserve">
     <value>У вас ещё нет аккаунта?</value>
   </data>
+  <data name="UserId" xml:space="preserve">
+    <value>ID пользователя</value>
+  </data>
+  <data name="PermissionManagement" xml:space="preserve">
+    <value>Управление доступом</value>
+  </data>
+  <data name="RoleList" xml:space="preserve">
+    <value>Список персонажей</value>
+  </data>
 </root>

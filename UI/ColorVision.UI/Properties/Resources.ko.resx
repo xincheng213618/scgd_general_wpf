@@ -487,4 +487,7 @@
   <data name="PropertyEditorWindow" xml:space="preserve">
     <value>속성 편집기 창</value>
   </data>
+  <data name="Edit" xml:space="preserve">
+    <value>편집하다</value>
+  </data>
 </root>

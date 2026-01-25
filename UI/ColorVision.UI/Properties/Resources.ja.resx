@@ -487,4 +487,7 @@
   <data name="PropertyEditorWindow" xml:space="preserve">
     <value>プロパティエディターウィンドウ</value>
   </data>
+  <data name="Edit" xml:space="preserve">
+    <value>編集</value>
+  </data>
 </root>

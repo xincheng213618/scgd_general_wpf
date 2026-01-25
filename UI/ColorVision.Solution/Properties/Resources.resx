@@ -313,4 +313,13 @@
   <data name="NoAccountYet" xml:space="preserve">
     <value>还没有账户？</value>
   </data>
+  <data name="UserId" xml:space="preserve">
+    <value>用户 ID</value>
+  </data>
+  <data name="PermissionManagement" xml:space="preserve">
+    <value>权限管理</value>
+  </data>
+  <data name="RoleList" xml:space="preserve">
+    <value>角色列表</value>
+  </data>
 </root>

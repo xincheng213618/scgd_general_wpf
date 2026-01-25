@@ -487,4 +487,7 @@
   <data name="PropertyEditorWindow" xml:space="preserve">
     <value>Fenêtre de l'éditeur de propriétés</value>
   </data>
+  <data name="Edit" xml:space="preserve">
+    <value>modifier</value>
+  </data>
 </root>

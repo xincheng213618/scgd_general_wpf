@@ -333,4 +333,13 @@
   <data name="NoAccountYet" xml:space="preserve">
     <value>まだアカウントをお持ちではありませんか?</value>
   </data>
+  <data name="UserId" xml:space="preserve">
+    <value>ユーザーID</value>
+  </data>
+  <data name="PermissionManagement" xml:space="preserve">
+    <value>アクセス管理</value>
+  </data>
+  <data name="RoleList" xml:space="preserve">
+    <value>キャラクターリスト</value>
+  </data>
 </root>

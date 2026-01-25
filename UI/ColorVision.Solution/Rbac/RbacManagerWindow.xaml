@@ -217,7 +217,7 @@
                                     </Grid.RowDefinitions>
                                     
                                     <!-- 用户ID -->
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="用户 ID" FontWeight="SemiBold" Margin="0,0,20,10" Foreground="#666666"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{x:Static properties:Resources.UserId}" FontWeight="SemiBold" Margin="0,0,20,10" Foreground="#666666"/>
                                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Config.LoginResult.User.Id}" Margin="0,0,0,10"/>
                                     
                                     <!-- 用户名 -->

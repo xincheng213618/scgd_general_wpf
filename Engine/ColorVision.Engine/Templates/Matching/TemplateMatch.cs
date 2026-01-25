@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.Matching
 
         public TemplateMatch()
         {
-            Title = "模板匹配模板管理";
+            Title = ColorVision.Engine.Properties.Resources.TemplateMatching;
             TemplateDicId = 34;
             Code = "MatchTemplate";
             TemplateParams = Params;
