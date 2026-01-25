@@ -291,4 +291,46 @@
   <data name="SolutionConfiguration" xml:space="preserve">
     <value>Configuration de la solution</value>
   </data>
+  <data name="UserCenter" xml:space="preserve">
+    <value>Centre utilisateur</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>nom d'utilisateur</value>
+  </data>
+  <data name="Role" xml:space="preserve">
+    <value>Rôle</value>
+  </data>
+  <data name="PermissionMode" xml:space="preserve">
+    <value>Mode d'autorisation</value>
+  </data>
+  <data name="LoginTime" xml:space="preserve">
+    <value>Heure de connexion</value>
+  </data>
+  <data name="UserManagementSystem" xml:space="preserve">
+    <value>Système de gestion des utilisateurs</value>
+  </data>
+  <data name="EditInfo" xml:space="preserve">
+    <value>Informations de modification</value>
+  </data>
+  <data name="UserManagement" xml:space="preserve">
+    <value>Gestion des utilisateurs</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Statut</value>
+  </data>
+  <data name="LoginOrSwitch" xml:space="preserve">
+    <value>Connexion/Changement</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>inconnu</value>
+  </data>
+  <data name="WelcomeBack" xml:space="preserve">
+    <value>Content de te revoir</value>
+  </data>
+  <data name="RememberLoginStatus7Days" xml:space="preserve">
+    <value>Mémoriser le statut de connexion (connexion automatique sous 7 jours)</value>
+  </data>
+  <data name="NoAccountYet" xml:space="preserve">
+    <value>Vous n'avez pas encore de compte ?</value>
+  </data>
 </root>

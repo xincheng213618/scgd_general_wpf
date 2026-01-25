@@ -523,4 +523,7 @@
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
   </data>
+  <data name="PropertyEditorWindow" xml:space="preserve">
+    <value>属性编辑器窗口</value>
+  </data>
 </root>

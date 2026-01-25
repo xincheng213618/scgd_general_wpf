@@ -291,4 +291,46 @@
   <data name="SolutionConfiguration" xml:space="preserve">
     <value>솔루션 구성</value>
   </data>
+  <data name="UserCenter" xml:space="preserve">
+    <value>사용자 센터</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>사용자 이름</value>
+  </data>
+  <data name="Role" xml:space="preserve">
+    <value>역할</value>
+  </data>
+  <data name="PermissionMode" xml:space="preserve">
+    <value>권한 모드</value>
+  </data>
+  <data name="LoginTime" xml:space="preserve">
+    <value>로그인 시간</value>
+  </data>
+  <data name="UserManagementSystem" xml:space="preserve">
+    <value>사용자 관리 시스템</value>
+  </data>
+  <data name="EditInfo" xml:space="preserve">
+    <value>정보 편집</value>
+  </data>
+  <data name="UserManagement" xml:space="preserve">
+    <value>사용자 관리</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>상태</value>
+  </data>
+  <data name="LoginOrSwitch" xml:space="preserve">
+    <value>로그인/전환</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>알려지지 않은</value>
+  </data>
+  <data name="WelcomeBack" xml:space="preserve">
+    <value>다시 오신 것을 환영합니다</value>
+  </data>
+  <data name="RememberLoginStatus7Days" xml:space="preserve">
+    <value>로그인 상태 기억 (7일 이내 자동 로그인)</value>
+  </data>
+  <data name="NoAccountYet" xml:space="preserve">
+    <value>아직 계정이 없으신가요?</value>
+  </data>
 </root>

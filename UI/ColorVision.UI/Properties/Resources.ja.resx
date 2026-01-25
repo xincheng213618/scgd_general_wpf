@@ -484,4 +484,7 @@
   <data name="Cancel" xml:space="preserve">
     <value>キャンセル</value>
   </data>
+  <data name="PropertyEditorWindow" xml:space="preserve">
+    <value>プロパティエディターウィンドウ</value>
+  </data>
 </root>

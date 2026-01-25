@@ -1051,6 +1051,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 属性编辑器窗口 的本地化字符串。
+        /// </summary>
+        public static string PropertyEditorWindow {
+            get {
+                return ResourceManager.GetString("PropertyEditorWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似   rem Robocopy 0-7 视为成功 的本地化字符串。
         /// </summary>
         public static string RemRobocopySuccess {
