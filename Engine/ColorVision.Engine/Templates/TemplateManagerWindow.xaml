@@ -55,8 +55,7 @@
             
             <!-- Column count selector on the right -->
             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <TextBlock Text="列数:" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="{DynamicResource PrimaryTextBrush}"/>
-                <ComboBox x:Name="ColumnCountComboBox" Width="60" SelectedIndex="2" SelectionChanged="ColumnCountComboBox_SelectionChanged"
+                <ComboBox x:Name="ColumnCountComboBox" Width="60" SelectedIndex="0" SelectionChanged="ColumnCountComboBox_SelectionChanged"
                          Style="{DynamicResource ComboBox.Small}">
                     <ComboBoxItem Content="1"/>
                     <ComboBoxItem Content="2"/>

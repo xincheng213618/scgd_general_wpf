@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Menus;
 using ColorVision.UI.Menus;
 using System;
@@ -116,7 +117,7 @@ namespace ColorVision.Engine.Templates
             // 显示汇总信息
             int totalTemplates = _allTemplates.Count;
             int totalGroups = _templateGroups.Count;
-            SummaryText.Text = $"共计 {totalGroups} 个命名空间分组，{totalTemplates} 个模板类型";
+            SummaryText.Text = $"{totalGroups} ，{totalTemplates}";
         }
 
         /// <summary>
