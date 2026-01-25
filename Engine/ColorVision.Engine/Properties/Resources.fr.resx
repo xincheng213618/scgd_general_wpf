@@ -1086,7 +1086,7 @@
   <data name="StereoFusion" xml:space="preserve">
     <value>Fusion binoculaire</value>
   </data>
-  <data name="KBDetect" xml:space="preserve">
+  <data name="CharacterBrghtnessInsp" xml:space="preserve">
     <value>Détection du clavier</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
@@ -2570,5 +2570,59 @@
   </data>
   <data name="CurrentCurrentMA" xml:space="preserve">
     <value>Courant (mA)</value>
+  </data>
+  <data name="ImageCrop" xml:space="preserve">
+    <value>recadrage d'image</value>
+  </data>
+  <data name="FindCross" xml:space="preserve">
+    <value>Positionnement croisé</value>
+  </data>
+  <data name="ColorCorrection" xml:space="preserve">
+    <value>Correction des différences de couleur</value>
+  </data>
+  <data name="EmittingAreaLocation" xml:space="preserve">
+    <value>Positionnement de la zone émettrice de lumière</value>
+  </data>
+  <data name="TemplateList" xml:space="preserve">
+    <value>Liste de modèles</value>
+  </data>
+  <data name="OpenFullEditor" xml:space="preserve">
+    <value>Ouvrir l'éditeur complet</value>
+  </data>
+  <data name="SelectTemplateToViewDetails" xml:space="preserve">
+    <value>Sélectionnez un modèle pour afficher les détails</value>
+  </data>
+  <data name="PleaseSelectTemplateToViewAndEdit" xml:space="preserve">
+    <value>Veuillez sélectionner un modèle à consulter et à modifier.</value>
+  </data>
+  <data name="TemplateEdit" xml:space="preserve">
+    <value>Édition de modèle</value>
+  </data>
+  <data name="CurrentSelection" xml:space="preserve">
+    <value>Sélection actuelle</value>
+  </data>
+  <data name="TemplatesCount" xml:space="preserve">
+    <value>Modèle</value>
+  </data>
+  <data name="TemplateEditorLoadFailed" xml:space="preserve">
+    <value>Impossible de charger l'éditeur de modèles</value>
+  </data>
+  <data name="DefaultValueType" xml:space="preserve">
+    <value>type de valeur par défaut</value>
+  </data>
+  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
+    <value>Configuration du registre de services</value>
+  </data>
+  <data name="ExportSucceeded" xml:space="preserve">
+    <value>Exportation réussie</value>
+  </data>
+  <data name="ConfirmReset" xml:space="preserve">
+    <value>Confirmer pour réinitialiser</value>
+  </data>
+  <data name="ImportException" xml:space="preserve">
+    <value>Erreur d'importation</value>
+  </data>
+  <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
+    <value>Veuillez ne pas supprimer sauf en cas d'absolue nécessité. (Supprimez si vous le souhaitez)</value>
   </data>
 </root>

@@ -40,9 +40,9 @@
         <StackPanel x:Name="FuncStackPanel"  Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,5,0,0">
             <ToggleButton x:Name="EditorModeToggle" Content="{x:Static properties:Resources.PropertyEdit}" Margin="0,0,5,0" Click="EditorModeToggle_Click" />
             <ToggleButton x:Name="DescriptionButton" Content="{x:Static properties:Resources.Annotation}" Margin="0,0,5,0" Click="Button_Click" />
-            <Button Content="校验Json" Margin="0,0,5,0" Command="{Binding CheckCommand}"/>
-            <Button Content="{x:Static properties:Resources.OpenEditTool}" Command="{Binding OpenEditToolCommand}"/>
-            <Button Content="json" Click="Button_Click_1"/>
+            <Button Content="{x:Static properties:Resources.VerifyJson}" Margin="0,0,5,0" Command="{Binding CheckCommand}"/>
+            <Button Content="{x:Static properties:Resources.OpenEditTool}" Command="{Binding OpenEditToolCommand}" Margin="0,0,5,0"/>
+            <Button Content="json" Click="Button_Click_1" Margin="0,0,5,0"/>
             <Button Content="{x:Static properties:Resources.Reset}" Command="{Binding ResetCommand}"/>
         </StackPanel>
         

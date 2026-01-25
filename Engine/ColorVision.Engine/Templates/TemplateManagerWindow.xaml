@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Templates"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="模板管理窗口" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.TemplateManagementWindow}" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -83,7 +83,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="模板列表" FontSize="14" FontWeight="Bold" Margin="5,0,0,5" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                    <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.TemplateList}" FontSize="14" FontWeight="Bold" Margin="5,0,0,5" Foreground="{DynamicResource PrimaryTextBrush}"/>
                     <ScrollViewer x:Name="TemplateScrollViewer" Grid.Row="1" 
                                  VerticalScrollBarVisibility="Auto" 
                                  HorizontalScrollBarVisibility="Disabled"
@@ -104,16 +104,16 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" x:Name="OpenFullEditorButton" Content="打开完整编辑器" 
+                    <Button DockPanel.Dock="Right" x:Name="OpenFullEditorButton" Content="{x:Static properties:Resources.OpenFullEditor}" 
                         Padding="10,5" Click="OpenFullEditor_Click"/>
-                    <TextBlock Grid.Row="0" x:Name="EditorTitle" Text="选择一个模板查看详情" 
+                    <TextBlock Grid.Row="0" x:Name="EditorTitle" Text="{x:Static properties:Resources.SelectTemplateToViewDetails}" 
                           FontSize="14" FontWeight="Bold" Margin="5,5,5,5" 
                           Foreground="{DynamicResource PrimaryTextBrush}"/>
                 </DockPanel>
 
                 <Grid Grid.Row="1" x:Name="EditorContainer">
                     <!-- Template editor content will be loaded here dynamically -->
-                    <TextBlock x:Name="PlaceholderText" Text="请选择一个模板以查看和编辑" 
+                    <TextBlock x:Name="PlaceholderText" Text="{x:Static properties:Resources.PleaseSelectTemplateToViewAndEdit}" 
                               HorizontalAlignment="Center" VerticalAlignment="Center"
                               Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
                 </Grid>

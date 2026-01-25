@@ -12,7 +12,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.LEDStripDetection
 {
 
-    [DisplayAlgorithm(10, "灯带检测", "定位算法")]
+    [DisplayAlgorithm(10, "LightBandDetection", "定位算法")]
     public class AlgorithmLEDStripDetection : DisplayAlgorithmBase
     {
 

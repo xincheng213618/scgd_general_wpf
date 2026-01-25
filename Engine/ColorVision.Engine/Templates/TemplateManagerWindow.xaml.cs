@@ -390,8 +390,8 @@ namespace ColorVision.Engine.Templates
         {
             if (template.Template == null) return;
 
-            EditorTitle.Text = $"模板编辑: {template.Title}";
-            SummaryText1.Text = $"当前选择: {template.Title} (共 {template.Template.Count} 个模板)";
+            EditorTitle.Text = $"{ColorVision.Engine.Properties.Resources.TemplateEdit}: {template.Title}";
+            SummaryText1.Text = $"{ColorVision.Engine.Properties.Resources.CurrentSelection}: {template.Title} ({template.Template.Count} {ColorVision.Engine.Properties.Resources.TemplatesCount})";
 
             // Remove old editor if exists
             if (_currentEditorContent != null)
@@ -413,7 +413,7 @@ namespace ColorVision.Engine.Templates
             {
                 EditorContainer.Children.Add(new TextBlock
                 {
-                    Text = "无法加载模板编辑器",
+                    Text = ColorVision.Engine.Properties.Resources.TemplateEditorLoadFailed,
                     Margin = new Thickness(10),
                     Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
                 });
@@ -443,7 +443,7 @@ namespace ColorVision.Engine.Templates
         /// </summary>
         private void ClearEditorDisplay()
         {
-            EditorTitle.Text = "选择一个模板查看详情";
+            EditorTitle.Text = ColorVision.Engine.Properties.Resources.SelectTemplateToViewDetails;
             
             if (_currentEditorContent != null)
             {

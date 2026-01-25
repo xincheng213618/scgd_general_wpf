@@ -1086,7 +1086,7 @@
   <data name="StereoFusion" xml:space="preserve">
     <value>Бинокулярное слияние</value>
   </data>
-  <data name="KBDetect" xml:space="preserve">
+  <data name="CharacterBrghtnessInsp" xml:space="preserve">
     <value>Распознавание клавиатуры</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
@@ -2570,5 +2570,59 @@
   </data>
   <data name="CurrentCurrentMA" xml:space="preserve">
     <value>Ток (мА)</value>
+  </data>
+  <data name="ImageCrop" xml:space="preserve">
+    <value>кадрирование изображения</value>
+  </data>
+  <data name="FindCross" xml:space="preserve">
+    <value>Перекрестное позиционирование</value>
+  </data>
+  <data name="ColorCorrection" xml:space="preserve">
+    <value>Коррекция цветовых различий</value>
+  </data>
+  <data name="EmittingAreaLocation" xml:space="preserve">
+    <value>Расположение светоизлучающей области</value>
+  </data>
+  <data name="TemplateList" xml:space="preserve">
+    <value>Список шаблонов</value>
+  </data>
+  <data name="OpenFullEditor" xml:space="preserve">
+    <value>Откройте полноэкранный редактор</value>
+  </data>
+  <data name="SelectTemplateToViewDetails" xml:space="preserve">
+    <value>Выберите шаблон, чтобы просмотреть подробности.</value>
+  </data>
+  <data name="PleaseSelectTemplateToViewAndEdit" xml:space="preserve">
+    <value>Пожалуйста, выберите шаблон для просмотра и редактирования.</value>
+  </data>
+  <data name="TemplateEdit" xml:space="preserve">
+    <value>Редактирование шаблонов</value>
+  </data>
+  <data name="CurrentSelection" xml:space="preserve">
+    <value>Текущий выбор</value>
+  </data>
+  <data name="TemplatesCount" xml:space="preserve">
+    <value>Шаблон</value>
+  </data>
+  <data name="TemplateEditorLoadFailed" xml:space="preserve">
+    <value>Не удалось загрузить редактор шаблонов.</value>
+  </data>
+  <data name="DefaultValueType" xml:space="preserve">
+    <value>Тип значения по умолчанию</value>
+  </data>
+  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
+    <value>Конфигурация реестра служб</value>
+  </data>
+  <data name="ExportSucceeded" xml:space="preserve">
+    <value>Успешный экспорт</value>
+  </data>
+  <data name="ConfirmReset" xml:space="preserve">
+    <value>Подтвердите сброс</value>
+  </data>
+  <data name="ImportException" xml:space="preserve">
+    <value>Ошибка импорта</value>
+  </data>
+  <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
+    <value>Пожалуйста, не удаляйте, если это не является абсолютно необходимым. (Удалите, если хотите)</value>
   </data>
 </root>

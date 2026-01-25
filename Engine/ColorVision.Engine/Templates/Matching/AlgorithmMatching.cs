@@ -14,7 +14,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.Matching
 {
 
-    [DisplayAlgorithm(99, "模板匹配", "定位算法")]
+    [DisplayAlgorithm(99, nameof(ColorVision.Engine.Properties.Resources.TemplateMatching), "定位算法")]
     public class AlgorithmMatching : DisplayAlgorithmBase
     {
 

@@ -1086,8 +1086,8 @@
   <data name="StereoFusion" xml:space="preserve">
     <value>Binocular Fusion</value>
   </data>
-  <data name="KBDetect" xml:space="preserve">
-    <value>Keyboard detection</value>
+  <data name="CharacterBrghtnessInsp" xml:space="preserve">
+    <value>Character BrghtnessI nsp</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
     <value>Subpixel-level LED detection</value>
@@ -2570,5 +2570,59 @@
   </data>
   <data name="CurrentCurrentMA" xml:space="preserve">
     <value>Current (mA)</value>
+  </data>
+  <data name="ImageCrop" xml:space="preserve">
+    <value>ImageCrop</value>
+  </data>
+  <data name="FindCross" xml:space="preserve">
+    <value>Cross positioning</value>
+  </data>
+  <data name="ColorCorrection" xml:space="preserve">
+    <value>Color difference correction</value>
+  </data>
+  <data name="EmittingAreaLocation" xml:space="preserve">
+    <value>Positioning of the light-emitting area</value>
+  </data>
+  <data name="TemplateList" xml:space="preserve">
+    <value>Template List</value>
+  </data>
+  <data name="OpenFullEditor" xml:space="preserve">
+    <value>Open the full editor</value>
+  </data>
+  <data name="SelectTemplateToViewDetails" xml:space="preserve">
+    <value>Select a template to view details</value>
+  </data>
+  <data name="PleaseSelectTemplateToViewAndEdit" xml:space="preserve">
+    <value>Please select a template to view and edit.</value>
+  </data>
+  <data name="TemplateEdit" xml:space="preserve">
+    <value>Template editing</value>
+  </data>
+  <data name="CurrentSelection" xml:space="preserve">
+    <value>Current selection</value>
+  </data>
+  <data name="TemplatesCount" xml:space="preserve">
+    <value>Template</value>
+  </data>
+  <data name="TemplateEditorLoadFailed" xml:space="preserve">
+    <value>Unable to load template editor</value>
+  </data>
+  <data name="DefaultValueType" xml:space="preserve">
+    <value>Default value type</value>
+  </data>
+  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
+    <value>Service Registry Configuration</value>
+  </data>
+  <data name="ExportSucceeded" xml:space="preserve">
+    <value>Export successful</value>
+  </data>
+  <data name="ConfirmReset" xml:space="preserve">
+    <value>Confirm to reset</value>
+  </data>
+  <data name="ImportException" xml:space="preserve">
+    <value>Import error</value>
+  </data>
+  <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
+    <value>Please do not delete unless absolutely necessary. (Delete if desired)</value>
   </data>
 </root>

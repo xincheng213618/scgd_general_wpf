@@ -15,7 +15,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Margin="0,5">
-            <Button Content="添加" Command="{Binding CreateCommand}"/>
+            <Button Content="{x:Static properties:Resources.Add}" Command="{Binding CreateCommand}"/>
         </StackPanel>
         <ListView x:Name="ListView1" Grid.Row="1" Padding="5,0" ItemsSource="{Binding  ModDetaiModels}"  ScrollViewer.HorizontalScrollBarVisibility="Auto" >
             <ListView.Resources>
@@ -47,7 +47,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="注释">
+                    <GridViewColumn  Header="{x:Static properties:Resources.Annotation}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type en:SysDictionaryModDetaiModel}">
                                 <TextBlock Text="{Binding  Name}" />

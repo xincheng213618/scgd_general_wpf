@@ -128,7 +128,7 @@ namespace ColorVision.Engine.Services
                 ofd.RestoreDirectory = true;
                 if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 Config.ToJsonNFile(ofd.FileName);
-                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "导出成功", "ColorVision");
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExportSucceeded, "ColorVision");
             });
 
             CopyCommand = new RelayCommand(a =>
@@ -140,7 +140,7 @@ namespace ColorVision.Engine.Services
             });
             ResetCommand = new RelayCommand(a =>
             {
-                MessageBoxResult result = MessageBox1.Show(WindowHelpers.GetActiveWindow(), $"确定要重置{Name}吗？", "ColorVision", MessageBoxButton.OKCancel);
+                MessageBoxResult result = MessageBox1.Show(WindowHelpers.GetActiveWindow(), $"{ColorVision.Engine.Properties.Resources.ConfirmReset} {Name}?", "ColorVision", MessageBoxButton.OKCancel);
                 if (result == MessageBoxResult.OK)
                     Config = new T();
             }, a => AccessControl.Check(PermissionMode.Administrator));
@@ -163,7 +163,7 @@ namespace ColorVision.Engine.Services
                     Save();
                 }
                 else
-                    MessageBox.Show("导入异常", "ColorVision");
+                    MessageBox.Show("ColorVision.Engine.Properties.Resources.ImportException", "ColorVision");
             });
 
             PropertyCommand = new RelayCommand((e) =>
@@ -253,7 +253,7 @@ namespace ColorVision.Engine.Services
 
         public override void Delete()
         {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "非必要情况下请勿删除,是否删除", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.AvoidDeletionUnlessNecessary, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             base.Delete();
 
             Parent.RemoveChild(this);

@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.LedCheck
 {
-    [DisplayAlgorithm(20, "像素级灯珠检测", "定位算法")]
+    [DisplayAlgorithm(20, "PixelLedDetect", "定位算法")]
     public class AlgorithmLedCheck : DisplayAlgorithmBase
     {
 

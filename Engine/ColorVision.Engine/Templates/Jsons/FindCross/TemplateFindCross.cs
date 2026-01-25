@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
         {
             Title = ColorVision.Engine.Properties.Resources.CrossCalculationTemplateManagement;
             Code = "FindCross";
-            Name = "十字定位算法";
+            Name = ColorVision.Engine.Properties.Resources.FindCross;
             TemplateDicId = 45;
             TemplateParams = Params;
             IsUserControl = true;

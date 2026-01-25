@@ -11,7 +11,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 {
-    [DisplayAlgorithm(12, "双目融合", "ARVR")]
+    [DisplayAlgorithm(12, "StereoFusion", "ARVR")]
     public class AlgorithmBinocularFusion : DisplayAlgorithmBase
     {
         public DeviceAlgorithm Device { get; set; }

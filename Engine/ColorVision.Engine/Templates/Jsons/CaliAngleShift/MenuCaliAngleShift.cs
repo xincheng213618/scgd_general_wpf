@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
 {
     public class MenuCaliAngleShift : MenuITemplateAlgorithmBase
     {
-        public override string Header => "色差校正";
+        public override string Header => ColorVision.Engine.Properties.Resources.ColorCorrection;
         public override int Order => 1004;
         public override ITemplate Template => new TemplateCaliAngleShift();
     }

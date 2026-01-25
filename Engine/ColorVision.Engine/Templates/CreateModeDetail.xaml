@@ -28,11 +28,11 @@
         <Border x:Name="BorderEdit" Grid.Row="0" d:DataContext="{d:DesignInstance local:ModDetailModel}" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
             <StackPanel>
                 <DockPanel Margin="2">
-                    <TextBlock Text="符号" Width="100" />
+                    <TextBlock Text="{x:Static properties:Resources.Symbol}" Width="100" />
                     <ComboBox x:Name="ComboBoxSymbol" SelectedValue="{Binding SysPid}" SelectedValuePath="Key"  DisplayMemberPath="Value"  SelectionChanged="ComboBoxSymbol_SelectionChanged"/>
                 </DockPanel>
                 <DockPanel Margin="2">
-                    <TextBlock Text="值" Width="100" />
+                    <TextBlock Text="{x:Static properties:Resources.Value}" Width="100" />
                     <TextBox Text="{Binding ValueA}"/>
                 </DockPanel>
             </StackPanel>

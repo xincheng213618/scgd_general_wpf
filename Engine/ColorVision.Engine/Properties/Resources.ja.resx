@@ -1086,7 +1086,7 @@
   <data name="StereoFusion" xml:space="preserve">
     <value>両眼融合</value>
   </data>
-  <data name="KBDetect" xml:space="preserve">
+  <data name="CharacterBrghtnessInsp" xml:space="preserve">
     <value>キーボード検出</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
@@ -2570,5 +2570,59 @@
   </data>
   <data name="CurrentCurrentMA" xml:space="preserve">
     <value>電流（mA）</value>
+  </data>
+  <data name="ImageCrop" xml:space="preserve">
+    <value>画像の切り抜き</value>
+  </data>
+  <data name="FindCross" xml:space="preserve">
+    <value>クロスポジショニング</value>
+  </data>
+  <data name="ColorCorrection" xml:space="preserve">
+    <value>色差補正</value>
+  </data>
+  <data name="EmittingAreaLocation" xml:space="preserve">
+    <value>発光領域の配置</value>
+  </data>
+  <data name="TemplateList" xml:space="preserve">
+    <value>テンプレートリスト</value>
+  </data>
+  <data name="OpenFullEditor" xml:space="preserve">
+    <value>フルエディターを開く</value>
+  </data>
+  <data name="SelectTemplateToViewDetails" xml:space="preserve">
+    <value>詳細を表示するにはテンプレートを選択してください</value>
+  </data>
+  <data name="PleaseSelectTemplateToViewAndEdit" xml:space="preserve">
+    <value>表示および編集するテンプレートを選択してください。</value>
+  </data>
+  <data name="TemplateEdit" xml:space="preserve">
+    <value>テンプレート編集</value>
+  </data>
+  <data name="CurrentSelection" xml:space="preserve">
+    <value>現在の選択</value>
+  </data>
+  <data name="TemplatesCount" xml:space="preserve">
+    <value>テンプレート</value>
+  </data>
+  <data name="TemplateEditorLoadFailed" xml:space="preserve">
+    <value>テンプレートエディタを読み込めません</value>
+  </data>
+  <data name="DefaultValueType" xml:space="preserve">
+    <value>デフォルト値の型</value>
+  </data>
+  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
+    <value>サービスレジストリの構成</value>
+  </data>
+  <data name="ExportSucceeded" xml:space="preserve">
+    <value>エクスポート成功</value>
+  </data>
+  <data name="ConfirmReset" xml:space="preserve">
+    <value>リセットを確認する</value>
+  </data>
+  <data name="ImportException" xml:space="preserve">
+    <value>インポートエラー</value>
+  </data>
+  <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
+    <value>絶対に必要な場合を除き、削除しないでください。（必要に応じて削除してください）</value>
   </data>
 </root>

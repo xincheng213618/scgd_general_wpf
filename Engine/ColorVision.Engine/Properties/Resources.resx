@@ -1086,7 +1086,7 @@
   <data name="StereoFusion" xml:space="preserve">
     <value>双目融合</value>
   </data>
-  <data name="KBDetect" xml:space="preserve">
+  <data name="CharacterBrghtnessInsp" xml:space="preserve">
     <value>键盘检测</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
@@ -2570,5 +2570,59 @@
   </data>
   <data name="CurrentCurrentMA" xml:space="preserve">
     <value>当前电流(mA)</value>
+  </data>
+  <data name="ImageCrop" xml:space="preserve">
+    <value>图像裁剪</value>
+  </data>
+  <data name="FindCross" xml:space="preserve">
+    <value>十字定位</value>
+  </data>
+  <data name="ColorCorrection" xml:space="preserve">
+    <value>色差校正</value>
+  </data>
+  <data name="EmittingAreaLocation" xml:space="preserve">
+    <value>发光区定位</value>
+  </data>
+  <data name="TemplateList" xml:space="preserve">
+    <value>模板列表</value>
+  </data>
+  <data name="OpenFullEditor" xml:space="preserve">
+    <value>打开完整编辑器</value>
+  </data>
+  <data name="SelectTemplateToViewDetails" xml:space="preserve">
+    <value>选择一个模板查看详情</value>
+  </data>
+  <data name="PleaseSelectTemplateToViewAndEdit" xml:space="preserve">
+    <value>请选择一个模板以查看和编辑</value>
+  </data>
+  <data name="TemplateEdit" xml:space="preserve">
+    <value>模板编辑</value>
+  </data>
+  <data name="CurrentSelection" xml:space="preserve">
+    <value>当前选择</value>
+  </data>
+  <data name="TemplatesCount" xml:space="preserve">
+    <value>个模板</value>
+  </data>
+  <data name="TemplateEditorLoadFailed" xml:space="preserve">
+    <value>无法加载模板编辑器</value>
+  </data>
+  <data name="DefaultValueType" xml:space="preserve">
+    <value>默认值类型</value>
+  </data>
+  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
+    <value>服务注册中心配置</value>
+  </data>
+  <data name="ExportSucceeded" xml:space="preserve">
+    <value>导出成功</value>
+  </data>
+  <data name="ConfirmReset" xml:space="preserve">
+    <value>确定要重置</value>
+  </data>
+  <data name="ImportException" xml:space="preserve">
+    <value>导入异常</value>
+  </data>
+  <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
+    <value>非必要情况下请勿删除,是否删除</value>
   </data>
 </root>

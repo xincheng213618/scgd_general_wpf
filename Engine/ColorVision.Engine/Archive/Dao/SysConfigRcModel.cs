@@ -77,7 +77,7 @@ namespace ColorVision.Engine.Sys.Dao
     {
         public override string OwnerGuid => nameof(MenuArchive);
 
-        public override string Header => "服务注册中心配置";
+        public override string Header => ColorVision.Engine.Properties.Resources.ServiceRegistryCenterConfig;
 
         public override void Execute()
         {

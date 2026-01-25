@@ -64,7 +64,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public TemplateKB()
         {
-            Title = "键盘检测模板管理";
+            Title = ColorVision.Engine.Properties.Resources.CharacterBrghtnessInsp;
             Code = "KB";
             TemplateDicId = 150;
             TemplateParams = Params;

@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             };
         }
     }
-    [DisplayAlgorithm(98, "键盘检测", "数据提取算法")]
+    [DisplayAlgorithm(98, "键盘检测1", "数据提取算法")]
     public class AlgorithmKB : DisplayAlgorithmBase
     {
 
