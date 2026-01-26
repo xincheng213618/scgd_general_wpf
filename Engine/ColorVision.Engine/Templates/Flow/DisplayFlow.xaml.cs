@@ -532,7 +532,6 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineManager.Batch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
             Db.Updateable(FlowEngineManager.Batch);
-
             View.logTextBox.Text = ColorVision.Engine.Properties.Resources.ExecutionCancelled;
 
         }
