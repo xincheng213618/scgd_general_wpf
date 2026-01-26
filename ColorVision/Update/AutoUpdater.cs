@@ -150,11 +150,11 @@ namespace ColorVision.Update
                     {
                         // 如果找到匹配项，提取变更日志
                         string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
-                        msg = $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?{Environment.NewLine}{Environment.NewLine}点击是立即更新，点击否跳过该版本，点击取消稍后提醒";
+                        msg = $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?{Environment.NewLine}{Environment.NewLine}{ColorVision.Properties.Resources.ClickYesToUpdateNow}";
                     }
                     else
                     {
-                        msg = $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}{Environment.NewLine}点击是立即更新，点击否跳过该版本，点击取消稍后提醒";
+                        msg = $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}{Environment.NewLine}{ColorVision.Properties.Resources.ClickYesToUpdateNow}";
                     }
 
                     Application.Current.Dispatcher.Invoke(() =>

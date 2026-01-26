@@ -74,7 +74,7 @@ namespace ColorVision
                     continue;
                 try
                 {
-                    log.Info("终止未响应的进程");
+                    log.Info(ColorVision.Properties.Resources.TerminateUnresponsiveProcess);
                     // 终止未响应的进程
                     process.Kill();
                     process.WaitForExit();

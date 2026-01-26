@@ -291,4 +291,10 @@
   <data name="FullScreen" xml:space="preserve">
     <value>plein écran</value>
   </data>
+  <data name="TerminateUnresponsiveProcess" xml:space="preserve">
+    <value>Mettre fin aux processus qui ne répondent pas</value>
+  </data>
+  <data name="ClickYesToUpdateNow" xml:space="preserve">
+    <value>Cliquez sur Oui pour mettre à jour immédiatement, sur Non pour ignorer cette version, ou sur Annuler pour me le rappeler plus tard.</value>
+  </data>
 </root>

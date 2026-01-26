@@ -2405,7 +2405,7 @@ namespace ProjectStarkSemi
                     double radians = (90 - azimuthAngle) * Math.PI / 180.0;
 
                     // Sample from center to edge
-                    for (int theta = 0; theta <= (int)MaxAngle; theta++)
+                    for (int theta = -(int)MaxAngle; theta <= (int)MaxAngle; theta++)
                     {
                         double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
                         double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);

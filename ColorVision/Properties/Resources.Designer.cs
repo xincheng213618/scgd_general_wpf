@@ -151,6 +151,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 点击是立即更新，点击否跳过该版本，点击取消稍后提醒 的本地化字符串。
+        /// </summary>
+        public static string ClickYesToUpdateNow {
+            get {
+                return ResourceManager.GetString("ClickYesToUpdateNow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 ColorVision 更新程序 的本地化字符串。
         /// </summary>
         public static string ColorVisionUpdater {
@@ -507,6 +516,15 @@ namespace ColorVision.Properties {
         public static string TbSettingsStartBoot {
             get {
                 return ResourceManager.GetString("TbSettingsStartBoot", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 终止未响应的进程 的本地化字符串。
+        /// </summary>
+        public static string TerminateUnresponsiveProcess {
+            get {
+                return ResourceManager.GetString("TerminateUnresponsiveProcess", resourceCulture);
             }
         }
         

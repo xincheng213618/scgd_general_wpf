@@ -457,6 +457,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 权限管理 的本地化字符串。
+        /// </summary>
+        public static string PermissionManagement {
+            get {
+                return ResourceManager.GetString("PermissionManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 权限模式 的本地化字符串。
         /// </summary>
         public static string PermissionMode {
@@ -574,6 +583,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 角色列表 的本地化字符串。
+        /// </summary>
+        public static string RoleList {
+            get {
+                return ResourceManager.GetString("RoleList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 保存 的本地化字符串。
         /// </summary>
         public static string Save {
@@ -669,6 +687,15 @@ namespace ColorVision.Solution.Properties {
         public static string UserCenter {
             get {
                 return ResourceManager.GetString("UserCenter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户 ID 的本地化字符串。
+        /// </summary>
+        public static string UserId {
+            get {
+                return ResourceManager.GetString("UserId", resourceCulture);
             }
         }
         

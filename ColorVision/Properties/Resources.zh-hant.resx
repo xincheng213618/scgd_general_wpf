@@ -291,4 +291,10 @@
   <data name="FullScreen" xml:space="preserve">
     <value>全螢幕</value>
   </data>
+  <data name="TerminateUnresponsiveProcess" xml:space="preserve">
+    <value>終止未回應的進程</value>
+  </data>
+  <data name="ClickYesToUpdateNow" xml:space="preserve">
+    <value>點選是立即更新，點選否跳過該版本，點選取消稍後提醒</value>
+  </data>
 </root>
