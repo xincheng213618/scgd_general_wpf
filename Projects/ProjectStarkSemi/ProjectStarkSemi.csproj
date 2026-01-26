@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.2.2.19</VersionPrefix>
+		<VersionPrefix>1.2.2.20</VersionPrefix>
 		<UseWindowsForms>True</UseWindowsForms>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>

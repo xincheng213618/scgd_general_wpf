@@ -291,4 +291,10 @@
   <data name="FullScreen" xml:space="preserve">
     <value>전체 화면</value>
   </data>
+  <data name="TerminateUnresponsiveProcess" xml:space="preserve">
+    <value>응답하지 않는 프로세스를 종료합니다.</value>
+  </data>
+  <data name="ClickYesToUpdateNow" xml:space="preserve">
+    <value>지금 업데이트하려면 '예'를 클릭하고, 이번 버전을 건너뛰려면 '아니요'를 클릭하고, 나중에 알림을 받으려면 '취소'를 클릭하세요.</value>
+  </data>
 </root>

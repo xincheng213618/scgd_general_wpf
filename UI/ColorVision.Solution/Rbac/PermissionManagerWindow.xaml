@@ -115,49 +115,25 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     
-                    <TextBlock Grid.Row="0" 
-                               Text="{x:Static properties:Resources.RoleList}" 
-                               FontSize="15" 
-                               FontWeight="SemiBold"
-                               Margin="0,0,0,10"/>
+                    <TextBlock Grid.Row="0"  Text="{x:Static properties:Resources.RoleList}"   FontSize="15"   FontWeight="SemiBold" Margin="0,0,0,10"/>
                     
-                    <Border Grid.Row="1" 
-                            BorderBrush="#E0E0E0" 
-                            BorderThickness="1"
-                            CornerRadius="4">
-                        <ListBox x:Name="RolesListBox" 
-                                 SelectionChanged="RolesListBox_SelectionChanged"
-                                 DisplayMemberPath="Name"
-                                 BorderThickness="0"
-                                 Padding="4"/>
+                    <Border Grid.Row="1"  BorderBrush="#E0E0E0"  BorderThickness="1"  CornerRadius="4">
+                        <ListBox x:Name="RolesListBox"   SelectionChanged="RolesListBox_SelectionChanged"   DisplayMemberPath="Name"   BorderThickness="0"    Padding="4"/>
                     </Border>
 
-                    <Button Grid.Row="2" 
-        HorizontalAlignment="Stretch" 
-        Margin="0,10,0,0" 
-        Click="RefreshRoles_Click"
-        Style="{StaticResource SecondaryButton}">
+                    <Button Grid.Row="2"   HorizontalAlignment="Stretch"   Margin="0,10,0,0"   Click="RefreshRoles_Click" Style="{StaticResource SecondaryButton}">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <!-- 图标部分 -->
-                            <TextBlock Text="&#xE72C;" 
-                   FontFamily="Segoe MDL2 Assets" 
-                   Margin="0,0,8,0" 
-                   VerticalAlignment="Center"/>
+                            <TextBlock Text="&#xE72C;"   FontFamily="Segoe MDL2 Assets"  Margin="0,0,8,0"     VerticalAlignment="Center"/>
                             <!-- 文字部分 -->
-                            <TextBlock Text="刷新角色" 
-                   FontFamily="Microsoft YaHei UI" 
-                   VerticalAlignment="Center"/>
+                            <TextBlock Text="刷新角色"   FontFamily="Microsoft YaHei UI"    VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
                 </Grid>
             </Border>
             
             <!-- 右侧：权限树 -->
-            <Border Grid.Column="2" 
-                    Background="White" 
-                    CornerRadius="6" 
-                    Padding="12"
-                    Effect="{DynamicResource EffectShadow1}">
+            <Border Grid.Column="2"   Background="White"    CornerRadius="6"  Padding="12"  Effect="{DynamicResource EffectShadow1}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -167,11 +143,7 @@
                     </Grid.RowDefinitions>
                     
                     <!-- 标题 -->
-                    <TextBlock Grid.Row="0" 
-                               Text="可用权限" 
-                               FontSize="15" 
-                               FontWeight="SemiBold"
-                               Margin="0,0,0,10"/>
+                    <TextBlock Grid.Row="0"   Text="可用权限"    FontSize="15"     FontWeight="SemiBold"     Margin="0,0,0,10"/>
                     
                     <!-- 操作栏 -->
                     <Border Grid.Row="1" 

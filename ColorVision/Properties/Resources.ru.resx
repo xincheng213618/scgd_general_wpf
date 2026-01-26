@@ -291,4 +291,10 @@
   <data name="FullScreen" xml:space="preserve">
     <value>полноэкранный</value>
   </data>
+  <data name="TerminateUnresponsiveProcess" xml:space="preserve">
+    <value>Завершить процессы, не отвечающие на запросы.</value>
+  </data>
+  <data name="ClickYesToUpdateNow" xml:space="preserve">
+    <value>Нажмите «Да», чтобы обновить немедленно, нажмите «Нет», чтобы пропустить эту версию, или нажмите «Отмена», чтобы напомнить мне позже.</value>
+  </data>
 </root>
