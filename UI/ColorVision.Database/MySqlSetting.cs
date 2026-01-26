@@ -15,11 +15,8 @@ namespace ColorVision.Database
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = Properties.Resources.EnableDatabase,
-                                Description = Properties.Resources.EnableDatabase,
                                 Group ="Engine",
                                 Order =1,
-                                Type = ConfigSettingType.Bool,
                                 BindingName = nameof(MySqlSetting.IsUseMySql),
                                 Source = MySqlSetting.Instance
                             },

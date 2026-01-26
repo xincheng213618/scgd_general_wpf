@@ -19,10 +19,7 @@ namespace ColorVision.UI.Desktop.Plugins
             {
                  new ConfigSettingMetadata
                 {
-                    Name = UI.Properties.Resources.CheckPluginUpdates,
-                    Description = UI.Properties.Resources.CheckPluginUpdates,
                     Order = 999,
-                    Type = ConfigSettingType.Bool,
                     BindingName =nameof(PluginWindowConfig.IsAutoUpdate),
                     Source = PluginWindowConfig.Instance,
                 }

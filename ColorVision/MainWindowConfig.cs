@@ -5,6 +5,7 @@ using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 
@@ -55,9 +56,11 @@ namespace ColorVision
         private int _LeftTabControlSelectedIndex = 1;
 
         [JsonIgnore]
+        [DisplayName("TbSettingsStartBoot")]
         public bool IsAutoRun { get => Tool.IsAutoRun(AutoRunName, AutoRunRegPath); set { Tool.SetAutoRun(value, AutoRunName, AutoRunRegPath); OnPropertyChanged(); } }
 
         [JsonIgnore]
+        [DisplayName("Win10ClassicDesktopMenu")]
         public bool IsWindows10ContextMenu { get => !Tool.IsWindows11ContextMenu(); set
             {
                 if (value != Tool.IsWindows11ContextMenu()) return;
@@ -77,27 +80,16 @@ namespace ColorVision
             {
                 new ConfigSettingMetadata
                 {
-                    Name = Properties.Resources.TbSettingsStartBoot,
-                    Description =  Properties.Resources.TbSettingsStartBoot,
-                    Order = 15,
-                    Type = ConfigSettingType.Bool,
                     BindingName =nameof(IsAutoRun),
-                    Source = this,
+                    Source = Instance,
                 },
                 new ConfigSettingMetadata
                 {
-                    Name = "OpenFloatingBall",
-                    Description =  "OpenFloatingBall",
-                    Order = 15,
-                    Type = ConfigSettingType.Bool,
                     BindingName =nameof(OpenFloatingBall),
-                    Source = this,
+                    Source = Instance,
                 },
                 new ConfigSettingMetadata
                 {
-                    Name = Properties.Resources.StartRecoverUILayout,
-                    Description = Properties.Resources.StartRecoverUILayout,
-                    Type = ConfigSettingType.Bool,
                     BindingName = nameof(IsRestoreWindow),
                     Source = Instance
                 }
@@ -107,12 +99,8 @@ namespace ColorVision
             {
                 list.Add(new ConfigSettingMetadata
                 {
-                    Name = ColorVision.Properties.Resources.Win10ClassicDesktopMenu,
-                    Description = "",
-                    Order = 15,
-                    Type = ConfigSettingType.Bool,
                     BindingName = nameof(IsWindows10ContextMenu),
-                    Source = this,
+                    Source = Instance,
                 });
             }
             return list;

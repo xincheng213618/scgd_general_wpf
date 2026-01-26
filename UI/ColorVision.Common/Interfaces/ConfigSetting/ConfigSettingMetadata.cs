@@ -27,7 +27,7 @@ namespace ColorVision.UI
         public string Description { get; set; }
 
 
-        public ConfigSettingType Type { get; set; }
+        public ConfigSettingType Type { get; set; } = ConfigSettingType.Property;
         /// <summary>
         /// Bool
         /// </summary>

@@ -15,21 +15,12 @@ namespace ColorVision.Engine.MQTT
             {
                 new ConfigSettingMetadata
                 {
-                    Name = "Start MQTT",
-                    Description = "Start MQTT",
-                    Order =1,
-                    Type = ConfigSettingType.Bool,
                     Group ="Engine",
                     BindingName = nameof(MQTTSetting.IsUseMQTT),
                     Source = MQTTSetting.Instance
                 },
                 new ConfigSettingMetadata
                 {
-                    Name = "MQTT TimeOut",
-                    Description = "TimeOut",
-                    Group ="Engine",
-                    Order =1,
-                    Type = ConfigSettingType.Text,
                     BindingName = nameof(MQTTSetting.DefaultTimeout),
                     Source = MQTTSetting.Instance
                 }

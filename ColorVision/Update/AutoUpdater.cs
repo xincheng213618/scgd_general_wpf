@@ -5,6 +5,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -21,14 +22,16 @@ namespace ColorVision.Update
 {
     public class AutoUpdateConfig:ViewModelBase, IConfig
     {
-        public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();    
+        public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();
 
+        [DisplayName("CheckUpdatesOnStartup")]
         public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; OnPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision";
 
         /// <summary>
         /// 是否自动更新
         /// </summary>
+        [DisplayName("CheckUpdatesOnStartup")]
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
 

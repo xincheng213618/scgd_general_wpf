@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System;
+using System.ComponentModel;
 
 namespace ColorVision.Database.SqliteLog
 {
@@ -10,6 +11,7 @@ namespace ColorVision.Database.SqliteLog
     public class SqliteLogManagerConfig:ViewModelBase,IConfig
     {
         public event EventHandler<bool> SqliteLogEnabledChanged;
+        [DisplayName("LogDatabase")]
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged();SqliteLogEnabledChanged?.Invoke(this, value); } }
         private bool _IsEnabled;
     }

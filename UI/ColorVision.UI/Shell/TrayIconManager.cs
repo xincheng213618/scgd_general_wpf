@@ -22,19 +22,13 @@ namespace ColorVision.UI.Shell
             {
                 new ConfigSettingMetadata()
                 {
-                    Name = "TrayIconShow",
-                    Description = "TrayIconShow",
                     Order = 99,
-                    Type = ConfigSettingType.Bool,
                     BindingName =nameof(IsShowTrayIcon),
                     Source = Instance,
                 },
                 new ConfigSettingMetadata()
                 {
-                    Name = "TrayIconContentUseWPF",
-                    Description = "TrayIconContentUseWPF",
                     Order = 99,
-                    Type = ConfigSettingType.Bool,
                     BindingName =nameof(IsUseWPFContextMenu),
                     Source = Instance,
                 },

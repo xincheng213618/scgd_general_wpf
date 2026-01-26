@@ -22,11 +22,8 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = "KBLVSacle",
-                                Description = "KBLVSacle",
                                 Order = 2,
                                 Group ="Engine",
-                                Type = ConfigSettingType.Text,
                                 BindingName =nameof(KBLVSacle),
                                 Source = Instance,
                             }

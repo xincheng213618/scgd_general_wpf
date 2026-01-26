@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using System.ComponentModel;
 using System.IO;
 using System.Xml.Linq;
 
@@ -11,6 +12,7 @@ namespace WindowsServicePlugin.CVWinSMS
     {
         public static CVWinSMSConfig Instance => ConfigService.Instance.GetRequiredService<CVWinSMSConfig>();
 
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string CVWinSMSPath { get => _CVWinSMSPath; set  { _CVWinSMSPath = value; } }
         private string _CVWinSMSPath = string.Empty;
 
@@ -62,7 +64,6 @@ namespace WindowsServicePlugin.CVWinSMS
             }
         }
 
-
         public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; OnPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool";
 
@@ -75,18 +76,12 @@ namespace WindowsServicePlugin.CVWinSMS
             {
                 new ConfigSettingMetadata()
                 {
-                    Name = "CVWinSMSPath",
-                    Description = "CVWinSMSPath",
-                    Type = ConfigSettingType.Text,
                     BindingName = nameof(CVWinSMSPath),
                     Source =Instance
                 },
                 new ConfigSettingMetadata
                 {
-                    Name = "CVWinSMSIsAutoUpdate",
-                    Description =  "",
                     Order = 999,
-                    Type = ConfigSettingType.Bool,
                     BindingName =nameof(IsAutoUpdate),
                     Source = Instance,
                 }

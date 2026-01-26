@@ -67,6 +67,8 @@ namespace ColorVision.UI.Desktop.Settings
                 }
                 else
                 {
+                    if (configSetting.Source == null || configSetting.BindingName == null) return;
+
                     PropertyInfo propertyInfo = configSetting.Source.GetType().GetProperty(configSetting.BindingName);
                     DockPanel dockPanel = PropertyEditorHelper.GenProperties(propertyInfo, configSetting.Source);
                     dockPanel.Margin = new Thickness(0, 0, 0, 5);
@@ -112,7 +114,14 @@ namespace ColorVision.UI.Desktop.Settings
             // 将排序后的配置设置添加到集合中
             foreach (var item in sortedSettings)
             {
-                Add(item);
+                try
+                {
+                    Add(item);
+                }
+                catch (Exception ex)
+                {
+
+                }
             }
         }
     }
