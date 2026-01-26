@@ -487,4 +487,7 @@
   <data name="Edit" xml:space="preserve">
     <value>modifier</value>
   </data>
+  <data name="Theme" xml:space="preserve">
+    <value>thème</value>
+  </data>
 </root>
