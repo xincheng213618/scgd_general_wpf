@@ -67,6 +67,7 @@ namespace WindowsServicePlugin.CVWinSMS
         public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; OnPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool";
 
+        [DisplayName("CVWinSMSIsAutoUpdate")]
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
 
@@ -76,12 +77,13 @@ namespace WindowsServicePlugin.CVWinSMS
             {
                 new ConfigSettingMetadata()
                 {
+                    Order = 521,
                     BindingName = nameof(CVWinSMSPath),
                     Source =Instance
                 },
                 new ConfigSettingMetadata
                 {
-                    Order = 999,
+                    Order = 520,
                     BindingName =nameof(IsAutoUpdate),
                     Source = Instance,
                 }

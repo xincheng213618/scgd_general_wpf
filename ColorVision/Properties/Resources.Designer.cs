@@ -124,6 +124,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 检测插件更新 的本地化字符串。
+        /// </summary>
+        public static string CheckPluginUpdates {
+            get {
+                return ResourceManager.GetString("CheckPluginUpdates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 检查更新(旧) 的本地化字符串。
         /// </summary>
         public static string CheckUpdateOld {

@@ -297,4 +297,7 @@
   <data name="ClickYesToUpdateNow" xml:space="preserve">
     <value>今すぐ更新するには「はい」をクリックし、このバージョンをスキップするには「いいえ」をクリックし、後で通知するには「キャンセル」をクリックします。</value>
   </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>プラグインの更新を確認</value>
+  </data>
 </root>

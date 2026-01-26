@@ -297,4 +297,7 @@
   <data name="ClickYesToUpdateNow" xml:space="preserve">
     <value>Нажмите «Да», чтобы обновить немедленно, нажмите «Нет», чтобы пропустить эту версию, или нажмите «Отмена», чтобы напомнить мне позже.</value>
   </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>Проверить обновления плагинов</value>
+  </data>
 </root>

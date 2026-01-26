@@ -2,8 +2,6 @@
 {
     public enum ConfigSettingType
     {
-        ComboBox,
-        UserControl,
         TabItem,
         Class,
         Property,

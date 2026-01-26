@@ -297,4 +297,7 @@
   <data name="ClickYesToUpdateNow" xml:space="preserve">
     <value>点击是立即更新，点击否跳过该版本，点击取消稍后提醒</value>
   </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>检测插件更新</value>
+  </data>
 </root>

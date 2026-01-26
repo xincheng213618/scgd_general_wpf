@@ -26,21 +26,16 @@ namespace ColorVision.UI
         /// </summary>
         public string Description { get; set; }
 
-
         public ConfigSettingType Type { get; set; } = ConfigSettingType.Property;
         /// <summary>
         /// Bool
         /// </summary>
         public string BindingName { get; set; }
         public object Source { get; set; }
+
         /// <summary>
         /// UserControl,TabItem
         /// </summary>
         public UserControl UserControl { get; set; }
-        
-        /// <summary>
-        /// ComboBox
-        /// </summary>
-        public ComboBox ComboBox { get; set; }
     }
 }

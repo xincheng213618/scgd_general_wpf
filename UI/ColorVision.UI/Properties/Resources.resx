@@ -307,9 +307,6 @@
   <data name="ViewMode9" xml:space="preserve">
     <value>视图模式9</value>
   </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
-    <value>检测插件更新</value>
-  </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>正在检索是否存在附加项目</value>
   </data>

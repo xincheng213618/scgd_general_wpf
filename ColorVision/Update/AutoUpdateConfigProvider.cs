@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Properties;
+using ColorVision.UI;
 using System.Collections.Generic;
 
 namespace ColorVision.Update
@@ -11,13 +12,13 @@ namespace ColorVision.Update
             {
             new ConfigSettingMetadata
             {
-                Order = 998, // Adjusted order for clarity
+                Order = 500, // Adjusted order for clarity
                 BindingName =nameof(AutoUpdateConfig.IsAutoUpdate),
                 Source = AutoUpdateConfig.Instance,
             },
              new ConfigSettingMetadata
             {
-                Order = 999,
+                Order = 500,
                 BindingName =nameof(AutoUpdateConfig.UpdatePath),
                 Source = AutoUpdateConfig.Instance,
             }

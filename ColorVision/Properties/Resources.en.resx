@@ -297,4 +297,7 @@
   <data name="ClickYesToUpdateNow" xml:space="preserve">
     <value>Click Yes to update immediately, click No to skip this version, or click Cancel to remind me later.</value>
   </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>Check for plugin updates</value>
+  </data>
 </root>

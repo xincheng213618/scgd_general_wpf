@@ -5,6 +5,7 @@ using ColorVision.UI.Plugins;
 using log4net;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -35,6 +36,8 @@ namespace ColorVision.UI.Desktop.Plugins
         /// <summary>
         /// 是否自动更新插件
         /// </summary>
+        /// 
+        [DisplayName("CheckPluginUpdates")]
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
     }

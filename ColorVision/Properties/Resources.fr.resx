@@ -297,4 +297,7 @@
   <data name="ClickYesToUpdateNow" xml:space="preserve">
     <value>Cliquez sur Oui pour mettre à jour immédiatement, sur Non pour ignorer cette version, ou sur Annuler pour me le rappeler plus tard.</value>
   </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>Vérifier les mises à jour des plugins</value>
+  </data>
 </root>

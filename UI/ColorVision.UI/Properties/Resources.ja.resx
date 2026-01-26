@@ -268,9 +268,6 @@
   <data name="ViewMode9" xml:space="preserve">
     <value>表示モード9</value>
   </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
-    <value>プラグインの更新を確認</value>
-  </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>追加プロジェクトを確認中</value>
   </data>

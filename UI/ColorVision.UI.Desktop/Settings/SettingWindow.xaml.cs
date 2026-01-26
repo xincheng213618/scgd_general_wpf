@@ -35,16 +35,8 @@ namespace ColorVision.UI.Desktop.Settings
 
             void Add(ConfigSettingMetadata configSetting)
             {
-                if (configSetting.Type == ConfigSettingType.ComboBox)
-                {
-                    DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0,0,0,5) };
-                    ComboBox comboBox = configSetting.ComboBox;
-                    DockPanel.SetDock(comboBox, Dock.Right);
-                    dockPanel.Children.Add(comboBox);
-                    dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
-                    SettingStackPanels[configSetting.Group].Children.Add(dockPanel);
-                }
-                else if (configSetting.Type == ConfigSettingType.TabItem)
+
+                if (configSetting.Type == ConfigSettingType.TabItem)
                 {
                     TabItem tabItem = new TabItem() { Header = configSetting.Name, Background = Brushes.Transparent };
                     Grid grid = new Grid();

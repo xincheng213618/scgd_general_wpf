@@ -24,7 +24,6 @@ namespace ColorVision.Update
     {
         public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();
 
-        [DisplayName("CheckUpdatesOnStartup")]
         public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; OnPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision";
 
