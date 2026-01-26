@@ -1,4 +1,6 @@
-﻿using ST.Library.UI.NodeEditor;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using ST.Library.UI.NodeEditor;
 using System;
 using System.Linq;
 using System.Windows;
@@ -6,12 +8,27 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-    /// <summary>
-    /// NodePropertyEditorWindow.xaml 的交互逻辑
-    /// Popup window for editing node properties with toggle between PropertyGrid and SignStackPanel
-    /// </summary>
+    public class NodePropertyEditorConfig : ViewModelBase, IConfig
+    {
+        public bool IsPropertyEditor { get => _IsPropertyEditor; set { _IsPropertyEditor = value; OnPropertyChanged(); } }
+        private bool _IsPropertyEditor = true;
+
+    }
+
+    public class NodePropertyEditorVM : ViewModelBase
+    {
+        public NodePropertyEditorConfig Config { get; set; }
+        public RelayCommand EditCommand { get; set; }
+        public NodePropertyEditorVM()
+        {
+            Config = ConfigService.Instance.GetRequiredService<NodePropertyEditorConfig>();
+            EditCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(),WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+        }
+    }
+    
     public partial class NodePropertyEditorWindow : Window
     {
+
         private Window _owner;
         private bool _allowClose = false;
         private System.Windows.Forms.Control _targetControl;
@@ -28,12 +45,16 @@ namespace ColorVision.Engine.Templates.Flow
             Closing += NodePropertyEditorWindow_Closing;
 
         }
+        NodePropertyEditorVM NodePropertyEditorVM { get; set; }
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            NodePropertyEditorVM = new NodePropertyEditorVM();
+            this.DataContext = NodePropertyEditorVM;
+        }
 
         public static float DpiX { get; set; }
 
-
-
-        private void NodePropertyEditorWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void NodePropertyEditorWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             // Prevent window from closing unless explicitly allowed
             if (!_allowClose)
@@ -89,7 +110,7 @@ namespace ColorVision.Engine.Templates.Flow
                 // Position the window to the right of the target control
                 Left = (controlLocation.X + _targetControl.Width + 10  ) * 96 / DpiX - this.ActualWidth; 
                 Top = controlLocation.Y * 96 / DpiX;
-            }
+            } 
             else if (_owner != null && _owner.IsLoaded)
             {
                 // Fallback: Position the window to the right of the owner
@@ -100,7 +121,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Window_Deactivated(object sender, EventArgs e)
         {
-            // Hide window when it loses focus
             //Hide();
         }
 
@@ -111,20 +131,15 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Window_Closed(object sender, EventArgs e)
         {
-            // Clean up
+            PropertyGridHost.Dispose();
         }
 
-        /// <summary>
-        /// Closes the window permanently. Only call this when disposing.
-        /// </summary>
+
         public void CloseWindow()
         {
             _allowClose = true;
             Close();
         }
-        /// <summary>
-        /// Shows the property editor window and activates it
-        /// </summary>
         public void ShowPropertyEditor()
         {
             try
@@ -134,7 +149,6 @@ namespace ColorVision.Engine.Templates.Flow
                     Show();
                 }
                 
-                // Try to activate the window
                 if (IsVisible)
                 {
                     Activate();
@@ -146,12 +160,11 @@ namespace ColorVision.Engine.Templates.Flow
                 // This should not happen with our Closing event handler, but just in case
             }
         }
-        private bool IsPropertyGrid = false;
         private void ToggleEditMode_Click(object sender, RoutedEventArgs e)
         {
-            IsPropertyGrid = !IsPropertyGrid;
-            PropertyGridHost.Visibility = IsPropertyGrid? Visibility.Visible : Visibility.Collapsed;
-            SignStackScrollViewer.Visibility = IsPropertyGrid ? Visibility.Collapsed : Visibility.Visible;
+            NodePropertyEditorVM.Config.IsPropertyEditor = !NodePropertyEditorVM.Config.IsPropertyEditor;
         }
+
+
     }
 }

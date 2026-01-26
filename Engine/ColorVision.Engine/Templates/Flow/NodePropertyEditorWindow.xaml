@@ -5,30 +5,43 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.Flow"
         xmlns:st="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
+        xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="属性编辑器" Height="450" Width="450"
-        WindowStyle="None"
-        ShowInTaskbar="False"
-        Topmost="False"
-        Background="{DynamicResource GlobalBackground}"
-        Deactivated="Window_Deactivated"
-        Activated="Window_Activated"
-        Closed="Window_Closed">
+        d:DataContext="{d:DesignInstance local:NodePropertyEditorVM}"
+        Height="450" Width="450" WindowStyle="None"  ShowInTaskbar="False" Topmost="False" Background="{DynamicResource GlobalBackground}"  Deactivated="Window_Deactivated" Activated="Window_Activated" Closed="Window_Closed" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
+                <Button.Triggers>
+                    <EventTrigger RoutedEvent="Button.Click">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Button.Triggers>
+                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                    <TextBlock.RenderTransform>
+                        <RotateTransform x:Name="rotateTransform2"/>
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+            </Button>
+            <Button x:Name="ToggleEditMode"  Content="{x:Static properties:Resources.Switch}" Click="ToggleEditMode_Click" HorizontalAlignment="Stretch"  Margin="0,0,0,0"/>
+        </DockPanel>
 
-        <Button x:Name="ToggleEditMode"  Content="切换编辑模式" Click="ToggleEditMode_Click" HorizontalAlignment="Stretch"  Margin="0,0,0,0"/>
 
         <Grid Grid.Row="1">
             <WindowsFormsHost x:Name="PropertyGridHost" 
-                              Visibility="Collapsed">
+                              Visibility="{Binding Config.IsPropertyEditor,Converter={StaticResource bool2VisibilityConverter1}}">
                 <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
             </WindowsFormsHost>
 
-            <ScrollViewer x:Name="SignStackScrollViewer"  Visibility="Visible"  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+            <ScrollViewer x:Name="SignStackScrollViewer"  Visibility="{Binding Config.IsPropertyEditor,Converter={StaticResource bool2VisibilityConverter}}"  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                 <StackPanel x:Name="SignStackPanelContainer"  Orientation="Vertical"  Margin="5"/>
             </ScrollViewer>
         </Grid>

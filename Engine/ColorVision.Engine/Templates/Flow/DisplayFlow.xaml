@@ -35,10 +35,7 @@
                 </TextBlock>
             </Button>
             <Grid  Margin="0,0">
-                <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"   Content="{x:Static properties:Resources.Workflow}"  FontSize="15"  IsChecked="True" />
-                <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="2,0,0,0">
-                    <Image Source="{DynamicResource DrawingImageFlow}"/>
-                </Grid>
+                <ToggleButton x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"   Content="{x:Static properties:Resources.Workflow}"  FontSize="15"  IsChecked="True" />
             </Grid>
         </DockPanel>
 

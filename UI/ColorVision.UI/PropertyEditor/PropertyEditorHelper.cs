@@ -312,7 +312,12 @@ namespace ColorVision.UI
         {
             if (obj == null) return new StackPanel();
 
-            if (resourceManager != null) GetResourceManager(obj, resourceManager);
+            bool OrderBy = true;
+            if (resourceManager != null)
+            {
+                OrderBy = false;
+                GetResourceManager(obj, resourceManager);
+            }
 
             var categoryGroups = new Dictionary<string, List<PropertyInfo>>(StringComparer.Ordinal);
 
@@ -324,15 +329,8 @@ namespace ColorVision.UI
                 var allProps = t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                 .Where(p => p.CanRead && p.CanWrite);
 
-                // 2. 【关键修改】进行排序
-                // GetInheritanceDepth 越小，说明越靠近基类 (object -> BaseConfig -> DeviceServiceConfig -> ConfigPG)
-                // 如果您想要“原始信息”（基类）在最前面，请使用 OrderBy
-                // 如果您想要“最上层”（派生类）在最前面，请使用 OrderByDescending
-                var sortedProps = allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType));
 
-                // 如果希望同一类中的属性按元数据Token（近似代码声明顺序）排序，可以再接一个 ThenBy
-                //var sortedProps = allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType))
-                //                          .ThenBy(p => p.MetadataToken);
+                var sortedProps = OrderBy? allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType)): allProps.OrderByDescending(p => GetInheritanceDepth(p.DeclaringType));
 
                 foreach (var prop in sortedProps)
                 {
