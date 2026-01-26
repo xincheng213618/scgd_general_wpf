@@ -186,27 +186,14 @@ namespace ColorVision.UI
 
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
-            TextBox textBox = new TextBox();
-            ComboBox cmlog = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
-            cmlog.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedValueProperty, new Binding(nameof(LogLevel)));
-
-            cmlog.ItemsSource = GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
-
-            cmlog.SelectionChanged += (s, e) => {
-
-            };
-            cmlog.DataContext = Instance;
-
-
             return new List<ConfigSettingMetadata>
             {
                 new ConfigSettingMetadata
                 {
-                    Name = Properties.Resources.LogLevel,
-                    Description =  Properties.Resources.LogLevel,
                     Order = 15,
-                    Type = ConfigSettingType.ComboBox,
-                    ComboBox = cmlog,
+                    Type = ConfigSettingType.Property,
+                    BindingName = nameof(LogLevel),
+                    Source = Instance
                 },
             };
         }

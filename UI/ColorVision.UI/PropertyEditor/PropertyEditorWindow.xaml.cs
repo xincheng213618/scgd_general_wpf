@@ -211,6 +211,7 @@ namespace ColorVision.UI
         }
 
 
+
         public void DisplayProperties(object obj)
         {
             categoryGroups.Clear();
