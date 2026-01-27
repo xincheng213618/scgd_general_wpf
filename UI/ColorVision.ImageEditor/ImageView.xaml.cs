@@ -86,6 +86,7 @@ namespace ColorVision.ImageEditor
             this.Focusable = true;
             this.Focus();
 
+            Config.Cleared += Config_Cleared;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
 
             foreach (var item in ImageViewModel.IEditorToolFactory.IImageComponents)
@@ -161,6 +162,18 @@ namespace ColorVision.ImageEditor
             }
         }
 
+        private void Config_Cleared(object? sender, EventArgs e)
+        {
+            Config.IsPseudo = false;
+            FunctionImage = null;
+            if (HImageCache != null)
+            {
+                HImageCache?.Dispose();
+                HImageCache = null;
+            }
+            GC.Collect();
+        }
+
         public void SetBackGround(SolidColorBrush color)
         {
             ZoomGrid.Background = color;
@@ -181,8 +194,6 @@ namespace ColorVision.ImageEditor
         /// </summary>
         private void SetupToolbarToggleCommands()
         {
-
-
             // Show All Toolbars (Ctrl+Shift+A)
             var showAllToolbarsCommand = new RoutedCommand();
             CommandBindings.Add(new CommandBinding(showAllToolbarsCommand, (s, e) => 
@@ -310,13 +321,6 @@ namespace ColorVision.ImageEditor
             ImageShow.Clear();
             ImageShow.Source = null;
             ImageShow.UpdateLayout();
-
-            if (HImageCache != null)
-            {
-                HImageCache?.Dispose();
-                HImageCache = null;
-            }
-            GC.Collect();
             ComboBoxLayers.Visibility = Visibility.Collapsed;
         }
 
@@ -667,6 +671,7 @@ namespace ColorVision.ImageEditor
         {
             Clear();
             ImageViewModel.Dispose();
+            Config.Cleared -= Config_Cleared;
 
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
             ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
