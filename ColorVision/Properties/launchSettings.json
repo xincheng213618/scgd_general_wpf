@@ -2,8 +2,7 @@
   "profiles": {
     "ColorVision": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"C:\\Users\\Xin\\Desktop\\Restore\\ECD55D852E4384805583F7C09C988C39.cvcal\"",
-      "nativeDebugging": false,
+      "nativeDebugging": true,
       "hotReloadEnabled": true
     }
   }

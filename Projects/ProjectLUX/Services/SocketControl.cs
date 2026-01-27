@@ -40,7 +40,6 @@ namespace ProjectLUX.Services
                 {
                     // 取 code 的最后两位（如果 code 长度足够）
                     string lastTwo = code.Length >= 2 ? code.Substring(code.Length - 2, 2) : code;
-
                     // 拼接到 H030 上
                     string h030x = SummaryManager.GetInstance().Summary.MachineNO + lastTwo;
 

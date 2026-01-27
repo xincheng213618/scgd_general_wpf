@@ -5,9 +5,11 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using log4net;
+using Microsoft.VisualBasic.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -531,7 +533,10 @@ namespace ColorVision.ImageEditor
                     log.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
                     Task.Run(() =>
                     {
+                        Stopwatch sw = Stopwatch.StartNew();
+
                         int ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes, channel);
+                        double algoMs = sw.Elapsed.TotalMilliseconds;
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             if (ret == 0)
@@ -543,9 +548,23 @@ namespace ColorVision.ImageEditor
 
                                     FunctionImage = image;
                                 }
+
                                 if (Pseudo.IsChecked == true)
                                 {
                                     ImageShow.Source = FunctionImage;
+                                }
+
+
+                                sw.Stop();
+                                double renderMs = sw.Elapsed.TotalMilliseconds;
+
+                                // ================== 输出结果 ==================
+                                // 建议在界面上加一个 TextBlock (比如 TimeStatus) 显示，比看日志更直观
+                                
+                                if (log.IsInfoEnabled)
+                                {
+                                    string perfMsg = $"算法耗时: {algoMs:F2} ms | 渲染耗时: {renderMs:F2} ms | 总计: {(algoMs + renderMs):F2} ms";
+                                    log.Info(perfMsg); // 记录日志
                                 }
                             }
                         });

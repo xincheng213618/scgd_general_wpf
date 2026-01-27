@@ -367,25 +367,36 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 
 COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel)
 {
+	// 构造 Mat 头，不拷贝数据
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 
 	if (mat.empty())
 		return -1;
 
-	cv::Mat out = mat.clone();
-	if (out.channels() != 1) {
+	cv::Mat out;
+
+	// 优化通道提取
+	if (mat.channels() != 1) {
 		if (channel >= 0 && channel < mat.channels()) {
-			std::vector<cv::Mat> channels;
-			cv::split(mat, channels);
-			out = channels[channel];
+			// 优化：extractChannel 比 split 快，因为它只拷贝需要的那个通道，split 会拷贝所有通道
+			cv::extractChannel(mat, out, channel);
 		}
 		else {
-			// Default to converting to grayscale if no valid channel is specified
 			cv::cvtColor(mat, out, cv::COLOR_BGR2GRAY);
 		}
 	}
+	else {
+		// 如果原图就是单通道，必须 clone 一份，因为 pseudoColor 会修改它(变身成3通道彩色)
+		// 如果不 clone，直接让 out = mat，当 pseudoColor 重新分配内存时，out 会指向新地址，
+		// 但如果 pseudoColor 内部有某种 In-place 逻辑可能会破坏 img.pData。
+		// 为了安全且因为 pseudoColor 最终输出 3 通道必然需要新内存，这里 clone 是合理的起点
+		out = mat.clone();
+	}
+
+	// 执行伪彩色变换
 	pseudoColor(out, min, max, types);
-	///���ﲻ����Ļ����ֲ��ڴ�������н���֮�����
+
+	// 转回 HImage (假设 MatToHImage 负责数据拷贝或接管)
 	return MatToHImage(out, outImage);
 }
 

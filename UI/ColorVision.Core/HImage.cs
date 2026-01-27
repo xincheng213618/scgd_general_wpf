@@ -42,6 +42,7 @@ namespace ColorVision.Core
         public readonly uint Size { get => (uint)(rows * cols * channels * (depth / 8)); }
 
         public IntPtr pData;
+
         public void Dispose()
         {
             // 使用 Marshal.FreeHGlobal来释放由 Marshal.AllocHGlobal 分配的内存

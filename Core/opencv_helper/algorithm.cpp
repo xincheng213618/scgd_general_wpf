@@ -432,56 +432,97 @@ int extractChannel(cv::Mat& input, cv::Mat& dst ,int channel)
     return 0;
 }
 
+void GetOptimizedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& outLut)
+{
+    // 【修改点1】生成 1行 256列 的矩阵，保证内存连续
+    cv::Mat range(1, 256, CV_8U);
+    for (int i = 0; i < 256; i++) range.at<uint8_t>(i) = i;
+
+    // 2. 生成 LUT (1行, 256列, 3通道)
+    cv::applyColorMap(range, outLut, mapType);
+
+    // 3. 魔改 LUT
+    // 因为是 1x256，isContinuous() 必为 true，可以直接用指针数组方式访问
+    cv::Vec3b* ptr = outLut.ptr<cv::Vec3b>();
+
+    for (int i = 0; i < minTh && i < 256; i++) {
+        ptr[i] = cv::Vec3b(0, 0, 0);
+    }
+
+    for (int i = maxTh + 1; i < 256; i++) {
+        ptr[i] = cv::Vec3b(255, 255, 255);
+    }
+}
+
 int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
 {
-    if (image.empty())
-        return -1;
+    if (image.empty()) return -1;
 
-    if (image.channels() != 1) {
-        cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
+    // ==========================================
+    // 1. 预处理：强制转换为单通道 8位 (Gray8)
+    // ==========================================
+
+    // 如果是多通道，先转灰度
+    if (image.channels() > 1) {
+        // 注意：这里要处理不同深度的转换
+        if (image.depth() == CV_8U)
+            cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
+        else if (image.depth() == CV_16U)
+            cv::cvtColor(image, image, cv::COLOR_BGR2GRAY); // convert也是支持16u转灰度的
+        // 浮点图一般也是先转灰度再 normalize
+        else
+            cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
     }
 
+    // 处理深度，统一转为 CV_8U
     if (image.depth() == CV_16U) {
-
-        ///2025.02.07 16Ϊͼ����ֱ��ͼʱ������ֱ��ͼ���⻯����ᵼ��ͼ����Σ����Ч������ͨ������Gammmaʵ��
-        //// Ӧ������Ӧֱ��ͼ���⻯
-        //cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-        ////�������ø��ˣ��ĸ��ǻᱻ��ɢ����
-        //clahe->setClipLimit(1.0); // ���öԱȶ�����
-        //clahe->apply(image, image);
-
         min1 = min1 / 256;
         max1 = max1 / 256;
+        image.convertTo(image, CV_8U, 255.0 / 65535.0);
+    }
+    else if (image.depth() == CV_32F) {
         cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
-	}
-
-    if (image.depth() == CV_32F) {
+    }
+    else if (image.depth() == CV_64F) {
         cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
     }
-    cv::Mat maskGreater;
-    cv::Mat maskLess;
-    if (max1 < 255) {
-        maskGreater = image > max1; // Change maxVal to your specific threshold
-        image.setTo(cv::Scalar(255, 255, 255), maskGreater);
-    }
-    if (min1 > 0) {
-        // Set values less than a threshold to black
-        maskLess = image < min1; // Change minVal to your specific threshold
-        image.setTo(cv::Scalar(0, 0, 0), maskLess);
+    // 如果输入已经是 CV_8U，这里不需要做任何事，min/max 也是原始值
+
+    // ★★★ 关键检查 ★★★
+    // 此时 image 必须是 CV_8UC1 (type=0)
+    // 如果此时 image.type() 不是 0，LUT 就会报错
+    if (image.type() != CV_8UC1) {
+        // 兜底策略：如果上面的逻辑漏了什么导致没转成 8U
+        // 强行归一化转一次，确保 LUT 不崩
+        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
+        if (image.channels() > 1) cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
     }
 
-    cv::applyColorMap(image, image, types);
+    // ==========================================
+    // 2. 准备参数
+    // ==========================================
+    if (min1 > 255) min1 = 255;
+    if (max1 > 255) max1 = 255;
 
-    if (max1 < 255) {
-        image.setTo(cv::Scalar(255, 255, 255), maskGreater);
-    }
-    if (min1 > 0) {
-        // Set values less than a threshold to black
-        image.setTo(cv::Scalar(0, 0, 0), maskLess);
-    }
+    // 获取魔改后的 LUT
+    cv::Mat customLut;
+    GetOptimizedLUT(types, (int)min1, (int)max1, customLut);
+
+    // ★★★ 检查 LUT 形状 ★★★
+    // LUT 必须是 CV_8UC3 (如果是彩色映射) 且 size 是 256
+    // customLut.total() == 256 且 customLut.type() == CV_8UC3
+
+    // ==========================================
+    // 3. 执行 LUT
+    // ==========================================
+
+    cv::Mat result_bgr;
+    cv::cvtColor(image, result_bgr, cv::COLOR_GRAY2RGB);
+
+    cv::LUT(result_bgr, customLut, image);
 
     return 0;
-}
+
 
 void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, double redBalance, double greenBalance, double blueBalance) {
     // Split the source image into BGR channels
