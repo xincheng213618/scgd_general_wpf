@@ -74,15 +74,21 @@ namespace ColorVision
                     continue;
                 try
                 {
-                    log.Info(ColorVision.Properties.Resources.TerminateUnresponsiveProcess);
-                    // 终止未响应的进程
-                    process.Kill();
-                    process.WaitForExit();
-                    log.Info($"已终止未响应的进程：PID {process.Id}");
+                    // 2. 核心判断：检查该进程是否有主窗口句柄
+                    // 如果 MainWindowHandle 为 IntPtr.Zero，说明该进程没有主窗口（即在后台运行）
+                    if (process.MainWindowHandle == IntPtr.Zero)
+                    {
+                        log.Info(ColorVision.Properties.Resources.TerminateUnresponsiveProcess); // 或者使用自定义提示："发现后台残留进程，正在终止..."
+
+                        // 终止僵尸进程
+                        process.Kill();
+                        process.WaitForExit(1000); // 等待最多1秒确认退出，避免死锁
+                        log.Info($"已终止后台僵尸进程：PID {process.Id}");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    // 处理可能的异常，例如权限不足
+                    // 处理可能的异常，例如权限不足或进程在检查过程中已自行退出
                     log.Warn($"无法终止进程：PID {process.Id}，错误：{ex.Message}");
                 }
             }
