@@ -458,19 +458,8 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
 {
     if (image.empty()) return -1;
 
-    // ==========================================
-    // 1. 预处理：强制转换为单通道 8位 (Gray8)
-    // ==========================================
-
     // 如果是多通道，先转灰度
     if (image.channels() > 1) {
-        // 注意：这里要处理不同深度的转换
-        if (image.depth() == CV_8U)
-            cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
-        else if (image.depth() == CV_16U)
-            cv::cvtColor(image, image, cv::COLOR_BGR2GRAY); // convert也是支持16u转灰度的
-        // 浮点图一般也是先转灰度再 normalize
-        else
             cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
     }
 
@@ -486,21 +475,7 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
     else if (image.depth() == CV_64F) {
         cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
     }
-    // 如果输入已经是 CV_8U，这里不需要做任何事，min/max 也是原始值
 
-    // ★★★ 关键检查 ★★★
-    // 此时 image 必须是 CV_8UC1 (type=0)
-    // 如果此时 image.type() 不是 0，LUT 就会报错
-    if (image.type() != CV_8UC1) {
-        // 兜底策略：如果上面的逻辑漏了什么导致没转成 8U
-        // 强行归一化转一次，确保 LUT 不崩
-        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
-        if (image.channels() > 1) cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
-    }
-
-    // ==========================================
-    // 2. 准备参数
-    // ==========================================
     if (min1 > 255) min1 = 255;
     if (max1 > 255) max1 = 255;
 
@@ -508,20 +483,14 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
     cv::Mat customLut;
     GetOptimizedLUT(types, (int)min1, (int)max1, customLut);
 
-    // ★★★ 检查 LUT 形状 ★★★
-    // LUT 必须是 CV_8UC3 (如果是彩色映射) 且 size 是 256
-    // customLut.total() == 256 且 customLut.type() == CV_8UC3
 
-    // ==========================================
-    // 3. 执行 LUT
-    // ==========================================
 
     cv::Mat result_bgr;
     cv::cvtColor(image, result_bgr, cv::COLOR_GRAY2RGB);
-
     cv::LUT(result_bgr, customLut, image);
 
     return 0;
+}
 
 
 void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, double redBalance, double greenBalance, double blueBalance) {

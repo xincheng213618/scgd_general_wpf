@@ -563,7 +563,7 @@ namespace ColorVision.ImageEditor
                                 
                                 if (log.IsInfoEnabled)
                                 {
-                                    string perfMsg = $"算法耗时: {algoMs:F2} ms | 渲染耗时: {renderMs:F2} ms | 总计: {(algoMs + renderMs):F2} ms";
+                                    string perfMsg = $"算法耗时: {algoMs:F2} ms | 渲染耗时: {renderMs - algoMs:F2} ms | 总计: {(renderMs):F2} ms";
                                     log.Info(perfMsg); // 记录日志
                                 }
                             }
