@@ -257,7 +257,6 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
 	mat = use_roi ? mat(mroi) : mat;
 
-	// 3. ת��Ϊ�Ҷ�ͼ���м���
 	cv::Mat gray_mat;
 	if (mat.channels() == 3 || mat.channels() == 4)
 	{
@@ -378,7 +377,6 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 	// 优化通道提取
 	if (mat.channels() != 1) {
 		if (channel >= 0 && channel < mat.channels()) {
-			// 优化：extractChannel 比 split 快，因为它只拷贝需要的那个通道，split 会拷贝所有通道
 			cv::extractChannel(mat, out, channel);
 		}
 		else {
@@ -386,10 +384,6 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 		}
 	}
 	else {
-		// 如果原图就是单通道，必须 clone 一份，因为 pseudoColor 会修改它(变身成3通道彩色)
-		// 如果不 clone，直接让 out = mat，当 pseudoColor 重新分配内存时，out 会指向新地址，
-		// 但如果 pseudoColor 内部有某种 In-place 逻辑可能会破坏 img.pData。
-		// 为了安全且因为 pseudoColor 最终输出 3 通道必然需要新内存，这里 clone 是合理的起点
 		out = mat.clone();
 	}
 
@@ -567,9 +561,7 @@ COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int chann
 	if (mat.empty())
 		return -1;
 	cv::Mat outMat;
-	int i = extractChannel(mat, outMat, channel);
-	if (i != 0)
-		return i;
+	cv::extractChannel(mat, outMat, channel);
 	MatToHImage(outMat, outImage);
 	return 0;
 }

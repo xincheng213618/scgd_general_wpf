@@ -10,6 +10,7 @@
 #include <vector>
 #include <algorithm>
 #include <ctime>
+#include <numeric>
 using namespace cv;
 
 cv::Mat removeMoire(const cv::Mat& image) {
@@ -434,22 +435,20 @@ int extractChannel(cv::Mat& input, cv::Mat& dst ,int channel)
 
 void GetOptimizedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& outLut)
 {
-    // 【修改点1】生成 1行 256列 的矩阵，保证内存连续
     cv::Mat range(1, 256, CV_8U);
-    for (int i = 0; i < 256; i++) range.at<uint8_t>(i) = i;
+    std::iota(range.ptr<uint8_t>(), range.ptr<uint8_t>() + 256, 0); // 更简洁
 
-    // 2. 生成 LUT (1行, 256列, 3通道)
     cv::applyColorMap(range, outLut, mapType);
 
-    // 3. 魔改 LUT
-    // 因为是 1x256，isContinuous() 必为 true，可以直接用指针数组方式访问
     cv::Vec3b* ptr = outLut.ptr<cv::Vec3b>();
 
-    for (int i = 0; i < minTh && i < 256; i++) {
-        ptr[i] = cv::Vec3b(0, 0, 0);
+    // 使用 memset 批量设置（黑色）
+    if (minTh > 0) {
+        std::memset(ptr, 0, std::min(minTh, 256) * 3);
     }
 
-    for (int i = maxTh + 1; i < 256; i++) {
+    // 白色需要循环（因为是 255）
+    for (int i = std::max(maxTh + 1, 0); i < 256; i++) {
         ptr[i] = cv::Vec3b(255, 255, 255);
     }
 }
@@ -458,37 +457,45 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
 {
     if (image.empty()) return -1;
 
-    // 如果是多通道，先转灰度
+    // 转灰度
     if (image.channels() > 1) {
-            cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
+        cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
     }
 
-    // 处理深度，统一转为 CV_8U
-    if (image.depth() == CV_16U) {
-        min1 = min1 / 256;
-        max1 = max1 / 256;
-        image.convertTo(image, CV_8U, 255.0 / 65535.0);
-    }
-    else if (image.depth() == CV_32F) {
+    // 处理深度
+    switch (image.depth()) {
+    case CV_16U:
+        min1 >>= 8;  // 位运算替代除法
+        max1 >>= 8;
+        image.convertTo(image, CV_8U, 1.0 / 257.0); // 255/65535 ≈ 1/257
+        break;
+    case CV_32F:
+    case CV_64F:
         cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
-    }
-    else if (image.depth() == CV_64F) {
-        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
+        break;
     }
 
-    if (min1 > 255) min1 = 255;
-    if (max1 > 255) max1 = 255;
+    min1 = std::min(min1, 255u);
+    max1 = std::min(max1, 255u);
 
-    // 获取魔改后的 LUT
     cv::Mat customLut;
     GetOptimizedLUT(types, (int)min1, (int)max1, customLut);
 
+    // 直接 LUT，无需中间转换
+    cv::Mat result(image.rows, image.cols, CV_8UC3);
+    const cv::Vec3b* lutPtr = customLut.ptr<cv::Vec3b>();
 
-
-    cv::Mat result_bgr;
-    cv::cvtColor(image, result_bgr, cv::COLOR_GRAY2RGB);
-    cv::LUT(result_bgr, customLut, image);
-
+    // 使用 parallel_for_ 并行处理
+    cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range) {
+        for (int y = range.start; y < range.end; y++) {
+            const uint8_t* srcRow = image.ptr<uint8_t>(y);
+            cv::Vec3b* dstRow = result.ptr<cv::Vec3b>(y);
+            for (int x = 0; x < image.cols; x++) {
+                dstRow[x] = lutPtr[srcRow[x]];
+            }
+        }
+        });
+    image = result;
     return 0;
 }
 
