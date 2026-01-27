@@ -23,6 +23,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
 {
@@ -570,8 +571,28 @@ namespace ColorVision.Engine.Media
                     context.Config.AddProperties("srcFileName", cVCIEFile.SrcFileName);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        context.ImageView.OpenImage(cVCIEFile.ToWriteableBitmap());
-                        context.ImageView.UpdateZoomAndScale();
+                        if (context.ImageView.ViewBitmapSource is WriteableBitmap writeableBitmap)
+                        {
+                            OpenCvSharp.Mat mat = cVCIEFile.ToMat();
+                            cVCIEFile.Dispose();
+                            if (!mat.UpdateWriteableBitmap(writeableBitmap))
+                            {
+                                WriteableBitmap writeableBitmap1 = OpenCvSharp.WpfExtensions.WriteableBitmapConverter.ToWriteableBitmap(mat);
+                                mat.Dispose();
+                                context.ImageView.OpenImage(writeableBitmap1);
+                                context.ImageView.UpdateZoomAndScale();
+                            }
+                            else
+                            {
+                                mat.Dispose();
+                            }
+                        }
+                        else
+                        {
+                            context.ImageView.OpenImage(cVCIEFile.ToWriteableBitmap());
+                            context.ImageView.UpdateZoomAndScale();
+                            cVCIEFile.Dispose();
+                        }
                     });
                 }));
             }

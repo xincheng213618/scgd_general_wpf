@@ -346,14 +346,16 @@ namespace ColorVision.ImageEditor
 
         public void OpenImage(string? filePath)
         {
+            Config.IsPseudo = false;
             //如果文件已经打开，不会重复打开
             if (filePath == null || filePath.Equals(Config.GetProperties<string>("FilePath"), StringComparison.Ordinal)) return;
 
             if (Config.Properties.Count > 0)
             {
-                ClearImageEventHandler?.Invoke(this, new EventArgs());
+                //ClearImageEventHandler?.Invoke(this, new EventArgs());
                 Config.Properties.Clear();
             }
+
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
             Config.FilePath = filePath;
@@ -478,12 +480,16 @@ namespace ColorVision.ImageEditor
                 if (depth == 16)
                 {
                     Config.AddProperties("Max", 65535);
+                    PseudoSlider.SmallChange = 255;
+                    PseudoSlider.LargeChange = 2550;
                     PseudoSlider.Maximum = 65535;
                     PseudoSlider.ValueEnd = 65535;
                 }
                 else
                 {
                     Config.AddProperties("Max", 255);
+                    PseudoSlider.SmallChange = 1;
+                    PseudoSlider.LargeChange = 10;
                     PseudoSlider.Maximum = 255;
                     PseudoSlider.ValueEnd = 255;
 
@@ -504,12 +510,12 @@ namespace ColorVision.ImageEditor
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e => RenderPseudo(), 0);
+            RenderPseudo();
         }
 
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e => RenderPseudo(), 0);
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 30, e => RenderPseudo(), 0);
         }
         public void RenderPseudo()
         {
@@ -530,7 +536,7 @@ namespace ColorVision.ImageEditor
                     uint max = (uint)PseudoSlider.ValueEnd;
                     int channel = ComboBoxLayers.SelectedIndex - 1;
 
-                    log.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
+                    log.Info($"PseudoColor,min:{min},max:{max}");
                     Task.Run(() =>
                     {
                         Stopwatch sw = Stopwatch.StartNew();
@@ -557,7 +563,6 @@ namespace ColorVision.ImageEditor
 
                                 sw.Stop();
                                 double renderMs = sw.Elapsed.TotalMilliseconds;
-
                                 // ================== 输出结果 ==================
                                 // 建议在界面上加一个 TextBlock (比如 TimeStatus) 显示，比看日志更直观
                                 
