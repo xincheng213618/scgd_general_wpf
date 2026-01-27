@@ -184,14 +184,19 @@ namespace ColorVision.Engine.Media
                 }
             }
 
-
-            imageView.ClearImageEventHandler += (s, e) =>
+            void Config_Cleared(object? sender, EventArgs e)
             {
+                imageView.Config.Cleared -= Config_Cleared;
                 int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
                 result = ConvertXYZ.CM_UnInitXYZ(Config.ConvertXYZhandle);
                 result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
                 imageView.ImageViewModel.MouseMagnifier.ClearMouseMoveColorHandler();
-            };
+            }
+            imageView.Config.Cleared += Config_Cleared;
+
+           
+
+
             if (!Config.ConvertXYZhandleOnce)
             {
                 int result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
@@ -308,6 +313,9 @@ namespace ColorVision.Engine.Media
             }
 
         }
+
+
+
         public float[] exp { get; set; }
 
         public List<MenuItemMetadata> GetContextMenuItems()
@@ -589,9 +597,10 @@ namespace ColorVision.Engine.Media
                         }
                         else
                         {
-                            context.ImageView.OpenImage(cVCIEFile.ToWriteableBitmap());
-                            context.ImageView.UpdateZoomAndScale();
+                            WriteableBitmap writeableBitmap1 = cVCIEFile.ToWriteableBitmap();
                             cVCIEFile.Dispose();
+                            context.ImageView.OpenImage(writeableBitmap1);
+                            context.ImageView.UpdateZoomAndScale();
                         }
                     });
                 }));

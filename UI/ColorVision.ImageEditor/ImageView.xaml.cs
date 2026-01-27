@@ -304,8 +304,7 @@ namespace ColorVision.ImageEditor
         public void Clear()
         {
             ClearImageEventHandler?.Invoke(this, new EventArgs());
-            Config.Properties.Clear();
-            Config.FilePath = string.Empty;
+            Config.ClearProperties();
             FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Clear();
@@ -346,15 +345,10 @@ namespace ColorVision.ImageEditor
 
         public void OpenImage(string? filePath)
         {
-            Config.IsPseudo = false;
             //如果文件已经打开，不会重复打开
             if (filePath == null || filePath.Equals(Config.GetProperties<string>("FilePath"), StringComparison.Ordinal)) return;
 
-            if (Config.Properties.Count > 0)
-            {
-                //ClearImageEventHandler?.Invoke(this, new EventArgs());
-                Config.Properties.Clear();
-            }
+            Config.ClearProperties();
 
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
