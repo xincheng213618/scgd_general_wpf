@@ -15,9 +15,9 @@
     </Window.Resources>
     <Grid Margin="8">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" MinWidth="400"/>
+            <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="5"/>
-            <ColumnDefinition Width="350" MinWidth="250"/>
+            <ColumnDefinition Width="550" MinWidth="250"/>
         </Grid.ColumnDefinitions>
         
         <!-- Left Panel: List and Controls -->
@@ -44,7 +44,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="处理类" Width="200">
+                        <GridViewColumn Header="处理类" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Converter={StaticResource TypeNameConverter}}" 

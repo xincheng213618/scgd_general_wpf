@@ -384,7 +384,7 @@ namespace ProjectARVRPro
             timer.Change(0, 500); // 启动定时器
         }
 
-        private bool PreProcessing(string flowName, string serialNumber)
+        private async Task<bool> PreProcessing(string flowName, string serialNumber)
         {
             try
             {
@@ -410,7 +410,7 @@ namespace ProjectARVRPro
                         log.Info($"执行预处理 {metadata.DisplayName}");
                         try
                         {
-                            bool success = processor.PreProcess(ctx);
+                            bool success = await processor.PreProcess(ctx);
                             if (!success)
                             {
                                 log.Warn($"预处理 {metadata.DisplayName} 执行返回失败");

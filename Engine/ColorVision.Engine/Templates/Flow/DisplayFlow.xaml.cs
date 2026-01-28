@@ -169,10 +169,7 @@ namespace ColorVision.Engine.Templates.Flow
                 View.FlowEngineControl.FlowClear();
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
-
-
                 FlowEngineManager.SlectFlowParam = flowParam;
-
 
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
@@ -247,7 +244,7 @@ namespace ColorVision.Engine.Templates.Flow
             });
         }
         
-        private bool PreProcessing(string flowName, string serialNumber)
+        private async Task<bool> PreProcessing(string flowName, string serialNumber)
         {
             try
             {
@@ -264,6 +261,7 @@ namespace ColorVision.Engine.Templates.Flow
                     {
                         FlowName = flowName,
                         SerialNumber = serialNumber,
+                        CVBaseServerNodes = FlowEngineManager.CVBaseServerNodes,
                     };
 
                     // Execute all matching pre-processors sequentially
@@ -273,7 +271,7 @@ namespace ColorVision.Engine.Templates.Flow
                         log.Info($"执行预处理 {metadata.DisplayName}");
                         try
                         {
-                            bool success = processor.PreProcess(ctx);
+                            bool success = await processor.PreProcess(ctx);
                             if (!success)
                             {
                                 log.Warn($"预处理 {metadata.DisplayName} 执行返回失败");
@@ -505,7 +503,9 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineManager.Batch.Id = Db.Insertable(FlowEngineManager.Batch).ExecuteReturnIdentity();
 
             // Execute pre-processors before flow starts
-            if (!PreProcessing(FlowName, sn))
+
+            bool preresult = await PreProcessing(FlowName, sn);
+            if (!preresult)
             {
                 stopwatch.Stop();
                 timer.Change(Timeout.Infinite, 500);

@@ -550,17 +550,28 @@ namespace ProjectStarkSemi
                 OpenConoscope(filename);
             }       
         }
-
+        string Filename;
         private void OpenConoscope(string filename)
         {
-            if (CVFileUtil.IsCVCIEFile(filename))
+            Filename = filename;
+            ImageView.Clear();
+            ImageView.ImageShow.ImageInitialized -= ImageShow_ImageInitialized;
+            ImageView.ImageShow.ImageInitialized += ImageShow_ImageInitialized;
+            ImageView.OpenImage(filename);
+        }
+
+        private void ImageShow_ImageInitialized(object? sender, EventArgs e)
+        {
+            ImageView.Config.IsPseudo = true;
+
+            if (CVFileUtil.IsCVCIEFile(Filename))
             {
                 XMat?.Dispose();
                 YMat?.Dispose();
                 ZMat?.Dispose();
 
                 CVCIEFile fileInfo = new CVCIEFile();
-                CVFileUtil.Read(filename, out fileInfo);
+                CVFileUtil.Read(Filename, out fileInfo);
 
                 // Calculate the size of a single channel in bytes
                 int channelSize = fileInfo.Cols * fileInfo.Rows * (fileInfo.Bpp / 8);
@@ -600,15 +611,6 @@ namespace ProjectStarkSemi
 
             }
 
-            ImageView.Clear();
-            ImageView.ImageShow.ImageInitialized -= ImageShow_ImageInitialized;
-            ImageView.ImageShow.ImageInitialized += ImageShow_ImageInitialized;
-            ImageView.OpenImage(filename);
-        }
-
-        private void ImageShow_ImageInitialized(object? sender, EventArgs e)
-        {
-            ImageView.Config.IsPseudo = true;
             CreateAndAnalyzePolarLines();
             Application.Current.Dispatcher.Invoke(async () =>
             {
