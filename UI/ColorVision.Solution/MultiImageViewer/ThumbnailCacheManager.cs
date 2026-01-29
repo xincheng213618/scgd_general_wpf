@@ -1,3 +1,4 @@
+using ColorVision.UI;
 using SqlSugar;
 using System;
 using System.IO;
@@ -137,6 +138,32 @@ namespace ColorVision.Solution.MultiImageViewer
         {
             try
             {
+                // Check if there's a custom thumbnail provider for this file type
+                var customProvider = ThumbnailProviderFactory.GetProvider(filePath);
+                if (customProvider != null)
+                {
+                    var (width, height) = customProvider.GetImageDimensions(filePath);
+                    var thumbnail = await customProvider.GenerateThumbnailAsync(filePath, thumbnailSize);
+                    return (thumbnail, width, height);
+                }
+
+                // Fall back to default WPF thumbnail generation for standard image formats
+                return await CreateDefaultThumbnailAsync(filePath, thumbnailSize);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"CreateThumbnailAsync Error: {ex.Message}");
+                return (null, 0, 0);
+            }
+        }
+
+        /// <summary>
+        /// Creates a thumbnail using default WPF BitmapDecoder for standard image formats.
+        /// </summary>
+        private async Task<(BitmapSource? thumbnail, int width, int height)> CreateDefaultThumbnailAsync(string filePath, int thumbnailSize)
+        {
+            try
+            {
                 BitmapSource? result = null;
                 int width = 0, height = 0;
 
@@ -171,7 +198,7 @@ namespace ColorVision.Solution.MultiImageViewer
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"CreateThumbnailAsync Error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"CreateDefaultThumbnailAsync Error: {ex.Message}");
                 return (null, 0, 0);
             }
         }
