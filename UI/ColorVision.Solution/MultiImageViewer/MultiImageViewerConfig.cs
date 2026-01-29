@@ -160,6 +160,6 @@ namespace ColorVision.Solution.MultiImageViewer
         /// 支持的图像扩展名
         /// </summary>
         [JsonIgnore]
-        public static readonly string[] SupportedExtensions = { ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif" };
+        public static readonly string[] SupportedExtensions = { ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif",".cvraw" ,".cvcie"};
     }
 }
