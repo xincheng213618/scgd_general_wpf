@@ -95,13 +95,13 @@
     
     <Grid x:Name="MainGrid">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" MinWidth="150" MaxWidth="400"/>
+            <ColumnDefinition Width="250" MinWidth="150" MaxWidth="400"/>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         
         <!-- 左侧文件列表区域 -->
-        <Grid Grid.Column="0" x:Name="FileListPanel" Width="200"
+        <Grid Grid.Column="0" x:Name="FileListPanel" 
               Visibility="{Binding IsShowListView, Converter={StaticResource bool2VisibilityConverter}}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="32"/>
