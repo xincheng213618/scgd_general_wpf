@@ -6,10 +6,12 @@ using ColorVision.UI;
 using log4net;
 using System;
 using System.Buffers;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -19,15 +21,25 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
     public class VideoReaderConfig:ViewModelBase,IConfig
     {
-        public bool UseA { get => _UseA; set { _UseA = value; OnPropertyChanged(); } }
-        private bool _UseA;
+        [DisplayName("启用视频计算")]
+        public bool IsUseCacheFile { get => _IsUseCacheFile; set { _IsUseCacheFile = value; OnPropertyChanged(); } }
+        private bool _IsUseCacheFile;
 
-        public bool IsAce { get => _IsAce; set { _IsAce = value; OnPropertyChanged(); } }
-        private bool _IsAce = true;
-
+        [DisplayName("计算清晰度")]
+        public bool IsCalArtculation { get => _IsCalArtculation; set { _IsCalArtculation = value; OnPropertyChanged(); } }
+        private bool _IsCalArtculation = true;
 
         public FocusAlgorithm  EvaFunc { get => _EvaFunc; set { _EvaFunc = value; OnPropertyChanged(); } }
         private FocusAlgorithm  _EvaFunc = FocusAlgorithm .Laplacian;
+  
+
+        public TextProperties TextProperties { get => _TextProperties; set { _TextProperties = value; OnPropertyChanged(); } }
+        private TextProperties _TextProperties = new TextProperties() { FontSize =200 };
+
+        [Browsable(false)]
+        public RectangleTextProperties RectangleTextProperties { get; set; } = new RectangleTextProperties();
+
+
     }
 
     /// <summary>
@@ -40,21 +52,28 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private MemoryMappedFile memoryMappedFile;
         private MemoryMappedViewStream memoryMappedViewStream;
         private BinaryReader binaryReader;
+
         private ImageView Image { get; set; }
 
         private byte[]? lastFrameData; // 上一帧池化数据
         private int lastFrameLen;      // 上一帧有效长度
 
-        public VideoReaderConfig VideoReaderConfig { get; set; } = ConfigService.Instance.GetRequiredService<VideoReaderConfig>();
+        public VideoReaderConfig Config { get; set; }
 
         public RelayCommand EditConfigCommand { get; set; }
         public void EditConfig()
         {
-            new PropertyEditorWindow(VideoReaderConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+        DVRectangleText DVRectangleText { get; set; }
+        DVText DVText { get; set; }
+
         public VideoReader()
         {
+            Config = ConfigService.Instance.GetRequiredService<VideoReaderConfig>();
             EditConfigCommand = new RelayCommand(a => EditConfig());
+            DVRectangleText = new DVRectangleText(Config.RectangleTextProperties);
+            DVText = new DVText(Config.TextProperties);
         }
 
         public int Startup(string mapNamePrefix, ImageView image)
@@ -74,6 +93,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             }
             openVideo = true;
             Image.ImageShow.AddVisualCommand(DVRectangleText);
+            Image.ImageShow.AddVisualCommand(DVText);
+
+            if (Image.Config.IsPseudo)
+            {
+                Config.IsUseCacheFile = true;
+                Config.IsCalArtculation = true;
+            }
 
             Image.Config.PseudoChanged -= Config_PseudoChanged;
             Image.Config.PseudoChanged += Config_PseudoChanged;
@@ -85,37 +111,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private void Config_PseudoChanged(object? sender, EventArgs e)
         {
             if (Image.Config.IsPseudo)
-            {
-                VideoReaderConfig.UseA = true;
-            }
+                Config.IsUseCacheFile = true;
         }
 
         HImage? _calculationHImage;
-        DVRectangleText DVRectangleText = new DVRectangleText();
-
 
         public void Close()
         {
             openVideo = false;
-
-            if (lastFrameData != null)
-            {
-                ArrayPool<byte>.Shared.Return(lastFrameData);
-                lastFrameData = null;
-                lastFrameLen = 0;
-            }
-
-
-            Image.ImageShow.RemoveVisualCommand(DVRectangleText);
-            Image.Config.PseudoChanged -= Config_PseudoChanged;
-            Image = null;
-            binaryReader?.Dispose();
-            memoryMappedViewStream?.Dispose();
-            memoryMappedFile?.Dispose();
-
-            _calculationHImage?.Dispose();
-            _calculationHImage = null;
-
         }
 
         private int frameCount;
@@ -166,7 +169,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                         await Task.Delay(1);
                         continue;
                     }
-                    if (VideoReaderConfig.UseA)
+                    if (Config.IsUseCacheFile)
                     {
                         // 直接从帧数据构造 HImage，无需内存拷贝
                         if (_calculationHImage == null || _calculationHImage.Value.cols != width || _calculationHImage.Value.rows != height || _calculationHImage.Value.channels != channels || _calculationHImage.Value.depth != bpp / 8)
@@ -192,7 +195,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                             if (_calculationHImage is HImage hImage)
                             {
                                 Rect rect = DVRectangleText.Rect;
-                                if (VideoReaderConfig.IsAce)
+                                if (Config.IsCalArtculation)
                                 {
                                     Thread task = new Thread(() =>
                                     {
@@ -200,16 +203,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                                         double articulation = OpenCVMediaHelper.M_CalArtculation(hImage, FocusAlgorithm.Laplacian, new RoiRect(rect));
                                         Application.Current?.Dispatcher.Invoke(() =>
                                         {
-                                            DVRectangleText.Attribute.Text = $"Articulation: {articulation:F5}";
+                                            DVText.Attribute.Text = $"Articulation: {articulation:F5}";
                                         });
                                         log.Info($"Image Articulation: {articulation}");
                                     });
                                     task.Start();
                                 }
-
+                                if (Image == null)
+                                {
+                                    return;
+                                }
                                 if (Image.Config.IsPseudo)
                                 {
-                                    Application.Current.Dispatcher.Invoke(() =>
+                                    Application.Current?.Dispatcher.Invoke(() =>
                                     {
 
                                         uint min = (uint)Image.PseudoSlider.ValueStart;
@@ -238,7 +244,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                                                 }
                                             });
                                         });
-
                                         task1.Start();
                                     });
 
@@ -320,6 +325,27 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 }
             }
             fpsTimer.Stop();
+
+            if (lastFrameData != null)
+            {
+                ArrayPool<byte>.Shared.Return(lastFrameData);
+                lastFrameData = null;
+                lastFrameLen = 0;
+            }
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Image.ImageShow.RemoveVisualCommand(DVRectangleText);
+                Image.ImageShow.RemoveVisualCommand(DVText);
+            });
+
+            Image.Config.PseudoChanged -= Config_PseudoChanged;
+            Image = null;
+            binaryReader?.Dispose();
+            memoryMappedViewStream?.Dispose();
+            memoryMappedFile?.Dispose();
+
+            _calculationHImage?.Dispose();
+            _calculationHImage = null;
         }
 
         private static System.Windows.Media.PixelFormat GetPixelFormat(int channels, int bpp)

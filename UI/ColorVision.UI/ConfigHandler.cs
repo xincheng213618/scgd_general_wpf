@@ -1,8 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.Json;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -17,9 +19,7 @@ namespace ColorVision.UI
         public bool EnableBackup { get => _EnableBackup; set { _EnableBackup = value; OnPropertyChanged(); } }
         private bool _EnableBackup = true;
     }
-    /// <summary>
-    /// 加载插件
-    /// </summary>
+
 
     public class ConfigHandler: IConfigService
     {
@@ -47,6 +47,11 @@ namespace ColorVision.UI
 
         public ConfigHandler()
         {
+            JsonSerializerSettings  = new JsonSerializerSettings { Formatting = Formatting.Indented };
+            JsonSerializerSettings.Converters.Add(new BrushJsonConverter());
+            JsonSerializerSettings.ContractResolver = new WpfContractResolver();
+
+
             InitDateTime = DateTime.Now;
             string AssemblyCompany = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? Assembly.GetEntryAssembly()?.GetName().Name;
             ConfigDIFileName =  $"{Assembly.GetEntryAssembly()?.GetName().Name ?? AssemblyCompany}Config";
@@ -68,9 +73,9 @@ namespace ColorVision.UI
             if (!Directory.Exists(BackupFolderPath))
                 Directory.CreateDirectory(BackupFolderPath);
             LoadConfigs(ConfigFilePath);
-            if (Options.EnableBackup)
+            if (IsAutoSave && Options.EnableBackup)
             {
-                Task.Delay(10000).ContinueWith(t =>
+                Task.Delay(100000).ContinueWith(t =>
                 {
                     BackupConfigs();
                 });
@@ -96,7 +101,7 @@ namespace ColorVision.UI
 
         public void SaveConfigs() => SaveConfigs(ConfigFilePath);
 
-        internal readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { Formatting = Formatting.Indented };
+        internal JsonSerializerSettings JsonSerializerSettings { get; set; } 
 
         public Dictionary<Type, IConfig> Configs { get; set; }
 
@@ -160,7 +165,7 @@ namespace ColorVision.UI
             {
                 if (jsonObject.TryGetValue(configName, out JToken configToken))
                 {
-                    var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
+                    var config = configToken.ToObject(type, JsonSerializer.Create(JsonSerializerSettings));
                     if (config is IConfigSecure configSecure)
                     {
                         configSecure.Decrypt();
@@ -206,9 +211,10 @@ namespace ColorVision.UI
                     MessageBox.Show(Properties.Resources.ConfigFileResetDueToError);
                 }
             }
+
             //防止被修改
             var configsSnapshot = Configs.ToArray();
-
+            JsonSerializer jsonSerializer = JsonSerializer.Create(JsonSerializerSettings);
             foreach (var configPair in configsSnapshot)
             {
                 try
@@ -218,12 +224,12 @@ namespace ColorVision.UI
                         if (configPair.Value is IConfigSecure configSecure)
                         {
                             configSecure.Encryption();
-                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                             configSecure.Decrypt();
                         }
                         else
                         {
-                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                         }
                     }
                     else if (Application.Current.Dispatcher.CheckAccess())
@@ -231,12 +237,12 @@ namespace ColorVision.UI
                         if (configPair.Value is IConfigSecure configSecure)
                         {
                             configSecure.Encryption();
-                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                             configSecure.Decrypt();
                         }
                         else
                         {
-                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                         }
                     }
                     else
@@ -246,12 +252,12 @@ namespace ColorVision.UI
                             if (configPair.Value is IConfigSecure configSecure)
                             {
                                 configSecure.Encryption();
-                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                                 configSecure.Decrypt();
                             }
                             else
                             {
-                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                             }
 
                         });
@@ -460,5 +466,7 @@ namespace ColorVision.UI
             }
         }
     }
+
+
 
 }

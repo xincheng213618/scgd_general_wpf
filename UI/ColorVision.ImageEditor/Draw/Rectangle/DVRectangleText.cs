@@ -5,11 +5,21 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
+    public enum RectangleTextPosition
+    {
+        Center,
+        Top,
+        Bottom,
+        Left,
+        Right
+    }
+
     public class RectangleTextProperties : RectangleProperties, ITextProperties
     {
         [Browsable(false)]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
         public bool IsShowText { get; set; } = true;
+        public RectangleTextPosition Position { get; set;} = RectangleTextPosition.Center;
 
         [Category("Attribute"), DisplayName("Text")]
         public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; OnPropertyChanged(); } }
@@ -65,9 +75,55 @@ namespace ColorVision.ImageEditor.Draw
             double size = 0;
             if (Attribute.IsShowText)
             {
-                FormattedText formattedText = new(TextAttribute.Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                size = formattedText.Width / 2;
-                dc.DrawText(formattedText, new Point(Attribute.Rect.X + Attribute.Rect.Width /2 - size, Attribute.Rect.Y+ Attribute.Rect.Height / 2 - formattedText.Height / 2));
+                string textToDraw = Attribute.IsShowText ? TextAttribute.Text : string.Empty;
+                if (!string.IsNullOrEmpty(textToDraw))
+                {
+                    FormattedText formattedText = new(
+                        textToDraw,
+                        CultureInfo.CurrentCulture,
+                        TextAttribute.FlowDirection,
+                        new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch),
+                        TextAttribute.FontSize,
+                        TextAttribute.Brush,
+                        VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    size = formattedText.Width / 2;
+                    Point origin = new Point();
+                    double halfWidth = formattedText.Width / 2;
+                    double halfHeight = formattedText.Height / 2;
+                    double rectHalfWidth = Attribute.Rect.Width / 2;
+                    double rectHalfHeight = Attribute.Rect.Height / 2;
+                    double rectCenterX = Attribute.Rect.X + rectHalfWidth;
+                    double rectCenterY = Attribute.Rect.Y + rectHalfHeight;
+
+                    // Calculate position based on the enum
+                    switch (Attribute.Position) // Assuming Attribute has a 'Position' property of type RectangleTextPosition
+                    {
+                        case RectangleTextPosition.Center:
+                            origin.X = rectCenterX - halfWidth;
+                            origin.Y = rectCenterY - halfHeight;
+                            break;
+                        case RectangleTextPosition.Top:
+                            origin.X = rectCenterX - halfWidth;
+                            origin.Y = Attribute.Rect.Y - formattedText.Height; // Above the rect
+                                                                                // Or inside top: origin.Y = Attribute.Rect.Y; 
+                            break;
+                        case RectangleTextPosition.Bottom:
+                            origin.X = rectCenterX - halfWidth;
+                            origin.Y = Attribute.Rect.Bottom; // Below the rect
+                                                              // Or inside bottom: origin.Y = Attribute.Rect.Bottom - formattedText.Height;
+                            break;
+                        case RectangleTextPosition.Left:
+                            origin.X = Attribute.Rect.X - formattedText.Width; // Left of rect
+                            origin.Y = rectCenterY - halfHeight;
+                            break;
+                        case RectangleTextPosition.Right:
+                            origin.X = Attribute.Rect.Right; // Right of rect
+                            origin.Y = rectCenterY - halfHeight;
+                            break;
+                    }
+
+                    dc.DrawText(formattedText, origin);
+                }
             }
             if (!string.IsNullOrWhiteSpace(Attribute.Msg))
             {

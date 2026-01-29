@@ -1,6 +1,7 @@
 using log4net;
+using System.Threading.Tasks;
 
-namespace ColorVision.Engine.Batch
+namespace ColorVision.Engine.Batch.PreProcess
 {
     public class CheckFlowPreProcessConfig : PreProcessConfigBase
     {
@@ -9,7 +10,7 @@ namespace ColorVision.Engine.Batch
     public class CheckFlowPreProcess: PreProcessBase<CheckFlowPreProcessConfig>
     {
         public static readonly ILog log = LogManager.GetLogger(typeof(CheckFlowPreProcess));
-        public override bool PreProcess(IPreProcessContext ctx)
+        public override Task<bool> PreProcess(IPreProcessContext ctx)
         {
             
             
@@ -17,7 +18,7 @@ namespace ColorVision.Engine.Batch
 
 
 
-            return true;
+            return Task.FromResult(true);
         }
     }
 }

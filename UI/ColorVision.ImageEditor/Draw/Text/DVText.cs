@@ -1,13 +1,15 @@
-﻿using System.ComponentModel;
+﻿using Newtonsoft.Json;
+using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class TextProperties : BaseProperties, ITextProperties
+    public class TextProperties : BaseProperties
     {
         [Browsable(false)]
+        [JsonIgnore]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
 
         public bool IsShowText { get; set; } = true;
@@ -18,7 +20,7 @@ namespace ColorVision.ImageEditor.Draw
         [Category("Text"), DisplayName("字体大小")] 
         public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; OnPropertyChanged(); } }
 
-        [Category("Text"), DisplayName("颜色")] 
+        [Category("Text"), DisplayName("颜色")]
         public Brush Foreground { get => TextAttribute.Brush; set { TextAttribute.Brush = value; OnPropertyChanged(); } }
 
         [Category("Text"), DisplayName("字体")] 
@@ -84,12 +86,10 @@ namespace ColorVision.ImageEditor.Draw
                 TextAttribute.Brush,
                 VisualTreeHelper.GetDpi(this).PixelsPerDip);
 
-            // 画背景
             if (Attribute.Background != null && Attribute.Background != Brushes.Transparent)
             {
                 dc.DrawRectangle(Attribute.Background, null, Attribute.Rect);
             }
-            // 文本
             dc.DrawText(formattedText, Attribute.Position);
 
         }

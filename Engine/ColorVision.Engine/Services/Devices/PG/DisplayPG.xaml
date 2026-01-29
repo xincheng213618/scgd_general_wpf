@@ -20,8 +20,8 @@
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
     </UserControl.Resources>
     <StackPanel Margin="0,3">
-        <DockPanel Margin="0,0,5,0" ToolTip="{Binding DService.DeviceStatus}">
-            <Grid DockPanel.Dock="Right" >
+        <DockPanel Margin="3,0,8,0" ToolTip="{Binding DService.DeviceStatus}">
+            <Grid DockPanel.Dock="Right"  >
                 <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  DService.IsAlive,Mode=OneWay}" IsEnabled="False" />
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
@@ -42,63 +42,57 @@
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
-            
 
-            <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
-            <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0"/>
+            <Grid ToolTip="{Binding DService.DeviceStatus}">
+                <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
+                <Grid  Height="18" HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0"/>
+            </Grid>
+
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
-            <StackPanel Margin="0">
+            <StackPanel Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
                 <TextBlock x:Name="TextBlockOffLine" Text="{x:Static properties:Resources.offline}"  HorizontalAlignment="Center"/>
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="{x:Static properties:Resources.Unregistered}" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
-                    <GroupBox Header="{x:Static properties:Resources.CommunicationType}" Margin="5">
-                        <StackPanel>
-                            <DockPanel Margin="0,5" IsEnabled="False">
-                                <TextBlock Text="{x:Static properties:Resources.CategoryModel}"/>
-                                <TextBox BorderThickness="0,0,0,1" Text="{Binding Config.Category}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,5" IsEnabled="False">
-                                <RadioButton Content="TCPIP" IsChecked="{Binding  Config.IsNet}" Margin="0,0,5,0"/>
-                                <RadioButton Content="{x:Static properties:Resources.SerialPortCom}"  IsChecked="{Binding  Config.IsNet,Converter={StaticResource Boolean2BooleanReConverter}}" Margin="0,0,5,0"/>
-                            </DockPanel>
-                            <UniformGrid IsEnabled="False" Columns="2">
-                                <DockPanel Margin="5">
-                                    <TextBlock  x:Name="TextBlockPGIP"   Text="IP"/>
-                                    <TextBox  x:Name="TextBoxPGIP" BorderThickness="0,0,0,1" Text="{Binding Config.Addr}"/>
-                                </DockPanel>
-                                <DockPanel Margin="5">
-                                    <TextBlock  x:Name="TextBlockPGPort"  Text="Port"/>
-                                    <TextBox  x:Name="TextBoxPGPort" BorderThickness="0,0,0,1" Text="{Binding Config.Port}"/>
-                                </DockPanel>
-                            </UniformGrid>
-                        </StackPanel>
-                    </GroupBox>
+                    <DockPanel Margin="0,0,0,5" IsEnabled="False">
+                        <TextBlock Text="{x:Static properties:Resources.CategoryModel}"/>
+                        <TextBox BorderThickness="0,0,0,1" Text="{Binding Config.Category}"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,5" IsEnabled="False">
+                        <RadioButton Content="TCPIP" IsChecked="{Binding  Config.IsNet}" Margin="0,0,5,0"/>
+                        <RadioButton Content="{x:Static properties:Resources.SerialPortCom}"  IsChecked="{Binding  Config.IsNet,Converter={StaticResource Boolean2BooleanReConverter}}" Margin="0,0,5,0"/>
+                    </DockPanel>
+                    <UniformGrid IsEnabled="False" Columns="2">
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock  x:Name="TextBlockPGIP"   Text="IP"/>
+                            <TextBox  x:Name="TextBoxPGIP" BorderThickness="0,0,0,1" Text="{Binding Config.Addr}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock  x:Name="TextBlockPGPort"  Text="Port"/>
+                            <TextBox  x:Name="TextBoxPGPort" BorderThickness="0,0,0,1" Text="{Binding Config.Port}"/>
+                        </DockPanel>
+                    </UniformGrid>
                     <UniformGrid Columns="2">
                         <Button Margin="2" x:Name="btn_open" Content="{x:Static properties:Resources.Open}" Click="PGOpen"/>
                         <Button Margin="2" Content="ReSet" Click="PGReSetPG"/>
                     </UniformGrid>
-                    <GroupBox Header="{x:Static properties:Resources.Operation}" Margin="2">
-                        <StackPanel Visibility="Visible" >
-                            <UniformGrid Columns="2">
-                                <Button Margin="2"  Content="{x:Static properties:Resources.PowerOn}" Click="PGStartPG"/>
-                                <Button Margin="2"  Content="{x:Static properties:Resources.PowerOff}" Click="PGStopPG"/>
-                                <Button Margin="2"  Content="{x:Static properties:Resources.Up}" Click="PGSwitchUpPG"/>
-                                <Button  Margin="2" Content="{x:Static properties:Resources.Down}" Click="PGSwitchDownPG"/>
-                                <TextBox VerticalContentAlignment="Center"  BorderThickness="0,0,0,1" Margin="2" x:Name="PGFrameText" Text="0"/>
-                                <Button  Margin="2" Content="{x:Static properties:Resources.Switch}" Click="PGSwitchFramePG"/>
-                            </UniformGrid>
+                    <UniformGrid Columns="2">
+                        <Button Margin="2"  Content="{x:Static properties:Resources.PowerOn}" Click="PGStartPG"/>
+                        <Button Margin="2"  Content="{x:Static properties:Resources.PowerOff}" Click="PGStopPG"/>
+                        <Button Margin="2"  Content="{x:Static properties:Resources.Up}" Click="PGSwitchUpPG"/>
+                        <Button  Margin="2" Content="{x:Static properties:Resources.Down}" Click="PGSwitchDownPG"/>
+                        <TextBox VerticalContentAlignment="Center"  BorderThickness="0,0,0,1" Margin="2" x:Name="PGFrameText" Text="0"/>
+                        <Button  Margin="2" Content="{x:Static properties:Resources.Switch}" Click="PGSwitchFramePG"/>
+                    </UniformGrid>
 
-                            <StackPanel>
-                                <DockPanel Margin="0,5">
-                                    <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.Send}" Click="PGSendCmd" Margin="2,0" Width="60"/>
-                                    <TextBlock Text="{x:Static properties:Resources.PGCommand}" Margin="0,0,5,0"/>
-                                    <TextBox x:Name="PGCmdMsg"  BorderThickness="0,0,0,1"/>
-                                </DockPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </GroupBox>
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.Send}" Click="PGSendCmd" Margin="2,0" Width="60"/>
+                            <TextBlock Text="{x:Static properties:Resources.PGCommand}" Margin="0,0,5,0"/>
+                            <TextBox x:Name="PGCmdMsg"  BorderThickness="0,0,0,1"/>
+                        </DockPanel>
+                    </StackPanel>
                 </StackPanel>
             </StackPanel>
         </Border>

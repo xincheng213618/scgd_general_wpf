@@ -6,8 +6,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
-namespace ColorVision.Engine.Batch
+namespace ColorVision.Engine.Batch.PreProcess
 {
 
 
@@ -45,7 +46,7 @@ namespace ColorVision.Engine.Batch
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FolderSizePreProcess));
 
-        public override bool PreProcess(IPreProcessContext ctx)
+        public override Task<bool> PreProcess(IPreProcessContext ctx)
         {
             foreach (var FolderPath in Config.FolderPaths)
             {
@@ -145,12 +146,11 @@ namespace ColorVision.Engine.Batch
                 catch (Exception ex)
                 {
                     log.Error("FolderSizePreProcess 执行失败", ex);
-                    return true; // Don't block flow execution on errors
+                    return Task.FromResult(false);
+
                 }
             }
-
-
-            return true;
+            return Task.FromResult(true);
         }
 
         private HashSet<string> ParseExtensions(string extensionsStr)
