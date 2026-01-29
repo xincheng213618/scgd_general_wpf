@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
@@ -8,7 +7,6 @@ using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons.HDR;
 using ColorVision.ImageEditor.Draw.Special;
@@ -54,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
-    public partial class DisplayCamera : UserControl,IDisPlayControl
+    public partial class DisplayCamera : UserControl,IDisPlayControl,IDisposable
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCamera));
         public DeviceCamera Device { get; set; }
@@ -84,10 +82,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             DataContext = Device;
             this.AddViewConfig(View, ComboxView);
-
-            this.ContextMenu = Device.ContextMenu;
-
-
             ButtonProgressBarGetData = new ButtonProgressBar(ProgressBar, TakePhotoButton);
             ButtonProgressBarOpen = new ButtonProgressBar(ProgressBarOpen, OpenButton);
             ButtonProgressBarClose = new ButtonProgressBar(ProgressBarClose, CloseButton);
@@ -123,73 +117,73 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                               select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
 
-            void UpdateUI(DeviceStatusType status)
-            {
-                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
-                void HideAllButtons()
-                {
-                    SetVisibility(ButtonOpen, Visibility.Collapsed);
-                    SetVisibility(ButtonInit, Visibility.Collapsed);
-                    SetVisibility(ButtonOffline, Visibility.Collapsed);
-                    SetVisibility(ButtonClose, Visibility.Collapsed);
-                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
-                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
-                    SetVisibility(StackPanelOpen, Visibility.Collapsed);
-                }
-                // Default state
-                HideAllButtons();
-
-                switch (status)
-                {
-                    case DeviceStatusType.Unauthorized:
-                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Unknown:
-                        SetVisibility(TextBlockUnknow, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.OffLine:
-                        SetVisibility(ButtonOffline, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.UnInit:
-                        SetVisibility(ButtonInit, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Closed:
-                        SetVisibility(ButtonOpen, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.LiveOpened:
-                        SetVisibility(StackPanelOpen, Visibility.Visible);
-                        SetVisibility(ButtonClose, Visibility.Visible);
-
-                        Device.CameraVideoControl ??= new VideoReader();
-                        if (!DService.IsVideoOpen)
-                        {
-                            DService.CurrentTakeImageMode = TakeImageMode.Live;
-                            string host = Device.Config.VideoConfig.Host;
-                            int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
-                            if (port > 0)
-                            {
-                                View.ImageView.ImageShow.Source = null;
-                            }
-                            else
-                            {
-                                Device.CameraVideoControl.Close();
-                            }
-                        }
-                        break;
-                    case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelOpen, Visibility.Visible);
-                        SetVisibility(ButtonClose, Visibility.Visible);
-                        TakePhotoButton.Visibility = Visibility.Visible;
-                        break;
-                    default:
-                        // No specific action needed
-                        break;
-                }
-            }
-            UpdateUI(DService.DeviceStatus);
-            DService.DeviceStatusChanged += UpdateUI;
+            DService_DeviceStatusChanged(sender,DService.DeviceStatus);
+            DService.DeviceStatusChanged += DService_DeviceStatusChanged;
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
+        }
+
+        private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
+        {
+            void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
+            void HideAllButtons()
+            {
+                SetVisibility(ButtonOpen, Visibility.Collapsed);
+                SetVisibility(ButtonInit, Visibility.Collapsed);
+                SetVisibility(ButtonOffline, Visibility.Collapsed);
+                SetVisibility(ButtonClose, Visibility.Collapsed);
+                SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                SetVisibility(StackPanelOpen, Visibility.Collapsed);
+            }
+            // Default state
+            HideAllButtons();
+
+            switch (e)
+            {
+                case DeviceStatusType.Unauthorized:
+                    SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Unknown:
+                    SetVisibility(TextBlockUnknow, Visibility.Visible);
+                    break;
+                case DeviceStatusType.OffLine:
+                    SetVisibility(ButtonOffline, Visibility.Visible);
+                    break;
+                case DeviceStatusType.UnInit:
+                    SetVisibility(ButtonInit, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Closed:
+                    SetVisibility(ButtonOpen, Visibility.Visible);
+                    break;
+                case DeviceStatusType.LiveOpened:
+                    SetVisibility(StackPanelOpen, Visibility.Visible);
+                    SetVisibility(ButtonClose, Visibility.Visible);
+                    Device.CameraVideoControl ??= new VideoReader();
+                    if (!DService.IsVideoOpen)
+                    {
+                        DService.CurrentTakeImageMode = TakeImageMode.Live;
+                        string host = Device.Config.VideoConfig.Host;
+                        int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
+                        if (port > 0)
+                        {
+                            View.ImageView.ImageShow.Source = null;
+                        }
+                        else
+                        {
+                            Device.CameraVideoControl.Close();
+                        }
+                    }
+                    break;
+                case DeviceStatusType.Opened:
+                    SetVisibility(StackPanelOpen, Visibility.Visible);
+                    SetVisibility(ButtonClose, Visibility.Visible);
+                    TakePhotoButton.Visibility = Visibility.Visible;
+                    break;
+                default:
+                    // No specific action needed
+                    break;
+            }
         }
 
         public event RoutedEventHandler Selected;
@@ -402,21 +396,29 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ButtonProgressBarGetData.TargetTime = Device.Config.ExpTime + DisplayCameraConfig.TakePictureDelay;
             logger.Info($"正在取图：ExpTime{Device.Config.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
             Device.SetMsgRecordChanged(msgRecord);
-
-            ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
             msgRecord.MsgRecordStateChanged += (s) =>
             {
                 ButtonProgressBarGetData.Stop();
                 DisplayCameraConfig.TakePictureDelay = ButtonProgressBarGetData.Elapsed - Device.Config.ExpTime;
                 if (s == MsgRecordState.Timeout)
                 {
-                    MessageBox1.Show("取图超时,请重设超时时间或者是否为物理相机配置校正");
+                    if (param.Id > 0 && Device?.PhyCamera?.DeviceCalibration ==null)
+                    {
+                        MessageBox1.Show("取图超时,是否为物理相机配置校正");
+                    }
+                    else
+                    {
+                        MessageBox1.Show("取图超时,请重设超时时间");
+                    }
                 }
-                if (s== MsgRecordState.Fail)
+                if (s == MsgRecordState.Fail)
                 {
                     View.SearchAll();
+                    MessageBox.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn.Message + Environment.NewLine + "重启服务试试","ColorVisoin");
                 }
             };
+            ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
+
         }
 
         public MsgRecord? TakePhoto(double exp =0)
@@ -460,19 +462,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        public void GetData()
+        public MsgRecord? GetData()
         {
-            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
-            if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param) return;
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return null;
+            if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param) return null;
 
             double[] expTime = null;
             if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
             else expTime = new double[] { Device.Config.ExpTime };
 
 
-            if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return;
+            if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return null;
 
-            MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
+            return DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);       
         }
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
@@ -512,18 +514,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
                     if (port > 0)
                     {
-                        MsgRecord msg = DService.OpenVideo(host, port);
-                        msg.MsgRecordStateChanged += (s) =>
+                        MsgRecord msgRecord = DService.OpenVideo(host, port);
+                        msgRecord.MsgRecordStateChanged += (s) =>
                         {
                             if (s == MsgRecordState.Fail)
                             {
+
+                                MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                                 Device.CameraVideoControl.Close();
                                 DService.Close();
                                 DService.IsVideoOpen = false;
                             }
                             else
                             {
-                                DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msg.MsgReturn.Data));
+                                DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msgRecord.MsgReturn.Data));
                                 string mapName = Device.Code;
                                 if (pm_live.IsLocal) mapName = pm_live.MapName;
                                 Device.CameraVideoControl.Startup(mapName, View.ImageView);
@@ -534,7 +538,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 StackPanelOpen.Visibility = Visibility.Visible;
                             }
                         };
-                        ServicesHelper.SendCommand(button, msg);
+                        ServicesHelper.SendCommand(button, msgRecord);
                     }
                     else
                     {
@@ -549,8 +553,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
             if (ComboxAutoFocus.SelectedValue is not AutoFocusParam param) return;
-            MsgRecord msg = DService.AutoFocus(param);
-            ServicesHelper.SendCommand(sender, msg);
+            MsgRecord msgRecord = DService.AutoFocus(param);
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Fail)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                }
+            };
+            ServicesHelper.SendCommand(sender, msgRecord);
+
         }
 
 
@@ -727,6 +739,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
                 }
             };
+        }
+
+        public void Dispose()
+        {
+            DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
         }
     }
 }

@@ -10,6 +10,12 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Ghost
 {
+    public enum CVOLEDCOLOR
+    {
+        BLUE = 0,
+        GREEN = 1,
+        RED = 2,
+    };
     [DisplayAlgorithm(54, "Ghost1.0", "ARVR")]
     public class AlgorithmGhost : DisplayAlgorithmBase
     {

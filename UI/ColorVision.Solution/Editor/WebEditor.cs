@@ -1,7 +1,6 @@
 ﻿using AvalonDock.Layout;
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Workspace;
-using ColorVision.UI;
 using ColorVision.UI.Desktop;
 using Microsoft.Web.WebView2.Wpf;
 using System.IO;

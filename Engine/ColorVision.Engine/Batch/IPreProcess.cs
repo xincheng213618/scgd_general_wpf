@@ -2,6 +2,8 @@ using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Documents;
 
 namespace ColorVision.Engine.Batch
 {
@@ -16,7 +18,7 @@ namespace ColorVision.Engine.Batch
         /// </summary>
         /// <param name="ctx">The context containing flow information and configuration. Cannot be null.</param>
         /// <returns>true if pre-processing succeeded and flow should continue; false to abort flow execution.</returns>
-        bool PreProcess(IPreProcessContext ctx);
+        Task<bool> PreProcess(IPreProcessContext ctx);
 
         /// <summary>
         /// Gets the configuration object for this pre-processor.
@@ -106,6 +108,6 @@ namespace ColorVision.Engine.Batch
         /// <summary>
         /// Executes the pre-processing logic.
         /// </summary>
-        public abstract bool PreProcess(IPreProcessContext ctx);
+        public abstract Task<bool> PreProcess(IPreProcessContext ctx);
     }
 }

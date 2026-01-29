@@ -1,12 +1,10 @@
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Sorts;
 using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;

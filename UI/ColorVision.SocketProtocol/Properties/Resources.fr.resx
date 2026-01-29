@@ -129,4 +129,79 @@
   <data name="IsServerEnabled" xml:space="preserve">
     <value>Serveur activé</value>
   </data>
+  <data name="SocketManagementWindow" xml:space="preserve">
+    <value>Gestionnaire de connexion Socket</value>
+  </data>
+  <data name="Query" xml:space="preserve">
+    <value>Requête</value>
+  </data>
+  <data name="AdvancedQuery" xml:space="preserve">
+    <value>Requête avancée</value>
+  </data>
+  <data name="OpenDb" xml:space="preserve">
+    <value>Ouvrir</value>
+  </data>
+  <data name="ClearMessages" xml:space="preserve">
+    <value>Message clair</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>installation</value>
+  </data>
+  <data name="ConnectedClients" xml:space="preserve">
+    <value>Mise en relation des clients</value>
+  </data>
+  <data name="LocalEndPoint" xml:space="preserve">
+    <value>Adresse locale</value>
+  </data>
+  <data name="RemoteEndPoint" xml:space="preserve">
+    <value>adresse distante</value>
+  </data>
+  <data name="ConnectionStatus" xml:space="preserve">
+    <value>État de la connexion</value>
+  </data>
+  <data name="MessageLog" xml:space="preserve">
+    <value>Journal des messages</value>
+  </data>
+  <data name="Time" xml:space="preserve">
+    <value>temps</value>
+  </data>
+  <data name="Direction" xml:space="preserve">
+    <value>direction</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="EventName" xml:space="preserve">
+    <value>Nom de l'événement</value>
+  </data>
+  <data name="Content" xml:space="preserve">
+    <value>contenu</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>copie</value>
+  </data>
+  <data name="Resend" xml:space="preserve">
+    <value>Renvoyer</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>supprimer</value>
+  </data>
+  <data name="MessageDetail" xml:space="preserve">
+    <value>Détails du message</value>
+  </data>
+  <data name="ResponseCode" xml:space="preserve">
+    <value>Code de réponse :</value>
+  </data>
+  <data name="CopyFormatted" xml:space="preserve">
+    <value>Copie formatée</value>
+  </data>
+  <data name="ResendSuccess" xml:space="preserve">
+    <value>Message renvoyé avec succès</value>
+  </data>
+  <data name="ResendFailed" xml:space="preserve">
+    <value>Échec du renvoi du message : {0}</value>
+  </data>
+  <data name="ClientNotConnected" xml:space="preserve">
+    <value>Client cible non connecté</value>
+  </data>
 </root>

@@ -2,12 +2,9 @@ using ColorVision.Database;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
-using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
-using ProjectARVRPro.Process.Chessboard;
-using ProjectARVRPro.Process.Green;
 using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.Distortion

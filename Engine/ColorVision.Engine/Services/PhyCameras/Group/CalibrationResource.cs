@@ -6,6 +6,7 @@ using ColorVision.UI.Authorizations;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
+using SqlSugar;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows;
@@ -124,8 +125,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public override void Save()
         {
             SysResourceModel.Remark = JsonConvert.SerializeObject(Config);
-
-            MySqlControl.GetInstance().DB.Updateable(SysResourceModel).ExecuteCommand();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
+            Db.Updateable(SysResourceModel).ExecuteCommand();
         }
     }
 }

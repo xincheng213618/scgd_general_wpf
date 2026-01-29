@@ -268,31 +268,5 @@ namespace ColorVision.UI
             for (int i = 0; i < IDisPlayControls.Count; i++)
                 DisPlayManagerConfig.Instance.StoreIndex[IDisPlayControls[i].DisPlayName] = i;
         }
-        public void DisableAllDisPlayControl()
-        {
-            for (int i = 0; i < IDisPlayControls.Count; i++)
-            {
-                if (IDisPlayControls[i].DisPlayName != "Flow")
-                {
-                    if (IDisPlayControls[i] is UserControl userControl)
-                    {
-                        userControl.IsEnabled = false;
-                        userControl.IsHitTestVisible = false;
-                    }
-                }
-            }
-
-        }
-        public void EnableAllDisPlayControl()
-        {
-            for (int i = 0; i < IDisPlayControls.Count; i++)
-            {
-                if (IDisPlayControls[i] is UserControl userControl)
-                {
-                    userControl.IsEnabled = true;
-                    userControl.IsHitTestVisible = true;
-                }
-            }
-        }
     }
 }

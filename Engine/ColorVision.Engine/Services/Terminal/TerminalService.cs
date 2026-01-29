@@ -7,6 +7,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using Newtonsoft.Json;
+using SqlSugar;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -116,9 +117,10 @@ namespace ColorVision.Engine.Services.Terminal
             Parent.RemoveChild(this);
             if (SysResourceModel != null)
             {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-                MySqlControl.GetInstance().DB.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
-                MySqlControl.GetInstance().DB.Deleteable<SysResourceModel>().Where(x => x.Id == SysResourceModel.Id).ExecuteCommand();
+                Db.Deleteable<SysResourceModel>().Where(x => x.Pid == SysResourceModel.Id).ExecuteCommand();
+                Db.Deleteable<SysResourceModel>().Where(x => x.Id == SysResourceModel.Id).ExecuteCommand();
 
             }
             ServiceManager.GetInstance().TerminalServices.Remove(this);
@@ -133,7 +135,8 @@ namespace ColorVision.Engine.Services.Terminal
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            MySqlControl.GetInstance().DB.Updateable<SysResourceModel>().ExecuteCommand();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            Db.Updateable<SysResourceModel>().ExecuteCommand();
             MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
         }
     }

@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 
 namespace System.ComponentModel
 {
@@ -22,6 +23,7 @@ namespace System.ComponentModel
             var toggleSwitch = new Wpf.Ui.Controls.ToggleSwitch
             {
                 Margin = new Thickness(5, 0, 0, 0),
+                Background = Brushes.DodgerBlue
             };
             var binding = PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name);
             toggleSwitch.SetBinding(ToggleButton.IsCheckedProperty, binding);

@@ -1,4 +1,6 @@
 ﻿
+using log4net;
+using log4net.Repository.Hierarchy;
 using Quartz;
 using Quartz.Listener;
 using System.Diagnostics;
@@ -8,13 +10,12 @@ namespace ColorVision.Scheduler
     public class TaskExecutionListener : JobListenerSupport
     {
         private readonly QuartzSchedulerManager _schedulerManager;
-        private readonly SchedulerLogger _logger;
+        private static readonly ILog _logger = LogManager.GetLogger(typeof(TaskExecutionListener));
         private readonly Dictionary<string, Stopwatch> _executionTimers = new();
 
         public TaskExecutionListener(QuartzSchedulerManager schedulerManager)
         {
             _schedulerManager = schedulerManager;
-            _logger = new SchedulerLogger("TaskExecutionListener");
         }
 
         public override string Name => "TaskExecutionListener";
@@ -29,7 +30,7 @@ namespace ColorVision.Scheduler
             if (taskInfo != null)
             {
                 taskInfo.Status = SchedulerStatus.Running;
-                _logger.LogInformation($"Job starting: {jobKey.Name}({jobKey.Group})");
+                _logger.Info($"Job starting: {jobKey.Name}({jobKey.Group})");
                 
                 // 启动计时器
                 var timerKey = $"{jobKey.Name}_{jobKey.Group}";
@@ -45,10 +46,12 @@ namespace ColorVision.Scheduler
         public override Task JobWasExecuted(IJobExecutionContext context, JobExecutionException? jobException, CancellationToken cancellationToken = default)
         {
             base.JobWasExecuted(context, jobException, cancellationToken);
-            
-            // 更新任务执行次数和状态
+
             var jobKey = context.JobDetail.Key;
-            var taskInfo = _schedulerManager.TaskInfos.FirstOrDefault(t => t.JobName == jobKey.Name && t.GroupName == jobKey.Group);
+
+            // 优化：尝试直接从 JobDataMap 获取 SchedulerInfo
+            SchedulerInfo? taskInfo = context.JobDetail.JobDataMap["SchedulerInfo"] as SchedulerInfo;
+
             if (taskInfo != null)
             {
                 taskInfo.RunCount++;
@@ -98,12 +101,12 @@ namespace ColorVision.Scheduler
                 if (jobException != null)
                 {
                     taskInfo.FailureCount++;
-                    _logger.LogError($"Job execution failed: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms", jobException);
+                    _logger.Error($"Job execution failed: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms", jobException);
                 }
                 else
                 {
                     taskInfo.SuccessCount++;
-                    _logger.LogInformation($"Job completed: {jobKey.Name}({jobKey.Group}), RunCount: {taskInfo.RunCount}, Duration: {executionTimeMs}ms");
+                    _logger.Info($"Job completed: {jobKey.Name}({jobKey.Group}), RunCount: {taskInfo.RunCount}, Duration: {executionTimeMs}ms");
                 }
             }
             

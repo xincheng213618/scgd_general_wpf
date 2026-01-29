@@ -1,8 +1,4 @@
-﻿using ColorVision.Database;
-using ColorVision.Engine.Templates.FOV;
-using ColorVision.Engine.Templates.Menus;
-using ColorVision.UI.Menus;
-using System.Windows;
+﻿using ColorVision.Engine.Templates.Menus;
 
 namespace ColorVision.Engine.Templates.ARVR.AOI
 {

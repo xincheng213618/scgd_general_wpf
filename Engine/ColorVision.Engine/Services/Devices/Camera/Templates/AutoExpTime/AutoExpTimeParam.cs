@@ -3,7 +3,6 @@
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Utilities;
 using System.Collections.Generic;
-using System.ComponentModel;
 using ColorVision.Engine.Properties;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam

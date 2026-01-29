@@ -1,9 +1,4 @@
-﻿using AvalonDock.Layout;
-using ColorVision.Solution.Editor;
-using ColorVision.Themes;
-using ColorVision.UI.Views;
-using System.IO;
-using System.Windows;
+﻿using ColorVision.Themes;
 using System.Windows.Controls;
 using System.Windows.Input;
 

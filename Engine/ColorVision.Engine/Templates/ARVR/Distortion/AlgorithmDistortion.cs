@@ -11,7 +11,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.Distortion
 {
 
-    [DisplayAlgorithmAttribute(55, "畸变评价", "畸变评价")]
+    [DisplayAlgorithmAttribute(55, nameof(ColorVision.Engine.Properties.Resources.DistortionEvaluation),"ARVR")]
     public class AlgorithmDistortion : DisplayAlgorithmBase
     {
 

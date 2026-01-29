@@ -5,7 +5,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.LogImp;
 using ColorVision.UI.Views;
 using FlowEngineLib;
 using ST.Library.UI.NodeEditor;
@@ -14,7 +13,6 @@ using System.Collections.ObjectModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -30,11 +28,12 @@ namespace ColorVision.Engine.Services.Flow
     /// </summary>
     public partial class ViewFlow : System.Windows.Controls.UserControl, IView, IDisposable
     {
+        public FlowEngineManager FlowEngineManager { get; set; }
         public FlowEngineControl FlowEngineControl { get; set; }
+        public FlowEngineConfig Config { get; set; }
 
-        public static FlowEngineManager FlowEngineManager => FlowEngineManager.GetInstance();
 
-        public ColorVision.UI.Views.View View { get; set; }
+        public View View { get; set; }
         public RelayCommand AutoSizeCommand { get; set; }
 
         public event EventHandler RefreshFlow;
@@ -48,14 +47,17 @@ namespace ColorVision.Engine.Services.Flow
 
         public RelayCommand OpenFlowTemplateCommand { get; set; }
 
-        public static FlowEngineConfig Config => FlowEngineConfig.Instance;
 
         public DisplayFlow DisplayFlow { get; set; }
 
-        public ViewFlow(FlowEngineControl flowEngineControl)
+        public ViewFlow(FlowEngineManager flowEngineManager)
         {
-            FlowEngineControl = flowEngineControl;
+            FlowEngineManager = flowEngineManager;
+            FlowEngineControl = FlowEngineManager.FlowEngineControl;
+            Config = FlowEngineManager.Config;
+
             InitializeComponent();
+
             AutoSizeCommand = new RelayCommand(a => AutoSize());
             RefreshCommand = new RelayCommand(a => Refresh());
             ClearCommand = new RelayCommand(a => Clear());
@@ -73,13 +75,13 @@ namespace ColorVision.Engine.Services.Flow
             this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
             CommandBindings.Add(new CommandBinding(EngineCommands.StartExecutionCommand, (s, e) => DisplayFlow.RunFlow(), (s, e) =>
             {
-                if (DisplayFlow.flowControl != null)
-                    e.CanExecute = !DisplayFlow.flowControl.IsFlowRun;
+                if (DisplayFlow.FlowControl != null)
+                    e.CanExecute = !DisplayFlow.FlowControl.IsFlowRun;
             }));
             CommandBindings.Add(new CommandBinding(EngineCommands.StopExecutionCommand, (s, e) => DisplayFlow.StopFlow(), (s, e) =>
             {
-                if (DisplayFlow.flowControl != null)
-                    e.CanExecute = DisplayFlow.flowControl.IsFlowRun;
+                if (DisplayFlow.FlowControl != null)
+                    e.CanExecute = DisplayFlow.FlowControl.IsFlowRun;
             }));
 
             ThemeManager.Current.CurrentUIThemeChanged += ThemeChanged;
@@ -155,15 +157,15 @@ namespace ColorVision.Engine.Services.Flow
 
         public void AutoAlignment()
         {
-            STNodeEditorHelper.ApplyTreeLayout(startX: 0, startY: 0, horizontalSpacing: 300, verticalSpacing: 300);
+            STNodeEditorHelper.ApplyTreeLayout(startX: 0, startY: 0, Config.horizontalSpacing, Config.verticalSpacing);
             STNodeEditorHelper.AutoSize();
         }
 
         public void Save()
         {
             if (!STNodeEditorHelper.CheckFlow()) return;
-            FlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData());
-            TemplateFlow.Save2DB(FlowParam);
+            FlowEngineManager.GetInstance().SlectFlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData());
+            TemplateFlow.Save2DB(FlowEngineManager.GetInstance().SlectFlowParam);
         }
 
 
@@ -178,7 +180,6 @@ namespace ColorVision.Engine.Services.Flow
 
         public STNodeEditorHelper STNodeEditorHelper { get; set; }
 
-        public FlowParam FlowParam { get; set; }
         
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -242,10 +243,15 @@ namespace ColorVision.Engine.Services.Flow
 
         private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (ActualWidth > 200)
+            if (ActualHeight > 250) 
             {
-                winf1.Height = (int)ActualHeight;
-                winf1.Width = (int)ActualWidth;
+                ProgressBar1.Visibility = Visibility.Collapsed;
+                GridControl.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                ProgressBar1.Visibility = Visibility.Visible;
+                GridControl.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -376,26 +382,6 @@ namespace ColorVision.Engine.Services.Flow
             STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + delta, mousePosition.X, mousePosition.Y);
         }
 
-        private void GridViewColumnSort(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-
-        public void Dispose()
-        {
-            ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
-
-            STNodeEditorHelper?.PropertyEditorWindow?.CloseWindow();
-            STNodeEditorMain?.Dispose();
-            winf1?.Dispose();
-            GC.SuppressFinalize(this);
-        }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -411,16 +397,6 @@ namespace ColorVision.Engine.Services.Flow
             else
             {
                 MessageBox.Show("请先执行流程");
-            }
-
-
-        }
-
-        private void Grid1_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (sender is Grid grid)
-            {
-                winf1.Visibility = grid.ActualHeight < 200 || grid.ActualWidth < 100 ? Visibility.Collapsed : Visibility.Visible;
             }
         }
 
@@ -441,56 +417,29 @@ namespace ColorVision.Engine.Services.Flow
                 STNodeEditorMain.SetActiveNode(FlowEngineManager.CVBaseServerNodes[NodeListView.SelectedIndex]);
             }
         }
-    }
 
-    public class LogFileHelper
-    {
-        /// <summary>
-        /// 获取最新的日志文件路径（主日志）
-        /// </summary>
-        public static string GetLatestMainLogPath(string baseDir)
+        public void Dispose()
         {
-            string logDir = Path.Combine(baseDir, "log");
-            return Path.Combine(logDir, $"{DateTime.Now:yyyyMMdd}.log");
+            ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
+
+            STNodeEditorHelper?.PropertyEditorWindow?.CloseWindow();
+            STNodeEditorMain?.Dispose();
+            winf1?.Dispose();
+            GC.SuppressFinalize(this);
         }
 
-        /// <summary>
-        /// 获取最新的Info日志文件路径
-        /// </summary>
-        public static string GetLatestInfoLogPath(string baseDir)
+        private void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
-            string logDir = Path.Combine(baseDir, "log", "LogInfo");
-            return Path.Combine(logDir, $"{DateTime.Now:yyyyMMdd}.log");
+            FlowEngineManager.DisplayFlow.RunFlow();
+
         }
 
-        /// <summary>
-        /// 获取最新的Error日志文件路径
-        /// </summary>
-        public static string GetLatestErrorLogPath(string baseDir)
+        private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
         {
-            string logDir = Path.Combine(baseDir, "log", "LogError");
-            return Path.Combine(logDir, $"{DateTime.Now:yyyyMMdd}.log");
-        }
+            FlowEngineManager.DisplayFlow.StopFlow();
 
-        /// <summary>
-        /// 获取目录下最新修改的日志文件（备用方案）
-        /// </summary>
-        public static string GetMostRecentLogFile(string logDirectory,string prefix = "")
-        {
-            if (!Directory.Exists(logDirectory))
-                return null;
-
-            // 如果传进来的是完整路径，取出文件名前缀
-            var filePrefix = Path.GetFileNameWithoutExtension(prefix);
-
-            var pattern = $"{filePrefix}*.log";
-
-            var latest = Directory.EnumerateFiles(logDirectory, pattern, SearchOption.TopDirectoryOnly)
-                                  .Select(p => new FileInfo(p))
-                                  .OrderByDescending(f => f.LastWriteTimeUtc)
-                                  .FirstOrDefault();
-
-            return latest?.FullName;
         }
     }
+
+
 }

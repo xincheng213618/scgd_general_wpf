@@ -1,6 +1,7 @@
 ﻿using ColorVision.Database;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -68,6 +69,8 @@ namespace ColorVision.Engine.Templates.POI
         }
         public override void Delete(int index)
         {
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
             Db.Deleteable<PoiMasterModel>().Where(it => it.Id == TemplateParams[index].Value.Id).ExecuteCommand();
             TemplateParams.RemoveAt(index);
         }
@@ -105,11 +108,11 @@ namespace ColorVision.Engine.Templates.POI
                         PoiDetailModel poiDetail = new PoiDetailModel(poiMasterModel.Id, pt);
                         poiDetails.Add(poiDetail);
                     }
+                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-                    var db = MySqlControl.GetInstance().DB;
                     Stopwatch sw2 = Stopwatch.StartNew();
-                    db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiMasterModel.Id).ExecuteCommand();
-                    int count = MySqlControl.GetInstance().DB.Insertable(poiDetails).ExecuteCommand();
+                    Db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiMasterModel.Id).ExecuteCommand();
+                    int count = Db.Insertable(poiDetails).ExecuteCommand();
                     sw2.Stop();
 
 
@@ -208,6 +211,7 @@ namespace ColorVision.Engine.Templates.POI
                 // Swap the IDs in the database using a three-step process to avoid constraint violations
                 // Use int.MinValue plus a hash-based offset incorporating both IDs to minimize collision risk
                 int tempId = int.MinValue + Math.Abs((id1 ^ id2).GetHashCode());
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
                 // Step 1: Move template1 to temporary ID
                 var poiMaster1 = Db.Queryable<PoiMasterModel>().InSingle(id1);

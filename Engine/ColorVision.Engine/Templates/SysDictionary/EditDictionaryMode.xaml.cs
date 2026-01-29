@@ -1,6 +1,7 @@
 ﻿using ColorVision.Database;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using SqlSugar;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -59,7 +60,9 @@ namespace ColorVision.Engine.Templates
         {
             if (sender is MenuItem menuItem && menuItem.Tag is SysDictionaryModDetaiModel SysDictionaryModDetaiModel)
             {
-                MySqlControl.GetInstance().DB.Deleteable<SysResourceModel>().Where(it => it.Id == SysDictionaryModDetaiModel.Id).ExecuteCommand();
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+                Db.Deleteable<SysResourceModel>().Where(it => it.Id == SysDictionaryModDetaiModel.Id).ExecuteCommand();
                 Param.ModDetaiModels.Remove(SysDictionaryModDetaiModel);
             }
         }

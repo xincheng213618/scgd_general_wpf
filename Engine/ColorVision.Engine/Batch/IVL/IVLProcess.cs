@@ -268,8 +268,8 @@ namespace ColorVision.Engine.Batch.IVL
                 var DeviceSMUs = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList();
                 if (DeviceSMUs.Count > 0)
                 {
-                    DeviceSMUs[0].Config.V = null;
-                    DeviceSMUs[0].Config.I = null;
+                    DeviceSMUs[0].DisplayConfig.V = null;
+                    DeviceSMUs[0].DisplayConfig.I = null;
                 }
                 return true;
             }

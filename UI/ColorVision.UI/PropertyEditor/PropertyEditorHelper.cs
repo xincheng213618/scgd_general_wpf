@@ -298,12 +298,64 @@ namespace ColorVision.UI
             comboBox.SetBinding(Selector.SelectedItemProperty, binding);
             return comboBox;
         }
+        static int GetInheritanceDepth(Type t)
+        {
+            int depth = 0;
+            while (t != null)
+            {
+                t = t.BaseType;
+                depth++;
+            }
+            return depth;
+        }
+
+        public static DockPanel GenProperties(PropertyInfo property, object obj)
+        {
+            DockPanel dockPanel = null;
+            var editorAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
+            if (editorAttr?.EditorType != null)
+            {
+                try
+                {
+                    var editor = GetOrCreateEditor(editorAttr.EditorType);
+                    dockPanel = editor.GenProperties(property, obj);
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            if (dockPanel == null)
+            {
+                Type? editorType = null;
+                editorType = GetEditorTypeForPropertyType(property.PropertyType);
+                if (editorType != null)
+                {
+                    try
+                    {
+                        var editor = GetOrCreateEditor(editorType);
+                        dockPanel = editor.GenProperties(property, obj);
+                    }
+                    catch (Exception)
+                    {
+
+                    }
+                }
+            }
+            dockPanel.Margin = new Thickness(0, 0, 0, 5);
+            return dockPanel;
+        }
 
         public static StackPanel GenPropertyEditorControl(object obj,ResourceManager resourceManager =null)
         {
             if (obj == null) return new StackPanel();
 
-            if (resourceManager != null) GetResourceManager(obj, resourceManager);
+            bool OrderBy = true;
+            if (resourceManager != null)
+            {
+                OrderBy = false;
+                GetResourceManager(obj, resourceManager);
+            }
 
             var categoryGroups = new Dictionary<string, List<PropertyInfo>>(StringComparer.Ordinal);
 
@@ -311,10 +363,14 @@ namespace ColorVision.UI
             {
                 var t = source.GetType();
 
-                var props = t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                             .Where(p => p.CanRead && p.CanWrite);
+                // 1. 获取属性
+                var allProps = t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                .Where(p => p.CanRead && p.CanWrite);
 
-                foreach (var prop in props)
+
+                var sortedProps = OrderBy? allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType)): allProps.OrderByDescending(p => GetInheritanceDepth(p.DeclaringType));
+
+                foreach (var prop in sortedProps)
                 {
                     var browsableAttr = prop.GetCustomAttribute<BrowsableAttribute>();
                     if (!(browsableAttr?.Browsable ?? true))

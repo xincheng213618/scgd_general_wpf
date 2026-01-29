@@ -1,4 +1,3 @@
-using ColorVision.Common.MVVM;
 using System.ComponentModel;
 
 namespace ProjectARVRPro.Process.MTFHV

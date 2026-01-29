@@ -1,6 +1,7 @@
-﻿using log4net;
+﻿using ColorVision.UI.CUDA;
+using log4net;
 
-namespace ColorVision.UI.CUDA
+namespace ColorVision.UI.Desktop.CUDA
 {
     public class SystemInitializer : InitializerBase
     {

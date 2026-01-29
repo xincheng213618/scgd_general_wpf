@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 
 namespace ProjectLUX.Process.AR.W51AR
 {

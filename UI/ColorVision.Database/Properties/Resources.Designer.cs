@@ -203,14 +203,5 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("UserName", resourceCulture);
             }
         }
-        
-        /// <summary>
-        ///   查找类似 刷新&quot;&gt; 的本地化字符串。
-        /// </summary>
-        public static string 刷新 {
-            get {
-                return ResourceManager.GetString("刷新", resourceCulture);
-            }
-        }
     }
 }

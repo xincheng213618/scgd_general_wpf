@@ -17,6 +17,9 @@ namespace ColorVision.Engine.Batch
         /// Gets or sets the serial number for the flow execution.
         /// </summary>
         public string SerialNumber { get; set; }
+
+        public ObservableCollection<CVBaseServerNode> CVBaseServerNodes { get; set; }
+
         /// <summary>
         /// Gets or sets the batch configuration settings.
         /// </summary>

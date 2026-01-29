@@ -98,9 +98,9 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 lock (_lock)
                 {
-                    _IsFlowRun = value;
-                    OnPropertyChanged();
+                    _IsFlowRun = value;   
                 }
+                Application.Current.Dispatcher.Invoke(() => OnPropertyChanged());
             }
         }
         public void Stop()
@@ -111,7 +111,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 flowEngine.StopNode(SerialNumber);
             }
-            IsFlowRun = false;
+            IsFlowRun = true;
         }
 
         public void Start(string sn)

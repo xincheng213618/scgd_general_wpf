@@ -22,18 +22,15 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = "KBLVSacle",
-                                Description = "KBLVSacle",
                                 Order = 2,
                                 Group ="Engine",
-                                Type = ConfigSettingType.Text,
                                 BindingName =nameof(KBLVSacle),
                                 Source = Instance,
                             }
             };
         }
     }
-    [DisplayAlgorithm(98, "键盘检测", "数据提取算法")]
+    [DisplayAlgorithm(98, "键盘检测1", "数据提取算法")]
     public class AlgorithmKB : DisplayAlgorithmBase
     {
 

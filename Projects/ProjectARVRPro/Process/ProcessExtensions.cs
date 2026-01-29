@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-
-namespace ProjectARVRPro.Process
+﻿namespace ProjectARVRPro.Process
 {
     public static class ProcessExtensions
     {

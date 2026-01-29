@@ -8,6 +8,11 @@
         d:DataContext="{d:DesignInstance local:PhyCameraManager}"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties" xmlns:hc="https://handyorg.github.io/handycontrol"
         Title="{x:Static properties:Resources.PhysicalCameraManager}" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
+    <Window.Resources>
+        <ResourceDictionary>
+            <local:StatusToTextConverter x:Key="StatusToTextConverter"/>
+        </ResourceDictionary>
+    </Window.Resources>
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -58,13 +63,34 @@
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type local:PhyCamera}">
                             <StackPanel Margin="-15,5,0,5">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Id}"/>
-                                    <TextBlock Text="  "/>
-                                    <TextBlock Text="{Binding SysResourceModel.Remark}"/>
-                                </StackPanel>
+                                <Grid Margin="0,0,0,5">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Id}"/>
+                                        <TextBlock Text="  "/>
+                                        <TextBlock Text="{Binding CameraLicenseModel.ColorVisionLicense.DeviceMode}"/>
+
+                                    </StackPanel>
+                                    <TextBlock FontSize="14" Text="{Binding SysResourceModel.Remark,Converter={StaticResource StatusToTextConverter}}" FontWeight="Bold" HorizontalAlignment="Right"> 
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SysResourceModel.Remark}" Value="Offline">
+                                                        <Setter Property="Foreground" Value="Red"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+     
                                 <TextBlock Text="{Binding Code}"/>
-                                <TextBlock Text="{Binding CameraLicenseModel.ColorVisionLicense.DeviceMode}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <TextBlock Text="{Binding Config.CameraModel}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="{Binding Config.CameraMode}" Margin="0,0,10,0" />
+                                    <TextBlock Text="{Binding Config.Channel}" Margin="0,0,10,0" />
+                                    <TextBlock Text="{Binding Config.ImageBpp}" Margin="0,0,10,0" />
+
+                                </StackPanel>
                                 <TextBlock Text="{Binding LicenseExpiryText}" 
                                            Foreground="{Binding LicenseExpiryColor}" 
                                            FontSize="11" 

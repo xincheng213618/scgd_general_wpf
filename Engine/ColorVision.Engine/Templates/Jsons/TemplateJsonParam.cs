@@ -2,6 +2,7 @@
 using ColorVision.Database;
 using ColorVision.UI.Utilities;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -69,8 +70,10 @@ namespace ColorVision.Engine.Templates.Jsons
         }
 
         public void ResetValue()
-        {        
-            SysDictionaryModModel? DicTemplateJsonModel = MySqlControl.GetInstance().DB.Queryable<SysDictionaryModModel>().Where(x => x.Id == TemplateJsonModel.Pid).First(); 
+        {
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            SysDictionaryModModel? DicTemplateJsonModel = Db.Queryable<SysDictionaryModModel>().Where(x => x.Id == TemplateJsonModel.Pid).First(); 
             if (DicTemplateJsonModel !=null && DicTemplateJsonModel.JsonVal is string str)
             {
                 JsonValue = str;

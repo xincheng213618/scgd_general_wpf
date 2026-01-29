@@ -2,8 +2,7 @@
 
 namespace ColorVision.UI.CUDA
 {
-
-    public class ConfigCuda:ViewModelBase,IConfig, IConfigSettingProvider
+    public class ConfigCuda:ViewModelBase,IConfig
     {
         public static ConfigCuda Instance => ConfigService.Instance.GetRequiredService<ConfigCuda>();
 
@@ -23,25 +22,5 @@ namespace ColorVision.UI.CUDA
 
         public ulong[] TotalMemories { get => _TotalMemories; set { _TotalMemories = value; OnPropertyChanged(); } }
         private ulong[] _TotalMemories;
-
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            List<ConfigSettingMetadata> configSettingMetadatas = new List<ConfigSettingMetadata>();
-            if (Instance.IsCudaSupported)
-            {
-                ConfigSettingMetadata configSettingMetadata = new ConfigSettingMetadata()
-                {
-                    Type = ConfigSettingType.Bool,
-                    Order = 1,
-                    Name = "CUDA",
-                    Description = Properties.Resources.EnableCUDA,
-                    BindingName = nameof(IsEnabled),
-                    Source = Instance
-                };
-
-                configSettingMetadatas.Add(configSettingMetadata);
-            }
-            return configSettingMetadatas;
-        }
     }
 }

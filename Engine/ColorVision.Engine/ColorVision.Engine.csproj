@@ -25,7 +25,7 @@
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.11.0.20250507" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.7.0" />
-		<PackageReference Include="ScottPlot.WPF" Version="5.1.57" />
+		<PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
 		<PackageReference Include="SqlSugarCore" Version="5.1.4.211" />
 		<PackageReference Include="System.IO.Ports" Version="10.0.2" />
 		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.2" />
@@ -173,6 +173,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Update="Assets\Tool\CommMonitor.exe">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="Assets\Tool\EditJson\Editjson.html">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -237,6 +240,10 @@
 		<Page Update="Templates\Jsons\BinocularFusion\DisplayBinocularFusion.xaml">
 			<SubType>Designer</SubType>
 		</Page>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Services\Devices\SMU\Job\" />
 	</ItemGroup>
 
 </Project>

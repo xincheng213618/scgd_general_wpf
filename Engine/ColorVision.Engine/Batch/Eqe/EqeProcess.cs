@@ -2,7 +2,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.SMU;
-using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.Flow;
@@ -192,8 +191,8 @@ namespace ColorVision.Engine.Batch.Eqe
                 var DeviceSMUs = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList();
                 if (DeviceSMUs.Count > 0)
                 {
-                    DeviceSMUs[0].Config.V = null;
-                    DeviceSMUs[0].Config.I = null;
+                    DeviceSMUs[0].DisplayConfig.V = null;
+                    DeviceSMUs[0].DisplayConfig.I = null;
                 }
 
                 return true;

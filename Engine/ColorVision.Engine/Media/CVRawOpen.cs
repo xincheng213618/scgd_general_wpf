@@ -19,11 +19,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
 {
@@ -184,14 +184,19 @@ namespace ColorVision.Engine.Media
                 }
             }
 
-
-            imageView.ClearImageEventHandler += (s, e) =>
+            void Config_Cleared(object? sender, EventArgs e)
             {
+                imageView.Config.Cleared -= Config_Cleared;
                 int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
                 result = ConvertXYZ.CM_UnInitXYZ(Config.ConvertXYZhandle);
                 result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
                 imageView.ImageViewModel.MouseMagnifier.ClearMouseMoveColorHandler();
-            };
+            }
+            imageView.Config.Cleared += Config_Cleared;
+
+           
+
+
             if (!Config.ConvertXYZhandleOnce)
             {
                 int result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
@@ -308,6 +313,9 @@ namespace ColorVision.Engine.Media
             }
 
         }
+
+
+
         public float[] exp { get; set; }
 
         public List<MenuItemMetadata> GetContextMenuItems()
@@ -571,8 +579,29 @@ namespace ColorVision.Engine.Media
                     context.Config.AddProperties("srcFileName", cVCIEFile.SrcFileName);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        context.ImageView.OpenImage(cVCIEFile.ToWriteableBitmap());
-                        context.ImageView.UpdateZoomAndScale();
+                        if (context.ImageView.ViewBitmapSource is WriteableBitmap writeableBitmap)
+                        {
+                            OpenCvSharp.Mat mat = cVCIEFile.ToMat();
+                            cVCIEFile.Dispose();
+                            if (!mat.UpdateWriteableBitmap(writeableBitmap))
+                            {
+                                WriteableBitmap writeableBitmap1 = OpenCvSharp.WpfExtensions.WriteableBitmapConverter.ToWriteableBitmap(mat);
+                                mat.Dispose();
+                                context.ImageView.OpenImage(writeableBitmap1);
+                                context.ImageView.UpdateZoomAndScale();
+                            }
+                            else
+                            {
+                                mat.Dispose();
+                            }
+                        }
+                        else
+                        {
+                            WriteableBitmap writeableBitmap1 = cVCIEFile.ToWriteableBitmap();
+                            cVCIEFile.Dispose();
+                            context.ImageView.OpenImage(writeableBitmap1);
+                            context.ImageView.UpdateZoomAndScale();
+                        }
                     });
                 }));
             }

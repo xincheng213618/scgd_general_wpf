@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
 
 namespace ProjectLUX.Process.VID
 {

@@ -87,11 +87,11 @@ namespace ColorVision
             if (_stopwatch != null)
             {
                 _stopwatch.Stop();
-                log.Info($"程序运行时间: {_stopwatch.Elapsed.TotalSeconds} 秒");
+                log.Info($"StopAndReport: {_stopwatch.Elapsed.TotalSeconds} s");
             }
             else
             {
-                log.Info("计时器未启动。");
+                log.Info("StopAndReport");
             }
         }
     }

@@ -232,9 +232,6 @@
   <data name="General" xml:space="preserve">
     <value>Universel</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>FenêtreGestionnaireDePlugins</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>Nom du plugin</value>
   </data>
@@ -270,9 +267,6 @@
   </data>
   <data name="ViewMode9" xml:space="preserve">
     <value>Mode Vue 9</value>
-  </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
-    <value>Vérifier les mises à jour des plugins</value>
   </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Vérification des projets supplémentaires</value>
@@ -454,12 +448,6 @@
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>Ressource bool2VisibilityConverter introuvable</value>
   </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>Télécharger MQTT</value>
-  </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>Télécharger MySQL</value>
-  </data>
   <data name="Install" xml:space="preserve">
     <value>Installer</value>
   </data>
@@ -492,5 +480,14 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>Annuler</value>
+  </data>
+  <data name="PropertyEditorWindow" xml:space="preserve">
+    <value>Fenêtre de l'éditeur de propriétés</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>modifier</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>thème</value>
   </data>
 </root>

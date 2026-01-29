@@ -232,9 +232,6 @@
   <data name="General" xml:space="preserve">
     <value>만능인</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>플러그인 관리자 창</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>플러그인 이름</value>
   </data>
@@ -270,9 +267,6 @@
   </data>
   <data name="ViewMode9" xml:space="preserve">
     <value>보기 모드 9</value>
-  </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
-    <value>플러그인 업데이트 확인</value>
   </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>추가 프로젝트 확인 중</value>
@@ -454,12 +448,6 @@
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter 리소스를 찾을 수 없습니다</value>
   </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>MQTT 다운로드</value>
-  </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>MySQL 다운로드</value>
-  </data>
   <data name="Install" xml:space="preserve">
     <value>설치하다</value>
   </data>
@@ -492,5 +480,14 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>취소</value>
+  </data>
+  <data name="PropertyEditorWindow" xml:space="preserve">
+    <value>속성 편집기 창</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>편집하다</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>테마</value>
   </data>
 </root>

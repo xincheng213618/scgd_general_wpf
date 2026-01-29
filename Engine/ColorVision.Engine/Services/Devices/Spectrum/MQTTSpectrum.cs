@@ -6,7 +6,6 @@ using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.Flow;
-using iText.Commons.Bouncycastle.Asn1.X509;
 using MQTTMessageLib;
 using MQTTMessageLib.Spectrum;
 using MQTTnet.Client;
@@ -18,7 +17,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Interop;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
@@ -90,12 +88,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                 {
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
-                                        ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
-                                        Device.View.AddViewResultSpectrum(viewResultSpectrum);
                                         try
                                         {
-                                            double? IntegralTime = msg?.Data?.IntegralTime;
-                                            Device.DisplayConfig.IntTime = (float)IntegralTime;
+                                            ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
+                                            Device.View.AddViewResultSpectrum(viewResultSpectrum);
+                                            Device.DisplayConfig.IntTime = model.IntTime ??0;
 
                                         }
                                         catch (Exception ex)
@@ -118,14 +115,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                 if (msg != null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
                                 {
                                     int masterId = msg.Data?.MasterId;
-                                    var DB = new SqlSugarClient(new ConnectionConfig
-                                    {
-                                        ConnectionString = MySqlControl.GetConnectionString(),
-                                        DbType = SqlSugar.DbType.MySql,
-                                        IsAutoCloseConnection = true
-                                    });
+                                    using var DB = new SqlSugarClient(new ConnectionConfig  { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                                     SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().Where(x => x.Id == masterId).First();
-                                    DB.Dispose();
+
                                     log.Info($"GetData MasterId:{masterId} ");
                                     if (model != null)
                                     {
@@ -133,17 +125,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                         {
                                             ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
                                             Device.View.AddViewResultSpectrum(viewResultSpectrum);
-
-                                            try
-                                            {
-                                                double? IntegralTime = msg?.Data?.IntegralTime;
-                                                Device.DisplayConfig.IntTime = (float)IntegralTime;
-
-                                            }
-                                            catch (Exception ex)
-                                            {
-                                                log.Error(ex);
-                                            }
+                                            Device.DisplayConfig.IntTime = model.IntTime ?? 0;
                                         });
                                     }
 
@@ -331,12 +313,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public MsgRecord InitDark()
         {
+            var Param = new Dictionary<string, object>();
             MsgSend msg = new()
             {
                 EventName = "InitDark",
-                Params = new Dictionary<string, object>() { { "IntegralTime", Device.DisplayConfig.IntTime }, { "NumberOfAverage", Device.DisplayConfig.AveNum } }
-
+                Params = Param
             };
+            Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
+            Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
+            Param.Add("AutoInitDark", Config.IsAutoDark);
             return PublishAsyncClient(msg);
         }
 
@@ -383,44 +368,44 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
 
 
-        public void ShutterConnect()
+        public MsgRecord ShutterConnect()
         {
             MsgSend msg = new()
             {
                 EventName = MQTTSpectrumEventEnum.Event_Shutter_Connect,
                 ServiceName = Config.Code,
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
-        public void ShutterDisconnect()
+        public MsgRecord ShutterDisconnect()
         {
             MsgSend msg = new()
             {
                 EventName = MQTTSpectrumEventEnum.Event_Shutter_Disconnect,
                 ServiceName = Config.Code,
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
-        public void ShutterDoopen()
+        public MsgRecord ShutterDoopen()
         {
             MsgSend msg = new()
             {
                 EventName = MQTTSpectrumEventEnum.Event_Shutter_Doopen,
                 ServiceName = Config.Code,
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
-        public void ShutterDoclose()
+        public MsgRecord ShutterDoclose()
         {
             MsgSend msg = new()
             {
                 EventName = MQTTSpectrumEventEnum.Event_Shutter_Doclose,
                 ServiceName = Config.Code,
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
     }
 }

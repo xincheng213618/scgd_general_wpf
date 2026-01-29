@@ -1,6 +1,7 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
+using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -54,18 +55,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public static void Load(ObservableCollection<TemplateModel<SpectrumResourceParam>> CalibrationParamModes, int resourceId)
         {
             CalibrationParamModes.Clear();
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            List<ModMasterModel> smus = Db.Queryable<ModMasterModel>().Where(x => x.Pid == 7).Where(x => x.ResourceId == resourceId).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
+            foreach (var dbModel in smus)
             {
-                List<ModMasterModel> smus = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Pid == 7).Where(x => x.ResourceId == resourceId).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
-                foreach (var dbModel in smus)
+                List<ModDetailModel> smuDetails = Db.Queryable<ModDetailModel>().Where(it => it.Pid == dbModel.Id).ToList();
+                foreach (var dbDetail in smuDetails)
                 {
-                    List<ModDetailModel> smuDetails = MySqlControl.GetInstance().DB.Queryable<ModDetailModel>().Where(it => it.Pid == dbModel.Id).ToList();
-                    foreach (var dbDetail in smuDetails)
-                    {
-                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
-                    }
-                    CalibrationParamModes.Add(new TemplateModel<SpectrumResourceParam>(dbModel.Name ?? "default", new SpectrumResourceParam(dbModel, smuDetails)));
+                    dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
                 }
+                CalibrationParamModes.Add(new TemplateModel<SpectrumResourceParam>(dbModel.Name ?? "default", new SpectrumResourceParam(dbModel, smuDetails)));
             }
         }
 

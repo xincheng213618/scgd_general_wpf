@@ -100,6 +100,7 @@ namespace ColorVision.FileIO
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+            GC.Collect();
         }
 
         /// <summary>

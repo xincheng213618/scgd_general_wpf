@@ -232,9 +232,6 @@
   <data name="General" xml:space="preserve">
     <value>一般</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>插件管理器視窗</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>插件名稱</value>
   </data>
@@ -270,9 +267,6 @@
   </data>
   <data name="ViewMode9" xml:space="preserve">
     <value>視圖模式9</value>
-  </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
-    <value>檢測插件更新</value>
   </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>正在檢索是否存在附加項目</value>
@@ -454,12 +448,6 @@
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter 資源未找到</value>
   </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>下載MQTT</value>
-  </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>下載MySql</value>
-  </data>
   <data name="Install" xml:space="preserve">
     <value>安裝</value>
   </data>
@@ -492,5 +480,14 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
+  </data>
+  <data name="PropertyEditorWindow" xml:space="preserve">
+    <value>屬性編輯器視窗</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>編輯</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>主題</value>
   </data>
 </root>

@@ -61,9 +61,11 @@ namespace ColorVision.UI
     public partial class PropertyEditorWindow : Window
     {
         public event EventHandler Submited;
+
+        public object ConfigCopy { get; set; }
+
         public object Config { get; set; }
         public object EditConfig { get; set; }
-        public bool IsEdit { get; set; } = true;
 
         public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
         
@@ -76,11 +78,10 @@ namespace ColorVision.UI
         /// </summary>
         public ObservableCollection<PropertyTreeNode> TreeNodes { get; } = new ObservableCollection<PropertyTreeNode>();
 
-
+        private bool isEdit = true;
         public PropertyEditorWindow(object config ,bool isEdit = true)
         {
-            Type type = config.GetType();
-            IsEdit = isEdit;
+            this.isEdit = isEdit;
             Config = config;
             InitializeComponent();
             this.ApplyCaption();
@@ -97,20 +98,23 @@ namespace ColorVision.UI
             SortComboBox.Items.Add(new ComboBoxItem { Content = "按分类排序 (降序)", Tag = PropertySortMode.CategoryDescending });
             SortComboBox.SelectedIndex = 0;
 
-            if (IsEdit)
+
+            EditConfig = Config.Clone();
+            if (!isEdit)
             {
-                DisplayProperties(Config);
+                DisplayProperties(EditConfig);
             }
             else
             {
-                EditConfig = Config.Clone();
-                DisplayProperties(EditConfig);
+                DisplayProperties(Config);
             }
         }
         private void OK_Click(object sender, RoutedEventArgs e)
         {
-            if (!IsEdit)
+            if (!isEdit)
+            {
                 EditConfig.CopyTo(Config);
+            }
             Submited?.Invoke(sender, new EventArgs());
             this.Close();
         }
@@ -122,8 +126,9 @@ namespace ColorVision.UI
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
-            if (!IsEdit)
+            if (!isEdit)
             {
+                SearchBox.Text = string.Empty;  // Clear search when resetting
                 Config.CopyTo(EditConfig);
                 PropertyPanel.Children.Clear();
                 SearchBox.Text = string.Empty;  // Clear search when resetting
@@ -132,53 +137,79 @@ namespace ColorVision.UI
             else
             {
                 SearchBox.Text = string.Empty;  // Clear search when resetting
-                Config.Reset();
+                EditConfig.CopyTo(Config);
+                PropertyPanel.Children.Clear();
+                SearchBox.Text = string.Empty;  // Clear search when resetting
+                DisplayProperties(Config);
             }
         }
 
         private void ResetToFactory_Click(object sender, RoutedEventArgs e)
         {
-            SearchBox.Text = string.Empty;  // Clear search when resetting
-            
-            if (!IsEdit)
+            if (!isEdit)
             {
-                // Reset EditConfig to class default
+                SearchBox.Text = string.Empty;  // Clear search when resetting
                 EditConfig.Reset();
                 PropertyPanel.Children.Clear();
                 DisplayProperties(EditConfig);
             }
             else
             {
-                // Reset Config to class default
+                SearchBox.Text = string.Empty;  // Clear search when resetting
                 Config.Reset();
+                PropertyPanel.Children.Clear();
+                DisplayProperties(Config);
             }
+  
         }
 
+        static int GetInheritanceDepth(Type t)
+        {
+            int depth = 0;
+            while (t != null)
+            {
+                t = t.BaseType;
+                depth++;
+            }
+            return depth;
+        }
 
         public void GenCategoryGroups(object source)
         {
-            Type type = source.GetType();
-            var title = type.GetCustomAttribute<DisplayNameAttribute>();
-            if (title != null)
-                this.Title = title.DisplayName;
+            var t = source.GetType();
 
-            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                  .Where(p => p.CanRead && p.CanWrite);
+            // 1. 获取属性
+            var allProps = t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                            .Where(p => p.CanRead && p.CanWrite);
 
-            foreach (PropertyInfo property in properties)
+            // 2. 【关键修改】进行排序
+            // GetInheritanceDepth 越小，说明越靠近基类 (object -> BaseConfig -> DeviceServiceConfig -> ConfigPG)
+            // 如果您想要“原始信息”（基类）在最前面，请使用 OrderBy
+            // 如果您想要“最上层”（派生类）在最前面，请使用 OrderByDescending
+            var sortedProps = allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType));
+
+            // 如果希望同一类中的属性按元数据Token（近似代码声明顺序）排序，可以再接一个 ThenBy
+            //var sortedProps = allProps.OrderBy(p => GetInheritanceDepth(p.DeclaringType))
+            //                          .ThenBy(p => p.MetadataToken);
+
+            foreach (var prop in sortedProps)
             {
-                var categoryAttr = property.GetCustomAttribute<CategoryAttribute>();
-                string category = categoryAttr?.Category ?? type.Name;
-                if (!categoryGroups.TryGetValue(category, out List<PropertyInfo>? value))
+                var browsableAttr = prop.GetCustomAttribute<BrowsableAttribute>();
+                if (!(browsableAttr?.Browsable ?? true))
+                    continue;
+
+                var categoryAttr = prop.GetCustomAttribute<CategoryAttribute>();
+                string category = categoryAttr?.Category ?? t.Name;
+
+                if (!categoryGroups.TryGetValue(category, out var list))
                 {
-                    categoryGroups.Add(category, new List<PropertyInfo>() { property });
+                    list = new List<PropertyInfo>();
+                    categoryGroups[category] = list;
                 }
-                else
-                {
-                    value.Add(property);
-                }
+                list.Add(prop);
             }
         }
+
 
 
         public void DisplayProperties(object obj)
@@ -277,13 +308,10 @@ namespace ColorVision.UI
                                 {
                                     stackPanel.Margin = new Thickness(5);
                                     StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
-                                    if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
-                                    {
-                                        stackPanel.Children.Add(stackPanel1);
+                                    stackPanel.Children.Add(stackPanel1);
 
-                                        var childNode = new PropertyTreeNode(property.Name, stackPanel1);
-                                        treeNode.Children.Add(childNode);
-                                    }
+                                    var childNode = new PropertyTreeNode(property.Name, stackPanel1);
+                                    treeNode.Children.Add(childNode);
                                     continue;
                                 }
                             }
@@ -332,15 +360,6 @@ namespace ColorVision.UI
                     TreeNodes.Add(treeNode);
                     PropertyPanel.Children.Add(border);
                 }
-            }
-
-            if (TreeNodes.Count == 1)
-            {
-                treeView.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                treeView.Visibility = Visibility.Visible;
             }
         }
 
@@ -617,7 +636,7 @@ namespace ColorVision.UI
                     PropertyPanel.Children.Clear();
                     TreeNodes.Clear();
                     nestedPropertiesMap.Clear();
-                    DisplayProperties(IsEdit ? Config : EditConfig);
+                    DisplayProperties(EditConfig);
                     ApplySearchFilter();
                     return;
             }
@@ -661,7 +680,7 @@ namespace ColorVision.UI
             TreeNodes.Clear();
             nestedPropertiesMap.Clear();
 
-            var source = IsEdit ? Config : EditConfig;
+            var source = EditConfig;
 
             foreach (var categoryGroup in categoryGroups)
             {

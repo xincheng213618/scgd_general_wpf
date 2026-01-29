@@ -1086,7 +1086,7 @@
   <data name="StereoFusion" xml:space="preserve">
     <value>Fusion binoculaire</value>
   </data>
-  <data name="KBDetect" xml:space="preserve">
+  <data name="CharacterBrghtnessInsp" xml:space="preserve">
     <value>Détection du clavier</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
@@ -1642,7 +1642,7 @@
     <value>Gauche</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>droite:</value>
+    <value>droite</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
     <value>montrer</value>
@@ -1714,7 +1714,7 @@
     <value>Actuel(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
-    <value>Tension</value>
+    <value>Tension(_V)</value>
   </data>
   <data name="HalfBandwidth" xml:space="preserve">
     <value>largeur de demi-onde</value>
@@ -1756,7 +1756,7 @@
     <value>Courbe de courant</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
-    <value>Courant (A)</value>
+    <value>Courant (mA)</value>
   </data>
   <data name="Voltage" xml:space="preserve">
     <value>Tension (V)</value>
@@ -1915,7 +1915,7 @@
     <value>Fichier d'amplitude</value>
   </data>
   <data name="IsEnableNd" xml:space="preserve">
-    <value>Activer ND ?</value>
+    <value>Activer ND</value>
   </data>
   <data name="ConnectType" xml:space="preserve">
     <value>Méthode de connexion</value>
@@ -2379,9 +2379,6 @@
   <data name="ClearDatabaseOnly" xml:space="preserve">
     <value>Effacer uniquement la base de données</value>
   </data>
-  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
-    <value>Supprimer les fichiers locaux</value>
-  </data>
   <data name="DeleteLocalFiles" xml:space="preserve">
     <value>Supprimer les fichiers locaux</value>
   </data>
@@ -2522,5 +2519,110 @@
   </data>
   <data name="ExportLicenseFailed" xml:space="preserve">
     <value>L'exportation de la licence a échoué.</value>
+  </data>
+  <data name="Customer" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>taper</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>Modèle</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>En ligne</value>
+  </data>
+  <data name="Syncfreq" xml:space="preserve">
+    <value>Fréquence de synchronisation</value>
+  </data>
+  <data name="SyncfreqFactor" xml:space="preserve">
+    <value>Fréquence de synchronisation</value>
+  </data>
+  <data name="FilterBW" xml:space="preserve">
+    <value>FiltreBW</value>
+  </data>
+  <data name="IsSyncFrequencyEnabled" xml:space="preserve">
+    <value>IsSyncFrequencyEnabled</value>
+  </data>
+  <data name="GetSpectrSerialNumber" xml:space="preserve">
+    <value>GetSpectrSerialNuméro</value>
+  </data>
+  <data name="EditDisplayConfig" xml:space="preserve">
+    <value>Modifier la configuration d'affichage</value>
+  </data>
+  <data name="OpenEditTool" xml:space="preserve">
+    <value>Outils d'édition</value>
+  </data>
+  <data name="Annotation" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="PropertyEdit" xml:space="preserve">
+    <value>Édition des attributs</value>
+  </data>
+  <data name="TextEdit" xml:space="preserve">
+    <value>édition de texte</value>
+  </data>
+  <data name="PreprocessManager" xml:space="preserve">
+    <value>Gestion du prétraitement</value>
+  </data>
+  <data name="CurrentVoltageV" xml:space="preserve">
+    <value>Tension actuelle (V)</value>
+  </data>
+  <data name="CurrentCurrentMA" xml:space="preserve">
+    <value>Courant (mA)</value>
+  </data>
+  <data name="ImageCrop" xml:space="preserve">
+    <value>recadrage d'image</value>
+  </data>
+  <data name="FindCross" xml:space="preserve">
+    <value>Positionnement croisé</value>
+  </data>
+  <data name="ColorCorrection" xml:space="preserve">
+    <value>Correction des différences de couleur</value>
+  </data>
+  <data name="EmittingAreaLocation" xml:space="preserve">
+    <value>Positionnement de la zone émettrice de lumière</value>
+  </data>
+  <data name="TemplateList" xml:space="preserve">
+    <value>Liste de modèles</value>
+  </data>
+  <data name="OpenFullEditor" xml:space="preserve">
+    <value>Ouvrir l'éditeur complet</value>
+  </data>
+  <data name="SelectTemplateToViewDetails" xml:space="preserve">
+    <value>Sélectionnez un modèle pour afficher les détails</value>
+  </data>
+  <data name="PleaseSelectTemplateToViewAndEdit" xml:space="preserve">
+    <value>Veuillez sélectionner un modèle à consulter et à modifier.</value>
+  </data>
+  <data name="TemplateEdit" xml:space="preserve">
+    <value>Édition de modèle</value>
+  </data>
+  <data name="CurrentSelection" xml:space="preserve">
+    <value>Sélection actuelle</value>
+  </data>
+  <data name="TemplatesCount" xml:space="preserve">
+    <value>Modèle</value>
+  </data>
+  <data name="TemplateEditorLoadFailed" xml:space="preserve">
+    <value>Impossible de charger l'éditeur de modèles</value>
+  </data>
+  <data name="DefaultValueType" xml:space="preserve">
+    <value>type de valeur par défaut</value>
+  </data>
+  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
+    <value>Configuration du registre de services</value>
+  </data>
+  <data name="ExportSucceeded" xml:space="preserve">
+    <value>Exportation réussie</value>
+  </data>
+  <data name="ConfirmReset" xml:space="preserve">
+    <value>Confirmer pour réinitialiser</value>
+  </data>
+  <data name="ImportException" xml:space="preserve">
+    <value>Erreur d'importation</value>
+  </data>
+  <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
+    <value>Veuillez ne pas supprimer sauf en cas d'absolue nécessité. (Supprimez si vous le souhaitez)</value>
   </data>
 </root>

@@ -1,7 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
-using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib;
 using MQTTMessageLib.FileServer;
 using System;
@@ -13,7 +12,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
 {
 
-    [DisplayAlgorithm(56, "色差校正", "Json")]
+    [DisplayAlgorithm(56, "ColorCorrection", "Json")]
     public class AlgorithmCaliAngleShift : DisplayAlgorithmBase
     {
 

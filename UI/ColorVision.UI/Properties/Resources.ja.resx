@@ -232,9 +232,6 @@
   <data name="General" xml:space="preserve">
     <value>ユニバーサル</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>プラグインマネージャーウィンドウ</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>プラグイン名</value>
   </data>
@@ -270,9 +267,6 @@
   </data>
   <data name="ViewMode9" xml:space="preserve">
     <value>表示モード9</value>
-  </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
-    <value>プラグインの更新を確認</value>
   </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>追加プロジェクトを確認中</value>
@@ -454,12 +448,6 @@
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverterリソースが見つかりません</value>
   </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>MQTTをダウンロード</value>
-  </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>MySQLをダウンロード</value>
-  </data>
   <data name="Install" xml:space="preserve">
     <value>インストール</value>
   </data>
@@ -492,5 +480,14 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>キャンセル</value>
+  </data>
+  <data name="PropertyEditorWindow" xml:space="preserve">
+    <value>プロパティエディターウィンドウ</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>編集</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>テーマ</value>
   </data>
 </root>

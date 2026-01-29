@@ -661,7 +661,7 @@
     <value>Clear</value>
   </data>
   <data name="Chart" xml:space="preserve">
-    <value>chart</value>
+    <value>Chart</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>Change log</value>
@@ -1063,10 +1063,10 @@
     <value>Data Catalog</value>
   </data>
   <data name="PortAddress" xml:space="preserve">
-    <value>port address</value>
+    <value>PortAddress</value>
   </data>
   <data name="PortRange" xml:space="preserve">
-    <value>Port range</value>
+    <value>PortRange</value>
   </data>
   <data name="RetentionDays" xml:space="preserve">
     <value>Storage days</value>
@@ -1086,8 +1086,8 @@
   <data name="StereoFusion" xml:space="preserve">
     <value>Binocular Fusion</value>
   </data>
-  <data name="KBDetect" xml:space="preserve">
-    <value>Keyboard detection</value>
+  <data name="CharacterBrghtnessInsp" xml:space="preserve">
+    <value>Character BrghtnessI nsp</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
     <value>Subpixel-level LED detection</value>
@@ -1174,10 +1174,10 @@
     <value>Serial communication</value>
   </data>
   <data name="PowerOn" xml:space="preserve">
-    <value>Power on</value>
+    <value>PowerOn</value>
   </data>
   <data name="PowerOff" xml:space="preserve">
-    <value>Power off</value>
+    <value>PowerOff</value>
   </data>
   <data name="Up" xml:space="preserve">
     <value>Up</value>
@@ -1204,19 +1204,19 @@
     <value>Send command</value>
   </data>
   <data name="RevCmd" xml:space="preserve">
-    <value>Return instruction</value>
+    <value>Return command</value>
   </data>
   <data name="SensorCfgInfo" xml:space="preserve">
     <value>Sensor configuration information</value>
   </data>
   <data name="IPAddress" xml:space="preserve">
-    <value>IP address</value>
+    <value>IPAddress</value>
   </data>
   <data name="Serial" xml:space="preserve">
-    <value>serial port</value>
+    <value>Serial</value>
   </data>
   <data name="BaudRate" xml:space="preserve">
-    <value>baud rate</value>
+    <value>BaudRate</value>
   </data>
   <data name="DeviceType" xml:space="preserve">
     <value>Equipment type</value>
@@ -1405,43 +1405,43 @@
     <value>Create correction</value>
   </data>
   <data name="ExpTime" xml:space="preserve">
-    <value>exposure</value>
+    <value>Exposure</value>
   </data>
   <data name="Focus" xml:space="preserve">
-    <value>focal length</value>
+    <value>Focus</value>
   </data>
   <data name="FocusDistance" xml:space="preserve">
-    <value>Focusing distance</value>
+    <value>FocusDistance</value>
   </data>
   <data name="Selected" xml:space="preserve">
     <value>Selected</value>
   </data>
   <data name="DarkNoise" xml:space="preserve">
-    <value>dark noise</value>
+    <value>DarkNoise</value>
   </data>
   <data name="DefectPoint" xml:space="preserve">
-    <value>Defects</value>
+    <value>DefectPoint</value>
   </data>
   <data name="ColorShift" xml:space="preserve">
-    <value>Color deviation</value>
+    <value>ColorShift</value>
   </data>
   <data name="Distortion" xml:space="preserve">
-    <value>distortion</value>
+    <value>Distortion</value>
   </data>
   <data name="Uniformity" xml:space="preserve">
-    <value>Uniform field</value>
+    <value>Uniformity</value>
   </data>
   <data name="ColorDiff" xml:space="preserve">
     <value>ColorDiff</value>
   </data>
   <data name="Brightness" xml:space="preserve">
-    <value>brightness</value>
+    <value>Brightness</value>
   </data>
   <data name="OneColor" xml:space="preserve">
-    <value>monochrome</value>
+    <value>OneColor</value>
   </data>
   <data name="FourColor" xml:space="preserve">
-    <value>Four colors</value>
+    <value>FourColor</value>
   </data>
   <data name="MultiColor" xml:space="preserve">
     <value>Multicolor</value>
@@ -1471,46 +1471,46 @@
     <value>Calibration View Settings</value>
   </data>
   <data name="ShowList" xml:space="preserve">
-    <value>Show list</value>
+    <value>ShowList</value>
   </data>
   <data name="TemperatureDataNotFound" xml:space="preserve">
     <value>Temperature data not obtained</value>
   </data>
   <data name="ListHeight" xml:space="preserve">
-    <value>List height</value>
+    <value>ListHeight</value>
   </data>
   <data name="MaxNumber" xml:space="preserve">
-    <value>Max Number</value>
+    <value>MaxNumber</value>
   </data>
   <data name="SaveCurrentExposureConfigPrompt" xml:space="preserve">
     <value>Do you want to save the current exposure configuration?</value>
   </data>
   <data name="FileSavePath" xml:space="preserve">
-    <value>File save path</value>
+    <value>FileSavePath</value>
   </data>
   <data name="ErrorQueryingTemperatureData" xml:space="preserve">
     <value>An error occurred while querying temperature data.</value>
   </data>
   <data name="SzComName" xml:space="preserve">
-    <value>serial number</value>
+    <value>SzComName</value>
   </data>
   <data name="RetryCount" xml:space="preserve">
-    <value>Number of retries</value>
+    <value>RetryCount</value>
   </data>
   <data name="FilterWheelCount" xml:space="preserve">
     <value>Number of color filters (6, 12)</value>
   </data>
   <data name="AutoConnect" xml:space="preserve">
-    <value>Automatic connection</value>
+    <value>Automatic Connection</value>
   </data>
   <data name="PgTemplateConfig" xml:space="preserve">
     <value>PG Template Configuration</value>
   </data>
   <data name="SensorDicEdit" xml:space="preserve">
-    <value>Sensor dictionary editing</value>
+    <value>Sensor Dictionary Editing</value>
   </data>
   <data name="SMUView" xml:space="preserve">
-    <value>SMU view</value>
+    <value>SMUView</value>
   </data>
   <data name="UploadLic" xml:space="preserve">
     <value>Upload License</value>
@@ -1534,166 +1534,166 @@
     <value>Third-party algorithm view</value>
   </data>
   <data name="CaliTemplateManagerment" xml:space="preserve">
-    <value>Correction Template Management</value>
+    <value>CaliTemplateManagerment</value>
   </data>
   <data name="CaliTemplateSet" xml:space="preserve">
-    <value>Correction template settings</value>
+    <value>CaliTemplateSet</value>
   </data>
   <data name="DownLicOnline" xml:space="preserve">
-    <value>Download license online</value>
+    <value>DownLicOnline</value>
   </data>
   <data name="CreateRestorePoint" xml:space="preserve">
     <value>Create a restore point</value>
   </data>
   <data name="LoadRestorePoint" xml:space="preserve">
-    <value>Load restore point</value>
+    <value>LoadRestorePoint</value>
   </data>
   <data name="StartRC" xml:space="preserve">
     <value>Enable RC</value>
   </data>
   <data name="DefaultCanvas" xml:space="preserve">
-    <value>Default Canvas</value>
+    <value>DefaultCanvas</value>
   </data>
   <data name="ImageImport" xml:space="preserve">
     <value>ImageImport</value>
   </data>
   <data name="ImportLatestImages" xml:space="preserve">
-    <value>Import the latest images</value>
+    <value>ImportLatestImages</value>
   </data>
   <data name="SavePOI" xml:space="preserve">
-    <value>Save attention</value>
+    <value>SavePOI</value>
   </data>
   <data name="ClearPOI" xml:space="preserve">
-    <value>Clear focus</value>
+    <value>ClearPOI</value>
   </data>
   <data name="ReRender" xml:space="preserve">
     <value>Re-render</value>
   </data>
   <data name="Once" xml:space="preserve">
-    <value>once</value>
+    <value>Once</value>
   </data>
   <data name="SaveToFile" xml:space="preserve">
-    <value>Save to file</value>
+    <value>SaveToFile</value>
   </data>
   <data name="Radius" xml:space="preserve">
-    <value>radius</value>
+    <value>Radius</value>
   </data>
   <data name="DataCorrectionFilePath" xml:space="preserve">
-    <value>Data correction file path</value>
+    <value>DataCorrectionFilePath</value>
   </data>
   <data name="TopRight" xml:space="preserve">
-    <value>Top right</value>
+    <value>TopRight</value>
   </data>
   <data name="TopLeft" xml:space="preserve">
-    <value>Top left</value>
+    <value>TopLeft</value>
   </data>
   <data name="DownLeft" xml:space="preserve">
-    <value>Bottom left</value>
+    <value>BottomLeft</value>
   </data>
   <data name="DownRight" xml:space="preserve">
-    <value>Bottom right</value>
+    <value>BottomRight</value>
   </data>
   <data name="SetToGlobalCache" xml:space="preserve">
-    <value>Set to global cache</value>
+    <value>SetToGlobalCache</value>
   </data>
   <data name="ApplyCache" xml:space="preserve">
-    <value>Application caching</value>
+    <value>ApplyCache</value>
   </data>
   <data name="EnableActiveAreaFourCorners" xml:space="preserve">
-    <value>Enable the four corner points of the luminous area</value>
+    <value>EnableActiveAreaFourCorners</value>
   </data>
   <data name="PointLayoutAreaDisplay" xml:space="preserve">
-    <value>Display of distribution area</value>
+    <value>PointLayoutAreaDisplay</value>
   </data>
   <data name="CentralPoint" xml:space="preserve">
-    <value>center point</value>
+    <value>CentralPoint</value>
   </data>
   <data name="SetPointLayoutArea" xml:space="preserve">
-    <value>Set up deployment area</value>
+    <value>SetPointLayoutArea</value>
   </data>
   <data name="Count" xml:space="preserve">
-    <value>quantity</value>
+    <value>Count</value>
   </data>
   <data name="Angle" xml:space="preserve">
-    <value>angle</value>
+    <value>Angle</value>
   </data>
   <data name="FindActiveArea" xml:space="preserve">
-    <value>Find the glowing area</value>
+    <value>FindActiveArea</value>
   </data>
   <data name="FillArea" xml:space="preserve">
-    <value>full</value>
+    <value>FillArea</value>
   </data>
   <data name="Width" xml:space="preserve">
-    <value>width</value>
+    <value>Width</value>
   </data>
   <data name="height" xml:space="preserve">
-    <value>high</value>
+    <value>height</value>
   </data>
   <data name="RowCount" xml:space="preserve">
-    <value>Number of lines</value>
+    <value>ColumCount</value>
   </data>
   <data name="ColumCount" xml:space="preserve">
     <value>Number of columns</value>
   </data>
   <data name="FindLuminousAreaCorners" xml:space="preserve">
-    <value>Find the corner of the luminous area</value>
+    <value>FindLuminousAreaCorners</value>
   </data>
   <data name="Left" xml:space="preserve">
     <value>Left</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>right:</value>
+    <value>right</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
-    <value>show</value>
+    <value>Dispaly</value>
   </data>
   <data name="SetSegmentation" xml:space="preserve">
-    <value>Set segmentation</value>
+    <value>SetSegmentation</value>
   </data>
   <data name="UseNodePrompt" xml:space="preserve">
-    <value>Use nodes</value>
+    <value>UseNodePrompt</value>
   </data>
   <data name="Quadrilateral" xml:space="preserve">
-    <value>quadrilateral</value>
+    <value>Quadrilateral</value>
   </data>
   <data name="Polyline" xml:space="preserve">
     <value>Polyline</value>
   </data>
   <data name="Value" xml:space="preserve">
-    <value>value</value>
+    <value>Value</value>
   </data>
   <data name="Circle" xml:space="preserve">
     <value>Circle</value>
   </data>
   <data name="POIEdit" xml:space="preserve">
-    <value>POI Editor</value>
+    <value>POIEdit</value>
   </data>
   <data name="Rect" xml:space="preserve">
-    <value>rectangle</value>
+    <value>Rect</value>
   </data>
   <data name="Draw" xml:space="preserve">
-    <value>draw</value>
+    <value>Draw</value>
   </data>
   <data name="POISetting" xml:space="preserve">
-    <value>POI settings</value>
+    <value>POISetting</value>
   </data>
   <data name="PGParamConfig" xml:space="preserve">
-    <value>PGParam settings</value>
+    <value>PGParamConfig</value>
   </data>
   <data name="CameraView" xml:space="preserve">
-    <value>Camera view</value>
+    <value>CameraView</value>
   </data>
   <data name="ClearServiceCache" xml:space="preserve">
-    <value>Clear service cache</value>
+    <value>ClearServiceCache</value>
   </data>
   <data name="DataBasicPath" xml:space="preserve">
-    <value>Data base path</value>
+    <value>DataBasicPath</value>
   </data>
   <data name="singleChannel" xml:space="preserve">
-    <value>single channel</value>
+    <value>SingleChannel</value>
   </data>
   <data name="threeChannels" xml:space="preserve">
-    <value>Three-channel</value>
+    <value>ThreeChannels</value>
   </data>
   <data name="Absolute" xml:space="preserve">
     <value>Absolute</value>
@@ -1705,7 +1705,7 @@
     <value>Wavelength</value>
   </data>
   <data name="RelativeSpectrum" xml:space="preserve">
-    <value>relative spectrum</value>
+    <value>Relative Spectrum</value>
   </data>
   <data name="AbsoluteSpectrum" xml:space="preserve">
     <value>Absolute Spectrum</value>
@@ -1714,13 +1714,13 @@
     <value>Current(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
-    <value>Voltage</value>
+    <value>Voltage(_V)</value>
   </data>
   <data name="HalfBandwidth" xml:space="preserve">
     <value>FWHM</value>
   </data>
   <data name="SourceValue" xml:space="preserve">
-    <value>SourceValue</value>
+    <value>Source</value>
   </data>
   <data name="LimitValue" xml:space="preserve">
     <value>Limit</value>
@@ -1735,28 +1735,28 @@
     <value>Start</value>
   </data>
   <data name="End" xml:space="preserve">
-    <value>Finish</value>
+    <value>End</value>
   </data>
   <data name="PointCount" xml:space="preserve">
     <value>PointCount</value>
   </data>
   <data name="Network" xml:space="preserve">
-    <value>network</value>
+    <value>Network</value>
   </data>
   <data name="Cleanup" xml:space="preserve">
-    <value>Cleaning</value>
+    <value>Cleanup</value>
   </data>
   <data name="MeasurementType" xml:space="preserve">
-    <value>Measurement attributes</value>
+    <value>MeasurementType</value>
   </data>
   <data name="LimitStart" xml:space="preserve">
-    <value>Original value</value>
+    <value>LimitStart</value>
   </data>
   <data name="CurrentCurve" xml:space="preserve">
-    <value>Current curve</value>
+    <value>CurrentCurve</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
-    <value>Current (A)</value>
+    <value>Current (mA)</value>
   </data>
   <data name="Voltage" xml:space="preserve">
     <value>Voltage (V)</value>
@@ -1771,13 +1771,13 @@
     <value>AbsoluteSpectrumCurve</value>
   </data>
   <data name="WavelengthNm" xml:space="preserve">
-    <value>Wavelength [nm]</value>
+    <value>Wavelength (nm)</value>
   </data>
   <data name="Scan" xml:space="preserve">
     <value>Scan</value>
   </data>
   <data name="Blue" xml:space="preserve">
-    <value>BlueLight</value>
+    <value>Blue</value>
   </data>
   <data name="fx" xml:space="preserve">
     <value>Cx</value>
@@ -1807,28 +1807,28 @@
     <value>Color rendering index Ra</value>
   </data>
   <data name="CancelAutoTest" xml:space="preserve">
-    <value>Cancel automatic testing</value>
+    <value>CancelAutoTest</value>
   </data>
   <data name="ExecutionComplete" xml:space="preserve">
-    <value>Execution completed</value>
+    <value>ExecutionComplete</value>
   </data>
   <data name="ExecutionFailed" xml:space="preserve">
-    <value>Execution failed</value>
+    <value>ExecutionFailed</value>
   </data>
   <data name="Opening" xml:space="preserve">
     <value>Opening</value>
   </data>
   <data name="Closing" xml:space="preserve">
-    <value>Closed</value>
+    <value>Closing</value>
   </data>
   <data name="QueryCount" xml:space="preserve">
-    <value>Query count</value>
+    <value>QueryCount</value>
   </data>
   <data name="SortByType" xml:space="preserve">
-    <value>Sort by type</value>
+    <value>SortByType</value>
   </data>
   <data name="CreateToPOI" xml:space="preserve">
-    <value>Create to POI</value>
+    <value>CreateToPOI</value>
   </data>
   <data name="SelectFileInFolder" xml:space="preserve">
     <value>Select the file in the folder</value>
@@ -1864,7 +1864,7 @@
     <value>Display data columns</value>
   </data>
   <data name="Operation" xml:space="preserve">
-    <value>operate</value>
+    <value>Operate</value>
   </data>
   <data name="OpenFailed" xml:space="preserve">
     <value>Failed to open</value>
@@ -1876,13 +1876,13 @@
     <value>Parameter template</value>
   </data>
   <data name="FileExport" xml:space="preserve">
-    <value>File output</value>
+    <value>FileExport</value>
   </data>
   <data name="StorageType" xml:space="preserve">
-    <value>Storage type</value>
+    <value>StorageType</value>
   </data>
   <data name="POIFile" xml:space="preserve">
-    <value>Focus document</value>
+    <value>POIFile</value>
   </data>
   <data name="CalculateColorTemperatureWavelength" xml:space="preserve">
     <value>Calculate color temperature wavelength</value>
@@ -1912,7 +1912,7 @@
     <value>Amplitude file</value>
   </data>
   <data name="IsEnableNd" xml:space="preserve">
-    <value>Enable ND?</value>
+    <value>Enable ND</value>
   </data>
   <data name="ConnectType" xml:space="preserve">
     <value>ConnectType</value>
@@ -1948,10 +1948,10 @@
     <value>All spectrometer equipment information</value>
   </data>
   <data name="CreateDataBase" xml:space="preserve">
-    <value>Database creation</value>
+    <value>Database Creation</value>
   </data>
   <data name="TemplateFailed" xml:space="preserve">
-    <value>Template failed</value>
+    <value>Template Failed</value>
   </data>
   <data name="LogicalCameraLicenseExpired_ClearBindingsAndRetryPrompt" xml:space="preserve">
     <value>The current logical camera license has expired, and the device list cannot be refreshed. Do you want to clear the physical cameras currently bound to the camera service and then try again?</value>
@@ -2026,7 +2026,7 @@
     <value>ImageEdit</value>
   </data>
   <data name="VerifyJson" xml:space="preserve">
-    <value>Validate JSON</value>
+    <value>Verify JSON</value>
   </data>
   <data name="DatabaseResetOptionNotConfigured" xml:space="preserve">
     <value>No database reset option is configured.</value>
@@ -2107,16 +2107,16 @@
     <value>Luminance (cd/m2)</value>
   </data>
   <data name="MsgLogWin" xml:space="preserve">
-    <value>Message Log Window</value>
+    <value>MsgLogWin</value>
   </data>
   <data name="PhySpectrum" xml:space="preserve">
-    <value>Physical spectrometer</value>
+    <value>PhySpectrum</value>
   </data>
   <data name="ComplyPoint" xml:space="preserve">
-    <value>point</value>
+    <value>Point</value>
   </data>
   <data name="ComplyPointList_" xml:space="preserve">
-    <value>dot set</value>
+    <value>Dot set</value>
   </data>
   <data name="EditDefaultComplianceDictionary" xml:space="preserve">
     <value>Edit the default compliance dictionary</value>
@@ -2179,13 +2179,13 @@
     <value>Minimum exposure time (ms)</value>
   </data>
   <data name="BurstThresholdMs" xml:space="preserve">
-    <value>burst threshold (ms)</value>
+    <value>Burst threshold (ms)</value>
   </data>
   <data name="EvaluationFunctionType" xml:space="preserve">
     <value>Evaluation function type</value>
   </data>
   <data name="StepSwingRange" xml:space="preserve">
-    <value>stride swing range</value>
+    <value>Stride swing range</value>
   </data>
   <data name="StepSwingRangeDiscription" xml:space="preserve">
     <value>The second step path.</value>
@@ -2248,10 +2248,10 @@
     <value>(Double-click to rename; currently only saved in memory)</value>
   </data>
   <data name="HandleClass" xml:space="preserve">
-    <value>Processing class</value>
+    <value>ProcessingClass</value>
   </data>
   <data name="Description" xml:space="preserve">
-    <value>describe</value>
+    <value>Describe</value>
   </data>
   <data name="DuplicateName" xml:space="preserve">
     <value>Duplicate Names</value>
@@ -2263,10 +2263,10 @@
     <value>No service requires configuring a cache path.</value>
   </data>
   <data name="BulkEdit" xml:space="preserve">
-    <value>Unified editing</value>
+    <value>Unified Editing</value>
   </data>
   <data name="ArchiveAll" xml:space="preserve">
-    <value>All archives</value>
+    <value>All Archives</value>
   </data>
   <data name="BatchResults" xml:space="preserve">
     <value>Batch results</value>
@@ -2284,13 +2284,13 @@
     <value>String</value>
   </data>
   <data name="Enum" xml:space="preserve">
-    <value>enumerate</value>
+    <value>Enumerate</value>
   </data>
   <data name="ConfigePOINeed" xml:space="preserve">
     <value>Need to configure attention points</value>
   </data>
   <data name="ExportTo" xml:space="preserve">
-    <value>Export as</value>
+    <value>ExportAs</value>
   </data>
   <data name="OpenFileFailed" xml:space="preserve">
     <value>File failed to open</value>
@@ -2375,9 +2375,6 @@
   </data>
   <data name="ClearDatabaseOnly" xml:space="preserve">
     <value>Clear the database only</value>
-  </data>
-  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
-    <value>DeleteLocalFiles</value>
   </data>
   <data name="DeleteLocalFiles" xml:space="preserve">
     <value>DeleteLocalFiles</value>
@@ -2531,5 +2528,101 @@
   </data>
   <data name="Model" xml:space="preserve">
     <value>Model</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>Online</value>
+  </data>
+  <data name="Syncfreq" xml:space="preserve">
+    <value>Syncfreq</value>
+  </data>
+  <data name="SyncfreqFactor" xml:space="preserve">
+    <value>Syncfreq</value>
+  </data>
+  <data name="FilterBW" xml:space="preserve">
+    <value>FilterBW</value>
+  </data>
+  <data name="IsSyncFrequencyEnabled" xml:space="preserve">
+    <value>IsSyncFrequencyEnabled</value>
+  </data>
+  <data name="GetSpectrSerialNumber" xml:space="preserve">
+    <value>GetSpectrSerialNumber</value>
+  </data>
+  <data name="EditDisplayConfig" xml:space="preserve">
+    <value>EditDisplayConfig</value>
+  </data>
+  <data name="OpenEditTool" xml:space="preserve">
+    <value>Editing Tools</value>
+  </data>
+  <data name="Annotation" xml:space="preserve">
+    <value>Notes</value>
+  </data>
+  <data name="PropertyEdit" xml:space="preserve">
+    <value>Attribute Editing</value>
+  </data>
+  <data name="TextEdit" xml:space="preserve">
+    <value>TextEdit</value>
+  </data>
+  <data name="PreprocessManager" xml:space="preserve">
+    <value>PreprocessManager</value>
+  </data>
+  <data name="CurrentVoltageV" xml:space="preserve">
+    <value>Voltage (V)</value>
+  </data>
+  <data name="CurrentCurrentMA" xml:space="preserve">
+    <value>Current (mA)</value>
+  </data>
+  <data name="ImageCrop" xml:space="preserve">
+    <value>ImageCrop</value>
+  </data>
+  <data name="FindCross" xml:space="preserve">
+    <value>Cross positioning</value>
+  </data>
+  <data name="ColorCorrection" xml:space="preserve">
+    <value>Color difference correction</value>
+  </data>
+  <data name="EmittingAreaLocation" xml:space="preserve">
+    <value>Positioning of the light-emitting area</value>
+  </data>
+  <data name="TemplateList" xml:space="preserve">
+    <value>Template List</value>
+  </data>
+  <data name="OpenFullEditor" xml:space="preserve">
+    <value>Open the full editor</value>
+  </data>
+  <data name="SelectTemplateToViewDetails" xml:space="preserve">
+    <value>Select a template to view details</value>
+  </data>
+  <data name="PleaseSelectTemplateToViewAndEdit" xml:space="preserve">
+    <value>Please select a template to view and edit.</value>
+  </data>
+  <data name="TemplateEdit" xml:space="preserve">
+    <value>Template editing</value>
+  </data>
+  <data name="CurrentSelection" xml:space="preserve">
+    <value>Current selection</value>
+  </data>
+  <data name="TemplatesCount" xml:space="preserve">
+    <value>Template</value>
+  </data>
+  <data name="TemplateEditorLoadFailed" xml:space="preserve">
+    <value>Unable to load template editor</value>
+  </data>
+  <data name="DefaultValueType" xml:space="preserve">
+    <value>Default value type</value>
+  </data>
+  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
+    <value>Service Registry Configuration</value>
+  </data>
+  <data name="ExportSucceeded" xml:space="preserve">
+    <value>Export successful</value>
+  </data>
+  <data name="ConfirmReset" xml:space="preserve">
+    <value>Confirm to reset</value>
+  </data>
+  <data name="ImportException" xml:space="preserve">
+    <value>Import error</value>
+  </data>
+  <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
+    <value>Please do not delete unless absolutely necessary. (Delete if desired)</value>
   </data>
 </root>

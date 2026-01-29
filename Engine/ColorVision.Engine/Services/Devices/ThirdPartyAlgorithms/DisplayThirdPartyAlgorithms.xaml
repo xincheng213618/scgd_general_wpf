@@ -41,7 +41,7 @@
                 </TextBlock>
             </Button>
 
-            <Grid>
+            <Grid Tag="{Binding DService.DeviceStatus}">
                 <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"   Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
                 <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="2,0,0,0">
                     <Image Source="{Binding Icon}"/>
@@ -119,7 +119,7 @@
                     </DockPanel>
                 </StackPanel>
                 <DockPanel Margin="0,2" >
-                    <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0" Tag="{Binding DService.DeviceStatus}"/>
                     <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
                 </DockPanel>
             </StackPanel>

@@ -9,7 +9,7 @@
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         d:DataContext="{d:DesignInstance phy:PhyCamera}"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.CalibrationFileManagement}"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="600" Width="1000" Initialized="Window_Initialized" >
+        Title="{x:Static properties:Resources.CalibrationFileManagement}"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="720" Width="1280" Initialized="Window_Initialized" >
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -32,11 +32,11 @@
         </StackPanel>
         <Grid  Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="250"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid Grid.Row="0" Margin="0,0,5,0">
-                <ListView  x:Name="ListView1" Grid.Row="0" Style="{DynamicResource ListView.Small}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="ListView1_SelectionChanged" Padding="0,5,0,0">
+                <ListView  x:Name="ListView1" Grid.Row="0" Style="{DynamicResource ListView.Small}" Background="Transparent"  ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="ListView1_SelectionChanged" Padding="0,5,0,0">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
                             <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
@@ -72,7 +72,7 @@
                 </ListView>
             </Grid>
             <Grid Grid.Column="1"  x:Name="StackPanelCab"  d:DataContext="{d:DesignInstance local:GroupResource}">
-                <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
+                <Border  BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="5">
                         <StackPanel Margin="5,0,0,0">
@@ -106,6 +106,7 @@
                         <StackPanel Margin="5">
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding DarkNoise.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0"/>
                                 <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.DarkNoise}"  Width="80" />
@@ -113,18 +114,22 @@
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding DSNU.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
+
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding DSNU.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxDSNU" SelectedValue="{Binding DSNU}"  DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding DefectPoint.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding DefectPoint.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.DefectPoint}" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxDefectPoint"  SelectedValue="{Binding DefectPoint}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding ColorShift.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.ColorShift}" Width="80"  />
@@ -132,6 +137,7 @@
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding Distortion.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Distortion}" Width="80"  />
@@ -139,12 +145,14 @@
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding Uniformity.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding Uniformity.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Uniformity}" Width="80"  />
                                 <hc:ComboBox  x:Name="ComboBoxUniformity"  SelectedValue="{Binding Uniformity}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LineArity.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="LineArity" Width="80"  />
@@ -152,6 +160,7 @@
                             </DockPanel>
                             <DockPanel>
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding ColorDiff.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.ColorDiff}" Width="80"  />
@@ -162,6 +171,7 @@
                         <StackPanel Margin="5">
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding Luminance.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Brightness}" Width="80"  />
@@ -169,6 +179,7 @@
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LumOneColor.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.OneColor}" Width="80"/>
@@ -176,6 +187,7 @@
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LumFourColor.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.FourColor}" Width="80"  />
@@ -183,6 +195,7 @@
                             </DockPanel>
                             <DockPanel >
                                 <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LumMultiColor.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.MultiColor}" Width="80"  />

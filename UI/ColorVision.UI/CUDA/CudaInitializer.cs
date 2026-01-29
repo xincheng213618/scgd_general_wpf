@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿#pragma warning disable
+using System.Runtime.InteropServices;
 using log4net;
 
 namespace ColorVision.UI.CUDA
@@ -29,7 +30,7 @@ namespace ColorVision.UI.CUDA
 
         private static readonly ILog log = LogManager.GetLogger(typeof(CudaInitializer));
 
-        public CudaInitializer() { }
+        public CudaInitializer() { }  
 
         public override async Task InitializeAsync()
         {

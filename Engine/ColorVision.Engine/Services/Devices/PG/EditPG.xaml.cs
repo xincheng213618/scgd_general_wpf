@@ -1,10 +1,11 @@
-﻿using System;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Themes;
+using ColorVision.UI;
+using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
-using ColorVision.Common.MVVM;
-using ColorVision.Themes;
-using ColorVision.Engine.Services.PhyCameras;
 
 
 namespace ColorVision.Engine.Services.Devices.PG
@@ -36,7 +37,30 @@ namespace ColorVision.Engine.Services.Devices.PG
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            DataContext = Device;
+
+            EditConfig = Device.Config.Clone();
+            EditContent.DataContext = EditConfig;
+
             Device.DService.ReLoadCategoryLib();
+
+            pgCategory.SelectionChanged += (s, e) =>
+            {
+                if (pgCategory.SelectedIndex == 4)
+                {
+                    EditConfig.Addr = "0";
+                    EditConfig.Port = 0x08;
+                    RegisterAddressDockPanel.Visibility = Visibility.Visible;
+
+                    TextBlockPGIP.Text = "串口id";
+                    TextBlockPGPort.Text = "设备地址";
+                }
+                else
+                {
+                    RegisterAddressDockPanel.Visibility = Visibility.Collapsed;
+                }
+            };
+
             pgCategory.ItemsSource = Device.DService.PGCategoryLib;
 
             foreach (var item in Device.DService.PGCategoryLib)
@@ -48,25 +72,14 @@ namespace ColorVision.Engine.Services.Devices.PG
                 }
             }
 
-            IsComm.Checked += (s,e)=>
+            if (EditConfig.Category == "CH431.I2C")
             {
-                TextBlockPGIP.Text = "串口";
-                TextBlockPGPort.Text = "波特率";
-            };
-            IsNet.Checked += (s,e)=> 
-            {
-                TextBlockPGIP.Text = "IP地址";
-                TextBlockPGPort.Text = "端口";
-            };
+                TextBlockPGIP.Text = "串口id";
+                TextBlockPGPort.Text = "设备地址";
+            }
 
 
-            DataContext = Device;
-
-            EditConfig = Device.Config.Clone();
-            EditContent.DataContext = EditConfig;
-
-            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
-            CameraPhyID.DisplayMemberPath = "Code";
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig));
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

@@ -8,7 +8,6 @@ using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
-using ProjectARVRPro.Process.Green;
 using System.Windows;
 using System.Windows.Media;
 

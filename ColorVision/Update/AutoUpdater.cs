@@ -5,6 +5,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -21,7 +22,7 @@ namespace ColorVision.Update
 {
     public class AutoUpdateConfig:ViewModelBase, IConfig
     {
-        public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();    
+        public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();
 
         public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; OnPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision";
@@ -29,6 +30,7 @@ namespace ColorVision.Update
         /// <summary>
         /// 是否自动更新
         /// </summary>
+        [DisplayName("CheckUpdatesOnStartup")]
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
 
@@ -65,35 +67,9 @@ namespace ColorVision.Update
 
         public RelayCommand UpdateCommand { get; set; }
 
-        public static void DeleteAllCachedUpdateFiles()
-        {
-            string tempPath = Path.GetTempPath();
-            string[] updatePatterns = { "ColorVision-*.exe", "ColorVision-*.zip" };
-            foreach (string pattern in updatePatterns)
-            {
-                string[] updateFiles = Directory.GetFiles(tempPath, pattern);
-                foreach (string updateFile in updateFiles)
-                {
-                    try
-                    {
-                        File.Delete(updateFile);
-                        log.Info($"Deleted update file: {updateFile}");
-                    }
-                    catch (Exception ex)
-                    {
-                        // 如果删除过程中出现错误，输出错误信息
-                        log.Info($"Error deleting the update file {updateFile}: {ex.Message}");
-                    }
-                }
-            }
-        }
 
         public static Version? CurrentVersion { get => Assembly.GetExecutingAssembly().GetName().Version; }
 
-        public static bool IsUpdateAvailable(string Version)
-        {
-            return true;
-        }
         public void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
         public void Update(Version Version, string DownloadPath,bool IsIncrement = false)
         {
@@ -117,7 +93,7 @@ namespace ColorVision.Update
             if (LatestVersion == new Version()) return;
             Application.Current.Dispatcher.Invoke(() =>
             {
-                Update(LatestVersion, Path.GetTempPath());
+                Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"));
             });
         }
 
@@ -176,11 +152,11 @@ namespace ColorVision.Update
                     {
                         // 如果找到匹配项，提取变更日志
                         string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
-                        msg = $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?{Environment.NewLine}{Environment.NewLine}点击是立即更新，点击否跳过该版本，点击取消稍后提醒";
+                        msg = $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?{Environment.NewLine}{Environment.NewLine}{ColorVision.Properties.Resources.ClickYesToUpdateNow}";
                     }
                     else
                     {
-                        msg = $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}{Environment.NewLine}点击是立即更新，点击否跳过该版本，点击取消稍后提醒";
+                        msg = $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}{Environment.NewLine}{ColorVision.Properties.Resources.ClickYesToUpdateNow}";
                     }
 
                     Application.Current.Dispatcher.Invoke(() =>
@@ -188,7 +164,7 @@ namespace ColorVision.Update
                         MessageBoxResult result = MessageBox1.Show(Application.Current.GetActiveWindow(), msg, $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.YesNoCancel);
                         if (result == MessageBoxResult.Yes)
                         {
-                            Update(LatestVersion, Path.GetTempPath(), IsIncrement);
+                            Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"), IsIncrement);
                         }
                         else if (result == MessageBoxResult.No)
                         {
@@ -217,7 +193,6 @@ namespace ColorVision.Update
         }
 
 
-        // 调用函数以删除所有更新文件
         public async Task CheckAndUpdate(bool detection = true,bool IsIncrement = false)
         {
             // 获取本地版本
@@ -247,7 +222,7 @@ namespace ColorVision.Update
                         {
                             if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
-                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
+                                Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"), IsIncrement);
                             }
                         });
                     }
@@ -257,7 +232,7 @@ namespace ColorVision.Update
                         {
                             if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
-                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
+                                Update(LatestVersion, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision"), IsIncrement);
                             }
                         });
                     }

@@ -43,84 +43,32 @@ namespace ColorVision.Engine.Services.Devices.SMU
             DataContext = Device;
 
             // When switching between voltage and current modes, swap the source and limit values so that the numbers follow the semantic meaning instead of the textbox position
-            if (Config is INotifyPropertyChanged npc)
+            if (Device.DisplayConfig is INotifyPropertyChanged npc)
             {
                 npc.PropertyChanged += (s, ev) =>
                 {
-                    if (ev.PropertyName == nameof(ConfigSMU.IsSourceV))
+                    if (ev.PropertyName == nameof(Device.DisplayConfig.IsSourceV))
                     {
                         // Swap MeasureVal (source) and LmtVal (limit)
-                        double oldMeasure = Config.MeasureVal;
-                        Config.MeasureVal = Config.LmtVal;
-                        Config.LmtVal = oldMeasure;
+                        double oldMeasure = Device.DisplayConfig.MeasureVal;
+                        Device.DisplayConfig.MeasureVal = Device.DisplayConfig.LmtVal;
+                        Device.DisplayConfig.LmtVal = oldMeasure;
                     }
                 };
             }
-
-            this.ContextMenu = Device.ContextMenu;
-
-
-            void UpdateUI(DeviceStatusType status)
-            {
-                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
-                void HideAllButtons()
-                {
-                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
-                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
-                    SetVisibility(StackPanelContent, Visibility.Collapsed);
-                    SetVisibility(TextBlockOffLine, Visibility.Collapsed);
-                }
-                // Default state
-                HideAllButtons();
-
-                switch (status)
-                {
-                    case DeviceStatusType.Unauthorized:
-                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Unknown:
-                        SetVisibility(TextBlockUnknow, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.OffLine:
-                        SetVisibility(TextBlockOffLine, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.UnInit:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Closed:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Open;
-                        break;
-                    case DeviceStatusType.LiveOpened:
-                    case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Close;
-                        break;
-                    case DeviceStatusType.Closing:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Closing;
-                        break;
-                    case DeviceStatusType.Opening:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Opening;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            UpdateUI(DService.DeviceStatus);
-            DService.DeviceStatusChanged += UpdateUI;
+            DService_DeviceStatusChanged(sender,DService.DeviceStatus);
+            DService.DeviceStatusChanged += DService_DeviceStatusChanged;
 
             ComboxVITemplate.ItemsSource = TemplateSMUParam.Params;
             ComboxVITemplate.SelectionChanged += (s, e) =>
             {
                 if (ComboxVITemplate.SelectedItem is TemplateModel<SMUParam> KeyValue && KeyValue.Value is SMUParam SxParm)
                 {
-                    Config.StartMeasureVal = SxParm.StartMeasureVal;
-                    Config.StopMeasureVal = SxParm.StopMeasureVal;
-                    Config.IsSourceV = SxParm.IsSourceV;
-                    Config.LimitVal = SxParm.LmtVal;
-                    Config.Number = SxParm.Number;
+                    Device.DisplayConfig.StartMeasureVal = SxParm.StartMeasureVal;
+                    Device.DisplayConfig.StopMeasureVal = SxParm.StopMeasureVal;
+                    Device.DisplayConfig.IsSourceV = SxParm.IsSourceV;
+                    Device.DisplayConfig.LimitVal = SxParm.LmtVal;
+                    Device.DisplayConfig.Number = SxParm.Number;
                 }
             };
             ComboxVITemplate.SelectedIndex = 0;
@@ -130,49 +78,61 @@ namespace ColorVision.Engine.Services.Devices.SMU
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
+        private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
+        {
+            void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
+            void HideAllButtons()
+            {
+                SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(StackPanelContent, Visibility.Collapsed);
+                SetVisibility(TextBlockOffLine, Visibility.Collapsed);
+            }
+            // Default state
+            HideAllButtons();
+
+            switch (e)
+            {
+                case DeviceStatusType.Unauthorized:
+                    SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Unknown:
+                    SetVisibility(TextBlockUnknow, Visibility.Visible);
+                    break;
+                case DeviceStatusType.OffLine:
+                    SetVisibility(TextBlockOffLine, Visibility.Visible);
+                    break;
+                case DeviceStatusType.UnInit:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Closed:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Open;
+                    break;
+                case DeviceStatusType.LiveOpened:
+                case DeviceStatusType.Opened:
+                    SetVisibility(StackPanelOpen, Visibility.Visible);
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Close;
+                    break;
+                case DeviceStatusType.Closing:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Closing;
+                    break;
+                case DeviceStatusType.Opening:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    ButtonSourceMeter1.Content = ColorVision.Engine.Properties.Resources.Opening;
+                    break;
+                default:
+                    break;
+            }
+        }
+
         public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;
         public event EventHandler SelectChanged;
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
-
-
-
-
-        PassSxSource passSxSource = new();
-
-        private void DoOpenByDll(Button button)
-        {
-            if (!passSxSource.IsOpen)
-            {
-                button.Content = ColorVision.Engine.Properties.Resources.Opening;
-                Task.Run(() =>
-                {
-                    if (passSxSource.Open(Config.IsNet, Config.DevName))
-                    {
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-                        {
-                            button.Content = ColorVision.Engine.Properties.Resources.Close;
-                        }));
-                    }
-                    else
-                    {
-                        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-                        {
-                            button.Content = ColorVision.Engine.Properties.Resources.OpenFailed;
-                        }));
-                    }
-                });
-            }
-            else
-            {
-                passSxSource.Close();
-                button.Content = ColorVision.Engine.Properties.Resources.Open;
-            }
-        }
-
-
-
 
         private void ButtonSourceMeter1_Click(object sender, RoutedEventArgs e)
         {
@@ -180,85 +140,101 @@ namespace ColorVision.Engine.Services.Devices.SMU
             {
                 if (DService.DeviceStatus != DeviceStatusType.Opened)
                 {
-                    ServicesHelper.SendCommand(button, DService.Open(Config.IsNet, Config.DevName));
+                    MsgRecord msgRecord = DService.Open(Config.IsNet, Config.DevName);
+                    ServicesHelper.SendCommand(button, msgRecord);
+                    msgRecord.MsgRecordStateChanged += (e) =>
+                    {
+                        if (e == MsgRecordState.Fail)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                        }
+                    };
+
                 }
                 else
                 {
+
+                    MsgRecord msgRecord = DService.Close();
                     ServicesHelper.SendCommand(button, DService.Close());
+                    msgRecord.MsgRecordStateChanged += (e) =>
+                    {
+                        if (e == MsgRecordState.Fail)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                        }
+                    };
                 }
             }
         }
 
         private void MeasureData_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal, Config.Channel);
-            msgRecord.MsgRecordStateChanged += (e) =>
+            MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.MeasureVal, Device.DisplayConfig.LmtVal, Device.DisplayConfig.Channel);
+            if(msgRecord != null)
             {
-                if (e == MsgRecordState.Success)
+                msgRecord.MsgRecordStateChanged += (e) =>
                 {
-                    if (msgRecord.MsgReturn.Code != 0)
+                    if (e == MsgRecordState.Fail)
                     {
-                        MessageBox.Show($"GetData Eorr Code{msgRecord.MsgReturn.Code}");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                     }
-                }
-                else
-                {
-                    MessageBox.Show(e.ToString());
-                }
-            };
+                };
+            }
+
         }
         private void StepMeasureData_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.GetData(Config.IsSourceV, Config.MeasureVal, Config.LmtVal, Config.Channel);
-            msgRecord.MsgRecordStateChanged += (e) =>
+            MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.MeasureVal, Device.DisplayConfig.LmtVal, Device.DisplayConfig.Channel);
+            if (msgRecord != null)
             {
-                if (e == MsgRecordState.Success)
+                msgRecord.MsgRecordStateChanged += (e) =>
                 {
-                    if (msgRecord.MsgReturn.Code != 0)
+                    if (e == MsgRecordState.Fail)
                     {
-                        MessageBox.Show($"GetData Eorr Code{msgRecord.MsgReturn.Code}");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                     }
-                }
-                else
-                {
-                    MessageBox.Show(e.ToString());
-                }
-            };
+                };
+            }
+
         }
         private void MeasureDataClose_Click(object sender, RoutedEventArgs e)
         {
             DService.CloseOutput();
-            Config.V = null;
-            Config.I = null;
+            Device.DisplayConfig.V = null;
+            Device.DisplayConfig.I = null;
         }
         private void VIScan_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.Scan(Config.IsSourceV, Config.StartMeasureVal, Config.StopMeasureVal, Config.LimitVal, Config.Number, Config.Channel);
-            msgRecord.MsgRecordStateChanged += async (e) =>
+            MsgRecord msgRecord = DService.Scan(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.StartMeasureVal, Device.DisplayConfig.StopMeasureVal, Device.DisplayConfig.LimitVal, Device.DisplayConfig.Number, Device.DisplayConfig.Channel);
+            if (msgRecord != null)
             {
-                if (e == MsgRecordState.Success)
+                msgRecord.MsgRecordStateChanged += async (e) =>
                 {
-                    if (msgRecord.MsgReturn.Code != 0)
+                    if (e == MsgRecordState.Success)
                     {
-                        DService.CloseOutput();
-                        MessageBox.Show($"GetData Eorr Code{msgRecord.MsgReturn.Code}");
+                        if (msgRecord.MsgReturn.Code != 0)
+                        {
+                            DService.CloseOutput();
+                            MessageBox.Show($"GetData Eorr Code{msgRecord.MsgReturn.Code}");
+                        }
+                        else
+                        {
+                            log.Info("DelyaClose1000");
+                            await Task.Delay(1000);
+                            DService.CloseOutput();
+                            Device.DisplayConfig.V = null;
+                            Device.DisplayConfig.I = null;
+                            log.Info("DelyaClose1000 1");
+                            await Task.Delay(1000);
+                        }
                     }
                     else
                     {
-                        log.Info("DelyaClose1000");
-                        await Task.Delay(1000);
-                        DService.CloseOutput();
-                        Config.V = null;
-                        Config.I = null;
-                        log.Info("DelyaClose1000 1");
-                        await Task.Delay(1000);
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                     }
-                }
-                else
-                {
-                    MessageBox.Show(e.ToString());
-                }
-            };
+                };
+            }
+
         }
 
 

@@ -3,7 +3,6 @@ using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace ProjectStarkSemi.Conoscope

@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Templates.Jsons.CaliAngleShift
 
         public TemplateCaliAngleShift()
         {
-            Title = "色差校正模板管理";
+            Title = ColorVision.Engine.Properties.Resources.ColorCorrection;
             Code = "CaliAngleShift";
             Name = "CaliAngleShift";
             TemplateDicId = 51;

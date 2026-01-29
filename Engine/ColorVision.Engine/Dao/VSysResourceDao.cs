@@ -1,4 +1,5 @@
 ﻿using ColorVision.Database;
+using SqlSugar;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine
@@ -10,7 +11,11 @@ namespace ColorVision.Engine
         {
         }
 
-        public List<SysResourceModel> GetGroupResourceItems(int groupId)=> Db.Queryable<SysResourceGoupModel, SysResourceModel>((rg, r) => rg.ResourceId == r.Id) .Where((rg, r) => rg.GroupId == groupId).Select((rg, r) => r)  .ToList();
+        public List<SysResourceModel> GetGroupResourceItems(int groupId)
+        {
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            return Db.Queryable<SysResourceGoupModel, SysResourceModel>((rg, r) => rg.ResourceId == r.Id).Where((rg, r) => rg.GroupId == groupId).Select((rg, r) => r).ToList();
+        }
 
 
         public List<SysResourceModel> GetAllType(int type) => this.GetAllByParam(new Dictionary<string, object>() { { "type", type },{ "is_delete",0 } });

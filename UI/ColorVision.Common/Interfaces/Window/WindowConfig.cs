@@ -11,6 +11,7 @@ namespace ColorVision.UI
 {
     public abstract class WindowConfig : ViewModelBase, IConfig
     {
+        [DisplayName("StartRecoverUILayout")]
         public bool IsRestoreWindow { get; set; } = true;
 
         public double Width { get; set; }

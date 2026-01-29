@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.LedCheck
 
         public TemplateLedCheck()
         {
-            Title = "像素级灯珠检测模板管理";
+            Title = ColorVision.Engine.Properties.Resources.PixelLedDetect;
             Code = "FindLED";
             TemplateParams = Params;
         }

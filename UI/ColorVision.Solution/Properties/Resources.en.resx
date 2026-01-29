@@ -268,7 +268,7 @@
     <value>Column</value>
   </data>
   <data name="Terminal" xml:space="preserve">
-    <value>terminal</value>
+    <value>Terminal</value>
   </data>
   <data name="EditSolution" xml:space="preserve">
     <value>Editing solutions</value>
@@ -290,5 +290,56 @@
   </data>
   <data name="SolutionConfiguration" xml:space="preserve">
     <value>Solution Configuration</value>
+  </data>
+  <data name="UserCenter" xml:space="preserve">
+    <value>User Center</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="Role" xml:space="preserve">
+    <value>Role</value>
+  </data>
+  <data name="PermissionMode" xml:space="preserve">
+    <value>Permission mode</value>
+  </data>
+  <data name="LoginTime" xml:space="preserve">
+    <value>Login time</value>
+  </data>
+  <data name="UserManagementSystem" xml:space="preserve">
+    <value>User Management System</value>
+  </data>
+  <data name="EditInfo" xml:space="preserve">
+    <value>Editing</value>
+  </data>
+  <data name="UserManagement" xml:space="preserve">
+    <value>User Management</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="LoginOrSwitch" xml:space="preserve">
+    <value>Login/Switch</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="WelcomeBack" xml:space="preserve">
+    <value>Welcome back</value>
+  </data>
+  <data name="RememberLoginStatus7Days" xml:space="preserve">
+    <value>Remember login status (automatic login within 7 days)</value>
+  </data>
+  <data name="NoAccountYet" xml:space="preserve">
+    <value>Don't have an account yet?</value>
+  </data>
+  <data name="UserId" xml:space="preserve">
+    <value>User ID</value>
+  </data>
+  <data name="PermissionManagement" xml:space="preserve">
+    <value>Access Management</value>
+  </data>
+  <data name="RoleList" xml:space="preserve">
+    <value>Character List</value>
   </data>
 </root>

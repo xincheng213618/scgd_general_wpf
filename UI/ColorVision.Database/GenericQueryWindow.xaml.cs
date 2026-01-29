@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;
-using NetTaste;
 using SqlSugar;
 using System;
 using System.Collections.Generic;

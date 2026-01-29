@@ -1,6 +1,5 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
-using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.ToolPlugins;
 using ColorVision.UI;
@@ -17,7 +16,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
     /// <summary>
     /// DisplaySensor.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplaySensor : UserControl, IDisPlayControl
+    public partial class DisplaySensor : UserControl, IDisPlayControl,IDisposable
     {
 
         public DeviceSensor Device { get; set; }
@@ -34,10 +33,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         {
             DataContext = Device;
 
-            this.ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new SSCOMTool().ToMenuItem());
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
-
             void Update()
             {
                 var list = new TemplateSensor(Device.Config.Category);
@@ -49,59 +44,58 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             ComboBoxType.ItemsSource = Enum.GetValues(typeof(SensorCmdType));
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
+            DService_DeviceStatusChanged(sender,Device.DService.DeviceStatus);
+            Device.DService.DeviceStatusChanged += DService_DeviceStatusChanged;
 
+        }
 
-            void UpdateUI(DeviceStatusType status)
+        private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
+        {
+            void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
+            void HideAllButtons()
             {
-                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
-                void HideAllButtons()
-                {
-                    SetVisibility(ButtonOpen, Visibility.Collapsed);
-                    SetVisibility(ButtonClose, Visibility.Collapsed);
-                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
-                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
-                    SetVisibility(StackPanelContent, Visibility.Collapsed);
-                    SetVisibility(TextBlockOffLine, Visibility.Collapsed);
+                SetVisibility(ButtonOpen, Visibility.Collapsed);
+                SetVisibility(ButtonClose, Visibility.Collapsed);
+                SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                SetVisibility(StackPanelContent, Visibility.Collapsed);
+                SetVisibility(TextBlockOffLine, Visibility.Collapsed);
 
-                }
-                // Default state
-                HideAllButtons();
-
-                switch (status)
-                {
-                    case DeviceStatusType.Unauthorized:
-                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Unknown:
-                        SetVisibility(TextBlockUnknow, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.OffLine:
-                        SetVisibility(TextBlockOffLine, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.UnInit:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        SetVisibility(ButtonOpen, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Closed:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        SetVisibility(ButtonOpen, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.LiveOpened:
-                    case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        SetVisibility(ButtonClose, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Closing:
-                    case DeviceStatusType.Opening:
-                    default:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        SetVisibility(ButtonOpen, Visibility.Visible);
-                        break;
-                }
             }
-            UpdateUI(Device.DService.DeviceStatus);
-            Device.DService.DeviceStatusChanged += UpdateUI;
+            // Default state
+            HideAllButtons();
 
+            switch (e)
+            {
+                case DeviceStatusType.Unauthorized:
+                    SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Unknown:
+                    SetVisibility(TextBlockUnknow, Visibility.Visible);
+                    break;
+                case DeviceStatusType.OffLine:
+                    SetVisibility(TextBlockOffLine, Visibility.Visible);
+                    break;
+                case DeviceStatusType.UnInit:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonOpen, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Closed:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonOpen, Visibility.Visible);
+                    break;
+                case DeviceStatusType.LiveOpened:
+                case DeviceStatusType.Opened:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonClose, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Closing:
+                case DeviceStatusType.Opening:
+                default:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(ButtonOpen, Visibility.Visible);
+                    break;
+            }
         }
 
         public event RoutedEventHandler Selected;
@@ -207,6 +201,11 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
+        }
+
+        public void Dispose()
+        {
+            Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
         }
     }
 }

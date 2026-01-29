@@ -196,15 +196,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 检测插件更新 的本地化字符串。
-        /// </summary>
-        public static string CheckPluginUpdates {
-            get {
-                return ResourceManager.GetString("CheckPluginUpdates", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 清理备份文件失败 的本地化字符串。
         /// </summary>
         public static string CleanupBackupFailed {
@@ -340,24 +331,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 下载MQTT 的本地化字符串。
-        /// </summary>
-        public static string DownLoadMQTT {
-            get {
-                return ResourceManager.GetString("DownLoadMQTT", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 下载MySql 的本地化字符串。
-        /// </summary>
-        public static string DownLoadMySql {
-            get {
-                return ResourceManager.GetString("DownLoadMySql", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 echo 正在备份当前版本... 的本地化字符串。
         /// </summary>
         public static string EchoBackingUpCurrentVersion {
@@ -484,6 +457,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 编辑 的本地化字符串。
+        /// </summary>
+        public static string Edit {
+            get {
+                return ResourceManager.GetString("Edit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 English（英语） 的本地化字符串。
         /// </summary>
         public static string en {
@@ -534,15 +516,6 @@ namespace ColorVision.UI.Properties {
         public static string ExeNameCannotBeEmpty {
             get {
                 return ResourceManager.GetString("ExeNameCannotBeEmpty", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 提取插件 的本地化字符串。
-        /// </summary>
-        public static string ExtractPlugin {
-            get {
-                return ResourceManager.GetString("ExtractPlugin", resourceCulture);
             }
         }
         
@@ -1033,38 +1006,11 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 插件提取失败 的本地化字符串。
-        /// </summary>
-        public static string PluginExtractFailed {
-            get {
-                return ResourceManager.GetString("PluginExtractFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 插件已成功提取到: {0} 的本地化字符串。
-        /// </summary>
-        public static string PluginExtractSuccess {
-            get {
-                return ResourceManager.GetString("PluginExtractSuccess", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 加载插件或manifest错误：{0} 的本地化字符串。
         /// </summary>
         public static string PluginLoadError {
             get {
                 return ResourceManager.GetString("PluginLoadError", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 插件管理器窗口 的本地化字符串。
-        /// </summary>
-        public static string PluginManagerWindow {
-            get {
-                return ResourceManager.GetString("PluginManagerWindow", resourceCulture);
             }
         }
         
@@ -1101,6 +1047,15 @@ namespace ColorVision.UI.Properties {
         public static string ProjectSolution_P {
             get {
                 return ResourceManager.GetString("ProjectSolution_P", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 属性编辑器窗口 的本地化字符串。
+        /// </summary>
+        public static string PropertyEditorWindow {
+            get {
+                return ResourceManager.GetString("PropertyEditorWindow", resourceCulture);
             }
         }
         
@@ -1173,15 +1128,6 @@ namespace ColorVision.UI.Properties {
         public static string Search {
             get {
                 return ResourceManager.GetString("Search", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 选择要提取插件的目标文件夹 的本地化字符串。
-        /// </summary>
-        public static string SelectExtractFolder {
-            get {
-                return ResourceManager.GetString("SelectExtractFolder", resourceCulture);
             }
         }
         
@@ -1263,6 +1209,15 @@ namespace ColorVision.UI.Properties {
         public static string SortOptions {
             get {
                 return ResourceManager.GetString("SortOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主题 的本地化字符串。
+        /// </summary>
+        public static string Theme {
+            get {
+                return ResourceManager.GetString("Theme", resourceCulture);
             }
         }
         

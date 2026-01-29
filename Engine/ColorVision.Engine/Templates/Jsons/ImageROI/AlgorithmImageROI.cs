@@ -11,7 +11,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.ImageROI
 {
-    [DisplayAlgorithm(22, "图像裁剪", "Json")]
+    [DisplayAlgorithm(22, "ImageCrop", "Json")]
 
     public class AlgorithmImageROI : DisplayAlgorithmBase
     {

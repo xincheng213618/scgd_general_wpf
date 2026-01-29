@@ -39,7 +39,6 @@ namespace ColorVision.Engine.Messages
 
         [SugarColumn(ColumnName = "MsgSendJson", IsNullable = true)]
         public string MsgSendJson { get => JsonConvert.SerializeObject(MsgSend); set { if (!string.IsNullOrEmpty(value)) MsgSend = JsonConvert.DeserializeObject<MsgSend>(value); } }
-
        
         [SugarColumn(IsIgnore = true)]
         public MsgReturn MsgReturn { get; set; }

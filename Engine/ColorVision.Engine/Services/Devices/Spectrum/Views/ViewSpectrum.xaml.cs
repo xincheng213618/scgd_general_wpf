@@ -1,12 +1,12 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using ScottPlot;
 using ScottPlot.Plottables;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -55,10 +55,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public static ViewSpectrumConfig Config => ViewSpectrumConfig.Instance;
 
-        public DisplaySpectrumConfig DisplayConfig { get; set; }
-        public ViewSpectrum(DisplaySpectrumConfig displayConfig)
+        public DisplaySpectrumConfig DisplayConfig => Device.DisplayConfig;
+        public DeviceSpectrum Device { get; set; }
+        public ViewSpectrum(DeviceSpectrum device)
         {
-            DisplayConfig = displayConfig;
+            Device = device;
             InitializeComponent();
         }
 
@@ -96,7 +97,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             wpfplot1.Plot.Axes.Left.Max = 1;
             string titleAbsolute = ColorVision.Engine.Properties.Resources.AbsoluteSpectrumCurve;
             wpfplot2.Plot.XLabel(ColorVision.Engine.Properties.Resources.WavelengthNm);
-            wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum);
+            wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum + "W/nm");
             wpfplot2.Plot.Axes.Title.Label.Text = titleAbsolute;
             wpfplot2.Plot.Axes.Title.Label.FontName = Fonts.Detect(titleAbsolute);
             wpfplot2.Plot.Axes.Left.Label.FontName = Fonts.Detect(titleAbsolute);
@@ -125,6 +126,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, Button_Click,(s, e) => e.CanExecute = true));
 
             DisplayConfig_IsIsLuminousFluxModeChanged();
             DisplayConfig.IsIsLuminousFluxModeChanged +=(s,e) => DisplayConfig_IsIsLuminousFluxModeChanged();
@@ -142,6 +144,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             if (DisplayConfig.IsLuminousFluxMode)
             {
+                wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum + "W/nm");
                 foreach (var item in GridViewColumnVisibilitys)
                 {
                     if (EQE.Contains(item.ColumnName))
@@ -157,6 +160,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
             else
             {
+                wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum + "w/sr·m^2·nm");
+
                 foreach (var item in GridViewColumnVisibilitys)
                 {
                     if (EQE.Contains(item.ColumnName))
@@ -215,53 +220,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 MessageBox.Show("SelectDataFirst");
                 return;
             }
-            using var dialog = new System.Windows.Forms.SaveFileDialog();
-            dialog.Filter = "CSV files (*.csv) | *.csv";
-            dialog.FileName = DateTime.Now.ToString("SpectrometerExportyyyy-MM-dd-HH-mm-ss");
-            dialog.RestoreDirectory = true;
-            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
-            var csvBuilder = new StringBuilder();
-
-            List<string> properties = new();
-            properties.Add("No");
-            properties.Add("Lot");
-            properties.Add("IP");
-            properties.Add("Luminace（Lv）(cd/m²)");
-            properties.Add("Blue Light Intensity");
-            properties.Add("Cx");
-            properties.Add("Cy");
-            properties.Add("u'");
-            properties.Add("v'");
-            properties.Add("Correlated Color Temperature(CCT)（K）");
-            properties.Add("DW（λd）（nm）");
-            properties.Add("Color Purity(%)");
-            properties.Add("Peak Wavelength(λp)(nm)");
-            properties.Add("Color Rendering (Ra)");
-            properties.Add("FWHM");
-            properties.Add("Voltgage(V) (V)");
-            properties.Add("Current(I) (mA)");
-
-            for (int i = 380; i <= 780; i++)
-            {
-                properties.Add(i.ToString());
-            }
-            for (int i = 380; i <= 780; i++)
-            {
-                properties.Add("sp" + i.ToString());
-            }
-            // 写入列头
-            for (int i = 0; i < properties.Count; i++)
-            {
-                // 添加列名
-                csvBuilder.Append(properties[i]);
-
-                // 如果不是最后一列，则添加逗号
-                if (i < properties.Count - 1)
-                    csvBuilder.Append(',');
-            }
-            // 添加换行符
-            csvBuilder.AppendLine();
 
 
             var selectedItemsCopy = new List<object>();
@@ -270,43 +228,175 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 selectedItemsCopy.Add(item);
             }
 
-            foreach (var item in selectedItemsCopy)
+            if (!DisplayConfig.IsLuminousFluxMode)
             {
-                if (item is ViewResultSpectrum result)
-                {
-                    csvBuilder.Append(result.Id + ",");
-                    csvBuilder.Append(result.BatchID + ",");
-                    csvBuilder.Append(result.IP + ",");
-                    csvBuilder.Append(result.Lv + ",");
-                    csvBuilder.Append(result.Blue + ",");
-                    csvBuilder.Append(result.fx + ",");
-                    csvBuilder.Append(result.fy + ",");
-                    csvBuilder.Append(result.fu + ",");
-                    csvBuilder.Append(result.fv + ",");
-                    csvBuilder.Append(result.fCCT + ",");
-                    csvBuilder.Append(result.fLd + ",");
-                    csvBuilder.Append(result.fPur + ",");
-                    csvBuilder.Append(result.fLp + ",");
-                    csvBuilder.Append(result.fRa + ",");
-                    csvBuilder.Append(result.fHW + ",");
-                    csvBuilder.Append(result.V + ",");
-                    csvBuilder.Append(result.I + ",");
+                using var dialog = new System.Windows.Forms.SaveFileDialog();
+                dialog.Filter = "CSV files (*.csv) | *.csv";
+                dialog.FileName = "SpectrometerExport" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+                dialog.RestoreDirectory = true;
+                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-                    for (int i = 0; i < result.SpectralDatas.Count; i++)
-                    {
-                        csvBuilder.Append(result.SpectralDatas[i].AbsoluteSpectrum);
-                        csvBuilder.Append(',');
-                    }
-                    for (int i = 0; i < result.SpectralDatas.Count; i++)
-                    {
-                        csvBuilder.Append(result.SpectralDatas[i].RelativeSpectrum);
-                        if (i < result.SpectralDatas.Count - 1)
-                            csvBuilder.Append(',');
-                    }
-                    csvBuilder.AppendLine();
+                var csvBuilder = new StringBuilder();
+
+                List<string> properties = new();
+                properties.Add("No");
+                properties.Add("Lot");
+                properties.Add("IP");
+                properties.Add("Luminace（Lv）(cd/m²)");
+                properties.Add("Blue Light Intensity");
+                properties.Add("Cx");
+                properties.Add("Cy");
+                properties.Add("u'");
+                properties.Add("v'");
+                properties.Add("Correlated Color Temperature(CCT)（K）");
+                properties.Add("DW（λd）（nm）");
+                properties.Add("Color Purity(%)");
+                properties.Add("Peak Wavelength(λp)(nm)");
+                properties.Add("Color Rendering (Ra)");
+                properties.Add("FWHM");
+                properties.Add("Voltgage(V) (V)");
+                properties.Add("Current(I) (mA)");
+
+                for (int i = 380; i <= 780; i++)
+                {
+                    properties.Add(i.ToString());
                 }
+                for (int i = 380; i <= 780; i++)
+                {
+                    properties.Add("sp" + i.ToString());
+                }
+                // 写入列头
+                for (int i = 0; i < properties.Count; i++)
+                {
+                    // 添加列名
+                    csvBuilder.Append(properties[i]);
+
+                    // 如果不是最后一列，则添加逗号
+                    if (i < properties.Count - 1)
+                        csvBuilder.Append(',');
+                }
+                // 添加换行符
+                csvBuilder.AppendLine();
+
+
+                foreach (var item in selectedItemsCopy)
+                {
+                    if (item is ViewResultSpectrum result)
+                    {
+                        csvBuilder.Append(result.Id + ",");
+                        csvBuilder.Append(result.BatchID + ",");
+                        csvBuilder.Append(result.IP + ",");
+                        csvBuilder.Append(result.Lv + ",");
+                        csvBuilder.Append(result.Blue + ",");
+                        csvBuilder.Append(result.fx + ",");
+                        csvBuilder.Append(result.fy + ",");
+                        csvBuilder.Append(result.fu + ",");
+                        csvBuilder.Append(result.fv + ",");
+                        csvBuilder.Append(result.fCCT + ",");
+                        csvBuilder.Append(result.fLd + ",");
+                        csvBuilder.Append(result.fPur + ",");
+                        csvBuilder.Append(result.fLp + ",");
+                        csvBuilder.Append(result.fRa + ",");
+                        csvBuilder.Append(result.fHW + ",");
+                        csvBuilder.Append(result.V + ",");
+                        csvBuilder.Append(result.I + ",");
+
+                        for (int i = 0; i < result.SpectralDatas.Count; i++)
+                        {
+                            csvBuilder.Append(result.SpectralDatas[i].AbsoluteSpectrum);
+                            csvBuilder.Append(',');
+                        }
+                        for (int i = 0; i < result.SpectralDatas.Count; i++)
+                        {
+                            csvBuilder.Append(result.SpectralDatas[i].RelativeSpectrum);
+                            if (i < result.SpectralDatas.Count - 1)
+                                csvBuilder.Append(',');
+                        }
+                        csvBuilder.AppendLine();
+                    }
+                }
+                File.WriteAllText(dialog.FileName, csvBuilder.ToString(), Encoding.UTF8);
             }
-            File.WriteAllText(dialog.FileName, csvBuilder.ToString(), Encoding.UTF8);
+            else
+            {
+                using var dialog = new System.Windows.Forms.SaveFileDialog();
+                dialog.Filter = "CSV files (*.csv) | *.csv";
+                dialog.FileName = "EQE" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+                dialog.RestoreDirectory = true;
+                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+                var csvBuilder = new StringBuilder();
+
+                List<string> properties = new();
+                properties.Add("No");
+                properties.Add("Lot");
+                properties.Add("IP");
+                properties.Add("EQE");
+                properties.Add("LuminousFlux(lm)");
+                properties.Add("RadiantFlux(W)");
+                properties.Add("LuminousEfficacy(lm/W)");
+                properties.Add("Cx");
+                properties.Add("Cy");
+                properties.Add("Correlated Color Temperature(CCT)（K）");
+                properties.Add("Peak Wavelength(λp)(nm)");
+                properties.Add("Voltgage(V) (V)");
+                properties.Add("Current(I) (mA)");
+
+                for (int i = 380; i <= 780; i++)
+                {
+                    properties.Add(i.ToString());
+                }
+                for (int i = 380; i <= 780; i++)
+                {
+                    properties.Add("sp" + i.ToString());
+                }
+
+                // 写入列头
+                for (int i = 0; i < properties.Count; i++)
+                {
+                    csvBuilder.Append(properties[i]);
+                    if (i < properties.Count - 1)
+                        csvBuilder.Append(',');
+                }
+                csvBuilder.AppendLine();
+
+                foreach (var item in selectedItemsCopy)
+                {
+                    if (item is ViewResultSpectrum result)
+                    {
+                        csvBuilder.Append(result.Id + ",");
+                        csvBuilder.Append(result.BatchID + ",");
+                        csvBuilder.Append(result.IP + ",");
+                        csvBuilder.Append(result.Eqe + ",");
+                        csvBuilder.Append(result.LuminousFlux + ",");
+                        csvBuilder.Append(result.RadiantFlux + ",");
+                        csvBuilder.Append(result.LuminousEfficacy + ",");
+                        csvBuilder.Append(result.fx + ",");
+                        csvBuilder.Append(result.fy + ",");
+                        csvBuilder.Append(result.fCCT + ",");
+                        csvBuilder.Append(result.fLp + ",");
+                        csvBuilder.Append(result.V + ",");
+                        csvBuilder.Append(result.I + ",");
+
+                        for (int i = 0; i < result.SpectralDatas.Count; i++)
+                        {
+                            csvBuilder.Append(result.SpectralDatas[i].AbsoluteSpectrum);
+                            csvBuilder.Append(',');
+                        }
+                        for (int i = 0; i < result.SpectralDatas.Count; i++)
+                        {
+                            csvBuilder.Append(result.SpectralDatas[i].RelativeSpectrum);
+                            if (i < result.SpectralDatas.Count - 1)
+                                csvBuilder.Append(',');
+                        }
+                        csvBuilder.AppendLine();
+                    }
+                }
+                File.WriteAllText(dialog.FileName, csvBuilder.ToString(), Encoding.UTF8);
+
+            }
+
+
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -624,8 +714,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             ViewResults.Clear();
             ScatterPlots.Clear();
             AbsoluteScatterPlots.Clear();
+            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultEntity>().Where(x => x.DataType == DisplayConfig.IsLuminousFluxMode);
+            var query = DB.Queryable<SpectumResultEntity>().Where(x => x.DataType == DisplayConfig.IsLuminousFluxMode);
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
@@ -640,7 +731,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         }
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<SpectumResultEntity, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultSpectrum>(MySqlControl.GetInstance().DB, ViewResults, 
+            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            GenericQuery<SpectumResultEntity, ViewResultSpectrum> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultSpectrum>(DB, ViewResults, 
                 t =>
                 {
                     ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(t);
@@ -666,7 +759,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             };
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
-
+            DB.Dispose();
 
         }
 

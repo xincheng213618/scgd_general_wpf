@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8602,CS8603
-using ColorVision.Common.MVVM;
 using Microsoft.Win32;
 using System.Reflection;
 using System.Windows.Forms;

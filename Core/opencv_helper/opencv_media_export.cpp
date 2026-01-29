@@ -257,7 +257,6 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
 	mat = use_roi ? mat(mroi) : mat;
 
-	// 3. ת��Ϊ�Ҷ�ͼ���м���
 	cv::Mat gray_mat;
 	if (mat.channels() == 3 || mat.channels() == 4)
 	{
@@ -367,25 +366,31 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, FocusAlgorithm type, Roi
 
 COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel)
 {
+	// 构造 Mat 头，不拷贝数据
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 
 	if (mat.empty())
 		return -1;
 
-	cv::Mat out = mat.clone();
-	if (out.channels() != 1) {
+	cv::Mat out;
+
+	// 优化通道提取
+	if (mat.channels() != 1) {
 		if (channel >= 0 && channel < mat.channels()) {
-			std::vector<cv::Mat> channels;
-			cv::split(mat, channels);
-			out = channels[channel];
+			cv::extractChannel(mat, out, channel);
 		}
 		else {
-			// Default to converting to grayscale if no valid channel is specified
 			cv::cvtColor(mat, out, cv::COLOR_BGR2GRAY);
 		}
 	}
+	else {
+		out = mat.clone();
+	}
+
+	// 执行伪彩色变换
 	pseudoColor(out, min, max, types);
-	///���ﲻ����Ļ����ֲ��ڴ�������н���֮�����
+
+	// 转回 HImage (假设 MatToHImage 负责数据拷贝或接管)
 	return MatToHImage(out, outImage);
 }
 
@@ -556,9 +561,7 @@ COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int chann
 	if (mat.empty())
 		return -1;
 	cv::Mat outMat;
-	int i = extractChannel(mat, outMat, channel);
-	if (i != 0)
-		return i;
+	cv::extractChannel(mat, outMat, channel);
 	MatToHImage(outMat, outImage);
 	return 0;
 }

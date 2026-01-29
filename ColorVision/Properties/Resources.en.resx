@@ -288,4 +288,16 @@
   <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
     <value>To roll back the software, you need to uninstall it first and then reinstall it, or reinstall the package after installation.</value>
   </data>
+  <data name="FullScreen" xml:space="preserve">
+    <value>FullScreen</value>
+  </data>
+  <data name="TerminateUnresponsiveProcess" xml:space="preserve">
+    <value>Terminate unresponsive processes</value>
+  </data>
+  <data name="ClickYesToUpdateNow" xml:space="preserve">
+    <value>Click Yes to update immediately, click No to skip this version, or click Cancel to remind me later.</value>
+  </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>Check for plugin updates</value>
+  </data>
 </root>

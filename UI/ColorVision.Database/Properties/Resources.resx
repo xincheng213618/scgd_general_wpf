@@ -145,7 +145,4 @@
   <data name="LogDatabase" xml:space="preserve">
     <value>日志数据库</value>
   </data>
-  <data name="刷新" xml:space="preserve">
-    <value>刷新"&gt;</value>
-  </data>
 </root>

@@ -54,7 +54,8 @@ namespace ColorVision.Engine.Templates.Flow
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                List<ModMasterModel> flows = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Pid == 11).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                List<ModMasterModel> flows = Db.Queryable<ModMasterModel>().Where(x => x.Pid == 11).Where(x => x.TenantId == 0).Where(x => x.IsDelete == false).ToList();
                 foreach (var dbModel in flows)
                 {
                     var details = Db.Queryable<ModDetailModel>().Where(x=>x.Pid == dbModel.Id)
@@ -99,6 +100,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             void DeleteSingle(int id)
             {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 List<ModDetailModel> de = Db.Queryable<ModDetailModel>().Where(x => x.Pid == id).ToList();
                 int ret = Db.Deleteable<ModMasterModel>().Where(x => x.Id == id).ExecuteCommand();
 
@@ -142,10 +144,10 @@ namespace ColorVision.Engine.Templates.Flow
 
         public static void Save2DB(FlowParam flowParam)
         {
-            var db = MySqlControl.GetInstance().DB;
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             flowParam.ModMaster.Name = flowParam.Name;
-            db.Updateable(flowParam.ModMaster).ExecuteCommand();
+            Db.Updateable(flowParam.ModMaster).ExecuteCommand();
 
             List<ModDetailModel> details = new();
             flowParam.GetDetail(details);
@@ -157,7 +159,7 @@ namespace ColorVision.Engine.Templates.Flow
                 bool hasId = int.TryParse(model.ValueA, out id);
                 if (hasId)
                 {
-                    res = db.Queryable<SysResourceModel>().InSingle(id);
+                    res = Db.Queryable<SysResourceModel>().InSingle(id);
                 }
 
                 if (res != null)
@@ -166,7 +168,7 @@ namespace ColorVision.Engine.Templates.Flow
                     res.Code = flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64);
                     res.Name = flowParam.Name;
                     res.Value = flowParam.DataBase64;
-                    db.Updateable(res).ExecuteCommand();
+                    Db.Updateable(res).ExecuteCommand();
                     model.ValueA = res.Id.ToString();
                 }
                 else
@@ -181,13 +183,13 @@ namespace ColorVision.Engine.Templates.Flow
                             ? (flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64))
                             : Cryptography.GetMd5Hash(flowParam.DataBase64)
                     };
-                    db.Insertable(res).ExecuteCommand();
+                    Db.Insertable(res).ExecuteCommand();
                     // 获取新资源id（SqlSugar自动回写Id）
                     model.ValueA = res.Id.ToString();
                 }
 
                 // 3. 更新明细表
-                db.Updateable(details)
+                Db.Updateable(details)
                     .Where(md => md.Pid == flowParam.Id)
                     .ExecuteCommand();
             }
@@ -315,6 +317,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
         public FlowParam? AddFlowParam(string templateName)
         {
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
             var flowMaster = new ModMasterModel() { Pid = 11, Name = templateName, TenantId = 0};
             int id = Db.Insertable(flowMaster).ExecuteReturnIdentity(); // 自增id自动回写
             flowMaster.Id = id;

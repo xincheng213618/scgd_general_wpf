@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
@@ -75,6 +74,13 @@ namespace ColorVision.Engine.Templates.Flow
         [JsonIgnore,Browsable(false)]
         public bool IsReady { get => _IsReady; set { if (value == _IsReady) return; _IsReady = value; OnPropertyChanged(); } }
         private bool _IsReady;
+
+
+        public int horizontalSpacing { get => _horizontalSpacing; set { _horizontalSpacing = value; OnPropertyChanged(); } }
+        private int _horizontalSpacing = 200;
+
+        public int verticalSpacing { get => _verticalSpacing; set { _verticalSpacing = value; OnPropertyChanged(); } }   
+        private int _verticalSpacing = 170;
     }
 
 
@@ -86,6 +92,7 @@ namespace ColorVision.Engine.Templates.Flow
         private static readonly object _locker = new();
         public static FlowEngineManager GetInstance() { lock (_locker) { return _instance ??= new FlowEngineManager(); } }
 
+        public FlowControl FlowControl { get; set; }
 
         public static FlowEngineConfig Config => FlowEngineConfig.Instance;
         public ObservableCollection<TemplateModel<FlowParam>> FlowParams { get; set; } = TemplateFlow.Params;
@@ -107,6 +114,9 @@ namespace ColorVision.Engine.Templates.Flow
         public MeasureBatchModel Batch { get => _Batch; set { _Batch = value; OnPropertyChanged(); BatchRecord?.Invoke(this, _Batch); } }
         private MeasureBatchModel _Batch;
         public event EventHandler<MeasureBatchModel> BatchRecord;
+
+        public FlowParam SlectFlowParam { get => _SlectFlowParam; set { _SlectFlowParam = value; OnPropertyChanged(); } }
+        private FlowParam _SlectFlowParam;
 
         public double BatchProgress { get => _BatchProgress; set { _BatchProgress = value; OnPropertyChanged(); } }
         private double _BatchProgress ;
@@ -141,7 +151,10 @@ namespace ColorVision.Engine.Templates.Flow
 
             FlowEngineControl = new FlowEngineControl(false);
 
-            View = new ViewFlow(FlowEngineControl);
+            View = new ViewFlow(this);
+
+            FlowControl = new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
+
             View.View.Title = ColorVision.Engine.Properties.Resources.Flow;
             ServiceConfig = ServiceConfig.Instance;
             OpenServiceCommand = new RelayCommand(a => ColorVision.Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(ServiceConfig.RegistrationCenterService),a=>File.Exists(ServiceConfig.RegistrationCenterService));
@@ -149,9 +162,12 @@ namespace ColorVision.Engine.Templates.Flow
             WindowsServiceX64 = new WindowsServiceBase(ServiceConfig.CVMainService_x64Info);
             WindowsServiceDev = new WindowsServiceBase(ServiceConfig.CVMainService_devInfo);
             WindowsServiceReg = new WindowsServiceBase(ServiceConfig.RegistrationCenterServiceInfo);
-            OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog()); 
+            OpenCameraLogCommand = new RelayCommand(a => OpenCameraLog());
+
+            DisplayFlow = new DisplayFlow(this);
         }
 
+        public DisplayFlow DisplayFlow { get; set; }
 
         public void OpenCameraLog()
         {

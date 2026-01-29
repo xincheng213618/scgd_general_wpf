@@ -239,7 +239,6 @@ namespace ColorVision.Scheduler
                 {
                     var jobKey = new Quartz.JobKey(info.JobName, info.GroupName);
                     await QuartzSchedulerManager.Scheduler.TriggerJob(jobKey);
-                    MessageBox.Show($"任务 {info.JobName} 已触发执行", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
@@ -254,29 +253,6 @@ namespace ColorVision.Scheduler
             if (obj is not SchedulerInfo task)
                 return false;
 
-            // 搜索文本过滤
-            var searchText = SearchTextBox?.Text?.Trim().ToLowerInvariant() ?? string.Empty;
-            if (!string.IsNullOrEmpty(searchText))
-            {
-                var matchesSearch = task.JobName?.ToLowerInvariant().Contains(searchText, StringComparison.OrdinalIgnoreCase) == true ||
-                                  task.GroupName?.ToLowerInvariant().Contains(searchText, StringComparison.OrdinalIgnoreCase) == true;
-                if (!matchesSearch)
-                    return false;
-            }
-
-            // 状态过滤
-            if (StatusFilterComboBox?.SelectedItem is ComboBoxItem statusItem)
-            {
-                var statusTag = statusItem.Tag?.ToString();
-                if (statusTag != "All")
-                {
-                    if (Enum.TryParse<SchedulerStatus>(statusTag, out var filterStatus))
-                    {
-                        if (task.Status != filterStatus)
-                            return false;
-                    }
-                }
-            }
 
             return true;
         }
@@ -293,12 +269,6 @@ namespace ColorVision.Scheduler
 
         private void ClearFilter_Click(object sender, RoutedEventArgs e)
         {
-            if (SearchTextBox != null)
-                SearchTextBox.Text = string.Empty;
-            
-            if (StatusFilterComboBox != null)
-                StatusFilterComboBox.SelectedIndex = 0;
-            
             _taskInfosView?.Refresh();
         }
 

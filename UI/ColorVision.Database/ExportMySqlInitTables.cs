@@ -1,10 +1,10 @@
 ﻿using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
+using SqlSugar;
 using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -55,7 +55,8 @@ namespace ColorVision.Database
                     try
                     {
                         log.Info($"正在初始化表：{type.Name}");
-                        MySqlControl.GetInstance().DB.CodeFirst.InitTables(type);
+                        using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                        DB.CodeFirst.InitTables(type);
                     }
                     catch (Exception ex)
                     {

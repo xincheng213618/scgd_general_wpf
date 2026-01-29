@@ -3,6 +3,7 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -53,8 +54,9 @@ namespace ColorVision.Engine.Services.Types
             terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{RCSetting.Instance.Config.RCName}";
 
             sysResource.Value = JsonConvert.SerializeObject(terminalServiceConfig);
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            int pkId = MySqlControl.GetInstance().DB.Insertable(sysResource).ExecuteReturnIdentity();
+            int pkId = Db.Insertable(sysResource).ExecuteReturnIdentity();
             sysResource.Id = pkId;
 
             if (pkId > 0)

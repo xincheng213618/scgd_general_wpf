@@ -395,8 +395,9 @@ namespace ProjectKB
             {
                 if (item.ImgFileType == ViewResultAlgType.KB || item.ImgFileType == ViewResultAlgType.KB_Raw)
                 {
-                   
-                    var mod = MySqlControl.GetInstance().DB.Queryable<ModMasterModel>().Where(x => x.Name == item.TName && x.Pid == 150).First();
+                    using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+                    var mod = Db.Queryable<ModMasterModel>().Where(x => x.Name == item.TName && x.Pid == 150).First();
                     if (mod == null)
                     {
                         log.Warn($"item.TName{item.TName},Cant find template");

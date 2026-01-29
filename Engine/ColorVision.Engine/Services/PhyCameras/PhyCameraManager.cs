@@ -1,63 +1,31 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Database;
+using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
-using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI.Plugins;
-using cvColorVision;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
-    [FileExtension(".lic")]
-
-    public class LicFileProcess : IFileProcessor
-    {
-        public int Order => 1;
-
-        public void Export(string filePath)
-        {
-
-        }
-
-        public bool Process(string filePath)
-        {
-            if (!File.Exists(filePath)) return false;
-            string content = File.ReadAllText(filePath);
-            if (string.IsNullOrWhiteSpace(content)) return false;
-            string LicenseValue = Tool.Base64Decode(content);
-            ColorVisionLicense colorVisionLicense =  JsonConvert.DeserializeObject<ColorVisionLicense>(LicenseValue);
-            if (colorVisionLicense == null) return false;
-
-            if (MessageBox.Show("是否导入许可证" + colorVisionLicense.DeviceMode, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.No) return false;
-            LicenseModel licenseModel = PhyLicenseDao.Instance.GetByMAC(Path.GetFileNameWithoutExtension(filePath)) ?? new LicenseModel();
-            licenseModel.LicenseValue = content;
-            PhyLicenseDao.Instance.Save(licenseModel);
-            return true;
-        }
-    }
 
     public class PhyCameraManagerConfig : ViewModelBase, IConfig
     {
@@ -70,8 +38,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         private static PhyCameraManager _instance;
         private static readonly object Locker = new();
         public static PhyCameraManager GetInstance() { lock (Locker) { return _instance ??= new PhyCameraManager(); } }
-        public static SqlSugar.SqlSugarClient Db => MySqlControl.GetInstance().DB;
-
         public RelayCommand CreateCommand { get; set; }
 
         public RelayCommand ImportCommand { get; set; }
@@ -216,7 +182,9 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void Create()
         {
-            if (MySqlControl.GetInstance().DB.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count() <= 0)
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            if (Db.Queryable<SysResourceModel>().Where(a => a.Type == 101 && SqlFunc.IsNullOrEmpty(a.Value)).Count() <= 0)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到未创建的相机,请插上相机后在尝试",nameof(PhyCameraManager));
                 foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>())
@@ -328,7 +296,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 {
                     Code = licenseModel.MacAddress,
                     Type = (int)ServiceTypes.PhyCamera,
-                    Value = JsonConvert.SerializeObject(CreateDefaultConfig())
+                    Value = JsonConvert.SerializeObject(new ConfigPhyCamera())
                 };
 
                 int ret = SysResourceDao.Instance.Save(sysDictionaryModel);
@@ -340,7 +308,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             else
             {
-                sysDictionaryModel.Value = JsonConvert.SerializeObject(CreateDefaultConfig());
+                sysDictionaryModel.Value = JsonConvert.SerializeObject(new ConfigPhyCamera());
                 int ret= SysResourceDao.Instance.Save(sysDictionaryModel);
                 if (ret != -1 && sysDictionaryModel.Code != null)
                 {
@@ -364,40 +332,23 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                 GetPhyCamera(cameraID).CameraLicenseModel = license;
 
-
                 foreach (var item in ServiceManager.GetInstance().DeviceServices)
                 {
+                    if (item.GetConfig() is DeviceServiceConfig deviceServiceConfig)
+                        deviceServiceConfig.SN = cameraID;
                     if (item is DeviceCamera deviceCamera)
                     {
-                        deviceCamera.Config.SN = cameraID;
                         deviceCamera.Config.CameraCode = cameraID;
-                        deviceCamera.Save();
-                    }
-                    if (item is DeviceAlgorithm deviceAlgorithm)
-                    {
-                        deviceAlgorithm.Config.SN = cameraID;
-                        deviceAlgorithm.Save();
                     }
                     if (item is DeviceCalibration deviceCalibration)
                     {
                         deviceCalibration.Config.CameraCode = cameraID;
-                        deviceCalibration.Save();
                     }
+                    item.Save();
                 }
             }
 
         }
-
-        private static ConfigPhyCamera CreateDefaultConfig()
-        {
-            return new ConfigPhyCamera
-            {
-                TakeImageMode = TakeImageMode.Measure_Normal,
-                ImageBpp = ImageBpp.bpp8,
-                Channel = ImageChannel.One,
-            };
-        }
-
         public EventHandler Loaded { get; set; }
 
         public ObservableCollection<PhyCamera> PhyCameras { get; set; } = new ObservableCollection<PhyCamera>();
@@ -450,6 +401,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private static void LoadPhyCameraResources(PhyCamera phyCamera)
         {
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
             var sysResourceModels =  Db.Queryable<SysResourceModel>().Where(it => it.Pid == phyCamera.SysResourceModel.Id && it.IsDelete == false && it.IsEnable == true).ToList();
             foreach (var sysResourceModel in sysResourceModels)
             {

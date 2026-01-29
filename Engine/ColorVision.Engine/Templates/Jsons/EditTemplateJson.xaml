@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Templates.Jsons"
              xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
              xmlns:jsonEditor="clr-namespace:ColorVision.UI.PropertyEditor.Json;assembly=ColorVision.UI"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:IEditTemplateJson}"
              d:DesignHeight="450" d:DesignWidth="400" Height="450" Width="400">
@@ -37,12 +38,12 @@
         <jsonEditor:JsonPropertyEditorControl x:Name="propertyEditor" Margin="5" Visibility="Collapsed"/>
 
         <StackPanel x:Name="FuncStackPanel"  Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,5,0,0">
-            <ToggleButton x:Name="EditorModeToggle" Content="属性编辑" Margin="0,0,5,0" Click="EditorModeToggle_Click" ToolTip="切换到属性编辑器模式" />
-            <ToggleButton x:Name="DescriptionButton" Content="注释" Margin="0,0,5,0" Click="Button_Click" />
-            <Button Content="校验Json" Margin="0,0,5,0" Command="{Binding CheckCommand}"/>
-            <Button Content="编辑工具" Command="{Binding OpenEditToolCommand}"/>
-            <Button Content="在线json解析" Click="Button_Click_1"/>
-            <Button Content="重置" Command="{Binding ResetCommand}"/>
+            <ToggleButton x:Name="EditorModeToggle" Content="{x:Static properties:Resources.PropertyEdit}" Margin="0,0,5,0" Click="EditorModeToggle_Click" />
+            <ToggleButton x:Name="DescriptionButton" Content="{x:Static properties:Resources.Annotation}" Margin="0,0,5,0" Click="Button_Click" />
+            <Button Content="{x:Static properties:Resources.VerifyJson}" Margin="0,0,5,0" Command="{Binding CheckCommand}"/>
+            <Button Content="{x:Static properties:Resources.OpenEditTool}" Command="{Binding OpenEditToolCommand}" Margin="0,0,5,0"/>
+            <Button Content="json" Click="Button_Click_1" Margin="0,0,5,0"/>
+            <Button Content="{x:Static properties:Resources.Reset}" Command="{Binding ResetCommand}"/>
         </StackPanel>
         
 

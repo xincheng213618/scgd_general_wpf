@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Templates.Flow;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using SqlSugar;
@@ -19,14 +20,14 @@ namespace ColorVision.Engine.Services.Devices.SMU
 {
     public class MQTTSMU : MQTTDeviceService<ConfigSMU>
     {
-        public DeviceSMU DeviceSMU { get; set; }
-        public MQTTSMU(DeviceSMU deviceSMU, ConfigSMU sMUConfig) : base(sMUConfig)
+        public DeviceSMU Device { get; set; }
+        public MQTTSMU(DeviceSMU deviceSMU) : base(deviceSMU.Config)
         {
-            DeviceSMU = deviceSMU;
-            Config = sMUConfig;
+            Device = deviceSMU;
+            Config = Device.Config;
 
-            SendTopic = sMUConfig.SendTopic;
-            SubscribeTopic = sMUConfig.SubscribeTopic;
+            SendTopic = Config.SendTopic;
+            SubscribeTopic = Config.SubscribeTopic;
 
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.SubscribeCache(SubscribeTopic);
@@ -65,14 +66,14 @@ namespace ColorVision.Engine.Services.Devices.SMU
                                 ViewResultSMU viewResultSpectrum = new ViewResultSMU(model);
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    DeviceSMU.View.AddViewResultSMU(viewResultSpectrum);
-                                    Config.I = model.IResult;
-                                    Config.V = model.VResult;
+                                    Device.View.AddViewResultSMU(viewResultSpectrum);
+                                    Device.DisplayConfig.I = model.IResult;
+                                    Device.DisplayConfig.V = model.VResult;
 
                                     foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>())
                                     {
-                                        item.DisplayConfig.V = Config.V ??0;
-                                        item.DisplayConfig.I = Config.I ?? 0;
+                                        item.DisplayConfig.V = Device.DisplayConfig.V ??0;
+                                        item.DisplayConfig.I = Device.DisplayConfig.I ?? 0;
                                     }
                                 });
                             }
@@ -83,13 +84,40 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     else if (msg.EventName == "Scan")
                     {
                         Configs.SMUScanResultData data = JsonConvert.DeserializeObject<Configs.SMUScanResultData>(JsonConvert.SerializeObject(msg.Data));
-                        Application.Current.Dispatcher.Invoke(() =>
+
+                        //未来全面启用4.0之后移除
+                        log.Info(FlowEngineManager.GetInstance().ServiceVersion);
+                        if (FlowEngineManager.GetInstance().ServiceVersion >= new Version(4, 0, 2, 115))
                         {
-                            ViewResultSMU viewResultSMU = new ViewResultSMU(Config.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current, (float)Config.StopMeasureVal, data.VList, data.IList);
-                            viewResultSMU.CreateTime = DateTime.Now;
-                            viewResultSMU.Id = -1;
-                            DeviceSMU.View.AddViewResultSMU(viewResultSMU);
-                        });
+                            if (msg != null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
+                            {
+                                int masterId = msg.Data?.MasterId;
+                                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                                SmuScanModel model = DB.Queryable<SmuScanModel>().Where(x => x.Id == masterId).First();
+                                log.Info($"GetData MasterId:{masterId} ");
+                                if (model != null)
+                                {
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        ViewResultSMU viewResultSpectrum = new ViewResultSMU(model);
+                                        Device.View.AddViewResultSMU(viewResultSpectrum);
+                                    });
+                                }
+
+
+                            }
+                        }
+                        else
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                ViewResultSMU viewResultSMU = new ViewResultSMU(Device.DisplayConfig.IsSourceV ? MeasurementType.Voltage : MeasurementType.Current, (float)Device.DisplayConfig.StopMeasureVal, data.VList, data.IList);
+                                viewResultSMU.CreateTime = DateTime.Now;
+                                viewResultSMU.Id = -1;
+                                Device.View.AddViewResultSMU(viewResultSMU);
+                            });
+                        }
+
                     }
                 }
                 catch(Exception ex)
@@ -123,13 +151,20 @@ namespace ColorVision.Engine.Services.Devices.SMU
             };
             Params.Add("DevName",devName);
             Params.Add("IsNet", isNet);
-            Params.Add("Channel", Config.Channel);
+            Params.Add("Channel", Device.DisplayConfig.Channel);
             return PublishAsyncClient(msg);
         }
 
 
-        public MsgRecord GetData(bool isSourceV, double measureVal, double lmtVal, SMUChannelType channel)
+        public MsgRecord? GetData(bool isSourceV, double measureVal, double lmtVal, SMUChannelType channel)
         {
+            if (Device.DisplayConfig.IsUseLimitSigned)
+            {
+                double V = isSourceV ? measureVal : lmtVal;
+                double I = isSourceV ? lmtVal : measureVal;
+                if (!IsLimit(V, I)) return null;
+            }
+
             var Params = new Dictionary<string, object>();
             MsgSend msg = new()
             {
@@ -165,18 +200,82 @@ namespace ColorVision.Engine.Services.Devices.SMU
             public SMUChannelType Channel { get; set; }
 
         }
-        public MsgRecord Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number, SMUChannelType channel)
+        public MsgRecord? Scan(bool isSourceV, double startMeasureVal, double stopMeasureVal, double lmtVal, int number, SMUChannelType channel)
         {
-            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            if (Device.DisplayConfig.IsUseLimitSigned)
+            {
+                double V = isSourceV ? stopMeasureVal : lmtVal;
+                double I = isSourceV ? lmtVal : stopMeasureVal;
+                if (!IsLimit(V, I)) return null;
+            }
+
             var Params = new Dictionary<string, object>();
             Params.Add("DeviceParam", new SMUScanParam() { IsSourceV = isSourceV, BeginValue = startMeasureVal, EndValue = stopMeasureVal, LimitValue = lmtVal, Points = number, Channel = channel });
             MsgSend msg = new()
             {
                 EventName = "Scan",
-                SerialNumber = sn,
                 Params = Params,
             };
             return PublishAsyncClient(msg);
+        }
+
+        public bool IsLimit(double V ,double I)
+        {
+            I /= 1000;
+
+            V = Math.Abs(V);
+            I = Math.Abs(I);
+
+            if (Device.Config.DevType == "Keithley_2400")
+            {
+                if (V > 200)
+                {
+                    MessageBox.Show("Keithley 2450最大输出电压为200V，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+                if ((V > 20 && V <= 200) && (I > 0.1))
+                {
+                    MessageBox.Show("Keithley 2450在输出电压大于20V时，最大输出电流为100mA，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+                if (V <= 20 && I > 1)
+                {
+                    MessageBox.Show("Keithley 2450在输出电压小于20V时，最大输出电流为1A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+            }
+            else if (Device.Config.DevType == "Keithley_2600")
+            {
+                if (V > 40)
+                {
+                    MessageBox.Show("Keithley 2600最大输出电压为40V，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+                if ((V > 6 && V <= 40) && (I > 1))
+                {
+                    MessageBox.Show("Keithley 2600在输出电压大于6V时，最大输出电流为1A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+                if (V <= 6 && I > 3)
+                {
+                    MessageBox.Show("Keithley 2600在输出电压小于6V时，最大输出电流为3A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+            }
+            else if (Device.Config.DevType == "Precise_S100")
+            {
+                if (V > 30)
+                {
+                    MessageBox.Show("Precise_S100最大输出电压为30V，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+                if (V <= 30 && I > 1)
+                {
+                    MessageBox.Show("Precise_S100在输出电压小于30V时，最大输出电流为1A，请调整测量参数后重试！", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+            }
+            return true;
         }
 
         public MsgRecord CloseOutput()
@@ -187,7 +286,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 EventName = "CloseOutput",
                 Params = Params,
             };
-            Params.Add("Channel",Config.Channel);
+            Params.Add("Channel", Device.DisplayConfig.Channel);
 
             return PublishAsyncClient(msg);
         }

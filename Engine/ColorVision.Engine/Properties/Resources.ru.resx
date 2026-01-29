@@ -1086,7 +1086,7 @@
   <data name="StereoFusion" xml:space="preserve">
     <value>Бинокулярное слияние</value>
   </data>
-  <data name="KBDetect" xml:space="preserve">
+  <data name="CharacterBrghtnessInsp" xml:space="preserve">
     <value>Распознавание клавиатуры</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
@@ -1642,7 +1642,7 @@
     <value>Левый</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>верно:</value>
+    <value>верно</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
     <value>показывать</value>
@@ -1714,7 +1714,7 @@
     <value>Текущий(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
-    <value>Напряжение</value>
+    <value>Напряжение(_V)</value>
   </data>
   <data name="HalfBandwidth" xml:space="preserve">
     <value>Ширина полуволны</value>
@@ -1756,7 +1756,7 @@
     <value>Кривая тока</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
-    <value>Ток (А)</value>
+    <value>Ток (mА)</value>
   </data>
   <data name="Voltage" xml:space="preserve">
     <value>Напряжение (В)</value>
@@ -1915,7 +1915,7 @@
     <value>Файл амплитуды</value>
   </data>
   <data name="IsEnableNd" xml:space="preserve">
-    <value>Включить ND?</value>
+    <value>Включить ND</value>
   </data>
   <data name="ConnectType" xml:space="preserve">
     <value>Способ подключения</value>
@@ -2379,9 +2379,6 @@
   <data name="ClearDatabaseOnly" xml:space="preserve">
     <value>Очистить только базу данных</value>
   </data>
-  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
-    <value>Удалить локальные файлы</value>
-  </data>
   <data name="DeleteLocalFiles" xml:space="preserve">
     <value>Удалить локальные файлы</value>
   </data>
@@ -2522,5 +2519,110 @@
   </data>
   <data name="ExportLicenseFailed" xml:space="preserve">
     <value>Экспорт лицензии не удался</value>
+  </data>
+  <data name="Customer" xml:space="preserve">
+    <value>Клиент</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>тип</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>Модель</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>Онлайн</value>
+  </data>
+  <data name="Syncfreq" xml:space="preserve">
+    <value>Синхронная частота</value>
+  </data>
+  <data name="SyncfreqFactor" xml:space="preserve">
+    <value>Синхронная частота</value>
+  </data>
+  <data name="FilterBW" xml:space="preserve">
+    <value>FilterBW</value>
+  </data>
+  <data name="IsSyncFrequencyEnabled" xml:space="preserve">
+    <value>IsSyncFrequencyEnabled</value>
+  </data>
+  <data name="GetSpectrSerialNumber" xml:space="preserve">
+    <value>GetSpectrSerialNumber</value>
+  </data>
+  <data name="EditDisplayConfig" xml:space="preserve">
+    <value>EditDisplayConfig</value>
+  </data>
+  <data name="OpenEditTool" xml:space="preserve">
+    <value>Инструменты редактирования</value>
+  </data>
+  <data name="Annotation" xml:space="preserve">
+    <value>Примечания</value>
+  </data>
+  <data name="PropertyEdit" xml:space="preserve">
+    <value>Редактирование атрибутов</value>
+  </data>
+  <data name="TextEdit" xml:space="preserve">
+    <value>Редактирование текста</value>
+  </data>
+  <data name="PreprocessManager" xml:space="preserve">
+    <value>Управление предварительной обработкой</value>
+  </data>
+  <data name="CurrentVoltageV" xml:space="preserve">
+    <value>Текущее напряжение (В)</value>
+  </data>
+  <data name="CurrentCurrentMA" xml:space="preserve">
+    <value>Ток (мА)</value>
+  </data>
+  <data name="ImageCrop" xml:space="preserve">
+    <value>кадрирование изображения</value>
+  </data>
+  <data name="FindCross" xml:space="preserve">
+    <value>Перекрестное позиционирование</value>
+  </data>
+  <data name="ColorCorrection" xml:space="preserve">
+    <value>Коррекция цветовых различий</value>
+  </data>
+  <data name="EmittingAreaLocation" xml:space="preserve">
+    <value>Расположение светоизлучающей области</value>
+  </data>
+  <data name="TemplateList" xml:space="preserve">
+    <value>Список шаблонов</value>
+  </data>
+  <data name="OpenFullEditor" xml:space="preserve">
+    <value>Откройте полноэкранный редактор</value>
+  </data>
+  <data name="SelectTemplateToViewDetails" xml:space="preserve">
+    <value>Выберите шаблон, чтобы просмотреть подробности.</value>
+  </data>
+  <data name="PleaseSelectTemplateToViewAndEdit" xml:space="preserve">
+    <value>Пожалуйста, выберите шаблон для просмотра и редактирования.</value>
+  </data>
+  <data name="TemplateEdit" xml:space="preserve">
+    <value>Редактирование шаблонов</value>
+  </data>
+  <data name="CurrentSelection" xml:space="preserve">
+    <value>Текущий выбор</value>
+  </data>
+  <data name="TemplatesCount" xml:space="preserve">
+    <value>Шаблон</value>
+  </data>
+  <data name="TemplateEditorLoadFailed" xml:space="preserve">
+    <value>Не удалось загрузить редактор шаблонов.</value>
+  </data>
+  <data name="DefaultValueType" xml:space="preserve">
+    <value>Тип значения по умолчанию</value>
+  </data>
+  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
+    <value>Конфигурация реестра служб</value>
+  </data>
+  <data name="ExportSucceeded" xml:space="preserve">
+    <value>Успешный экспорт</value>
+  </data>
+  <data name="ConfirmReset" xml:space="preserve">
+    <value>Подтвердите сброс</value>
+  </data>
+  <data name="ImportException" xml:space="preserve">
+    <value>Ошибка импорта</value>
+  </data>
+  <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
+    <value>Пожалуйста, не удаляйте, если это не является абсолютно необходимым. (Удалите, если хотите)</value>
   </data>
 </root>

@@ -291,4 +291,55 @@
   <data name="SolutionConfiguration" xml:space="preserve">
     <value>解決方案配置</value>
   </data>
+  <data name="UserCenter" xml:space="preserve">
+    <value>使用者中心</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>使用者名稱</value>
+  </data>
+  <data name="Role" xml:space="preserve">
+    <value>角色</value>
+  </data>
+  <data name="PermissionMode" xml:space="preserve">
+    <value>權限模式</value>
+  </data>
+  <data name="LoginTime" xml:space="preserve">
+    <value>登入時間</value>
+  </data>
+  <data name="UserManagementSystem" xml:space="preserve">
+    <value>使用者管理系統</value>
+  </data>
+  <data name="EditInfo" xml:space="preserve">
+    <value>編輯訊息</value>
+  </data>
+  <data name="UserManagement" xml:space="preserve">
+    <value>使用者管理</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>状態</value>
+  </data>
+  <data name="LoginOrSwitch" xml:space="preserve">
+    <value>登入/切換</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>未知</value>
+  </data>
+  <data name="WelcomeBack" xml:space="preserve">
+    <value>歡迎回來</value>
+  </data>
+  <data name="RememberLoginStatus7Days" xml:space="preserve">
+    <value>記得登入狀態（7天內自動登入）</value>
+  </data>
+  <data name="NoAccountYet" xml:space="preserve">
+    <value>還沒有帳戶？</value>
+  </data>
+  <data name="UserId" xml:space="preserve">
+    <value>使用者 ID</value>
+  </data>
+  <data name="PermissionManagement" xml:space="preserve">
+    <value>權限管理</value>
+  </data>
+  <data name="RoleList" xml:space="preserve">
+    <value>角色列表</value>
+  </data>
 </root>

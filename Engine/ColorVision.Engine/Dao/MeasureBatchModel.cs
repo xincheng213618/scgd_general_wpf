@@ -54,6 +54,10 @@ namespace ColorVision.Engine
     {
         public static BatchResultMasterDao Instance { get; set; } = new BatchResultMasterDao();
 
-        public MeasureBatchModel? GetByCode(string code) => Db.Queryable<MeasureBatchModel>().Where(a => a.Code == code).First();
+        public MeasureBatchModel? GetByCode(string code) 
+        {
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            return Db.Queryable<MeasureBatchModel>().Where(a => a.Code == code).First();
+        }
     }
 }

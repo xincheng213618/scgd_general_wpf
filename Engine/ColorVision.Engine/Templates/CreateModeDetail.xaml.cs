@@ -1,5 +1,6 @@
 ﻿using ColorVision.Database;
 using ColorVision.Themes;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,7 +54,9 @@ namespace ColorVision.Engine.Templates
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            int id  = MySqlControl.GetInstance().DB.Insertable(CreateConfig).ExecuteReturnIdentity();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            int id  = Db.Insertable(CreateConfig).ExecuteReturnIdentity();
             CreateConfig.Id = id;
             if (id > 0)
             {

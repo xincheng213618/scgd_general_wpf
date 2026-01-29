@@ -1,6 +1,4 @@
-﻿ using Newtonsoft.Json;
-
-namespace ProjectLUX.Process
+﻿namespace ProjectLUX.Process
 {
     public static class ProcessExtensions
     {

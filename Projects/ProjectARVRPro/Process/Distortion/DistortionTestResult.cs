@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using System.Windows; // PoiPointResultModel
 
 namespace ProjectARVRPro.Process.Distortion

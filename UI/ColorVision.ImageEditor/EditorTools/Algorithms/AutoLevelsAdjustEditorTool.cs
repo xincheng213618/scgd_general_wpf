@@ -1,7 +1,5 @@
 using ColorVision.Core;
 using log4net;
-using System;
-using System.Diagnostics;
 using System.Windows;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms

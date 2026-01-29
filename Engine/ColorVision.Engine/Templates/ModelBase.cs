@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using SqlSugar;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -29,9 +30,11 @@ namespace ColorVision.Engine.Templates
 
         public ConcurrentDictionary<int, SysDictionaryModDetaiModel> Cache { get; set; } = new ConcurrentDictionary<int, SysDictionaryModDetaiModel>();
 
-        public SymbolCache() 
+        public SymbolCache()
         {
-            MySqlControl.GetInstance().DB.Queryable<SysDictionaryModDetaiModel>().ToList().ForEach(item =>
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            Db.Queryable<SysDictionaryModDetaiModel>().ToList().ForEach(item =>
             {
                 Cache.TryAdd(item.Id, item);
             });

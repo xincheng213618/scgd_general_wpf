@@ -11,15 +11,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     {
         public DeviceSpectrum Device { get; set; }
 
-        private MQTTSpectrum? SpectrumService;
-        private bool disposedValue;
-        private bool disposedObj;
-
         public InfoSpectrum(DeviceSpectrum mqttDeviceSp)
         {
-            disposedObj = false;
             Device = mqttDeviceSp;
-            SpectrumService = mqttDeviceSp.DService;
             InitializeComponent();
         }
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -29,26 +23,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             Device.RefreshEmptySpectrum();
         }
 
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    if (disposedObj && SpectrumService != null)
-                    {
-                        SpectrumService.Dispose();
-                        SpectrumService = null;
-                    }
-                }
-                disposedValue = true;
-            }
-        }
-
         public void Dispose()
         {
-            Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
     }

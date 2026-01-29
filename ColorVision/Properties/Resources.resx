@@ -288,4 +288,16 @@
   <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
     <value>回退软件需要先卸载在安装，或者是安装后重新运行安装包；</value>
   </data>
+  <data name="FullScreen" xml:space="preserve">
+    <value>全屏</value>
+  </data>
+  <data name="TerminateUnresponsiveProcess" xml:space="preserve">
+    <value>终止未响应的进程</value>
+  </data>
+  <data name="ClickYesToUpdateNow" xml:space="preserve">
+    <value>点击是立即更新，点击否跳过该版本，点击取消稍后提醒</value>
+  </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>检测插件更新</value>
+  </data>
 </root>

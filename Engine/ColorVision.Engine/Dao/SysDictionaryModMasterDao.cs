@@ -59,6 +59,11 @@ namespace ColorVision.Engine
     public class SysDictionaryModMasterDao : BaseTableDao<SysDictionaryModModel>
     {
         public static SysDictionaryModMasterDao Instance { get; set; } = new SysDictionaryModMasterDao();
-        public SysDictionaryModModel? GetByCode(string code) => Db.Queryable<SysDictionaryModModel>().Where(x => x.Code == code && x.IsDelete == false).First();
+        public SysDictionaryModModel? GetByCode(string code)
+        {
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            return Db.Queryable<SysDictionaryModModel>().Where(x => x.Code == code && x.IsDelete == false).First();
+
+        }
     }
 }

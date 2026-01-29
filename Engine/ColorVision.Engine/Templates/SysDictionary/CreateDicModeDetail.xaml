@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates"
+        xmlns:eng="clr-namespace:ColorVision.Engine"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
@@ -25,26 +26,26 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Border x:Name="BorderEdit" Grid.Row="0" d:DataContext="{d:DesignInstance local:SysDictionaryModDetaiModel}" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
+        <Border x:Name="BorderEdit" Grid.Row="0" d:DataContext="{d:DesignInstance eng:SysDictionaryModDetaiModel}" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
             <StackPanel>
                 <DockPanel Margin="5">
                     <TextBlock Text="ID" Width="100" />
                     <TextBox Text="{Binding Id}"/>
                 </DockPanel>
                 <DockPanel Margin="6">
-                    <TextBlock Text="符号" Width="100" />
+                    <TextBlock Text="{x:Static properties:Resources.Symbol}" Width="100" />
                     <TextBox Text="{Binding Symbol}"/>
                 </DockPanel>
                 <DockPanel Margin="5">
-                    <TextBlock Text="注释" Width="100" />
+                    <TextBlock Text="{x:Static properties:Resources.Annotation}" Width="100" />
                     <TextBox Text="{Binding Name}"/>
                 </DockPanel>
                 <DockPanel Margin="5">
-                    <TextBlock Text="默认值类型" Width="100" />
+                    <TextBlock Text="{x:Static properties:Resources.DefaultValueType}" Width="100" />
                     <ComboBox x:Name="ComboBoxValueType" SelectedValue="{Binding ValueType}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                 </DockPanel>
                 <DockPanel Margin="5">
-                    <TextBlock Text="默认值" Width="100" />
+                    <TextBlock Text="{x:Static properties:Resources.DefaultValue}" Width="100" />
                     <TextBox Text="{Binding DefaultValue}"/>
                 </DockPanel>
             </StackPanel>

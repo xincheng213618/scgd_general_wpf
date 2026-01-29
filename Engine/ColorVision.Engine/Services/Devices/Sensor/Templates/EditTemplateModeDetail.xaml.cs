@@ -3,6 +3,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using MQTTMessageLib.Sensor;
+using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -53,7 +54,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             if (sender is MenuItem menuItem && menuItem.Tag is SensorCommand sensorCommand)
             {
-                MySqlControl.GetInstance().DB.Deleteable<ModDetailModel>().Where(x => x.Pid == sensorCommand.Model.Id).ExecuteCommand();
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                Db.Deleteable<ModDetailModel>().Where(x => x.Pid == sensorCommand.Model.Id).ExecuteCommand();
                 Param.ModDetailModels.Remove(sensorCommand.Model);
             }
         }

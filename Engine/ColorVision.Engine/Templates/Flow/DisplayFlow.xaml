@@ -35,10 +35,7 @@
                 </TextBlock>
             </Button>
             <Grid  Margin="0,0">
-                <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"   Content="{x:Static properties:Resources.Workflow}"  FontSize="15"  IsChecked="True" />
-                <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="2,0,0,0">
-                    <Image Source="{DynamicResource DrawingImageFlow}"/>
-                </Grid>
+                <ToggleButton x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"   Content="{x:Static properties:Resources.Workflow}"  FontSize="15"  IsChecked="True" />
             </Grid>
         </DockPanel>
 
@@ -55,7 +52,7 @@
                                 </BeginStoryboard>
                             </EventTrigger>
                         </Button.Triggers>
-                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="15" ToolTip="刷新">
+                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="15" ToolTip="{x:Static properties:Resources.Refresh}">
                             <TextBlock.RenderTransform>
                                 <RotateTransform x:Name="rotateTransform5" CenterX="7.5" CenterY="7.5"/>
                             </TextBlock.RenderTransform>
@@ -92,8 +89,8 @@
                         <TextBlock Text="Ready" Visibility="{Binding Config.IsReady,Converter={StaticResource bool2VisibilityConverter}}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Height="35">
-                        <Button Content="{x:Static properties:Resources.ExecutionProcess}"  x:Name="ButtonRun" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
-                        <Button Content="{x:Static properties:Resources.StopProcess}"  x:Name="ButtonStop"  FontWeight="Bold" Visibility="Collapsed" FontSize="16" Click="Button_FlowStop_Click" />
+                        <Button Content="{x:Static properties:Resources.ExecutionProcess}"   Visibility="{Binding FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter1}}" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
+                        <Button Content="{x:Static properties:Resources.StopProcess}"  Visibility="{Binding FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter}}"  FontWeight="Bold" FontSize="16" Click="Button_FlowStop_Click" />
                     </StackPanel>
                 </Grid>
 

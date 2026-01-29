@@ -1,27 +1,18 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
 using MvCamCtrl.NET;
-using ProjectStarkSemi.Conoscope;
-using ScottPlot.AxisLimitManagers;
+using OpenCvSharp.Dnn;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using static MvCamCtrl.NET.MyCamera;
 
 namespace ProjectStarkSemi
@@ -60,6 +51,10 @@ namespace ProjectStarkSemi
         public double Exposure { get => _Exposure; set { _Exposure = value; OnPropertyChanged(); } }
         private double _Exposure ;
 
+
+        public double MaxExposure { get => _MaxExposure; set { _MaxExposure = value; OnPropertyChanged(); } }
+        private double _MaxExposure = 2499;
+
     }
 
     public class MVSViewManager
@@ -93,6 +88,8 @@ namespace ProjectStarkSemi
     /// </summary>
     public partial class MVSViewWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(MVSViewWindow));
+
         public MVSViewManager MVSViewManager { get; set; }
         MyCamera.MV_CC_DEVICE_INFO_LIST m_stDeviceList = new MyCamera.MV_CC_DEVICE_INFO_LIST();
         private MyCamera m_MyCamera = new MyCamera();
@@ -130,6 +127,8 @@ namespace ProjectStarkSemi
         // ch:显示错误信息 | en:Show error message
         private void ShowErrorMsg(string csMessage, int nErrorNum)
         {
+            log.Info($"ShowErrorMsg {csMessage}{nErrorNum}");
+
             string errorMsg;
             if (nErrorNum == 0)
             {
@@ -792,16 +791,7 @@ namespace ProjectStarkSemi
 
         private void tbExposure_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (MVSViewManager.IsOpen)
-            {
-                m_MyCamera.MV_CC_SetEnumValue_NET("ExposureAuto", 0);
-                int nRet = m_MyCamera.MV_CC_SetFloatValue_NET("ExposureTime", (float)MVSViewManager.Config.Exposure * 1000);
-                if (nRet != MyCamera.MV_OK)
-                {
-                    ShowErrorMsg("Set Exposure Time Fail!", nRet);
-                }
-                UpdateStatusBar();
-            }
+
 
         }
 
@@ -816,7 +806,6 @@ namespace ProjectStarkSemi
                 ShowErrorMsg("Please enter correct type!", 0);
                 return;
             }
-
 
             int nRet = m_MyCamera.MV_CC_SetFloatValue_NET("AcquisitionFrameRate", float.Parse(tbFrameRate.Text));
             if (nRet != MyCamera.MV_OK)
@@ -880,6 +869,30 @@ namespace ProjectStarkSemi
             {
                 StatusFrameRateText.Text = tbFrameRate.Text;
             }
+        }
+
+        private void TextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (!MVSViewManager.IsOpen) return;
+            if (MVSViewManager.Config.Exposure <= 0)
+            {
+                log.Info($"ExposureTime {MVSViewManager.Config.Exposure}");
+                return;
+            }
+
+            if (MVSViewManager.Config.Exposure > MVSViewManager.Config.MaxExposure)
+            {
+                log.Info($"Exposure time cannot be greater than {MVSViewManager.Config.MaxExposure} ms!");
+                return;
+            }
+            m_MyCamera.MV_CC_SetEnumValue_NET("ExposureAuto", 0);
+            int nRet = m_MyCamera.MV_CC_SetFloatValue_NET("ExposureTime", (float)MVSViewManager.Config.Exposure * 1000);
+            if (nRet != MyCamera.MV_OK)
+            {
+                ShowErrorMsg("Set Exposure Time Fail!", nRet);
+            }
+            log.Info($"ExposureTime ret{nRet}");
+            UpdateStatusBar();
         }
     }
 }

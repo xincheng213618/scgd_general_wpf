@@ -291,4 +291,55 @@
   <data name="SolutionConfiguration" xml:space="preserve">
     <value>Конфигурация решения</value>
   </data>
+  <data name="UserCenter" xml:space="preserve">
+    <value>Центр пользователя</value>
+  </data>
+  <data name="Username" xml:space="preserve">
+    <value>имя пользователя</value>
+  </data>
+  <data name="Role" xml:space="preserve">
+    <value>Роль</value>
+  </data>
+  <data name="PermissionMode" xml:space="preserve">
+    <value>Режим разрешений</value>
+  </data>
+  <data name="LoginTime" xml:space="preserve">
+    <value>Время входа в систему</value>
+  </data>
+  <data name="UserManagementSystem" xml:space="preserve">
+    <value>Система управления пользователями</value>
+  </data>
+  <data name="EditInfo" xml:space="preserve">
+    <value>Редактирование информации</value>
+  </data>
+  <data name="UserManagement" xml:space="preserve">
+    <value>Управление пользователями</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Статус</value>
+  </data>
+  <data name="LoginOrSwitch" xml:space="preserve">
+    <value>Вход/Переключение</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>неизвестный</value>
+  </data>
+  <data name="WelcomeBack" xml:space="preserve">
+    <value>Добро пожаловать</value>
+  </data>
+  <data name="RememberLoginStatus7Days" xml:space="preserve">
+    <value>Запоминание статуса входа (автоматический вход в течение 7 дней)</value>
+  </data>
+  <data name="NoAccountYet" xml:space="preserve">
+    <value>У вас ещё нет аккаунта?</value>
+  </data>
+  <data name="UserId" xml:space="preserve">
+    <value>ID пользователя</value>
+  </data>
+  <data name="PermissionManagement" xml:space="preserve">
+    <value>Управление доступом</value>
+  </data>
+  <data name="RoleList" xml:space="preserve">
+    <value>Список персонажей</value>
+  </data>
 </root>

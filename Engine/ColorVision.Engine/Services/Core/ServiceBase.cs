@@ -14,8 +14,6 @@ namespace ColorVision.Engine.Services
 
     public class ServiceBase : ServiceObjectBase
     {
-        public static SqlSugarClient Db => MySqlControl.GetInstance().DB;
-
         public SysResourceModel SysResourceModel { get; set; }
         public int Id { get => SysResourceModel.Id; set { } }
 
@@ -28,14 +26,14 @@ namespace ColorVision.Engine.Services
         public override void Save()
         {
             SysResourceModel.Name = Name;
-            var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
-            DB.Updateable(SysResourceModel).ExecuteCommand();
-            DB.Dispose();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
+            Db.Updateable(SysResourceModel).ExecuteCommand();
         }
 
         public override void Delete()
         {
             base.Delete();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, });
             int ret = Db.Deleteable<SysResourceModel>().Where(it => it.Id == SysResourceModel.Id).ExecuteCommand();
         }
 

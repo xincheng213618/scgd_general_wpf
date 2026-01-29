@@ -4,6 +4,7 @@ using ColorVision.Database;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -60,7 +61,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
         public override void Save()
         {
             if (SaveIndex.Count == 0) return;
-
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
             foreach (var index in SaveIndex)
             {
                 if (index > -1 && index < TemplateParams.Count)
@@ -115,6 +116,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
             if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
             void DeleteSingle(int id)
             {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 Db.Deleteable<BuzProductMasterModel>().Where(x => x.Id == id).ExecuteCommand();
                 Db.Deleteable<BuzProductDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
                 TemplateParams.RemoveAt(index);

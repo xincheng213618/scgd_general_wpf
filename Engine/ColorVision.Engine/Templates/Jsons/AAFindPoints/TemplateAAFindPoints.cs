@@ -29,9 +29,9 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 
         public TemplateAAFindPoints()
         {
-            Title = ColorVision.Engine.Properties.Resources.FindAaRegionTemplateManagement;
+            Title = ColorVision.Engine.Properties.Resources.EmittingAreaLocation;
             Code = "FindLightArea";
-            Name = "发光区定位";
+            Name = ColorVision.Engine.Properties.Resources.EmittingAreaLocation;
             TemplateDicId = 42;
             TemplateParams = Params;
             IsUserControl = true;

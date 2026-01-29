@@ -1,8 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.MQTT;
 using ColorVision.UI;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -17,11 +15,7 @@ namespace ColorVision.Engine.Services.RC
             {
                 new ConfigSettingMetadata
                 {
-                    Name = ColorVision.Engine.Properties.Resources.StartRC,
-                    Description = ColorVision.Engine.Properties.Resources.StartRC,
-                    Type = ConfigSettingType.Bool,
                     Group ="Engine",
-                    Order =10,
                     BindingName = nameof(RCSetting.IsUseRCService),
                     Source = RCSetting.Instance
                 },

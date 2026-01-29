@@ -154,6 +154,7 @@
   <ItemGroup>
     <Image Include="cie.ico" />
     <Image Include="ColorVision1.ico" />
+    <Image Include="cvcal.ico" />
     <Image Include="cvx.ico" />
     <Image Include="cvxp.ico" />
     <Image Include="flow.ico" />

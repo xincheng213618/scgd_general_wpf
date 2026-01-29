@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using System;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices
@@ -6,7 +7,7 @@ namespace ColorVision.Engine.Services.Devices
     public class MQTTDeviceService<T> : MQTTServiceBase where T : BaseConfig
     {
 
-        public event DeviceStatusChangedHandler DeviceStatusChanged;
+        public event EventHandler<DeviceStatusType> DeviceStatusChanged;
 
         public override DeviceStatusType DeviceStatus
         {
@@ -25,7 +26,7 @@ namespace ColorVision.Engine.Services.Devices
                 if (value == DeviceStatus) return;
                 _DeviceStatus = value;
 
-                Application.Current?.Dispatcher.BeginInvoke(() => DeviceStatusChanged?.Invoke(value));
+                Application.Current?.Dispatcher.BeginInvoke(() => DeviceStatusChanged?.Invoke(this,value));
                 OnPropertyChanged(); OnPropertyChanged(nameof(DeviceStatusString));
             }
         }

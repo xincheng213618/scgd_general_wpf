@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI;
-using iText.Layout.Borders;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;

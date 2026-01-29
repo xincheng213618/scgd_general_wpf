@@ -271,9 +271,6 @@
   <data name="General" xml:space="preserve">
     <value>通用</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>插件管理器窗口</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>插件名称</value>
   </data>
@@ -309,9 +306,6 @@
   </data>
   <data name="ViewMode9" xml:space="preserve">
     <value>视图模式9</value>
-  </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
-    <value>检测插件更新</value>
   </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>正在检索是否存在附加项目</value>
@@ -502,12 +496,6 @@
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter 资源未找到</value>
   </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>下载MQTT</value>
-  </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>下载MySql</value>
-  </data>
   <data name="Install" xml:space="preserve">
     <value>安装</value>
   </data>
@@ -532,16 +520,13 @@
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
   </data>
-  <data name="ExtractPlugin" xml:space="preserve">
-    <value>提取插件</value>
+  <data name="PropertyEditorWindow" xml:space="preserve">
+    <value>属性编辑器窗口</value>
   </data>
-  <data name="SelectExtractFolder" xml:space="preserve">
-    <value>选择要提取插件的目标文件夹</value>
+  <data name="Edit" xml:space="preserve">
+    <value>编辑</value>
   </data>
-  <data name="PluginExtractSuccess" xml:space="preserve">
-    <value>插件已成功提取到: {0}</value>
-  </data>
-  <data name="PluginExtractFailed" xml:space="preserve">
-    <value>插件提取失败</value>
+  <data name="Theme" xml:space="preserve">
+    <value>主题</value>
   </data>
 </root>

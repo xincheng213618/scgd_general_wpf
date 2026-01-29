@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using System;
 using System.Windows;
 using System.Windows.Media;
 
@@ -23,9 +24,9 @@ namespace ColorVision.ImageEditor.Draw
         public double FontSize { get => _FontSize; set { _FontSize = value; OnPropertyChanged(); } }
         private double _FontSize = 10;
 
-        [JsonIgnore]
         public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged(); } }
         private Brush _Brush = Brushes.SaddleBrown;
+
         [JsonIgnore]
         public FontFamily FontFamily { get => _FontFamily; set { _FontFamily = value; OnPropertyChanged(); } }
         private FontFamily _FontFamily = new FontFamily("Arial");

@@ -120,6 +120,7 @@ namespace ColorVision
             }
 
             ConfigHandler.GetInstance().IsAutoSave = true;
+
             //单独处理文件的进程不需要关闭当前进程
             mutex = new Mutex(true, "ColorVision", out bool ret);
             if (!ret && !Debugger.IsAttached)
@@ -136,7 +137,7 @@ namespace ColorVision
                         SendMessage(hWnd, WM_USER + 1, IntPtr.Zero, (IntPtr)atom);  // 发送消息
                     }
                     log.Info("程序已经打开");
-                    Environment.Exit(0);
+                    //Environment.Exit(0);
                 }
                 ////写在这里可以Avoid命令行多开的效果，但是没有办法检测版本，实现同版本的情况下更新条件唯一
                 //Environment.Exit(0);

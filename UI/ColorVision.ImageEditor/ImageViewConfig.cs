@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Core;
-using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -18,10 +16,13 @@ namespace ColorVision.ImageEditor
 
     public class ImageViewConfig:ViewModelBase
     {
+        public RelayCommand ClearCommand { get; set; }
 
         public ImageViewConfig()
         {
             Configs = new Dictionary<Type, IImageEditorConfig>();
+
+            ClearCommand = new RelayCommand(o => Cleared?.Invoke(this,new EventArgs()));    
         }
 
         public Dictionary<Type, IImageEditorConfig> Configs { get; set; }
@@ -42,9 +43,19 @@ namespace ColorVision.ImageEditor
             // 此处递归调用是为了确保缓存和异常处理逻辑一致
             return GetRequiredService<T>();
         }
-
+        public event EventHandler Cleared;
         [JsonIgnore]
         public Dictionary<string, object?> Properties { get; set; } = new Dictionary<string, object?>();
+
+        public void ClearProperties()
+        {
+            IsPseudo = false;
+            FilePath = string.Empty;
+            Properties.Clear();
+            Cleared?.Invoke(this, new EventArgs());
+        }
+
+
 
         public void AddProperties(string Key,object? Value)
         {

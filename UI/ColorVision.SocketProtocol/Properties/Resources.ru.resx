@@ -129,4 +129,79 @@
   <data name="IsServerEnabled" xml:space="preserve">
     <value>Сервер включен</value>
   </data>
+  <data name="SocketManagementWindow" xml:space="preserve">
+    <value>Диспетчер сокетных соединений</value>
+  </data>
+  <data name="Query" xml:space="preserve">
+    <value>Запрос</value>
+  </data>
+  <data name="AdvancedQuery" xml:space="preserve">
+    <value>Расширенный запрос</value>
+  </data>
+  <data name="OpenDb" xml:space="preserve">
+    <value>Открыть</value>
+  </data>
+  <data name="ClearMessages" xml:space="preserve">
+    <value>Чёткое сообщение</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>настраивать</value>
+  </data>
+  <data name="ConnectedClients" xml:space="preserve">
+    <value>Соединение клиентов</value>
+  </data>
+  <data name="LocalEndPoint" xml:space="preserve">
+    <value>Местный адрес</value>
+  </data>
+  <data name="RemoteEndPoint" xml:space="preserve">
+    <value>удаленный адрес</value>
+  </data>
+  <data name="ConnectionStatus" xml:space="preserve">
+    <value>Статус подключения</value>
+  </data>
+  <data name="MessageLog" xml:space="preserve">
+    <value>Журнал сообщений</value>
+  </data>
+  <data name="Time" xml:space="preserve">
+    <value>время</value>
+  </data>
+  <data name="Direction" xml:space="preserve">
+    <value>направление</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Клиент</value>
+  </data>
+  <data name="EventName" xml:space="preserve">
+    <value>Название мероприятия</value>
+  </data>
+  <data name="Content" xml:space="preserve">
+    <value>содержание</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>копия</value>
+  </data>
+  <data name="Resend" xml:space="preserve">
+    <value>Повторная отправка</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>удалить</value>
+  </data>
+  <data name="MessageDetail" xml:space="preserve">
+    <value>Подробности сообщения</value>
+  </data>
+  <data name="ResponseCode" xml:space="preserve">
+    <value>Код ответа:</value>
+  </data>
+  <data name="CopyFormatted" xml:space="preserve">
+    <value>Отформатированная копия</value>
+  </data>
+  <data name="ResendSuccess" xml:space="preserve">
+    <value>Сообщение успешно отправлено повторно.</value>
+  </data>
+  <data name="ResendFailed" xml:space="preserve">
+    <value>Повторная отправка сообщения не удалась: {0}</value>
+  </data>
+  <data name="ClientNotConnected" xml:space="preserve">
+    <value>Целевой клиент не подключен</value>
+  </data>
 </root>

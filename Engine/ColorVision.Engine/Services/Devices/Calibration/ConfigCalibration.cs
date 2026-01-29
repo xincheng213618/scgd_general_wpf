@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         [Browsable(false)]
         public override string SN { get => base.SN; set => base.SN = value; }
 
-        [PropertyEditorType(typeof(TextSNPropertiesEditor)),DisplayName("SN"), Category("Base")]
+        [PropertyEditorType(typeof(TextSNPropertiesEditor)),DisplayName("SN")]
         public string? CameraCode { get => _CameraCode; set { _CameraCode = value; OnPropertyChanged(); } }
         private string? _CameraCode;
 

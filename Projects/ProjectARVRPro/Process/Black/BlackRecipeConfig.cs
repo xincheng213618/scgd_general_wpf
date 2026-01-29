@@ -1,6 +1,5 @@
 ﻿
 using ColorVision.Common.MVVM;
-using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Recipe;
 using System.ComponentModel;
 

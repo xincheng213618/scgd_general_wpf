@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Menus;
-using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
@@ -117,7 +117,7 @@ namespace ColorVision.Engine.Templates
             // 显示汇总信息
             int totalTemplates = _allTemplates.Count;
             int totalGroups = _templateGroups.Count;
-            SummaryText.Text = $"共计 {totalGroups} 个命名空间分组，{totalTemplates} 个模板类型";
+            SummaryText.Text = $"{totalGroups} ，{totalTemplates}";
         }
 
         /// <summary>
@@ -391,8 +391,8 @@ namespace ColorVision.Engine.Templates
         {
             if (template.Template == null) return;
 
-            EditorTitle.Text = $"模板编辑: {template.Title}";
-            SummaryText1.Text = $"当前选择: {template.Title} (共 {template.Template.Count} 个模板)";
+            EditorTitle.Text = $"{ColorVision.Engine.Properties.Resources.TemplateEdit}: {template.Title}";
+            SummaryText1.Text = $"{ColorVision.Engine.Properties.Resources.CurrentSelection}: {template.Title} ({template.Template.Count} {ColorVision.Engine.Properties.Resources.TemplatesCount})";
 
             // Remove old editor if exists
             if (_currentEditorContent != null)
@@ -414,7 +414,7 @@ namespace ColorVision.Engine.Templates
             {
                 EditorContainer.Children.Add(new TextBlock
                 {
-                    Text = "无法加载模板编辑器",
+                    Text = ColorVision.Engine.Properties.Resources.TemplateEditorLoadFailed,
                     Margin = new Thickness(10),
                     Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
                 });
@@ -444,7 +444,7 @@ namespace ColorVision.Engine.Templates
         /// </summary>
         private void ClearEditorDisplay()
         {
-            EditorTitle.Text = "选择一个模板查看详情";
+            EditorTitle.Text = ColorVision.Engine.Properties.Resources.SelectTemplateToViewDetails;
             
             if (_currentEditorContent != null)
             {

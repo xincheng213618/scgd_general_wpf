@@ -232,9 +232,6 @@
   <data name="General" xml:space="preserve">
     <value>Универсальный</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>ОкноМенеджераПлагинов</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>название плагина</value>
   </data>
@@ -270,9 +267,6 @@
   </data>
   <data name="ViewMode9" xml:space="preserve">
     <value>Режим просмотра 9</value>
-  </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
-    <value>Проверить обновления плагинов</value>
   </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Проверка дополнительных проектов</value>
@@ -454,12 +448,6 @@
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>Ресурс bool2VisibilityConverter не найден</value>
   </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>Загрузить MQTT</value>
-  </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>Загрузить MySQL</value>
-  </data>
   <data name="Install" xml:space="preserve">
     <value>Установить</value>
   </data>
@@ -492,5 +480,14 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>Отмена</value>
+  </data>
+  <data name="PropertyEditorWindow" xml:space="preserve">
+    <value>PropertyEditorWindow</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>редактировать</value>
+  </data>
+  <data name="Theme" xml:space="preserve">
+    <value>тема</value>
   </data>
 </root>

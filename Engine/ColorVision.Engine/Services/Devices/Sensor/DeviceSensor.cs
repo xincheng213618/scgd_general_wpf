@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.ToolPlugins;
 using ColorVision.UI.Authorizations;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,6 +21,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             }, a => AccessControl.Check(PermissionMode.Administrator));
+
+            RelayCommand relayCommand = new RelayCommand(a => new SSCOMTool());
+            ContextMenu.Items.Add(relayCommand);
+
         }
 
         public override UserControl GetDeviceInfo() => new InfoSensor(this);

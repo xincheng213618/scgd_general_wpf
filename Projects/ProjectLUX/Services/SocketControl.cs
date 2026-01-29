@@ -1,20 +1,15 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Messages;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
-using ColorVision.Engine.Templates.Flow;
 using ColorVision.SocketProtocol;
 using Dm.util;
 using log4net;
 using ProjectLUX.PluginConfig;
 using ProjectLUX.Process.VID;
-using SQLitePCL;
-using SqlSugar;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
-using System.Windows;
 
 namespace ProjectLUX.Services
 {
@@ -45,7 +40,6 @@ namespace ProjectLUX.Services
                 {
                     // 取 code 的最后两位（如果 code 长度足够）
                     string lastTwo = code.Length >= 2 ? code.Substring(code.Length - 2, 2) : code;
-
                     // 拼接到 H030 上
                     string h030x = SummaryManager.GetInstance().Summary.MachineNO + lastTwo;
 

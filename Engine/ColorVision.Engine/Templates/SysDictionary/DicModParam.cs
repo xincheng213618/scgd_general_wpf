@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.UI.Menus;
+using SqlSugar;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -39,6 +40,7 @@ namespace ColorVision.Engine.Templates
             if (index > -1 && index < TemplateParams.Count)
             {
                 var item = TemplateParams[index];
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 Db.Deleteable<SysResourceModel>().Where(a => a.Id == item.Value.Id).ExecuteCommand();
 
                 TemplateParams.RemoveAt(index);

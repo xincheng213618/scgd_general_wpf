@@ -28,7 +28,6 @@ namespace Spectrum
                     Name ="界面显示日志",
                     Description =  "界面显示日志",
                     Order = 1,
-                    Type = ConfigSettingType.Bool,
                     BindingName =nameof(LogControlVisibility),
                     Source = this,
                 }

@@ -9,9 +9,6 @@ namespace ColorVision.UI.Views
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = Resources.AutoSwitchSelectedView,
-                                Description = Resources.AutoSwitchSelectedView,
-                                Type = ConfigSettingType.Bool,
                                 BindingName = nameof(ViewConfig.IsAutoSelect),
                                 Source = ViewConfig.Instance
                             }

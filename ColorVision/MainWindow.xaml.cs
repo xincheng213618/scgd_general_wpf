@@ -14,7 +14,6 @@ using Microsoft.Xaml.Behaviors.Layout;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -123,7 +122,7 @@ namespace ColorVision
 
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.LoadHotKeyFromAssembly();
-            StatusBarGridInitialized();
+            StatusBarManager.GetInstance().Init(StatusBarGrid, StatusBarTextDocker);
 
             Application.Current.MainWindow = this;
             Task.Run(() =>
@@ -216,7 +215,7 @@ namespace ColorVision
                 {
                     if (Activator.CreateInstance(type) is IMainWindowInitialized componentInitialize)
                     {
-                        IMainWindowInitializeds .Add(componentInitialize);
+                        IMainWindowInitializeds.Add(componentInitialize);
   
                     }
                 }
@@ -236,147 +235,6 @@ namespace ColorVision
         }
 
 
-        private void ViewGrid_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && int.TryParse(button.Tag.ToString(), out int nums))
-            {
-                switch (nums)
-                {
-                    case 20:
-                        ViewGridManager.SetViewGridTwo();
-                        break;
-                    case 21:
-                        ViewGridManager.SetViewGrid(2);
-                        break;
-                    case 30:
-                        ViewGridManager.SetViewGridThree();
-                        break;
-                    case 31:
-                        ViewGridManager.SetViewGridThree(false);
-                        break;
-                    default:
-                        ViewGridManager.SetViewGrid(nums);
-                        break;
-                }
-            }
-        }
-
-
-        private void StatusBarGridInitialized()
-        {
-            ContextMenu contextMenu= new ContextMenu();
-            StatusBarGrid.ContextMenu = contextMenu;
-
-            void AddStatusBarIconMetadata(StatusBarMeta statusBarIconMetadata)
-            {
-                if (statusBarIconMetadata.Type == StatusBarType.Icon)
-                {
-                    // 创建 StatusBarItem
-                    StatusBarItem statusBarItem = new StatusBarItem { ToolTip = statusBarIconMetadata.Description };
-                    statusBarItem.DataContext = statusBarIconMetadata.Source;
-
-                    if (statusBarIconMetadata.VisibilityBindingName != null)
-                    {
-                        var visibilityBinding = new Binding(statusBarIconMetadata.VisibilityBindingName)
-                        {
-                            Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter")
-                        };
-                        statusBarItem.SetBinding(VisibilityProperty, visibilityBinding);
-                    }
-                    // 设置 MouseLeftButtonDown 事件处理程序
-                    if (statusBarIconMetadata.Command != null)
-                    {
-                        statusBarItem.MouseLeftButtonDown += (s, e) => statusBarIconMetadata.Command.Execute(e);
-                    }
-
-                    ToggleButton toggleButton = new ToggleButton { IsEnabled = false };
-                    if (Application.Current.TryFindResource(statusBarIconMetadata.ButtonStyleName) is Style styleResource)
-                        toggleButton.Style = styleResource;
-
-                    // 设置 IsChecked 绑定
-                    var isCheckedBinding = new Binding(statusBarIconMetadata.BindingName) { Mode = BindingMode.OneWay };
-                    toggleButton.SetBinding(ToggleButton.IsCheckedProperty, isCheckedBinding);
-                    statusBarItem.Content = toggleButton;
-                    toggleButton.DataContext = statusBarIconMetadata.Source;
-
-                    StatusBarTextDocker.Children.Add(statusBarItem);
-
-                    MenuItem menuItem = new MenuItem() { Header = statusBarIconMetadata.Name };
-                    menuItem.Click += (s, e) => menuItem.IsChecked = !menuItem.IsChecked;
-                    menuItem.DataContext = statusBarIconMetadata.Source;
-                    // 绑定 MenuItem 的 IsChecked 属性到 VisibilityBindingName
-                    if (statusBarIconMetadata.VisibilityBindingName != null)
-                    {
-                        var isCheckedBinding1 = new Binding(statusBarIconMetadata.VisibilityBindingName)
-                        {
-                            Mode = BindingMode.TwoWay,
-                        };
-                        menuItem.SetBinding(MenuItem.IsCheckedProperty, isCheckedBinding1);
-                    }
-                    contextMenu.Items.Add(menuItem);
-                }
-                else if (statusBarIconMetadata.Type == StatusBarType.Text)
-                {
-                    StatusBarItem statusBarItem = new StatusBarItem();
-                    statusBarItem.DataContext = statusBarIconMetadata.Source;
-
-                    var Binding = new Binding(statusBarIconMetadata.BindingName) { Mode = BindingMode.OneWay };
-                    statusBarItem.SetBinding(ContentProperty, Binding);
-
-
-                    if (statusBarIconMetadata.VisibilityBindingName != null)
-                    {
-                        var visibilityBinding = new Binding(statusBarIconMetadata.VisibilityBindingName)
-                        {
-                            Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter")
-                        };
-                        statusBarItem.SetBinding(VisibilityProperty, visibilityBinding);
-                    }
-
-                    StatusBarTextDocker.Children.Add(statusBarItem);
-
-                    MenuItem menuItem = new MenuItem() { Header = statusBarIconMetadata.Name };
-                    menuItem.Click += (s, e) => menuItem.IsChecked = !menuItem.IsChecked;
-                    menuItem.DataContext = statusBarIconMetadata.Source;
-                    // 绑定 MenuItem 的 IsChecked 属性到 VisibilityBindingName
-                    if (statusBarIconMetadata.VisibilityBindingName != null)
-                    {
-                        var isCheckedBinding = new Binding(statusBarIconMetadata.VisibilityBindingName)
-                        {
-                            Mode = BindingMode.TwoWay,
-                        };
-                        menuItem.SetBinding(MenuItem.IsCheckedProperty, isCheckedBinding);
-                    }
-                    contextMenu.Items.Add(menuItem);
-                }
-
-            }
-
-            var allSettings = new List<StatusBarMeta>();
-
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IStatusBarProvider).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IStatusBarProvider configSetting)
-                    {
-                        allSettings.AddRange(configSetting.GetStatusBarIconMetadata());
-                    }
-                }
-            }
-
-            // 先按 ConfigSettingType 分组，再在每个组内按 Order 排序
-            var sortedSettings = allSettings
-                .GroupBy(setting => setting.Type)
-                .SelectMany(group => group.OrderBy(setting => setting.Order));
-
-            // 将排序后的配置设置添加到集合中
-            foreach (var item in sortedSettings)
-            {
-                AddStatusBarIconMetadata(item);
-            }
-        }
-
         public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();
         public List<ISearch> filteredResults { get; set; } = new List<ISearch>();
 
@@ -385,6 +243,7 @@ namespace ColorVision
         {
             Searches = new ObservableCollection<ISearch>(SearchManager.GetInstance().GetISearches());
         }
+
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox)

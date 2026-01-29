@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using System.Windows.Input;
+﻿using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.Draw.Ruler
 {

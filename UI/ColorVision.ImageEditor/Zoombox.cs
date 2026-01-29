@@ -1,5 +1,3 @@
-
-using Newtonsoft.Json.Linq;
 using System;
 using System.Windows;
 using System.Windows.Controls;

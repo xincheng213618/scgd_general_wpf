@@ -1,7 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate;
 using ColorVision.ImageEditor.EditorTools.Algorithms.Calculate.SFR;
-using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows;

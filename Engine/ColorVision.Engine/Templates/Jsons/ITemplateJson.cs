@@ -53,6 +53,7 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public override object CreateDefault()
         {
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
             var dictemplate = Db.Queryable<SysDictionaryModModel>().Where(x => x.Id == TemplateDicId).First();
             if (dictemplate ==null)
                 return new T();
@@ -73,6 +74,7 @@ namespace ColorVision.Engine.Templates.Jsons
         public override void Save()
         {
             if (SaveIndex.Count == 0) return;
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             foreach (var index in SaveIndex)
             {
@@ -92,6 +94,7 @@ namespace ColorVision.Engine.Templates.Jsons
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
                 List<ModMasterModel> templates = new List<ModMasterModel>();
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 templates = Db.Queryable<ModMasterModel>().Where(x => x.Pid == TemplateDicId && x.IsDelete == false).ToList();
 
                 foreach (var template in templates)
@@ -121,6 +124,7 @@ namespace ColorVision.Engine.Templates.Jsons
             void DeleteSingle(int id)
             {
                 string key = TemplateParams[index].Key;
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 int ret = Db.Deleteable<ModMasterModel>().Where(it => it.Id == id).ExecuteCommand();
                 log.Info($"Delete Tempate：{key},ret{ret}");
                 TemplateParams.RemoveAt(index);
@@ -246,6 +250,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             try
             {
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 var dictemplate = Db.Queryable<SysDictionaryModModel>().Where(x => x.Id == TemplateDicId).First();
                 if (dictemplate == null)
                 {
@@ -324,6 +329,7 @@ namespace ColorVision.Engine.Templates.Jsons
                 // Swap the IDs in the database using a three-step process to avoid constraint violations
                 // Use int.MinValue plus a hash-based offset incorporating both IDs to minimize collision risk
                 int tempId = int.MinValue + Math.Abs((id1 ^ id2).GetHashCode());
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
                 // Step 1: Move template1 to temporary ID
                 var modMaster1 = Db.Queryable<ModMasterModel>().InSingle(id1);

@@ -55,9 +55,9 @@ namespace System.ComponentModel
             // 添加编辑按钮
             var editButton = new Button
             {
-                Content = "编辑",
+                Content = ColorVision.UI.Properties.Resources.Edit,
                 Margin = new Thickness(5, 0, 0, 0),
-                Width = 60
+                MinWidth = 60
             };
             editButton.Click += (s, e) =>
             {

@@ -1,4 +1,3 @@
-using ColorVision.Common.Utilities;
 using Microsoft.Win32;
 using System;
 using System.IO;

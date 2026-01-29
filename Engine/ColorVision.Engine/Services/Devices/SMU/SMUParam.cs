@@ -9,7 +9,6 @@ using cvColorVision;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Text;
 namespace ColorVision.Engine.Services.Devices.SMU
 {

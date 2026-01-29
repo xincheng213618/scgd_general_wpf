@@ -2,15 +2,13 @@
 using ColorVision.Database;
 using ColorVision.Engine.Cache;
 using ColorVision.Engine.PropertyEditor;
-using ColorVision.Engine.Services.PhyCameras;
-using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.UI;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -68,65 +66,88 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         {
 
         }
-      
 
-        [PropertyEditorType(typeof(TextSectrumSNPropertiesEditor)), Category("Base")]
+
+        [PropertyEditorType(typeof(TextSectrumSNPropertiesEditor))]
         public override string SN { get => _SN; set { _SN = value; OnPropertyChanged(); } }
         private string _SN;
 
 
-        [DisplayName("DeviceAutoConnect"), Category("Base")]
+        [DisplayName("DeviceAutoConnect")]
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; OnPropertyChanged(); } }
         private bool _IsAutoOpen;
 
         [DisplayName("WaveLengthFile")]
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor)), Category("Base")]
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string WavelengthFile { get => _WavelengthFile; set { _WavelengthFile = value; OnPropertyChanged(); } }
         private string _WavelengthFile;
 
         [DisplayName("AmplitudeFile")]
-        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor)), Category("Base")]
+        [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile;
 
-        [DisplayName("IsEnableNd"), Category("Base")]
+        [DisplayName("IsEnableNd")]
         public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
         private bool _IsWithND;
 
-        [DisplayName("ConnectType"), Category("Base")]
-        public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); if (value == SpectrometerType.CMvSpectra) _ComPort = "0"; OnPropertyChanged(nameof(ComPort)); } }
+        [DisplayName("ConnectType")]
+        public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged();} }
         private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
 
-        [ Category("Base")]
-        public string ComPort { get => _ComPort; set { _ComPort = value; OnPropertyChanged(); } }
+        [PropertyEditorType(typeof(TextSerialPortPropertiesEditor)),DisplayName(nameof(ComPort))]
+        public string ComPortView
+        {
+            get => "COM" + ComPort;
+            set
+            {
+                // 1. 处理输入值，去掉 "COM"
+                string newPortValue = value;
+                if (!string.IsNullOrEmpty(value) && value.StartsWith("COM", StringComparison.OrdinalIgnoreCase))
+                {
+                    newPortValue = value.Substring(3);
+                }
+
+                // 2. 【关键】在赋值给 ComPort 之前，先判断值是否真的变了
+                // 如果当前 ComPort 已经是 "1"，而你又传入 "1"，就直接 return，切断循环
+                if (ComPort != newPortValue)
+                {
+                    ComPort = newPortValue;
+                    OnPropertyChanged(); // 通知 ComPortView 变了
+                }
+            }
+        }
+        [Browsable(false)]
+        public string ComPort { get => _ComPort; set { _ComPort = value; OnPropertyChanged(); OnPropertyChanged(nameof(ComPortView)); } }
         private string _ComPort = "0";
 
-        [DisplayName("BaudRate"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor)), Category("Base")]
+
+        [DisplayName("BaudRate"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 9600;
 
-        [DisplayName("Saturation"), Category("Base")]
+        [DisplayName("Saturation")]
         public int Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
         private int _Saturation = 80;
 
-        [DisplayName("MaxIntegrationTime_Ms"), Category("Base")]
+        [DisplayName("MaxIntegrationTime_Ms")]
         public int MaxIntegralTime { get => _TimeLimit; set { _TimeLimit = value; OnPropertyChanged(); } }
         private int _TimeLimit = 60000;
 
-        [DisplayName("AutoTestInterval_Ms"),Category("Base")]
+        [DisplayName("AutoTestInterval_Ms")]
         public int AutoTestTime { get => _AutoTestTime; set { _AutoTestTime = value; OnPropertyChanged(); } }
         private int _AutoTestTime = 100;
 
-
-
-
-        [DisplayName("StartIntegrationTime_Ms"), Category("Base")]
+        [DisplayName("StartIntegrationTime_Ms")]
         public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; OnPropertyChanged(); } }
         private float _TimeFrom = 10;
 
-        [Category("Base")]
+
         public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutter = false; _IsAutoDark = value; OnPropertyChanged(); } }
         private bool _IsAutoDark;
+
+        public DisplaySpectrumConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySpectrumConfig>(Code);
+
 
         public SelfAdaptionInitDark SelfAdaptionInitDark { get; set; } = new SelfAdaptionInitDark();
 
@@ -142,9 +163,34 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
+        public GetDataConfig GetDataConfig { get; set; } = new GetDataConfig(); 
+
     }
 
+    public class GetDataConfig : ViewModelBase, IConfig
+    {
+        [DisplayName("IsSyncFrequencyEnabled")]
+        public bool IsSyncFrequencyEnabled { get => _IsSyncFrequencyEnabled; set { _IsSyncFrequencyEnabled = value; OnPropertyChanged(); } }
+        private bool _IsSyncFrequencyEnabled;
 
+        [DisplayName("Syncfreq")]
+        public double Syncfreq { get => _Syncfreq; set { _Syncfreq = value; OnPropertyChanged(); } }
+        private double _Syncfreq = 1000;
+
+        [DisplayName("SyncfreqFactor")]
+        public int SyncfreqFactor { get => _SyncfreqFactor; set { _SyncfreqFactor = value; OnPropertyChanged(); } }
+        private int _SyncfreqFactor = 10;
+
+        [DisplayName("FilterBW")]
+        public int FilterBW { get => _FilterBW; set { _FilterBW = value; OnPropertyChanged(); } }
+        private int _FilterBW = 5;
+
+        public float SetWL1 { get => _SetWL1; set { _SetWL1 = value; OnPropertyChanged(); } }
+        private float _SetWL1 = 380;
+        public float SetWL2 { get => _SetWL2; set { _SetWL2 = value; OnPropertyChanged(); } }
+        private float _SetWL2 = 780;
+
+    }
 
     public class NDConfig : ViewModelBase
     {
@@ -155,7 +201,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         private bool _IsBingNDDevice = true;
 
 
-        [PropertyEditorType(typeof(TextCFWPropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice))]
+        [PropertyEditorType(typeof(DeviceNameEditor)), DeviceSourceType(typeof(DeviceCfwPort)),PropertyVisibility(nameof(IsBingNDDevice))]
         public string NDBindDeviceCode { get => _NDBindDeviceCode; set { _NDBindDeviceCode = value; OnPropertyChanged(); } }
         private string _NDBindDeviceCode;
 
@@ -180,8 +226,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         public List<string> NDCaliNameGroups { get; set; } = new List<string>();
 
-
-
+        [DisplayName("DarkNDPort")]
+        public int DarkNDPort { get => _DarkNDPort; set { _DarkNDPort = value; OnPropertyChanged(); } }
+        private int _DarkNDPort = -1;
     }
 
 

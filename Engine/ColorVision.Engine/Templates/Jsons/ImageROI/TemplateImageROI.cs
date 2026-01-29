@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Templates.Jsons.ImageROI
 {
     public class ExportTemplateImageROI : MenuITemplateAlgorithmBase
     {
-        public override string Header => "图像裁剪模板管理";
+        public override string Header => ColorVision.Engine.Properties.Resources.ImageCrop;
         public override int Order => 0;
         public override ITemplate Template => new TemplateImageROI();
 
@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Templates.Jsons.ImageROI
 
         public TemplateImageROI()
         {
-            Title = "图像裁剪模板管理";
+            Title = ColorVision.Engine.Properties.Resources.ImageCrop;
             Code = "Image.ROI";
             TemplateDicId = 52;
             TemplateParams = Params;

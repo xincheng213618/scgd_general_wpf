@@ -23,24 +23,6 @@ namespace ColorVision.Database
 
         public static MySqlConfig Config => MySqlSetting.Instance.MySqlConfig;
 
-        public SqlSugarClient DB 
-        { 
-            get
-            {
-                if (_DB !=null && _DB.Ado.Connection.State == ConnectionState.Closed)
-                {
-                    log.Info("数据库连接已关闭，正在尝试重新打开连接...");
-                    _DB.Ado.Connection.Open();
-                }
-                return _DB;
-            }
-            set 
-            {
-                _DB = value;
-            } 
-        }
-        private SqlSugarClient _DB;
-
         public MySqlControl()
         {
             Task.Run(async () => 
@@ -67,14 +49,7 @@ namespace ColorVision.Database
                 newConn.Open();
 
                 log.Info($"数据库连接成功:{connStr}");
-
-                _DB?.Dispose();
-                _DB = new SqlSugarClient(new ConnectionConfig
-                {
-                    ConnectionString = GetConnectionString(Config),
-                    DbType = Config.DbType,
-                    IsAutoCloseConnection = false
-                });
+                using var  _DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = GetConnectionString(Config), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 //修复管理员权限下bulk创建文件权限错误的问题
                 StaticConfig.BulkCopy_MySqlCsvPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ColorVision", "bulkcopyfiles");
                 
@@ -213,6 +188,7 @@ namespace ColorVision.Database
         {
             var dbName = MySqlSetting.Instance.MySqlConfig.Database;
             var sql = @"SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @dbName AND TABLE_TYPE = 'BASE TABLE'";
+            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
             var result = DB.Ado.SqlQuery<string>(sql, new { dbName });
             return result;
         }
@@ -231,6 +207,8 @@ namespace ColorVision.Database
         {
             try
             {
+                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
                 return param == null
                     ? DB.Ado.ExecuteCommand(sql)
                     : DB.Ado.ExecuteCommand(sql, param);
@@ -245,6 +223,7 @@ namespace ColorVision.Database
         {
             var statements = sqlBatch.Split(';', StringSplitOptions.RemoveEmptyEntries);
             int totalCount = 0;
+            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
             try
             {
                 DB.Ado.BeginTran();
@@ -272,7 +251,6 @@ namespace ColorVision.Database
 
         public void Dispose()
         {
-            DB?.Dispose();
             GC.SuppressFinalize(this);
         }
 

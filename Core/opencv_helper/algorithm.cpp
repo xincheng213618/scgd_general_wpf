@@ -10,6 +10,7 @@
 #include <vector>
 #include <algorithm>
 #include <ctime>
+#include <numeric>
 using namespace cv;
 
 cv::Mat removeMoire(const cv::Mat& image) {
@@ -432,56 +433,72 @@ int extractChannel(cv::Mat& input, cv::Mat& dst ,int channel)
     return 0;
 }
 
+void GetOptimizedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& outLut)
+{
+    cv::Mat range(1, 256, CV_8U);
+    std::iota(range.ptr<uint8_t>(), range.ptr<uint8_t>() + 256, 0); // 更简洁
+
+    cv::applyColorMap(range, outLut, mapType);
+
+    cv::Vec3b* ptr = outLut.ptr<cv::Vec3b>();
+
+    // 使用 memset 批量设置（黑色）
+    if (minTh > 0) {
+        std::memset(ptr, 0, std::min(minTh, 256) * 3);
+    }
+
+    // 白色需要循环（因为是 255）
+    for (int i = std::max(maxTh + 1, 0); i < 256; i++) {
+        ptr[i] = cv::Vec3b(255, 255, 255);
+    }
+}
+
 int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
 {
-    if (image.empty())
-        return -1;
+    if (image.empty()) return -1;
 
-    if (image.channels() != 1) {
+    // 转灰度
+    if (image.channels() > 1) {
         cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
     }
 
-    if (image.depth() == CV_16U) {
-
-        ///2025.02.07 16Ϊͼ����ֱ��ͼʱ������ֱ��ͼ���⻯����ᵼ��ͼ����Σ����Ч������ͨ������Gammmaʵ��
-        //// Ӧ������Ӧֱ��ͼ���⻯
-        //cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-        ////�������ø��ˣ��ĸ��ǻᱻ��ɢ����
-        //clahe->setClipLimit(1.0); // ���öԱȶ�����
-        //clahe->apply(image, image);
-
-        min1 = min1 / 256;
-        max1 = max1 / 256;
+    // 处理深度
+    switch (image.depth()) {
+    case CV_16U:
+        min1 >>= 8;  // 位运算替代除法
+        max1 >>= 8;
+        image.convertTo(image, CV_8U, 1.0 / 257.0); // 255/65535 ≈ 1/257
+        break;
+    case CV_32F:
+    case CV_64F:
         cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
-	}
-
-    if (image.depth() == CV_32F) {
-        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
-    }
-    cv::Mat maskGreater;
-    cv::Mat maskLess;
-    if (max1 < 255) {
-        maskGreater = image > max1; // Change maxVal to your specific threshold
-        image.setTo(cv::Scalar(255, 255, 255), maskGreater);
-    }
-    if (min1 > 0) {
-        // Set values less than a threshold to black
-        maskLess = image < min1; // Change minVal to your specific threshold
-        image.setTo(cv::Scalar(0, 0, 0), maskLess);
+        break;
     }
 
-    cv::applyColorMap(image, image, types);
+    min1 = std::min(min1, 255u);
+    max1 = std::min(max1, 255u);
 
-    if (max1 < 255) {
-        image.setTo(cv::Scalar(255, 255, 255), maskGreater);
-    }
-    if (min1 > 0) {
-        // Set values less than a threshold to black
-        image.setTo(cv::Scalar(0, 0, 0), maskLess);
-    }
+    cv::Mat customLut;
+    GetOptimizedLUT(types, (int)min1, (int)max1, customLut);
 
+    // 直接 LUT，无需中间转换
+    cv::Mat result(image.rows, image.cols, CV_8UC3);
+    const cv::Vec3b* lutPtr = customLut.ptr<cv::Vec3b>();
+
+    // 使用 parallel_for_ 并行处理
+    cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range) {
+        for (int y = range.start; y < range.end; y++) {
+            const uint8_t* srcRow = image.ptr<uint8_t>(y);
+            cv::Vec3b* dstRow = result.ptr<cv::Vec3b>(y);
+            for (int x = 0; x < image.cols; x++) {
+                dstRow[x] = lutPtr[srcRow[x]];
+            }
+        }
+        });
+    image = result;
     return 0;
 }
+
 
 void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, double redBalance, double greenBalance, double blueBalance) {
     // Split the source image into BGR channels

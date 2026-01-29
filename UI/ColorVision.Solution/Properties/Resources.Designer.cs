@@ -214,6 +214,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 编辑信息 的本地化字符串。
+        /// </summary>
+        public static string EditInfo {
+            get {
+                return ResourceManager.GetString("EditInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 编辑解决方案 的本地化字符串。
         /// </summary>
         public static string EditSolution {
@@ -273,6 +282,24 @@ namespace ColorVision.Solution.Properties {
         public static string Line {
             get {
                 return ResourceManager.GetString("Line", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 登录/切换 的本地化字符串。
+        /// </summary>
+        public static string LoginOrSwitch {
+            get {
+                return ResourceManager.GetString("LoginOrSwitch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 登录时间 的本地化字符串。
+        /// </summary>
+        public static string LoginTime {
+            get {
+                return ResourceManager.GetString("LoginTime", resourceCulture);
             }
         }
         
@@ -358,6 +385,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 还没有账户？ 的本地化字符串。
+        /// </summary>
+        public static string NoAccountYet {
+            get {
+                return ResourceManager.GetString("NoAccountYet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 未找到 的本地化字符串。
         /// </summary>
         public static string NoFound {
@@ -417,6 +453,24 @@ namespace ColorVision.Solution.Properties {
         public static string Password {
             get {
                 return ResourceManager.GetString("Password", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 权限管理 的本地化字符串。
+        /// </summary>
+        public static string PermissionManagement {
+            get {
+                return ResourceManager.GetString("PermissionManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 权限模式 的本地化字符串。
+        /// </summary>
+        public static string PermissionMode {
+            get {
+                return ResourceManager.GetString("PermissionMode", resourceCulture);
             }
         }
         
@@ -493,6 +547,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 记住登录状态（7天内自动登录） 的本地化字符串。
+        /// </summary>
+        public static string RememberLoginStatus7Days {
+            get {
+                return ResourceManager.GetString("RememberLoginStatus7Days", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 重置 的本地化字符串。
         /// </summary>
         public static string Reset {
@@ -507,6 +570,24 @@ namespace ColorVision.Solution.Properties {
         public static string Reseted {
             get {
                 return ResourceManager.GetString("Reseted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 角色 的本地化字符串。
+        /// </summary>
+        public static string Role {
+            get {
+                return ResourceManager.GetString("Role", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 角色列表 的本地化字符串。
+        /// </summary>
+        public static string RoleList {
+            get {
+                return ResourceManager.GetString("RoleList", resourceCulture);
             }
         }
         
@@ -574,11 +655,83 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 状态 的本地化字符串。
+        /// </summary>
+        public static string Status {
+            get {
+                return ResourceManager.GetString("Status", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 终端 的本地化字符串。
         /// </summary>
         public static string Terminal {
             get {
                 return ResourceManager.GetString("Terminal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未知 的本地化字符串。
+        /// </summary>
+        public static string Unknown {
+            get {
+                return ResourceManager.GetString("Unknown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户中心 的本地化字符串。
+        /// </summary>
+        public static string UserCenter {
+            get {
+                return ResourceManager.GetString("UserCenter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户 ID 的本地化字符串。
+        /// </summary>
+        public static string UserId {
+            get {
+                return ResourceManager.GetString("UserId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户管理 的本地化字符串。
+        /// </summary>
+        public static string UserManagement {
+            get {
+                return ResourceManager.GetString("UserManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户管理系统 的本地化字符串。
+        /// </summary>
+        public static string UserManagementSystem {
+            get {
+                return ResourceManager.GetString("UserManagementSystem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户名 的本地化字符串。
+        /// </summary>
+        public static string Username {
+            get {
+                return ResourceManager.GetString("Username", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 欢迎回来 的本地化字符串。
+        /// </summary>
+        public static string WelcomeBack {
+            get {
+                return ResourceManager.GetString("WelcomeBack", resourceCulture);
             }
         }
     }

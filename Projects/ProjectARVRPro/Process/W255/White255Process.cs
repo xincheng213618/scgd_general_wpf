@@ -9,10 +9,8 @@ using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
-using ScottPlot.Colormaps;
 using System.Windows;
 using System.Windows.Media;
-using static HelixToolkit.Wpf.Viewport3DHelper;
 
 namespace ProjectARVRPro.Process.W255
 {

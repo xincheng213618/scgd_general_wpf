@@ -1086,7 +1086,7 @@
   <data name="StereoFusion" xml:space="preserve">
     <value>両眼融合</value>
   </data>
-  <data name="KBDetect" xml:space="preserve">
+  <data name="CharacterBrghtnessInsp" xml:space="preserve">
     <value>キーボード検出</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
@@ -1642,7 +1642,7 @@
     <value>左</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>右：</value>
+    <value>右</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
     <value>見せる</value>
@@ -1714,7 +1714,7 @@
     <value>現在(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
-    <value>電圧</value>
+    <value>電圧(_V)</value>
   </data>
   <data name="HalfBandwidth" xml:space="preserve">
     <value>半波長</value>
@@ -1756,7 +1756,7 @@
     <value>現在の曲線</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
-    <value>電流（A）</value>
+    <value>電流（mA）</value>
   </data>
   <data name="Voltage" xml:space="preserve">
     <value>電圧（V）</value>
@@ -1915,7 +1915,7 @@
     <value>振幅ファイル</value>
   </data>
   <data name="IsEnableNd" xml:space="preserve">
-    <value>ND を有効にしますか?</value>
+    <value>ND を有効にしますか</value>
   </data>
   <data name="ConnectType" xml:space="preserve">
     <value>接続方法</value>
@@ -2379,9 +2379,6 @@
   <data name="ClearDatabaseOnly" xml:space="preserve">
     <value>データベースのみをクリアする</value>
   </data>
-  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
-    <value>ローカルファイルを削除する</value>
-  </data>
   <data name="DeleteLocalFiles" xml:space="preserve">
     <value>ローカルファイルを削除する</value>
   </data>
@@ -2522,5 +2519,110 @@
   </data>
   <data name="ExportLicenseFailed" xml:space="preserve">
     <value>ライセンスのエクスポートに失敗しました</value>
+  </data>
+  <data name="Customer" xml:space="preserve">
+    <value>お客様</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>タイプ</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>モデル</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>オンライン</value>
+  </data>
+  <data name="Syncfreq" xml:space="preserve">
+    <value>同期周波数</value>
+  </data>
+  <data name="SyncfreqFactor" xml:space="preserve">
+    <value>同期周波数</value>
+  </data>
+  <data name="FilterBW" xml:space="preserve">
+    <value>フィルターBW</value>
+  </data>
+  <data name="IsSyncFrequencyEnabled" xml:space="preserve">
+    <value>同期頻度が有効</value>
+  </data>
+  <data name="GetSpectrSerialNumber" xml:space="preserve">
+    <value>スペクトラムシリアル番号の取得</value>
+  </data>
+  <data name="EditDisplayConfig" xml:space="preserve">
+    <value>ディスプレイ設定の編集</value>
+  </data>
+  <data name="OpenEditTool" xml:space="preserve">
+    <value>編集ツール</value>
+  </data>
+  <data name="Annotation" xml:space="preserve">
+    <value>注記</value>
+  </data>
+  <data name="PropertyEdit" xml:space="preserve">
+    <value>属性編集</value>
+  </data>
+  <data name="TextEdit" xml:space="preserve">
+    <value>テキスト編集</value>
+  </data>
+  <data name="PreprocessManager" xml:space="preserve">
+    <value>前処理管理</value>
+  </data>
+  <data name="CurrentVoltageV" xml:space="preserve">
+    <value>電流電圧（V）</value>
+  </data>
+  <data name="CurrentCurrentMA" xml:space="preserve">
+    <value>電流（mA）</value>
+  </data>
+  <data name="ImageCrop" xml:space="preserve">
+    <value>画像の切り抜き</value>
+  </data>
+  <data name="FindCross" xml:space="preserve">
+    <value>クロスポジショニング</value>
+  </data>
+  <data name="ColorCorrection" xml:space="preserve">
+    <value>色差補正</value>
+  </data>
+  <data name="EmittingAreaLocation" xml:space="preserve">
+    <value>発光領域の配置</value>
+  </data>
+  <data name="TemplateList" xml:space="preserve">
+    <value>テンプレートリスト</value>
+  </data>
+  <data name="OpenFullEditor" xml:space="preserve">
+    <value>フルエディターを開く</value>
+  </data>
+  <data name="SelectTemplateToViewDetails" xml:space="preserve">
+    <value>詳細を表示するにはテンプレートを選択してください</value>
+  </data>
+  <data name="PleaseSelectTemplateToViewAndEdit" xml:space="preserve">
+    <value>表示および編集するテンプレートを選択してください。</value>
+  </data>
+  <data name="TemplateEdit" xml:space="preserve">
+    <value>テンプレート編集</value>
+  </data>
+  <data name="CurrentSelection" xml:space="preserve">
+    <value>現在の選択</value>
+  </data>
+  <data name="TemplatesCount" xml:space="preserve">
+    <value>テンプレート</value>
+  </data>
+  <data name="TemplateEditorLoadFailed" xml:space="preserve">
+    <value>テンプレートエディタを読み込めません</value>
+  </data>
+  <data name="DefaultValueType" xml:space="preserve">
+    <value>デフォルト値の型</value>
+  </data>
+  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
+    <value>サービスレジストリの構成</value>
+  </data>
+  <data name="ExportSucceeded" xml:space="preserve">
+    <value>エクスポート成功</value>
+  </data>
+  <data name="ConfirmReset" xml:space="preserve">
+    <value>リセットを確認する</value>
+  </data>
+  <data name="ImportException" xml:space="preserve">
+    <value>インポートエラー</value>
+  </data>
+  <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
+    <value>絶対に必要な場合を除き、削除しないでください。（必要に応じて削除してください）</value>
   </data>
 </root>

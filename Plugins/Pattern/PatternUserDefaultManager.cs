@@ -1,10 +1,6 @@
-using ColorVision.Common.Utilities;
 using ColorVision.UI.Extension;
 using log4net;
-using Newtonsoft.Json;
-using System;
 using System.IO;
-using System.Linq;
 
 namespace Pattern
 {

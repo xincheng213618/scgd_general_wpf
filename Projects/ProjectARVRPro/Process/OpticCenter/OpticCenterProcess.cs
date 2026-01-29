@@ -4,8 +4,6 @@ using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.FindCross; // FindCrossDetailViewReslut
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
-using ProjectARVRPro.Process.Red;
-using ProjectARVRPro.Process.W25;
 
 namespace ProjectARVRPro.Process.OpticCenter
 {

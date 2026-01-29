@@ -9,7 +9,7 @@
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
-             d:DesignHeight="800" d:DesignWidth="300" Width="300" Initialized="UserControl_Initialized">
+             d:DesignHeight="800" d:DesignWidth="300" Width="300" ContextMenu="{Binding ContextMenu}" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -89,7 +89,7 @@
                     </Button.Triggers>
                 </Button>
             </Grid>
-            <Grid >
+            <Grid ToolTip="{Binding DService.DeviceStatus}">
                 <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding DisplayConfig.IsDisplayOpen}" />
                 <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding DisplayConfig.IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0"/>
             </Grid>
@@ -119,12 +119,27 @@
                     </Grid>
 
                 </DockPanel>
-                <DockPanel x:Name="ButtonClose"  Visibility="Collapsed" >
+                <DockPanel x:Name="ButtonClose"  Visibility="Visible" Margin="0,0,0,3">
+                    <Button DockPanel.Dock="Right" Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}" Margin="5,0,0,0" HorizontalAlignment="Left" Command="{Binding CameraVideoControl.EditConfigCommand}" Padding="2" Height="21" Width="21">
+                        <Button.Triggers>
+                            <EventTrigger RoutedEvent="Button.Click">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="rotateTransform255" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Button.Triggers>
+                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform x:Name="rotateTransform255"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Button>
                     <Grid>
                         <ProgressBar Grid.Column="1" Name="ProgressBarClose" Background="Transparent" Value="1" Foreground="Green" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" hc:VisualElement.Text="{Binding ElementName=CloseButton,Path=Content}"  MaxWidth="400" Visibility="Collapsed"/>
-                        <Button x:Name="CloseButton" Margin="0,0,0,3" Grid.Column="0" Content="{x:Static properties:Resources.Close}" Foreground="White" Background="Red"  Click="Close_Click" />
+                        <Button x:Name="CloseButton"  Grid.Column="0" Content="{x:Static properties:Resources.Close}" Foreground="White" Background="Red"  Click="Close_Click" />
                     </Grid>
-
                 </DockPanel>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,2">
                     <StackPanel Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
@@ -138,22 +153,7 @@
                             <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime, StringFormat=F2}" MinWidth="50"/>
                             <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="{Binding Config.ExpTimeMinLog}" Maximum="{Binding Config.ExpTimeMaxLog}"/>
                         </DockPanel>
-                        <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding CameraVideoControl.EditConfigCommand}" Padding="2" Height="25" Width="25" >
-                            <Button.Triggers>
-                                <EventTrigger RoutedEvent="Button.Click">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="rotateTransform255" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Button.Triggers>
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
-                                <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform255"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                        </Button>
+       
                     </StackPanel>
 
                     <StackPanel x:Name="StackPanelImage"  Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
@@ -360,7 +360,7 @@
 
                 </StackPanel>
                 <DockPanel Margin="0,0,0,0" >
-                    <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0" ToolTip="{Binding DService.DeviceStatus}"/>
                     <ComboBox x:Name="ComboxView" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"/>
                 </DockPanel>
             </StackPanel>

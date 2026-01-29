@@ -6,6 +6,7 @@ using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using ScottPlot;
 using ScottPlot.Plottables;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -94,6 +95,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView1.Columns, LeftGridViewColumnVisibilitys);
             }
 
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, Button_Click, (s, e) => e.CanExecute = true));
+
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
@@ -133,9 +136,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 MessageBox.Show("SelectDataFirst");
                 return;
             }
+
+            var selectedItemsCopy = new List<object>();
+            foreach (var item in listView1.SelectedItems)
+            {
+                selectedItemsCopy.Add(item);
+            }
+
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
-            dialog.FileName = DateTime.Now.ToString("EqeExportyyyy-MM-dd-HH-mm-ss");
+            dialog.FileName = "EQEExport" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
@@ -145,7 +155,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             properties.Add("No");
             properties.Add("Lot");
             properties.Add("IP");
-            properties.Add("Luminace（Lv）(cd/m²)");
             properties.Add("EQE");
             properties.Add("LuminousFlux(lm)");
             properties.Add("RadiantFlux(W)");
@@ -175,11 +184,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
             csvBuilder.AppendLine();
 
-            var selectedItemsCopy = new List<object>();
-            foreach (var item in listView1.SelectedItems)
-            {
-                selectedItemsCopy.Add(item);
-            }
+
 
             foreach (var item in selectedItemsCopy)
             {
@@ -188,7 +193,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                     csvBuilder.Append(result.Id + ",");
                     csvBuilder.Append(result.BatchID + ",");
                     csvBuilder.Append(result.IP + ",");
-                    csvBuilder.Append(result.Lv + ",");
                     csvBuilder.Append(result.Eqe + ",");
                     csvBuilder.Append(result.LuminousFlux + ",");
                     csvBuilder.Append(result.RadiantFlux + ",");
@@ -580,8 +584,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             ViewResults.Clear();
             ScatterPlots.Clear();
             AbsoluteScatterPlots.Clear();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            var query = MySqlControl.GetInstance().DB.Queryable<SpectumResultEntity>();
+            var query = Db.Queryable<SpectumResultEntity>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = Config.Count > 0 ? query.Take(Config.Count).ToList() : query.ToList();
             foreach (var item in dbList)
@@ -596,7 +601,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         }
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            GenericQuery<SpectumResultEntity, ViewResultEqe> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultEqe>(MySqlControl.GetInstance().DB, ViewResults,
+            var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            GenericQuery<SpectumResultEntity, ViewResultEqe> genericQuery = new GenericQuery<SpectumResultEntity, ViewResultEqe>(Db, ViewResults,
                 t =>
                 {
                     ViewResultEqe viewResultSpectrum = new ViewResultEqe(t);
@@ -622,7 +629,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             };
             GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
             genericQueryWindow.ShowDialog();
-
+            Db.Dispose();
 
         }
     }

@@ -12,142 +12,144 @@
              xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
              d:DataContext="{d:DesignInstance local:ViewFlow}"
              
-             d:DesignHeight="600" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}" Initialized="UserControl_Initialized" >
+             d:DesignHeight="600" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}" Initialized="UserControl_Initialized"  SizeChanged="UserControl_SizeChanged">
     <Grid Margin="0,0.5,0,0">
-        <Grid.ColumnDefinitions >
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
-        <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Column="0" Grid.ColumnSpan="1" x:Name="Grid1">
+            <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch" >
+                <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
+            </WindowsFormsHost>
+        </Grid>
+        <ProgressBar x:Name="ProgressBar1" Visibility="Collapsed" Grid.Row="1" Maximum="100" Style="{StaticResource ProgressBarFlat}" Value="{Binding FlowEngineManager.BatchProgress}"/>
+
+        <Grid x:Name="GridControl"  Grid.Row="2">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Grid Grid.Column="0" Grid.ColumnSpan="1" x:Name="Grid1" SizeChanged="Grid1_SizeChanged" >
-                <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch" >
-                    <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
-                </WindowsFormsHost>
-            </Grid>
             <Grid Grid.Row="1">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Row="0"  Width="220" >
-                        <UniformGrid  Columns="6" Margin="0,0,0,5">
-                            <Button Command="{Binding SaveCommand}" Height="30" Width="30"  Margin="0,0,5,0" Padding="2">
-                                <Image Source="{DynamicResource DrawingImageSave}" Height="20" />
-                            </Button>
-                            <Button Command="{Binding RefreshCommand}" Padding="2" Height="30" Width="30"   Margin="0,0,5,0" >
-                                <Button.Triggers>
-                                    <EventTrigger RoutedEvent="Button.Click">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </Button.Triggers>
-                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"  ToolTip="{x:Static properties:Resources.Refresh}">
-                                    <TextBlock.RenderTransform>
-                                        <RotateTransform x:Name="rotateTransform1" CenterX="15" CenterY="15"/>
-                                    </TextBlock.RenderTransform>
-                                </TextBlock>
-                            </Button>
-                            <Button Command="{Binding AutoSizeCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
-                                <Image  Source="{DynamicResource DrawingImageexpend}"/>
-                            </Button>
-                            <Button Command="{Binding AutoAlignmentCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
-                                <Button.Triggers>
-                                    <EventTrigger RoutedEvent="Button.Click">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="rotateTransform3" Storyboard.TargetProperty="Angle" From="0" To="720" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </Button.Triggers>
-                                <Image  Source="{DynamicResource DrawingImageFlow}">
-                                    <Image.RenderTransform>
-                                        <RotateTransform x:Name="rotateTransform3" CenterX="15" CenterY="15"/>
-                                    </Image.RenderTransform>
-                                </Image>
-                            </Button>
-                            <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
-                                <Image  Source="{DynamicResource DrawingImageClear}"/>
-                            </Button>
-                            <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
-                                <Image  Source="{DynamicResource DIExpand}"/>
-                            </Button>
-                        </UniformGrid>
-                        <StackPanel Grid.Column="2">
-                            <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-                                <Button Content="{x:Static properties:Resources.SearchResults}" Click="Button_Click" Margin="0,0,5,0"/>
-                                <Button Content="{x:Static properties:Resources.FlowResultManagement}"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
-                            </StackPanel>
-                            <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-                                <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1" Margin="0,0,5,0"/>
-                                <Button Content="预处理管理" Click="Button_Click_PreProcess"/>
-                            </StackPanel>
-                            <StackPanel Margin="0,0,0,5"  Orientation="Horizontal">
-                                <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
-                                    <Button Content="x64" Command="{Binding FlowEngineManager.WindowsServiceX64.OpenLogCommand}"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
-                                    <Button Content="dev" Command="{Binding FlowEngineManager.WindowsServiceDev.OpenLogCommand}"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
-                                    <Button Content="RC" Command="{Binding FlowEngineManager.WindowsServiceReg.OpenLogCommand}"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Content="Camera" Command="{Binding FlowEngineManager.OpenCameraLogCommand}"/>
-                                </StackPanel>
-                            </StackPanel>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Row="0"  Width="220" >
+                    <StackPanel Margin="0,0,0,5">
+                        <TextBox Text="{Binding FlowEngineManager.SlectFlowParam.Name}" Style="{DynamicResource TextBox.Small}"/>
+                    </StackPanel>
+                    <UniformGrid  Columns="6" Margin="0,0,0,5">
+                        <Button Command="{Binding SaveCommand}" Height="30" Width="30"  Margin="0,0,5,0" Padding="2">
+                            <Image Source="{DynamicResource DrawingImageSave}" Height="20" />
+                        </Button>
+                        <Button Command="{Binding RefreshCommand}" Padding="2" Height="30" Width="30"   Margin="0,0,5,0" >
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"  ToolTip="{x:Static properties:Resources.Refresh}">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform1" CenterX="15" CenterY="15"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Button>
+                        <Button Command="{Binding AutoSizeCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
+                            <Image  Source="{DynamicResource DrawingImageexpend}"/>
+                        </Button>
+                        <Button Command="{Binding AutoAlignmentCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="rotateTransform3" Storyboard.TargetProperty="Angle" From="0" To="720" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                            <Image  Source="{DynamicResource DrawingImageFlow}">
+                                <Image.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform3" CenterX="15" CenterY="15"/>
+                                </Image.RenderTransform>
+                            </Image>
+                        </Button>
+                        <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
+                            <Image  Source="{DynamicResource DrawingImageClear}"/>
+                        </Button>
+                        <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
+                            <Image  Source="{DynamicResource DIExpand}"/>
+                        </Button>
+                    </UniformGrid>
+                    <StackPanel Grid.Column="2">
+                        <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                            <Button Content="{x:Static properties:Resources.SearchResults}" Click="Button_Click" Margin="0,0,5,0"/>
+                            <Button Content="{x:Static properties:Resources.FlowResultManagement}"  Command="{Binding FlowEngineManager.MeasureBatchManagerCommand}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                            <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1" Margin="0,0,5,0"/>
+                            <Button Content="{x:Static properties:Resources.PreprocessManager}" Click="Button_Click_PreProcess"/>
                         </StackPanel>
                     </StackPanel>
-                    <ListView x:Name="NodeListView" Grid.Column="1"  Background="Transparent" Height="120" SelectionChanged="NodeListView_SelectionChanged" ItemsSource="{Binding FlowEngineManager.CVBaseServerNodes}">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.View>
-                            <GridView >
-                                <GridView.ColumnHeaderContainerStyle>
-                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </Style>
-                                </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn   Width="230">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding Title,Mode=OneWay}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
+                </StackPanel>
+                <ListView x:Name="NodeListView" Grid.Column="2" Height="110" Padding="0" BorderThickness="0" Background="Transparent"  SelectionChanged="NodeListView_SelectionChanged" ItemsSource="{Binding FlowEngineManager.CVBaseServerNodes}">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView >
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn   Width="230">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Title,Mode=OneWay}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
 
-                    <Grid Grid.Column="2">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <ProgressBar  Maximum="100" Value="{Binding FlowEngineManager.BatchProgress}"/>
-                        <TextBox x:FieldModifier="public" x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Height="100"  Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True"/>
-
-                    </Grid>
-
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <ProgressBar  Maximum="100" Value="{Binding FlowEngineManager.BatchProgress}"/>
+                    <TextBox x:FieldModifier="public" x:Name="logTextBox" Background="Transparent" TextWrapping="WrapWithOverflow" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True"/>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Height="35">
+                        <Button Content="{x:Static properties:Resources.ExecutionProcess}"  x:Name="ButtonRun" Visibility="{Binding FlowEngineManager.FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter1}}" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
+                        <Button Content="{x:Static properties:Resources.StopProcess}"  x:Name="ButtonStop" Visibility="{Binding FlowEngineManager.FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter}}" FontWeight="Bold" FontSize="16" Click="Button_FlowStop_Click" />
+                    </StackPanel>
+                    <StackPanel  Grid.Row="1" VerticalAlignment="Bottom" Orientation="Horizontal">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                            <Button Content="x64" Command="{Binding FlowEngineManager.WindowsServiceX64.OpenLogCommand}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                            <Button Content="dev" Command="{Binding FlowEngineManager.WindowsServiceDev.OpenLogCommand}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
+                            <Button Content="RC" Command="{Binding FlowEngineManager.WindowsServiceReg.OpenLogCommand}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Camera" Command="{Binding FlowEngineManager.OpenCameraLogCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
                 </Grid>
 
-
             </Grid>
+
 
         </Grid>
     </Grid>

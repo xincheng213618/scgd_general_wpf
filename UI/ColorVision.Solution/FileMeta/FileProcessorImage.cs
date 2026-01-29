@@ -2,7 +2,6 @@
 using ColorVision.UI;
 using System.ComponentModel;
 using System.Windows;
-using WpfHexaEditor.Core.MethodExtention;
 
 
 namespace ColorVision.Solution.FileMeta

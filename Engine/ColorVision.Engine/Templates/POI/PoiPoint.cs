@@ -1,5 +1,4 @@
 ﻿using ColorVision.ImageEditor;
-using ColorVision.UI.Sorts;
 
 namespace ColorVision.Engine.Templates.POI
 {

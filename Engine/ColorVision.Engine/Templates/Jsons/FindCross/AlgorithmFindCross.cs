@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.FindCross
 {
-    [DisplayAlgorithm(53, "十字定位算法", "ARVR")]
+    [DisplayAlgorithm(53, "FindCross", "ARVR")]
     public class AlgorithmFindCross : DisplayAlgorithmBase
     {
 

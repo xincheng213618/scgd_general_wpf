@@ -5,7 +5,6 @@ using ColorVision.Database;
 using ColorVision.UI;
 using log4net;
 using SqlSugar;
-using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;

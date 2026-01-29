@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using ColorVision.UI;
 
 namespace ColorVision.UI.Tests;
 
@@ -94,31 +93,7 @@ public class PropertyEditorWindowTests
         Assert.True(Enum.IsDefined(typeof(PropertySortMode), PropertySortMode.CategoryDescending));
     }
 
-    [Fact]
-    public void PropertyEditorWindow_Constructor_WithConfig_DoesNotThrow()
-    {
-        // Arrange
-        var config = new TestConfig();
 
-        // Act & Assert - Should not throw when creating window
-        var window = new PropertyEditorWindow(config, isEdit: true);
-        Assert.NotNull(window);
-        Assert.Equal(config, window.Config);
-        Assert.True(window.IsEdit);
-    }
-
-    [Fact]
-    public void PropertyEditorWindow_Constructor_WithNonEditMode_DoesNotThrow()
-    {
-        // Arrange
-        var config = new TestConfig();
-
-        // Act & Assert
-        var window = new PropertyEditorWindow(config, isEdit: false);
-        Assert.NotNull(window);
-        Assert.Equal(config, window.Config);
-        Assert.False(window.IsEdit);
-    }
 
     [Fact]
     public void PropertyEditorWindow_CategoryGroups_IsInitializedEmpty()

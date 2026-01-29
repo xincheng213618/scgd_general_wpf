@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;
@@ -53,12 +52,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 switch (msg.EventName)
                 {
-                    case "Close":
-                        break;
-                    case MQTTCameraEventEnum.Event_Open:
-                    case MQTTCameraEventEnum.Event_OpenLive:
-                    case MQTTCameraEventEnum.Event_GetData:
-                        break;
                     case "GetAutoExpTime":
                         if (msg.Data == null) break;
                         try

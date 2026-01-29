@@ -232,9 +232,6 @@
   <data name="General" xml:space="preserve">
     <value>Universal</value>
   </data>
-  <data name="PluginManagerWindow" xml:space="preserve">
-    <value>PluginManagerWindow</value>
-  </data>
   <data name="PluginName" xml:space="preserve">
     <value>Name</value>
   </data>
@@ -270,9 +267,6 @@
   </data>
   <data name="ViewMode9" xml:space="preserve">
     <value>View Mode 9</value>
-  </data>
-  <data name="CheckPluginUpdates" xml:space="preserve">
-    <value>Check for plugin updates</value>
   </data>
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Checking for additional projects</value>
@@ -454,12 +448,6 @@
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter resource not found</value>
   </data>
-  <data name="DownLoadMQTT" xml:space="preserve">
-    <value>Download MQTT</value>
-  </data>
-  <data name="DownLoadMySql" xml:space="preserve">
-    <value>Download MySQL</value>
-  </data>
   <data name="Install" xml:space="preserve">
     <value>Install</value>
   </data>
@@ -493,16 +481,13 @@
   <data name="Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
-  <data name="ExtractPlugin" xml:space="preserve">
-    <value>Extract Plugin</value>
+  <data name="PropertyEditorWindow" xml:space="preserve">
+    <value>PropertyEditorWindow</value>
   </data>
-  <data name="SelectExtractFolder" xml:space="preserve">
-    <value>Select target folder to extract plugin</value>
+  <data name="Edit" xml:space="preserve">
+    <value>Edit</value>
   </data>
-  <data name="PluginExtractSuccess" xml:space="preserve">
-    <value>Plugin extracted successfully to: {0}</value>
-  </data>
-  <data name="PluginExtractFailed" xml:space="preserve">
-    <value>Plugin extraction failed</value>
+  <data name="Theme" xml:space="preserve">
+    <value>Theme</value>
   </data>
 </root>

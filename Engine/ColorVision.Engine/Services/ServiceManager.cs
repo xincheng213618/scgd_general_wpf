@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -12,7 +11,6 @@ using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
-using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
@@ -32,34 +30,11 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services
 {
 
-    public class TextCFWPropertiesEditor : IPropertyEditor
-    {
-        public DockPanel GenProperties(PropertyInfo property, object obj)
-        {
-            var rm = PropertyEditorHelper.GetResourceManager(obj);
-            var dockPanel = new DockPanel();
-
-
-
-            var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
-            dockPanel.Children.Add(textBlock);
-
-            var combo = new HandyControl.Controls.ComboBox { Margin = new Thickness(5, 0, 0, 0), Style = PropertyEditorHelper.ComboBoxSmallStyle, IsEditable = true };
-            HandyControl.Controls.InfoElement.SetShowClearButton(combo, true);
-            combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
-            combo.ItemsSource = ServiceManager.GetInstance().DeviceServices.Where(item => item is DeviceCfwPort).Select(item => item.Code).ToList();
-            dockPanel.Children.Add(combo);
-            return dockPanel;
-        }
-    }
-
     public class ServiceManager
     {
         private static ServiceManager _instance;
         private static readonly object _locker = new();
         public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
-        public static SqlSugarClient Db => MySqlControl.GetInstance().DB;
-
         public ObservableCollection<TypeService> TypeServices { get; set; } = new ObservableCollection<TypeService>();
         public ObservableCollection<TerminalService> TerminalServices { get; set; } = new ObservableCollection<TerminalService>();
         public ObservableCollection<DeviceService> DeviceServices { get; set; } = new ObservableCollection<DeviceService>();
@@ -84,7 +59,7 @@ namespace ColorVision.Engine.Services
             var nameToIndexMap = DisPlayManagerConfig.Instance.StoreIndex;
 
             DisPlayManager.GetInstance().IDisPlayControls.Clear();
-            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, DisplayFlow.GetInstance());
+            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, FlowEngineManager.GetInstance().DisplayFlow);
             foreach (var item in MQTTDevices)
             {
                 if (item is DeviceService device)
@@ -105,7 +80,7 @@ namespace ColorVision.Engine.Services
         {
             LastGenControl = new ObservableCollection<DeviceService>();
             DisPlayManager.GetInstance().IDisPlayControls.Clear();
-            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, DisplayFlow.GetInstance());
+            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, FlowEngineManager.GetInstance().DisplayFlow);
             foreach (var serviceKind in TypeServices)
             {
                 foreach (var service in serviceKind.VisualChildren)
@@ -161,6 +136,7 @@ namespace ColorVision.Engine.Services
             }
 
             DeviceServices.Clear();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             foreach (var terminalService in TerminalServices)
             {
@@ -255,8 +231,6 @@ namespace ColorVision.Engine.Services
 
         public void LoadgroupResource(GroupResource groupResource)
         {
-            Db.CodeFirst.InitTables<SysResourceGoupModel>();
-
             List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetGroupResourceItems(groupResource.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
             {

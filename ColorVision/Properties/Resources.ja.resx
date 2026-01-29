@@ -288,4 +288,16 @@
   <data name="RollbackRequiresUninstallThenInstallOrRerunPackage" xml:space="preserve">
     <value>ソフトウェアをロールバックするには、まずソフトウェアをアンインストールしてから再インストールするか、インストール後にパッケージを再インストールする必要があります。</value>
   </data>
+  <data name="FullScreen" xml:space="preserve">
+    <value>全画面表示</value>
+  </data>
+  <data name="TerminateUnresponsiveProcess" xml:space="preserve">
+    <value>応答しないプロセスを終了する</value>
+  </data>
+  <data name="ClickYesToUpdateNow" xml:space="preserve">
+    <value>今すぐ更新するには「はい」をクリックし、このバージョンをスキップするには「いいえ」をクリックし、後で通知するには「キャンセル」をクリックします。</value>
+  </data>
+  <data name="CheckPluginUpdates" xml:space="preserve">
+    <value>プラグインの更新を確認</value>
+  </data>
 </root>

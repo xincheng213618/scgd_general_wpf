@@ -123,7 +123,9 @@ namespace ProjectARVRLite
 
         public void BatchDataHistory()
         {
-            var Batch = MySqlControl.GetInstance().DB.Queryable<MeasureBatchModel>().Where(a => a.Id == BatchId).First();
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+            var Batch = Db.Queryable<MeasureBatchModel>().Where(a => a.Id == BatchId).First();
             if (Batch == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");

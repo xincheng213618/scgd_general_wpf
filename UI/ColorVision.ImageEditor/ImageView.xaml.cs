@@ -5,9 +5,11 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI;
 using log4net;
+using Microsoft.VisualBasic.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -84,6 +86,7 @@ namespace ColorVision.ImageEditor
             this.Focusable = true;
             this.Focus();
 
+            Config.Cleared += Config_Cleared;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
 
             foreach (var item in ImageViewModel.IEditorToolFactory.IImageComponents)
@@ -159,6 +162,18 @@ namespace ColorVision.ImageEditor
             }
         }
 
+        private void Config_Cleared(object? sender, EventArgs e)
+        {
+            Config.IsPseudo = false;
+            FunctionImage = null;
+            if (HImageCache != null)
+            {
+                HImageCache?.Dispose();
+                HImageCache = null;
+            }
+            GC.Collect();
+        }
+
         public void SetBackGround(SolidColorBrush color)
         {
             ZoomGrid.Background = color;
@@ -179,8 +194,6 @@ namespace ColorVision.ImageEditor
         /// </summary>
         private void SetupToolbarToggleCommands()
         {
-
-
             // Show All Toolbars (Ctrl+Shift+A)
             var showAllToolbarsCommand = new RoutedCommand();
             CommandBindings.Add(new CommandBinding(showAllToolbarsCommand, (s, e) => 
@@ -302,20 +315,12 @@ namespace ColorVision.ImageEditor
         public void Clear()
         {
             ClearImageEventHandler?.Invoke(this, new EventArgs());
-            Config.Properties.Clear();
-            Config.FilePath = string.Empty;
+            Config.ClearProperties();
             FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Clear();
             ImageShow.Source = null;
             ImageShow.UpdateLayout();
-
-            if (HImageCache != null)
-            {
-                HImageCache?.Dispose();
-                HImageCache = null;
-            }
-            GC.Collect();
             ComboBoxLayers.Visibility = Visibility.Collapsed;
         }
 
@@ -347,11 +352,8 @@ namespace ColorVision.ImageEditor
             //如果文件已经打开，不会重复打开
             if (filePath == null || filePath.Equals(Config.GetProperties<string>("FilePath"), StringComparison.Ordinal)) return;
 
-            if (Config.Properties.Count > 0)
-            {
-                ClearImageEventHandler?.Invoke(this, new EventArgs());
-                Config.Properties.Clear();
-            }
+            Config.ClearProperties();
+
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
             Config.FilePath = filePath;
@@ -476,12 +478,16 @@ namespace ColorVision.ImageEditor
                 if (depth == 16)
                 {
                     Config.AddProperties("Max", 65535);
+                    PseudoSlider.SmallChange = 255;
+                    PseudoSlider.LargeChange = 2550;
                     PseudoSlider.Maximum = 65535;
                     PseudoSlider.ValueEnd = 65535;
                 }
                 else
                 {
                     Config.AddProperties("Max", 255);
+                    PseudoSlider.SmallChange = 1;
+                    PseudoSlider.LargeChange = 10;
                     PseudoSlider.Maximum = 255;
                     PseudoSlider.ValueEnd = 255;
 
@@ -502,12 +508,12 @@ namespace ColorVision.ImageEditor
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e => RenderPseudo(), 0);
+            RenderPseudo();
         }
 
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e => RenderPseudo(), 0);
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 30, e => RenderPseudo(), 0);
         }
         public void RenderPseudo()
         {
@@ -528,10 +534,13 @@ namespace ColorVision.ImageEditor
                     uint max = (uint)PseudoSlider.ValueEnd;
                     int channel = ComboBoxLayers.SelectedIndex - 1;
 
-                    log.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
+                    log.Info($"PseudoColor,min:{min},max:{max}");
                     Task.Run(() =>
                     {
+                        Stopwatch sw = Stopwatch.StartNew();
+
                         int ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes, channel);
+                        double algoMs = sw.Elapsed.TotalMilliseconds;
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             if (ret == 0)
@@ -543,9 +552,22 @@ namespace ColorVision.ImageEditor
 
                                     FunctionImage = image;
                                 }
+
                                 if (Pseudo.IsChecked == true)
                                 {
                                     ImageShow.Source = FunctionImage;
+                                }
+
+
+                                sw.Stop();
+                                double renderMs = sw.Elapsed.TotalMilliseconds;
+                                // ================== 输出结果 ==================
+                                // 建议在界面上加一个 TextBlock (比如 TimeStatus) 显示，比看日志更直观
+                                
+                                if (log.IsInfoEnabled)
+                                {
+                                    string perfMsg = $"算法耗时: {algoMs:F2} ms | 渲染耗时: {renderMs - algoMs:F2} ms | 总计: {(renderMs):F2} ms";
+                                    log.Info(perfMsg); // 记录日志
                                 }
                             }
                         });
@@ -649,6 +671,7 @@ namespace ColorVision.ImageEditor
         {
             Clear();
             ImageViewModel.Dispose();
+            Config.Cleared -= Config_Cleared;
 
             ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
             ImageShow.VisualsRemove -= ImageShow_VisualsRemove;

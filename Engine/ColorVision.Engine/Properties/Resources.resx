@@ -1086,7 +1086,7 @@
   <data name="StereoFusion" xml:space="preserve">
     <value>双目融合</value>
   </data>
-  <data name="KBDetect" xml:space="preserve">
+  <data name="CharacterBrghtnessInsp" xml:space="preserve">
     <value>键盘检测</value>
   </data>
   <data name="subPixelDetect" xml:space="preserve">
@@ -1642,7 +1642,7 @@
     <value>左</value>
   </data>
   <data name="Right" xml:space="preserve">
-    <value>右:</value>
+    <value>右</value>
   </data>
   <data name="Dispaly" xml:space="preserve">
     <value>显示</value>
@@ -1714,7 +1714,7 @@
     <value>电流(mA)</value>
   </data>
   <data name="V" xml:space="preserve">
-    <value>电压</value>
+    <value>电压(_V)</value>
   </data>
   <data name="HalfBandwidth" xml:space="preserve">
     <value>半波宽</value>
@@ -1756,7 +1756,7 @@
     <value>电流曲线</value>
   </data>
   <data name="ElectricCurrent" xml:space="preserve">
-    <value>电流(A)</value>
+    <value>电流(mA)</value>
   </data>
   <data name="Voltage" xml:space="preserve">
     <value>电压(V)</value>
@@ -1915,7 +1915,7 @@
     <value>幅值文件</value>
   </data>
   <data name="IsEnableNd" xml:space="preserve">
-    <value>是否启用ND</value>
+    <value>启用ND</value>
   </data>
   <data name="ConnectType" xml:space="preserve">
     <value>连接方式</value>
@@ -2062,7 +2062,7 @@
     <value>POI过滤模板设置</value>
   </data>
   <data name="LedBandDetectorManagement" xml:space="preserve">
-    <value>灯条检测模板管理"</value>
+    <value>灯条检测模板管理</value>
   </data>
   <data name="SfrEdgeDetectionTemplateManagement" xml:space="preserve">
     <value>SFR寻边模板管理</value>
@@ -2379,9 +2379,6 @@
   <data name="ClearDatabaseOnly" xml:space="preserve">
     <value>仅清除数据库</value>
   </data>
-  <data name="ConfigArchivedModel_删除本地文件" xml:space="preserve">
-    <value>删除本地文件</value>
-  </data>
   <data name="DeleteLocalFiles" xml:space="preserve">
     <value>删除本地文件</value>
   </data>
@@ -2531,5 +2528,101 @@
   </data>
   <data name="Model" xml:space="preserve">
     <value>型号</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>在线</value>
+  </data>
+  <data name="Syncfreq" xml:space="preserve">
+    <value>同步频率</value>
+  </data>
+  <data name="SyncfreqFactor" xml:space="preserve">
+    <value>同步频率系数</value>
+  </data>
+  <data name="FilterBW" xml:space="preserve">
+    <value>滤波宽度</value>
+  </data>
+  <data name="IsSyncFrequencyEnabled" xml:space="preserve">
+    <value>是否开启同步频率</value>
+  </data>
+  <data name="GetSpectrSerialNumber" xml:space="preserve">
+    <value>获取光谱序列号</value>
+  </data>
+  <data name="EditDisplayConfig" xml:space="preserve">
+    <value>编辑显示配置</value>
+  </data>
+  <data name="OpenEditTool" xml:space="preserve">
+    <value>编辑工具</value>
+  </data>
+  <data name="Annotation" xml:space="preserve">
+    <value>注释</value>
+  </data>
+  <data name="PropertyEdit" xml:space="preserve">
+    <value>属性编辑</value>
+  </data>
+  <data name="TextEdit" xml:space="preserve">
+    <value>文本编辑</value>
+  </data>
+  <data name="PreprocessManager" xml:space="preserve">
+    <value>预处理管理</value>
+  </data>
+  <data name="CurrentVoltageV" xml:space="preserve">
+    <value>当前电压(V)</value>
+  </data>
+  <data name="CurrentCurrentMA" xml:space="preserve">
+    <value>当前电流(mA)</value>
+  </data>
+  <data name="ImageCrop" xml:space="preserve">
+    <value>图像裁剪</value>
+  </data>
+  <data name="FindCross" xml:space="preserve">
+    <value>十字定位</value>
+  </data>
+  <data name="ColorCorrection" xml:space="preserve">
+    <value>色差校正</value>
+  </data>
+  <data name="EmittingAreaLocation" xml:space="preserve">
+    <value>发光区定位</value>
+  </data>
+  <data name="TemplateList" xml:space="preserve">
+    <value>模板列表</value>
+  </data>
+  <data name="OpenFullEditor" xml:space="preserve">
+    <value>打开完整编辑器</value>
+  </data>
+  <data name="SelectTemplateToViewDetails" xml:space="preserve">
+    <value>选择一个模板查看详情</value>
+  </data>
+  <data name="PleaseSelectTemplateToViewAndEdit" xml:space="preserve">
+    <value>请选择一个模板以查看和编辑</value>
+  </data>
+  <data name="TemplateEdit" xml:space="preserve">
+    <value>模板编辑</value>
+  </data>
+  <data name="CurrentSelection" xml:space="preserve">
+    <value>当前选择</value>
+  </data>
+  <data name="TemplatesCount" xml:space="preserve">
+    <value>个模板</value>
+  </data>
+  <data name="TemplateEditorLoadFailed" xml:space="preserve">
+    <value>无法加载模板编辑器</value>
+  </data>
+  <data name="DefaultValueType" xml:space="preserve">
+    <value>默认值类型</value>
+  </data>
+  <data name="ServiceRegistryCenterConfig" xml:space="preserve">
+    <value>服务注册中心配置</value>
+  </data>
+  <data name="ExportSucceeded" xml:space="preserve">
+    <value>导出成功</value>
+  </data>
+  <data name="ConfirmReset" xml:space="preserve">
+    <value>确定要重置</value>
+  </data>
+  <data name="ImportException" xml:space="preserve">
+    <value>导入异常</value>
+  </data>
+  <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
+    <value>非必要情况下请勿删除,是否删除</value>
   </data>
 </root>

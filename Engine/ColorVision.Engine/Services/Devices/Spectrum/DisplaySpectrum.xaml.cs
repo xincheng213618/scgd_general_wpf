@@ -1,22 +1,22 @@
-﻿using ColorVision.Database;
-using ColorVision.Engine.Batch.Eqe;
-using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
-using SqlSugar;
 using System;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
+
+
     /// <summary>
     /// DisplaySpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplaySpectrum : UserControl, IDisPlayControl
+    public partial class DisplaySpectrum : UserControl, IDisPlayControl,IDisposable
     {
         public DeviceSpectrum Device { get; set; }
         public MQTTSpectrum DService { get => Device.DService; }
@@ -35,7 +35,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             DataContext = Device;
 
-            //增加进度显示
             Device.SelfAdaptionInitDarkStarted += () =>
             {
                 Application.Current.Dispatcher.Invoke(() =>
@@ -53,63 +52,59 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 });
             };
             this.AddViewConfig(View,ComboxView);
-            this.ContextMenu = Device.ContextMenu;
-
-
-            void UpdateUI(DeviceStatusType status)
-            {
-                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
-
-                void HideAllButtons()
-                {
-                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
-                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
-                    SetVisibility(StackPanelContent, Visibility.Collapsed);
-                    SetVisibility(StackPanelOpen, Visibility.Collapsed);
-                    SetVisibility(TextBlockOffLine, Visibility.Collapsed);
-                }
-
-                HideAllButtons();
-                btn_autoTest.Content = ColorVision.Engine.Properties.Resources.ContinuousMeasurement;
-                switch (status)
-                {
-
-                    case DeviceStatusType.Unknown:
-                        SetVisibility(TextBlockUnknow, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Unauthorized:
-                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.OffLine:
-                        SetVisibility(TextBlockOffLine, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.UnInit:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        btn_connect.Content = ColorVision.Engine.Properties.Resources.Open;
-                        break;
-                    case DeviceStatusType.Closed:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        btn_connect.Content = ColorVision.Engine.Properties.Resources.Open;
-                        break;
-                    case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        SetVisibility(StackPanelOpen, Visibility.Visible);
-                        btn_connect.Content = ColorVision.Engine.Properties.Resources.Close;
-                        break;
-                    case DeviceStatusType.SP_Continuous_Mode:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        SetVisibility(StackPanelOpen, Visibility.Visible);
-                        btn_autoTest.Content = ColorVision.Engine.Properties.Resources.CancelAutoTest;
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            UpdateUI(DService.DeviceStatus);
-            DService.DeviceStatusChanged += UpdateUI;
+            DService_DeviceStatusChanged(sender,DService.DeviceStatus);
+            DService.DeviceStatusChanged += DService_DeviceStatusChanged;
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
+        }
+
+        private void DService_DeviceStatusChanged(object? sender, DeviceStatusType e)
+        {
+            void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
+            void HideAllButtons()
+            {
+                SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                SetVisibility(StackPanelContent, Visibility.Collapsed);
+                SetVisibility(StackPanelOpen, Visibility.Collapsed);
+                SetVisibility(TextBlockOffLine, Visibility.Collapsed);
+            }
+
+            HideAllButtons();
+            btn_autoTest.Content = ColorVision.Engine.Properties.Resources.ContinuousMeasurement;
+            switch (e)
+            {
+
+                case DeviceStatusType.Unknown:
+                    SetVisibility(TextBlockUnknow, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Unauthorized:
+                    SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                    break;
+                case DeviceStatusType.OffLine:
+                    SetVisibility(TextBlockOffLine, Visibility.Visible);
+                    break;
+                case DeviceStatusType.UnInit:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    btn_connect.Content = ColorVision.Engine.Properties.Resources.Open;
+                    break;
+                case DeviceStatusType.Closed:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    btn_connect.Content = ColorVision.Engine.Properties.Resources.Open;
+                    break;
+                case DeviceStatusType.Opened:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(StackPanelOpen, Visibility.Visible);
+                    btn_connect.Content = ColorVision.Engine.Properties.Resources.Close;
+                    break;
+                case DeviceStatusType.SP_Continuous_Mode:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    SetVisibility(StackPanelOpen, Visibility.Visible);
+                    btn_autoTest.Content = ColorVision.Engine.Properties.Resources.CancelAutoTest;
+                    break;
+                default:
+                    break;
+            }
         }
 
         private void Device_SelfAdaptionInitDarkStarted()
@@ -137,12 +132,26 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 {
                     btn_connect.Content = ColorVision.Engine.Properties.Resources.Opening;
                     MsgRecord msgRecord = DService.Open();
+                    msgRecord.MsgRecordStateChanged += (e) =>
+                    {
+                        if (e == MsgRecordState.Fail)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                        }
+                    };
 
                 }
                 else
                 {
                     btn_connect.Content = ColorVision.Engine.Properties.Resources.Closing;
                     MsgRecord msgRecord = DService.Close();
+                    msgRecord.MsgRecordStateChanged += (e) =>
+                    {
+                        if (e == MsgRecordState.Fail)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                        }
+                    };
                 }
             }
         }
@@ -151,12 +160,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             MsgRecord msgRecord = DService.GetData();
             msgRecord.MsgRecordStateChanged += (e) =>
             {
-                if (e == MsgRecordState.Success)
+                if (e == MsgRecordState.Fail)
                 {
-                }
-                else
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                 }
             };
         }
@@ -166,12 +172,26 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             string btnTitle = btn_autoTest.Content.ToString();
             if (!string.IsNullOrWhiteSpace(btnTitle) && btnTitle.Equals(ColorVision.Engine.Properties.Resources.ContinuousMeasurement, StringComparison.Ordinal))
             {
-                DService.GetDataAuto();
+                MsgRecord msgRecord = DService.GetDataAuto();
                 btn_autoTest.Content = ColorVision.Engine.Properties.Resources.CancelAutoTest;
+                msgRecord.MsgRecordStateChanged += (e) =>
+                {
+                    if (e == MsgRecordState.Fail)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                    }
+                };
             }
             else
             {
-                DService.GetDataAutoStop();
+                MsgRecord msgRecord = DService.GetDataAutoStop();
+                msgRecord.MsgRecordStateChanged += (e) =>
+                {
+                    if (e == MsgRecordState.Fail)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                    }
+                };
                 btn_autoTest.Content = ColorVision.Engine.Properties.Resources.ContinuousMeasurement;
             }
         }
@@ -186,7 +206,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                 }
             };
         }
@@ -195,17 +215,39 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private void Button_Click_Shutter_Connect(object sender, RoutedEventArgs e)
         {
-            DService.ShutterConnect();
+            MsgRecord msgRecord = DService.ShutterConnect();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Fail)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                }
+            };
+
         }
 
         private void Button_Click_Shutter_Doopen(object sender, RoutedEventArgs e)
         {
-            DService.ShutterDoopen();
+            MsgRecord msgRecord = DService.ShutterDoopen();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Fail)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                }
+            };
         }
 
         private void Button_Click_Shutter_Doclose(object sender, RoutedEventArgs e)
         {
-            DService.ShutterDoclose();
+            MsgRecord msgRecord = DService.ShutterDoclose();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Fail)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                }
+            };
         }
 
         private void NDport_Click(object sender, RoutedEventArgs e)
@@ -213,12 +255,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             MsgRecord msgRecord = DService.SetPort();
             msgRecord.MsgRecordStateChanged += (e) =>
             {
-                if (e == MsgRecordState.Success)
+                if (e == MsgRecordState.Fail)
                 {
-                }
-                else
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                 }
             };
         }
@@ -235,7 +274,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                 }
             };
         }
@@ -243,6 +282,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
+        }
+
+        public void Dispose()
+        {
+            DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Database;
 using log4net;
 using Newtonsoft.Json;
+using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -24,19 +25,13 @@ namespace ColorVision.Engine.Templates.POI
                 poiDetails.Add(new PoiDetailModel(poiParam.Id, pt));
             }
             int count;
+            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            var db = MySqlControl.GetInstance().DB;
             Stopwatch sw2 = Stopwatch.StartNew();
-            db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiParam.Id).ExecuteCommand();
-            count = MySqlControl.GetInstance().DB.Fastest<PoiDetailModel>().BulkCopy(poiDetails);
+            Db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiParam.Id).ExecuteCommand();
+            count = Db.Fastest<PoiDetailModel>().BulkCopy(poiDetails);
             sw2.Stop();
             log.Debug("SqlSugar BulkCopy " + count + " 耗时: " + sw2.ElapsedMilliseconds + " ms");
-
-            //Stopwatch sw3 = Stopwatch.StartNew();
-            //db.Deleteable<PoiDetailModel>().Where(x => x.Pid == poiParam.Id).ExecuteCommand();
-            //count = MySqlControl.GetInstance().DB.Insertable(poiDetails).ExecuteCommand();
-            //sw3.Stop();
-            //log.Debug("SqlSugar Insertable " + count + " 耗时: " + sw3.ElapsedMilliseconds + " ms");
 
             return  1;
         }
@@ -58,7 +53,9 @@ namespace ColorVision.Engine.Templates.POI
             List<PoiDetailModel> poiDetails2 = null;
             try
             {
-                poiDetails2 = MySqlControl.GetInstance().DB
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+
+                poiDetails2 = Db
                     .Queryable<PoiDetailModel>()
                     .Where(x => x.Pid == poiParam.Id)
                     .ToList();

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.RC;
 
 namespace ColorVision.Engine.Services.Devices.Motor
 {

@@ -1,6 +1,5 @@
 ﻿using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using CVCommCore;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,7 +9,7 @@ namespace ColorVision.Engine.Services.Devices.PG
     /// <summary>
     /// DisplayPG.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayPG : UserControl, IDisPlayControl
+    public partial class DisplayPG : UserControl, IDisPlayControl,IDisposable
     {
         private MQTTPG PGService { get => Device.DService; }
         private DevicePG Device { get; set; }
@@ -25,87 +24,8 @@ namespace ColorVision.Engine.Services.Devices.PG
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-
-            this.ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
-
-            PGService.DeviceStatusChanged += (e) =>
-            {
-                switch (e)
-                {
-                    case DeviceStatusType.Unknown:
-                        break;
-                    case DeviceStatusType.OffLine:
-                        break;
-                    case DeviceStatusType.Closed:
-                        btn_open.Content = "打开";
-                        break;
-                    case DeviceStatusType.Closing:
-                        btn_open.Content = "关闭中";
-                        break;
-                    case DeviceStatusType.Opened:
-                        btn_open.Content = "关闭";
-                        break;
-                    case DeviceStatusType.Opening:
-                        btn_open.Content = "打开中";
-                        break;
-                    case DeviceStatusType.Busy:
-                        break;
-                    case DeviceStatusType.Free:
-                        break;
-                    case DeviceStatusType.LiveOpened:
-                        break;
-                    default:
-                        break;
-                }
-            };
-
-
-            void UpdateUI(DeviceStatusType status)
-            {
-                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
-
-                void HideAllButtons()
-                {
-                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
-                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
-                    SetVisibility(StackPanelContent, Visibility.Collapsed);
-                    SetVisibility(TextBlockOffLine, Visibility.Collapsed);
-                }
-
-                HideAllButtons();
-                switch (status)
-                {
-
-                    case DeviceStatusType.Unknown:
-                        SetVisibility(TextBlockUnknow, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Unauthorized:
-                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.OffLine:
-                        SetVisibility(TextBlockOffLine, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.UnInit:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Closed:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-
-            UpdateUI(PGService.DeviceStatus);
-            PGService.DeviceStatusChanged += UpdateUI;
-
-
-
+            PGService_DeviceStatusChanged(sender,PGService.DeviceStatus);
+            PGService.DeviceStatusChanged += PGService_DeviceStatusChanged;
             if (PGService.Config.IsNet)
             {
                 TextBlockPGIP.Text = "IP地址";
@@ -117,6 +37,46 @@ namespace ColorVision.Engine.Services.Devices.PG
                 TextBlockPGPort.Text = "波特率";
             }
             this.ApplyChangedSelectedColor(DisPlayBorder);
+        }
+
+        private void PGService_DeviceStatusChanged(object? sender, DeviceStatusType e)
+        {
+            void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }
+
+            void HideAllButtons()
+            {
+                SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                SetVisibility(StackPanelContent, Visibility.Collapsed);
+                SetVisibility(TextBlockOffLine, Visibility.Collapsed);
+            }
+
+            HideAllButtons();
+            switch (e)
+            {
+
+                case DeviceStatusType.Unknown:
+                    SetVisibility(TextBlockUnknow, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Unauthorized:
+                    SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                    break;
+                case DeviceStatusType.OffLine:
+                    SetVisibility(TextBlockOffLine, Visibility.Visible);
+                    break;
+                case DeviceStatusType.UnInit:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Closed:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    break;
+                case DeviceStatusType.Opened:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    break;
+                default:
+                    SetVisibility(StackPanelContent, Visibility.Visible);
+                    break;
+            }
         }
 
         public event RoutedEventHandler Selected;
@@ -171,6 +131,11 @@ namespace ColorVision.Engine.Services.Devices.PG
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
+        }
+
+        public void Dispose()
+        {
+            PGService.DeviceStatusChanged -= PGService_DeviceStatusChanged;
         }
     }
 }

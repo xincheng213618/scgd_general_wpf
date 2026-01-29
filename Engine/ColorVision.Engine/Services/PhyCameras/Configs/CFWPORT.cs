@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.PropertyEditor;
-using ColorVision.Engine.Services.Devices;
-using Newtonsoft.Json;
+using ColorVision.Engine.Services.Devices.CfwPort;
 using System.Collections.Generic;
 using System.ComponentModel;
 
@@ -21,7 +20,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public bool IsBingNDDevice { get => _IsBingNDDevice; set { _IsBingNDDevice = value; OnPropertyChanged(); } }
         private bool _IsBingNDDevice = true;
 
-        [PropertyEditorType(typeof(TextCFWPropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice))]
+        [PropertyEditorType(typeof(DeviceNameEditor)), DeviceSourceType(typeof(DeviceCfwPort)), PropertyVisibility(nameof(IsBingNDDevice))]
         public string NDBindDeviceCode { get => _NDBindDeviceCode; set { _NDBindDeviceCode = value; OnPropertyChanged(); } }
         private string _NDBindDeviceCode = "";
 

@@ -9,6 +9,7 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Services.Devices.SMU;
@@ -59,16 +60,13 @@ using FlowEngineLib.Base;
 using FlowEngineLib.End;
 using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib.Start;
-using NPOI.SS.Formula.Functions;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Resources;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -224,7 +222,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.PG.PGNode pgnode)
             {
-                AddStackPanel(name => pgnode.DeviceCode = name, pgnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
+                AddStackPanel(name => pgnode.DeviceCode = name, pgnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DevicePG>().ToList());
             }
             if (STNodeEditor.ActiveNode is FlowEngineLib.FWNode fwnode)
             {
@@ -694,16 +692,14 @@ namespace ColorVision.Engine.Templates.Flow
             dockPanel.Children.Add(new TextBlock
             {
                 Text = Tag,
-                Width = 50,
+                Width = 70,
                 Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
             });
 
             // 文本框
             var textBox = new TextBox
             {
-                Width = 150,
                 Margin = new Thickness(0, 0, 0, 0),
-                HorizontalAlignment =HorizontalAlignment.Left,
                 Style = (Style)Application.Current.FindResource("TextBox.Small"),
                 Text = filename
             };
@@ -783,12 +779,6 @@ namespace ColorVision.Engine.Templates.Flow
             Grid myGrid = new Grid();
             myGrid.DataContext = selectedItem;
 
-            // Create a Button
-            var button = new Button
-            {
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0),
-            };
             comboBox.SelectionChanged += (s, e) =>
             {
                 string selectedName = string.Empty;
@@ -805,6 +795,11 @@ namespace ColorVision.Engine.Templates.Flow
                 STNodeEditorMain_ActiveChanged(this,new EventArgs());
             };
 
+            var button = new Button
+            {
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+            };
             // Create a ToggleButton
             var toggleButton = new ToggleButton
             {

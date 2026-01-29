@@ -1,12 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using Newtonsoft;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Text.Json.Nodes;
 
 
 namespace ColorVision.Engine.Services

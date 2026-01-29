@@ -12,6 +12,12 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
+    public enum CVOLEDCOLOR
+    {
+        BLUE = 0,
+        GREEN = 1,
+        RED = 2,
+    };
     public class PointVM:ViewModelBase
     {
         public double X { get => _X; set { _X = value; OnPropertyChanged(); } }

@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8604
-using ColorVision.UI;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Windows.Controls;

@@ -124,6 +124,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 检测插件更新 的本地化字符串。
+        /// </summary>
+        public static string CheckPluginUpdates {
+            get {
+                return ResourceManager.GetString("CheckPluginUpdates", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 检查更新(旧) 的本地化字符串。
         /// </summary>
         public static string CheckUpdateOld {
@@ -147,6 +156,15 @@ namespace ColorVision.Properties {
         public static string ClearPackageCache {
             get {
                 return ResourceManager.GetString("ClearPackageCache", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 点击是立即更新，点击否跳过该版本，点击取消稍后提醒 的本地化字符串。
+        /// </summary>
+        public static string ClickYesToUpdateNow {
+            get {
+                return ResourceManager.GetString("ClickYesToUpdateNow", resourceCulture);
             }
         }
         
@@ -282,6 +300,15 @@ namespace ColorVision.Properties {
         public static string ForceUpdate {
             get {
                 return ResourceManager.GetString("ForceUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 全屏 的本地化字符串。
+        /// </summary>
+        public static string FullScreen {
+            get {
+                return ResourceManager.GetString("FullScreen", resourceCulture);
             }
         }
         
@@ -498,6 +525,15 @@ namespace ColorVision.Properties {
         public static string TbSettingsStartBoot {
             get {
                 return ResourceManager.GetString("TbSettingsStartBoot", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 终止未响应的进程 的本地化字符串。
+        /// </summary>
+        public static string TerminateUnresponsiveProcess {
+            get {
+                return ResourceManager.GetString("TerminateUnresponsiveProcess", resourceCulture);
             }
         }
         

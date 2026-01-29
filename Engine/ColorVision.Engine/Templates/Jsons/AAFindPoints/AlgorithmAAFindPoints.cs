@@ -11,7 +11,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 {
-    [DisplayAlgorithm(70, "发光区定位", "基础算法")]
+    [DisplayAlgorithm(70, "EmittingAreaLocation,", "基础算法")]
     public class AlgorithmAAFindPoints : DisplayAlgorithmBase
     {
 
