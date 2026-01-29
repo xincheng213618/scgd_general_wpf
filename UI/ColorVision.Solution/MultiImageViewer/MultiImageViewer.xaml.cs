@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,6 +32,12 @@ namespace ColorVision.Solution.MultiImageViewer
         /// 当前显示的文件列表
         /// </summary>
         private List<string>? _currentFileList;
+
+        /// <summary>
+        /// 用于防止并发打开图像的锁
+        /// </summary>
+        private string? _currentOpeningFile;
+        private readonly object _openImageLock = new();
 
         public MultiImageViewer()
         {
@@ -149,41 +156,71 @@ namespace ColorVision.Solution.MultiImageViewer
             if (fileInfo.FilePath.Equals(ImageView.Config?.FilePath, StringComparison.OrdinalIgnoreCase))
                 return;
 
+            // 防止并发打开同一文件
+            lock (_openImageLock)
+            {
+                if (fileInfo.FilePath.Equals(_currentOpeningFile, StringComparison.OrdinalIgnoreCase))
+                    return;
+                _currentOpeningFile = fileInfo.FilePath;
+            }
+
             if (fileInfo.FileExists)
             {
+                var filePath = fileInfo.FilePath;
                 Task.Run(async () =>
                 {
                     try
                     {
-                        var fi = new FileInfo(fileInfo.FilePath);
+                        var fi = new FileInfo(filePath);
                         // 尝试打开文件以确认可读
                         using (fi.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) { }
 
                         if (fi.Length > 0)
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
+                            await Application.Current.Dispatcher.InvokeAsync(() =>
                             {
-                                ImageView.OpenImage(fileInfo.FilePath);
+                                // 再次检查是否仍然是要打开的文件
+                                lock (_openImageLock)
+                                {
+                                    if (!filePath.Equals(_currentOpeningFile, StringComparison.OrdinalIgnoreCase))
+                                        return;
+                                }
+                                ImageView.OpenImage(filePath);
                                 NoImageHint.Visibility = Visibility.Collapsed;
                             });
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        System.Diagnostics.Debug.WriteLine($"OpenImage initial attempt failed: {ex.Message}");
                         // 文件可能正在写入，延迟重试
                         await Task.Delay(Config.ImageReadDelay);
-                        Application.Current.Dispatcher.Invoke(() =>
+                        await Application.Current.Dispatcher.InvokeAsync(() =>
                         {
                             try
                             {
-                                ImageView.OpenImage(fileInfo.FilePath);
+                                // 再次检查是否仍然是要打开的文件
+                                lock (_openImageLock)
+                                {
+                                    if (!filePath.Equals(_currentOpeningFile, StringComparison.OrdinalIgnoreCase))
+                                        return;
+                                }
+                                ImageView.OpenImage(filePath);
                                 NoImageHint.Visibility = Visibility.Collapsed;
                             }
-                            catch (Exception ex)
+                            catch (Exception innerEx)
                             {
-                                System.Diagnostics.Debug.WriteLine($"OpenImage Error: {ex.Message}");
+                                System.Diagnostics.Debug.WriteLine($"OpenImage retry failed: {innerEx.Message}");
                             }
                         });
+                    }
+                    finally
+                    {
+                        lock (_openImageLock)
+                        {
+                            if (filePath.Equals(_currentOpeningFile, StringComparison.OrdinalIgnoreCase))
+                                _currentOpeningFile = null;
+                        }
                     }
                 });
             }
@@ -222,7 +259,10 @@ namespace ColorVision.Solution.MultiImageViewer
                 {
                     Clipboard.SetText(selectedFile.FilePath);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"CopyFilePath Error: {ex.Message}");
+                }
             }
         }
 

@@ -189,8 +189,9 @@ namespace ColorVision.Solution.MultiImageViewer
                     FileExists = false;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"LoadFileInfo Error: {ex.Message}");
                 FileExists = false;
             }
         }
@@ -239,32 +240,29 @@ namespace ColorVision.Solution.MultiImageViewer
 
         private async System.Threading.Tasks.Task LoadThumbnailDirectAsync(int thumbnailSize)
         {
-            await System.Threading.Tasks.Task.Run(() =>
+            try
             {
-                try
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    System.Windows.Application.Current?.Dispatcher.Invoke(() =>
-                    {
-                        using var stream = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                        var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
-                        var frame = decoder.Frames[0];
+                    using var stream = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+                    var frame = decoder.Frames[0];
 
-                        ImageWidth = frame.PixelWidth;
-                        ImageHeight = frame.PixelHeight;
+                    ImageWidth = frame.PixelWidth;
+                    ImageHeight = frame.PixelHeight;
 
-                        double scale = Math.Min((double)thumbnailSize / ImageWidth, (double)thumbnailSize / ImageHeight);
-                        scale = Math.Min(scale, 1.0);
+                    double scale = Math.Min((double)thumbnailSize / ImageWidth, (double)thumbnailSize / ImageHeight);
+                    scale = Math.Min(scale, 1.0);
 
-                        var thumbnail = new TransformedBitmap(frame, new ScaleTransform(scale, scale));
-                        thumbnail.Freeze();
-                        Thumbnail = thumbnail;
-                    });
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"LoadThumbnailDirectAsync Error: {ex.Message}");
-                }
-            });
+                    var thumbnail = new TransformedBitmap(frame, new ScaleTransform(scale, scale));
+                    thumbnail.Freeze();
+                    Thumbnail = thumbnail;
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"LoadThumbnailDirectAsync Error: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -283,7 +281,10 @@ namespace ColorVision.Solution.MultiImageViewer
                     System.Diagnostics.Process.Start("explorer.exe", Directory);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"OpenInExplorer Error: {ex.Message}");
+            }
         }
     }
 }

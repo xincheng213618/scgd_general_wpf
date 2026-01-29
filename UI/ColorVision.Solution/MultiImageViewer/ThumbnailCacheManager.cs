@@ -30,7 +30,10 @@ namespace ColorVision.Solution.MultiImageViewer
             {
                 lock (_locker)
                 {
-                    _instance ??= new ThumbnailCacheManager();
+                    if (_instance == null || _instance._disposed)
+                    {
+                        _instance = new ThumbnailCacheManager();
+                    }
                     return _instance;
                 }
             }
@@ -70,7 +73,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <returns>缩略图的BitmapSource，失败返回null</returns>
         public async Task<BitmapSource?> GetOrCreateThumbnailAsync(string filePath, int thumbnailSize = 120)
         {
-            if (_db == null || !File.Exists(filePath))
+            if (_db == null || _disposed || !File.Exists(filePath))
                 return null;
 
             try
@@ -116,115 +119,111 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         public ThumbnailCacheEntry? GetCachedInfo(string filePath)
         {
-            if (_db == null) return null;
+            if (_db == null || _disposed) return null;
 
             try
             {
                 return _db.Queryable<ThumbnailCacheEntry>()
                           .First(x => x.FilePath == filePath);
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"GetCachedInfo Error: {ex.Message}");
                 return null;
             }
         }
 
         private async Task<(BitmapSource? thumbnail, int width, int height)> CreateThumbnailAsync(string filePath, int thumbnailSize)
         {
-            return await Task.Run(() =>
+            try
             {
-                try
-                {
-                    BitmapSource? result = null;
-                    int width = 0, height = 0;
+                BitmapSource? result = null;
+                int width = 0, height = 0;
 
-                    Application.Current?.Dispatcher.Invoke(() =>
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+                    var frame = decoder.Frames[0];
+
+                    width = frame.PixelWidth;
+                    height = frame.PixelHeight;
+
+                    // 计算缩略图尺寸
+                    double scale = Math.Min((double)thumbnailSize / width, (double)thumbnailSize / height);
+                    scale = Math.Min(scale, 1.0); // 不放大小图
+                    int thumbWidth = (int)(width * scale);
+                    int thumbHeight = (int)(height * scale);
+
+                    var thumbnail = new TransformedBitmap(frame, new ScaleTransform(scale, scale));
+                    var rtb = new RenderTargetBitmap(thumbWidth, thumbHeight, 96, 96, PixelFormats.Pbgra32);
+                    var dv = new DrawingVisual();
+                    using (var dc = dv.RenderOpen())
                     {
-                        using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                        var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
-                        var frame = decoder.Frames[0];
+                        dc.DrawImage(thumbnail, new Rect(0, 0, thumbWidth, thumbHeight));
+                    }
+                    rtb.Render(dv);
+                    rtb.Freeze();
+                    result = rtb;
+                });
 
-                        width = frame.PixelWidth;
-                        height = frame.PixelHeight;
-
-                        // 计算缩略图尺寸
-                        double scale = Math.Min((double)thumbnailSize / width, (double)thumbnailSize / height);
-                        scale = Math.Min(scale, 1.0); // 不放大小图
-                        int thumbWidth = (int)(width * scale);
-                        int thumbHeight = (int)(height * scale);
-
-                        var thumbnail = new TransformedBitmap(frame, new ScaleTransform(scale, scale));
-                        var rtb = new RenderTargetBitmap(thumbWidth, thumbHeight, 96, 96, PixelFormats.Pbgra32);
-                        var dv = new DrawingVisual();
-                        using (var dc = dv.RenderOpen())
-                        {
-                            dc.DrawImage(thumbnail, new Rect(0, 0, thumbWidth, thumbHeight));
-                        }
-                        rtb.Render(dv);
-                        rtb.Freeze();
-                        result = rtb;
-                    });
-
-                    return (result, width, height);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"CreateThumbnailAsync Error: {ex.Message}");
-                    return (null, 0, 0);
-                }
-            });
+                return (result, width, height);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"CreateThumbnailAsync Error: {ex.Message}");
+                return (null, 0, 0);
+            }
         }
 
         private async Task<byte[]?> EncodeThumbnailAsync(BitmapSource thumbnail)
         {
-            return await Task.Run(() =>
+            try
             {
-                try
+                byte[]? result = null;
+                await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    byte[]? result = null;
-                    Application.Current?.Dispatcher.Invoke(() =>
-                    {
-                        var encoder = new PngBitmapEncoder();
-                        encoder.Frames.Add(BitmapFrame.Create(thumbnail));
-                        using var ms = new MemoryStream();
-                        encoder.Save(ms);
-                        result = ms.ToArray();
-                    });
-                    return result;
-                }
-                catch
-                {
-                    return null;
-                }
-            });
+                    var encoder = new PngBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(thumbnail));
+                    using var ms = new MemoryStream();
+                    encoder.Save(ms);
+                    result = ms.ToArray();
+                });
+                return result;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"EncodeThumbnailAsync Error: {ex.Message}");
+                return null;
+            }
         }
 
         private async Task<BitmapSource?> LoadThumbnailFromBytesAsync(byte[] data)
         {
-            return await Task.Run(() =>
+            try
             {
-                try
+                BitmapSource? result = null;
+                await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    BitmapSource? result = null;
-                    Application.Current?.Dispatcher.Invoke(() =>
-                    {
-                        using var ms = new MemoryStream(data);
-                        var decoder = new PngBitmapDecoder(ms, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-                        result = decoder.Frames[0];
-                        result.Freeze();
-                    });
-                    return result;
-                }
-                catch
-                {
-                    return null;
-                }
-            });
+                    using var ms = new MemoryStream(data);
+                    var decoder = new PngBitmapDecoder(ms, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+                    result = decoder.Frames[0];
+                    result.Freeze();
+                });
+                return result;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"LoadThumbnailFromBytesAsync Error: {ex.Message}");
+                return null;
+            }
         }
 
         private async Task SaveToCacheAsync(string filePath, FileInfo fileInfo, byte[] thumbnailData,
             BitmapSource thumbnail, int originalWidth, int originalHeight)
         {
+            if (_db == null || _disposed) return;
+
             await Task.Run(() =>
             {
                 try
@@ -242,19 +241,18 @@ namespace ColorVision.Solution.MultiImageViewer
                         CreateDate = DateTime.Now
                     };
 
-                    // 检查是否存在
-                    var existing = _db?.Queryable<ThumbnailCacheEntry>()
-                                       .First(x => x.FilePath == filePath);
-
-                    if (existing != null)
-                    {
-                        entry.Id = existing.Id;
-                        _db?.Updateable(entry).ExecuteCommand();
-                    }
-                    else
-                    {
-                        _db?.Insertable(entry).ExecuteCommand();
-                    }
+                    // 使用Storageable实现UPSERT操作，避免竞态条件
+                    _db?.Storageable(entry)
+                        .WhereColumns(new[] { nameof(ThumbnailCacheEntry.FilePath) })
+                        .ToStorage()
+                        .AsUpdateable
+                        .ExecuteCommand();
+                    
+                    _db?.Storageable(entry)
+                        .WhereColumns(new[] { nameof(ThumbnailCacheEntry.FilePath) })
+                        .ToStorage()
+                        .AsInsertable
+                        .ExecuteCommand();
                 }
                 catch (Exception ex)
                 {
@@ -275,7 +273,10 @@ namespace ColorVision.Solution.MultiImageViewer
                     return new FileInfo(SqliteDbPath).Length;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GetCacheSize Error: {ex.Message}");
+            }
             return 0;
         }
 
@@ -284,11 +285,16 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         public int GetCacheCount()
         {
+            if (_disposed) return 0;
+
             try
             {
                 return _db?.Queryable<ThumbnailCacheEntry>().Count() ?? 0;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GetCacheCount Error: {ex.Message}");
+            }
             return 0;
         }
 
@@ -297,6 +303,8 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         public void ClearCache()
         {
+            if (_disposed) return;
+
             try
             {
                 _db?.Deleteable<ThumbnailCacheEntry>().ExecuteCommand();
@@ -315,21 +323,30 @@ namespace ColorVision.Solution.MultiImageViewer
         /// </summary>
         public void RemoveCache(string filePath)
         {
+            if (_disposed) return;
+
             try
             {
                 _db?.Deleteable<ThumbnailCacheEntry>()
                     .Where(x => x.FilePath == filePath)
                     .ExecuteCommand();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"RemoveCache Error: {ex.Message}");
+            }
         }
 
         public void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
-            _db?.Dispose();
-            _db = null;
+            lock (_locker)
+            {
+                if (_disposed) return;
+                _disposed = true;
+                _db?.Dispose();
+                _db = null;
+                _instance = null;
+            }
             GC.SuppressFinalize(this);
         }
 

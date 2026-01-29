@@ -15,7 +15,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <summary>
         /// 原始文件完整路径
         /// </summary>
-        [SugarColumn(IsNullable = false, Length = 1024)]
+        [SugarColumn(IsNullable = false, Length = 1024, IndexGroupNameList = new[] { "idx_FilePath" })]
         public string FilePath { get; set; } = string.Empty;
 
         /// <summary>
