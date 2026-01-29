@@ -18,6 +18,11 @@ namespace ColorVision.Solution
         /// Key: file extension (e.g., ".cs"), Value: editor type full name
         /// </summary>
         public Dictionary<string, string> DefaultEditors { get; set; } = new Dictionary<string, string>();
+
+        /// <summary>
+        /// Default folder editor type full name
+        /// </summary>
+        public string? DefaultFolderEditor { get; set; }
     }
 
     /// <summary>
@@ -35,8 +40,13 @@ namespace ColorVision.Solution
         private readonly Dictionary<string, Type> _defaultEditors = new();
         // 支持多个通用编辑器
         private readonly List<Type> _genericEditorTypes = new();
+        // 支持多个文件夹编辑器
+        private readonly List<Type> _folderEditorTypes = new();
+        // 默认文件夹编辑器类型
+        private Type? _defaultFolderEditor;
 
         private const string GENERIC_KEY = "*";
+        private const string FOLDER_KEY = "folder";
 
         private EditorManager()
         {
@@ -58,6 +68,17 @@ namespace ColorVision.Solution
                     if (editorType != null)
                         _defaultEditors[extLower] = editorType;
                 }
+            }
+
+            // Load default folder editor from config
+            var defaultFolderEditorName = EditorManagerConfig.Instance.DefaultFolderEditor;
+            if (!string.IsNullOrEmpty(defaultFolderEditorName))
+            {
+                var folderEditorType = AssemblyService.Instance.GetAssemblies()
+                    .SelectMany(a => a.GetTypes())
+                    .FirstOrDefault(t => t.FullName == defaultFolderEditorName);
+                if (folderEditorType != null && _folderEditorTypes.Contains(folderEditorType))
+                    _defaultFolderEditor = folderEditorType;
             }
         }
 
@@ -92,6 +113,14 @@ namespace ColorVision.Solution
                                 _editorMappings[GENERIC_KEY] = new List<Type>();
                             _editorMappings[GENERIC_KEY].Add(type);
                         }
+                        // 支持多个文件夹编辑器
+                        if (type.GetCustomAttributes(typeof(FolderEditorAttribute), false).Any())
+                        {
+                            _folderEditorTypes.Add(type);
+                            // 第一个注册的文件夹编辑器作为默认
+                            if (_defaultFolderEditor == null)
+                                _defaultFolderEditor = type;
+                        }
                     }
                 }
             }
@@ -106,6 +135,10 @@ namespace ColorVision.Solution
                 .Cast<GenericEditorAttribute>().FirstOrDefault();
             if (genericAttr != null && !string.IsNullOrWhiteSpace(genericAttr.Name))
                 return genericAttr.Name!;
+            var folderAttr = type.GetCustomAttributes(typeof(FolderEditorAttribute), false)
+                .Cast<FolderEditorAttribute>().FirstOrDefault();
+            if (folderAttr != null && !string.IsNullOrWhiteSpace(folderAttr.Name))
+                return folderAttr.Name!;
             return type.Name;
         }
 
@@ -146,18 +179,43 @@ namespace ColorVision.Solution
             }
         }
 
-        public IEditor? OpenFolder  (string folderPath)
+        /// <summary>
+        /// 获取所有文件夹编辑器
+        /// </summary>
+        public List<Type> GetFolderEditors()
+        {
+            return new List<Type>(_folderEditorTypes);
+        }
+
+        /// <summary>
+        /// 获取默认文件夹编辑器类型
+        /// </summary>
+        public Type? GetDefaultFolderEditorType()
+        {
+            return _defaultFolderEditor;
+        }
+
+        /// <summary>
+        /// 设置默认文件夹编辑器
+        /// </summary>
+        public void SetDefaultFolderEditor(Type editorType)
+        {
+            if (_folderEditorTypes.Contains(editorType))
+            {
+                _defaultFolderEditor = editorType;
+                EditorManagerConfig.Instance.DefaultFolderEditor = editorType.FullName;
+                ConfigService.Instance.Save<EditorManagerConfig>();
+            }
+        }
+
+        public IEditor? OpenFolder(string folderPath)
         {
             if (Directory.Exists(folderPath))
             {
-                var defaultType = typeof(MultiImageViewerEditor);
+                // 使用动态的默认文件夹编辑器
+                var defaultType = _defaultFolderEditor ?? _folderEditorTypes.FirstOrDefault();
                 if (defaultType != null)
                     return Activator.CreateInstance(defaultType) as IEditor;
-
-                //var defaultType = typeof(WebView2Editor);
-                //if (defaultType != null)
-                //    return Activator.CreateInstance(defaultType) as IEditor;
-
             }
             return null;
         }
