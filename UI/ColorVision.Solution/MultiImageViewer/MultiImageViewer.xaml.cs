@@ -1,4 +1,9 @@
+using AvalonDock.Layout;
+using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor;
+using ColorVision.Solution.Editor;
+using ColorVision.Solution.Workspace;
+using ColorVision.UI.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,10 +16,62 @@ using System.Windows.Controls;
 
 namespace ColorVision.Solution.MultiImageViewer
 {
+    [GenericEditor("MultiImageViewerEditor"), FolderEditor("MultiImageViewerEditor")]
+    public class MultiImageViewerEditor : EditorBase
+    {
+        public override void Open(string filePath)
+        {
+            string GuidId = Tool.GetMD5(filePath);
+            var existingDocument = WorkspaceManager.FindDocumentById(WorkspaceManager.layoutRoot, GuidId.ToString());
+
+            if (existingDocument != null)
+            {
+                if (existingDocument.Parent is LayoutDocumentPane layoutDocumentPane)
+                {
+                    layoutDocumentPane.SelectedContentIndex = layoutDocumentPane.IndexOf(existingDocument); ;
+                }
+                else if (existingDocument.Parent is LayoutFloatingWindow layoutFloatingWindow)
+                {
+                    var window = Window.GetWindow(layoutFloatingWindow);
+                    if (window != null)
+                    {
+                        window.Activate();
+                    }
+                }
+            }
+            else
+            {
+
+                var directory = new DirectoryInfo(filePath);
+                MultiImageViewer MultiImageViewer = new MultiImageViewer();
+                MultiImageViewer.LoadFromFolderAsync(filePath);
+
+                LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(filePath) };
+
+                layoutDocument.Content = MultiImageViewer;
+                WorkspaceManager.LayoutDocumentPane.Children.Add(layoutDocument);
+                WorkspaceManager.LayoutDocumentPane.SelectedContentIndex = WorkspaceManager.LayoutDocumentPane.IndexOf(layoutDocument);
+                layoutDocument.IsActiveChanged += (s, e) =>
+                {
+                    if (layoutDocument.IsActive)
+                    {
+                        WorkspaceManager.OnContentIdSelected(filePath);
+                    }
+                };
+                layoutDocument.Closing += (s, e) =>
+                {
+                    MultiImageViewer?.Dispose();
+                };
+
+            }
+        }
+    }
+
+
     /// <summary>
     /// 多图预览控件 - 支持文件夹浏览和图片切换
     /// </summary>
-    public partial class MultiImageViewer : UserControl
+    public partial class MultiImageViewer : UserControl,IDisposable
     {
         public static MultiImageViewerConfig Config => MultiImageViewerConfig.Instance;
 
@@ -164,66 +221,8 @@ namespace ColorVision.Solution.MultiImageViewer
                 _currentOpeningFile = fileInfo.FilePath;
             }
 
-            if (fileInfo.FileExists)
-            {
-                var filePath = fileInfo.FilePath;
-                Task.Run(async () =>
-                {
-                    try
-                    {
-                        var fi = new FileInfo(filePath);
-                        // 尝试打开文件以确认可读
-                        using (fi.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) { }
-
-                        if (fi.Length > 0)
-                        {
-                            await Application.Current.Dispatcher.InvokeAsync(() =>
-                            {
-                                // 再次检查是否仍然是要打开的文件
-                                lock (_openImageLock)
-                                {
-                                    if (!filePath.Equals(_currentOpeningFile, StringComparison.OrdinalIgnoreCase))
-                                        return;
-                                }
-                                ImageView.OpenImage(filePath);
-                                NoImageHint.Visibility = Visibility.Collapsed;
-                            });
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"OpenImage initial attempt failed: {ex.Message}");
-                        // 文件可能正在写入，延迟重试
-                        await Task.Delay(Config.ImageReadDelay);
-                        await Application.Current.Dispatcher.InvokeAsync(() =>
-                        {
-                            try
-                            {
-                                // 再次检查是否仍然是要打开的文件
-                                lock (_openImageLock)
-                                {
-                                    if (!filePath.Equals(_currentOpeningFile, StringComparison.OrdinalIgnoreCase))
-                                        return;
-                                }
-                                ImageView.OpenImage(filePath);
-                                NoImageHint.Visibility = Visibility.Collapsed;
-                            }
-                            catch (Exception innerEx)
-                            {
-                                System.Diagnostics.Debug.WriteLine($"OpenImage retry failed: {innerEx.Message}");
-                            }
-                        });
-                    }
-                    finally
-                    {
-                        lock (_openImageLock)
-                        {
-                            if (filePath.Equals(_currentOpeningFile, StringComparison.OrdinalIgnoreCase))
-                                _currentOpeningFile = null;
-                        }
-                    }
-                });
-            }
+            ImageView.OpenImage(fileInfo.FilePath);
+            NoImageHint.Visibility = Visibility.Collapsed;
         }
 
         private void UpdateFileCountText()
@@ -322,6 +321,11 @@ namespace ColorVision.Solution.MultiImageViewer
             _currentFileList = null;
             NoImageHint.Visibility = Visibility.Visible;
             UpdateFileCountText();
+        }
+
+        public void Dispose()
+        {
+            ImageView?.Dispose();
         }
     }
 }

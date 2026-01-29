@@ -1,4 +1,5 @@
 ﻿using ColorVision.Solution.Editor;
+using ColorVision.Solution.MultiImageViewer;
 using ColorVision.UI;
 using System.IO;
 
@@ -149,9 +150,14 @@ namespace ColorVision.Solution
         {
             if (Directory.Exists(folderPath))
             {
-                var defaultType = typeof(WebView2Editor);
+                var defaultType = typeof(MultiImageViewerEditor);
                 if (defaultType != null)
                     return Activator.CreateInstance(defaultType) as IEditor;
+
+                //var defaultType = typeof(WebView2Editor);
+                //if (defaultType != null)
+                //    return Activator.CreateInstance(defaultType) as IEditor;
+
             }
             return null;
         }
