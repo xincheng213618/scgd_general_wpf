@@ -23,17 +23,17 @@ namespace ColorVision.ImageEditor.Draw
         [Category("Text"), DisplayName("颜色")]
         public Brush Foreground { get => TextAttribute.Brush; set { TextAttribute.Brush = value; OnPropertyChanged(); } }
 
-        [Category("Text"), DisplayName("字体")] 
+        [Category("Text"), DisplayName("字体"), JsonIgnore] 
         public FontFamily FontFamily { get => TextAttribute.FontFamily; set { TextAttribute.FontFamily = value; OnPropertyChanged(); } }
 
-        [Category("Text"), DisplayName("FontStyle")] 
+        [Category("Text"), DisplayName("FontStyle"), JsonIgnore] 
         public FontStyle FontStyle { get => TextAttribute.FontStyle; set { TextAttribute.FontStyle = value; OnPropertyChanged(); } }
-        [Category("Text"), DisplayName("FontWeight")] 
+        [Category("Text"), DisplayName("FontWeight"), JsonIgnore] 
         public FontWeight FontWeight { get => TextAttribute.FontWeight; set { TextAttribute.FontWeight = value; OnPropertyChanged(); } }
-        [Category("Text"), DisplayName("FontStretch")] 
+        [Category("Text"), DisplayName("FontStretch"), JsonIgnore] 
         public FontStretch FontStretch { get => TextAttribute.FontStretch; set { TextAttribute.FontStretch = value; OnPropertyChanged(); } }
 
-        [Category("Text"), DisplayName("FlowDirection")] 
+        [Category("Text"), DisplayName("FlowDirection"), JsonIgnore] 
         public FlowDirection FlowDirection { get => TextAttribute.FlowDirection; set { TextAttribute.FlowDirection = value; OnPropertyChanged(); } }
 
         [Category("Text"), DisplayName("位置")] 
@@ -44,7 +44,7 @@ namespace ColorVision.ImageEditor.Draw
         public Rect Rect { get => _Rect; set { _Rect = value; OnPropertyChanged(); } }
         private Rect _Rect = new Rect(50,50,0,0);
 
-        [Browsable(false)]
+        [Browsable(false), JsonIgnore]
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen = new Pen(Brushes.Red,1);
 

@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public TextProperties TextProperties { get => _TextProperties; set { _TextProperties = value; OnPropertyChanged(); } }
         private TextProperties _TextProperties = new TextProperties() { FontSize =200 };
 
-        [Browsable(false)]
+        [Browsable(false),JsonIgnore]
         public RectangleTextProperties RectangleTextProperties { get; set; } = new RectangleTextProperties();
 
 

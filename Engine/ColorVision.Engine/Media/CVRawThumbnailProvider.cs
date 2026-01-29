@@ -96,9 +96,8 @@ namespace ColorVision.Engine.Media
                     try
                     {
                         // Read file header first to get dimensions
-                        fileInfo = new CVCIEFile();
-                        int index = CVFileUtil.ReadCIEFileHeader(filePath, out fileInfo);
-                        if (index != 0)
+                     int index = CVFileUtil.ReadCIEFileHeader(filePath, out fileInfo);
+                        if (index <= 0)
                         {
                             log.Warn($"ReadCIEFileHeader returned {index} for {filePath}");
                             return null;

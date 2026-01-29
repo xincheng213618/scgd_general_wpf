@@ -57,7 +57,6 @@ namespace ColorVision.Solution.MultiImageViewer
                     DbType = DbType.Sqlite,
                     IsAutoCloseConnection = true
                 });
-
                 _db.CodeFirst.InitTables<ThumbnailCacheEntry>();
             }
             catch (Exception ex)
@@ -74,7 +73,7 @@ namespace ColorVision.Solution.MultiImageViewer
         /// <returns>缩略图的BitmapSource，失败返回null</returns>
         public async Task<BitmapSource?> GetOrCreateThumbnailAsync(string filePath, int thumbnailSize = 120)
         {
-            if (_db == null || _disposed || !File.Exists(filePath))
+            if (!File.Exists(filePath))
                 return null;
 
             try
@@ -84,8 +83,17 @@ namespace ColorVision.Solution.MultiImageViewer
 
                 // 查找缓存
                 var cached = await Task.Run(() =>
-                    _db.Queryable<ThumbnailCacheEntry>()
-                       .First(x => x.FilePath == filePath));
+                {
+
+                    using var db = new SqlSugarClient(new ConnectionConfig
+                    {
+                        ConnectionString = $"Data Source={SqliteDbPath}",
+                        DbType = DbType.Sqlite,
+                        IsAutoCloseConnection = true
+                    });
+                    return db.Queryable<ThumbnailCacheEntry>().First(x => x.FilePath == filePath);
+                });
+
 
                 // 检查缓存是否有效
                 if (cached != null && cached.FileLastModified == lastModified && cached.ThumbnailData != null)
@@ -267,8 +275,6 @@ namespace ColorVision.Solution.MultiImageViewer
         private async Task SaveToCacheAsync(string filePath, FileInfo fileInfo, byte[] thumbnailData,
             BitmapSource thumbnail, int originalWidth, int originalHeight)
         {
-            if (_db == null || _disposed) return;
-
             await Task.Run(() =>
             {
                 try
@@ -286,27 +292,20 @@ namespace ColorVision.Solution.MultiImageViewer
                         CreateDate = DateTime.Now
                     };
 
-                    // 使用事务确保原子性UPSERT操作
-                    _db?.Ado.BeginTran();
-                    try
+                    using var db = new SqlSugarClient(new ConnectionConfig
                     {
-                        // 先尝试更新现有记录
-                        var updateCount = _db?.Updateable(entry)
-                            .Where(x => x.FilePath == filePath)
-                            .ExecuteCommand() ?? 0;
+                        ConnectionString = $"Data Source={SqliteDbPath}",
+                        DbType = DbType.Sqlite,
+                        IsAutoCloseConnection = true
+                    });
+                    var updateCount = db.Updateable(entry)
+                        .Where(x => x.FilePath == filePath)
+                        .ExecuteCommand();
 
-                        // 如果更新没有影响任何行，则插入新记录
-                        if (updateCount == 0)
-                        {
-                            _db?.Insertable(entry).ExecuteCommand();
-                        }
-
-                        _db?.Ado.CommitTran();
-                    }
-                    catch
+                    // 如果更新没有影响任何行，则插入新记录
+                    if (updateCount == 0)
                     {
-                        _db?.Ado.RollbackTran();
-                        throw;
+                        db?.Insertable(entry).ExecuteCommand();
                     }
                 }
                 catch (Exception ex)
