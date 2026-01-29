@@ -1,10 +1,10 @@
-using ColorVision.Common.Interfaces.Assembly;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.UI
@@ -33,6 +33,7 @@ namespace ColorVision.UI
 
         /// <summary>
         /// Ensures providers are discovered and initialized.
+        /// AssemblyService must be initialized before calling this method.
         /// </summary>
         private static void EnsureInitialized()
         {
@@ -44,23 +45,41 @@ namespace ColorVision.UI
 
                 try
                 {
-                    // Discover IThumbnailProvider implementations from all loaded assemblies
-                    var providerTypes = AssemblyService.Instance
-                        .GetImplementingTypes<IThumbnailProvider>()
-                        .Where(t => !t.IsAbstract && !t.IsInterface);
+                    // Check if AssemblyService is available
+                    if (AssemblyService.Instance == null)
+                    {
+                        System.Diagnostics.Debug.WriteLine("ThumbnailProviderFactory: AssemblyService.Instance is null, skipping discovery.");
+                        _initialized = true;
+                        return;
+                    }
 
-                    foreach (var type in providerTypes)
+                    // Discover IThumbnailProvider implementations from all loaded assemblies
+                    // Using the same pattern as EditorToolFactory
+                    foreach (var assembly in AssemblyService.Instance.GetAssemblies())
                     {
                         try
                         {
-                            if (Activator.CreateInstance(type) is IThumbnailProvider provider)
+                            foreach (var type in assembly.GetTypes())
                             {
-                                _providers.Add(provider);
+                                try
+                                {
+                                    if (typeof(IThumbnailProvider).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
+                                    {
+                                        if (Activator.CreateInstance(type) is IThumbnailProvider provider)
+                                        {
+                                            _providers.Add(provider);
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"Failed to create IThumbnailProvider instance of {type.Name}: {ex.Message}");
+                                }
                             }
                         }
                         catch (Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"Failed to create IThumbnailProvider instance of {type.Name}: {ex.Message}");
+                            System.Diagnostics.Debug.WriteLine($"Failed to scan assembly {assembly.FullName}: {ex.Message}");
                         }
                     }
 
@@ -132,6 +151,7 @@ namespace ColorVision.UI
 
         /// <summary>
         /// Gets all supported file extensions from registered providers.
+        /// Note: This uses the FileExtensionAttribute which may differ from CanHandle() logic.
         /// </summary>
         public static IEnumerable<string> GetSupportedExtensions()
         {
@@ -161,9 +181,12 @@ namespace ColorVision.UI
         /// </summary>
         public static void RegisterProvider(IThumbnailProvider provider)
         {
+            if (provider == null) return;
+
             lock (_lock)
             {
-                if (!_providers.Contains(provider))
+                // Check by type to avoid duplicate registrations
+                if (!_providers.Any(p => p.GetType() == provider.GetType()))
                 {
                     _providers.Add(provider);
                     _providers.Sort((a, b) => a.Order.CompareTo(b.Order));
@@ -172,7 +195,7 @@ namespace ColorVision.UI
         }
 
         /// <summary>
-        /// Clears all registered providers (mainly for testing).
+        /// Clears all registered providers and resets initialization (mainly for testing).
         /// </summary>
         public static void ClearProviders()
         {

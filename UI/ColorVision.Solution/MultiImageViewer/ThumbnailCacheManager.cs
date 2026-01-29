@@ -144,6 +144,24 @@ namespace ColorVision.Solution.MultiImageViewer
                 {
                     var (width, height) = customProvider.GetImageDimensions(filePath);
                     var thumbnail = await customProvider.GenerateThumbnailAsync(filePath, thumbnailSize);
+                    
+                    // If thumbnail succeeded but dimensions failed, try to get dimensions from thumbnail
+                    if (thumbnail != null && (width <= 0 || height <= 0))
+                    {
+                        // Calculate original dimensions from thumbnail and scale
+                        double scale = Math.Min((double)thumbnailSize / thumbnail.PixelWidth, (double)thumbnailSize / thumbnail.PixelHeight);
+                        if (scale > 0 && scale < 1)
+                        {
+                            width = (int)(thumbnail.PixelWidth / scale);
+                            height = (int)(thumbnail.PixelHeight / scale);
+                        }
+                        else
+                        {
+                            width = thumbnail.PixelWidth;
+                            height = thumbnail.PixelHeight;
+                        }
+                    }
+                    
                     return (thumbnail, width, height);
                 }
 

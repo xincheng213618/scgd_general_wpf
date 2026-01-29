@@ -6,6 +6,7 @@ using OpenCvSharp.WpfExtensions;
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
@@ -21,6 +22,18 @@ namespace ColorVision.Engine.Media
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawThumbnailProvider));
 
+        // Cache the supported extensions from the attribute for CanHandle consistency
+        private static readonly string[] SupportedExtensions;
+
+        static CVRawThumbnailProvider()
+        {
+            var attr = typeof(CVRawThumbnailProvider)
+                .GetCustomAttributes(typeof(FileExtensionAttribute), false)
+                .FirstOrDefault() as FileExtensionAttribute;
+
+            SupportedExtensions = attr?.Extensions ?? new[] { ".cvraw", ".cvcie" };
+        }
+
         /// <summary>
         /// Priority order - lower values are checked first.
         /// </summary>
@@ -28,6 +41,7 @@ namespace ColorVision.Engine.Media
 
         /// <summary>
         /// Checks if the file has a supported extension (.cvraw or .cvcie).
+        /// Uses the extensions from the FileExtensionAttribute for consistency.
         /// </summary>
         public bool CanHandle(string filePath)
         {
@@ -35,11 +49,12 @@ namespace ColorVision.Engine.Media
                 return false;
 
             var ext = Path.GetExtension(filePath).ToLowerInvariant();
-            return ext == ".cvraw" || ext == ".cvcie";
+            return SupportedExtensions.Any(e => e.Equals(ext, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
         /// Gets the image dimensions from the file header without fully loading the image data.
+        /// This is a fast operation that only reads the file header.
         /// </summary>
         public (int width, int height) GetImageDimensions(string filePath)
         {
@@ -76,26 +91,30 @@ namespace ColorVision.Engine.Media
                 return await Task.Run(() =>
                 {
                     BitmapSource? result = null;
+                    CVCIEFile? fileInfo = null;
+                    Mat? mat = null;
+                    Mat? thumbnail = null;
 
-                    // Read file header first to get dimensions
-                    CVCIEFile fileInfo = new CVCIEFile();
-                    int ret = CVFileUtil.ReadCIEFileHeader(filePath, ref fileInfo);
-                    if (ret != 0)
+                    try
                     {
-                        log.Warn($"ReadCIEFileHeader returned {ret} for {filePath}");
-                        return null;
-                    }
+                        // Read file header first to get dimensions
+                        fileInfo = new CVCIEFile();
+                        int ret = CVFileUtil.ReadCIEFileHeader(filePath, ref fileInfo);
+                        if (ret != 0)
+                        {
+                            log.Warn($"ReadCIEFileHeader returned {ret} for {filePath}");
+                            return null;
+                        }
 
-                    // Read the full file data
-                    ret = CVFileUtil.ReadCIEFileData(filePath, ref fileInfo, 0);
-                    if (ret != 0)
-                    {
-                        log.Warn($"ReadCIEFileData returned {ret} for {filePath}");
-                        return null;
-                    }
+                        // Read the full file data
+                        ret = CVFileUtil.ReadCIEFileData(filePath, ref fileInfo, 0);
+                        if (ret != 0)
+                        {
+                            log.Warn($"ReadCIEFileData returned {ret} for {filePath}");
+                            return null;
+                        }
 
-                    using (var mat = CreateMatFromCVCIEFile(fileInfo))
-                    {
+                        mat = CreateMatFromCVCIEFile(fileInfo);
                         if (mat == null)
                             return null;
 
@@ -110,22 +129,35 @@ namespace ColorVision.Engine.Media
                             return null;
 
                         // Resize using OpenCV
-                        using (var thumbnail = new Mat())
-                        {
-                            Cv2.Resize(mat, thumbnail, new Size(thumbWidth, thumbHeight), 0, 0, InterpolationFlags.Area);
+                        thumbnail = new Mat();
+                        Cv2.Resize(mat, thumbnail, new Size(thumbWidth, thumbHeight), 0, 0, InterpolationFlags.Area);
 
-                            // Convert to WriteableBitmap on UI thread
-                            Application.Current?.Dispatcher.Invoke(() =>
+                        // Convert to WriteableBitmap
+                        // Note: ToWriteableBitmap creates a frozen copy, safe to use across threads
+                        if (Application.Current != null)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
                                 var bitmap = thumbnail.ToWriteableBitmap();
                                 bitmap?.Freeze();
                                 result = bitmap;
                             });
                         }
-                    }
+                        else
+                        {
+                            // Fallback if Application.Current is not available
+                            log.Warn("Application.Current is null, cannot convert Mat to WriteableBitmap");
+                        }
 
-                    fileInfo.Dispose();
-                    return result;
+                        return result;
+                    }
+                    finally
+                    {
+                        // Ensure proper cleanup of all resources
+                        thumbnail?.Dispose();
+                        mat?.Dispose();
+                        fileInfo?.Dispose();
+                    }
                 });
             }
             catch (Exception ex)
@@ -157,8 +189,6 @@ namespace ColorVision.Engine.Media
                         if (fileInfo.Channels == 3)
                         {
                             // For 3-channel CIE, use first channel (Y component)
-                            byte[] data = new byte[len];
-                            Buffer.BlockCopy(fileInfo.Data, len, data, 0, data.Length);
                             src = Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, MatType.MakeType(fileInfo.Depth, 1), fileInfo.Data);
                         }
                         else
@@ -174,6 +204,7 @@ namespace ColorVision.Engine.Media
                     // Normalize 32-bit float images to 8-bit for display
                     if (fileInfo.Bpp == 32 && src != null)
                     {
+                        // Normalize in-place and convert to 8-bit
                         Cv2.Normalize(src, src, 0, 255, NormTypes.MinMax);
                         src.ConvertTo(src, MatType.CV_8U);
                     }
