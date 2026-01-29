@@ -21,8 +21,7 @@ namespace ColorVision.UI.Json
                 }
                 else
                 {
-                    colorStr = null;
-                    writer.WriteValue(colorStr);
+                    writer.WriteNull();
                 }
             }
             else

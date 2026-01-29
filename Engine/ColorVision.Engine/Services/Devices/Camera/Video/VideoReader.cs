@@ -4,6 +4,7 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using log4net;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Buffers;
 using System.ComponentModel;

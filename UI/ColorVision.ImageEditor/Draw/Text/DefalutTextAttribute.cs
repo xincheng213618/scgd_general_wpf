@@ -7,8 +7,10 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class DefalutTextAttribute : ViewModelBase,IConfig 
+    public class DefalutTextAttribute : ViewModelBase,IConfig
     {
+
+        [JsonIgnore]
         public static DefalutTextAttribute Defalut => ConfigService.Instance.GetRequiredService<DefalutTextAttribute>();
 
         public double ActualLength { get => _ActualLength; set { _ActualLength = value; OnPropertyChanged(); } }
