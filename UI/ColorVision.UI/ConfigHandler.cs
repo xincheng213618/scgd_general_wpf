@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.Json;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -8,71 +9,9 @@ using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Media;
 
 namespace ColorVision.UI
 {
-    public class WpfContractResolver : DefaultContractResolver
-    {
-        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
-        {
-            var property = base.CreateProperty(member, memberSerialization);
-
-            if (typeof(Freezable).IsAssignableFrom(property.PropertyType))
-            {
-                property.ObjectCreationHandling = ObjectCreationHandling.Replace;
-            }
-            return property;
-        }
-    }
-
-    public class BrushJsonConverter : JsonConverter<Brush>
-    {
-        public override void WriteJson(JsonWriter writer, Brush value, JsonSerializer serializer)
-        {
-            // 将 SolidColorBrush 转换为十六进制字符串 (例如 "#FFFF0000")
-            if (value is SolidColorBrush brush)
-            {
-                string colorStr = null;
-
-                // 检查是否需要跨线程访问
-                if (brush.CheckAccess())
-                {
-                    // 当前线程拥有该对象，直接读取
-                    colorStr = brush.Color.ToString();
-                }
-                else
-                {
-                    colorStr = null;
-                    writer.WriteValue(colorStr);
-                }
-            }
-            else
-            {
-                // 对于其他类型的 Brush (如 GradientBrush)，这里可以抛出异常或返回 null，视需求而定
-                writer.WriteNull();
-            }
-        }
-
-        public override Brush ReadJson(JsonReader reader, Type objectType, Brush existingValue, bool hasExistingValue, JsonSerializer serializer)
-        {
-            if (reader.Value == null) return null;
-
-            string colorString = reader.Value.ToString();
-
-            try
-            {
-                // 将十六进制字符串转换回 Color
-                var color = (Color)ColorConverter.ConvertFromString(colorString);
-                return new SolidColorBrush(color);
-            }
-            catch
-            {
-                return null; // 或者提供一个默认颜色
-            }
-        }
-    }
-
     [DisplayName("配置相关参数")]
     public class ConfigOptions:ViewModelBase, IConfig
     {
@@ -80,9 +19,7 @@ namespace ColorVision.UI
         public bool EnableBackup { get => _EnableBackup; set { _EnableBackup = value; OnPropertyChanged(); } }
         private bool _EnableBackup = true;
     }
-    /// <summary>
-    /// 加载插件
-    /// </summary>
+
 
     public class ConfigHandler: IConfigService
     {
@@ -274,9 +211,10 @@ namespace ColorVision.UI
                     MessageBox.Show(Properties.Resources.ConfigFileResetDueToError);
                 }
             }
+
             //防止被修改
             var configsSnapshot = Configs.ToArray();
-
+            JsonSerializer jsonSerializer = JsonSerializer.Create(JsonSerializerSettings);
             foreach (var configPair in configsSnapshot)
             {
                 try
@@ -286,12 +224,12 @@ namespace ColorVision.UI
                         if (configPair.Value is IConfigSecure configSecure)
                         {
                             configSecure.Encryption();
-                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                             configSecure.Decrypt();
                         }
                         else
                         {
-                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                         }
                     }
                     else if (Application.Current.Dispatcher.CheckAccess())
@@ -299,12 +237,12 @@ namespace ColorVision.UI
                         if (configPair.Value is IConfigSecure configSecure)
                         {
                             configSecure.Encryption();
-                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                             configSecure.Decrypt();
                         }
                         else
                         {
-                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                            jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                         }
                     }
                     else
@@ -314,12 +252,12 @@ namespace ColorVision.UI
                             if (configPair.Value is IConfigSecure configSecure)
                             {
                                 configSecure.Encryption();
-                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                                 configSecure.Decrypt();
                             }
                             else
                             {
-                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                             }
 
                         });
