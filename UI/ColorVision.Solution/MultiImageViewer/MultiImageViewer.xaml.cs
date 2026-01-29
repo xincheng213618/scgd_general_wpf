@@ -1,9 +1,12 @@
 using AvalonDock.Layout;
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.EditorTools.Zoom;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Workspace;
 using ColorVision.UI.Desktop;
+using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,6 +19,31 @@ using System.Windows.Controls;
 
 namespace ColorVision.Solution.MultiImageViewer
 {
+    public record class ZoomEditorToolContextMenu(EditorContext context) : IIEditorToolContextMenu
+    {
+        public List<MenuItemMetadata> GetContextMenuItems()
+        {
+            var MenuItemMetadatas = new List<MenuItemMetadata>();
+            string filepath = context.Config.FilePath;
+            string DirectoryPath = Directory.GetParent(filepath)?.FullName;
+            if (DirectoryPath != null)
+            {
+                RelayCommand OpenMultiImageViewerEditorCommand = new RelayCommand((o) =>
+                {
+                    Window window = new Window();
+                    MultiImageViewer multiImageViewer = new MultiImageViewer();
+                    multiImageViewer.FilePath =filepath;
+                    window.Content = multiImageViewer;
+                    window.Show();
+                    multiImageViewer.LoadFromFolderAsync(DirectoryPath);
+                });
+                MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MultiImageViewerEditor", Order = 10, Header = "MultiImageViewer", Command = OpenMultiImageViewerEditorCommand });
+            }
+            return MenuItemMetadatas;
+        }
+    }
+
+
     [GenericEditor("MultiImageViewerEditor"), FolderEditor("MultiImageViewerEditor")]
     public class MultiImageViewerEditor : EditorBase
     {
@@ -108,6 +136,8 @@ namespace ColorVision.Solution.MultiImageViewer
             UpdateFileCountText();
         }
 
+        public string FilePath { get; set; }
+
         /// <summary>
         /// 从文件夹加载图片
         /// </summary>
@@ -166,8 +196,15 @@ namespace ColorVision.Solution.MultiImageViewer
             ImageView.Clear();
             NoImageHint.Visibility = Visibility.Visible;
 
-            foreach (var file in files)
+            int index = 0;
+            for (int i = 0; i < files.Count; i++)
             {
+                var file = files[i];
+
+                if (file.Equals(FilePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    index = i;
+                }
                 var fileInfo = new ImageFileInfo(file);
                 ImageFiles.Add(fileInfo);
             }
@@ -180,10 +217,12 @@ namespace ColorVision.Solution.MultiImageViewer
                 await LoadThumbnailsAsync();
             }
 
-            // 自动选中第一个
             if (ImageFiles.Count > 0)
             {
-                FileListBox.SelectedIndex = 0;
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    FileListBox.SelectedIndex = index;
+                });
             }
         }
 

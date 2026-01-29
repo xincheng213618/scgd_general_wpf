@@ -257,7 +257,7 @@ namespace ColorVision.UI
                             }
                             else
                             {
-                                jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
+                               jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, jsonSerializer);
                             }
 
                         });
