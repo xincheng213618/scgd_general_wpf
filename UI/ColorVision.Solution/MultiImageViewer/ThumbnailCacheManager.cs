@@ -18,11 +18,11 @@ namespace ColorVision.Solution.MultiImageViewer
         private SqlSugarClient? _db;
         private bool _disposed = false;
 
-        public static string DirectoryPath { get; set; } = Path.Combine(
+        public static string DirectoryPath { get; } = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "ColorVision", "Cache");
 
-        public static string SqliteDbPath { get; set; } = Path.Combine(DirectoryPath, "ThumbnailCache.db");
+        public static string SqliteDbPath { get; } = Path.Combine(DirectoryPath, "ThumbnailCache.db");
 
         public static ThumbnailCacheManager Instance
         {
@@ -241,18 +241,28 @@ namespace ColorVision.Solution.MultiImageViewer
                         CreateDate = DateTime.Now
                     };
 
-                    // 使用Storageable实现UPSERT操作，避免竞态条件
-                    _db?.Storageable(entry)
-                        .WhereColumns(new[] { nameof(ThumbnailCacheEntry.FilePath) })
-                        .ToStorage()
-                        .AsUpdateable
-                        .ExecuteCommand();
-                    
-                    _db?.Storageable(entry)
-                        .WhereColumns(new[] { nameof(ThumbnailCacheEntry.FilePath) })
-                        .ToStorage()
-                        .AsInsertable
-                        .ExecuteCommand();
+                    // 使用事务确保原子性UPSERT操作
+                    _db?.Ado.BeginTran();
+                    try
+                    {
+                        // 先尝试更新现有记录
+                        var updateCount = _db?.Updateable(entry)
+                            .Where(x => x.FilePath == filePath)
+                            .ExecuteCommand() ?? 0;
+
+                        // 如果更新没有影响任何行，则插入新记录
+                        if (updateCount == 0)
+                        {
+                            _db?.Insertable(entry).ExecuteCommand();
+                        }
+
+                        _db?.Ado.CommitTran();
+                    }
+                    catch
+                    {
+                        _db?.Ado.RollbackTran();
+                        throw;
+                    }
                 }
                 catch (Exception ex)
                 {

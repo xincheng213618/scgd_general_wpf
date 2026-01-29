@@ -274,11 +274,32 @@ namespace ColorVision.Solution.MultiImageViewer
             {
                 if (File.Exists(_filePath))
                 {
-                    System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{_filePath}\"");
+                    // 使用ProcessStartInfo避免命令注入，并验证路径
+                    var fullPath = Path.GetFullPath(_filePath);
+                    if (!fullPath.Contains("..") && File.Exists(fullPath))
+                    {
+                        var startInfo = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "explorer.exe",
+                            Arguments = $"/select,\"{fullPath}\"",
+                            UseShellExecute = true
+                        };
+                        System.Diagnostics.Process.Start(startInfo);
+                    }
                 }
                 else if (System.IO.Directory.Exists(Directory))
                 {
-                    System.Diagnostics.Process.Start("explorer.exe", Directory);
+                    var fullDir = Path.GetFullPath(Directory);
+                    if (!fullDir.Contains("..") && System.IO.Directory.Exists(fullDir))
+                    {
+                        var startInfo = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "explorer.exe",
+                            Arguments = fullDir,
+                            UseShellExecute = true
+                        };
+                        System.Diagnostics.Process.Start(startInfo);
+                    }
                 }
             }
             catch (Exception ex)
