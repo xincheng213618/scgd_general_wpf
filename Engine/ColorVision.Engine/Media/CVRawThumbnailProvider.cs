@@ -8,7 +8,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
@@ -63,9 +62,8 @@ namespace ColorVision.Engine.Media
 
             try
             {
-                CVCIEFile fileInfo = new CVCIEFile();
-                int ret = CVFileUtil.ReadCIEFileHeader(filePath, ref fileInfo);
-                if (ret == 0)
+                int index = CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile fileInfo);
+                if (index > 0)
                 {
                     return (fileInfo.Cols, fileInfo.Rows);
                 }
@@ -99,16 +97,16 @@ namespace ColorVision.Engine.Media
                     {
                         // Read file header first to get dimensions
                         fileInfo = new CVCIEFile();
-                        int ret = CVFileUtil.ReadCIEFileHeader(filePath, ref fileInfo);
-                        if (ret != 0)
+                        int index = CVFileUtil.ReadCIEFileHeader(filePath, out fileInfo);
+                        if (index != 0)
                         {
-                            log.Warn($"ReadCIEFileHeader returned {ret} for {filePath}");
+                            log.Warn($"ReadCIEFileHeader returned {index} for {filePath}");
                             return null;
                         }
 
                         // Read the full file data
-                        ret = CVFileUtil.ReadCIEFileData(filePath, ref fileInfo, 0);
-                        if (ret != 0)
+                        bool ret = CVFileUtil.ReadCIEFileData(filePath, ref fileInfo, index);
+                        if (!ret)
                         {
                             log.Warn($"ReadCIEFileData returned {ret} for {filePath}");
                             return null;
@@ -134,9 +132,9 @@ namespace ColorVision.Engine.Media
 
                         // Convert to WriteableBitmap
                         // Note: ToWriteableBitmap creates a frozen copy, safe to use across threads
-                        if (Application.Current != null)
+                        if (System.Windows.Application.Current != null)
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
+                            System.Windows.Application.Current.Dispatcher.Invoke(() =>
                             {
                                 var bitmap = thumbnail.ToWriteableBitmap();
                                 bitmap?.Freeze();
