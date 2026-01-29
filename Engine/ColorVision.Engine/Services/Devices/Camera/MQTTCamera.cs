@@ -52,12 +52,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 switch (msg.EventName)
                 {
-                    case "Close":
-                        break;
-                    case MQTTCameraEventEnum.Event_Open:
-                    case MQTTCameraEventEnum.Event_OpenLive:
-                    case MQTTCameraEventEnum.Event_GetData:
-                        break;
                     case "GetAutoExpTime":
                         if (msg.Data == null) break;
                         try

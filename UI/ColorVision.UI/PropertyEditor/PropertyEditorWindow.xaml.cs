@@ -308,13 +308,10 @@ namespace ColorVision.UI
                                 {
                                     stackPanel.Margin = new Thickness(5);
                                     StackPanel stackPanel1 = PropertyEditorHelper.GenPropertyEditorControl(nestedObj);
-                                    if (stackPanel1.Children.Count == 1 && stackPanel1.Children[0] is Border border1 && border1.Child is StackPanel stackPanel2 && stackPanel2.Children.Count > 1)
-                                    {
-                                        stackPanel.Children.Add(stackPanel1);
+                                    stackPanel.Children.Add(stackPanel1);
 
-                                        var childNode = new PropertyTreeNode(property.Name, stackPanel1);
-                                        treeNode.Children.Add(childNode);
-                                    }
+                                    var childNode = new PropertyTreeNode(property.Name, stackPanel1);
+                                    treeNode.Children.Add(childNode);
                                     continue;
                                 }
                             }

@@ -3,13 +3,76 @@ using ColorVision.UI.Authorizations;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Media;
 
 namespace ColorVision.UI
 {
+    public class WpfContractResolver : DefaultContractResolver
+    {
+        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+        {
+            var property = base.CreateProperty(member, memberSerialization);
+
+            if (typeof(Freezable).IsAssignableFrom(property.PropertyType))
+            {
+                property.ObjectCreationHandling = ObjectCreationHandling.Replace;
+            }
+            return property;
+        }
+    }
+
+    public class BrushJsonConverter : JsonConverter<Brush>
+    {
+        public override void WriteJson(JsonWriter writer, Brush value, JsonSerializer serializer)
+        {
+            // 将 SolidColorBrush 转换为十六进制字符串 (例如 "#FFFF0000")
+            if (value is SolidColorBrush brush)
+            {
+                string colorStr = null;
+
+                // 检查是否需要跨线程访问
+                if (brush.CheckAccess())
+                {
+                    // 当前线程拥有该对象，直接读取
+                    colorStr = brush.Color.ToString();
+                }
+                else
+                {
+                    colorStr = null;
+                    writer.WriteValue(colorStr);
+                }
+            }
+            else
+            {
+                // 对于其他类型的 Brush (如 GradientBrush)，这里可以抛出异常或返回 null，视需求而定
+                writer.WriteNull();
+            }
+        }
+
+        public override Brush ReadJson(JsonReader reader, Type objectType, Brush existingValue, bool hasExistingValue, JsonSerializer serializer)
+        {
+            if (reader.Value == null) return null;
+
+            string colorString = reader.Value.ToString();
+
+            try
+            {
+                // 将十六进制字符串转换回 Color
+                var color = (Color)ColorConverter.ConvertFromString(colorString);
+                return new SolidColorBrush(color);
+            }
+            catch
+            {
+                return null; // 或者提供一个默认颜色
+            }
+        }
+    }
+
     [DisplayName("配置相关参数")]
     public class ConfigOptions:ViewModelBase, IConfig
     {
@@ -47,6 +110,11 @@ namespace ColorVision.UI
 
         public ConfigHandler()
         {
+            JsonSerializerSettings  = new JsonSerializerSettings { Formatting = Formatting.Indented };
+            JsonSerializerSettings.Converters.Add(new BrushJsonConverter());
+            JsonSerializerSettings.ContractResolver = new WpfContractResolver();
+
+
             InitDateTime = DateTime.Now;
             string AssemblyCompany = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? Assembly.GetEntryAssembly()?.GetName().Name;
             ConfigDIFileName =  $"{Assembly.GetEntryAssembly()?.GetName().Name ?? AssemblyCompany}Config";
@@ -68,9 +136,9 @@ namespace ColorVision.UI
             if (!Directory.Exists(BackupFolderPath))
                 Directory.CreateDirectory(BackupFolderPath);
             LoadConfigs(ConfigFilePath);
-            if (Options.EnableBackup)
+            if (IsAutoSave && Options.EnableBackup)
             {
-                Task.Delay(10000).ContinueWith(t =>
+                Task.Delay(100000).ContinueWith(t =>
                 {
                     BackupConfigs();
                 });
@@ -96,7 +164,7 @@ namespace ColorVision.UI
 
         public void SaveConfigs() => SaveConfigs(ConfigFilePath);
 
-        internal readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { Formatting = Formatting.Indented };
+        internal JsonSerializerSettings JsonSerializerSettings { get; set; } 
 
         public Dictionary<Type, IConfig> Configs { get; set; }
 
@@ -160,7 +228,7 @@ namespace ColorVision.UI
             {
                 if (jsonObject.TryGetValue(configName, out JToken configToken))
                 {
-                    var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
+                    var config = configToken.ToObject(type, JsonSerializer.Create(JsonSerializerSettings));
                     if (config is IConfigSecure configSecure)
                     {
                         configSecure.Decrypt();
@@ -460,5 +528,7 @@ namespace ColorVision.UI
             }
         }
     }
+
+
 
 }

@@ -1,8 +1,14 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine;
+using ColorVision.UI;
+using ColorVision.UI.Menus;
+using log4net;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Update.Export
@@ -18,6 +24,33 @@ namespace ColorVision.Update.Export
             MessageBox.Show(Application.Current.GetActiveWindow(),"注册表应用成功","ColorVision");
         }
     }
+    public class RegConfig : ViewModelBase, IConfig
+    {
+        public Version Version { get => _Version; set { _Version = value; OnPropertyChanged(); } }
+        private Version _Version = new Version(0, 0, 0);
+    }
+
+
+    public class RegInitialized : MainWindowInitializedBase
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(RegInitialized));
+
+        public static Version Version { get; set; } = new Version(1, 0, 1, 0);
+
+        public override Task Initialize()
+        {
+            RegConfig sqlConfig = ConfigService.Instance.GetRequiredService<RegConfig>();
+            if (sqlConfig.Version < Version)
+            {
+                sqlConfig.Version = Version;
+                ConfigService.Instance.SaveConfigs();
+                log.Info($"RegInitialized 版本更新到 {Version}");
+                FileAssociationHelper.RegisterAssociations();
+            }
+            return Task.CompletedTask;
+        }
+    }
+
 
     public static class FileAssociationHelper
     {
@@ -45,9 +78,21 @@ namespace ColorVision.Update.Export
                 // ------------------------------------------------------
                 //  1. 注册 .cvx 
                 // ------------------------------------------------------
+
+
+
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvx]");
                 sb.AppendLine($"@=\"ColorVision.Launcher.cvx\""); // 指向 ProgID
+                sb.AppendLine($"\"PerceivedType\"=\"compressed\"");
+                sb.AppendLine($"\"Content Type\"=\"application/x-zip-compressed\"");
                 sb.AppendLine();
+
+                // 新增：注册关联系统压缩文件夹能力
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvx\\OpenWithProgids]");
+                sb.AppendLine($"\"CompressedFolder\"=\"\"");
+                sb.AppendLine();
+
+
 
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvx]");
                 sb.AppendLine($"@=\"ColorVision Core Update Package\""); // 文件类型描述
@@ -63,12 +108,30 @@ namespace ColorVision.Update.Export
                 sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
                 sb.AppendLine();
 
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvx\\shell\\preview]");
+                sb.AppendLine($"@=\"Preview as Winrar\"");
+                sb.AppendLine();
+
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvx\\shell\\preview\\command]");
+                // 注意：路径中的反斜杠需要转义。C:\\Program Files\\WinRAR\\WinRAR.exe
+                // 写入 .reg 文件时需要变成 C:\\Program Files\\WinRAR\\WinRAR.exe
+                // 所以 C# 字符串里要写成 C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe
+                sb.AppendLine($"@=\"\\\"C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe\\\" \\\"%1\\\"\"");
+                sb.AppendLine();
+
 
                 // ------------------------------------------------------
                 //  2. 注册 .cvxp 
                 // ------------------------------------------------------
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvxp]");
                 sb.AppendLine($"@=\"ColorVision.Launcher.cvxp\"");
+                sb.AppendLine($"\"PerceivedType\"=\"compressed\"");
+                sb.AppendLine($"\"Content Type\"=\"application/x-zip-compressed\"");
+                sb.AppendLine();
+
+                // 新增：注册关联系统压缩文件夹能力
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvxp\\OpenWithProgids]");
+                sb.AppendLine($"\"CompressedFolder\"=\"\"");
                 sb.AppendLine();
 
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvxp]");
@@ -86,6 +149,18 @@ namespace ColorVision.Update.Export
                 sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
                 sb.AppendLine();
 
+
+                // 新增：Preview 行为 -> 使用 DelegateExecute 调用资源管理器内部Zip浏览
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvxp\\shell\\preview]");
+                sb.AppendLine($"@=\"Preview as Winrar\"");
+                sb.AppendLine();
+
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvxp\\shell\\preview\\command]");
+                // 注意：路径中的反斜杠需要转义。C:\\Program Files\\WinRAR\\WinRAR.exe
+                // 写入 .reg 文件时需要变成 C:\\Program Files\\WinRAR\\WinRAR.exe
+                // 所以 C# 字符串里要写成 C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe
+                sb.AppendLine($"@=\"\\\"C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe\\\" \\\"%1\\\"\"");
+                sb.AppendLine();
 
                 // ------------------------------------------------------
                 //  3. 注册 .lic 
@@ -112,6 +187,13 @@ namespace ColorVision.Update.Export
 
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcal]");
                 sb.AppendLine($"@=\"ColorVision.Launcher.cvcal\"");
+                sb.AppendLine($"\"PerceivedType\"=\"compressed\"");
+                sb.AppendLine($"\"Content Type\"=\"application/x-zip-compressed\"");
+                sb.AppendLine();
+
+                // 新增：注册关联系统压缩文件夹能力
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcal\\OpenWithProgids]");
+                sb.AppendLine($"\"CompressedFolder\"=\"\"");
                 sb.AppendLine();
 
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcal]");
@@ -128,6 +210,21 @@ namespace ColorVision.Update.Export
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcal\\shell\\open\\command]");
                 sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
                 sb.AppendLine();
+
+                // 新增：Preview 行为 -> 使用 DelegateExecute 调用资源管理器内部Zip浏览
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcal\\shell\\preview]");
+                sb.AppendLine($"@=\"Preview as Winrar\"");
+                sb.AppendLine();
+
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcal\\shell\\preview\\command]");
+                // 注意：路径中的反斜杠需要转义。C:\\Program Files\\WinRAR\\WinRAR.exe
+                // 写入 .reg 文件时需要变成 C:\\Program Files\\WinRAR\\WinRAR.exe
+                // 所以 C# 字符串里要写成 C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe
+                sb.AppendLine($"@=\"\\\"C:\\\\Program Files\\\\WinRAR\\\\WinRAR.exe\\\" \\\"%1\\\"\"");
+                sb.AppendLine();
+
+
+
 
                 // ------------------------------------------------------
                 //  4. 注册 .cvraw 

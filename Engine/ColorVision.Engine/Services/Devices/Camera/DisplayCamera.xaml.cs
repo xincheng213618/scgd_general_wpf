@@ -159,7 +159,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 case DeviceStatusType.LiveOpened:
                     SetVisibility(StackPanelOpen, Visibility.Visible);
                     SetVisibility(ButtonClose, Visibility.Visible);
-
                     Device.CameraVideoControl ??= new VideoReader();
                     if (!DService.IsVideoOpen)
                     {
