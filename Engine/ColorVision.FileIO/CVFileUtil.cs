@@ -118,8 +118,6 @@ namespace ColorVision.FileIO
             return fileHeader == MagicHeader;
         }
 
-
-
         /// <summary>
         /// 读取CVCIE文件头信息（文件路径）。
         /// </summary>
