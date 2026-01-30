@@ -481,11 +481,10 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
     cv::Mat customLut;
     GetOptimizedLUT(types, (int)min1, (int)max1, customLut);
 
-    // 直接 LUT，无需中间转换
+    // OpenMP 并行
     cv::Mat result(image.rows, image.cols, CV_8UC3);
     const cv::Vec3b* lutPtr = customLut.ptr<cv::Vec3b>();
 
-    // 使用 parallel_for_ 并行处理
     cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range) {
         for (int y = range.start; y < range.end; y++) {
             const uint8_t* srcRow = image.ptr<uint8_t>(y);
@@ -495,7 +494,7 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
             }
         }
         });
-    image = result;
+    image = std::move(result);
     return 0;
 }
 

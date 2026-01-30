@@ -1,13 +1,18 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services.Terminal;
+using ColorVision.Engine.Templates;
+using log4net;
 using Newtonsoft.Json;
 using SqlSugar;
+using System;
 
 namespace ColorVision.Engine.Services
 {
     public static class ServiceObjectBaseExtensions
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(TemplateInitializer));
+
         /// <summary>
         /// 得到指定数据类型的祖先节点。
         /// </summary>
@@ -32,12 +37,12 @@ namespace ColorVision.Engine.Services
             {
                 return JsonConvert.DeserializeObject<T>(json) ?? CreateDefaultConfig<T>();
             }
-            catch
+            catch(Exception ex)
             {
+                log.Error($"反序列化配置时出错，返回默认配置。异常信息：{ex}");
                 return CreateDefaultConfig<T>();
             }
         }
-
 
         public static bool ExistsDevice<T>(this T This,string Code) where T : ServiceObjectBase
         {

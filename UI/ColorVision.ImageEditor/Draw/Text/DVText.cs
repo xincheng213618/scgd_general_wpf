@@ -9,18 +9,16 @@ namespace ColorVision.ImageEditor.Draw
     public class TextProperties : BaseProperties
     {
         [Browsable(false)]
-        [JsonIgnore]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
-
         public bool IsShowText { get; set; } = true;
 
-        [Category("Text"), DisplayName("文本")] 
+        [Category("Text"), DisplayName("文本"), JsonIgnore] 
         public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; OnPropertyChanged(); } }
 
-        [Category("Text"), DisplayName("字体大小")] 
+        [Category("Text"), DisplayName("字体大小"), JsonIgnore] 
         public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; OnPropertyChanged(); } }
 
-        [Category("Text"), DisplayName("颜色")]
+        [Category("Text"), DisplayName("颜色"), JsonIgnore]
         public Brush Foreground { get => TextAttribute.Brush; set { TextAttribute.Brush = value; OnPropertyChanged(); } }
 
         [Category("Text"), DisplayName("字体"), JsonIgnore] 
@@ -48,7 +46,7 @@ namespace ColorVision.ImageEditor.Draw
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen = new Pen(Brushes.Red,1);
 
-        [Category("Text"), DisplayName("背景")] 
+        [Category("Text"), DisplayName("背景"), JsonIgnore] 
         public Brush Background { get => _Background; set { _Background = value; OnPropertyChanged(); } }
         private Brush _Background = Brushes.Transparent;
     }

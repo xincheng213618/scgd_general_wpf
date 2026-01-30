@@ -4,6 +4,7 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using log4net;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Buffers;
@@ -12,7 +13,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -32,8 +32,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public FocusAlgorithm  EvaFunc { get => _EvaFunc; set { _EvaFunc = value; OnPropertyChanged(); } }
         private FocusAlgorithm  _EvaFunc = FocusAlgorithm .Laplacian;
-  
-
         public TextProperties TextProperties { get => _TextProperties; set { _TextProperties = value; OnPropertyChanged(); } }
         private TextProperties _TextProperties = new TextProperties() { FontSize =200 };
 

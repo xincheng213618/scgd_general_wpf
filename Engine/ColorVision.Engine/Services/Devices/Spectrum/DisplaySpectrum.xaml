@@ -138,24 +138,11 @@
                                 <TextBox Text="{Binding DisplayConfig.PortNum}"  BorderThickness="0,0,0,1" Margin="5,0"/>
                             </DockPanel>
                         </StackPanel>
-                        <GroupBox Header="Shutter" Margin="0,0,0,5" Visibility="{Binding Config.IsShutter,Converter={StaticResource bool2VisibilityConverter}}">
-                            <StackPanel Margin="5">
-                                <DockPanel  Margin="0,2">
-                                    <TextBlock Text="{Binding Config.ShutterCfg.Addr}" MinWidth="40"/>
-                                    <TextBlock Text=":"/>
-                                    <TextBlock Text="{Binding Config.ShutterCfg.BaudRate}" MinWidth="40"/>
-                                    <Button Content="{x:Static properties:Resources.Connect}" Click="Button_Click_Shutter_Connect" Visibility="Collapsed"/>
-                                </DockPanel>                                      
-                                <DockPanel  Margin="0,2">
-                                    <TextBlock Text="{Binding Config.ShutterCfg.OpenCmd}" MinWidth="40"/>
-                                    <Button Content="{x:Static properties:Resources.Open}" Click="Button_Click_Shutter_Doopen"/>
-                                </DockPanel>
-                                <DockPanel  Margin="0,2">
-                                    <TextBlock Text="{Binding Config.ShutterCfg.CloseCmd}" MinWidth="40"/>
-                                    <Button Content="{x:Static properties:Resources.Close}" Click="Button_Click_Shutter_Doclose"/>
-                                </DockPanel>
-                            </StackPanel>
-                        </GroupBox>
+                        <StackPanel Margin="0,0,0,5" Orientation="Horizontal" Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
+                            <Button Content="Open Shutter" Click="Button_Click_Shutter_Doopen" />
+                            <Button Content="Close Shutter" Click="Button_Click_Shutter_Doclose" Margin="5,0,0,0"/> 
+                        </StackPanel>
+
                     </StackPanel>
 
                 </StackPanel>
