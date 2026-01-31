@@ -200,7 +200,11 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         public void GenerateRequestString()
         {
-            Model.ValueA = $"{Request},{Response},{SensorCmdType},{Timeout}/{Delay},{RetryCount}";
+            _Request = _Request.Replace("\\r\\n", "\r\n")
+                 .Replace("\\n", "\n")
+                 .Replace("\\r", "\r")
+                 .Replace("\\t", "\t");
+            Model.ValueA = $"{_Request},{_Request},{SensorCmdType},{Timeout}/{Delay},{RetryCount}";
             OnPropertyChanged(nameof(OriginText));
         }
 

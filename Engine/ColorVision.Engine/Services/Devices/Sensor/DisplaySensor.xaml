@@ -59,12 +59,11 @@
                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="MenuItem_Template"/>
                         </Grid>
                     </DockPanel>
-                    <CheckBox Content="调试模式" Margin="0,0,0,5"  IsChecked="True" x:Name="CheckBoxIsDeBug"/>
-
-                    <StackPanel Visibility="{Binding ElementName=CheckBoxIsDeBug,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                    <TextBlock Text="调试模式" Margin="0,0,0,5"/>
+                    <StackPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="{x:Static properties:Resources.CommandType}" Width="60"/>
                             <ComboBox x:Name="ComboBoxType" Style="{StaticResource ComboBox.Small}"/>
+                            <CheckBox x:Name="IsAddNewLine" Content="加回车换行" Margin="5,0,0,0"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="{x:Static properties:Resources.SendCmd}" Width="60"/>
