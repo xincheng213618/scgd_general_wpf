@@ -25,19 +25,22 @@ namespace ColorVision.Solution.MultiImageViewer
         {
             var MenuItemMetadatas = new List<MenuItemMetadata>();
             string filepath = context.Config.FilePath;
-            string DirectoryPath = Directory.GetParent(filepath)?.FullName;
-            if (DirectoryPath != null)
+            if (filepath != null)
             {
-                RelayCommand OpenMultiImageViewerEditorCommand = new RelayCommand((o) =>
+                string DirectoryPath = Directory.GetParent(filepath)?.FullName;
+                if (DirectoryPath != null)
                 {
-                    Window window = new Window();
-                    MultiImageViewer multiImageViewer = new MultiImageViewer();
-                    multiImageViewer.FilePath =filepath;
-                    window.Content = multiImageViewer;
-                    window.Show();
-                    multiImageViewer.LoadFromFolderAsync(DirectoryPath);
-                });
-                MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MultiImageViewerEditor", Order = 10, Header = "MultiImageViewer", Command = OpenMultiImageViewerEditorCommand });
+                    RelayCommand OpenMultiImageViewerEditorCommand = new RelayCommand((o) =>
+                    {
+                        Window window = new Window();
+                        MultiImageViewer multiImageViewer = new MultiImageViewer();
+                        multiImageViewer.FilePath = filepath;
+                        window.Content = multiImageViewer;
+                        window.Show();
+                        multiImageViewer.LoadFromFolderAsync(DirectoryPath);
+                    });
+                    MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MultiImageViewerEditor", Order = 10, Header = "MultiImageViewer", Command = OpenMultiImageViewerEditorCommand });
+                }
             }
             return MenuItemMetadatas;
         }
