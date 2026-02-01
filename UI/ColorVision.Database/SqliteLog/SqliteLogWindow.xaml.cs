@@ -166,9 +166,18 @@ namespace ColorVision.Database.SqliteLog
 
         private void UpdatePaginationUI()
         {
-            TotalCountText.Text = _totalRecords.ToString();
-            TotalPagesText.Text = _totalPages.ToString();
-            CurrentPageTextBox.Text = _currentPage.ToString();
+            if (TotalCountText != null)
+            {
+                TotalCountText.Text = _totalRecords.ToString();
+            }
+            if (TotalPagesText != null)
+            {
+                TotalPagesText.Text = _totalPages.ToString();
+            }
+            if (CurrentPageTextBox != null)
+            {
+                CurrentPageTextBox.Text = _currentPage.ToString();
+            }
         }
 
         private void Query_Click(object sender, RoutedEventArgs e)

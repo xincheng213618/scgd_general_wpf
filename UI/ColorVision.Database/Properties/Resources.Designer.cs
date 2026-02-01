@@ -160,11 +160,29 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 详细信息 的本地化字符串。
+        /// </summary>
+        public static string DetailInfo {
+            get {
+                return ResourceManager.GetString("DetailInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 启用数据库 的本地化字符串。
         /// </summary>
         public static string EnableDatabase {
             get {
                 return ResourceManager.GetString("EnableDatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 结束日期 的本地化字符串。
+        /// </summary>
+        public static string EndDate {
+            get {
+                return ResourceManager.GetString("EndDate", resourceCulture);
             }
         }
         
@@ -178,11 +196,29 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 第一页 的本地化字符串。
+        /// </summary>
+        public static string FirstPage {
+            get {
+                return ResourceManager.GetString("FirstPage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 主机 的本地化字符串。
         /// </summary>
         public static string Host {
             get {
                 return ResourceManager.GetString("Host", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 最后一页 的本地化字符串。
+        /// </summary>
+        public static string LastPage {
+            get {
+                return ResourceManager.GetString("LastPage", resourceCulture);
             }
         }
         
@@ -250,6 +286,15 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 下一页 的本地化字符串。
+        /// </summary>
+        public static string NextPage {
+            get {
+                return ResourceManager.GetString("NextPage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 确定 的本地化字符串。
         /// </summary>
         public static string OK {
@@ -264,6 +309,24 @@ namespace ColorVision.Database.Properties {
         public static string OpenFolder {
             get {
                 return ResourceManager.GetString("OpenFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 页 的本地化字符串。
+        /// </summary>
+        public static string Page {
+            get {
+                return ResourceManager.GetString("Page", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 每页条数: 的本地化字符串。
+        /// </summary>
+        public static string PageSize {
+            get {
+                return ResourceManager.GetString("PageSize", resourceCulture);
             }
         }
         
@@ -286,6 +349,24 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 上一页 的本地化字符串。
+        /// </summary>
+        public static string PrevPage {
+            get {
+                return ResourceManager.GetString("PrevPage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查询 的本地化字符串。
+        /// </summary>
+        public static string Query {
+            get {
+                return ResourceManager.GetString("Query", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 刷新 的本地化字符串。
         /// </summary>
         public static string Refresh {
@@ -295,11 +376,29 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 显示详情 的本地化字符串。
+        /// </summary>
+        public static string ShowDetail {
+            get {
+                return ResourceManager.GetString("ShowDetail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 日志数据库查看器 的本地化字符串。
         /// </summary>
         public static string SqliteLogWindow {
             get {
                 return ResourceManager.GetString("SqliteLogWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 开始日期 的本地化字符串。
+        /// </summary>
+        public static string StartDate {
+            get {
+                return ResourceManager.GetString("StartDate", resourceCulture);
             }
         }
         
@@ -336,105 +435,6 @@ namespace ColorVision.Database.Properties {
         public static string UserName {
             get {
                 return ResourceManager.GetString("UserName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 查询 的本地化字符串。
-        /// </summary>
-        public static string Query {
-            get {
-                return ResourceManager.GetString("Query", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 开始日期 的本地化字符串。
-        /// </summary>
-        public static string StartDate {
-            get {
-                return ResourceManager.GetString("StartDate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 结束日期 的本地化字符串。
-        /// </summary>
-        public static string EndDate {
-            get {
-                return ResourceManager.GetString("EndDate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 显示详情 的本地化字符串。
-        /// </summary>
-        public static string ShowDetail {
-            get {
-                return ResourceManager.GetString("ShowDetail", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 详细信息 的本地化字符串。
-        /// </summary>
-        public static string DetailInfo {
-            get {
-                return ResourceManager.GetString("DetailInfo", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 每页条数: 的本地化字符串。
-        /// </summary>
-        public static string PageSize {
-            get {
-                return ResourceManager.GetString("PageSize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 页 的本地化字符串。
-        /// </summary>
-        public static string Page {
-            get {
-                return ResourceManager.GetString("Page", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 第一页 的本地化字符串。
-        /// </summary>
-        public static string FirstPage {
-            get {
-                return ResourceManager.GetString("FirstPage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 上一页 的本地化字符串。
-        /// </summary>
-        public static string PrevPage {
-            get {
-                return ResourceManager.GetString("PrevPage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 下一页 的本地化字符串。
-        /// </summary>
-        public static string NextPage {
-            get {
-                return ResourceManager.GetString("NextPage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最后一页 的本地化字符串。
-        /// </summary>
-        public static string LastPage {
-            get {
-                return ResourceManager.GetString("LastPage", resourceCulture);
             }
         }
     }
