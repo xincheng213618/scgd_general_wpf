@@ -30,6 +30,8 @@ namespace ColorVision.Database
                 await Task.Delay(10000); // 等待配置加载完成
                 MySqlLocalServicesManager.GetInstance();
             });
+            //修复管理员权限下bulk创建文件权限错误的问题
+            StaticConfig.BulkCopy_MySqlCsvPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ColorVision", "bulkcopyfiles");
         }
 
         public event EventHandler MySqlConnectChanged;
@@ -50,9 +52,7 @@ namespace ColorVision.Database
 
                 log.Info($"数据库连接成功:{connStr}");
                 using var  _DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = GetConnectionString(Config), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-                //修复管理员权限下bulk创建文件权限错误的问题
-                StaticConfig.BulkCopy_MySqlCsvPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ColorVision", "bulkcopyfiles");
-                
+
                 // 检查数据库名是否为空
                 // 检查当前 local_infile 的值
                 int localInfile = _DB.Ado.GetInt("SELECT @@global.local_infile;");
