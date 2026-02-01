@@ -165,4 +165,82 @@
   <data name="LogDatabase" xml:space="preserve">
     <value>로그 데이터베이스</value>
   </data>
+  <data name="SqliteLogWindow" xml:space="preserve">
+    <value>로그 데이터베이스 뷰어</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>새로 고침</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>캐시 지우기</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>폴더 열기</value>
+  </data>
+  <data name="TotalRecords" xml:space="preserve">
+    <value>총 레코드 수:</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>날짜</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>수준</value>
+  </data>
+  <data name="Thread" xml:space="preserve">
+    <value>스레드</value>
+  </data>
+  <data name="Logger" xml:space="preserve">
+    <value>로거</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>메시지</value>
+  </data>
+  <data name="Exception" xml:space="preserve">
+    <value>예외</value>
+  </data>
+  <data name="LoadFailed" xml:space="preserve">
+    <value>로드 실패</value>
+  </data>
+  <data name="ClearCacheConfirm" xml:space="preserve">
+    <value>모든 로그 캐시를 지우시겠습니까? 이 작업은 되돌릴 수 없습니다.</value>
+  </data>
+  <data name="ClearCacheSuccess" xml:space="preserve">
+    <value>로그 캐시가 지워졌습니다</value>
+  </data>
+  <data name="ClearCacheFailed" xml:space="preserve">
+    <value>캐시 지우기 실패</value>
+  </data>
+  <data name="Query" xml:space="preserve">
+    <value>검색</value>
+  </data>
+  <data name="StartDate" xml:space="preserve">
+    <value>시작일</value>
+  </data>
+  <data name="EndDate" xml:space="preserve">
+    <value>종료일</value>
+  </data>
+  <data name="ShowDetail" xml:space="preserve">
+    <value>상세 보기</value>
+  </data>
+  <data name="DetailInfo" xml:space="preserve">
+    <value>상세 정보</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>페이지 크기:</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>페이지</value>
+  </data>
+  <data name="FirstPage" xml:space="preserve">
+    <value>첫 페이지</value>
+  </data>
+  <data name="PrevPage" xml:space="preserve">
+    <value>이전 페이지</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>다음 페이지</value>
+  </data>
+  <data name="LastPage" xml:space="preserve">
+    <value>마지막 페이지</value>
+  </data>
 </root>
