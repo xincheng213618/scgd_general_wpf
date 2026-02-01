@@ -13,6 +13,6 @@ namespace ColorVision.Database.SqliteLog
         public event EventHandler<bool> SqliteLogEnabledChanged;
         [DisplayName("LogDatabase")]
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged();SqliteLogEnabledChanged?.Invoke(this, value); } }
-        private bool _IsEnabled;
+        private bool _IsEnabled = true;
     }
 }
