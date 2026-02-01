@@ -52,7 +52,7 @@ namespace ColorVision.Database.SqliteLog
         {
             return new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={SqliteLogManager.SqliteDbPath}",
+                ConnectionString = $"Data Source={SqliteLogManager.GetSqliteDbPath()}",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
@@ -62,7 +62,7 @@ namespace ColorVision.Database.SqliteLog
         {
             LogEntries.Clear();
 
-            if (!File.Exists(SqliteLogManager.SqliteDbPath))
+            if (!File.Exists(SqliteLogManager.GetSqliteDbPath()))
             {
                 TotalCountText.Text = "0";
                 return;
@@ -103,7 +103,7 @@ namespace ColorVision.Database.SqliteLog
 
             try
             {
-                if (File.Exists(SqliteLogManager.SqliteDbPath))
+                if (File.Exists(SqliteLogManager.GetSqliteDbPath()))
                 {
                     using var db = CreateDbClient();
                     db.Deleteable<LogEntry>().ExecuteCommand();
