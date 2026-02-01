@@ -204,7 +204,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                  .Replace("\\n", "\n")
                  .Replace("\\r", "\r")
                  .Replace("\\t", "\t");
-            Model.ValueA = $"{_Request},{_Request},{SensorCmdType},{Timeout}/{Delay},{RetryCount}";
+            Model.ValueA = $"{_Request},{_Response},{SensorCmdType},{Timeout}/{Delay},{RetryCount}";
             OnPropertyChanged(nameof(OriginText));
         }
 

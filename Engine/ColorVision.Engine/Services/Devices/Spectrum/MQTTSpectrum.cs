@@ -207,10 +207,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             };
             Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
             Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
-            Param.Add("AutoInitDark", Config.IsAutoDark);
-            Param.Add("SelfAdaptionInitDark", Config.IsShutter);
+            Param.Add("AutoInitDark", Device.DisplayConfig.IsAutoDark);
+            Param.Add("SelfAdaptionInitDark", Device.DisplayConfig.IsShutter);
             Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
-            Param.Add("AFactor", ViewSpectrumConfig.Instance.divisor);
+            Param.Add("AFactor", Device.DisplayConfig.Divisor);
             Param.Add("OutputDataFilename", "EQEData.json");
 
             var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
@@ -248,14 +248,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             };
             Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
             Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
-            Param.Add("AutoInitDark", Config.IsAutoDark);
-            Param.Add("SelfAdaptionInitDark", Config.IsShutter);
+            Param.Add("AutoInitDark", Device.DisplayConfig.IsAutoDark);
+            Param.Add("SelfAdaptionInitDark", Device.DisplayConfig.IsShutter);
             Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
-            Param.Add("IsWithND", Config.IsWithND);
+            Param.Add("IsWithND", Device.DisplayConfig.IsWithND);
             if (Device.DisplayConfig.IsLuminousFluxMode)
             {
                 msg.EventName = "EQE.GetData";
-                Param.Add("AFactor", ViewSpectrumConfig.Instance.divisor);
+                Param.Add("AFactor", Device.DisplayConfig.Divisor);
                 Param.Add("OutputDataFilename", "EQEData.json");
                 var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };
@@ -321,7 +321,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             };
             Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
             Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
-            Param.Add("AutoInitDark", Config.IsAutoDark);
+            Param.Add("AutoInitDark", Device.DisplayConfig.IsAutoDark);
             return PublishAsyncClient(msg);
         }
 
@@ -335,16 +335,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             };
             Param.Add("IntegralTime", Device.DisplayConfig.IntTime);
             Param.Add("NumberOfAverage", Device.DisplayConfig.AveNum);
-            Param.Add("AutoInitDark", Config.IsAutoDark);
-            Param.Add("SelfAdaptionInitDark", Config.IsShutter);
+            Param.Add("AutoInitDark", Device.DisplayConfig.IsAutoDark);
+            Param.Add("SelfAdaptionInitDark", Device.DisplayConfig.IsShutter);
             Param.Add("AutoIntegration", Device.DisplayConfig.IsAutoIntTime);
-            Param.Add("IsWithND", Config.IsWithND);
+            Param.Add("IsWithND", Device.DisplayConfig.IsWithND);
 
             if (Device.DisplayConfig.IsLuminousFluxMode)
             {
                 msg.EventName = "EQE.GetDataAuto";
 
-                Param.Add("AFactor", ViewSpectrumConfig.Instance.divisor);
+                Param.Add("AFactor", Device.DisplayConfig.Divisor);
                 Param.Add("OutputDataFilename", "EQEData.json");
                 var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                 SMUResultModel sMUResultModel = new SMUResultModel() { VResult = (float)Device.DisplayConfig.V, IResult = (float)Device.DisplayConfig.I };

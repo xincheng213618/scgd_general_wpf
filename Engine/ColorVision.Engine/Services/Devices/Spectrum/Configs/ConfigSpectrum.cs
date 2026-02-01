@@ -107,9 +107,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile;
 
-        [DisplayName("IsEnableNd")]
-        public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
-        private bool _IsWithND;
+
 
         [DisplayName("ConnectType")]
         public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged();} }
@@ -162,11 +160,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; OnPropertyChanged(); } }
         private float _TimeFrom = 10;
 
-
-        public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutter = false; _IsAutoDark = value; OnPropertyChanged(); } }
-        private bool _IsAutoDark;
-        public bool IsShutter { get => _IsShutter; set { if (value) IsAutoDark = false;  _IsShutter = value; OnPropertyChanged(); } }
-        private bool _IsShutter;
         public bool IsShutterEnable { get => _IsShutterEnable; set { _IsShutterEnable = value; OnPropertyChanged(); } }
         private bool _IsShutterEnable;
 

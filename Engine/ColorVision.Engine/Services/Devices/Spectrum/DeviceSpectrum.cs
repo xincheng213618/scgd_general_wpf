@@ -43,6 +43,24 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public event EventHandler<bool> IsIsLuminousFluxModeChanged;
 
+        [PropertyVisibility(nameof(IsLuminousFluxMode))]
+        public double Divisor { get => _Divisor; set { _Divisor = value; OnPropertyChanged(); } }
+        private double _Divisor = 1.0;
+
+
+        [DisplayName("自动积分")]
+        public bool IsAutoIntTime { get => _IsAutoIntTime; set { _IsAutoIntTime = value; OnPropertyChanged(); } }
+        private bool _IsAutoIntTime;
+
+        [DisplayName("IsEnableNd")]
+        public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
+        private bool _IsWithND;
+
+        public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutter = false; _IsAutoDark = value; OnPropertyChanged(); } }
+        private bool _IsAutoDark;
+        public bool IsShutter { get => _IsShutter; set { if (value) IsAutoDark = false; _IsShutter = value; OnPropertyChanged(); } }
+        private bool _IsShutter;
+
 
         public double IntTime { get => _IntTime; set { _IntTime = value; OnPropertyChanged(); } }
         private double _IntTime = 100;
@@ -53,9 +71,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public int PortNum { get => _PortNum; set { _PortNum = value; OnPropertyChanged(); } }
         private int _PortNum = 1;
 
-        [DisplayName("自动积分")]
-        public bool IsAutoIntTime { get => _IsAutoIntTime; set { _IsAutoIntTime = value; OnPropertyChanged(); } }
-        private bool _IsAutoIntTime;
+
+
 
         public double V { get => _V; set { _V = value; OnPropertyChanged(); } }
         private double _V = 5;
