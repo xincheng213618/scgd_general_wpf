@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
 namespace ColorVision.Database.SqliteLog
@@ -133,7 +134,7 @@ namespace ColorVision.Database.SqliteLog
                     query = query.Where(x => x.Date >= _startDate.Value);
                 
                 if (_endDate.HasValue)
-                    query = query.Where(x => x.Date <= _endDate.Value.AddDays(1));
+                    query = query.Where(x => x.Date < _endDate.Value.AddDays(1)); // Exclusive upper bound: include all logs from end date
 
                 // Get total count for pagination
                 _totalRecords = query.Count();
@@ -244,11 +245,23 @@ namespace ColorVision.Database.SqliteLog
             
             if (!isChecked)
             {
+                // Save current width before hiding
+                if (DetailColumn.Width.Value > 0)
+                    SqliteLogWindowConfig.Instance.DetailPanelWidth = DetailColumn.Width.Value;
                 DetailColumn.Width = new GridLength(0);
             }
             else
             {
                 DetailColumn.Width = new GridLength(SqliteLogWindowConfig.Instance.DetailPanelWidth);
+            }
+        }
+
+        private void DetailSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
+        {
+            // Save the detail panel width when user resizes it
+            if (DetailColumn.Width.Value > 0)
+            {
+                SqliteLogWindowConfig.Instance.DetailPanelWidth = DetailColumn.Width.Value;
             }
         }
 
