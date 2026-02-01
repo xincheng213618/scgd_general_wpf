@@ -210,4 +210,37 @@
   <data name="ClearCacheFailed" xml:space="preserve">
     <value>キャッシュのクリアに失敗しました</value>
   </data>
+  <data name="Query" xml:space="preserve">
+    <value>検索</value>
+  </data>
+  <data name="StartDate" xml:space="preserve">
+    <value>開始日</value>
+  </data>
+  <data name="EndDate" xml:space="preserve">
+    <value>終了日</value>
+  </data>
+  <data name="ShowDetail" xml:space="preserve">
+    <value>詳細表示</value>
+  </data>
+  <data name="DetailInfo" xml:space="preserve">
+    <value>詳細情報</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>ページサイズ:</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>ページ</value>
+  </data>
+  <data name="FirstPage" xml:space="preserve">
+    <value>最初のページ</value>
+  </data>
+  <data name="PrevPage" xml:space="preserve">
+    <value>前のページ</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>次のページ</value>
+  </data>
+  <data name="LastPage" xml:space="preserve">
+    <value>最後のページ</value>
+  </data>
 </root>

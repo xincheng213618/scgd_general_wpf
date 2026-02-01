@@ -190,4 +190,37 @@
   <data name="ClearCacheFailed" xml:space="preserve">
     <value>清理缓存失败</value>
   </data>
+  <data name="Query" xml:space="preserve">
+    <value>查询</value>
+  </data>
+  <data name="StartDate" xml:space="preserve">
+    <value>开始日期</value>
+  </data>
+  <data name="EndDate" xml:space="preserve">
+    <value>结束日期</value>
+  </data>
+  <data name="ShowDetail" xml:space="preserve">
+    <value>显示详情</value>
+  </data>
+  <data name="DetailInfo" xml:space="preserve">
+    <value>详细信息</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>每页条数:</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>页</value>
+  </data>
+  <data name="FirstPage" xml:space="preserve">
+    <value>第一页</value>
+  </data>
+  <data name="PrevPage" xml:space="preserve">
+    <value>上一页</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>下一页</value>
+  </data>
+  <data name="LastPage" xml:space="preserve">
+    <value>最后一页</value>
+  </data>
 </root>

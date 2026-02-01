@@ -210,4 +210,37 @@
   <data name="ClearCacheFailed" xml:space="preserve">
     <value>캐시 지우기 실패</value>
   </data>
+  <data name="Query" xml:space="preserve">
+    <value>검색</value>
+  </data>
+  <data name="StartDate" xml:space="preserve">
+    <value>시작일</value>
+  </data>
+  <data name="EndDate" xml:space="preserve">
+    <value>종료일</value>
+  </data>
+  <data name="ShowDetail" xml:space="preserve">
+    <value>상세 보기</value>
+  </data>
+  <data name="DetailInfo" xml:space="preserve">
+    <value>상세 정보</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>페이지 크기:</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>페이지</value>
+  </data>
+  <data name="FirstPage" xml:space="preserve">
+    <value>첫 페이지</value>
+  </data>
+  <data name="PrevPage" xml:space="preserve">
+    <value>이전 페이지</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>다음 페이지</value>
+  </data>
+  <data name="LastPage" xml:space="preserve">
+    <value>마지막 페이지</value>
+  </data>
 </root>

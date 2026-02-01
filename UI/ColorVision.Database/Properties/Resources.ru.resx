@@ -210,4 +210,37 @@
   <data name="ClearCacheFailed" xml:space="preserve">
     <value>Не удалось очистить кэш</value>
   </data>
+  <data name="Query" xml:space="preserve">
+    <value>Поиск</value>
+  </data>
+  <data name="StartDate" xml:space="preserve">
+    <value>Дата начала</value>
+  </data>
+  <data name="EndDate" xml:space="preserve">
+    <value>Дата окончания</value>
+  </data>
+  <data name="ShowDetail" xml:space="preserve">
+    <value>Показать детали</value>
+  </data>
+  <data name="DetailInfo" xml:space="preserve">
+    <value>Подробная информация</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>Размер страницы:</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>Страница</value>
+  </data>
+  <data name="FirstPage" xml:space="preserve">
+    <value>Первая страница</value>
+  </data>
+  <data name="PrevPage" xml:space="preserve">
+    <value>Предыдущая страница</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>Следующая страница</value>
+  </data>
+  <data name="LastPage" xml:space="preserve">
+    <value>Последняя страница</value>
+  </data>
 </root>

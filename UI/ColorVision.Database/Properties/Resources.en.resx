@@ -210,4 +210,37 @@
   <data name="ClearCacheFailed" xml:space="preserve">
     <value>Failed to clear cache</value>
   </data>
+  <data name="Query" xml:space="preserve">
+    <value>Query</value>
+  </data>
+  <data name="StartDate" xml:space="preserve">
+    <value>Start Date</value>
+  </data>
+  <data name="EndDate" xml:space="preserve">
+    <value>End Date</value>
+  </data>
+  <data name="ShowDetail" xml:space="preserve">
+    <value>Show Detail</value>
+  </data>
+  <data name="DetailInfo" xml:space="preserve">
+    <value>Detail Info</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>Page Size:</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>Page</value>
+  </data>
+  <data name="FirstPage" xml:space="preserve">
+    <value>First Page</value>
+  </data>
+  <data name="PrevPage" xml:space="preserve">
+    <value>Previous Page</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>Next Page</value>
+  </data>
+  <data name="LastPage" xml:space="preserve">
+    <value>Last Page</value>
+  </data>
 </root>
