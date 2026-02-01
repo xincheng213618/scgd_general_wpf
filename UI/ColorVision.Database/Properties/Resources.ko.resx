@@ -165,4 +165,49 @@
   <data name="LogDatabase" xml:space="preserve">
     <value>로그 데이터베이스</value>
   </data>
+  <data name="SqliteLogWindow" xml:space="preserve">
+    <value>로그 데이터베이스 뷰어</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>새로 고침</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>캐시 지우기</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>폴더 열기</value>
+  </data>
+  <data name="TotalRecords" xml:space="preserve">
+    <value>총 레코드 수:</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>날짜</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>수준</value>
+  </data>
+  <data name="Thread" xml:space="preserve">
+    <value>스레드</value>
+  </data>
+  <data name="Logger" xml:space="preserve">
+    <value>로거</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>메시지</value>
+  </data>
+  <data name="Exception" xml:space="preserve">
+    <value>예외</value>
+  </data>
+  <data name="LoadFailed" xml:space="preserve">
+    <value>로드 실패</value>
+  </data>
+  <data name="ClearCacheConfirm" xml:space="preserve">
+    <value>모든 로그 캐시를 지우시겠습니까? 이 작업은 되돌릴 수 없습니다.</value>
+  </data>
+  <data name="ClearCacheSuccess" xml:space="preserve">
+    <value>로그 캐시가 지워졌습니다</value>
+  </data>
+  <data name="ClearCacheFailed" xml:space="preserve">
+    <value>캐시 지우기 실패</value>
+  </data>
 </root>

@@ -165,4 +165,49 @@
   <data name="LogDatabase" xml:space="preserve">
     <value>Log database</value>
   </data>
+  <data name="SqliteLogWindow" xml:space="preserve">
+    <value>Log Database Viewer</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>Clear Cache</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Open Folder</value>
+  </data>
+  <data name="TotalRecords" xml:space="preserve">
+    <value>Total Records:</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>Level</value>
+  </data>
+  <data name="Thread" xml:space="preserve">
+    <value>Thread</value>
+  </data>
+  <data name="Logger" xml:space="preserve">
+    <value>Logger</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="Exception" xml:space="preserve">
+    <value>Exception</value>
+  </data>
+  <data name="LoadFailed" xml:space="preserve">
+    <value>Load failed</value>
+  </data>
+  <data name="ClearCacheConfirm" xml:space="preserve">
+    <value>Are you sure you want to clear all log cache? This action cannot be undone.</value>
+  </data>
+  <data name="ClearCacheSuccess" xml:space="preserve">
+    <value>Log cache cleared successfully</value>
+  </data>
+  <data name="ClearCacheFailed" xml:space="preserve">
+    <value>Failed to clear cache</value>
+  </data>
 </root>

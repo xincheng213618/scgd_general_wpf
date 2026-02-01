@@ -165,4 +165,49 @@
   <data name="LogDatabase" xml:space="preserve">
     <value>База данных журналов</value>
   </data>
+  <data name="SqliteLogWindow" xml:space="preserve">
+    <value>Просмотр базы данных журналов</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>Очистить кэш</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Открыть папку</value>
+  </data>
+  <data name="TotalRecords" xml:space="preserve">
+    <value>Всего записей:</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Дата</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>Уровень</value>
+  </data>
+  <data name="Thread" xml:space="preserve">
+    <value>Поток</value>
+  </data>
+  <data name="Logger" xml:space="preserve">
+    <value>Логгер</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>Сообщение</value>
+  </data>
+  <data name="Exception" xml:space="preserve">
+    <value>Исключение</value>
+  </data>
+  <data name="LoadFailed" xml:space="preserve">
+    <value>Ошибка загрузки</value>
+  </data>
+  <data name="ClearCacheConfirm" xml:space="preserve">
+    <value>Вы уверены, что хотите очистить весь кэш журналов? Это действие нельзя отменить.</value>
+  </data>
+  <data name="ClearCacheSuccess" xml:space="preserve">
+    <value>Кэш журналов успешно очищен</value>
+  </data>
+  <data name="ClearCacheFailed" xml:space="preserve">
+    <value>Не удалось очистить кэш</value>
+  </data>
 </root>

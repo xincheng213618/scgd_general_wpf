@@ -145,4 +145,49 @@
   <data name="LogDatabase" xml:space="preserve">
     <value>日志数据库</value>
   </data>
+  <data name="SqliteLogWindow" xml:space="preserve">
+    <value>日志数据库查看器</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>刷新</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>清理缓存</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="TotalRecords" xml:space="preserve">
+    <value>总记录数:</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>日期</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>级别</value>
+  </data>
+  <data name="Thread" xml:space="preserve">
+    <value>线程</value>
+  </data>
+  <data name="Logger" xml:space="preserve">
+    <value>记录器</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>消息</value>
+  </data>
+  <data name="Exception" xml:space="preserve">
+    <value>异常</value>
+  </data>
+  <data name="LoadFailed" xml:space="preserve">
+    <value>加载失败</value>
+  </data>
+  <data name="ClearCacheConfirm" xml:space="preserve">
+    <value>确定要清理所有日志缓存吗？此操作不可恢复。</value>
+  </data>
+  <data name="ClearCacheSuccess" xml:space="preserve">
+    <value>日志缓存已清理完毕</value>
+  </data>
+  <data name="ClearCacheFailed" xml:space="preserve">
+    <value>清理缓存失败</value>
+  </data>
 </root>

@@ -203,5 +203,140 @@ namespace ColorVision.Database.Properties {
                 return ResourceManager.GetString("UserName", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 日志数据库查看器 的本地化字符串。
+        /// </summary>
+        public static string SqliteLogWindow {
+            get {
+                return ResourceManager.GetString("SqliteLogWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 刷新 的本地化字符串。
+        /// </summary>
+        public static string Refresh {
+            get {
+                return ResourceManager.GetString("Refresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清理缓存 的本地化字符串。
+        /// </summary>
+        public static string ClearCache {
+            get {
+                return ResourceManager.GetString("ClearCache", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开文件夹 的本地化字符串。
+        /// </summary>
+        public static string OpenFolder {
+            get {
+                return ResourceManager.GetString("OpenFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 总记录数: 的本地化字符串。
+        /// </summary>
+        public static string TotalRecords {
+            get {
+                return ResourceManager.GetString("TotalRecords", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 日期 的本地化字符串。
+        /// </summary>
+        public static string Date {
+            get {
+                return ResourceManager.GetString("Date", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 级别 的本地化字符串。
+        /// </summary>
+        public static string Level {
+            get {
+                return ResourceManager.GetString("Level", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 线程 的本地化字符串。
+        /// </summary>
+        public static string Thread {
+            get {
+                return ResourceManager.GetString("Thread", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 记录器 的本地化字符串。
+        /// </summary>
+        public static string Logger {
+            get {
+                return ResourceManager.GetString("Logger", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 消息 的本地化字符串。
+        /// </summary>
+        public static string Message {
+            get {
+                return ResourceManager.GetString("Message", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 异常 的本地化字符串。
+        /// </summary>
+        public static string Exception {
+            get {
+                return ResourceManager.GetString("Exception", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载失败 的本地化字符串。
+        /// </summary>
+        public static string LoadFailed {
+            get {
+                return ResourceManager.GetString("LoadFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定要清理所有日志缓存吗？此操作不可恢复。 的本地化字符串。
+        /// </summary>
+        public static string ClearCacheConfirm {
+            get {
+                return ResourceManager.GetString("ClearCacheConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 日志缓存已清理完毕 的本地化字符串。
+        /// </summary>
+        public static string ClearCacheSuccess {
+            get {
+                return ResourceManager.GetString("ClearCacheSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清理缓存失败 的本地化字符串。
+        /// </summary>
+        public static string ClearCacheFailed {
+            get {
+                return ResourceManager.GetString("ClearCacheFailed", resourceCulture);
+            }
+        }
     }
 }
