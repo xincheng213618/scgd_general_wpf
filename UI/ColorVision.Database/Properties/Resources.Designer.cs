@@ -70,6 +70,42 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 清理缓存 的本地化字符串。
+        /// </summary>
+        public static string ClearCache {
+            get {
+                return ResourceManager.GetString("ClearCache", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定要清理所有日志缓存吗？此操作不可恢复。 的本地化字符串。
+        /// </summary>
+        public static string ClearCacheConfirm {
+            get {
+                return ResourceManager.GetString("ClearCacheConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清理缓存失败 的本地化字符串。
+        /// </summary>
+        public static string ClearCacheFailed {
+            get {
+                return ResourceManager.GetString("ClearCacheFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 日志缓存已清理完毕 的本地化字符串。
+        /// </summary>
+        public static string ClearCacheSuccess {
+            get {
+                return ResourceManager.GetString("ClearCacheSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 连接名 的本地化字符串。
         /// </summary>
         public static string ConnectionName {
@@ -106,6 +142,15 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 日期 的本地化字符串。
+        /// </summary>
+        public static string Date {
+            get {
+                return ResourceManager.GetString("Date", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 删除 的本地化字符串。
         /// </summary>
         public static string Delete {
@@ -124,6 +169,15 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 异常 的本地化字符串。
+        /// </summary>
+        public static string Exception {
+            get {
+                return ResourceManager.GetString("Exception", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 主机 的本地化字符串。
         /// </summary>
         public static string Host {
@@ -133,11 +187,47 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 级别 的本地化字符串。
+        /// </summary>
+        public static string Level {
+            get {
+                return ResourceManager.GetString("Level", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载失败 的本地化字符串。
+        /// </summary>
+        public static string LoadFailed {
+            get {
+                return ResourceManager.GetString("LoadFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 日志数据库 的本地化字符串。
         /// </summary>
         public static string LogDatabase {
             get {
                 return ResourceManager.GetString("LogDatabase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 记录器 的本地化字符串。
+        /// </summary>
+        public static string Logger {
+            get {
+                return ResourceManager.GetString("Logger", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 消息 的本地化字符串。
+        /// </summary>
+        public static string Message {
+            get {
+                return ResourceManager.GetString("Message", resourceCulture);
             }
         }
         
@@ -169,6 +259,15 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 打开文件夹 的本地化字符串。
+        /// </summary>
+        public static string OpenFolder {
+            get {
+                return ResourceManager.GetString("OpenFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 密码 的本地化字符串。
         /// </summary>
         public static string Password {
@@ -187,20 +286,11 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
-        ///   查找类似 测试连接 的本地化字符串。
+        ///   查找类似 刷新 的本地化字符串。
         /// </summary>
-        public static string TesConnection {
+        public static string Refresh {
             get {
-                return ResourceManager.GetString("TesConnection", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 用户 的本地化字符串。
-        /// </summary>
-        public static string UserName {
-            get {
-                return ResourceManager.GetString("UserName", resourceCulture);
+                return ResourceManager.GetString("Refresh", resourceCulture);
             }
         }
         
@@ -214,56 +304,11 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
-        ///   查找类似 刷新 的本地化字符串。
+        ///   查找类似 测试连接 的本地化字符串。
         /// </summary>
-        public static string Refresh {
+        public static string TesConnection {
             get {
-                return ResourceManager.GetString("Refresh", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 清理缓存 的本地化字符串。
-        /// </summary>
-        public static string ClearCache {
-            get {
-                return ResourceManager.GetString("ClearCache", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 打开文件夹 的本地化字符串。
-        /// </summary>
-        public static string OpenFolder {
-            get {
-                return ResourceManager.GetString("OpenFolder", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 总记录数: 的本地化字符串。
-        /// </summary>
-        public static string TotalRecords {
-            get {
-                return ResourceManager.GetString("TotalRecords", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 日期 的本地化字符串。
-        /// </summary>
-        public static string Date {
-            get {
-                return ResourceManager.GetString("Date", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 级别 的本地化字符串。
-        /// </summary>
-        public static string Level {
-            get {
-                return ResourceManager.GetString("Level", resourceCulture);
+                return ResourceManager.GetString("TesConnection", resourceCulture);
             }
         }
         
@@ -277,65 +322,20 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
-        ///   查找类似 记录器 的本地化字符串。
+        ///   查找类似 总记录数: 的本地化字符串。
         /// </summary>
-        public static string Logger {
+        public static string TotalRecords {
             get {
-                return ResourceManager.GetString("Logger", resourceCulture);
+                return ResourceManager.GetString("TotalRecords", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 消息 的本地化字符串。
+        ///   查找类似 用户 的本地化字符串。
         /// </summary>
-        public static string Message {
+        public static string UserName {
             get {
-                return ResourceManager.GetString("Message", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 异常 的本地化字符串。
-        /// </summary>
-        public static string Exception {
-            get {
-                return ResourceManager.GetString("Exception", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 加载失败 的本地化字符串。
-        /// </summary>
-        public static string LoadFailed {
-            get {
-                return ResourceManager.GetString("LoadFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 确定要清理所有日志缓存吗？此操作不可恢复。 的本地化字符串。
-        /// </summary>
-        public static string ClearCacheConfirm {
-            get {
-                return ResourceManager.GetString("ClearCacheConfirm", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 日志缓存已清理完毕 的本地化字符串。
-        /// </summary>
-        public static string ClearCacheSuccess {
-            get {
-                return ResourceManager.GetString("ClearCacheSuccess", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 清理缓存失败 的本地化字符串。
-        /// </summary>
-        public static string ClearCacheFailed {
-            get {
-                return ResourceManager.GetString("ClearCacheFailed", resourceCulture);
+                return ResourceManager.GetString("UserName", resourceCulture);
             }
         }
     }
