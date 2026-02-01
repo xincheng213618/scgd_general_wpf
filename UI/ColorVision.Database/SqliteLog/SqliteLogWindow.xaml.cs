@@ -6,7 +6,6 @@ using SqlSugar;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Database.SqliteLog
@@ -49,6 +48,16 @@ namespace ColorVision.Database.SqliteLog
             LoadLogEntries();
         }
 
+        private static SqlSugarClient CreateDbClient()
+        {
+            return new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = $"Data Source={SqliteLogManager.SqliteDbPath}",
+                DbType = DbType.Sqlite,
+                IsAutoCloseConnection = true
+            });
+        }
+
         private void LoadLogEntries()
         {
             LogEntries.Clear();
@@ -61,12 +70,7 @@ namespace ColorVision.Database.SqliteLog
 
             try
             {
-                using var db = new SqlSugarClient(new ConnectionConfig
-                {
-                    ConnectionString = $"Data Source={SqliteLogManager.SqliteDbPath}",
-                    DbType = DbType.Sqlite,
-                    IsAutoCloseConnection = true
-                });
+                using var db = CreateDbClient();
 
                 var entries = db.Queryable<LogEntry>()
                     .OrderByDescending(x => x.Date)
@@ -101,13 +105,7 @@ namespace ColorVision.Database.SqliteLog
             {
                 if (File.Exists(SqliteLogManager.SqliteDbPath))
                 {
-                    using var db = new SqlSugarClient(new ConnectionConfig
-                    {
-                        ConnectionString = $"Data Source={SqliteLogManager.SqliteDbPath}",
-                        DbType = DbType.Sqlite,
-                        IsAutoCloseConnection = true
-                    });
-
+                    using var db = CreateDbClient();
                     db.Deleteable<LogEntry>().ExecuteCommand();
                     LoadLogEntries();
                     MessageBox.Show(Properties.Resources.ClearCacheSuccess, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
