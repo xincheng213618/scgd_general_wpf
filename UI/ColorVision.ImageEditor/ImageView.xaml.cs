@@ -511,9 +511,11 @@ namespace ColorVision.ImageEditor
             RenderPseudo();
         }
 
+        private int PseudoSliderTime = 50;
+
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 30, e => RenderPseudo(), 0);
+            DebounceTimer.AddOrResetTimer("PseudoSlider", PseudoSliderTime, e => RenderPseudo(), 0);
         }
         public void RenderPseudo()
         {
@@ -561,9 +563,12 @@ namespace ColorVision.ImageEditor
 
                                 sw.Stop();
                                 double renderMs = sw.Elapsed.TotalMilliseconds;
+
+                                PseudoSliderTime =(int)renderMs / 1000;
+
                                 // ================== 输出结果 ==================
                                 // 建议在界面上加一个 TextBlock (比如 TimeStatus) 显示，比看日志更直观
-                                
+
                                 if (log.IsInfoEnabled)
                                 {
                                     string perfMsg = $"算法耗时: {algoMs:F2} ms | 渲染耗时: {renderMs - algoMs:F2} ms | 总计: {(renderMs):F2} ms";

@@ -572,7 +572,11 @@ namespace ColorVision.Engine.Media
             {
                 await Task.Run((Action)(() =>
                 {
-                    CVCIEFile cVCIEFile = CVFileUtil.OpenLocalCVFile(filePath);
+                    CVCIEFile cVCIEFile = CVFileUtil.OpenLocalCVFile(filePath);  
+                    context.Config.AddProperties("Rows", (object)cVCIEFile.Rows);
+                    context.Config.AddProperties("Cols", cVCIEFile.Cols);
+                    context.Config.AddProperties("Rows", cVCIEFile.Rows);
+                    context.Config.AddProperties("Channel", cVCIEFile.Channels);
                     context.Config.AddProperties("Gain", (object)cVCIEFile.Gain);
                     context.Config.AddProperties("exp", cVCIEFile.Exp);
                     context.Config.AddProperties("FileExtType", cVCIEFile.FileExtType);
