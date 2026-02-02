@@ -20,6 +20,6 @@ namespace ColorVision.Database.SqliteLog
 
         [DisplayName("单文件大小限制 (MB)")]
         public int MaxFileSizeInMB { get => _MaxFileSizeInMB; set { _MaxFileSizeInMB = value; OnPropertyChanged(); } }
-        private int _MaxFileSizeInMB = 10; // 默认 10MB
+        private int _MaxFileSizeInMB = 1024; // 默认 10MB
     }
 }

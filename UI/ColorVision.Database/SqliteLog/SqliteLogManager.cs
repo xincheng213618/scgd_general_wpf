@@ -9,7 +9,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
+using System.IO.Compression; // 必须引用: System.IO.Compression.FileSystem
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,7 +19,6 @@ namespace ColorVision.Database.SqliteLog
     {
         private static SqliteLogManager _instance;
         private static readonly object _locker = new();
-
         public static SqliteLogManager GetInstance()
         {
             lock (_locker)
@@ -31,12 +30,21 @@ namespace ColorVision.Database.SqliteLog
 
         public static string DirectoryPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision", "Log");
 
-        // 固定当前正在使用的数据库文件名，不论月份，只通过大小控制轮转
-        // 如果你需要同时按月分，可以在 GetActiveDbPath 里加逻辑，这里简化为单文件轮转
+        // 固定当前正在使用的活跃数据库文件名
+        // 轮转逻辑：始终往 SqliteLogs.db 写，写满了移走改名，再自动创建新的 SqliteLogs.db
         public static string SqliteDbPath { get; set; } = Path.Combine(DirectoryPath, "SqliteLogs.db");
 
         public static SqliteLogManagerConfig Config => ConfigService.Instance.GetRequiredService<SqliteLogManagerConfig>();
-
+        public static SqlSugarClient CreateDbClient()
+        {
+            return new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = $"Data Source={SqliteDbPath}",
+                DbType = DbType.Sqlite,
+                IsAutoCloseConnection = true
+            });
+        }
+        // 异步队列
         private BlockingCollection<LogEntry> _logQueue;
         private CancellationTokenSource _cts;
         private Task _writeTask;
@@ -59,6 +67,7 @@ namespace ColorVision.Database.SqliteLog
             else Disable();
         }
 
+
         private void Enable()
         {
             if (_isEnabled) return;
@@ -69,9 +78,11 @@ namespace ColorVision.Database.SqliteLog
 
                 Directory.CreateDirectory(DirectoryPath);
 
+                // 初始化队列
                 _logQueue = new BlockingCollection<LogEntry>(new ConcurrentQueue<LogEntry>());
                 _cts = new CancellationTokenSource();
 
+                // 注册 log4net appender
                 _hierarchy = (Hierarchy)LogManager.GetRepository();
                 if (!AppenderExists(_hierarchy, this))
                 {
@@ -80,6 +91,7 @@ namespace ColorVision.Database.SqliteLog
                     _hierarchy.RaiseConfigurationChanged(EventArgs.Empty);
                 }
 
+                // 启动后台写入线程
                 _writeTask = Task.Factory.StartNew(ProcessQueue, _cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
         }
@@ -95,13 +107,11 @@ namespace ColorVision.Database.SqliteLog
                 _hierarchy?.Root.RemoveAppender(this);
 
                 _logQueue?.CompleteAdding();
-                try { _writeTask?.Wait(2000); } catch { }
-
-                _cts?.Cancel();
-                _cts?.Dispose();
-                _logQueue?.Dispose();
-            }
-        }
+                try
+                {
+                    _writeTask?.Wait(3000);
+                }
+                catch { /* 忽略取消异常 */ }
 
                 _cts?.Cancel();
                 _cts?.Dispose();
@@ -145,7 +155,7 @@ namespace ColorVision.Database.SqliteLog
                         WriteBatchToDb(buffer);
                         buffer.Clear();
 
-                        // 写入完成后，检查大小并执行轮转逻辑
+                        // 【新增逻辑】写入完成后，检查文件大小并执行轮转
                         CheckAndRotateDb();
                     }
                 }
@@ -156,7 +166,7 @@ namespace ColorVision.Database.SqliteLog
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[SqliteLogManager] Error: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"SqliteLogManager Error: {ex.Message}");
                 }
             }
         }
@@ -165,18 +175,18 @@ namespace ColorVision.Database.SqliteLog
         {
             if (logs.Count == 0) return;
 
-            // 使用短连接
+            // 使用短连接模式，确保文件句柄在使用后立即释放，方便文件移动
             using (var db = new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={SqliteDbPath};Cache Size=2000;",
+                ConnectionString = $"Data Source={SqliteDbPath};",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true,
                 InitKeyType = InitKeyType.Attribute
             }))
             {
-                // WAL模式性能优化
                 db.Ado.ExecuteCommand("PRAGMA journal_mode=WAL;");
                 db.Ado.ExecuteCommand("PRAGMA synchronous=NORMAL;");
+
                 db.CodeFirst.InitTables<LogEntry>();
 
                 try
@@ -188,11 +198,13 @@ namespace ColorVision.Database.SqliteLog
                 catch
                 {
                     db.RollbackTran();
+                    // 这里可以记录错误，或者尝试写入到备用文本文件
                 }
 
-                // 强制 Checkpoint，确保 WAL 数据合并到 DB，方便后续移动文件
-                // 这一步在即将检查文件大小时很有用
-                // db.Ado.ExecuteCommand("PRAGMA wal_checkpoint(TRUNCATE);"); 
+                // 关键点：在准备检查文件大小前，强制将 WAL 文件的内容 Checkpoint 回主数据库文件
+                // 这样移动主 .db 文件时才不会丢失 WAL 中的数据
+                // TRUNCATE 模式会清空 WAL 文件并将数据写入 DB，且保持 WAL 文件大小为 0
+                try { db.Ado.ExecuteCommand("PRAGMA wal_checkpoint(TRUNCATE);"); } catch { }
             }
         }
 
@@ -206,28 +218,27 @@ namespace ColorVision.Database.SqliteLog
                 var fileInfo = new FileInfo(SqliteDbPath);
                 if (!fileInfo.Exists) return;
 
-                // 转换 MB 到 Byte
+                // 配置中的 MB 转为 Byte
                 long limitBytes = Config.MaxFileSizeInMB * 1024L * 1024L;
 
                 if (fileInfo.Length > limitBytes)
                 {
-                    // 1. 生成归档文件名：SqliteLogs_Backup_20231027_103001.db
+                    // 1. 确定备份文件名 (例如: SqliteLogs_Backup_20231027_103001.db)
                     string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                     string archiveDbPath = Path.Combine(DirectoryPath, $"SqliteLogs_Backup_{timestamp}.db");
 
                     // 2. 重命名（移动）当前文件
-                    // 注意：因为 WriteBatchToDb 里的 using 已经释放了连接，理论上文件未被锁定。
-                    // 但为了保险，如果存在 .wal 或 .shm 文件，最好一起移走或忽略。
-                    // 简单移动 .db 文件即可，WAL 机制下如果连接已关闭，WAL 文件通常会被合并或删除。
+                    // 因为 WriteBatchToDb 里的 using 已经结束，且执行了 checkpoint，理论上文件未被锁定。
                     File.Move(SqliteDbPath, archiveDbPath);
 
-                    // 3. 移动可能存在的 WAL 临时文件 (如果有的话，通常 Close 后就没了，但以防万一)
-                    var walPath = SqliteDbPath + "-wal";
-                    var shmPath = SqliteDbPath + "-shm";
+                    // 3. 清理残留的 WAL/SHM 临时文件 (如果有)
+                    string walPath = SqliteDbPath + "-wal";
+                    string shmPath = SqliteDbPath + "-shm";
                     if (File.Exists(walPath)) File.Delete(walPath);
                     if (File.Exists(shmPath)) File.Delete(shmPath);
 
-                    // 4. 后台处理旧文件（压缩或删除），不阻塞当前的写入流程
+                    // 4. 启动后台任务处理旧文件（压缩或删除），不阻塞当前的写入流程
+                    // 必须传参进去，因为 archiveDbPath 是局部变量
                     Task.Run(() => ProcessRotatedFile(archiveDbPath));
                 }
             }
@@ -237,6 +248,9 @@ namespace ColorVision.Database.SqliteLog
             }
         }
 
+        /// <summary>
+        /// 后台处理归档文件
+        /// </summary>
         private void ProcessRotatedFile(string filePath)
         {
             try
@@ -246,13 +260,17 @@ namespace ColorVision.Database.SqliteLog
                     // === 启用压缩：压缩为 zip 后删除原 db ===
                     string zipPath = Path.ChangeExtension(filePath, ".zip");
 
-                    using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+                    // 检查 zip 是否已存在（极端情况），存在则不再覆盖
+                    if (!File.Exists(zipPath))
                     {
-                        // 将 db 文件放入压缩包，条目名为原文件名
-                        archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
+                        using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+                        {
+                            // 将 db 文件放入压缩包
+                            archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
+                        }
                     }
 
-                    // 压缩成功后删除原 db 文件
+                    // 压缩成功后，删除原始的大 db 文件
                     if (File.Exists(zipPath))
                     {
                         File.Delete(filePath);
@@ -261,7 +279,7 @@ namespace ColorVision.Database.SqliteLog
                 else
                 {
                     // === 未启用压缩：直接删除 ===
-                    // 需求："不开超过大小就删除"
+                    // 满足需求："不开压缩超过大小就删除"
                     if (File.Exists(filePath))
                     {
                         File.Delete(filePath);
@@ -270,7 +288,7 @@ namespace ColorVision.Database.SqliteLog
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[ProcessArchived] Failed: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[ProcessRotatedFile] Failed: {ex.Message}");
             }
         }
 

@@ -1,10 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Database.SqliteLog;
 using log4net;
 using MySqlConnector;
 using SqlSugar;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,6 +22,7 @@ namespace ColorVision.Database
         public static MySqlControl GetInstance() { lock (_locker) { return _instance ??= new MySqlControl(); } }
 
         public static MySqlConfig Config => MySqlSetting.Instance.MySqlConfig;
+
 
         public MySqlControl()
         {
@@ -95,7 +96,15 @@ namespace ColorVision.Database
                 return Task.FromResult(false);
             }
         }
-
+        public static SqlSugarClient CreateDbClient()
+        {
+            return new SqlSugarClient(new ConnectionConfig
+            {
+                ConnectionString = GetConnectionString(),
+                DbType = DbType.Sqlite,
+                IsAutoCloseConnection = true
+            });
+        }
 
 
         public static string GetConnectionString() => GetConnectionString(Config);

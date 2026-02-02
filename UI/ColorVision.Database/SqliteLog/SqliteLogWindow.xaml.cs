@@ -70,8 +70,11 @@ namespace ColorVision.Database.SqliteLog
             SqliteLogWindowConfig.Instance.SetWindow(this);
         }
 
+        public SqliteLogManager SqliteLogManager { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
+            SqliteLogManager = SqliteLogManager.GetInstance();
+
             LogDataGrid.ItemsSource = LogEntries;
             
             // Load config
@@ -92,21 +95,11 @@ namespace ColorVision.Database.SqliteLog
             LoadLogEntries();
         }
 
-        private static SqlSugarClient CreateDbClient()
-        {
-            return new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = $"Data Source={SqliteLogManager.GetSqliteDbPath()}",
-                DbType = DbType.Sqlite,
-                IsAutoCloseConnection = true
-            });
-        }
-
         private void LoadLogEntries()
         {
             LogEntries.Clear();
 
-            if (!File.Exists(SqliteLogManager.GetSqliteDbPath()))
+            if (!File.Exists(SqliteLogManager.SqliteDbPath))
             {
                 _totalRecords = 0;
                 _totalPages = 1;
@@ -116,7 +109,7 @@ namespace ColorVision.Database.SqliteLog
 
             try
             {
-                using var db = CreateDbClient();
+                using var db = SqliteLogManager.CreateDbClient();
 
                 // Build query with filters
                 var query = db.Queryable<LogEntry>();
@@ -221,9 +214,9 @@ namespace ColorVision.Database.SqliteLog
 
             try
             {
-                if (File.Exists(SqliteLogManager.GetSqliteDbPath()))
+                if (File.Exists(SqliteLogManager.SqliteDbPath))
                 {
-                    using var db = CreateDbClient();
+                    using var db = SqliteLogManager.CreateDbClient();
                     db.Deleteable<LogEntry>().ExecuteCommand();
                     _currentPage = 1;
                     LoadLogEntries();
