@@ -103,6 +103,12 @@ namespace ColorVision.Database.SqliteLog
             }
         }
 
+                _cts?.Cancel();
+                _cts?.Dispose();
+                _logQueue?.Dispose();
+            }
+        }
+
         protected override void Append(LoggingEvent loggingEvent)
         {
             if (!_isEnabled || _logQueue == null || _logQueue.IsAddingCompleted) return;

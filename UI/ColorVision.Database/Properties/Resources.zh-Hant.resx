@@ -165,4 +165,82 @@
   <data name="LogDatabase" xml:space="preserve">
     <value>日誌資料庫</value>
   </data>
+  <data name="SqliteLogWindow" xml:space="preserve">
+    <value>日誌資料庫檢視器</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>重新整理</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>清理快取</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>開啟資料夾</value>
+  </data>
+  <data name="TotalRecords" xml:space="preserve">
+    <value>總記錄數:</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>日期</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>級別</value>
+  </data>
+  <data name="Thread" xml:space="preserve">
+    <value>執行緒</value>
+  </data>
+  <data name="Logger" xml:space="preserve">
+    <value>記錄器</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>訊息</value>
+  </data>
+  <data name="Exception" xml:space="preserve">
+    <value>例外</value>
+  </data>
+  <data name="LoadFailed" xml:space="preserve">
+    <value>載入失敗</value>
+  </data>
+  <data name="ClearCacheConfirm" xml:space="preserve">
+    <value>確定要清理所有日誌快取嗎？此操作不可恢復。</value>
+  </data>
+  <data name="ClearCacheSuccess" xml:space="preserve">
+    <value>日誌快取已清理完畢</value>
+  </data>
+  <data name="ClearCacheFailed" xml:space="preserve">
+    <value>清理快取失敗</value>
+  </data>
+  <data name="Query" xml:space="preserve">
+    <value>查詢</value>
+  </data>
+  <data name="StartDate" xml:space="preserve">
+    <value>開始日期</value>
+  </data>
+  <data name="EndDate" xml:space="preserve">
+    <value>結束日期</value>
+  </data>
+  <data name="ShowDetail" xml:space="preserve">
+    <value>顯示詳情</value>
+  </data>
+  <data name="DetailInfo" xml:space="preserve">
+    <value>詳細資訊</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>每頁筆數:</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>頁</value>
+  </data>
+  <data name="FirstPage" xml:space="preserve">
+    <value>第一頁</value>
+  </data>
+  <data name="PrevPage" xml:space="preserve">
+    <value>上一頁</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>下一頁</value>
+  </data>
+  <data name="LastPage" xml:space="preserve">
+    <value>最後一頁</value>
+  </data>
 </root>
