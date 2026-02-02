@@ -82,24 +82,18 @@ namespace ColorVision.Engine.Templates.Flow
             this.flowEngine = flowEngine;
         }
 
-        private readonly object _lock = new object();
         private bool _IsFlowRun;
 
         public bool IsFlowRun
         {
             get
             {
-                lock (_lock)
-                {
-                    return _IsFlowRun;
-                }
+                return _IsFlowRun;
+
             }
             set
             {
-                lock (_lock)
-                {
-                    _IsFlowRun = value;   
-                }
+                _IsFlowRun = value;
                 Application.Current.Dispatcher.Invoke(() => OnPropertyChanged());
             }
         }
@@ -111,7 +105,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 flowEngine.StopNode(SerialNumber);
             }
-            IsFlowRun = true;
+            IsFlowRun = false;
         }
 
         public void Start(string sn)
