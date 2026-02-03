@@ -187,11 +187,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             // lambda_m = lambda_nm * 1e-9
             // 组合: (val * fPlambda) * step_nm * (lambda_nm * 1e-9) / (hc)
 
-            double divisor = ViewSpectrumConfig.Instance.divisor;
+            double divisor = 1;
 
-            // 【修复 2】: 将 divisor 应用到 fPlambda
+            // 【修复 2】: 将 Divisor 应用到 fPlambda
             // 公式: TotalPhotons = Sum(P * step * lambda_m / hc)
-            // 系数 K = (fPlambda * divisor * step_nm * 1.0e-9) / (h * c)
+            // 系数 K = (fPlambda * Divisor * step_nm * 1.0e-9) / (h * c)
             double K_constant = (fPlambda * divisor * step_nm * 1.0e-9) / (h * c);
 
             double total_photons_per_sec = sum_P_times_Lambda * K_constant;
@@ -285,7 +285,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             fCIEy_2015 = cieData.fCIEy_2015;
             fCIEz_2015 = cieData.fCIEz_2015;
 
-            //LuminousFlux = (float)(fCIEy * ViewSpectrumConfig.Instance.divisor);
+            //LuminousFlux = (float)(fCIEy * ViewSpectrumConfig.Instance.Divisor);
 
             //if (fPL.Length > 0)
             //{
@@ -410,7 +410,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             fCIEz_2015 = item.fCIEz_2015;
 
 
-            //LuminousFlux = (float)(fCIEy * ViewSpectrumConfig.Instance.divisor);
+            //LuminousFlux = (float)(fCIEy * ViewSpectrumConfig.Instance.Divisor);
 
             //if (fPL.Length > 0)
             //{

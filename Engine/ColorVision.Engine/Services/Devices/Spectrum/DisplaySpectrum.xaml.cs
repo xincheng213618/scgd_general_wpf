@@ -235,6 +235,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                 }
+                else if (e == MsgRecordState.Success) 
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Sucess", "ColorVision");
+                }
             };
         }
 
@@ -246,6 +250,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 if (e == MsgRecordState.Fail)
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                }
+                else if (e == MsgRecordState.Success)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"Sucess", "ColorVision");
                 }
             };
         }

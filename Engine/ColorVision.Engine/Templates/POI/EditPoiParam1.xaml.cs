@@ -1040,7 +1040,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-            var recentItems = Db.Queryable<MeasureResultImgModel>()
+            var recentItems = Db.Queryable<MeasureResultImgModel>().Where(x=>x.FileType == 2)
                    .OrderBy(it => it.CreateDate, OrderByType.Desc)
                    .Take(6)
                    .ToList();

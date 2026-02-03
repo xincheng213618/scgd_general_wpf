@@ -165,4 +165,82 @@
   <data name="LogDatabase" xml:space="preserve">
     <value>База данных журналов</value>
   </data>
+  <data name="SqliteLogWindow" xml:space="preserve">
+    <value>Просмотр базы данных журналов</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>Очистить кэш</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Открыть папку</value>
+  </data>
+  <data name="TotalRecords" xml:space="preserve">
+    <value>Всего записей:</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Дата</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>Уровень</value>
+  </data>
+  <data name="Thread" xml:space="preserve">
+    <value>Поток</value>
+  </data>
+  <data name="Logger" xml:space="preserve">
+    <value>Логгер</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>Сообщение</value>
+  </data>
+  <data name="Exception" xml:space="preserve">
+    <value>Исключение</value>
+  </data>
+  <data name="LoadFailed" xml:space="preserve">
+    <value>Ошибка загрузки</value>
+  </data>
+  <data name="ClearCacheConfirm" xml:space="preserve">
+    <value>Вы уверены, что хотите очистить весь кэш журналов? Это действие нельзя отменить.</value>
+  </data>
+  <data name="ClearCacheSuccess" xml:space="preserve">
+    <value>Кэш журналов успешно очищен</value>
+  </data>
+  <data name="ClearCacheFailed" xml:space="preserve">
+    <value>Не удалось очистить кэш</value>
+  </data>
+  <data name="Query" xml:space="preserve">
+    <value>Поиск</value>
+  </data>
+  <data name="StartDate" xml:space="preserve">
+    <value>Дата начала</value>
+  </data>
+  <data name="EndDate" xml:space="preserve">
+    <value>Дата окончания</value>
+  </data>
+  <data name="ShowDetail" xml:space="preserve">
+    <value>Показать детали</value>
+  </data>
+  <data name="DetailInfo" xml:space="preserve">
+    <value>Подробная информация</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>Размер страницы:</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>Страница</value>
+  </data>
+  <data name="FirstPage" xml:space="preserve">
+    <value>Первая страница</value>
+  </data>
+  <data name="PrevPage" xml:space="preserve">
+    <value>Предыдущая страница</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>Следующая страница</value>
+  </data>
+  <data name="LastPage" xml:space="preserve">
+    <value>Последняя страница</value>
+  </data>
 </root>

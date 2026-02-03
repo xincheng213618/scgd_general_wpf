@@ -3,6 +3,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Cache;
 using ColorVision.Engine.PropertyEditor;
 using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.UI;
 using System;
@@ -46,6 +47,25 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);
             var dockPanel = new DockPanel();
+
+            Button button = new Button
+            {
+                Content = ColorVision.Engine.Properties.Resources.Edit,
+                Margin = new Thickness(5, 0, 0, 0),
+                MinWidth = 70,
+            };
+
+            RelayCommand relayCommand = new RelayCommand((o) =>
+            {
+                LicenseManagerWindow licenseManagerWindow = new LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                licenseManagerWindow.ShowDialog();
+            });
+
+            button.Command = relayCommand;
+            DockPanel.SetDock(button, Dock.Right);
+            dockPanel.Children.Add(button);
+
+
             var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
             dockPanel.Children.Add(textBlock);
 
@@ -87,9 +107,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile;
 
-        [DisplayName("IsEnableNd")]
-        public bool IsWithND { get => _IsWithND; set { _IsWithND = value; OnPropertyChanged(); } }
-        private bool _IsWithND;
+
 
         [DisplayName("ConnectType")]
         public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged();} }
@@ -142,12 +160,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; OnPropertyChanged(); } }
         private float _TimeFrom = 10;
 
+        public bool IsShutterEnable { get => _IsShutterEnable; set { _IsShutterEnable = value; OnPropertyChanged(); } }
+        private bool _IsShutterEnable;
 
-        public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutter = false; _IsAutoDark = value; OnPropertyChanged(); } }
-        private bool _IsAutoDark;
-
-        public DisplaySpectrumConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplaySpectrumConfig>(Code);
-
+        public ShutterConfig ShutterCfg { get => _ShutterCfg; set { _ShutterCfg = value; OnPropertyChanged(); } }
+        private ShutterConfig _ShutterCfg = new ShutterConfig();
 
         public SelfAdaptionInitDark SelfAdaptionInitDark { get; set; } = new SelfAdaptionInitDark();
 
@@ -155,15 +172,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         public NDConfig NDConfig { get; set; } = new NDConfig();
 
-        public bool IsShutter { get => _IsShutter; set { if (value) IsAutoDark = false; _IsShutter = value; OnPropertyChanged(); } }
-        private bool _IsShutter;
-
-        public ShutterConfig ShutterCfg { get => _ShutterCfg; set { _ShutterCfg = value; OnPropertyChanged(); } }
-        private ShutterConfig _ShutterCfg = new ShutterConfig();
-
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
-        public GetDataConfig GetDataConfig { get; set; } = new GetDataConfig(); 
+        public GetDataConfig GetDataConfig { get; set; } = new GetDataConfig();
 
     }
 

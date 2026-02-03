@@ -170,7 +170,26 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         {
             if (ComboBoxType.SelectedItem is SensorCmdType CmdType)
             {
-                SensorCmd cmd = new() { CmdType = CmdType, Request = TextBoxSendCommand.Text, Response = TextBoxResCommand.Text, Timeout = 5000, Delay = 0, RetryCount = 1 };
+                bool ische = IsAddNewLine.IsChecked ?? false;
+                string sendcmd = TextBoxSendCommand.Text;
+
+                // 处理转义字符：将字面字符串转换为实际的转义字符
+                sendcmd = sendcmd.Replace("\\r\\n", "\r\n")
+                                 .Replace("\\n", "\n")
+                                 .Replace("\\r", "\r")
+                                 .Replace("\\t", "\t");
+
+                sendcmd += ische ? "\n" : "";
+
+                SensorCmd cmd = new()
+                {
+                    CmdType = CmdType,
+                    Request = sendcmd,
+                    Response = TextBoxResCommand.Text,
+                    Timeout = 5000,
+                    Delay = 0,
+                    RetryCount = 1
+                };
                 MsgRecord msgRecord = DeviceService.ExecCmd(cmd);
                 msgRecord.MsgRecordStateChanged += (s) =>
                 {

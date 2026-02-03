@@ -9,31 +9,29 @@ namespace ColorVision.ImageEditor.Draw
     public class TextProperties : BaseProperties
     {
         [Browsable(false)]
-        [JsonIgnore]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
-
         public bool IsShowText { get; set; } = true;
 
-        [Category("Text"), DisplayName("文本")] 
+        [Category("Text"), DisplayName("文本"), JsonIgnore] 
         public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; OnPropertyChanged(); } }
 
-        [Category("Text"), DisplayName("字体大小")] 
+        [Category("Text"), DisplayName("字体大小"), JsonIgnore] 
         public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; OnPropertyChanged(); } }
 
-        [Category("Text"), DisplayName("颜色")]
+        [Category("Text"), DisplayName("颜色"), JsonIgnore]
         public Brush Foreground { get => TextAttribute.Brush; set { TextAttribute.Brush = value; OnPropertyChanged(); } }
 
-        [Category("Text"), DisplayName("字体")] 
+        [Category("Text"), DisplayName("字体"), JsonIgnore] 
         public FontFamily FontFamily { get => TextAttribute.FontFamily; set { TextAttribute.FontFamily = value; OnPropertyChanged(); } }
 
-        [Category("Text"), DisplayName("FontStyle")] 
+        [Category("Text"), DisplayName("FontStyle"), JsonIgnore] 
         public FontStyle FontStyle { get => TextAttribute.FontStyle; set { TextAttribute.FontStyle = value; OnPropertyChanged(); } }
-        [Category("Text"), DisplayName("FontWeight")] 
+        [Category("Text"), DisplayName("FontWeight"), JsonIgnore] 
         public FontWeight FontWeight { get => TextAttribute.FontWeight; set { TextAttribute.FontWeight = value; OnPropertyChanged(); } }
-        [Category("Text"), DisplayName("FontStretch")] 
+        [Category("Text"), DisplayName("FontStretch"), JsonIgnore] 
         public FontStretch FontStretch { get => TextAttribute.FontStretch; set { TextAttribute.FontStretch = value; OnPropertyChanged(); } }
 
-        [Category("Text"), DisplayName("FlowDirection")] 
+        [Category("Text"), DisplayName("FlowDirection"), JsonIgnore] 
         public FlowDirection FlowDirection { get => TextAttribute.FlowDirection; set { TextAttribute.FlowDirection = value; OnPropertyChanged(); } }
 
         [Category("Text"), DisplayName("位置")] 
@@ -44,11 +42,11 @@ namespace ColorVision.ImageEditor.Draw
         public Rect Rect { get => _Rect; set { _Rect = value; OnPropertyChanged(); } }
         private Rect _Rect = new Rect(50,50,0,0);
 
-        [Browsable(false)]
+        [Browsable(false), JsonIgnore]
         public Pen Pen { get => _Pen; set { _Pen = value; OnPropertyChanged(); } }
         private Pen _Pen = new Pen(Brushes.Red,1);
 
-        [Category("Text"), DisplayName("背景")] 
+        [Category("Text"), DisplayName("背景"), JsonIgnore] 
         public Brush Background { get => _Background; set { _Background = value; OnPropertyChanged(); } }
         private Brush _Background = Brushes.Transparent;
     }

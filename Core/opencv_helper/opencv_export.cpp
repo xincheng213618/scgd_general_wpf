@@ -81,13 +81,6 @@ COLORVISIONCORE_API int CM_PseudoColor(HImage img, HImage* outImage, uint min, u
 
 	if (mat.empty())
 		return -1;
-
-	if (mat.channels() != 1) {
-		cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY);
-	}
-	if (mat.depth() == CV_16U) {
-		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
-	}
 	pseudoColor(mat, min,max, types);
 	///这里不分配的话，局部内存会在运行结束之后清空
 	MatToHImage(mat, outImage);

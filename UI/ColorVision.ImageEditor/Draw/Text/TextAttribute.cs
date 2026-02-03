@@ -23,21 +23,21 @@ namespace ColorVision.ImageEditor.Draw
         public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged(); } }
         private Brush _Brush = DefalutTextAttribute.Brush;
 
-        [Category("TextAttribute"), DisplayName("FontFamily")]
+        [Category("TextAttribute"), DisplayName("FontFamily"), JsonIgnore]
         public FontFamily FontFamily { get => _FontFamily; set { _FontFamily = value; OnPropertyChanged(); } }
         private FontFamily _FontFamily = DefalutTextAttribute.FontFamily;
 
-        [Category("TextAttribute"), DisplayName("FontStyle")]
+        [Category("TextAttribute"), DisplayName("FontStyle"), JsonIgnore]
         public FontStyle FontStyle { get => _FontStyle; set { _FontStyle = value; OnPropertyChanged(); } }
         private FontStyle _FontStyle = DefalutTextAttribute.FontStyle;
-        [Category("TextAttribute"), DisplayName("FontWeight")]
+        [Category("TextAttribute"), DisplayName("FontWeight"), JsonIgnore]
         public FontWeight FontWeight { get => _FontWeight; set { _FontWeight = value; OnPropertyChanged(); } }
         private FontWeight _FontWeight = DefalutTextAttribute.FontWeight;
-        [Category("TextAttribute"), DisplayName("FontStretch")]
+        [Category("TextAttribute"), DisplayName("FontStretch"), JsonIgnore]
         public FontStretch FontStretch { get => _FontStretch; set { _FontStretch = value; OnPropertyChanged(); } }
         private FontStretch _FontStretch = DefalutTextAttribute.FontStretch;
 
-        [Category("TextAttribute"), DisplayName("FlowDirection")]
+        [Category("TextAttribute"), DisplayName("FlowDirection"), JsonIgnore]
         public FlowDirection FlowDirection { get => _FlowDirection; set { _FlowDirection = value; OnPropertyChanged(); } }
         private FlowDirection _FlowDirection = DefalutTextAttribute.FlowDirection;
 

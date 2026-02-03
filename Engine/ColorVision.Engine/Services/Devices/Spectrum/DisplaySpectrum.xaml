@@ -75,10 +75,22 @@
                         </DockPanel>
                         <StackPanel Margin="0,0,0,5">
                             <UniformGrid Columns="2">
-                                <CheckBox Content="{x:Static properties:Resources.AutoIntegra}"  IsChecked="{Binding DisplayConfig.IsAutoIntTime}"/>
-                                <CheckBox Content="ND"  IsChecked="{Binding Config.IsWithND}"/>
-                                <CheckBox Content="{x:Static properties:Resources.AutoZeroCalibration}"  IsChecked="{Binding Config.IsAutoDark}"/>
-                                <CheckBox Content="{x:Static properties:Resources.AdaptiveZeroCalibration}" IsChecked="{Binding Config.IsShutter}"/>
+                                <DockPanel Margin="0,0,0,2">
+                                    <CheckBox IsChecked="{Binding DisplayConfig.IsAutoIntTime}" Margin="0,0,5,0"/>
+                                    <TextBlock Text="{x:Static properties:Resources.AutoIntegra}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,0,0,2">
+                                    <CheckBox IsChecked="{Binding DisplayConfig.IsWithND}" Margin="0,0,5,0"/>
+                                    <TextBlock Text="ND"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,0,0,2">
+                                    <CheckBox IsChecked="{Binding DisplayConfig.IsAutoDark}" Margin="0,0,5,0"/>
+                                    <TextBlock Text="{x:Static properties:Resources.AutoZeroCalibration}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,0,0,2">
+                                    <CheckBox IsChecked="{Binding DisplayConfig.IsShutter}" Margin="0,0,5,0"/>
+                                    <TextBlock Text="{x:Static properties:Resources.AdaptiveZeroCalibration}"/>
+                                </DockPanel>
                             </UniformGrid>
                         </StackPanel>
                         <DockPanel Visibility="{Binding  DisplayConfig.IsLuminousFluxMode,Converter={StaticResource bool2VisibilityConverter}}">
@@ -130,32 +142,19 @@
                                 </Button>
 
                             </DockPanel>
-    
-                            <DockPanel Margin="0,2" Visibility="{Binding Config.IsWithND,Converter={StaticResource bool2VisibilityConverter}}">
+
+                            <DockPanel Margin="0,2" Visibility="{Binding DisplayConfig.IsWithND,Converter={StaticResource bool2VisibilityConverter}}">
                                 <Button  DockPanel.Dock="Right" Content="Get"  Click="GetNDport_Click" />
                                 <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.ChangeNDPort}"  Click="NDport_Click" />
                                 <TextBlock Text="NDPort" />
                                 <TextBox Text="{Binding DisplayConfig.PortNum}"  BorderThickness="0,0,0,1" Margin="5,0"/>
                             </DockPanel>
                         </StackPanel>
-                        <GroupBox Header="Shutter" Margin="0,0,0,5" Visibility="{Binding Config.IsShutter,Converter={StaticResource bool2VisibilityConverter}}">
-                            <StackPanel Margin="5">
-                                <DockPanel  Margin="0,2">
-                                    <TextBlock Text="{Binding Config.ShutterCfg.Addr}" MinWidth="40"/>
-                                    <TextBlock Text=":"/>
-                                    <TextBlock Text="{Binding Config.ShutterCfg.BaudRate}" MinWidth="40"/>
-                                    <Button Content="{x:Static properties:Resources.Connect}" Click="Button_Click_Shutter_Connect" Visibility="Collapsed"/>
-                                </DockPanel>                                      
-                                <DockPanel  Margin="0,2">
-                                    <TextBlock Text="{Binding Config.ShutterCfg.OpenCmd}" MinWidth="40"/>
-                                    <Button Content="{x:Static properties:Resources.Open}" Click="Button_Click_Shutter_Doopen"/>
-                                </DockPanel>
-                                <DockPanel  Margin="0,2">
-                                    <TextBlock Text="{Binding Config.ShutterCfg.CloseCmd}" MinWidth="40"/>
-                                    <Button Content="{x:Static properties:Resources.Close}" Click="Button_Click_Shutter_Doclose"/>
-                                </DockPanel>
-                            </StackPanel>
-                        </GroupBox>
+                        <StackPanel Margin="0,0,0,5" Orientation="Horizontal" Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
+                            <Button Content="Open Shutter" Click="Button_Click_Shutter_Doopen" />
+                            <Button Content="Close Shutter" Click="Button_Click_Shutter_Doclose" Margin="5,0,0,0"/> 
+                        </StackPanel>
+
                     </StackPanel>
 
                 </StackPanel>

@@ -165,4 +165,82 @@
   <data name="LogDatabase" xml:space="preserve">
     <value>Base de données de journaux</value>
   </data>
+  <data name="SqliteLogWindow" xml:space="preserve">
+    <value>Visionneuse de base de données de journaux</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Actualiser</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>Vider le cache</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Ouvrir le dossier</value>
+  </data>
+  <data name="TotalRecords" xml:space="preserve">
+    <value>Nombre total d'enregistrements:</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Level" xml:space="preserve">
+    <value>Niveau</value>
+  </data>
+  <data name="Thread" xml:space="preserve">
+    <value>Thread</value>
+  </data>
+  <data name="Logger" xml:space="preserve">
+    <value>Logger</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="Exception" xml:space="preserve">
+    <value>Exception</value>
+  </data>
+  <data name="LoadFailed" xml:space="preserve">
+    <value>Échec du chargement</value>
+  </data>
+  <data name="ClearCacheConfirm" xml:space="preserve">
+    <value>Êtes-vous sûr de vouloir vider tout le cache des journaux ? Cette action est irréversible.</value>
+  </data>
+  <data name="ClearCacheSuccess" xml:space="preserve">
+    <value>Cache des journaux vidé avec succès</value>
+  </data>
+  <data name="ClearCacheFailed" xml:space="preserve">
+    <value>Échec du vidage du cache</value>
+  </data>
+  <data name="Query" xml:space="preserve">
+    <value>Rechercher</value>
+  </data>
+  <data name="StartDate" xml:space="preserve">
+    <value>Date de début</value>
+  </data>
+  <data name="EndDate" xml:space="preserve">
+    <value>Date de fin</value>
+  </data>
+  <data name="ShowDetail" xml:space="preserve">
+    <value>Afficher les détails</value>
+  </data>
+  <data name="DetailInfo" xml:space="preserve">
+    <value>Informations détaillées</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>Taille de page:</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>Page</value>
+  </data>
+  <data name="FirstPage" xml:space="preserve">
+    <value>Première page</value>
+  </data>
+  <data name="PrevPage" xml:space="preserve">
+    <value>Page précédente</value>
+  </data>
+  <data name="NextPage" xml:space="preserve">
+    <value>Page suivante</value>
+  </data>
+  <data name="LastPage" xml:space="preserve">
+    <value>Dernière page</value>
+  </data>
 </root>

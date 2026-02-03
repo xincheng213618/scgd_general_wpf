@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
+using ColorVision.Solution.Editor;
 using ColorVision.Solution.FolderMeta;
 using ColorVision.Solution.Properties;
 using ColorVision.UI.Menus;
@@ -26,6 +27,7 @@ namespace ColorVision.Solution.V
         FileSystemWatcher FileSystemWatcher { get; set; }
         public bool HasFile { get => this.HasFile(); }
         public RelayCommand OpenInCmdCommand { get; set; }
+        public RelayCommand OpenMethodCommand { get; set; }
 
         public VFolder(IFolderMeta folder) :base()
         {
@@ -101,6 +103,25 @@ namespace ColorVision.Solution.V
             OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
             OpenInCmdCommand = new RelayCommand(a => System.Diagnostics.Process.Start("cmd.exe", $"/K cd \"{DirectoryInfo.FullName}\""), a => DirectoryInfo.Exists);
+            OpenMethodCommand = new RelayCommand(a => OpenMethod());
+        }
+
+        /// <summary>
+        /// 打开文件夹编辑器选择窗口
+        /// </summary>
+        public void OpenMethod()
+        {
+            var types = EditorManager.Instance.GetFolderEditors();
+            var current = EditorManager.Instance.GetDefaultFolderEditorType();
+
+            if (types.Count == 0) return;
+
+            var window = new FolderEditorSelectionWindow(types, current, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            if (window.ShowDialog() == true)
+            {
+                var selectedType = window.SelectedEditorType;
+                EditorManager.Instance.SetDefaultFolderEditor(selectedType);
+            }
         }
 
         private void InitializeEventHandlers()
@@ -136,6 +157,7 @@ namespace ColorVision.Solution.V
                 Header = Resources.MenuOpen,
                 Command = OpenCommand
             });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹",Command = AddDirCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });

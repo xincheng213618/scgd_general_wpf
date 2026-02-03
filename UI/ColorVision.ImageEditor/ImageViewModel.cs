@@ -91,22 +91,12 @@ namespace ColorVision.ImageEditor
                 }
                 else if (e.Key == Key.Up)
                 {
-                    // 切换到上一个文件
-                    string? previousFile = GetAdjacentImageFile(EditorContext.Config.FilePath, false);
-                    if (!string.IsNullOrEmpty(previousFile))
-                    {
-                        EditorContext.ImageView.OpenImage(previousFile);
-                    }
+                    MoveView(0, -10);
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Down)
                 {
-                    // 切换到下一个文件
-                    string? nextFile = GetAdjacentImageFile(EditorContext.Config.FilePath, true);
-                    if (!string.IsNullOrEmpty(nextFile))
-                    {
-                        EditorContext.ImageView.OpenImage(nextFile);
-                    }
+                    MoveView(0, 10);
                     e.Handled = true;
                 }
             }
@@ -126,68 +116,6 @@ namespace ColorVision.ImageEditor
             EditorContext.Zoombox.SetCurrentValue(Zoombox.ContentMatrixProperty,
                 Matrix.Multiply(EditorContext.Zoombox.ContentMatrix, translateTransform.Value));
         }
-
-        /// <summary>
-        /// 获取相邻的图像文件
-        /// </summary>
-        /// <param name="currentFilePath">当前文件路径</param>
-        /// <param name="moveNext">是否获取下一个文件</param>
-        /// <returns>相邻文件的路径</returns>
-        private string? GetAdjacentImageFile(string currentFilePath, bool moveNext)
-        {
-            var supportedExtensions = IEditorToolFactory.IImageOpens.Keys.ToList();
-            try
-            {
-                // 获取当前文件所在的目录
-                string? directory = Path.GetDirectoryName(currentFilePath);
-                if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
-                {
-                    return null;
-                }
-
-                // 获取目录中所有支持的图片文件，并按名称排序
-                var imageFiles = Directory.GetFiles(directory)
-                    .Where(f => supportedExtensions.Contains(Path.GetExtension(f)))
-                    .OrderBy(f => f)
-                    .ToList();
-
-                if (imageFiles.Count <= 1)
-                {
-                    return null; // 文件夹中没有其他图片
-                }
-
-                // 在列表中找到当前文件的索引
-                int currentIndex = imageFiles.FindIndex(
-                    f => string.Equals(f, currentFilePath, StringComparison.OrdinalIgnoreCase));
-
-                if (currentIndex == -1)
-                {
-                    return null; // 当前文件不在列表中（可能已重命名或删除）
-                }
-
-                // 计算上一个或下一个文件的索引
-                int newIndex;
-                if (moveNext) // 获取下一个
-                {
-                    newIndex = (currentIndex + 1) % imageFiles.Count;
-                }
-                else // 获取上一个
-                {
-                    newIndex = (currentIndex - 1 + imageFiles.Count) % imageFiles.Count;
-                }
-
-                // 返回新的文件路径
-                return imageFiles[newIndex];
-            }
-            catch (Exception ex)
-            {
-                // 可以添加日志记录
-                Console.WriteLine($"Error finding adjacent image file: {ex.Message}");
-                return null;
-            }
-        }
-
-
 
         /// <summary>
         /// 处理上下文菜单打开事件

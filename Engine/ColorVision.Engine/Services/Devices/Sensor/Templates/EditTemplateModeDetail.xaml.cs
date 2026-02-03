@@ -34,7 +34,9 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
-
+            string sql = "INSERT IGNORE INTO `t_scgd_sys_dictionary_mod_item` \r\n(`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) \r\nVALUES (506009, 'defaultcommand', 506009, 'defaultcommand', 0, NULL, '\\n,,Ascii,1000/0,0', 50, '2026-01-31 21:17:11', 1, 0, NULL);";
+            using var db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            db.Ado.ExecuteCommand(sql);
         }
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {

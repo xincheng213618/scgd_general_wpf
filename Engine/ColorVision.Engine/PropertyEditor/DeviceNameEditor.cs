@@ -49,7 +49,7 @@ namespace ColorVision.Engine.PropertyEditor
             combo.DisplayMemberPath = "Name";
 
 
-            string? code = property.GetValue(obj).ToString();
+            string? code = property.GetValue(obj)?.ToString();
             var selectedItem = ItemsSource.FirstOrDefault(x => x.Name == code);
             if (selectedItem != null)
                 combo.SelectedIndex = ItemsSource.IndexOf(selectedItem);
