@@ -16,6 +16,12 @@ namespace Pattern
 {
     public class PatternManagerConfig:ViewModelBase,IConfig
     {
+
+        [DisplayName("模板路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
+        public string PatternPath { get => _PatternPath; set { _PatternPath = value; OnPropertyChanged(); } }
+        private string _PatternPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Pattern");
+
+
         [DisplayName("图卡生成路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor))]
         public string SaveFilePath { get => _SaveFilePath; set { _SaveFilePath = value; OnPropertyChanged(); } }
         private string _SaveFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Pattern");
@@ -29,6 +35,7 @@ namespace Pattern
         private PatternFormat _PatternFormat = PatternFormat.bmp;
     }
 
+
     public class PatternManager
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PatternManager));
@@ -41,8 +48,8 @@ namespace Pattern
         public ObservableCollection<TemplatePatternFile> TemplatePatternFiles { get; set; } = new ObservableCollection<TemplatePatternFile>();
         public ObservableCollection<PatternMeta> Patterns { get; set; } = new ObservableCollection<PatternMeta>();
 
-        public string PatternPath { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ColorVision", "Pattern");
-       
+
+        public string PatternPath => Config.PatternPath;
         public RelayCommand EditCommand { get; set; }
         public RelayCommand OpenPatternPathCommand { get; set; }
         public RelayCommand OpenSaveFilePathCommand { get; set; }

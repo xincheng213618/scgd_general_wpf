@@ -165,8 +165,11 @@ namespace ColorVision.Engine.Services
 
         public virtual DateTime LastAliveTime { get; set; }
 
+        /// <summary>
+        /// 默认是绿色，刷新后在变颜色
+        /// </summary>
         public  bool IsAlive { get => _IsAlive; set { _IsAlive = value; OnPropertyChanged(); } }
-        private bool _IsAlive;
+        private bool _IsAlive = true;
 
         private  Dictionary<string, Timer> _msgTimers = new();
 
