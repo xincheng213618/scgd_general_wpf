@@ -219,15 +219,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5" Margin="0,0,0,5">
-                        <hc:StepBar Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2">
-                            <hc:StepBarItem Content="WFov"/>
-                            <hc:StepBarItem Content="WCorrdinate"/>
-                            <hc:StepBarItem Content="Red"/>
-                            <hc:StepBarItem Content="Green"/>
-                            <hc:StepBarItem Content="Blue"/>
-                            <hc:StepBarItem Content="Chessboard"/>
-                            <hc:StepBarItem Content="MTF"/>
-                            <hc:StepBarItem Content="Distortion"/>
+                        <hc:StepBar x:Name="stepBar" Grid.Row="0" StepIndex="{Binding StepIndex}" Margin="-5,3,0,2">
                         </hc:StepBar>
                     </Border>
                     <RichTextBox x:Name="outputText"  Grid.Row="1"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">

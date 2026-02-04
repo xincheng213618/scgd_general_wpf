@@ -24,6 +24,7 @@ namespace ProjectLUX.Process.W255
         /// </summary>
         public ObjectiveTestItem DiagonalFieldOfViewAngle { get; set; } = new ObjectiveTestItem() { Name = "Diagonal_Field_of_View_Angle", Unit = "degree" };
 
+
         public ObjectiveTestItem P1Lv { get; set; } = new ObjectiveTestItem() { Name = "P1(Lv)", Unit = "cd/m^2" };
         public ObjectiveTestItem P1Cx { get; set; } = new ObjectiveTestItem() { Name = "P1(Cx)" };
         public ObjectiveTestItem P1Cy { get; set; } = new ObjectiveTestItem() { Name = "P1(Cy)"};

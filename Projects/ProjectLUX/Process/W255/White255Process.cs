@@ -8,14 +8,16 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using ProjectLUX.Fix;
+using ProjectLUX.Process.AR.W51AR;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ProjectLUX.Process.W255
 {
-    public class White255Process : IProcess
+    public class White255Process : ProcessBase<W255ProcessConfig>
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -48,7 +50,7 @@ namespace ProjectLUX.Process.W255
                             poi.v *= fixConfig.CenterCIE1976ChromaticCoordinatesv;
                             testResult.PoixyuvDatas.Add(poi);
 
-                            if (item.PoiName == "P_9")
+                            if (item.PoiName == Config.Key_Center)
                             {
                                 testResult.CenterLunimance = new ObjectiveTestItem
                                 {
@@ -102,7 +104,7 @@ namespace ProjectLUX.Process.W255
 
                     if (master.ImgFileType == ViewResultAlgType.PoiAnalysis)
                     {
-                        if (master.TName.Contains("Luminance_uniformity"))
+                        if (master.TName.Contains(Config.LuminanceUniformityTempName))
                         {
                             var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
                             if (details.Count == 1)
@@ -120,7 +122,7 @@ namespace ProjectLUX.Process.W255
 
                             }
                         }
-                        if (master.TName.Contains("Color_uniformity"))
+                        if (master.TName.Contains(Config.ColorUniformityTempName))
                         {
                             var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
                             if (details.Count == 1)
@@ -185,7 +187,7 @@ namespace ProjectLUX.Process.W255
             }
         }
 
-        public void Render (IProcessExecutionContext ctx)
+        public override void Render (IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             W255ViewTestResult testResult = JsonConvert.DeserializeObject<W255ViewTestResult>(ctx.Result.ViewResultJson);
@@ -226,7 +228,7 @@ namespace ProjectLUX.Process.W255
 
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
@@ -250,5 +252,16 @@ namespace ProjectLUX.Process.W255
             outtext += $"VerticalFieldOfViewAngle:{testResult.VerticalFieldOfViewAngle.TestValue} LowLimit:{testResult.VerticalFieldOfViewAngle.LowLimit} UpLimit:{testResult.VerticalFieldOfViewAngle.UpLimit},Rsult{(testResult.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
         }
+
+        public override IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<W255RecipeConfig>();
+        }
+
+        public override IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<W255FixConfig>();
+        }
     }
+
 }

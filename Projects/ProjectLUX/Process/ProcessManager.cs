@@ -12,6 +12,7 @@ using System.IO;
 
 namespace ProjectLUX.Process
 {
+
     public class ProcessManager : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(ProcessManager));
@@ -28,6 +29,7 @@ namespace ProjectLUX.Process
         public ObservableCollection<ProcessMeta> ProcessMetas { get; } = new ObservableCollection<ProcessMeta>();
 
         public ObservableCollection<TemplateModel<FlowParam>> templateModels { get; set; } = TemplateFlow.Params;
+
         public RelayCommand EditCommand { get; set; }
 
         // New properties for creation
@@ -58,7 +60,6 @@ namespace ProjectLUX.Process
         public ProcessManager()
         {
             LoadProcesses();
-            ProcessMetas.CollectionChanged -= ProcessMetas_CollectionChanged;
             ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged;
             EditCommand = new RelayCommand(a => Edit());
             AddMetaCommand = new RelayCommand(a => AddMeta(), a => CanAddMeta());
@@ -135,11 +136,13 @@ namespace ProjectLUX.Process
                 MessageBox.Show(Application.Current.GetActiveWindow(), "名称重复", "ColorVision");
                 return;
             }
+            // Create a new instance of the process to ensure independent config
+            var newProcessInstance = SelectedProcess.CreateInstance();
             ProcessMetas.Add(new ProcessMeta
             {
                 Name = NewMetaName,
                 FlowTemplate = SelectedTemplate.Key,
-                Process = SelectedProcess
+                Process = newProcessInstance
             });
             NewMetaName = string.Empty;
         }
@@ -157,7 +160,7 @@ namespace ProjectLUX.Process
         {
             if (SelectedProcessMeta != null)
             {
-                // Populate update fields when a BatchProcessMeta is selected
+                // Populate update fields when a ProcessMeta is selected
                 UpdateTemplate = templateModels.FirstOrDefault(t => t.Key == SelectedProcessMeta.FlowTemplate);
                 UpdateProcess = Processes.FirstOrDefault(p => p.GetType().FullName == SelectedProcessMeta.Process?.GetType().FullName);
             }
@@ -172,9 +175,20 @@ namespace ProjectLUX.Process
         {
             if (!CanUpdateMeta()) return;
             
-            // Update the selected BatchProcessMeta with new values
+            // Update the selected ProcessMeta with new values
             SelectedProcessMeta.FlowTemplate = UpdateTemplate.Key;
-            SelectedProcessMeta.Process = UpdateProcess;
+            
+            // Create a new instance of the process to ensure independent config
+            var newProcessInstance = UpdateProcess.CreateInstance();
+            
+            // If the same process type, preserve the existing config
+            if (SelectedProcessMeta.Process?.GetType().FullName == newProcessInstance.GetType().FullName 
+                && !string.IsNullOrEmpty(SelectedProcessMeta.ConfigJson))
+            {
+                newProcessInstance.SetProcessConfig(SelectedProcessMeta.ConfigJson);
+            }
+            
+            SelectedProcessMeta.Process = newProcessInstance;
         }
 
         private bool CanMoveUp()
@@ -212,8 +226,8 @@ namespace ProjectLUX.Process
                 ProcessMetas.CollectionChanged -= ProcessMetas_CollectionChanged; // 暂停事件
                 foreach (var item in list)
                 {
-                    IProcess proc = Processes.FirstOrDefault(p => p.GetType().FullName == item.ProcessTypeFullName);
-                    if (proc == null)
+                    IProcess templateProc = Processes.FirstOrDefault(p => p.GetType().FullName == item.ProcessTypeFullName);
+                    if (templateProc == null)
                     {
                         // 尝试反射创建
                         try
@@ -221,9 +235,9 @@ namespace ProjectLUX.Process
                             var t = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).FirstOrDefault(x => x.FullName == item.ProcessTypeFullName && typeof(IProcess).IsAssignableFrom(x));
                             if (t != null)
                             {
-                                proc = Activator.CreateInstance(t) as IProcess;
-                                if (proc != null && !Processes.Any(p => p.GetType().FullName == proc.GetType().FullName))
-                                    Processes.Add(proc);
+                                templateProc = Activator.CreateInstance(t) as IProcess;
+                                if (templateProc != null && !Processes.Any(p => p.GetType().FullName == templateProc.GetType().FullName))
+                                    Processes.Add(templateProc);
                             }
                         }
                         catch (Exception ex)
@@ -231,7 +245,22 @@ namespace ProjectLUX.Process
                             log.Warn($"无法实例化进程类型 {item.ProcessTypeFullName}: {ex.Message}");
                         }
                     }
-                    ProcessMeta meta = new ProcessMeta() { Name = item.Name, FlowTemplate = item.FlowTemplate, Process = proc };
+                    
+                    // Create a new instance for each meta to ensure independent config
+                    IProcess proc = templateProc?.CreateInstance();
+                    
+                    ProcessMeta meta = new ProcessMeta() 
+                    { 
+                        Name = item.Name, 
+                        FlowTemplate = item.FlowTemplate, 
+                        Process = proc, 
+                        IsEnabled = item.IsEnabled,
+                        ConfigJson = item.ConfigJson
+                    };
+                    
+                    // Apply the stored config to the process
+                    meta.ApplyConfig();
+                    
                     meta.PropertyChanged += Meta_PropertyChanged;
                     ProcessMetas.Add(meta);
                 }
@@ -252,7 +281,9 @@ namespace ProjectLUX.Process
                 {
                     Name = m.Name,
                     FlowTemplate = m.FlowTemplate,
-                    ProcessTypeFullName = m.Process?.GetType().FullName
+                    ProcessTypeFullName = m.Process?.GetType().FullName,
+                    IsEnabled = m.IsEnabled,
+                    ConfigJson = m.ConfigJson
                 }).ToList();
                 string json = JsonConvert.SerializeObject(list, Formatting.Indented);
                 File.WriteAllText(PersistFilePath, json);

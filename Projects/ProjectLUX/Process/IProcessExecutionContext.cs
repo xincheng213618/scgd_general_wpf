@@ -15,6 +15,8 @@ namespace ProjectLUX.Process
 
         public ImageView ImageView { get; set; }
 
+        public string SavePath { get; set; }
+
         public ILog Logger { get; set; }
     }
 }

@@ -28,17 +28,10 @@ namespace ProjectLUX
         public double Height { get => _Height; set { _Height = value; OnPropertyChanged(); } }
         private double _Height = 300;
 
-        [DisplayName("打开图像延迟"), Category("View")]
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; OnPropertyChanged(); } }
-        private int _ViewImageReadDelay = 1000;
 
         [DisplayName("Csv保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("ARVR")]
         public string CsvSavePath { get => _CsvSavePath; set { _CsvSavePath = value; OnPropertyChanged(); } }
         private string _CsvSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
-
-        [DisplayName("Text保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("ARVR")]
-        public string TextSavePath { get => _TextSavePath; set { _TextSavePath = value; OnPropertyChanged(); } }
-        private string _TextSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
     }
 
     public class ViewResultManager : ViewModelBase,IDisposable
@@ -85,8 +78,6 @@ namespace ProjectLUX
             _db.CodeFirst.InitTables<ProjectLUXReuslt>();
             LoadAll(Config.Count);
 
-            if (!Directory.Exists(Config.TextSavePath))
-                Directory.CreateDirectory(Config.TextSavePath);
             if (!Directory.Exists(Config.CsvSavePath))
                 Directory.CreateDirectory(Config.CsvSavePath);
         }

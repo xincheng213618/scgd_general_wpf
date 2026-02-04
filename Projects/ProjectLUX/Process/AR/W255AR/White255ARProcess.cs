@@ -7,14 +7,39 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp; // PoiPointResultModel
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using ProjectLUX.Fix;
+using ProjectLUX.Process.Distortion;
+using ProjectLUX.Process.W255;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ProjectLUX.Process.W255AR
 {
-    public class White255ARProcess : IProcess
+    public class White255ARPProcessConfig : ProcessConfigBase
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        [Category("解析配置")]
+        [DisplayName("Center解析Key")]
+        [Description("用于解析Center数据的Key")]
+        public string Key_Center { get => _Key_Center; set { _Key_Center = value; OnPropertyChanged(); } }
+        private string _Key_Center = "P_5";
+
+        [Category("解析配置")]
+        [DisplayName("LuminanceUniformityTempName")]
+        [Description("Luminance_uniformity")]
+        public string LuminanceUniformityTempName { get => _LuminanceUniformityTempName; set { _LuminanceUniformityTempName = value; OnPropertyChanged(); } }
+        private string _LuminanceUniformityTempName = "Luminance_uniformity";
+
+
+        [Category("解析配置")]
+        [DisplayName("ColorUniformityTempName")]
+        [Description("Color_uniformity")]
+        public string ColorUniformityTempName { get => _ColorUniformityTempName; set { _ColorUniformityTempName = value; OnPropertyChanged(); } }
+        private string _ColorUniformityTempName = "Color_uniformity";
+    }
+    public class White255ARProcess : ProcessBase<White255ARPProcessConfig>
+    {
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -407,7 +432,7 @@ namespace ProjectLUX.Process.W255AR
                             testResult.PoixyuvDatas.Add(poi);
 
 
-                            if (item.PoiName == "P_5")
+                            if (item.PoiName == Config.Key_Center)
                             {
                                 testResult.CenterLunimance.Value = poi.Y;
                                 testResult.CenterLunimance.Value *= fixConfig.CenterLunimance;
@@ -452,7 +477,7 @@ namespace ProjectLUX.Process.W255AR
 
                     if (master.ImgFileType == ViewResultAlgType.PoiAnalysis)
                     {
-                        if (master.TName.Contains("Luminance_uniformity"))
+                        if (master.TName.Contains(Config.LuminanceUniformityTempName))
                         {
                             var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
                             if (details.Count == 1)
@@ -470,7 +495,7 @@ namespace ProjectLUX.Process.W255AR
                             }
                         }
 
-                        if (master.TName.Contains("Color_uniformity"))
+                        if (master.TName.Contains(Config.ColorUniformityTempName))
                         {
                             var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
                             if (details.Count == 1)
@@ -500,7 +525,7 @@ namespace ProjectLUX.Process.W255AR
             }
         }
 
-        public void Render (IProcessExecutionContext ctx)
+        public override void Render (IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             W255ARViewTestResult testResult = JsonConvert.DeserializeObject<W255ARViewTestResult>(ctx.Result.ViewResultJson);
@@ -541,7 +566,7 @@ namespace ProjectLUX.Process.W255AR
 
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
@@ -559,6 +584,16 @@ namespace ProjectLUX.Process.W255AR
             outtext += $"Luminance_uniformity:{testResult.LuminanceUniformity.TestValue} LowLimit:{testResult.LuminanceUniformity.LowLimit}  UpLimit:{testResult.LuminanceUniformity.UpLimit},Rsult{(testResult.LuminanceUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"Color_uniformity:{testResult.ColorUniformity.TestValue} LowLimit:{testResult.ColorUniformity.LowLimit} UpLimit:{testResult.ColorUniformity.UpLimit},Rsult{(testResult.ColorUniformity.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
+        }
+
+        public override IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<W255ARRecipeConfig>();
+        }
+
+        public override IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<W255ARFixConfig>();
         }
     }
 }

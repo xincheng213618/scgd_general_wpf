@@ -3,12 +3,24 @@ using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilComm
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using Newtonsoft.Json;
+using ProjectLUX.Fix;
+using ProjectLUX.Process.W255AR;
+using System.ComponentModel;
 
 namespace ProjectLUX.Process.AR.W51AR
 {
-    public class W51ARProcess : IProcess
+    public class White51ARPProcessConfig : ProcessConfigBase
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        [Category("解析配置")]
+        [DisplayName("Center解析Key")]
+        [Description("用于解析Center数据的Key")]
+        public string Key_Center { get => _Key_Center; set { _Key_Center = value; OnPropertyChanged(); } }
+        private string _Key_Center = "P_5";
+    }
+
+    public class W51ARProcess : ProcessBase<White51ARPProcessConfig>
+    {
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -70,14 +82,14 @@ namespace ProjectLUX.Process.AR.W51AR
             }
         }
 
-        public void Render (IProcessExecutionContext ctx)
+        public override void Render (IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             W51ARViewTestResult testResult = JsonConvert.DeserializeObject<W51ARViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return;
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
@@ -92,6 +104,16 @@ namespace ProjectLUX.Process.AR.W51AR
             outtext += $"HorizontalFieldOfViewAngle:{testResult.HorizontalFieldOfViewAngle.TestValue} LowLimit:{testResult.HorizontalFieldOfViewAngle.LowLimit} UpLimit:{testResult.HorizontalFieldOfViewAngle.UpLimit} ,Rsult{(testResult.HorizontalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"VerticalFieldOfViewAngle:{testResult.VerticalFieldOfViewAngle.TestValue} LowLimit:{testResult.VerticalFieldOfViewAngle.LowLimit} UpLimit:{testResult.VerticalFieldOfViewAngle.UpLimit},Rsult{(testResult.VerticalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
+        }
+
+        public override IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<W51ARRecipeConfig>();
+        }
+
+        public override IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<W51ARFixConfig>();
         }
     }
 }

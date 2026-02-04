@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Batch;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
@@ -57,7 +58,6 @@ namespace ProjectLUX
             Config.SetWindow(this);
         }
 
-        public int CurrentTestType = -1;
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
 
 
@@ -66,7 +66,6 @@ namespace ProjectLUX
         {
             ProjectLUXConfig.Instance.StepIndex = 0;
             ObjectiveTestResult = new ObjectiveTestResult();
-            CurrentTestType = -1;
 
             if (!Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
             {
@@ -102,7 +101,6 @@ namespace ProjectLUX
             Application.Current.Dispatcher.Invoke(() =>
             {
                 ProjectLUXConfig.Instance.StepIndex = index;
-                CurrentTestType = index;
                 var temp = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(templatename));     
                 if (ProjectLUXConfig.Instance.LUXTestOpen && temp !=null)
                 {
@@ -129,6 +127,8 @@ namespace ProjectLUX
         LogOutput logOutput;
         private void Window_Initialized(object sender, EventArgs e)
         {
+            ProcessManager.GenStepBar(stepBar);
+
             this.DataContext = ProjectLUXConfig.Instance;
 
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
@@ -191,7 +191,7 @@ namespace ProjectLUX
         }
 
 
-        public  async Task Refresh()
+        public async Task Refresh()
         {
             if (FlowTemplate.SelectedIndex < 0) return;
 
@@ -290,9 +290,35 @@ namespace ProjectLUX
             CurrentFlowResult.SN = ProjectLUXConfig.Instance.SN;
             CurrentFlowResult.Model = FlowTemplate.Text;
 
-            CurrentFlowResult.TestType = CurrentTestType;
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase)) is ProcessMeta processMeta)
+                {
+                    CurrentFlowResult.TestType = ProcessMetas.IndexOf(processMeta);
+                    ProjectLUXConfig.Instance.StepIndex = CurrentFlowResult.TestType;
+
+                }
+                else
+                {
+                    CurrentFlowResult.TestType = -1;
+                    ProjectLUXConfig.Instance.StepIndex = CurrentFlowResult.TestType;
+                }
+            });
 
             FlowName = FlowTemplate.Text;
+
+            ProcessMeta? processMeta = ProcessManager.ProcessMetas.FirstOrDefault(a => a.FlowTemplate == FlowName);
+            if (processMeta != null)
+            {
+               int index =  ProcessManager.ProcessMetas.IndexOf(processMeta);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProjectLUXConfig.Instance.StepIndex = index;
+                });
+            }
+
+            FlowName = FlowTemplate.Text;
+
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
 
             await Refresh();
@@ -312,13 +338,80 @@ namespace ProjectLUX
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
             stopwatch.Reset();
             stopwatch.Start();
-            MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code};
+            MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
             int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
             CurrentFlowResult.BatchId = id;
+
+            PreProcessing(FlowName, CurrentFlowResult.Code);
+
             flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
         }
+
+
+        private async Task<bool> PreProcessing(string flowName, string serialNumber)
+        {
+            try
+            {
+                // Find all enabled pre-processors that apply to this flow template
+                var matchingProcessors = PreProcessManager.GetInstance().Processes
+                    .Where(p => IsValidEnabledPreProcessor(p, flowName))
+                    .ToList();
+
+                if (matchingProcessors.Count > 0)
+                {
+                    log.Info($"匹配到 {matchingProcessors.Count} 个已启用的预处理 {flowName}");
+
+                    var ctx = new IPreProcessContext
+                    {
+                        FlowName = flowName,
+                        SerialNumber = serialNumber,
+                    };
+
+                    // Execute all matching pre-processors sequentially
+                    foreach (var processor in matchingProcessors)
+                    {
+                        var metadata = PreProcessMetadata.FromProcess(processor);
+                        log.Info($"执行预处理 {metadata.DisplayName}");
+                        try
+                        {
+                            bool success = await processor.PreProcess(ctx);
+                            if (!success)
+                            {
+                                log.Warn($"预处理 {metadata.DisplayName} 执行返回失败");
+                                return false; // Abort flow if any pre-processor fails
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error($"预处理 {metadata.DisplayName} 执行异常", ex);
+                            return false; // Abort flow on exception
+                        }
+                    }
+                }
+                return true; // All pre-processors succeeded or none configured
+            }
+            catch (Exception ex)
+            {
+                log.Error("匹配/执行预处理出错", ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Checks if a pre-processor is valid and enabled for the given flow.
+        /// </summary>
+        private static bool IsValidEnabledPreProcessor(IPreProcess processor, string flowName)
+        {
+            var config = processor.GetConfig();
+            if (config is PreProcessConfigBase baseConfig)
+            {
+                return baseConfig.IsEnabled && baseConfig.AppliesToTemplate(flowName);
+            }
+            return false;
+        }
+
 
         private FlowControl flowControl;
 
@@ -473,7 +566,7 @@ namespace ProjectLUX
 
                         if (!string.IsNullOrWhiteSpace(ReturnCode))
                         {
-                            if (CurrentTestType == 0)
+                            if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR"&&CurrentFlowResult?.TestType == 0)
                             {
                                 log.Info("IsOC");
                                 if(ObjectiveTestResult.OpticCenterTestResult != null)
@@ -485,6 +578,7 @@ namespace ProjectLUX
                                     log.Info("ObjectiveTestResult.OpticCenterTestResult null");
                                 }
                             }
+
                             try
                             {
                                 if (Stream != null)
@@ -508,7 +602,7 @@ namespace ProjectLUX
                 }
                 else
                 {
-                    log.Info($"匹配到不到自定义流程 {meta.Name} -> {meta.ProcessTypeName};");
+                    log.Info($"匹配到不到自定义流程");
                 }
             }
             catch (Exception ex)
@@ -518,7 +612,6 @@ namespace ProjectLUX
             ViewResultManager.Save(result);
             ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
         }
-        private bool IsTestTypeCompleted() => CurrentTestType + 1 >= ProcessMetas.Count;
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
@@ -698,7 +791,7 @@ namespace ProjectLUX
             TestResult.W255ARTestResult = new Process.W255AR.W255ARTestResult();
             TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
             TestResult.ChessboardARTestResult = new Process.ChessboardAR.ChessboardARTestResult();
-            TestResult.DistortionARTestResult = new Process.DistortionAR.DistortionARTestResult();
+            TestResult.DistortionARTestResult = new Process.Distortion.DistortionTestResult();
             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
             ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
         }

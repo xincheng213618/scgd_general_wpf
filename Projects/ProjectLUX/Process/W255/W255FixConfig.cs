@@ -7,6 +7,16 @@ namespace ProjectLUX.Process.W255
 {
     public class W255FixConfig : ViewModelBase, IFixConfig
     {
+        [Category("FOV")]
+        public double W51HorizontalFieldOfViewAngle { get => _W51HorizontalFieldOfViewAngle; set { _W51HorizontalFieldOfViewAngle = value; OnPropertyChanged(); } }
+        private double _W51HorizontalFieldOfViewAngle = 1;
+        [Category("FOV")]
+        public double W51VerticalFieldOfViewAngle { get => _W51VerticalFieldOfViewAngle; set { _W51VerticalFieldOfViewAngle = value; OnPropertyChanged(); } }
+        private double _W51VerticalFieldOfViewAngle = 1;
+        [Category("FOV")]
+        public double W51DiagonalFieldOfViewAngle { get => _W51DiagonalFieldOfViewAngle; set { _W51DiagonalFieldOfViewAngle = value; OnPropertyChanged(); } }
+        private double _W51DiagonalFieldOfViewAngle = 1;
+
         [Category("W255")]
         public double LuminanceUniformity { get => _LuminanceUniformity; set { _LuminanceUniformity = value; OnPropertyChanged(); } }
         private double _LuminanceUniformity = 1;
@@ -32,15 +42,7 @@ namespace ProjectLUX.Process.W255
         public double CenterCorrelatedColorTemperature { get => _BlackCenterCorrelatedColorTemperature; set { _BlackCenterCorrelatedColorTemperature = value; OnPropertyChanged(); } }
         private double _BlackCenterCorrelatedColorTemperature = 1;
 
-        [Category("FOV")]
-        public double W51HorizontalFieldOfViewAngle { get => _W51HorizontalFieldOfViewAngle; set { _W51HorizontalFieldOfViewAngle = value; OnPropertyChanged(); } }
-        private double _W51HorizontalFieldOfViewAngle = 1;
-        [Category("FOV")]
-        public double W51VerticalFieldOfViewAngle { get => _W51VerticalFieldOfViewAngle; set { _W51VerticalFieldOfViewAngle = value; OnPropertyChanged(); } }
-        private double _W51VerticalFieldOfViewAngle = 1;
-        [Category("FOV")]
-        public double W51DiagonalFieldOfViewAngle { get => _W51DiagonalFieldOfViewAngle; set { _W51DiagonalFieldOfViewAngle = value; OnPropertyChanged(); } }
-        private double _W51DiagonalFieldOfViewAngle = 1;
+
     }
 
 }

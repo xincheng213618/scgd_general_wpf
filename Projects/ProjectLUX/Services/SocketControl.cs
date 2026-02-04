@@ -196,7 +196,6 @@ namespace ProjectLUX.Services
                             TestResult.BlueTestResult = new Process.Blue.BlueTestResult();
                             TestResult.GreenTestResult = new Process.Green.GreenTestResult();
                             TestResult.MTFHVTestResult = new Process.MTFHV.MTFHVTestResult();
-                            TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
                             TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
                             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
 
@@ -215,7 +214,6 @@ namespace ProjectLUX.Services
                             TestResult.BlueTestResult = new Process.Blue.BlueTestResult();
                             TestResult.GreenTestResult = new Process.Green.GreenTestResult();
                             TestResult.MTFHVTestResult = new Process.MTFHV.MTFHVTestResult();
-                            TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
                             TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
                             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
 
@@ -233,7 +231,6 @@ namespace ProjectLUX.Services
                             TestResult.BlueTestResult = new Process.Blue.BlueTestResult();
                             TestResult.GreenTestResult = new Process.Green.GreenTestResult();
                             TestResult.MTFHVTestResult = new Process.MTFHV.MTFHVTestResult();
-                            TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
                             TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
                             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
 
@@ -251,7 +248,6 @@ namespace ProjectLUX.Services
                             TestResult.BlueTestResult = new Process.Blue.BlueTestResult();
                             TestResult.GreenTestResult = new Process.Green.GreenTestResult();
                             TestResult.MTFHVTestResult = new Process.MTFHV.MTFHVTestResult();
-                            TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
                             TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
                             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
 
@@ -269,7 +265,6 @@ namespace ProjectLUX.Services
                             TestResult.BlueTestResult = new Process.Blue.BlueTestResult();
                             TestResult.GreenTestResult = new Process.Green.GreenTestResult();
                             TestResult.MTFHVTestResult = new Process.MTFHV.MTFHVTestResult();
-                            TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
                             TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
                             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
 
@@ -287,7 +282,6 @@ namespace ProjectLUX.Services
                             TestResult.BlueTestResult = new Process.Blue.BlueTestResult();
                             TestResult.GreenTestResult = new Process.Green.GreenTestResult();
                             TestResult.MTFHVTestResult = new Process.MTFHV.MTFHVTestResult();
-                            TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
                             TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
                             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
 
@@ -306,7 +300,6 @@ namespace ProjectLUX.Services
                             TestResult.BlueTestResult = new Process.Blue.BlueTestResult();
                             TestResult.GreenTestResult = new Process.Green.GreenTestResult();
                             TestResult.MTFHVTestResult = new Process.MTFHV.MTFHVTestResult();
-                            TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
                             TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
                             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
 
@@ -324,7 +317,6 @@ namespace ProjectLUX.Services
                             TestResult.BlueTestResult = new Process.Blue.BlueTestResult();
                             TestResult.GreenTestResult = new Process.Green.GreenTestResult();
                             TestResult.MTFHVTestResult = new Process.MTFHV.MTFHVTestResult();
-                            TestResult.DistortionTestResult = new Process.Distortion.DistortionTestResult();
                             TestResult.ChessboardTestResult = new Process.Chessboard.ChessboardTestResult();
                             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
                             ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path); return null;

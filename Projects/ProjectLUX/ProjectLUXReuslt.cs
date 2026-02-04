@@ -30,9 +30,26 @@ namespace ProjectLUX
 
             ContextMenu.Items.Add(new MenuItem() { Command = openFolderAndSelectFile, Header = "OpenFolderAndSelectFile" });
 
-            RelayCommand BatchDataHistoryCommand = new RelayCommand(a => BatchDataHistory(),e => BatchId > 0);
-            ContextMenu.Items.Add(new MenuItem() { Command = BatchDataHistoryCommand ,Header ="流程结果查询"});
+            RelayCommand BatchDataHistoryCommand = new RelayCommand(a => BatchDataHistory(), e => BatchId > 0);
+            ContextMenu.Items.Add(new MenuItem() { Command = BatchDataHistoryCommand, Header = "流程结果查询" });
 
+            RelayCommand ViewTestResultCommand = new RelayCommand(a => ViewTestResult(), e => !string.IsNullOrEmpty(ViewResultJson));
+            ContextMenu.Items.Add(new MenuItem() { Command = ViewTestResultCommand, Header = "查看测试结果" });
+        }
+
+        public void ViewTestResult()
+        {
+            if (string.IsNullOrEmpty(ViewResultJson))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "ViewResultJson为空", "ColorVision");
+                return;
+            }
+            var window = new TestResultViewWindow(ViewResultJson)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            window.ShowDialog();
         }
 
         public void BatchDataHistory()
