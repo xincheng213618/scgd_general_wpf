@@ -40,11 +40,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
 
-        public int AvgCount { get => _AvgCount; set { _AvgCount = value; OnPropertyChanged(); } }
-        private int _AvgCount = 1;
-
-        public CVImageFlipMode FlipMode { get => _FlipMode; set { _FlipMode = value; OnPropertyChanged(); } }
-        private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
 
         public bool UsingFileCaching { get => _UsingFileCaching; set { _UsingFileCaching = value; OnPropertyChanged(); } }
         private bool _UsingFileCaching;

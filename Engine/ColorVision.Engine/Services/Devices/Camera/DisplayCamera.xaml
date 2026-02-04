@@ -144,6 +144,10 @@
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,2">
                     <StackPanel Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
                         <DockPanel Margin="0,0,0,3" >
+                            <TextBlock  Text="{x:Static properties:Resources.Flip}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
+                            <ComboBox x:Name="CBFilp1" SelectedValue="{Binding DisplayConfig.FlipMode}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  SelectionChanged="CBFilp1_SelectionChanged"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,3" >
                             <TextBlock  Text="{x:Static properties:Resources.Gain}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
                             <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain, StringFormat=F2}" MinWidth="50"/>
                             <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10" ValueChanged="PreviewSlider_ValueChanged1"  Value="{Binding Config.Gain}" Minimum="{Binding Config.GainMin}" Maximum="{Binding Config.GainMax}"/>
@@ -190,9 +194,9 @@
                         </StackPanel>
                         <StackPanel Margin="0,0,0,3" Orientation="Horizontal">
                             <TextBlock  Text="{x:Static properties:Resources.AverageTimes}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
-                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.AvgCount}" HorizontalAlignment="Left" Width="100"  Margin="0,0,10,0"  />
+                            <TextBox DockPanel.Dock="Right" Text="{Binding DisplayConfig.AvgCount}" HorizontalAlignment="Left" Width="100"  Margin="0,0,10,0"  />
                             <TextBlock  Text="{x:Static properties:Resources.Flip}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="30" />
-                            <ComboBox x:Name="CBFilp" SelectedValue="{Binding Config.FlipMode}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Width="70" />
+                            <ComboBox x:Name="CBFilp" SelectedValue="{Binding DisplayConfig.FlipMode}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Width="70" />
                         </StackPanel>
 
                         <DockPanel Margin="0,0,0,3">

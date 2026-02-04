@@ -46,6 +46,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public ReferenceLineParam ReferenceLineParam { get => _ReferenceLineParam; set { _ReferenceLineParam = value; OnPropertyChanged(); } }
         private ReferenceLineParam _ReferenceLineParam = new ReferenceLineParam();
 
+        public int AvgCount { get => _AvgCount; set { _AvgCount = value; OnPropertyChanged(); } }
+        private int _AvgCount = 1;
+
+        public CVImageFlipMode FlipMode { get => _FlipMode; set { _FlipMode = value; OnPropertyChanged(); } }
+        private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
     }
 
 
@@ -73,7 +78,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, GetData_Click, (s, e) => e.CanExecute = Device.DService.DeviceStatus == DeviceStatusType.Opened));
         }
 
-
         ButtonProgressBar ButtonProgressBarGetData { get; set; }
         ButtonProgressBar ButtonProgressBarOpen { get; set; }
         ButtonProgressBar ButtonProgressBarClose { get; set; }
@@ -90,7 +94,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
                 ComboxCalibrationTemplate.SelectedIndex = 0;
-
             }
             UpdateTemplate();
             Device.ConfigChanged += (s, e) => UpdateTemplate();
@@ -116,6 +119,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             CBFilp.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
                                               select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
+            CBFilp1.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
+                                select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
+
 
             DService_DeviceStatusChanged(sender,DService.DeviceStatus);
             DService.DeviceStatusChanged += DService_DeviceStatusChanged;
@@ -137,26 +143,31 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 SetVisibility(StackPanelOpen, Visibility.Collapsed);
             }
             // Default state
-            HideAllButtons();
 
             switch (e)
             {
                 case DeviceStatusType.Unauthorized:
+                    HideAllButtons();
                     SetVisibility(ButtonUnauthorized, Visibility.Visible);
                     break;
                 case DeviceStatusType.Unknown:
+                    HideAllButtons();
                     SetVisibility(TextBlockUnknow, Visibility.Visible);
                     break;
                 case DeviceStatusType.OffLine:
+                    HideAllButtons();
                     SetVisibility(ButtonOffline, Visibility.Visible);
                     break;
                 case DeviceStatusType.UnInit:
+                    HideAllButtons();
                     SetVisibility(ButtonInit, Visibility.Visible);
                     break;
                 case DeviceStatusType.Closed:
+                    HideAllButtons();
                     SetVisibility(ButtonOpen, Visibility.Visible);
                     break;
                 case DeviceStatusType.LiveOpened:
+                    HideAllButtons();
                     SetVisibility(StackPanelOpen, Visibility.Visible);
                     SetVisibility(ButtonClose, Visibility.Visible);
                     Device.CameraVideoControl ??= new VideoReader();
@@ -176,12 +187,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
                     break;
                 case DeviceStatusType.Opened:
+                    HideAllButtons();
                     SetVisibility(StackPanelOpen, Visibility.Visible);
                     SetVisibility(ButtonClose, Visibility.Visible);
                     TakePhotoButton.Visibility = Visibility.Visible;
                     break;
                 default:
-                    // No specific action needed
                     break;
             }
         }
@@ -519,7 +530,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         {
                             if (s == MsgRecordState.Fail)
                             {
-
                                 MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
                                 Device.CameraVideoControl.Close();
                                 DService.Close();
@@ -744,6 +754,24 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public void Dispose()
         {
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+        }
+
+        private void CBFilp1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (Device.DService.IsVideoOpen)
+            {
+                MsgRecord msgRecord = DService.SetFlip();
+                msgRecord.MsgRecordStateChanged += (e) =>
+                {
+                    if (e == MsgRecordState.Success)
+                    {
+                    }
+                    else
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ExecutionFailed, "ColorVision");
+                    }
+                };
+            }
         }
     }
 }

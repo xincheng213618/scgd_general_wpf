@@ -43,14 +43,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public ViewCamera View { get; set; }
         public MQTTCamera DService { get; set; }
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
-        public RelayCommand DisPlaySaveCommand { get; set; }
+
         public DisplayCameraConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(Config.Code);
 
 
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DService = new MQTTCamera(Config);
+            DService = new MQTTCamera(this);
 
             View = new ViewCamera(this);
             View.View.Title = ColorVision.Engine.Properties.Resources.CameraView +$" - {Config.Code}";
@@ -60,8 +60,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             FetchLatestTemperatureCommand =  new RelayCommand(a => FetchLatestTemperature(a));
 
-
-            DisPlaySaveCommand = new RelayCommand(a => SaveDis());
             DisplayCameraControlLazy = new Lazy<DisplayCamera>(() => new DisplayCamera(this));
 
 
@@ -305,12 +303,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
                 });
             });
-        }
-
-        public void SaveDis()
-        {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.SaveCurrentExposureConfigPrompt, " ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
-            SaveConfig();
         }
 
         public override void Save()

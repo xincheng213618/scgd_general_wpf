@@ -18,9 +18,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
     public class MQTTCamera : MQTTDeviceService<ConfigCamera>
     {
+        public DeviceCamera Device { get; set; }
 
-        public MQTTCamera(ConfigCamera CameraConfig) : base(CameraConfig)
+        public MQTTCamera(DeviceCamera deviceCamera) : base(deviceCamera.Config)
         {
+            Device = deviceCamera;
+
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatusType.UnInit;
         }
@@ -266,12 +269,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             CurrentTakeImageMode = TakeImageMode.Live;
             bool IsLocal = (host=="127.0.0.1");
+
+            var Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "Gain", Config.Gain }, { "ExpTime", Config.ExpTime }, { "IsLocal", IsLocal } };
             MsgSend msg = new()
             {
                 EventName = "OpenLive",
-                Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "Gain", Config.Gain }, { "ExpTime", Config.ExpTime }, { "IsLocal", IsLocal } }
+                Params = Params
             };
-             return PublishAsyncClient(msg);
+            Params.Add("FlipMode", Device.DisplayConfig.FlipMode);
+
+            return PublishAsyncClient(msg);
         }
         public TakeImageMode CurrentTakeImageMode { get; set; }
 
@@ -285,6 +292,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
             return PublishAsyncClient(msg);
         }
+
+        public MsgRecord SetFlip()
+        {
+            var Params = new Dictionary<string, object>() { };
+            MsgSend msg = new()
+            {
+                EventName = "SetParam",
+                Params = Params
+            };
+            var Func = new List<ParamFunction>();
+            Func.Add(new ParamFunction() { Name = "CM_SetFlip", Params = new Dictionary<string, object>() { { "FlipMode", Device.DisplayConfig.FlipMode } } });
+            Params.Add("Func", Func);
+            return PublishAsyncClient(msg);
+        }
+
 
         public MsgRecord SetExp()
         {
@@ -379,9 +401,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 SerialNumber = SerialNumber,
                 Params = Params
             };
-            Params.Add("AvgCount", Config.AvgCount);
+            Params.Add("AvgCount", Device.DisplayConfig.AvgCount);
             Params.Add("ExpTime", expTime);
-            Params.Add("FlipMode", Config.FlipMode);
+            Params.Add("FlipMode", Device.DisplayConfig.FlipMode);
 
             if (param.Id == -1)
             {

@@ -3,6 +3,7 @@ using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
+using iText.Kernel.Crypto.Securityhandler;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -75,12 +76,23 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             DVText = new DVText(Config.TextProperties);
         }
 
+        public MemoryMappedFile VideoMemoryMappedFile { get; set; }
+
+        public void CreateMemoryMappedFile(string mapNamePrefix, long capacity)
+        {
+            VideoMemoryMappedFile = MemoryMappedFile.CreateOrOpen(mapNamePrefix, 1024L * 1024 * 1000 *2, MemoryMappedFileAccess.ReadWrite);
+        }
+
+
         public int Startup(string mapNamePrefix, ImageView image)
         {
             first = true;
             Image = image;
             try
             {
+                MemoryMappedFile memoryMappedFile =  MemoryMappedFile.CreateOrOpen(mapNamePrefix, 1024 * 1024 * 1000, MemoryMappedFileAccess.ReadWrite);
+                memoryMappedFile?.Dispose();
+
                 memoryMappedFile = MemoryMappedFile.OpenExisting(mapNamePrefix);
                 memoryMappedViewStream = memoryMappedFile.CreateViewStream();
                 binaryReader = new BinaryReader(memoryMappedViewStream);
@@ -118,6 +130,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public void Close()
         {
             openVideo = false;
+            VideoMemoryMappedFile?.Dispose();
+
         }
 
         private int frameCount;
