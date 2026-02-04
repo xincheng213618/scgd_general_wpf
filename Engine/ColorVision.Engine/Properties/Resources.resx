@@ -2466,7 +2466,7 @@
   <data name="WorkflowStartNodeNotFound_RunFailed" xml:space="preserve">
     <value>找不到流程启动结点，运行失败</value>
   </data>
-  <data name="ExecutionCancelled" xml:space="preserve">
+  <data name="ExecutionCancelled" xml:space="preserve">  
     <value>已经取消执行</value>
   </data>
   <data name="FlowWindows" xml:space="preserve">
