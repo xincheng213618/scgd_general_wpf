@@ -1057,7 +1057,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 
                 cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
                 cvCameraCSLib.CM_Close(m_hCamHandle);
-                button.Content = LocalVideo;
+                button.Content = "LocalVideo";
                 Device.DisplayConfig.IsLocalVideoOpen = false;
                 fpsTimer.Stop();
                 // Unsubscribe from pseudo-color changes
