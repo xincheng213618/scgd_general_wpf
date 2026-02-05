@@ -873,10 +873,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
         bool IsVideo = false;
         private void Video1_Click(object sender, RoutedEventArgs e)
         {
+            if (sender is not Button button) return;
             if (IsVideo)
             {
                 cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
-                cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle,TakeImageMode.Measure_Normal);
+                cvCameraCSLib.CM_Close(m_hCamHandle);
+                button.Content = Properties.Resources.Video;
                 IsVideo = false;
                 return;
             }
@@ -937,9 +939,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             IntPtr intPtrHandle = GCHandle.ToIntPtr(hander);
             callback = new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
             cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, intPtrHandle);
-
+            button.Content = "Close Video";
             IsVideo = true;
-
         }
 
         private void PreviewSliderLocalExp_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
