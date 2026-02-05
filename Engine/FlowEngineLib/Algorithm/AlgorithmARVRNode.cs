@@ -6,8 +6,6 @@ namespace FlowEngineLib.Algorithm;
 [STNode("/03_2 Algorithm")]
 public class AlgorithmARVRNode : CVBaseServerNode
 {
-	private int _OrderIndex;
-
 	private AlgorithmARVRType _Algorithm;
 
 	private string _POITempName;
@@ -106,7 +104,6 @@ public class AlgorithmARVRNode : CVBaseServerNode
 	{
 		operatorCode = "MTF";
 		base.Height += 50;
-		_OrderIndex = -1;
 		_BufferLen = 1024;
 		_Color = CVOLED_COLOR.GREEN;
 	}

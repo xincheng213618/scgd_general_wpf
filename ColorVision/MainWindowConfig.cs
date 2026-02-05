@@ -15,6 +15,7 @@ namespace ColorVision
     {
         public static MainWindowConfig Instance => ConfigService.Instance.GetRequiredService<MainWindowConfig>();
 
+
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; OnPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;
 

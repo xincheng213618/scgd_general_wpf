@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.NativeMethods;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.NativeMethods;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.Wizards;
@@ -6,6 +7,8 @@ using ColorVision.UI.Languages;
 using ColorVision.UI.Plugins;
 using ColorVision.UI.Shell;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -15,6 +18,26 @@ using System.Windows;
 
 namespace ColorVision
 {
+
+    public class APPConfig : ViewModelBase,IConfig, IConfigSettingProvider
+    {
+        [DisplayName("允许程序多开")]
+        public bool IsMute { get => _IsMute; set { _IsMute = value; OnPropertyChanged(); } }
+        private bool _IsMute = true;
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            var Instance = ConfigHandler.GetInstance().GetRequiredService<APPConfig>();
+            var list = new List<ConfigSettingMetadata>
+            {
+                new ConfigSettingMetadata
+                {
+                    BindingName =nameof(IsMute),
+                    Source = Instance,
+                }
+            };
+            return list;
+        }
+    }
 
     /// <summary>
     /// Interaction logic for App.xaml
@@ -137,7 +160,8 @@ namespace ColorVision
                         SendMessage(hWnd, WM_USER + 1, IntPtr.Zero, (IntPtr)atom);  // 发送消息
                     }
                     log.Info("程序已经打开");
-                    //Environment.Exit(0);
+                    if (!ConfigHandler.GetInstance().GetRequiredService<APPConfig>().IsMute)
+                        Environment.Exit(0);
                 }
                 ////写在这里可以Avoid命令行多开的效果，但是没有办法检测版本，实现同版本的情况下更新条件唯一
                 //Environment.Exit(0);

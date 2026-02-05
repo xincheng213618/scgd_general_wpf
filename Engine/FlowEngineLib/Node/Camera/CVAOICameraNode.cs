@@ -19,8 +19,6 @@ public class CVAOICameraNode : CVBaseServerNode
 
 	protected bool _IsAutoExp;
 
-	private new string _TempName;
-
 	private bool _IsWithND;
 
 	protected bool _IsAutoFocus;

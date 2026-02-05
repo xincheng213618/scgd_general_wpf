@@ -21,7 +21,7 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 
 	protected STNodeEditText<string> m_ctrl_lpName;
 
-	protected STNodeEditText<SMUChannelType> m_ctrl_channel;
+	protected STNodeEditText<string> m_ctrl_channel;
 
 	protected string loopName;
 
@@ -76,6 +76,8 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		}
 	}
 
+	private string DisTypeString => $"{_channel.ToString()}/{_source.ToString()}";
+
 	public SMUBaseNode(string title, string nodeType, string nodeName, string deviceCode)
 		: base(title, nodeType, nodeName, deviceCode)
 	{
@@ -108,15 +110,16 @@ public class SMUBaseNode : CVBaseServerNode, ICVLoopNextNode
 		CreateSMUNextControl();
 		Rectangle custom_item = m_custom_item;
 		custom_item.Y = 50;
-		m_ctrl_channel = CreateControl(typeof(STNodeEditText<SMUChannelType>), custom_item, "通道:", _channel);
+		m_ctrl_channel = CreateStringControl(custom_item, "类型:", DisTypeString);
 		custom_item.Y += 25;
-		m_ctrl_curValue = CreateControl(typeof(STNodeEditText<string>), custom_item, "当前值:", string.Empty);
+		m_ctrl_curValue = CreateStringControl(custom_item, "当前值:", string.Empty);
 		custom_item.Y += 25;
-		m_ctrl_lpName = CreateControl(typeof(STNodeEditText<string>), custom_item, "LoopName:", loopName);
+		m_ctrl_lpName = CreateStringControl(custom_item, "LoopName:", loopName);
 	}
 
 	protected virtual void updateUI()
 	{
+		m_ctrl_channel.Value = DisTypeString;
 		if (m_step_idx == 0)
 		{
 			m_ctrl_curValue.Value = $"{m_begin_val}-{m_end_val}/{m_point_num}";

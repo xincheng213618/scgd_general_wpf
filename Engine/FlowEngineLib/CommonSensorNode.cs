@@ -28,8 +28,7 @@ public class CommonSensorNode : CVBaseServerNode
 		}
 		set
 		{
-            _TempName = value;
-            setTempName(_TempName);
+			setTempName(value);
 		}
 	}
 
