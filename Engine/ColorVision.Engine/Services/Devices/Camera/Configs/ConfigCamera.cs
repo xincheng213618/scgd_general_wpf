@@ -47,8 +47,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public bool IsCVCIEFileSave { get => _IsCVCIEFileSave; set { _IsCVCIEFileSave = value; OnPropertyChanged(); } }
         private bool _IsCVCIEFileSave = true;
 
-        public float Gain { get => _Gain; set { _Gain = value; OnPropertyChanged(); } }
-        private float _Gain = 10;
 
         public float GainMin { get => _GainMin; set { _GainMin = value; OnPropertyChanged(); } }
         private float _GainMin = 0;
@@ -79,10 +77,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public bool IsAutoExpose { get => _IsAutoExpose; set { _IsAutoExpose =value; OnPropertyChanged(); } }
         private bool _IsAutoExpose;
 
-        public double ExpTime { get => _ExpTime; set { _ExpTime = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExpTimeLog)); } }
-        private double _ExpTime = 100;
 
-        public double ExpTimeLog { get => Math.Log(ExpTime); set { ExpTime = Math.Pow(Math.E, value); } }
 
         public double ExpTimeMax { get => _ExpTimeMax; set { _ExpTimeMax = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExpTimeMaxLog)); } }
         private double _ExpTimeMax = 60000;
@@ -94,19 +89,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public double ExpTimeMinLog { get => Math.Log(ExpTimeMin); set { ExpTimeMin = Math.Pow(Math.E, value); } }
 
-        public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExpTimeRLog)); } }
-        private double _ExpTimeR = 100;
-
-        public double ExpTimeRLog { get => Math.Log(ExpTimeR); set { ExpTimeR = Math.Pow(Math.E, value); } }
-
-        public double ExpTimeG { get => _ExpTimeG; set { _ExpTimeG = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExpTimeGLog)); } }
-        private double _ExpTimeG = 100;
-        public double ExpTimeGLog { get => Math.Log(ExpTimeG); set { ExpTimeG = Math.Pow(Math.E, value); } }
-
-        public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExpTimeBLog)); } }
-        private double _ExpTimeB = 100;
-
-        public double ExpTimeBLog { get => Math.Log(ExpTimeB); set { ExpTimeB = Math.Pow(Math.E, value); } }
 
         public int NDPort { get => _NDPort; set { _NDPort = value; OnPropertyChanged(); } }
         private int _NDPort;
@@ -116,18 +98,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         /// </summary>
         public bool IsAutoExpWithND { get => _IsAutoExpWithND; set { _IsAutoExpWithND = value; OnPropertyChanged(); } }
         private bool _IsAutoExpWithND;
-
-        public double Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
-        private double _Saturation = -1;
-
-        public double SaturationR { get => _SaturationR; set { _SaturationR = value; OnPropertyChanged(); } }
-        private double _SaturationR = -1;
-
-        public double SaturationG { get => _SaturationG; set { _SaturationG = value; OnPropertyChanged(); } }
-        private double _SaturationG = -1;
-
-        public double SaturationB { get => _SaturationB; set { _SaturationB = value; OnPropertyChanged(); } }
-        private double _SaturationB = -1;
 
         public CFWPORT CFW { get => _CFW; set { _CFW = value; OnPropertyChanged(); } }
         private CFWPORT _CFW = new CFWPORT();

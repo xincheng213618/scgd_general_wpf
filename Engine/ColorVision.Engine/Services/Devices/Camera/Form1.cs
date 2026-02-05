@@ -122,7 +122,6 @@ namespace WindowsFormsTest
             cb_CM_MODE.SelectedIndex = (int)Device.Config.CameraMode;
             cb_get_mode.SelectedIndex = (int)TakeImageMode.Live;
             cb_bpp.Text = "8";
-            cb_Channels.SelectedIndex = 0;
 
             btn_close.Enabled = false;
             btn_Meas.Enabled = false;

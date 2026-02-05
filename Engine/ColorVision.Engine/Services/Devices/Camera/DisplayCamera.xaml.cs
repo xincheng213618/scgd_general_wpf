@@ -33,8 +33,6 @@ using static Dm.FldrStatement;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
-
-
     public class DisplayCameraConfig: IDisplayConfigBase
     {
         public double TakePictureDelay { get; set; }
@@ -54,8 +52,42 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public int AvgCount { get => _AvgCount; set { _AvgCount = value; OnPropertyChanged(); } }
         private int _AvgCount = 1;
 
+        public float Gain { get => _Gain; set { _Gain = value; OnPropertyChanged(); } }
+        private float _Gain = 10;
+
         public CVImageFlipMode FlipMode { get => _FlipMode; set { _FlipMode = value; OnPropertyChanged(); } }
         private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
+
+        public double ExpTime { get => _ExpTime; set { _ExpTime = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExpTimeLog)); } }
+        private double _ExpTime = 100;
+        public double ExpTimeLog { get => Math.Log(ExpTime); set { ExpTime = Math.Pow(Math.E, value); } }
+
+        public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExpTimeRLog)); } }
+        private double _ExpTimeR = 100;
+
+        public double ExpTimeRLog { get => Math.Log(ExpTimeR); set { ExpTimeR = Math.Pow(Math.E, value); } }
+
+        public double ExpTimeG { get => _ExpTimeG; set { _ExpTimeG = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExpTimeGLog)); } }
+        private double _ExpTimeG = 100;
+        public double ExpTimeGLog { get => Math.Log(ExpTimeG); set { ExpTimeG = Math.Pow(Math.E, value); } }
+
+        public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; OnPropertyChanged(); OnPropertyChanged(nameof(ExpTimeBLog)); } }
+        private double _ExpTimeB = 100;
+
+        public double ExpTimeBLog { get => Math.Log(ExpTimeB); set { ExpTimeB = Math.Pow(Math.E, value); } }
+
+
+        public double Saturation { get => _Saturation; set { _Saturation = value; OnPropertyChanged(); } }
+        private double _Saturation = -1;
+
+        public double SaturationR { get => _SaturationR; set { _SaturationR = value; OnPropertyChanged(); } }
+        private double _SaturationR = -1;
+
+        public double SaturationG { get => _SaturationG; set { _SaturationG = value; OnPropertyChanged(); } }
+        private double _SaturationG = -1;
+
+        public double SaturationB { get => _SaturationB; set { _SaturationB = value; OnPropertyChanged(); } }
+        private double _SaturationB = -1;
     }
 
 
@@ -126,6 +158,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             CBFilp1.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
                                 select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
+
+            CBFilp2.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
+                                  select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
 
             DService_DeviceStatusChanged(sender,DService.DeviceStatus);
@@ -402,8 +437,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             double[] expTime = null;
-            if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
-            else expTime = new double[] { Device.Config.ExpTime };
+            if (Device.Config.IsExpThree) { expTime = new double[] { Device.DisplayConfig.ExpTimeR, Device.DisplayConfig.ExpTimeG, Device.DisplayConfig.ExpTimeB }; }
+            else expTime = new double[] { Device.DisplayConfig.ExpTime };
 
 
 
@@ -416,13 +451,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
 
             ButtonProgressBarGetData.Start();
-            ButtonProgressBarGetData.TargetTime = Device.Config.ExpTime + DisplayCameraConfig.TakePictureDelay;
-            logger.Info($"正在取图：ExpTime{Device.Config.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
+            ButtonProgressBarGetData.TargetTime = Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay;
+            logger.Info($"正在取图：ExpTime{Device.DisplayConfig.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
             Device.SetMsgRecordChanged(msgRecord);
             msgRecord.MsgRecordStateChanged += (s) =>
             {
                 ButtonProgressBarGetData.Stop();
-                DisplayCameraConfig.TakePictureDelay = ButtonProgressBarGetData.Elapsed - Device.Config.ExpTime;
+                DisplayCameraConfig.TakePictureDelay = ButtonProgressBarGetData.Elapsed - Device.DisplayConfig.ExpTime;
                 if (s == MsgRecordState.Timeout)
                 {
                     if (param.Id > 0 && Device?.PhyCamera?.DeviceCalibration ==null)
@@ -469,8 +504,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             double[] expTime = null;
             if (exp == 0)
             {
-                if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
-                else expTime = new double[] { Device.Config.ExpTime };
+                if (Device.Config.IsExpThree) { expTime = new double[] { Device.DisplayConfig.ExpTimeR, Device.DisplayConfig.ExpTimeG, Device.DisplayConfig.ExpTimeB }; }
+                else expTime = new double[] { Device.DisplayConfig.ExpTime };
             }
             else
             {
@@ -491,8 +526,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param) return null;
 
             double[] expTime = null;
-            if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
-            else expTime = new double[] { Device.Config.ExpTime };
+            if (Device.Config.IsExpThree) { expTime = new double[] { Device.DisplayConfig.ExpTimeR, Device.DisplayConfig.ExpTimeG, Device.DisplayConfig.ExpTimeB }; }
+            else expTime = new double[] { Device.DisplayConfig.ExpTime };
 
 
             if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return null;
@@ -833,45 +868,55 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }));
             return 0;
         }
+        cvCameraCSLib.QHYCCDProcCallBack callback;
 
+        bool IsVideo = false;
         private void Video1_Click(object sender, RoutedEventArgs e)
         {
-            cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
-            m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(Device.Config.CameraModel, Device.Config.CameraMode, strPathSysCfg);
-            cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
-
-            cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
-
-            string CameraID = null;
-            string szText = "";
-            if (cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
+            if (IsVideo)
             {
-                JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
+                cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
+                cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle,TakeImageMode.Measure_Normal);
+                IsVideo = false;
+                return;
+            }
 
-                if (jObject["ID"] != null)
+            if (m_hCamHandle == IntPtr.Zero)
+            {
+                cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
+                m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(Device.Config.CameraModel, Device.Config.CameraMode, strPathSysCfg);
+                cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
+                cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
+
+                if (string.IsNullOrWhiteSpace(Device.Config.CameraID))
                 {
-                    JToken[] data = jObject["ID"].ToArray();
-
-                    for (int i = 0; i < data.Length; i++)
+                    string szText = "";
+                    if (cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
                     {
-                        string camerid = data[i].ToString().Trim();
+                        JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
 
-                        string MD5 = ColorVision.Common.Utilities.Tool.GetMD5(camerid);
-
-                        if (MD5.ToUpper().Contains(Device.Config.CameraCode))
+                        if (jObject["ID"] != null)
                         {
-                            CameraID = camerid;
+                            JToken[] data = jObject["ID"].ToArray();
+
+                            for (int i = 0; i < data.Length; i++)
+                            {
+                                string camerid = data[i].ToString();
+
+                                string MD5 = ColorVision.Common.Utilities.Tool.GetMD5(camerid);
+
+                                if (MD5.ToUpper().Contains(Device.Config.CameraCode))
+                                {
+                                    Device.Config.CameraID = camerid;
+                                }
+                            }
                         }
                     }
                 }
+                cvCameraCSLib.CM_SetCameraID(m_hCamHandle, Device.Config.CameraID);
+                cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, TakeImageMode.Live);
+                cvCameraCSLib.CM_SetImageBpp(m_hCamHandle, 8);
             }
-            if (cvCameraCSLib.CM_IsOpen(m_hCamHandle))
-            {
-                return;
-            }
-            cvCameraCSLib.CM_SetCameraID(m_hCamHandle, CameraID);
-            cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, TakeImageMode.Live);
-            cvCameraCSLib.CM_SetImageBpp(m_hCamHandle, 8);
 
             int nErr = cvErrorDefine.CV_ERR_UNKNOWN;
             if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
@@ -884,14 +929,32 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
 
-
-            cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.Config.ExpTime);
-            cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.Config.Gain);
+            cvCameraCSLib.CM_SetFlip(m_hCamHandle, (int)Device.DisplayConfig.FlipMode);
+            cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
+            cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
 
             GCHandle hander = GCHandle.Alloc(this);
             IntPtr intPtrHandle = GCHandle.ToIntPtr(hander);
+            callback = new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
+            cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, intPtrHandle);
 
-            cvCameraCSLib.CM_SetCallBack(m_hCamHandle, new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction), intPtrHandle);
+            IsVideo = true;
+
+        }
+
+        private void PreviewSliderLocalExp_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.DisplayConfig.ExpTime);
+        }
+
+        private void PreviewSliderLocalGain_ValueChanged1(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.DisplayConfig.Gain);
+        }
+
+        private void CBFilp2_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            cvCameraCSLib.CM_SetFlip(m_hCamHandle, (int)Device.DisplayConfig.FlipMode);
 
         }
     }
