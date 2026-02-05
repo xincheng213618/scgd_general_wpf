@@ -22,6 +22,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -967,11 +968,30 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         height * width * channels * (bpp / 8),
                         width * channels * (bpp / 8));
                     writeableBitmap.Unlock();
+
+                    Interlocked.Increment(ref frameCount);
+                    if (fpsTimer.ElapsedMilliseconds >= 1000)
+                    {
+                        lastFps = (double)frameCount * 1000 / fpsTimer.ElapsedMilliseconds;
+                        logger.Info($"Current FPS: {lastFps:F2}");
+                        Interlocked.Exchange(ref frameCount, 0);
+                        fpsTimer.Restart();
+                    }
+
+                    if (first)
+                    {
+                        first = false;
+                        Device.View.ImageView.Zoombox1.ZoomUniform();
+                    }
                 }
             }));
             return 0;
         }
         cvCameraCSLib.QHYCCDProcCallBack callback;
+        private int frameCount;
+        private readonly Stopwatch fpsTimer = new Stopwatch();
+        private double lastFps;
+        bool first = true;
 
         bool IsVideo = false;
         private void Video1_Click(object sender, RoutedEventArgs e)
@@ -983,7 +1003,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 cvCameraCSLib.CM_Close(m_hCamHandle);
                 button.Content = Properties.Resources.Video;
                 IsVideo = false;
-                
+                fpsTimer.Stop();
                 // Unsubscribe from pseudo-color changes
                 Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
                 
@@ -1079,6 +1099,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Device.View.ImageView.Config.PseudoChanged += VideoConfig_PseudoChanged;
             
             button.Content = "Close Video";
+            fpsTimer.Start();
             IsVideo = true;
         }
         
