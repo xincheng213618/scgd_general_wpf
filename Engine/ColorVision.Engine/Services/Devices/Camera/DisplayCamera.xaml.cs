@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Core;
 using ColorVision.Database;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
@@ -9,6 +10,7 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons.HDR;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -104,6 +106,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public ViewCamera View { get; set; }
         public string DisPlayName => Device.Config.Name;
 
+        // Video display related fields
+        private VideoReaderConfig VideoConfig { get; set; }
+        private DVRectangleText DVRectangleText { get; set; }
+        private DVText DVText { get; set; }
+        private HImage? _calculationHImage;
+        private bool _visualsAdded = false;
+
         public DisplayCamera(DeviceCamera device)
         {
             Device = device;
@@ -113,6 +122,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _timer.Interval = TimeSpan.FromMilliseconds(100);
             _timer.Tick += Timer_Tick;
             CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, GetData_Click, (s, e) => e.CanExecute = Device.DService.DeviceStatus == DeviceStatusType.Opened));
+            
+            // Initialize video display components
+            VideoConfig = ConfigService.Instance.GetRequiredService<VideoReaderConfig>();
+            DVRectangleText = new DVRectangleText(VideoConfig.RectangleTextProperties);
+            DVText = new DVText(VideoConfig.TextProperties);
         }
 
         ButtonProgressBar ButtonProgressBarGetData { get; set; }
@@ -801,6 +815,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public void Dispose()
         {
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+            
+            // Clean up video display resources
+            Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
+            _calculationHImage?.Dispose();
+            _calculationHImage = null;
         }
 
         private void CBFilp1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -842,29 +861,113 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             Application.Current?.Dispatcher.Invoke(new Action(() =>
             {
-                WriteableBitmap writeableBitmap = Device.View.ImageView.ImageShow.Source as WriteableBitmap;
-                bool needNewBitmap = writeableBitmap == null
-                    || writeableBitmap.PixelWidth != width
-                    || writeableBitmap.PixelHeight != height
-                    || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
-
-                if (needNewBitmap)
+                // Handle accuracy calculation and pseudo-color if enabled
+                if (VideoConfig.IsUseCacheFile)
                 {
-                    writeableBitmap = new WriteableBitmap(
-                        width,
-                        height,
-                        96, 96,
-                        GetPixelFormat(channels, bpp),
-                        null);
-                    Device.View.ImageView.ImageShow.Source = writeableBitmap;
+                    // Initialize or reallocate HImage if dimensions changed
+                    if (_calculationHImage == null || _calculationHImage.Value.cols != width || _calculationHImage.Value.rows != height || _calculationHImage.Value.channels != channels || _calculationHImage.Value.depth != bpp / 8)
+                    {
+                        _calculationHImage?.Dispose();
+                        _calculationHImage = new HImage
+                        {
+                            rows = height,
+                            cols = width,
+                            channels = channels,
+                            depth = bpp / 8,
+                            pData = Marshal.AllocHGlobal(height * width * channels * (bpp / 8))
+                        };
+                        logger.Info($"Allocated new HImage for video callback: {width}x{height}, bpp={bpp}, channels={channels}");
+                        DVRectangleText.Rect = new Rect(0, 0, width, height);
+                    }
+
+                    if (_calculationHImage != null)
+                    {
+                        // Copy data from local memory to HImage
+                        int dataSize = height * width * channels * (bpp / 8);
+                        unsafe
+                        {
+                            Buffer.MemoryCopy(pData.ToPointer(), _calculationHImage.Value.pData.ToPointer(), dataSize, dataSize);
+                        }
+
+                        HImage hImage = _calculationHImage.Value;
+                        Rect rect = DVRectangleText.Rect;
+
+                        // Calculate articulation (accuracy) if enabled
+                        if (VideoConfig.IsCalArtculation)
+                        {
+                            Thread task = new Thread(() =>
+                            {
+                                double articulation = OpenCVMediaHelper.M_CalArtculation(hImage, VideoConfig.EvaFunc, new RoiRect(rect));
+                                Application.Current?.Dispatcher.Invoke(() =>
+                                {
+                                    DVText.Attribute.Text = $"Articulation: {articulation:F5}";
+                                });
+                                logger.Info($"Video Articulation: {articulation}");
+                            });
+                            task.Start();
+                        }
+
+                        // Handle pseudo-color display if enabled
+                        if (Device.View.ImageView.Config.IsPseudo)
+                        {
+                            uint min = (uint)Device.View.ImageView.PseudoSlider.ValueStart;
+                            uint max = (uint)Device.View.ImageView.PseudoSlider.ValueEnd;
+
+                            logger.Info($"Video callback processing PseudoColor, min:{min}, max:{max}");
+
+                            Thread task1 = new Thread(() =>
+                            {
+                                int ret = OpenCVMediaHelper.M_PseudoColor(hImage, out HImage hImageProcessed, min, max, Device.View.ImageView.Config.ColormapTypes, 0);
+                                Application.Current?.Dispatcher.Invoke(() =>
+                                {
+                                    if (ret == 0)
+                                    {
+                                        if (!HImageExtension.UpdateWriteableBitmap(Device.View.ImageView.FunctionImage, hImageProcessed))
+                                        {
+                                            var image = hImageProcessed.ToWriteableBitmap();
+                                            hImageProcessed.Dispose();
+                                            Device.View.ImageView.FunctionImage = image;
+                                        }
+                                        if (Device.View.ImageView.Config.IsPseudo == true)
+                                        {
+                                            Device.View.ImageView.ImageShow.Source = Device.View.ImageView.FunctionImage;
+                                        }
+                                    }
+                                });
+                            });
+                            task1.Start();
+                            return; // Don't update the normal bitmap when in pseudo mode
+                        }
+                    }
                 }
-                writeableBitmap!.Lock();
-                writeableBitmap.WritePixels(
-                    new Int32Rect(0, 0, width, height),
-                    pData,
-                    height * width * channels * (bpp / 8),
-                    width * channels * (bpp / 8));
-                writeableBitmap.Unlock();
+
+                // Normal display (non-pseudo color)
+                if (!Device.View.ImageView.Config.IsPseudo)
+                {
+                    WriteableBitmap writeableBitmap = Device.View.ImageView.ImageShow.Source as WriteableBitmap;
+                    bool needNewBitmap = writeableBitmap == null
+                        || writeableBitmap.PixelWidth != width
+                        || writeableBitmap.PixelHeight != height
+                        || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
+
+                    if (needNewBitmap)
+                    {
+                        writeableBitmap = new WriteableBitmap(
+                            width,
+                            height,
+                            96, 96,
+                            GetPixelFormat(channels, bpp),
+                            null);
+                        Device.View.ImageView.ImageShow.Source = writeableBitmap;
+                    }
+                    writeableBitmap!.Lock();
+                    writeableBitmap.WritePixels(
+                        new Int32Rect(0, 0, width, height),
+                        pData,
+                        height * width * channels * (bpp / 8),
+                        width * channels * (bpp / 8));
+                    writeableBitmap.Unlock();
+                }
             }));
             return 0;
         }
@@ -880,6 +983,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 cvCameraCSLib.CM_Close(m_hCamHandle);
                 button.Content = Properties.Resources.Video;
                 IsVideo = false;
+                
+                // Unsubscribe from pseudo-color changes
+                Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
+                
+                // Cleanup visuals
+                if (_visualsAdded)
+                {
+                    Device.View.ImageView.ImageShow.RemoveVisualCommand(DVRectangleText);
+                    Device.View.ImageView.ImageShow.RemoveVisualCommand(DVText);
+                    _visualsAdded = false;
+                }
+                
+                // Cleanup calculation HImage
+                _calculationHImage?.Dispose();
+                _calculationHImage = null;
+                
                 return;
             }
 
@@ -939,8 +1058,34 @@ namespace ColorVision.Engine.Services.Devices.Camera
             IntPtr intPtrHandle = GCHandle.ToIntPtr(hander);
             callback = new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
             cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, intPtrHandle);
+            
+            // Add visual elements for displaying articulation and ROI
+            if (!_visualsAdded)
+            {
+                Device.View.ImageView.ImageShow.AddVisualCommand(DVRectangleText);
+                Device.View.ImageView.ImageShow.AddVisualCommand(DVText);
+                _visualsAdded = true;
+            }
+            
+            // Enable pseudo-color support if needed
+            if (Device.View.ImageView.Config.IsPseudo)
+            {
+                VideoConfig.IsUseCacheFile = true;
+                VideoConfig.IsCalArtculation = true;
+            }
+            
+            // Listen to pseudo-color changes
+            Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
+            Device.View.ImageView.Config.PseudoChanged += VideoConfig_PseudoChanged;
+            
             button.Content = "Close Video";
             IsVideo = true;
+        }
+        
+        private void VideoConfig_PseudoChanged(object? sender, EventArgs e)
+        {
+            if (Device.View.ImageView.Config.IsPseudo)
+                VideoConfig.IsUseCacheFile = true;
         }
 
         private void PreviewSliderLocalExp_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
