@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -112,6 +113,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private DVText DVText { get; set; }
         private HImage? _calculationHImage;
         private bool _visualsAdded = false;
+        private CancellationTokenSource _videoCancellationTokenSource;
 
         public DisplayCamera(DeviceCamera device)
         {
@@ -818,6 +820,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             
             // Clean up video display resources
             Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
+            _videoCancellationTokenSource?.Cancel();
+            _videoCancellationTokenSource?.Dispose();
             _calculationHImage?.Dispose();
             _calculationHImage = null;
         }
@@ -857,6 +861,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     : System.Windows.Media.PixelFormats.Gray8;
             }
         }
+
+        /// <summary>
+        /// Checks if HImage needs reallocation based on new image dimensions
+        /// </summary>
+        private bool NeedsHImageReallocation(int width, int height, int channels, int bpp)
+        {
+            return _calculationHImage == null 
+                || _calculationHImage.Value.cols != width 
+                || _calculationHImage.Value.rows != height 
+                || _calculationHImage.Value.channels != channels 
+                || _calculationHImage.Value.depth != bpp / 8;
+        }
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
         {
             Application.Current?.Dispatcher.Invoke(new Action(() =>
@@ -865,7 +881,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (VideoConfig.IsUseCacheFile)
                 {
                     // Initialize or reallocate HImage if dimensions changed
-                    if (_calculationHImage == null || _calculationHImage.Value.cols != width || _calculationHImage.Value.rows != height || _calculationHImage.Value.channels != channels || _calculationHImage.Value.depth != bpp / 8)
+                    if (NeedsHImageReallocation(width, height, channels, bpp))
                     {
                         _calculationHImage?.Dispose();
                         _calculationHImage = new HImage
@@ -892,32 +908,41 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         HImage hImage = _calculationHImage.Value;
                         Rect rect = DVRectangleText.Rect;
 
-                        // Calculate articulation (accuracy) if enabled
-                        if (VideoConfig.IsCalArtculation)
+                        // Calculate articulation (accuracy) if enabled - using Task for proper lifecycle management
+                        if (VideoConfig.IsCalArtculation && _videoCancellationTokenSource != null)
                         {
-                            Thread task = new Thread(() =>
+                            var token = _videoCancellationTokenSource.Token;
+                            Task.Run(() =>
                             {
+                                if (token.IsCancellationRequested) return;
                                 double articulation = OpenCVMediaHelper.M_CalArtculation(hImage, VideoConfig.EvaFunc, new RoiRect(rect));
+                                if (token.IsCancellationRequested) return;
                                 Application.Current?.Dispatcher.Invoke(() =>
                                 {
                                     DVText.Attribute.Text = $"Articulation: {articulation:F5}";
                                 });
                                 logger.Info($"Video Articulation: {articulation}");
-                            });
-                            task.Start();
+                            }, token);
                         }
 
                         // Handle pseudo-color display if enabled
-                        if (Device.View.ImageView.Config.IsPseudo)
+                        if (Device.View.ImageView.Config.IsPseudo && _videoCancellationTokenSource != null)
                         {
                             uint min = (uint)Device.View.ImageView.PseudoSlider.ValueStart;
                             uint max = (uint)Device.View.ImageView.PseudoSlider.ValueEnd;
 
                             logger.Info($"Video callback processing PseudoColor, min:{min}, max:{max}");
 
-                            Thread task1 = new Thread(() =>
+                            var token = _videoCancellationTokenSource.Token;
+                            Task.Run(() =>
                             {
+                                if (token.IsCancellationRequested) return;
                                 int ret = OpenCVMediaHelper.M_PseudoColor(hImage, out HImage hImageProcessed, min, max, Device.View.ImageView.Config.ColormapTypes, 0);
+                                if (token.IsCancellationRequested)
+                                {
+                                    hImageProcessed.Dispose();
+                                    return;
+                                }
                                 Application.Current?.Dispatcher.Invoke(() =>
                                 {
                                     if (ret == 0)
@@ -928,14 +953,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                             hImageProcessed.Dispose();
                                             Device.View.ImageView.FunctionImage = image;
                                         }
-                                        if (Device.View.ImageView.Config.IsPseudo == true)
+                                        if (Device.View.ImageView.Config.IsPseudo)
                                         {
                                             Device.View.ImageView.ImageShow.Source = Device.View.ImageView.FunctionImage;
                                         }
                                     }
                                 });
-                            });
-                            task1.Start();
+                            }, token);
                             return; // Don't update the normal bitmap when in pseudo mode
                         }
                     }
@@ -979,6 +1003,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (sender is not Button button) return;
             if (IsVideo)
             {
+                // Cancel any running background tasks
+                _videoCancellationTokenSource?.Cancel();
+                _videoCancellationTokenSource?.Dispose();
+                _videoCancellationTokenSource = null;
+                
                 cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
                 cvCameraCSLib.CM_Close(m_hCamHandle);
                 button.Content = Properties.Resources.Video;
@@ -1059,6 +1088,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             callback = new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
             cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, intPtrHandle);
             
+            // Initialize cancellation token for background tasks
+            _videoCancellationTokenSource = new CancellationTokenSource();
+            
             // Add visual elements for displaying articulation and ROI
             if (!_visualsAdded)
             {
@@ -1068,6 +1100,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             
             // Enable pseudo-color support if needed
+            // Note: When pseudo-color is enabled, we automatically enable cache and articulation
+            // for better image analysis capabilities
             if (Device.View.ImageView.Config.IsPseudo)
             {
                 VideoConfig.IsUseCacheFile = true;
@@ -1075,7 +1109,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             
             // Listen to pseudo-color changes
-            Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
             Device.View.ImageView.Config.PseudoChanged += VideoConfig_PseudoChanged;
             
             button.Content = "Close Video";
