@@ -12,10 +12,10 @@ namespace ColorVision.ImageEditor.Draw
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
         public bool IsShowText { get; set; } = true;
 
-        [Category("Text"), DisplayName("文本"), JsonIgnore] 
+        [Category("Text"), DisplayName("文本")] 
         public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; OnPropertyChanged(); } }
 
-        [Category("Text"), DisplayName("字体大小"), JsonIgnore] 
+        [Category("Text"), DisplayName("字体大小")] 
         public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; OnPropertyChanged(); } }
 
         [Category("Text"), DisplayName("颜色"), JsonIgnore]

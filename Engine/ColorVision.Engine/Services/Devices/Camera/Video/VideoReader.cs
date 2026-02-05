@@ -33,8 +33,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public FocusAlgorithm  EvaFunc { get => _EvaFunc; set { _EvaFunc = value; OnPropertyChanged(); } }
         private FocusAlgorithm  _EvaFunc = FocusAlgorithm .Laplacian;
+
+        [JsonIgnore]
         public TextProperties TextProperties { get => _TextProperties; set { _TextProperties = value; OnPropertyChanged(); } }
-        private TextProperties _TextProperties = new TextProperties() { FontSize =200 };
+        private TextProperties _TextProperties = new TextProperties() { FontSize = 200 };
 
         [Browsable(false),JsonIgnore]
         public RectangleTextProperties RectangleTextProperties { get; set; } = new RectangleTextProperties();

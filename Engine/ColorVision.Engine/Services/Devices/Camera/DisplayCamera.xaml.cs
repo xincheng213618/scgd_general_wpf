@@ -29,6 +29,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -92,6 +93,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public double SaturationB { get => _SaturationB; set { _SaturationB = value; OnPropertyChanged(); } }
         private double _SaturationB = -1;
+
+        [JsonIgnore]
+        public bool IsLocalVideoOpen { get => _IsLocalVideoOpen; set { _IsLocalVideoOpen = value; OnPropertyChanged(); } }
+        private bool _IsLocalVideoOpen;
     }
 
 
@@ -183,6 +188,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DService_DeviceStatusChanged(sender,DService.DeviceStatus);
             DService.DeviceStatusChanged += DService_DeviceStatusChanged;
             this.ApplyChangedSelectedColor(DisPlayBorder);
+            var vb = new Binding("DService.DeviceStatus")
+            {
+                Source = Device,
+                Mode = BindingMode.OneWay
+            };
+            vb.Converter = TryFindResource("enum2VisibilityConverter") as IValueConverter;
+            vb.ConverterParameter = DeviceStatusType.Closed;
+            LocalVideo.SetBinding(StackPanel.VisibilityProperty, vb);
 
         }
 
@@ -862,7 +875,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     : System.Windows.Media.PixelFormats.Gray8;
             }
         }
-
+        double articulation;
         /// <summary>
         /// Checks if HImage needs reallocation based on new image dimensions
         /// </summary>
@@ -878,20 +891,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             Application.Current?.Dispatcher.Invoke(new Action(() =>
             {
-                // Handle accuracy calculation and pseudo-color if enabled
                 if (VideoConfig.IsUseCacheFile)
                 {
-                    // Initialize or reallocate HImage if dimensions changed
                     if (NeedsHImageReallocation(width, height, channels, bpp))
                     {
-                        _calculationHImage?.Dispose();
                         _calculationHImage = new HImage
                         {
                             rows = height,
                             cols = width,
                             channels = channels,
                             depth = bpp / 8,
-                            pData = Marshal.AllocHGlobal(height * width * channels * (bpp / 8))
+                            pData = pData
                         };
                         logger.Info($"Allocated new HImage for video callback: {width}x{height}, bpp={bpp}, channels={channels}");
                         DVRectangleText.Rect = new Rect(0, 0, width, height);
@@ -899,14 +909,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                     if (_calculationHImage != null)
                     {
-                        // Copy data from local memory to HImage
-                        int dataSize = height * width * channels * (bpp / 8);
-                        unsafe
-                        {
-                            Buffer.MemoryCopy(pData.ToPointer(), _calculationHImage.Value.pData.ToPointer(), dataSize, dataSize);
-                        }
-
                         HImage hImage = _calculationHImage.Value;
+                        hImage.pData = pData;
                         Rect rect = DVRectangleText.Rect;
 
                         // Calculate articulation (accuracy) if enabled - using Task for proper lifecycle management
@@ -916,11 +920,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             Task.Run(() =>
                             {
                                 if (token.IsCancellationRequested) return;
-                                double articulation = OpenCVMediaHelper.M_CalArtculation(hImage, VideoConfig.EvaFunc, new RoiRect(rect));
+                                articulation = OpenCVMediaHelper.M_CalArtculation(hImage, VideoConfig.EvaFunc, new RoiRect(rect));
                                 if (token.IsCancellationRequested) return;
                                 Application.Current?.Dispatcher.Invoke(() =>
                                 {
-                                    DVText.Attribute.Text = $"Articulation: {articulation:F5}";
+                                    DVText.Attribute.Text = $"fps:{lastFps} Articulation: {articulation:F5}";
                                 });
                                 logger.Info($"Video Articulation: {articulation}");
                             }, token);
@@ -1009,14 +1013,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     else
                     {
                         OpenCvSharp.Cv2.Flip(srcMat, dstMat, (OpenCvSharp.FlipMode)Device.DisplayConfig.FlipMode);
-                    }
-    
-                    //writeableBitmap.WritePixels(
-                    //    new Int32Rect(0, 0, width, height),
-                    //    pData,
-                    //    height * width * channels * (bpp / 8),
-                    //    width * channels * (bpp / 8));
-
+                    } 
                     writeableBitmap.Unlock();
 
                     Interlocked.Increment(ref frameCount);
@@ -1027,7 +1024,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         Interlocked.Exchange(ref frameCount, 0);
                         fpsTimer.Restart();
                     }
-
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        DVText.Attribute.Text = $"fps:{lastFps} Articulation: {articulation:F5}";
+                    });
                     if (first)
                     {
                         first = false;
@@ -1045,11 +1045,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private double lastFps;
         bool first = true;
 
-        bool IsVideo = false;
         private void Video1_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button button) return;
-            if (IsVideo)
+            if (Device.DisplayConfig.IsLocalVideoOpen)
             {
                 // Cancel any running background tasks
                 _videoCancellationTokenSource?.Cancel();
@@ -1058,8 +1057,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 
                 cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
                 cvCameraCSLib.CM_Close(m_hCamHandle);
-                button.Content = Properties.Resources.Video;
-                IsVideo = false;
+                button.Content = LocalVideo;
+                Device.DisplayConfig.IsLocalVideoOpen = false;
                 fpsTimer.Stop();
                 // Unsubscribe from pseudo-color changes
                 Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
@@ -1070,10 +1069,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     Device.View.ImageView.ImageShow.RemoveVisualCommand(DVRectangleText);
                     Device.View.ImageView.ImageShow.RemoveVisualCommand(DVText);
                     _visualsAdded = false;
-                }
-                
-                // Cleanup calculation HImage
-                _calculationHImage?.Dispose();
+                } 
                 _calculationHImage = null;
                 
                 return;
@@ -1140,31 +1136,24 @@ namespace ColorVision.Engine.Services.Devices.Camera
             
             // Initialize cancellation token for background tasks
             _videoCancellationTokenSource = new CancellationTokenSource();
-            
+
             // Add visual elements for displaying articulation and ROI
-            if (!_visualsAdded)
-            {
-                Device.View.ImageView.ImageShow.AddVisualCommand(DVRectangleText);
-                Device.View.ImageView.ImageShow.AddVisualCommand(DVText);
-                _visualsAdded = true;
-            }
-            
-            // Enable pseudo-color support if needed
-            // Note: When pseudo-color is enabled, we automatically enable cache and articulation
-            // for better image analysis capabilities
+
+            Device.View.ImageView.ImageShow.AddVisualCommand(DVRectangleText);
+            Device.View.ImageView.ImageShow.AddVisualCommand(DVText);
+
             if (Device.View.ImageView.Config.IsPseudo)
             {
                 VideoConfig.IsUseCacheFile = true;
                 VideoConfig.IsCalArtculation = true;
             }
             
-            // Listen to pseudo-color changes
             Device.View.ImageView.Config.PseudoChanged += VideoConfig_PseudoChanged;
             
             button.Content = "Close Video";
             fpsTimer.Start();
             logger.Info("视频模式初始化结束");
-            IsVideo = true;
+            Device.DisplayConfig.IsLocalVideoOpen = true;
         }
         
         private void VideoConfig_PseudoChanged(object? sender, EventArgs e)

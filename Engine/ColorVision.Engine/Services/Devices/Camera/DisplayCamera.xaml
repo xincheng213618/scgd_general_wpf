@@ -360,25 +360,45 @@
                             <TextBox IsReadOnly="True" Text="{Binding Config.MotorConfig.VIDPosition}" Background="Transparent" BorderThickness="0,0,0,0"  Margin="5,0"/>
                         </DockPanel>
                     </StackPanel>
-
-    
                 </StackPanel>
-                <StackPanel Margin="0,0,0,3">
-                    <Button  Content="{x:Static properties:Resources.Video}"  Click="Video1_Click"/>
-                    <DockPanel Margin="0,0,0,3" >
-                        <TextBlock  Text="{x:Static properties:Resources.Flip}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
-                        <ComboBox x:Name="CBFilp2" SelectedValue="{Binding DisplayConfig.FlipMode}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  SelectionChanged="CBFilp2_SelectionChanged"/>
+                
+                <StackPanel x:Name="LocalVideo" Margin="0,0,0,3">
+                    <DockPanel  Margin="0,0,0,3" >
+                        <Button DockPanel.Dock="Right" Margin="5,0,0,0" HorizontalAlignment="Left" Command="{Binding CameraVideoControl.EditConfigCommand}" Padding="2" Height="21" Width="21">
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="rotateTransform256" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform256"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Button>
+                        <Button  Content="LocalVideo"  Click="Video1_Click"/>
+
                     </DockPanel>
-                    <DockPanel Margin="0,0,0,3" >
-                        <TextBlock  Text="{x:Static properties:Resources.Gain}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
-                        <TextBox DockPanel.Dock="Right" Text="{Binding DisplayConfig.Gain, StringFormat=F2}" MinWidth="50"/>
-                        <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10" ValueChanged="PreviewSliderLocalGain_ValueChanged1"  Value="{Binding DisplayConfig.Gain}" Minimum="{Binding Config.GainMin}" Maximum="{Binding Config.GainMax}"/>
-                    </DockPanel>
-                    <DockPanel Margin="0,0,0,3" >
-                        <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50" />
-                        <TextBox DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTime, StringFormat=F2}" MinWidth="50"/>
-                        <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSliderLocalExp_ValueChanged"  Value="{Binding DisplayConfig.ExpTimeLog}" Minimum="{Binding Config.ExpTimeMinLog}" Maximum="{Binding Config.ExpTimeMaxLog}"/>
-                    </DockPanel>
+                    <StackPanel Visibility="{Binding DisplayConfig.IsLocalVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
+                        <DockPanel Margin="0,0,0,3" >
+                            <TextBlock  Text="{x:Static properties:Resources.Flip}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
+                            <ComboBox x:Name="CBFilp2" SelectedValue="{Binding DisplayConfig.FlipMode}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  SelectionChanged="CBFilp2_SelectionChanged"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,3" >
+                            <TextBlock  Text="{x:Static properties:Resources.Gain}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
+                            <TextBox DockPanel.Dock="Right" Text="{Binding DisplayConfig.Gain, StringFormat=F2}" MinWidth="50"/>
+                            <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10" ValueChanged="PreviewSliderLocalGain_ValueChanged1"  Value="{Binding DisplayConfig.Gain}" Minimum="{Binding Config.GainMin}" Maximum="{Binding Config.GainMax}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,3" >
+                            <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50" />
+                            <TextBox DockPanel.Dock="Right" Text="{Binding DisplayConfig.ExpTime, StringFormat=F2}" MinWidth="50"/>
+                            <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSliderLocalExp_ValueChanged"  Value="{Binding DisplayConfig.ExpTimeLog}" Minimum="{Binding Config.ExpTimeMinLog}" Maximum="{Binding Config.ExpTimeMaxLog}"/>
+                        </DockPanel>
+                    </StackPanel>
                 </StackPanel>
 
                 <DockPanel Margin="0,0,0,0" >
