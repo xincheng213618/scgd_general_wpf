@@ -220,12 +220,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
                 msgRecordStateChangedHandler = (e) =>
                 {
-                    ButtonOpen.Visibility = Visibility.Collapsed;
-                    ButtonClose.Visibility = Visibility.Visible;
-                    StackPanelOpen.Visibility = Visibility.Visible;
                     msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
                     ButtonProgressBarOpen.Stop();
                     DisplayCameraConfig.OpenTime = ButtonProgressBarOpen.Elapsed;
+                    if (e == MsgRecordState.Success)
+                    {
+                        ButtonOpen.Visibility = Visibility.Collapsed;
+                        ButtonClose.Visibility = Visibility.Visible;
+                        StackPanelOpen.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), $"{msgRecord.MsgReturn.Message}", "ColorVision");
+                    }
                 };
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
 
@@ -503,7 +510,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         };
                         if (e == MsgRecordState.Fail)
                         {
-                            MessageBox1.Show($"自动曝光失败，请检查服务日志{Environment.NewLine}{msgRecord.MsgReturn.ToString()}" , "ColorVision");
+                            MessageBox1.Show($"自动曝光失败，请检查服务日志{Environment.NewLine}{msgRecord.MsgReturn.Message}" , "ColorVision");
                         };
                     };
                     ServicesHelper.SendCommand(button, msgRecord);
@@ -530,7 +537,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         {
                             if (s == MsgRecordState.Fail)
                             {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                                MessageBox.Show(Application.Current.GetActiveWindow(), $"{msgRecord.MsgReturn.Message}", "ColorVision");
                                 Device.CameraVideoControl.Close();
                                 DService.Close();
                                 DService.IsVideoOpen = false;

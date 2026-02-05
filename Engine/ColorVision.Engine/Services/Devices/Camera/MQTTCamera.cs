@@ -216,25 +216,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         break;
                 }
             }
-            else
-            {
-                switch (msg.EventName)
-                {
-                    case "Close":
-                        DeviceStatus = DeviceStatusType.Closed;
-                        break;
-                    case "Open":
-                        DeviceStatus = DeviceStatusType.Closed;
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox1.Show(Application.Current.MainWindow, "打开失败", "ColorVision"));
-                        break;
-                    case "Init":
-                        break;
-                    case "UnInit":
-                        break;
-                    default:
-                        break;
-                }
-            }
         }
 
 
