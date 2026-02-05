@@ -98,7 +98,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     licenseManagerViewModel.SaveToLincense();
                 }
 
-                Form1 form1 = new Form1();
+                Form1 form1 = new Form1(this);
                 form1.Show();
             };
 

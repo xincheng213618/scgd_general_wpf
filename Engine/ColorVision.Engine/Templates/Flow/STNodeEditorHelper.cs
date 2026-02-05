@@ -281,7 +281,7 @@ namespace ColorVision.Engine.Templates.Flow
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == cVAOICameraNode.DeviceCode);
                 if (reuslt?.PhyCamera != null)
                     AddStackPanel(name => cVAOICameraNode.CalibTempName = name, cVAOICameraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
-                AddStackPanel(name => cVAOICameraNode.TempName = name, cVAOICameraNode.TempName, "AOI", new TemplateOLEDAOI());
+                AddStackPanel(name => cVAOICameraNode.AlgTempName = name, cVAOICameraNode.AlgTempName, "AOI", new TemplateOLEDAOI());
 
             }
 
@@ -295,7 +295,7 @@ namespace ColorVision.Engine.Templates.Flow
                 if (reuslt?.PhyCamera != null)
                     AddStackPanel(name => cVAOI2CameraNode.CalibTempName = name, cVAOI2CameraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
 
-                AddStackPanel(name => cVAOI2CameraNode.TempName = name, cVAOI2CameraNode.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
+                AddStackPanel(name => cVAOI2CameraNode.AlgTempName = name, cVAOI2CameraNode.AlgTempName, "亚像素灯珠检测", new TemplateLedCheck2());
             }
 
 
@@ -703,6 +703,7 @@ namespace ColorVision.Engine.Templates.Flow
                 algComplianceMathNode.nodeEvent += (s, e) => Refesh();
                 Refesh();
             }
+
             SignStackPanel.Children.Add(StackPanel);
             StackPanel.Children.Clear();
 
@@ -1088,8 +1089,6 @@ namespace ColorVision.Engine.Templates.Flow
             SignStackPanel.Children.Add(dockPanel);
         }
 
-
-
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplate<T> template) where T : ParamModBase, new()
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
@@ -1156,6 +1155,8 @@ namespace ColorVision.Engine.Templates.Flow
 
             SignStackPanel.Children.Add(dockPanel);
         }
+
+
 
         #endregion
 

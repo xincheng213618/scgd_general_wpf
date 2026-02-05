@@ -17,14 +17,19 @@ using FlowEngineLib.Algorithm;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using static Dm.FldrStatement;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -779,6 +784,115 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
                 };
             }
+        }
+
+        public IntPtr m_hCamHandle;
+        public string strPathSysCfg = "cfg\\sys.cfg";
+        private static System.Windows.Media.PixelFormat GetPixelFormat(int channels, int bpp)
+        {
+            if (channels == 3)
+            {
+                return bpp == 16
+                    ? System.Windows.Media.PixelFormats.Rgb48
+                    : System.Windows.Media.PixelFormats.Bgr24;
+            }
+            else
+            {
+                return bpp == 16
+                    ? System.Windows.Media.PixelFormats.Gray16
+                    : System.Windows.Media.PixelFormats.Gray8;
+            }
+        }
+        ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
+        {
+            Application.Current?.Dispatcher.Invoke(new Action(() =>
+            {
+                WriteableBitmap writeableBitmap = Device.View.ImageView.ImageShow.Source as WriteableBitmap;
+                bool needNewBitmap = writeableBitmap == null
+                    || writeableBitmap.PixelWidth != width
+                    || writeableBitmap.PixelHeight != height
+                    || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
+
+                if (needNewBitmap)
+                {
+                    writeableBitmap = new WriteableBitmap(
+                        width,
+                        height,
+                        96, 96,
+                        GetPixelFormat(channels, bpp),
+                        null);
+                    Device.View.ImageView.ImageShow.Source = writeableBitmap;
+                }
+                writeableBitmap!.Lock();
+                writeableBitmap.WritePixels(
+                    new Int32Rect(0, 0, width, height),
+                    pData,
+                    height * width * channels * (bpp / 8),
+                    width * channels * (bpp / 8));
+                writeableBitmap.Unlock();
+            }));
+            return 0;
+        }
+
+        private void Video1_Click(object sender, RoutedEventArgs e)
+        {
+            cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
+            m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(Device.Config.CameraModel, Device.Config.CameraMode, strPathSysCfg);
+            cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
+
+            cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
+
+            string CameraID = null;
+            string szText = "";
+            if (cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
+            {
+                JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
+
+                if (jObject["ID"] != null)
+                {
+                    JToken[] data = jObject["ID"].ToArray();
+
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        string camerid = data[i].ToString().Trim();
+
+                        string MD5 = ColorVision.Common.Utilities.Tool.GetMD5(camerid);
+
+                        if (MD5.ToUpper().Contains(Device.Config.CameraCode))
+                        {
+                            CameraID = camerid;
+                        }
+                    }
+                }
+            }
+            if (cvCameraCSLib.CM_IsOpen(m_hCamHandle))
+            {
+                return;
+            }
+            cvCameraCSLib.CM_SetCameraID(m_hCamHandle, CameraID);
+            cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, TakeImageMode.Live);
+            cvCameraCSLib.CM_SetImageBpp(m_hCamHandle, 8);
+
+            int nErr = cvErrorDefine.CV_ERR_UNKNOWN;
+            if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
+            {
+                string szMsg = "";
+
+                cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
+
+                MessageBox.Show(szMsg);
+                return;
+            }
+
+
+            cvCameraCSLib.CM_SetExpTime(m_hCamHandle, (float)Device.Config.ExpTime);
+            cvCameraCSLib.CM_SetGain(m_hCamHandle, Device.Config.Gain);
+
+            GCHandle hander = GCHandle.Alloc(this);
+            IntPtr intPtrHandle = GCHandle.ToIntPtr(hander);
+
+            cvCameraCSLib.CM_SetCallBack(m_hCamHandle, new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction), intPtrHandle);
+
         }
     }
 }

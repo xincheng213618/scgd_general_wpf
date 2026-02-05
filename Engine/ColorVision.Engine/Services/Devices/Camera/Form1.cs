@@ -1,4 +1,5 @@
 ﻿#pragma warning disable
+using ColorVision.Engine.Services.Devices.Camera;
 using cvColorVision;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -12,7 +13,10 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Media.Imaging;
+using MessageBox = System.Windows.Forms.MessageBox;
 
 namespace WindowsFormsTest
 {
@@ -57,8 +61,11 @@ namespace WindowsFormsTest
 
         public string strLoadname = "cfg//Form1.cfg";
 
-        public Form1()
+        public DeviceCamera Device { get; set; }
+
+        public Form1(DeviceCamera deviceCamera)
         {
+            Device = deviceCamera;
             if (File.Exists(strLoadname))
             {
                 string json = System.IO.File.ReadAllText(strLoadname);
@@ -68,7 +75,7 @@ namespace WindowsFormsTest
 
             InitializeComponent();
 
-            filename = Application.StartupPath + "\\Form1Config.cfg";
+            filename = System.Windows.Forms.Application.StartupPath + "\\Form1Config.cfg";
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -76,18 +83,46 @@ namespace WindowsFormsTest
             cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
             m_hCamHandle = cvCameraCSLib.CM_CreatCameraManagerV1(m_eCameraMdl, m_eCameraMode, strPathSysCfg);
             cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
+
+
             formcfg = new FormCfg(m_hCamHandle, strPathSysCfg);
 
-            //cvCameraCSLib.CM_SetCV_MIL_CLParam(m_hCamHandle, "COM3", 9600);
             m_cDib.Initial(pictureBox1.Width, pictureBox1.Height);
+
+            string szText = "";
+            cb_CM_ID.Items.Clear();
+            if (cvCameraCSLib.GetAllCameraIDV1(m_eCameraMdl, ref szText))
+            {
+                JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
+
+                if (jObject["ID"] != null)
+                {
+                    JToken[] data = jObject["ID"].ToArray();
+
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        string camerid = data[i].ToString().Trim();
+
+                        string MD5 = ColorVision.Common.Utilities.Tool.GetMD5(camerid);
+                        cb_CM_ID.Items.Add(camerid);
+
+                        if (MD5.ToUpper().Contains(Device.Config.CameraCode))
+                        {
+                            cb_CM_ID.Text = camerid;
+                        }
+                    }
+                }
+            }
+
 
             tb_TiffPath.Text = System.Windows.Forms.Application.StartupPath + "\\TIFF";
             System.IO.Directory.CreateDirectory(tb_TiffPath.Text);
-
-            cb_CM_TYPE.SelectedIndex = (int)m_eCameraMdl;
-            cb_CM_MODE.SelectedIndex = (int)m_eCameraMode;
-            cb_get_mode.SelectedIndex = (int)m_etakeImageMode;
-            cb_bpp.SelectedIndex = m_nBppIndex;
+            cb_CM_ID.Text = Device.Config.CameraCode;
+            cb_CM_TYPE.SelectedIndex = (int)Device.Config.CameraModel;
+            cb_CM_MODE.SelectedIndex = (int)Device.Config.CameraMode;
+            cb_get_mode.SelectedIndex = (int)TakeImageMode.Live;
+            cb_bpp.Text = "8";
+            cb_Channels.SelectedIndex = 0;
 
             btn_close.Enabled = false;
             btn_Meas.Enabled = false;
@@ -143,27 +178,53 @@ namespace WindowsFormsTest
         EventWaitHandle m_hStopEvent = new EventWaitHandle(false, EventResetMode.ManualReset);
 
         TimeSpan start = new TimeSpan(DateTime.Now.Ticks);
-
-        static UInt64 QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int nW, int nH, int lss, int bpp
-            , int channels, IntPtr usrData)
+        private static System.Windows.Media.PixelFormat GetPixelFormat(int channels, int bpp)
         {
-            Form1 form = (Form1)GCHandle.FromIntPtr(usrData).Target;
-            int sizeBpp = bpp / 8;
-            Marshal.Copy(pData, form.rawArray, 0, (int)(nH * nW * channels * sizeBpp));
-            form.ImgWid = (uint)nW;
-            form.ImgHei = (uint)nH;
-            form.Imgbpp = (uint)bpp;
-            form.Imgchannels = (uint)channels;
-            form.m_hShowPictureEvent.Set();
+            if (channels == 3)
+            {
+                return bpp == 16
+                    ? System.Windows.Media.PixelFormats.Rgb48
+                    : System.Windows.Media.PixelFormats.Bgr24;
+            }
+            else
+            {
+                return bpp == 16
+                    ? System.Windows.Media.PixelFormats.Gray16
+                    : System.Windows.Media.PixelFormats.Gray8;
+            }
+        }
 
-            TimeSpan end = new TimeSpan(DateTime.Now.Ticks);
-            TimeSpan abs = end.Subtract(form.start).Duration();
-            Console.WriteLine("QHYCCDProcCallBackFunction {0}", abs.TotalMilliseconds);
-            //form.Text = string.Format("QHYCCDProcCallBackFunction {0}", abs.TotalMilliseconds);
-            form.start = end;
+        ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
+        {
+            System.Windows.Application.Current?.Dispatcher.Invoke(new Action(() =>
+            {
+                WriteableBitmap writeableBitmap = Device.View.ImageView.ImageShow.Source as WriteableBitmap;
+                bool needNewBitmap = writeableBitmap == null
+                    || writeableBitmap.PixelWidth != width
+                    || writeableBitmap.PixelHeight != height
+                    || GetPixelFormat(channels, bpp) != writeableBitmap.Format;
 
+                if (needNewBitmap)
+                {
+                    writeableBitmap = new WriteableBitmap(
+                        width,
+                        height,
+                        96, 96,
+                        GetPixelFormat(channels, bpp),
+                        null);
+                    Device.View.ImageView.ImageShow.Source = writeableBitmap;
+                }
+                writeableBitmap!.Lock();
+                writeableBitmap.WritePixels(
+                    new Int32Rect(0, 0, width, height),
+                    pData,
+                    height * width * channels * (bpp / 8),
+                    width * channels * (bpp / 8));
+                writeableBitmap.Unlock();
+            }));
             return 0;
         }
+
         private PhotoShow.CDIb m_cDib;
 
         static void ShowPictureProc(object obj)
@@ -311,7 +372,7 @@ namespace WindowsFormsTest
             param.obT = 0;
             param.obB = 0;
 
-            param.startBurst =1;
+            param.startBurst = 1;
             param.endBurst = 3;
             param.posBurst = 0;
 
@@ -497,35 +558,35 @@ namespace WindowsFormsTest
 
             cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, m_eCameraMdl, m_eCameraMode);
 
-            cb_CM_ID.Items.Clear();
-            string szText = "";
-            if (cvCameraCSLib.GetAllCameraIDV1(m_eCameraMdl, ref szText))
-            {
-                JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
+            //cb_CM_ID.Items.Clear();
+            //string szText = "";
+            //if (cvCameraCSLib.GetAllCameraIDV1(m_eCameraMdl, ref szText))
+            //{
+            //    JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
 
-                if (jObject["ID"] != null)
-                {
-                    JToken[] data = jObject["ID"].ToArray();
+            //    if (jObject["ID"] != null)
+            //    {
+            //        JToken[] data = jObject["ID"].ToArray();
 
-                    for (int i = 0; i < data.Length; i++)
-                    {
-                        cb_CM_ID.Items.Add(data[i].ToString());
-                    }
+            //        for (int i = 0; i < data.Length; i++)
+            //        {
+            //            cb_CM_ID.Items.Add(data[i].ToString());
+            //        }
 
-                    if (cb_CM_ID.Items.Count > 0)
-                        cb_CM_ID.SelectedIndex = 0;
-                }
-            }
+            //        if (cb_CM_ID.Items.Count > 0)
+            //            cb_CM_ID.SelectedIndex = 0;
+            //    }
+            //}
 
-            UInt32 nChls = 0;
+            //UInt32 nChls = 0;
 
-            if (cvCameraCSLib.CM_GetChannels(m_hCamHandle, ref nChls))
-            {
-                if (nChls == 1)
-                    cb_Channels.SelectedIndex = 0;
-                else
-                    cb_Channels.SelectedIndex = 1;
-            }
+            //if (cvCameraCSLib.CM_GetChannels(m_hCamHandle, ref nChls))
+            //{
+            //    if (nChls == 1)
+            //        cb_Channels.SelectedIndex = 0;
+            //    else
+            //        cb_Channels.SelectedIndex = 1;
+            //}
         }
 
         private void cb_CM_ID_SelectedIndexChanged(object sender, EventArgs e)
@@ -553,30 +614,11 @@ namespace WindowsFormsTest
 
             if (cvCameraCSLib.CM_IsOpen(m_hCamHandle))
             {
-                cb_get_mode.Enabled = false;
-                cb_bpp.Enabled = false;
-                btn_Connect.Enabled = false;
-                cb_CM_ID.Enabled = false;
                 return;
             }
 
             int nErr = cvErrorDefine.CV_ERR_UNKNOWN;
-
-//             if ((nErr = cvCameraCSLib.CM_ResetEx(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
-//             {
-//                 string szMsg = "";
-// 
-//                 cvCameraCSLib.CM_GetErrorMessage(nErr, ref szMsg);
-// 
-//                 MessageBox.Show(szMsg);
-// 
-//                 btn_Connect.Enabled = true;
-// 
-//                 return;
-//             }
-// 
             cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, m_etakeImageMode);
-
             if (m_nBppIndex == 0)
             {
                 cvCameraCSLib.CM_SetImageBpp(m_hCamHandle, 8);
@@ -585,8 +627,6 @@ namespace WindowsFormsTest
             {
                 cvCameraCSLib.CM_SetImageBpp(m_hCamHandle, 16);
             }
-
-            btn_Connect.Enabled = false;
 
             if (m_etakeImageMode != TakeImageMode.Live)
             {
@@ -609,7 +649,6 @@ namespace WindowsFormsTest
                 this.Text = "Model: COLOR VISION " + mode;
 
                 cb_CM_TYPE.Enabled = false;
-                cb_CM_MODE.Enabled = false;
                 cb_CM_ID.Enabled = false;
                 cb_get_mode.Enabled = false;
                 cb_bpp.Enabled = false;
@@ -636,43 +675,12 @@ namespace WindowsFormsTest
                 cvCameraCSLib.CM_SetExpTime(m_hCamHandle, float.Parse(tb_Exp.Text));
                 cvCameraCSLib.CM_SetGain(m_hCamHandle, float.Parse(tb_Gain.Text));
 
-                rawArray = null;
-
-                UInt32 w = 0, h = 0;
-                UInt32 channels = 0;
-                uint bpp = 0;
-
-                cvCameraCSLib.CM_GetSrcFrameInfo(m_hCamHandle, ref w, ref h, ref bpp, ref channels);
-                UInt64 nLen = (bpp / 8) * w * h * channels;
-                if (nLen > 0)
-                {
-                    rawArray = new byte[nLen];
-                }
-
-                GCHandle hander = GCHandle.Alloc(this);
-                IntPtr intPtrHandle = GCHandle.ToIntPtr(hander);
-
                 if (callback == null)
                 {
                     callback = new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
                 }
 
-                cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, intPtrHandle);
-
-                Thread showpictureThread = new Thread(() => ShowPictureProc(this));
-                m_hStopEvent.Reset();
-                showpictureThread.Start();
-
-                cb_CM_TYPE.Enabled = false;
-                cb_CM_MODE.Enabled = false;
-                cb_CM_ID.Enabled = false;
-                cb_get_mode.Enabled = false;
-                cb_bpp.Enabled = false;
-                btn_Connect.Enabled = false;
-                btn_close.Enabled = true;
-
-                cvCameraCSLib.CM_GetSrcFrameInfo(m_hCamHandle, ref w, ref h, ref bpp, ref channels);
-                //H264Encoder.H264_Encoder_Setup((int)w,(int)h);
+                cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, IntPtr.Zero);
             }
         }
 
@@ -688,7 +696,6 @@ namespace WindowsFormsTest
                 m_hStopEvent.Set();
 
                 cb_CM_TYPE.Enabled = true;
-                cb_CM_MODE.Enabled = true;
                 cb_CM_ID.Enabled = true;
                 cb_get_mode.Enabled = true;
                 cb_bpp.Enabled = true;
@@ -861,40 +868,6 @@ namespace WindowsFormsTest
             }
 
             btn_CalAutoExp.Enabled = true;
-        }
-
-        private void btn_StartLive_Click(object sender, EventArgs e)
-        {
-            cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, TakeImageMode.Live);
-
-            if (cvCameraCSLib.CM_Open(m_hCamHandle) == cvErrorDefine.CV_ERR_SUCCESS)
-            {
-                cvCameraCSLib.CM_SetExpTime(m_hCamHandle, float.Parse(tb_Exp.Text));
-                cvCameraCSLib.CM_SetGain(m_hCamHandle, float.Parse(tb_Gain.Text));
-                btn_close.Enabled = true;
-
-                rawArray = null;
-
-                UInt32 len = cvCameraCSLib.CM_GetFrameMemLength(m_hCamHandle);
-                if (len > 0)
-                {
-                    rawArray = new byte[len];
-                }
-
-                GCHandle hander = GCHandle.Alloc(this);
-                IntPtr intPtrHandle = GCHandle.ToIntPtr(hander);
-
-                if (callback == null)
-                {
-                    callback = new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
-                }
-
-                cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, intPtrHandle);
-
-                Thread showpictureThread = new Thread(() => ShowPictureProc(this));
-                m_hStopEvent.Reset();
-                showpictureThread.Start();
-            }
         }
 
         private void btn_SetExp_Click(object sender, EventArgs e)
@@ -1136,7 +1109,7 @@ namespace WindowsFormsTest
 
         private void button2_Click(object sender, EventArgs e)
         {
-  
+
         }
 
         private void Camera_MenuItem_Click(object sender, EventArgs e)
@@ -1360,6 +1333,11 @@ namespace WindowsFormsTest
             {
                 MessageBox.Show("请设置正确的参数！");
             }
+        }
+
+        private void cb_Channels_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

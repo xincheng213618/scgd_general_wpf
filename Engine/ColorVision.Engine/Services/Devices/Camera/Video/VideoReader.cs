@@ -298,11 +298,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                             }
 
                             writeableBitmap!.Lock();
+
                             writeableBitmap.WritePixels(
                                 new Int32Rect(0, 0, width, height),
                                 buffer,
                                 width * channels * (bpp / 8),
                                 0);
+
+
                             writeableBitmap.Unlock();
                         }
 
