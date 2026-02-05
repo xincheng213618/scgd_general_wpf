@@ -33,7 +33,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using static Dm.FldrStatement;
+
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -986,11 +986,37 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         Device.View.ImageView.ImageShow.Source = writeableBitmap;
                     }
                     writeableBitmap!.Lock();
-                    writeableBitmap.WritePixels(
-                        new Int32Rect(0, 0, width, height),
-                        pData,
-                        height * width * channels * (bpp / 8),
-                        width * channels * (bpp / 8));
+
+                    OpenCvSharp.MatType matType;
+                    if (channels == 1 && bpp == 8) matType = OpenCvSharp.MatType.CV_8UC1;
+                    else if (channels == 1 && bpp == 16) matType = OpenCvSharp.MatType.CV_16UC1;
+                    else if (channels == 3 && bpp == 8) matType = OpenCvSharp.MatType.CV_8UC3;
+                    else if (channels == 4 && bpp == 32) matType = OpenCvSharp.MatType.CV_8UC4; // BGRA?
+                    else throw new NotSupportedException($"Unsupported format: ch={channels}, bpp={bpp}");
+
+                    // 2. 包装源数据 (pData) -> Zero Copy
+                    // 关键点：使用传入的 lss (Line Size / Stride) 确保对齐正确
+                    using var srcMat = OpenCvSharp.Mat.FromPixelData(height, width, matType, pData);
+
+                    // 3. 包装目标数据 (WriteableBitmap BackBuffer) -> Zero Copy
+                    // 关键点：直接指向显存/UI后台缓冲区，不分配新内存
+                    using var dstMat = OpenCvSharp.Mat.FromPixelData(height, width, matType, writeableBitmap.BackBuffer, writeableBitmap.BackBufferStride);
+
+                    if (Device.DisplayConfig.FlipMode == CVImageFlipMode.None)
+                    {
+                        srcMat.CopyTo(dstMat); 
+                    }
+                    else
+                    {
+                        OpenCvSharp.Cv2.Flip(srcMat, dstMat, (OpenCvSharp.FlipMode)Device.DisplayConfig.FlipMode);
+                    }
+    
+                    //writeableBitmap.WritePixels(
+                    //    new Int32Rect(0, 0, width, height),
+                    //    pData,
+                    //    height * width * channels * (bpp / 8),
+                    //    width * channels * (bpp / 8));
+
                     writeableBitmap.Unlock();
 
                     Interlocked.Increment(ref frameCount);
@@ -1011,6 +1037,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }));
             return 0;
         }
+
+
         cvCameraCSLib.QHYCCDProcCallBack callback;
         private int frameCount;
         private readonly Stopwatch fpsTimer = new Stopwatch();
@@ -1050,6 +1078,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 
                 return;
             }
+            logger.Info("初始化视频模式");
 
             if (m_hCamHandle == IntPtr.Zero)
             {
@@ -1089,6 +1118,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             int nErr = cvErrorDefine.CV_ERR_UNKNOWN;
+            logger.Info("CM_Open");
             if ((nErr = cvCameraCSLib.CM_Open(m_hCamHandle)) != cvErrorDefine.CV_ERR_SUCCESS)
             {
                 string szMsg = "";
@@ -1133,6 +1163,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             
             button.Content = "Close Video";
             fpsTimer.Start();
+            logger.Info("视频模式初始化结束");
             IsVideo = true;
         }
         
@@ -1154,7 +1185,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void CBFilp2_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            cvCameraCSLib.CM_SetFlip(m_hCamHandle, (int)Device.DisplayConfig.FlipMode);
+            //cvCameraCSLib.CM_SetFlip(m_hCamHandle, (int)Device.DisplayConfig.FlipMode);
 
         }
     }
