@@ -270,9 +270,34 @@ namespace ColorVision.Engine.Templates.Flow
                 AddImagePath(name => oled.ImgFileName = name, oled.ImgFileName);
                 AddStackPanel(name => oled.TempName = name, oled.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
                 AddStackPanel(name => oled.OutputTemplateName = name, oled.OutputTemplateName, "PoiOutPut", new TemplatePoiOutputParam());
-
-                
             }
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Camera.CVAOICameraNode cVAOICameraNode)
+            {
+                AddStackPanel(name => cVAOICameraNode.DeviceCode = name, cVAOICameraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
+
+                AddStackPanel(name => cVAOICameraNode.CamTempName = name, cVAOICameraNode.CamTempName, "相机模板", new TemplateCameraRunParam());
+                AddStackPanel(name => cVAOICameraNode.TempName = name, cVAOICameraNode.TempName, "曝光模板", new TemplateAutoExpTime());
+                var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == cVAOICameraNode.DeviceCode);
+                if (reuslt?.PhyCamera != null)
+                    AddStackPanel(name => cVAOICameraNode.CalibTempName = name, cVAOICameraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
+                AddStackPanel(name => cVAOICameraNode.TempName = name, cVAOICameraNode.TempName, "AOI", new TemplateOLEDAOI());
+
+            }
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Camera.CVAOI2CameraNode cVAOI2CameraNode)
+            {
+                AddStackPanel(name => cVAOI2CameraNode.DeviceCode = name, cVAOI2CameraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
+
+                AddStackPanel(name => cVAOI2CameraNode.CamTempName = name, cVAOI2CameraNode.CamTempName, "相机模板", new TemplateCameraRunParam());
+                AddStackPanel(name => cVAOI2CameraNode.TempName = name, cVAOI2CameraNode.TempName, "曝光模板", new TemplateAutoExpTime());
+                var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == cVAOI2CameraNode.DeviceCode);
+                if (reuslt?.PhyCamera != null)
+                    AddStackPanel(name => cVAOI2CameraNode.CalibTempName = name, cVAOI2CameraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
+
+                AddStackPanel(name => cVAOI2CameraNode.TempName = name, cVAOI2CameraNode.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
+            }
+
 
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.POIReviseNode poiReviseNode)

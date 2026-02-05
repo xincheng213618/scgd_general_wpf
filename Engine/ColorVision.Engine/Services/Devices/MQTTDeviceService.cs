@@ -22,10 +22,7 @@ namespace ColorVision.Engine.Services.Devices
                         return;
                     }
                 }
-
-                if (value == DeviceStatus) return;
                 _DeviceStatus = value;
-
                 Application.Current?.Dispatcher.BeginInvoke(() => DeviceStatusChanged?.Invoke(this,value));
                 OnPropertyChanged(); OnPropertyChanged(nameof(DeviceStatusString));
             }
