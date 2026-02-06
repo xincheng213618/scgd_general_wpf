@@ -1008,12 +1008,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                     if (Device.DisplayConfig.FlipMode == CVImageFlipMode.None)
                     {
-                        srcMat.CopyTo(dstMat); 
+                        srcMat.CopyTo(dstMat);
                     }
                     else
                     {
                         OpenCvSharp.Cv2.Flip(srcMat, dstMat, (OpenCvSharp.FlipMode)Device.DisplayConfig.FlipMode);
-                    } 
+                    }
+                    writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
+
+                    //writeableBitmap.WritePixels(new Int32Rect(0, 0, width, height),  pData, height * width * channels * (bpp / 8),   width * channels * (bpp / 8));
+
                     writeableBitmap.Unlock();
 
                     Interlocked.Increment(ref frameCount);

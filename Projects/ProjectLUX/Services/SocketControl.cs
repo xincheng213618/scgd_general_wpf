@@ -321,6 +321,8 @@ namespace ProjectLUX.Services
                             TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
                             ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path); return null;
                         }
+
+                        //
                     }
                     return string.Join(",", strings) + ";";
                 }
