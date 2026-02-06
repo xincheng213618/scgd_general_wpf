@@ -587,7 +587,7 @@ namespace ColorVision.Engine.Media
                         {
                             OpenCvSharp.Mat mat = cVCIEFile.ToMat();
                             cVCIEFile.Dispose();
-                            if (!mat.UpdateWriteableBitmap(writeableBitmap))
+                            if (!mat.MatUpdateWriteableBitmap(writeableBitmap))
                             {
                                 WriteableBitmap writeableBitmap1 = OpenCvSharp.WpfExtensions.WriteableBitmapConverter.ToWriteableBitmap(mat);
                                 mat.Dispose();

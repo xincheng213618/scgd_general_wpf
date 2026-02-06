@@ -328,6 +328,10 @@ namespace ColorVision.ImageEditor
         {
             if (writeableBitmap != null)
                 SetImageSource(writeableBitmap);
+            else
+            {
+                log.Error("传入的 WriteableBitmap 为 null，无法打开图像。");
+            }
         }
 
 
