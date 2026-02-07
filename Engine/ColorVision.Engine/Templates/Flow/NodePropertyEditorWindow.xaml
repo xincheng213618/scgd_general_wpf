@@ -9,13 +9,40 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:NodePropertyEditorVM}"
         Height="450" Width="450" WindowStyle="None"  ShowInTaskbar="False" Topmost="False" Background="{DynamicResource GlobalBackground}"  Deactivated="Window_Deactivated" Activated="Window_Activated" Closed="Window_Closed" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style x:Key="CaptionButtonStyleClose" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource CaptionButtonForeground}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="LayoutRoot" Background="{TemplateBinding Background}" Height="30">
+                            <TextBlock x:Name="txt" Text="{TemplateBinding Content}" FontFamily="Segoe MDL2 Assets" FontSize="12" 
+                                   Foreground="{TemplateBinding Foreground}" ToolTip="{TemplateBinding ToolTip}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   RenderOptions.ClearTypeHint="Auto" TextOptions.TextRenderingMode="Aliased"  TextOptions.TextFormattingMode="Display"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="LayoutRoot" Property="Background" Value="Red"/>
+                                <Setter TargetName="txt" Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CloseButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyleClose}">
+            <Setter Property="Content" Value="&#xE8BB;"/>
+            <Setter Property="ToolTip" Value="{x:Static properties:Resources.Close}"/>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <DockPanel>
-            <Button DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="25" Width="25" >
+            <Button  Grid.Column="1" Margin="0,0,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="28" Width="28" >
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
                         <BeginStoryboard>
@@ -31,6 +58,8 @@
                     </TextBlock.RenderTransform>
                 </TextBlock>
             </Button>
+            <Button  x:Name="CloseButton"  DockPanel.Dock="Right" IsTabStop="False" Style="{DynamicResource CloseButtonStyle}"  Click="CloseButton_Click" Width="50" />
+
             <Button x:Name="ToggleEditMode"  Content="{x:Static properties:Resources.Switch}" Click="ToggleEditMode_Click" HorizontalAlignment="Stretch"  Margin="0,0,0,0"/>
         </DockPanel>
 

@@ -14,6 +14,7 @@ using ProjectLUX.Process.VR.MTFH;
 using ProjectLUX.Process.VR.MTFV;
 using ProjectLUX.Process.W255;
 using ProjectLUX.Process.W255AR;
+using SQLitePCL;
 using System.Collections;
 using System.ComponentModel;
 using System.IO;
@@ -27,14 +28,27 @@ namespace ProjectLUX
         {
             foreach (var property in obj.GetType().GetProperties())
             {
+                var childObj = property.GetValue(obj);
+                if (childObj is IList list1 && property.PropertyType.IsGenericType)
+                {
+                    foreach (var item in list1)
+                    {
+                        if (item is ObjectiveTestItem objectiveTestItem)
+                        {
+                            rows.Add(FormatCsvRow(testScreenName, objectiveTestItem));
+                        }
+                    }
+                    continue;
+                }
                 if (property.PropertyType == typeof(ObjectiveTestItem))
                 {
                     var testItem = (ObjectiveTestItem)property.GetValue(obj);
                     if (testItem != null)
                     {
-                        rows.Add(FormatCsvRow(testScreenName, property.Name, testItem));
+                        rows.Add(FormatCsvRow(testScreenName, testItem));
                     }
                 }
+
                 else if (property.PropertyType == typeof(List<PoixyuvData>))
                 {
                     try
@@ -60,10 +74,10 @@ namespace ProjectLUX
                 {
                     try
                     {                    // Recursively process child objects
-                        var childObj = property.GetValue(obj);
-                        if (childObj != null)
+                        var childObj1 = property.GetValue(obj);
+                        if (childObj1 != null)
                         {
-                            CollectRows(childObj, testScreenName, rows);
+                            CollectRows(childObj1, testScreenName, rows);
                         }
 
                     }
@@ -92,7 +106,7 @@ namespace ProjectLUX
             }
         }
 
-        private static string FormatCsvRow(string testScreenName, string propertyName, ObjectiveTestItem testItem)
+        private static string FormatCsvRow(string testScreenName, ObjectiveTestItem testItem)
         {
             string testResult = testItem.TestResult ? "pass" : "fail";
             return $"{testScreenName},{testItem.Name},{testItem.Value},{testItem.Unit},{testItem.LowLimit},{testItem.UpLimit},{testResult}";
@@ -112,6 +126,7 @@ namespace ProjectLUX
 
                     // Recursively process child objects
                     var childObj = prop.GetValue(results);
+                    if (childObj == null) continue;
                     if (childObj is IList list && prop.PropertyType.IsGenericType)
                     {
                         CollectRowsFromList(list, raw, rows);

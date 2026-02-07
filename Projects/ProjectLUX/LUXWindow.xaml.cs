@@ -8,11 +8,13 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
+using Dm.util;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using ProjectLUX.Fix;
 using ProjectLUX.Process;
+using ProjectLUX.Services;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -94,7 +96,6 @@ namespace ProjectLUX
                 });
             }
         }
-        public NetworkStream Stream { get; set; }
 
         public void RunTemplate(int index,string templatename)
         {
@@ -110,10 +111,28 @@ namespace ProjectLUX
                 else
                 {
                     log.Error($"cant find {templatename} error");
-                    if (Stream !=null)
-                        Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    if (SocketControl.Current.Stream != null)
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                 }
             });
+        }
+
+        public void RunTemplate(int index)
+        {
+            if (index >= 0 && index < Process.ProcessManager.GetInstance().ProcessMetas.Count)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProcessMeta processMeta = ProcessMetas[index];
+                    ProjectConfig.StepIndex = index;
+                    FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains(processMeta.FlowTemplate)).Value;
+                    RunTemplate();
+                });
+            }
+            else
+            {
+                log.Info("超出范围");
+            }
         }
 
         public string ReturnCode { get; set; }
@@ -468,8 +487,8 @@ namespace ProjectLUX
                 {
                     if (!string.IsNullOrWhiteSpace(ReturnCode))
                     {
-                        if (Stream !=null)
-                            Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                        if (SocketControl.Current.Stream != null)
+                            SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                     }
                 }
                 TryCount = 0;
@@ -478,8 +497,8 @@ namespace ProjectLUX
             {
                 if (!string.IsNullOrWhiteSpace(ReturnCode))
                 {
-                    if (Stream != null)
-                        Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    if (SocketControl.Current.Stream != null)
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                 }
 
                 log.Error("流程运行失败" + FlowControlData.EventName + FlowControlData.Params);
@@ -581,8 +600,8 @@ namespace ProjectLUX
 
                             try
                             {
-                                if (Stream != null)
-                                    Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                                if (SocketControl.Current.Stream != null)
+                                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                                 else
                                 {
                                     log.Info("找不到通信连接");
@@ -787,12 +806,12 @@ namespace ProjectLUX
             string sn = "ssss";
             string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"C_{sn}.csv");
             ObjectiveTestResult TestResult = new ObjectiveTestResult();
-            TestResult.W51ARTestResult = new Process.AR.W51AR.W51ARTestResult();
-            TestResult.W255ARTestResult = new Process.W255AR.W255ARTestResult();
-            TestResult.MTFHVARTestResult = new Process.MTFHVAR.MTFHARVTestResult();
-            TestResult.ChessboardARTestResult = new Process.ChessboardAR.ChessboardARTestResult();
-            TestResult.DistortionARTestResult = new Process.Distortion.DistortionTestResult();
-            TestResult.OpticCenterTestResult = new Process.OpticCenter.OpticCenterTestResult();
+            TestResult.VRMTFHTestResult = new Process.VR.MTFH.VRMTFHTestResult();
+            for (int i = 0; i < 80; i++)
+            {
+                ObjectiveTestItem objectiveTestItem = new ObjectiveTestItem() { Name = i.ToString()  ,Value = i};
+                TestResult.VRMTFHTestResult.ObjectiveTestItems.Add(objectiveTestItem);
+            }
             ObjectiveTestResultCsvExporter.ExportToCsv(TestResult, path);
         }
     }

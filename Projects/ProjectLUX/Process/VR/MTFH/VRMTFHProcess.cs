@@ -1,3 +1,4 @@
+using ColorVision.Common.NativeMethods;
 using ColorVision.Database;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons;
@@ -39,15 +40,22 @@ namespace ProjectLUX.Process.VR.MTFH
                     if (details.Count == 1)
                     {
                         var mtfDetail = new MTFDetailViewReslut(details[0]);
-                        foreach (var mtf in mtfDetail.MTFResult.result)
+
+                        if (mtfDetail?.MTFResult?.result != null)
                         {
-                            ObjectiveTestItem objectiveTestItem = new ObjectiveTestItem();
-                            objectiveTestItem.TestValue = mtf.mtfValue.HasValue ? mtf.mtfValue.Value.ToString("F2") : "N/A";
-                            objectiveTestItem.Name = mtf.name;
-                            objectiveTestItem.Value = mtf.mtfValue ?? 0;
-                            testResult.ObjectiveTestItems.Add(objectiveTestItem);
+                            mtfDetail.MTFResult.result.Sort((x, y) => Shlwapi.CompareLogical(x.name, y.name));
+                            foreach (var mtf in mtfDetail.MTFResult.result)
+                            {
+                                ObjectiveTestItem objectiveTestItem = new ObjectiveTestItem();
+                                objectiveTestItem.TestValue = mtf.mtfValue.HasValue ? mtf.mtfValue.Value.ToString("F2") : "N/A";
+                                objectiveTestItem.Name = mtf.name;
+                                objectiveTestItem.Value = mtf.mtfValue ?? 0;
+                                objectiveTestItem.LowLimit = 0;
+                                objectiveTestItem.UpLimit = 0;
+                                testResult.ObjectiveTestItems.Add(objectiveTestItem);
+                            }
+                            testResult.MTFDetailViewReslut = mtfDetail;
                         }
-                        testResult.MTFDetailViewReslut = mtfDetail;
                     }
                 }
 
@@ -86,8 +94,6 @@ namespace ProjectLUX.Process.VR.MTFH
                     Rectangle.Attribute.Brush = Brushes.Transparent;
                     Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                     Rectangle.Attribute.Id = id;
-                    Rectangle.Attribute.Text = item.name + "_" + item.id;
-                    Rectangle.Attribute.Msg = item.mtfValue.ToString();
                     Rectangle.Render();
                     ctx.ImageView.AddVisual(Rectangle);
                 }
