@@ -7592,5 +7592,14 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("ThirdPartyApps", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 未安装 的本地化字符串。
+        /// </summary>
+        public static string NotInstalled {
+            get {
+                return ResourceManager.GetString("NotInstalled", resourceCulture);
+            }
+        }
     }
 }

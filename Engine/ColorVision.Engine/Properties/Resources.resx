@@ -2628,4 +2628,7 @@
   <data name="ThirdPartyApps" xml:space="preserve">
     <value>第三方应用管理</value>
   </data>
+  <data name="NotInstalled" xml:space="preserve">
+    <value>未安装</value>
+  </data>
 </root>

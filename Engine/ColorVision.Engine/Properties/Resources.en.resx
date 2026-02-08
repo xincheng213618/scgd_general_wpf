@@ -2628,4 +2628,7 @@
   <data name="ThirdPartyApps" xml:space="preserve">
     <value>Third-Party Apps</value>
   </data>
+  <data name="NotInstalled" xml:space="preserve">
+    <value>Not Installed</value>
+  </data>
 </root>

@@ -18,14 +18,27 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
         public string? InstallDirectory { get; set; }
         public string[]? RegistryKeys { get; set; }
 
+        /// <summary>
+        /// Portable apps are standalone executables that don't need installation.
+        /// They are considered "installed" if the exe file exists.
+        /// </summary>
+        public bool IsPortable { get; set; }
+
+        /// <summary>
+        /// For portable apps, this is the path to the executable.
+        /// </summary>
+        public string? PortableExePath { get; set; }
+
         public bool IsInstalled
         {
             get => _isInstalled;
-            set { _isInstalled = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplayOpacity)); }
+            set { _isInstalled = value; OnPropertyChanged(); OnPropertyChanged(nameof(DisplayOpacity)); OnPropertyChanged(nameof(StatusText)); }
         }
         private bool _isInstalled;
 
         public double DisplayOpacity => IsInstalled ? 1.0 : 0.4;
+
+        public string StatusText => IsInstalled ? string.Empty : Properties.Resources.NotInstalled;
 
         public ImageSource? IconSource
         {
@@ -35,7 +48,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
         private ImageSource? _iconSource;
 
         public ICommand DoubleClickCommand => new RelayCommand(a => OnDoubleClick());
-        public ICommand OpenDirectoryCommand => new RelayCommand(a => OnOpenDirectory(), b => IsInstalled && !string.IsNullOrEmpty(InstallDirectory));
+        public ICommand OpenDirectoryCommand => new RelayCommand(a => OnOpenDirectory(), b => !string.IsNullOrEmpty(GetDirectoryPath()));
 
         public void RefreshStatus()
         {
@@ -43,7 +56,16 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
             InstallDirectory = null;
             InstalledExePath = null;
 
-            if (RegistryKeys != null)
+            if (IsPortable)
+            {
+                if (!string.IsNullOrEmpty(PortableExePath) && File.Exists(PortableExePath))
+                {
+                    InstalledExePath = PortableExePath;
+                    InstallDirectory = Path.GetDirectoryName(PortableExePath);
+                    IsInstalled = true;
+                }
+            }
+            else if (RegistryKeys != null)
             {
                 foreach (var key in RegistryKeys)
                 {
@@ -80,7 +102,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                 catch { }
             }
 
-            if (IconSource == null && File.Exists(InstallerPath))
+            if (IconSource == null && !string.IsNullOrEmpty(InstallerPath) && File.Exists(InstallerPath))
             {
                 try
                 {
@@ -110,7 +132,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                     MessageBox.Show($"Failed to launch {Name}: {ex.Message}");
                 }
             }
-            else if (File.Exists(InstallerPath))
+            else if (!string.IsNullOrEmpty(InstallerPath) && File.Exists(InstallerPath))
             {
                 try
                 {
@@ -123,13 +145,23 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
             }
         }
 
+        private string? GetDirectoryPath()
+        {
+            if (!string.IsNullOrEmpty(InstallDirectory))
+                return InstallDirectory;
+            if (IsPortable && !string.IsNullOrEmpty(PortableExePath))
+                return Path.GetDirectoryName(Path.GetFullPath(PortableExePath));
+            return null;
+        }
+
         private void OnOpenDirectory()
         {
-            if (!string.IsNullOrEmpty(InstallDirectory) && Directory.Exists(InstallDirectory))
+            string? dir = GetDirectoryPath();
+            if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
             {
                 try
                 {
-                    Process.Start(new ProcessStartInfo("explorer.exe", InstallDirectory) { UseShellExecute = true });
+                    Process.Start(new ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true });
                 }
                 catch (Exception ex)
                 {
