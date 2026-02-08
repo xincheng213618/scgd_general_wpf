@@ -4822,15 +4822,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 打开目录 的本地化字符串。
-        /// </summary>
-        public static string OpenDirectory {
-            get {
-                return ResourceManager.GetString("OpenDirectory", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 离线 的本地化字符串。
         /// </summary>
         public static string offline {
@@ -4917,6 +4908,15 @@ namespace ColorVision.Engine.Properties {
         public static string OpenDeviceManager {
             get {
                 return ResourceManager.GetString("OpenDeviceManager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开目录 的本地化字符串。
+        /// </summary>
+        public static string OpenDirectory {
+            get {
+                return ResourceManager.GetString("OpenDirectory", resourceCulture);
             }
         }
         
