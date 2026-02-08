@@ -4813,6 +4813,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 未安装 的本地化字符串。
+        /// </summary>
+        public static string NotInstalled {
+            get {
+                return ResourceManager.GetString("NotInstalled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 离线 的本地化字符串。
         /// </summary>
         public static string offline {
@@ -7018,6 +7027,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 第三方应用管理 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyApps {
+            get {
+                return ResourceManager.GetString("ThirdPartyApps", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 三通道 的本地化字符串。
         /// </summary>
         public static string threeChannels {
@@ -7581,24 +7599,6 @@ namespace ColorVision.Engine.Properties {
         public static string WorkflowTemplate {
             get {
                 return ResourceManager.GetString("WorkflowTemplate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 第三方应用管理 的本地化字符串。
-        /// </summary>
-        public static string ThirdPartyApps {
-            get {
-                return ResourceManager.GetString("ThirdPartyApps", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 未安装 的本地化字符串。
-        /// </summary>
-        public static string NotInstalled {
-            get {
-                return ResourceManager.GetString("NotInstalled", resourceCulture);
             }
         }
     }
