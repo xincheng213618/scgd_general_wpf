@@ -57,6 +57,8 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
             if (AppsListBox.SelectedItem is ThirdPartyAppInfo app)
             {
                 ContextMenu contextMenu = new ContextMenu();
+                contextMenu.PlacementTarget = AppsListBox;
+
                 MenuItem openItem = new MenuItem { Header = Properties.Resources.Open };
                 openItem.Click += (s, args) => app.DoubleClickCommand.Execute(null);
                 contextMenu.Items.Add(openItem);
