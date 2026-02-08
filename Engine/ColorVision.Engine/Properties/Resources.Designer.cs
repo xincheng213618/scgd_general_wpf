@@ -7583,5 +7583,14 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("WorkflowTemplate", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 第三方应用管理 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyApps {
+            get {
+                return ResourceManager.GetString("ThirdPartyApps", resourceCulture);
+            }
+        }
     }
 }

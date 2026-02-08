@@ -2625,4 +2625,7 @@
   <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
     <value>非必要情况下请勿删除,是否删除</value>
   </data>
+  <data name="ThirdPartyApps" xml:space="preserve">
+    <value>第三方应用管理</value>
+  </data>
 </root>
