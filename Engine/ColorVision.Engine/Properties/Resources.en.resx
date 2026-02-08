@@ -2625,4 +2625,13 @@
   <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
     <value>Please do not delete unless absolutely necessary. (Delete if desired)</value>
   </data>
+  <data name="ThirdPartyApps" xml:space="preserve">
+    <value>Third-Party Apps</value>
+  </data>
+  <data name="NotInstalled" xml:space="preserve">
+    <value>Not Installed</value>
+  </data>
+  <data name="OpenDirectory" xml:space="preserve">
+    <value>Open Directory</value>
+  </data>
 </root>

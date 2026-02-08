@@ -249,7 +249,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Assets\Tool\新文件夹\" />
 	  <Folder Include="Services\Devices\SMU\Job\" />
 	</ItemGroup>
 
