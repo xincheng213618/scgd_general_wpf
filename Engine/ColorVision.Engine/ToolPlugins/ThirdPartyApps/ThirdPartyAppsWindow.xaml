@@ -65,7 +65,8 @@
                                            HorizontalAlignment="Center" Margin="4,2,4,0"
                                            TextTrimming="CharacterEllipsis"/>
                                 <TextBlock Grid.Row="2" Text="{Binding StatusText}" FontSize="10"
-                                           Foreground="Gray" HorizontalAlignment="Center" Margin="4,0,4,6"/>
+                                           Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.5"
+                                           HorizontalAlignment="Center" Margin="4,0,4,6"/>
                             </Grid>
                         </Border>
                     </DataTemplate>
