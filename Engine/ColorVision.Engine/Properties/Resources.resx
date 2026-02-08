@@ -2631,4 +2631,7 @@
   <data name="NotInstalled" xml:space="preserve">
     <value>未安装</value>
   </data>
+  <data name="OpenDirectory" xml:space="preserve">
+    <value>打开目录</value>
+  </data>
 </root>

@@ -2631,4 +2631,7 @@
   <data name="NotInstalled" xml:space="preserve">
     <value>Not Installed</value>
   </data>
+  <data name="OpenDirectory" xml:space="preserve">
+    <value>Open Directory</value>
+  </data>
 </root>
