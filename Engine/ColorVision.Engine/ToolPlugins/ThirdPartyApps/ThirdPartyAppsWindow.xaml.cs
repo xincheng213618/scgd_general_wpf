@@ -26,6 +26,11 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
 
         private void SearchBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
+            ApplyFilter();
+        }
+
+        private void ApplyFilter()
+        {
             string keyword = SearchBox.Text.Trim();
             if (string.IsNullOrEmpty(keyword))
             {
@@ -49,7 +54,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
         private void BtnRefresh_Click(object sender, RoutedEventArgs e)
         {
             ThirdPartyAppManager.GetInstance().Refresh();
-            SearchBox_TextChanged(sender, new System.Windows.Controls.TextChangedEventArgs(System.Windows.Controls.TextBox.TextChangedEvent, System.Windows.Controls.UndoAction.None));
+            ApplyFilter();
         }
     }
 }

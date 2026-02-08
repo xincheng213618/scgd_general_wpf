@@ -107,7 +107,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message);
+                    MessageBox.Show($"Failed to launch {Name}: {ex.Message}");
                 }
             }
             else if (File.Exists(InstallerPath))
@@ -118,7 +118,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message);
+                    MessageBox.Show($"Failed to run installer for {Name}: {ex.Message}");
                 }
             }
         }
@@ -133,7 +133,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message);
+                    MessageBox.Show($"Failed to open directory for {Name}: {ex.Message}");
                 }
             }
         }
