@@ -8,7 +8,7 @@
         <SignAssembly Condition="!Exists('$(AssemblyOriginatorKeyFile)')">False</SignAssembly>
 		<Platforms>x64;ARM64</Platforms>
 		<PackageTags>ColorVision</PackageTags>  
-		<EnableNETAnalyzers>true</EnableNETAnalyzers>
+		<EnableNETAnalyzers>true</EnableNETAnalyzers>  
 		<AnalysisMode>Recommended</AnalysisMode>
 		<PlatformTarget>$(Platform)</PlatformTarget>
 		<TargetFrameworks>net8.0-windows</TargetFrameworks>   
