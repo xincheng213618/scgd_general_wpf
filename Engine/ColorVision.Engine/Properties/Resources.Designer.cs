@@ -3580,6 +3580,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 安装工具 的本地化字符串。
+        /// </summary>
+        public static string InstallTools {
+            get {
+                return ResourceManager.GetString("InstallTools", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 整数 的本地化字符串。
         /// </summary>
         public static string Integer {
@@ -5340,6 +5349,15 @@ namespace ColorVision.Engine.Properties {
         public static string Port {
             get {
                 return ResourceManager.GetString("Port", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 便携工具 的本地化字符串。
+        /// </summary>
+        public static string PortableTools {
+            get {
+                return ResourceManager.GetString("PortableTools", resourceCulture);
             }
         }
         
@@ -7608,24 +7626,6 @@ namespace ColorVision.Engine.Properties {
         public static string WorkflowTemplate {
             get {
                 return ResourceManager.GetString("WorkflowTemplate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 便携工具 的本地化字符串。
-        /// </summary>
-        public static string PortableTools {
-            get {
-                return ResourceManager.GetString("PortableTools", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 安装工具 的本地化字符串。
-        /// </summary>
-        public static string InstallTools {
-            get {
-                return ResourceManager.GetString("InstallTools", resourceCulture);
             }
         }
     }
