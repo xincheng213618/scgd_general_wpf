@@ -93,7 +93,13 @@ namespace ColorVision.Engine.Services.PhyCameras
             this.DataContext = PhyCameraManager.GetInstance();
             PhyCameraManager.GetInstance().RefreshEmptyCamera();
             ApplyOnlineSorting();
-            PhyCameraManager.GetInstance().PhyCameras.CollectionChanged += (s, args) => ApplyOnlineSorting();
+            PhyCameraManager.GetInstance().PhyCameras.CollectionChanged += OnPhyCamerasCollectionChanged;
+            this.Closed += (s, args) => PhyCameraManager.GetInstance().PhyCameras.CollectionChanged -= OnPhyCamerasCollectionChanged;
+        }
+
+        private void OnPhyCamerasCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            ApplyOnlineSorting();
         }
 
         private void ApplyOnlineSorting()
