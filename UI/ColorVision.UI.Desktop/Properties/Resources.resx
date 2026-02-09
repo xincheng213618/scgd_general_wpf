@@ -445,4 +445,16 @@
   <data name="Loading" xml:space="preserve">
     <value>加载</value>
   </data>
+  <data name="ThirdPartyApps" xml:space="preserve">
+    <value>第三方应用管理</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>打开</value>
+  </data>
+  <data name="OpenDirectory" xml:space="preserve">
+    <value>打开目录</value>
+  </data>
+  <data name="SystemTools" xml:space="preserve">
+    <value>系统工具</value>
+  </data>
 </root>

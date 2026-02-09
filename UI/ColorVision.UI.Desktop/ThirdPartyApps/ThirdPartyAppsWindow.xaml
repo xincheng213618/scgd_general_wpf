@@ -1,10 +1,10 @@
-﻿<Window x:Class="ColorVision.Engine.ToolPlugins.ThirdPartyApps.ThirdPartyAppsWindow"
+﻿<Window x:Class="ColorVision.UI.Desktop.ThirdPartyApps.ThirdPartyAppsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Third-Party Apps" Height="520" Width="720"
+        Title="Third-Party Apps" Height="700" Width="900"
         Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -28,15 +28,35 @@
             </Border>
         </DockPanel>
 
-        <!-- App grid -->
+        <!-- App grid with grouping -->
         <ListBox x:Name="AppsListBox" Grid.Row="1" Background="Transparent" BorderThickness="0"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                  MouseDoubleClick="AppsListBox_MouseDoubleClick"
                  PreviewMouseRightButtonUp="AppsListBox_PreviewMouseRightButtonUp">
+            <ListBox.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.HeaderTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,12,0,6" Padding="8,4" 
+                                    Background="{DynamicResource RegionBrush}" 
+                                    CornerRadius="4"
+                                    BorderThickness="0,0,0,1" BorderBrush="{DynamicResource BorderBrush}">
+                                <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GlobalTextBrush}"/>
+                            </Border>
+                        </DataTemplate>
+                    </GroupStyle.HeaderTemplate>
+                    <GroupStyle.Panel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" Margin="0,0,0,8"/>
+                        </ItemsPanelTemplate>
+                    </GroupStyle.Panel>
+                </GroupStyle>
+            </ListBox.GroupStyle>
             <ListBox.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <WrapPanel Orientation="Horizontal"/>
+                    <StackPanel Orientation="Vertical"/>
                 </ItemsPanelTemplate>
             </ListBox.ItemsPanel>
             <ListBox.ItemContainerStyle>

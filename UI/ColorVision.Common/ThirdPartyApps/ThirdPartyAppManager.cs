@@ -1,10 +1,9 @@
 ﻿using ColorVision.UI;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 
-namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
+namespace ColorVision.Common.ThirdPartyApps
 {
     public class ThirdPartyAppManager
     {
@@ -30,8 +29,6 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
                     Apps.Add(app);
                 }
             }
-
-            ScanInstallToolDirectory();
         }
 
         public void Refresh()
@@ -42,26 +39,9 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
             }
         }
 
-        private void ScanInstallToolDirectory()
+        public IEnumerable<IGrouping<string, ThirdPartyAppInfo>> GetGroupedApps()
         {
-            string installToolDir = Path.Combine("Assets", "InstallTool");
-            if (!Directory.Exists(installToolDir)) return;
-
-            var existingInstallers = new HashSet<string>(Apps.Where(a => !string.IsNullOrEmpty(a.InstallerPath)).Select(a => Path.GetFullPath(a.InstallerPath)));
-
-            foreach (var file in Directory.GetFiles(installToolDir, "*.exe"))
-            {
-                string fullPath = Path.GetFullPath(file);
-                if (existingInstallers.Contains(fullPath)) continue;
-
-                var app = new ThirdPartyAppInfo
-                {
-                    Name = Path.GetFileNameWithoutExtension(file),
-                    InstallerPath = file,
-                };
-                app.RefreshStatus();
-                Apps.Add(app);
-            }
+            return Apps.GroupBy(a => a.Group);
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
+namespace ColorVision.Common.ThirdPartyApps
 {
     /// <summary>
     /// Interface for providing third-party application definitions.

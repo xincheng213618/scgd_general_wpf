@@ -1,12 +1,15 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Common.ThirdPartyApps;
+using ColorVision.Themes;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
+namespace ColorVision.UI.Desktop.ThirdPartyApps
 {
     public partial class ThirdPartyAppsWindow : Window
     {
@@ -22,7 +25,18 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
         {
             var manager = ThirdPartyAppManager.GetInstance();
             _allApps = manager.Apps;
-            AppsListBox.ItemsSource = _allApps;
+            ApplyGroupedView(_allApps);
+        }
+
+        private void ApplyGroupedView(System.Collections.IEnumerable source)
+        {
+            var view = CollectionViewSource.GetDefaultView(source);
+            if (view != null)
+            {
+                view.GroupDescriptions.Clear();
+                view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(ThirdPartyAppInfo.Group)));
+            }
+            AppsListBox.ItemsSource = source;
         }
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -35,12 +49,12 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
             string keyword = SearchBox.Text.Trim();
             if (string.IsNullOrEmpty(keyword))
             {
-                AppsListBox.ItemsSource = _allApps;
+                ApplyGroupedView(_allApps);
             }
             else
             {
                 var filtered = _allApps.Where(a => a.Name != null && a.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)).ToList();
-                AppsListBox.ItemsSource = filtered;
+                ApplyGroupedView(filtered);
             }
         }
 

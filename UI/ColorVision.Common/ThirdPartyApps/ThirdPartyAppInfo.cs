@@ -8,11 +8,12 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
+namespace ColorVision.Common.ThirdPartyApps
 {
     public class ThirdPartyAppInfo : ViewModelBase
     {
         public string Name { get; set; } = string.Empty;
+        public string Group { get; set; } = string.Empty;
         public string InstallerPath { get; set; } = string.Empty;
         public string? InstalledExePath { get; set; }
         public string? InstallDirectory { get; set; }
@@ -29,6 +30,17 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
         /// </summary>
         public string? PortableExePath { get; set; }
 
+        /// <summary>
+        /// Launch command for system apps (e.g., "cmd.exe", "regedit.exe", "services.msc").
+        /// When set, the app is always considered installed and launched via this command.
+        /// </summary>
+        public string? LaunchPath { get; set; }
+
+        /// <summary>
+        /// Optional arguments for the launch command.
+        /// </summary>
+        public string? LaunchArguments { get; set; }
+
         public bool IsInstalled
         {
             get => _isInstalled;
@@ -38,7 +50,7 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
 
         public double DisplayOpacity => IsInstalled ? 1.0 : 0.4;
 
-        public string StatusText => IsInstalled ? string.Empty : Properties.Resources.NotInstalled;
+        public string StatusText => IsInstalled ? string.Empty : "Not Installed";
 
         public ImageSource? IconSource
         {
@@ -52,6 +64,13 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
 
         public void RefreshStatus()
         {
+            if (!string.IsNullOrEmpty(LaunchPath))
+            {
+                IsInstalled = true;
+                LoadIcon();
+                return;
+            }
+
             IsInstalled = false;
             InstallDirectory = null;
             InstalledExePath = null;
@@ -86,7 +105,28 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
         private void LoadIcon()
         {
             IconSource = null;
-            if (IsInstalled && !string.IsNullOrEmpty(InstalledExePath) && File.Exists(InstalledExePath))
+
+            if (!string.IsNullOrEmpty(LaunchPath))
+            {
+                try
+                {
+                    string? resolvedPath = ResolveSystemPath(LaunchPath);
+                    if (!string.IsNullOrEmpty(resolvedPath) && File.Exists(resolvedPath))
+                    {
+                        using var icon = System.Drawing.Icon.ExtractAssociatedIcon(resolvedPath);
+                        if (icon != null)
+                        {
+                            IconSource = Imaging.CreateBitmapSourceFromHIcon(
+                                icon.Handle,
+                                Int32Rect.Empty,
+                                BitmapSizeOptions.FromEmptyOptions());
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            if (IconSource == null && IsInstalled && !string.IsNullOrEmpty(InstalledExePath) && File.Exists(InstalledExePath))
             {
                 try
                 {
@@ -119,8 +159,37 @@ namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
             }
         }
 
+        private static string? ResolveSystemPath(string path)
+        {
+            if (File.Exists(path))
+                return path;
+
+            string systemDir = Environment.GetFolderPath(Environment.SpecialFolder.System);
+            string fullPath = Path.Combine(systemDir, path);
+            if (File.Exists(fullPath))
+                return fullPath;
+
+            return null;
+        }
+
         private void OnDoubleClick()
         {
+            if (!string.IsNullOrEmpty(LaunchPath))
+            {
+                try
+                {
+                    var psi = new ProcessStartInfo(LaunchPath) { UseShellExecute = true };
+                    if (!string.IsNullOrEmpty(LaunchArguments))
+                        psi.Arguments = LaunchArguments;
+                    Process.Start(psi);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to launch {Name}: {ex.Message}");
+                }
+                return;
+            }
+
             if (IsInstalled && !string.IsNullOrEmpty(InstalledExePath) && File.Exists(InstalledExePath))
             {
                 try

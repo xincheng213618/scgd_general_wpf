@@ -7610,5 +7610,23 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("WorkflowTemplate", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 便携工具 的本地化字符串。
+        /// </summary>
+        public static string PortableTools {
+            get {
+                return ResourceManager.GetString("PortableTools", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 安装工具 的本地化字符串。
+        /// </summary>
+        public static string InstallTools {
+            get {
+                return ResourceManager.GetString("InstallTools", resourceCulture);
+            }
+        }
     }
 }

@@ -1103,5 +1103,41 @@ namespace ColorVision.UI.Desktop.Properties {
                 return ResourceManager.GetString("zh-Hant", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 第三方应用管理 的本地化字符串。
+        /// </summary>
+        public static string ThirdPartyApps {
+            get {
+                return ResourceManager.GetString("ThirdPartyApps", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开 的本地化字符串。
+        /// </summary>
+        public static string Open {
+            get {
+                return ResourceManager.GetString("Open", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开目录 的本地化字符串。
+        /// </summary>
+        public static string OpenDirectory {
+            get {
+                return ResourceManager.GetString("OpenDirectory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 系统工具 的本地化字符串。
+        /// </summary>
+        public static string SystemTools {
+            get {
+                return ResourceManager.GetString("SystemTools", resourceCulture);
+            }
+        }
     }
 }
