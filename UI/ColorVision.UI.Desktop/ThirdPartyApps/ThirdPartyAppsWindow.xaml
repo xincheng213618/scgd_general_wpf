@@ -28,81 +28,104 @@
             </Border>
         </DockPanel>
 
-        <!-- App grid with grouping -->
-        <ListBox x:Name="AppsListBox" Grid.Row="1" Background="Transparent" BorderThickness="0"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto"
-                 MouseDoubleClick="AppsListBox_MouseDoubleClick"
-                 PreviewMouseRightButtonUp="AppsListBox_PreviewMouseRightButtonUp">
-            <ListBox.GroupStyle>
-                <GroupStyle>
-                    <GroupStyle.HeaderTemplate>
-                        <DataTemplate>
-                            <Border Margin="0,12,0,6" Padding="8,4" 
-                                    Background="{DynamicResource RegionBrush}" 
-                                    CornerRadius="4"
-                                    BorderThickness="0,0,0,1" BorderBrush="{DynamicResource BorderBrush}">
-                                <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource GlobalTextBrush}"/>
-                            </Border>
-                        </DataTemplate>
-                    </GroupStyle.HeaderTemplate>
-                    <GroupStyle.Panel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" Margin="0,0,0,8"/>
-                        </ItemsPanelTemplate>
-                    </GroupStyle.Panel>
-                </GroupStyle>
-            </ListBox.GroupStyle>
-            <ListBox.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <StackPanel Orientation="Vertical"/>
-                </ItemsPanelTemplate>
-            </ListBox.ItemsPanel>
-            <ListBox.ItemContainerStyle>
-                <Style TargetType="ListBoxItem">
-                    <Setter Property="Padding" Value="0"/>
-                    <Setter Property="Margin" Value="0"/>
-                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="ListBoxItem">
-                                <Border x:Name="ItemBorder" Width="120" Height="120" Margin="8" CornerRadius="6"
-                                        BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
-                                        Background="{DynamicResource RegionBrush}" Cursor="Hand"
-                                        Opacity="{Binding DisplayOpacity}">
-                                    <Grid ToolTip="{Binding Name}">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <Image Grid.Row="0" Source="{Binding IconSource}" Width="48" Height="48"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,0"/>
-                                        <TextBlock Grid.Row="1" Text="{Binding Name}" FontSize="12"
-                                                   Foreground="{DynamicResource GlobalTextBrush}"
-                                                   HorizontalAlignment="Center" Margin="4,2,4,0"
-                                                   TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Grid.Row="2" Text="{Binding StatusText}" FontSize="10"
-                                                   Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.5"
-                                                   HorizontalAlignment="Center" Margin="4,0,4,6"/>
-                                    </Grid>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource BorderBrush}"/>
-                                        <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-                                    </Trigger>
-                                    <Trigger Property="IsSelected" Value="True">
-                                        <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-                                        <Setter TargetName="ItemBorder" Property="BorderThickness" Value="2"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </ListBox.ItemContainerStyle>
-        </ListBox>
+        <!-- Split layout: Left navigation + Right content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Group navigation -->
+            <ListBox x:Name="GroupListBox" Grid.Column="0" Background="Transparent" BorderThickness="0,0,1,0"
+                     BorderBrush="{DynamicResource BorderBrush}" Margin="0,0,8,0"
+                     SelectionChanged="GroupListBox_SelectionChanged">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="10,8"/>
+                        <Setter Property="Margin" Value="0,2"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="NavBorder" Padding="10,8" Margin="0,1" CornerRadius="4"
+                                            Background="Transparent">
+                                        <TextBlock Text="{Binding}" FontSize="13" Foreground="{DynamicResource GlobalTextBrush}"
+                                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding}"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="NavBorder" Property="Background" Value="{DynamicResource BorderBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="NavBorder" Property="Background" Value="{DynamicResource RegionBrush}"/>
+                                            <Setter TargetName="NavBorder" Property="BorderThickness" Value="2,0,0,0"/>
+                                            <Setter TargetName="NavBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+            </ListBox>
+
+            <!-- Right: App grid -->
+            <ListBox x:Name="AppsListBox" Grid.Column="1" Background="Transparent" BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     MouseDoubleClick="AppsListBox_MouseDoubleClick"
+                     PreviewMouseRightButtonUp="AppsListBox_PreviewMouseRightButtonUp">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="ItemBorder" Width="120" Height="120" Margin="8" CornerRadius="6"
+                                            BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
+                                            Background="{DynamicResource RegionBrush}" Cursor="Hand"
+                                            Opacity="{Binding DisplayOpacity}">
+                                        <Grid ToolTip="{Binding Name}">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <Image Grid.Row="0" Source="{Binding IconSource}" Width="48" Height="48"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,0"/>
+                                            <TextBlock Grid.Row="1" Text="{Binding Name}" FontSize="12"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       HorizontalAlignment="Center" Margin="4,2,4,0"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Grid.Row="2" Text="{Binding StatusText}" FontSize="10"
+                                                       Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.5"
+                                                       HorizontalAlignment="Center" Margin="4,0,4,6"/>
+                                        </Grid>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource BorderBrush}"/>
+                                            <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                            <Setter TargetName="ItemBorder" Property="BorderThickness" Value="2"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+            </ListBox>
+        </Grid>
     </Grid>
 </Window>

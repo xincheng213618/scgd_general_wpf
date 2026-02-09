@@ -2,6 +2,8 @@
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
+using System.Collections;
+using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
@@ -33,6 +35,24 @@ namespace ColorVision.Engine.Services.PhyCameras
             throw new NotImplementedException();
         }
     }
+
+    public class PhyCameraOnlineComparer : IComparer
+    {
+        public int Compare(object? x, object? y)
+        {
+            if (x is PhyCamera a && y is PhyCamera b)
+            {
+                bool aOnline = string.Equals(a.SysResourceModel?.Remark, "Online", StringComparison.OrdinalIgnoreCase);
+                bool bOnline = string.Equals(b.SysResourceModel?.Remark, "Online", StringComparison.OrdinalIgnoreCase);
+
+                if (aOnline && !bOnline) return -1;
+                if (!aOnline && bOnline) return 1;
+                return a.Id.CompareTo(b.Id);
+            }
+            return 0;
+        }
+    }
+
     public class ExportPhyCamerManager : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
@@ -72,6 +92,17 @@ namespace ColorVision.Engine.Services.PhyCameras
             PhyCameraManager.GetInstance().LoadPhyCamera();
             this.DataContext = PhyCameraManager.GetInstance();
             PhyCameraManager.GetInstance().RefreshEmptyCamera();
+            ApplyOnlineSorting();
+            PhyCameraManager.GetInstance().PhyCameras.CollectionChanged += (s, args) => ApplyOnlineSorting();
+        }
+
+        private void ApplyOnlineSorting()
+        {
+            var view = CollectionViewSource.GetDefaultView(PhyCameraManager.GetInstance().PhyCameras);
+            if (view is ListCollectionView listView)
+            {
+                listView.CustomSort = new PhyCameraOnlineComparer();
+            }
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
