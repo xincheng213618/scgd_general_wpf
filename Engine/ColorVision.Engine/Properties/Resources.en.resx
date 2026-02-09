@@ -2634,4 +2634,10 @@
   <data name="OpenDirectory" xml:space="preserve">
     <value>Open Directory</value>
   </data>
+  <data name="PortableTools" xml:space="preserve">
+    <value>Portable Tools</value>
+  </data>
+  <data name="InstallTools" xml:space="preserve">
+    <value>Install Tools</value>
+  </data>
 </root>

@@ -3,7 +3,7 @@ using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Engine.ToolPlugins.ThirdPartyApps
+namespace ColorVision.UI.Desktop.ThirdPartyApps
 {
     public class MenuThirdPartyApps : MenuItemBase
     {
