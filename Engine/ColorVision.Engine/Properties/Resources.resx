@@ -2640,4 +2640,7 @@
   <data name="InstallTools" xml:space="preserve">
     <value>安装工具</value>
   </data>
+  <data name="InternalTools" xml:space="preserve">
+    <value>内置工具</value>
+  </data>
 </root>

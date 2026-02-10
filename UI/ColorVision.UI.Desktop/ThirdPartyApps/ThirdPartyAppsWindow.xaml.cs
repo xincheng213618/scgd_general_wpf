@@ -31,7 +31,12 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 
         private void RefreshGroups()
         {
-            _groups = _allApps.Select(a => a.Group).Where(g => !string.IsNullOrEmpty(g)).Distinct().ToList();
+            _groups = _allApps
+                .GroupBy(a => a.Group)
+                .Where(g => !string.IsNullOrEmpty(g.Key))
+                .OrderBy(g => g.Min(a => a.Order))
+                .Select(g => g.Key)
+                .ToList();
 
             GroupListBox.Items.Clear();
             GroupListBox.Items.Add(AllGroupsKey);
@@ -69,7 +74,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 filtered = filtered.Where(a => a.Name != null && a.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase));
             }
 
-            AppsListBox.ItemsSource = filtered.ToList();
+            AppsListBox.ItemsSource = filtered.OrderBy(a => a.Order).ThenBy(a => a.Name).ToList();
         }
 
         private void AppsListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)

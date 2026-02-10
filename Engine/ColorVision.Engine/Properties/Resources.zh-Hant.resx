@@ -2625,4 +2625,7 @@
   <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
     <value>非必要情況下請勿刪除,是否刪除</value>
   </data>
+  <data name="InternalTools" xml:space="preserve">
+    <value>內建工具</value>
+  </data>
 </root>

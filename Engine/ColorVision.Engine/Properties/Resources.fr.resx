@@ -2625,4 +2625,7 @@
   <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
     <value>Veuillez ne pas supprimer sauf en cas d'absolue nécessité. (Supprimez si vous le souhaitez)</value>
   </data>
+  <data name="InternalTools" xml:space="preserve">
+    <value>Outils internes</value>
+  </data>
 </root>
