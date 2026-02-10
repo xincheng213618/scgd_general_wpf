@@ -154,9 +154,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             EditDisplayConfigCommand = new RelayCommand(a => EditDisplayConfig());
 
             OpenSpectrumLogCommand = new RelayCommand(a => OpenSpectrumLog());
-
-            RelayCommand OpenSSCOMToolCommand = new RelayCommand(a => new SSCOMTool());
-            ContextMenu.Items.Add(new MenuItem() { Header = "SSCOM5.3.1", Command = OpenSSCOMToolCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "SpectrumLog", Command = OpenSpectrumLogCommand });
         }
 

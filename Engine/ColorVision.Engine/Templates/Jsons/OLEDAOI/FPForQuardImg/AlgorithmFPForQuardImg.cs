@@ -9,30 +9,29 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-
-namespace ColorVision.Engine.Templates.Jsons.OLEDAOI
+namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForQuardImg
 {
-    [DisplayAlgorithm(28, "AOI", "OLED")]
-    public class AlgorithmOLEDAOI : DisplayAlgorithmBase
+    [DisplayAlgorithm(55, "亮点检测", "OLED")]
+    public class AlgorithmFPForQuardImg : DisplayAlgorithmBase
     {
-
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
         public RelayCommand OpenTemplateCommand { get; set; }
 
-        public AlgorithmOLEDAOI(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmFPForQuardImg(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
+
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; OnPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
         public void OpenTemplate()
         {
-            new TemplateEditorWindow(new TemplateOLEDAOI(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new TemplateEditorWindow(new TemplateFPForQuardImg(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
         public RelayCommand OpenTemplatePoiCommand { get; set; }
@@ -41,18 +40,15 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI
 
         public void OpenTemplatePoi()
         {
-            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
-
 
         public override UserControl GetUserControl()
         {
-            UserControl ??= new DisplayOLEDAOI(this);
+            UserControl ??= new DisplayFPForQuardImg(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }
-
 
         public MsgRecord SendCommand(ParamBase param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
@@ -65,7 +61,7 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
 
-            if(TemplatePoiSelectedIndex > -1)
+            if (TemplatePoiSelectedIndex > -1)
             {
                 var poi_pm = TemplatePoi.Params[TemplatePoiSelectedIndex].Value;
                 Params.Add("POITemplateParam", new CVTemplateParam() { ID = poi_pm.Id, Name = poi_pm.Name });
@@ -74,7 +70,7 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI
             Params.Add("Version", "2.0");
             MsgSend msg = new()
             {
-                EventName = "OLEDAOI",
+                EventName = "FPForQuardImg",
                 SerialNumber = sn,
                 Params = Params
             };

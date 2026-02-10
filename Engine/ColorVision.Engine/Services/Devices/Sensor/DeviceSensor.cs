@@ -22,9 +22,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 window.ShowDialog();
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
-            RelayCommand relayCommand = new RelayCommand(a => new SSCOMTool());
-            ContextMenu.Items.Add(relayCommand);
-
         }
 
         public override UserControl GetDeviceInfo() => new InfoSensor(this);
