@@ -77,7 +77,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             {
                 _imageView.ViewBitmapSource = writeableBitmap;
                 _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
-                _imageView.HImageCache = writeableBitmap.ToHImage();
+                _imageView.HImageCache = null;
                 _imageView.FunctionImage = null;
             }
             Close();
