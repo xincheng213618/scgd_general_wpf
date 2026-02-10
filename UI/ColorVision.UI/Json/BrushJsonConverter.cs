@@ -12,7 +12,6 @@ namespace ColorVision.UI.Json
             if (value is SolidColorBrush brush)
             {
                 string colorStr = null;
-
                 // 检查是否需要跨线程访问
                 if (brush.CheckAccess())
                 {

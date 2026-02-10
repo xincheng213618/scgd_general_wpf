@@ -393,15 +393,27 @@ namespace ColorVision.ImageEditor
         {
             get
             {
-                if (_hImageCache == null && ViewBitmapSource != null && ViewBitmapSource is WriteableBitmap writeableBitmap)
+
+                ImageShow.CheckAccess();
+
+                if (_hImageCache == null)
                 {
-                    if (writeableBitmap.Dispatcher.CheckAccess())
+                    if (ImageShow.CheckAccess())
                     {
-                        _hImageCache = writeableBitmap.ToHImage();
+                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
+                        {
+                            _hImageCache = writeableBitmap.ToHImage();
+                        }
                     }
                     else
                     {
-                        _hImageCache = writeableBitmap.Dispatcher.Invoke(() => writeableBitmap.ToHImage());
+                        ImageShow.Dispatcher.Invoke(() =>
+                        {
+                            if (ImageShow.Source is WriteableBitmap writeableBitmap)
+                            {
+                                _hImageCache = writeableBitmap.ToHImage();
+                            }
+                        });
                     }
                 }
                 return _hImageCache;
@@ -508,6 +520,7 @@ namespace ColorVision.ImageEditor
         }
 
         public ImageSource FunctionImage { get; set; }
+
         public ImageSource ViewBitmapSource { get; set; }
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
@@ -519,6 +532,7 @@ namespace ColorVision.ImageEditor
 
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
+            PseudoSliderTime = PseudoSliderTime > 0 ? PseudoSliderTime : 50;
             DebounceTimer.AddOrResetTimer("PseudoSlider", PseudoSliderTime, e => RenderPseudo(), 0);
         }
         public void RenderPseudo()

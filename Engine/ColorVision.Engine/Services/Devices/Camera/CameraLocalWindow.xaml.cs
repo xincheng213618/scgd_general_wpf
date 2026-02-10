@@ -11,6 +11,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using WindowsFormsTest;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -449,30 +450,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
                 cvCameraCSLib.CM_Close(m_hCamHandle);
-                m_hStopEvent.Set();
-
-                cb_CM_TYPE.IsEnabled = true;
-                cb_CM_ID.IsEnabled = true;
-                cb_get_mode.IsEnabled = true;
-                cb_bpp.IsEnabled = true;
-                btn_Connect.IsEnabled = true;
-                btn_close.IsEnabled = false;
             }
             else
             {
                 cvCameraCSLib.CM_Close(m_hCamHandle);
-
-                cb_CM_TYPE.IsEnabled = true;
-                cb_CM_MODE.IsEnabled = true;
-                cb_CM_ID.IsEnabled = true;
-                cb_get_mode.IsEnabled = true;
-                cb_bpp.IsEnabled = true;
-                btn_Connect.IsEnabled = true;
-                btn_close.IsEnabled = false;
-                btn_Meas.IsEnabled = false;
-                btn_MeasTif.IsEnabled = false;
-                button1.IsEnabled = false;
-                btn_CalAutoExp.IsEnabled = false;
             }
         }
 
