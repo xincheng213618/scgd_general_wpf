@@ -11,7 +11,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForRePicGradingV2
 {
-    [DisplayAlgorithm(56, "缺陷检测V2", "Json")]
+    [DisplayAlgorithm(56, "缺陷检测V2", "OLED")]
     public class AlgorithmFPForRePicGradingV2 : DisplayAlgorithmBase
     {
         public DeviceAlgorithm Device { get; set; }

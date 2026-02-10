@@ -12,8 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.OLEDAOI
 {
-
-    [DisplayAlgorithm(28, "OLED AOI", "Json")]
+    [DisplayAlgorithm(28, "AOI", "OLED")]
     public class AlgorithmOLEDAOI : DisplayAlgorithmBase
     {
 

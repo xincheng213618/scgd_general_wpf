@@ -11,7 +11,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForQuardImg
 {
-    [DisplayAlgorithm(55, "亮点检测", "Json")]
+    [DisplayAlgorithm(55, "亮点检测", "OLED")]
     public class AlgorithmFPForQuardImg : DisplayAlgorithmBase
     {
         public DeviceAlgorithm Device { get; set; }

@@ -11,7 +11,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForBlackScreen
 {
-    [DisplayAlgorithm(57, "黑画面检测", "Json")]
+    [DisplayAlgorithm(57, "黑画面检测", "OLED")]
     public class AlgorithmFPForBlackScreen : DisplayAlgorithmBase
     {
         public DeviceAlgorithm Device { get; set; }
