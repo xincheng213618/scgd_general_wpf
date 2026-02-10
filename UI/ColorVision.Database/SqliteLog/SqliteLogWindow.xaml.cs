@@ -180,8 +180,9 @@ namespace ColorVision.Database.SqliteLog
                 dbEntry.ExtractToFile(tempDbPath, overwrite: true);
                 return tempDbPath;
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[ExtractDbFromZip] Failed: {ex.Message}");
                 return null;
             }
         }
@@ -190,7 +191,8 @@ namespace ColorVision.Database.SqliteLog
         {
             if (_tempExtractedPath != null && File.Exists(_tempExtractedPath))
             {
-                try { File.Delete(_tempExtractedPath); } catch { }
+                try { File.Delete(_tempExtractedPath); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[CleanupTemp] Failed: {ex.Message}"); }
                 _tempExtractedPath = null;
             }
         }
