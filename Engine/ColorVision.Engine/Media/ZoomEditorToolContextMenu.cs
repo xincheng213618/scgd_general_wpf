@@ -44,16 +44,81 @@ namespace ColorVision.ImageEditor.EditorTools
                     writeableBitmap.Unlock();
                 });
 
-
-
                 MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Flip", Order = 101, Header = "Flip", Icon = MenuItemIcon.TryFindResource("DIRotate") });
                 MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Flip", GuidId = "X", Order = 3, Header = "X", Command = XCommand});
                 MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Flip", GuidId = "Y", Order = 4, Header = "Y", Command = YCommand });
-                MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Flip", GuidId = "XY", Order = 4, Header = "XY", Command = XYCommand });
+                MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Flip", GuidId = "XY", Order = 5, Header = "XY", Command = XYCommand });
+
+                // === Image Processing (图像处理) ===
+                MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ImageProcessing", Order = 102, Header = "图像处理" });
+
+                // Threshold (二值化)
+                RelayCommand thresholdCommand = new(o =>
+                {
+                    var dlg = new ThresholdDialog(writeableBitmap) { Owner = Application.Current.GetActiveWindow() };
+                    dlg.ShowDialog();
+                });
+                MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "ImageProcessing", GuidId = "Threshold", Order = 1, Header = "Threshold (二值化)", Command = thresholdCommand });
+
+                // Erode (腐蚀)
+                RelayCommand erodeCommand = new(o =>
+                {
+                    var dlg = new MorphologyDialog(writeableBitmap, 0) { Owner = Application.Current.GetActiveWindow() };
+                    dlg.ShowDialog();
+                });
+                MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "ImageProcessing", GuidId = "Erode", Order = 2, Header = "Erode (腐蚀)", Command = erodeCommand });
+
+                // Dilate (膨胀)
+                RelayCommand dilateCommand = new(o =>
+                {
+                    var dlg = new MorphologyDialog(writeableBitmap, 1) { Owner = Application.Current.GetActiveWindow() };
+                    dlg.ShowDialog();
+                });
+                MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "ImageProcessing", GuidId = "Dilate", Order = 3, Header = "Dilate (膨胀)", Command = dilateCommand });
+
+                // MorphologyEx (形态学操作)
+                RelayCommand morphologyExCommand = new(o =>
+                {
+                    var dlg = new MorphologyDialog(writeableBitmap, 2) { Owner = Application.Current.GetActiveWindow() };
+                    dlg.ShowDialog();
+                });
+                MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "ImageProcessing", GuidId = "MorphologyEx", Order = 4, Header = "MorphologyEx (形态学)", Command = morphologyExCommand });
+
+                // === Filter/Denoise (滤波/去噪) ===
+                MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "FilterDenoise", Order = 103, Header = "滤波/去噪" });
+
+                // GaussianBlur (高斯滤波)
+                RelayCommand gaussianCommand = new(o =>
+                {
+                    var dlg = new FilterDialog(writeableBitmap, 0) { Owner = Application.Current.GetActiveWindow() };
+                    dlg.ShowDialog();
+                });
+                MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "FilterDenoise", GuidId = "GaussianBlur", Order = 1, Header = "GaussianBlur (高斯滤波)", Command = gaussianCommand });
+
+                // MedianBlur (中值滤波)
+                RelayCommand medianCommand = new(o =>
+                {
+                    var dlg = new FilterDialog(writeableBitmap, 1) { Owner = Application.Current.GetActiveWindow() };
+                    dlg.ShowDialog();
+                });
+                MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "FilterDenoise", GuidId = "MedianBlur", Order = 2, Header = "MedianBlur (中值滤波)", Command = medianCommand });
+
+                // BilateralFilter (双边滤波/去噪)
+                RelayCommand bilateralCommand = new(o =>
+                {
+                    var dlg = new FilterDialog(writeableBitmap, 2) { Owner = Application.Current.GetActiveWindow() };
+                    dlg.ShowDialog();
+                });
+                MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "FilterDenoise", GuidId = "BilateralFilter", Order = 3, Header = "BilateralFilter (双边滤波)", Command = bilateralCommand });
+
+                // Blur (均值滤波)
+                RelayCommand blurCommand = new(o =>
+                {
+                    var dlg = new FilterDialog(writeableBitmap, 3) { Owner = Application.Current.GetActiveWindow() };
+                    dlg.ShowDialog();
+                });
+                MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "FilterDenoise", GuidId = "Blur", Order = 4, Header = "Blur (均值滤波)", Command = blurCommand });
             }
-
-
-
 
 
 
