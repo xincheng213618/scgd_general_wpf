@@ -30,7 +30,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using WindowsFormsTest;
+
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -98,8 +98,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     licenseManagerViewModel.SaveToLincense();
                 }
 
-                Form1 form1 = new Form1(this);
-                form1.Show();
+                CameraLocalWindow cameraLocalWindow = new CameraLocalWindow(this);
+                cameraLocalWindow.Show();
             };
 
             ContextMenu.Items.Add(menuItem);
