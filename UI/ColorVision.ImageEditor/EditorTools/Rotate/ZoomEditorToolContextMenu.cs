@@ -7,9 +7,6 @@ namespace ColorVision.ImageEditor.EditorTools
 {
     public record class RotateEditorToolContextMenu(EditorContext context) : IIEditorToolContextMenu
     {
-
-
-
         public List<MenuItemMetadata> GetContextMenuItems()
         {
             var MenuItemMetadatas = new  List<MenuItemMetadata>();

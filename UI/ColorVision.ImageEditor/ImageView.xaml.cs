@@ -398,8 +398,11 @@ namespace ColorVision.ImageEditor
 
                 if (_hImageCache == null)
                 {
+
                     if (ImageShow.CheckAccess())
                     {
+                        ViewBitmapSource = ImageShow.Source;
+
                         if (ImageShow.Source is WriteableBitmap writeableBitmap)
                         {
                             _hImageCache = writeableBitmap.ToHImage();
@@ -409,6 +412,7 @@ namespace ColorVision.ImageEditor
                     {
                         ImageShow.Dispatcher.Invoke(() =>
                         {
+                            ViewBitmapSource = ImageShow.Source;
                             if (ImageShow.Source is WriteableBitmap writeableBitmap)
                             {
                                 _hImageCache = writeableBitmap.ToHImage();
@@ -520,7 +524,6 @@ namespace ColorVision.ImageEditor
         }
 
         public ImageSource FunctionImage { get; set; }
-
         public ImageSource ViewBitmapSource { get; set; }
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)

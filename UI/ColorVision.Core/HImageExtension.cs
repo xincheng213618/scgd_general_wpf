@@ -122,68 +122,6 @@ namespace ColorVision.Core
         public static WriteableBitmap ToWriteableBitmap(this BitmapImage bitmapImage) => new(bitmapImage);
 
 
-        public static HImage ForHImage(this WriteableBitmap writeableBitmap)
-        {
-            // Determine the number of channels and Depth based on the pixel format
-            int channels, depth;
-            int bytesPerPixel;
-
-            switch (writeableBitmap.Format.ToString())
-            {
-                case "Bgr32":
-                case "Bgra32":
-                case "Pbgra32":
-                    channels = 4; // BGRA format has 4 channels
-                    depth = 8; // 8 bits per channel
-                    break;
-                case "Bgr24":
-                case "Rgb24":
-                    channels = 3; // RGB format has 3 channels
-                    depth = 8; // 8 bits per channel
-                    break;
-                case "Indexed8":
-                    depth = 8; // 8 bits per channel
-                    channels = 1;
-                    break;
-                case "Rgb48":
-                    channels = 3; // RGB format has 3 channels
-                    depth = 16; // 8 bits per channel
-                    break;
-                case "Gray8":
-                    channels = 1; // Gray scale has 1 channel
-                    depth = 8; // 8 bits per channel
-                    break;
-                case "Gray16":
-                    channels = 1; // Gray scale has 1 channel
-                    depth = 16; // 16 bits per channel
-                    break;
-                case "Gray32Float":
-                    channels = 1; // Gray scale has 1 channel
-                    depth = 32; // 16 bits per channel
-                    break;
-                default:
-                    MessageBox.Show($"{writeableBitmap.Format}暂不支持的格式,请联系开发人员");
-                    throw new NotSupportedException("The pixel format is not supported.");
-            }
-
-            bytesPerPixel = channels * (depth / 8);
-            int stride = writeableBitmap.PixelWidth * bytesPerPixel;
-
-            // Create a new HImageCache instance
-            HImage hImage = new()
-            {
-                rows = writeableBitmap.PixelHeight,
-                cols = writeableBitmap.PixelWidth,
-                channels = channels,
-                depth = depth, // You might need to adjust this based on the actual bits per pixel
-                pData = writeableBitmap.BackBuffer,
-                stride = writeableBitmap.BackBufferStride
-
-            };
-            return hImage;
-        }
-
-
         public static HImage ToHImage(this WriteableBitmap writeableBitmap)
         {
             // Determine the number of channels and Depth based on the pixel format
