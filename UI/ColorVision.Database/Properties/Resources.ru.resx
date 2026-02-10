@@ -243,4 +243,10 @@
   <data name="LastPage" xml:space="preserve">
     <value>Последняя страница</value>
   </data>
+  <data name="DataSource" xml:space="preserve">
+    <value>Источник данных:</value>
+  </data>
+  <data name="CurrentLog" xml:space="preserve">
+    <value>Текущий журнал</value>
+  </data>
 </root>

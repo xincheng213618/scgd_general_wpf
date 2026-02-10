@@ -37,12 +37,37 @@ namespace ColorVision.Database.SqliteLog
         public static SqliteLogManagerConfig Config => ConfigService.Instance.GetRequiredService<SqliteLogManagerConfig>();
         public static SqlSugarClient CreateDbClient()
         {
+            return CreateDbClient(SqliteDbPath);
+        }
+
+        public static SqlSugarClient CreateDbClient(string dbPath)
+        {
             return new SqlSugarClient(new ConnectionConfig
             {
-                ConnectionString = $"Data Source={SqliteDbPath}",
+                ConnectionString = $"Data Source={dbPath}",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
             });
+        }
+
+        /// <summary>
+        /// 获取所有归档日志文件（.db 和 .zip）
+        /// </summary>
+        public static List<string> GetArchiveFiles()
+        {
+            var files = new List<string>();
+            if (!Directory.Exists(DirectoryPath)) return files;
+
+            foreach (var file in Directory.GetFiles(DirectoryPath, "SqliteLogs_Backup_*.db"))
+            {
+                files.Add(file);
+            }
+            foreach (var file in Directory.GetFiles(DirectoryPath, "SqliteLogs_Backup_*.zip"))
+            {
+                files.Add(file);
+            }
+            files.Sort((a, b) => string.Compare(b, a, StringComparison.OrdinalIgnoreCase));
+            return files;
         }
         // 异步队列
         private BlockingCollection<LogEntry> _logQueue;
@@ -210,6 +235,7 @@ namespace ColorVision.Database.SqliteLog
 
         /// <summary>
         /// 检查当前数据库大小，如果超限则进行轮转（压缩或删除）
+        /// 使用 Copy + Delete 代替 File.Move，避免在高并发下因文件锁导致失败
         /// </summary>
         private void CheckAndRotateDb()
         {
@@ -227,17 +253,43 @@ namespace ColorVision.Database.SqliteLog
                     string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                     string archiveDbPath = Path.Combine(DirectoryPath, $"SqliteLogs_Backup_{timestamp}.db");
 
-                    // 2. 重命名（移动）当前文件
-                    // 因为 WriteBatchToDb 里的 using 已经结束，且执行了 checkpoint，理论上文件未被锁定。
-                    File.Move(SqliteDbPath, archiveDbPath);
+                    // 2. 使用 Copy + Delete 代替 File.Move
+                    //    File.Copy 不需要独占源文件，更安全；即使 Delete 失败也不会丢失归档
+                    const int maxRetries = 3;
+                    for (int i = 0; i < maxRetries; i++)
+                    {
+                        try
+                        {
+                            File.Copy(SqliteDbPath, archiveDbPath, overwrite: false);
+                            break;
+                        }
+                        catch (IOException) when (i < maxRetries - 1)
+                        {
+                            Thread.Sleep(200 * (i + 1));
+                        }
+                    }
 
-                    // 3. 清理残留的 WAL/SHM 临时文件 (如果有)
+                    // 3. 删除原始文件（带重试），如果失败则下次轮转时再处理
+                    for (int i = 0; i < maxRetries; i++)
+                    {
+                        try
+                        {
+                            File.Delete(SqliteDbPath);
+                            break;
+                        }
+                        catch (IOException) when (i < maxRetries - 1)
+                        {
+                            Thread.Sleep(200 * (i + 1));
+                        }
+                    }
+
+                    // 4. 清理残留的 WAL/SHM 临时文件 (如果有)
                     string walPath = SqliteDbPath + "-wal";
                     string shmPath = SqliteDbPath + "-shm";
-                    if (File.Exists(walPath)) File.Delete(walPath);
-                    if (File.Exists(shmPath)) File.Delete(shmPath);
+                    try { if (File.Exists(walPath)) File.Delete(walPath); } catch { }
+                    try { if (File.Exists(shmPath)) File.Delete(shmPath); } catch { }
 
-                    // 4. 启动后台任务处理旧文件（压缩或删除），不阻塞当前的写入流程
+                    // 5. 启动后台任务处理旧文件（压缩或删除），不阻塞当前的写入流程
                     // 必须传参进去，因为 archiveDbPath 是局部变量
                     Task.Run(() => ProcessRotatedFile(archiveDbPath));
                 }
