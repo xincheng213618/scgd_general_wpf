@@ -1,4 +1,3 @@
-#pragma warning disable
 using cvColorVision;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
