@@ -3589,15 +3589,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 内置工具 的本地化字符串。
-        /// </summary>
-        public static string InternalTools {
-            get {
-                return ResourceManager.GetString("InternalTools", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 整数 的本地化字符串。
         /// </summary>
         public static string Integer {
@@ -3630,6 +3621,15 @@ namespace ColorVision.Engine.Properties {
         public static string IntegrationTime {
             get {
                 return ResourceManager.GetString("IntegrationTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 内置工具 的本地化字符串。
+        /// </summary>
+        public static string InternalTools {
+            get {
+                return ResourceManager.GetString("InternalTools", resourceCulture);
             }
         }
         

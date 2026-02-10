@@ -465,4 +465,16 @@
   <data name="Loading" xml:space="preserve">
     <value>짐</value>
   </data>
+  <data name="ThirdPartyApps" xml:space="preserve">
+    <value>타사 애플리케이션 관리</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>열려 있는</value>
+  </data>
+  <data name="OpenDirectory" xml:space="preserve">
+    <value>디렉토리 열기</value>
+  </data>
+  <data name="SystemTools" xml:space="preserve">
+    <value>시스템 도구</value>
+  </data>
 </root>
