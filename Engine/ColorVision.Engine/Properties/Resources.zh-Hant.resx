@@ -2625,4 +2625,22 @@
   <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
     <value>非必要情況下請勿刪除,是否刪除</value>
   </data>
+  <data name="InternalTools" xml:space="preserve">
+    <value>內建工具</value>
+  </data>
+  <data name="ThirdPartyApps" xml:space="preserve">
+    <value>第三方應用管理</value>
+  </data>
+  <data name="NotInstalled" xml:space="preserve">
+    <value>未安裝</value>
+  </data>
+  <data name="OpenDirectory" xml:space="preserve">
+    <value>開啟目錄</value>
+  </data>
+  <data name="PortableTools" xml:space="preserve">
+    <value>便攜工具</value>
+  </data>
+  <data name="InstallTools" xml:space="preserve">
+    <value>安裝工具</value>
+  </data>
 </root>

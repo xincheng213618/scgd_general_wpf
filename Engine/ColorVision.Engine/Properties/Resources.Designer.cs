@@ -3625,6 +3625,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 内置工具 的本地化字符串。
+        /// </summary>
+        public static string InternalTools {
+            get {
+                return ResourceManager.GetString("InternalTools", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 间隔时间 的本地化字符串。
         /// </summary>
         public static string IntervalTime {

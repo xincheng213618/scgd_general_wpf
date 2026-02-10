@@ -14,6 +14,7 @@ namespace ColorVision.Common.ThirdPartyApps
     {
         public string Name { get; set; } = string.Empty;
         public string Group { get; set; } = string.Empty;
+        public int Order { get; set; } = 100;
         public string InstallerPath { get; set; } = string.Empty;
         public string? InstalledExePath { get; set; }
         public string? InstallDirectory { get; set; }
@@ -41,6 +42,12 @@ namespace ColorVision.Common.ThirdPartyApps
         /// </summary>
         public string? LaunchArguments { get; set; }
 
+        /// <summary>
+        /// Action to execute for internal app windows.
+        /// When set, the app is always considered installed and launched via this action.
+        /// </summary>
+        public Action? LaunchAction { get; set; }
+
         public bool IsInstalled
         {
             get => _isInstalled;
@@ -64,6 +71,13 @@ namespace ColorVision.Common.ThirdPartyApps
 
         public void RefreshStatus()
         {
+            if (LaunchAction != null)
+            {
+                IsInstalled = true;
+                LoadIcon();
+                return;
+            }
+
             if (!string.IsNullOrEmpty(LaunchPath))
             {
                 IsInstalled = true;
@@ -174,6 +188,19 @@ namespace ColorVision.Common.ThirdPartyApps
 
         private void OnDoubleClick()
         {
+            if (LaunchAction != null)
+            {
+                try
+                {
+                    LaunchAction.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to launch {Name}: {ex.Message}");
+                }
+                return;
+            }
+
             if (!string.IsNullOrEmpty(LaunchPath))
             {
                 try

@@ -243,4 +243,10 @@
   <data name="LastPage" xml:space="preserve">
     <value>마지막 페이지</value>
   </data>
+  <data name="DataSource" xml:space="preserve">
+    <value>데이터 소스:</value>
+  </data>
+  <data name="CurrentLog" xml:space="preserve">
+    <value>현재 로그</value>
+  </data>
 </root>

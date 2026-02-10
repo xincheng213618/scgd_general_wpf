@@ -7,6 +7,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -63,6 +65,10 @@ namespace ColorVision.Database.SqliteLog
         private DateTime? _startDate = null;
         private DateTime? _endDate = null;
 
+        // Data source
+        private string _currentDbPath = "";
+        private string? _tempExtractedPath = null;
+
         public SqliteLogWindow()
         {
             InitializeComponent();
@@ -91,15 +97,111 @@ namespace ColorVision.Database.SqliteLog
                     break;
                 }
             }
+
+            // Populate data source selector
+            RefreshDataSourceList();
             
             LoadLogEntries();
+        }
+
+        private void RefreshDataSourceList()
+        {
+            DataSourceComboBox.SelectionChanged -= DataSourceComboBox_SelectionChanged;
+            DataSourceComboBox.Items.Clear();
+
+            // Current active log
+            DataSourceComboBox.Items.Add(new ComboBoxItem
+            {
+                Content = Properties.Resources.CurrentLog,
+                Tag = SqliteLogManager.SqliteDbPath
+            });
+
+            // Archive files
+            foreach (var archiveFile in SqliteLogManager.GetArchiveFiles())
+            {
+                string fileName = Path.GetFileName(archiveFile);
+                DataSourceComboBox.Items.Add(new ComboBoxItem
+                {
+                    Content = fileName,
+                    Tag = archiveFile
+                });
+            }
+
+            // Select first (current) by default
+            DataSourceComboBox.SelectedIndex = 0;
+            _currentDbPath = SqliteLogManager.SqliteDbPath;
+
+            DataSourceComboBox.SelectionChanged += DataSourceComboBox_SelectionChanged;
+        }
+
+        private void DataSourceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (DataSourceComboBox.SelectedItem is ComboBoxItem item && item.Tag is string dbPath)
+            {
+                CleanupTempExtractedFile();
+
+                if (dbPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Extract .db from .zip to temp for viewing
+                    string? extractedPath = ExtractDbFromZip(dbPath);
+                    if (extractedPath != null)
+                    {
+                        _tempExtractedPath = extractedPath;
+                        _currentDbPath = extractedPath;
+                    }
+                    else
+                    {
+                        MessageBox.Show($"{Properties.Resources.LoadFailed}", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                }
+                else
+                {
+                    _currentDbPath = dbPath;
+                }
+
+                _currentPage = 1;
+                LoadLogEntries();
+            }
+        }
+
+        private static string? ExtractDbFromZip(string zipPath)
+        {
+            try
+            {
+                string tempDir = Path.Combine(Path.GetTempPath(), "ColorVision_SqliteLog");
+                Directory.CreateDirectory(tempDir);
+
+                using var archive = ZipFile.OpenRead(zipPath);
+                var dbEntry = archive.Entries.FirstOrDefault(entry => entry.Name.EndsWith(".db", StringComparison.OrdinalIgnoreCase));
+                if (dbEntry == null) return null;
+
+                string tempDbPath = Path.Combine(tempDir, $"temp_{Guid.NewGuid():N}.db");
+                dbEntry.ExtractToFile(tempDbPath, overwrite: true);
+                return tempDbPath;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ExtractDbFromZip] Failed: {ex.Message}");
+                return null;
+            }
+        }
+
+        private void CleanupTempExtractedFile()
+        {
+            if (_tempExtractedPath != null && File.Exists(_tempExtractedPath))
+            {
+                try { File.Delete(_tempExtractedPath); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[CleanupTemp] Failed: {ex.Message}"); }
+                _tempExtractedPath = null;
+            }
         }
 
         private void LoadLogEntries()
         {
             LogEntries.Clear();
 
-            if (!File.Exists(SqliteLogManager.SqliteDbPath))
+            if (!File.Exists(_currentDbPath))
             {
                 _totalRecords = 0;
                 _totalPages = 1;
@@ -109,7 +211,7 @@ namespace ColorVision.Database.SqliteLog
 
             try
             {
-                using var db = SqliteLogManager.CreateDbClient();
+                using var db = SqliteLogManager.CreateDbClient(_currentDbPath);
 
                 // Build query with filters
                 var query = db.Queryable<LogEntry>();
@@ -202,6 +304,9 @@ namespace ColorVision.Database.SqliteLog
             _startDate = null;
             _endDate = null;
             _currentPage = 1;
+
+            // Refresh archive file list
+            RefreshDataSourceList();
             
             LoadLogEntries();
         }

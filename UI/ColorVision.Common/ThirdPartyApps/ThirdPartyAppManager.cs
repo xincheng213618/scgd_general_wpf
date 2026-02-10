@@ -41,7 +41,10 @@ namespace ColorVision.Common.ThirdPartyApps
 
         public IEnumerable<IGrouping<string, ThirdPartyAppInfo>> GetGroupedApps()
         {
-            return Apps.GroupBy(a => a.Group);
+            return Apps
+                .OrderBy(a => a.Order).ThenBy(a => a.Name)
+                .GroupBy(a => a.Group)
+                .OrderBy(g => g.Min(a => a.Order));
         }
     }
 }
