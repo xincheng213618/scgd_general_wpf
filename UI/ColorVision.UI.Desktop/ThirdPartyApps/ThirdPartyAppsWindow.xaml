@@ -75,6 +75,7 @@
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                      MouseDoubleClick="AppsListBox_MouseDoubleClick"
+                     PreviewMouseLeftButtonDown="AppsListBox_PreviewMouseLeftButtonDown"
                      PreviewMouseRightButtonUp="AppsListBox_PreviewMouseRightButtonUp">
                 <ListBox.ItemsPanel>
                     <ItemsPanelTemplate>

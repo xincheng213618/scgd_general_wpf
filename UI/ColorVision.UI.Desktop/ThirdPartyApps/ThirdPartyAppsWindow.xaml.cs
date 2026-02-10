@@ -24,6 +24,12 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            Init();
+        }
+
+        public async Task Init()
+        {
+            await Task.Delay(30);
             var manager = ThirdPartyAppManager.GetInstance();
             _allApps = manager.Apps;
             RefreshGroups();
@@ -109,6 +115,14 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         {
             ThirdPartyAppManager.GetInstance().Refresh();
             RefreshGroups();
+        }
+
+        private void AppsListBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            //if (AppsListBox.SelectedItem is ThirdPartyAppInfo app)
+            //{
+            //    app.DoubleClickCommand.Execute(null);
+            //}
         }
     }
 }

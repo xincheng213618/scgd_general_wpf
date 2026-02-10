@@ -20,7 +20,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 {
                     Name = "PowerShell",
                     Group = group,
-                    LaunchPath = "powershell.exe",
+                    LaunchPath = "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe",
                 },
                 new ThirdPartyAppInfo
                 {
@@ -32,7 +32,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 {
                     Name = "Registry Editor",
                     Group = group,
-                    LaunchPath = "regedit.exe",
+                    LaunchPath = "C:\\Windows\\SysWOW64\\regedit.exe",
                 },
                 new ThirdPartyAppInfo
                 {
