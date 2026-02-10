@@ -6,7 +6,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
 {
-    public partial class MorphologyDialog : Window
+    public partial class MorphologyDialog : System.Windows.Window
     {
         private readonly WriteableBitmap _writeableBitmap;
         private readonly byte[] _originalPixels;
@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Media
             {
                 MatType matType = _writeableBitmap.Format.GetPixelFormat();
                 using var srcMat = Mat.FromPixelData(_writeableBitmap.PixelHeight, _writeableBitmap.PixelWidth, matType, _writeableBitmap.BackBuffer, _writeableBitmap.BackBufferStride);
-                using var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new Size(kernelSize, kernelSize));
+                using var kernel = Cv2.GetStructuringElement(MorphShapes.Rect, new OpenCvSharp.Size(kernelSize, kernelSize));
 
                 switch (opIndex)
                 {

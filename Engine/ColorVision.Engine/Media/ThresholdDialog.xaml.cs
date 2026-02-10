@@ -5,7 +5,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
 {
-    public partial class ThresholdDialog : Window
+    public partial class ThresholdDialog : System.Windows.Window
     {
         private readonly WriteableBitmap _writeableBitmap;
         private readonly byte[] _originalPixels;

@@ -6,7 +6,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
 {
-    public partial class FilterDialog : Window
+    public partial class FilterDialog : System.Windows.Window
     {
         private readonly WriteableBitmap _writeableBitmap;
         private readonly byte[] _originalPixels;
@@ -22,6 +22,8 @@ namespace ColorVision.Engine.Media
 
         private void UpdatePanelVisibility()
         {
+            if (!IsInitialized) return;
+
             int idx = FilterCombo.SelectedIndex;
             // GaussianBlur: show sigma panel, hide sigmaColor
             // MedianBlur: hide both sigma panels
@@ -33,6 +35,7 @@ namespace ColorVision.Engine.Media
 
         private void Param_Changed(object sender, RoutedEventArgs e)
         {
+            if (!IsInitialized) return;
             if (KernelSlider == null || FilterCombo == null) return;
             UpdatePanelVisibility();
             ApplyFilter();
@@ -56,7 +59,7 @@ namespace ColorVision.Engine.Media
                 {
                     case 0: // GaussianBlur
                         double sigma = SigmaSlider?.Value ?? 1.5;
-                        Cv2.GaussianBlur(srcMat, srcMat, new Size(kernelSize, kernelSize), sigma);
+                        Cv2.GaussianBlur(srcMat, srcMat, new OpenCvSharp.Size(kernelSize, kernelSize), sigma);
                         break;
                     case 1: // MedianBlur
                         Cv2.MedianBlur(srcMat, srcMat, kernelSize);
@@ -70,7 +73,7 @@ namespace ColorVision.Engine.Media
                         }
                         break;
                     case 3: // Blur (average)
-                        Cv2.Blur(srcMat, srcMat, new Size(kernelSize, kernelSize));
+                        Cv2.Blur(srcMat, srcMat, new OpenCvSharp.Size(kernelSize, kernelSize));
                         break;
                 }
 
