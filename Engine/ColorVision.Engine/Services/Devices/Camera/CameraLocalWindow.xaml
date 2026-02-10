@@ -1,0 +1,225 @@
+<Window x:Class="ColorVision.Engine.Services.Devices.Camera.CameraLocalWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera"
+        xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
+        mc:Ignorable="d"
+        Title="COLOR VISION" Height="900" Width="1400"
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded" Closing="Window_Closing">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Menu Bar -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="显示设置">
+                <MenuItem x:Name="MenuItem_ShowCenterLine" Header="显示中心线" IsCheckable="True"/>
+            </MenuItem>
+            <MenuItem Header="基本参数设置">
+                <MenuItem Header="相机参数设置" Click="Camera_MenuItem_Click"/>
+                <MenuItem Header="通道参数设置" Click="Channels_MenuItem_Click"/>
+                <MenuItem Header="校正参数设置" Click="Calibration_MenuItem_Click"/>
+                <MenuItem Header="自动曝光参数设置" Click="ExpTime_MenuItem_Click"/>
+            </MenuItem>
+        </Menu>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left Panel - Controls -->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="10,5">
+                    <!-- Camera Model -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="相机型号：" Width="90"/>
+                        <ComboBox x:Name="cb_CM_TYPE" SelectionChanged="cb_CM_TYPE_SelectionChanged">
+                            <ComboBoxItem Content="QHY_USB"/>
+                            <ComboBoxItem Content="HK_USB"/>
+                            <ComboBoxItem Content="HK_CARD"/>
+                            <ComboBoxItem Content="MIL_CL_CARD"/>
+                            <ComboBoxItem Content="MIL_CXP_CARD"/>
+                            <ComboBoxItem Content="NN_USB"/>
+                            <ComboBoxItem Content="TOUP_USB"/>
+                            <ComboBoxItem Content="HK_FG_CARD"/>
+                            <ComboBoxItem Content="IKAP_CARD"/>
+                        </ComboBox>
+                    </DockPanel>
+
+                    <!-- Camera Mode -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="相机模式：" Width="90"/>
+                        <ComboBox x:Name="cb_CM_MODE" SelectionChanged="cb_CM_MODE_SelectionChanged">
+                            <ComboBoxItem Content="CV_MODE"/>
+                            <ComboBoxItem Content="BV_MODE"/>
+                            <ComboBoxItem Content="LV_MODE"/>
+                            <ComboBoxItem Content="LVTOBV_MODE"/>
+                        </ComboBox>
+                    </DockPanel>
+
+                    <!-- Camera ID -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="相机ID：" Width="90"/>
+                        <ComboBox x:Name="cb_CM_ID" SelectionChanged="cb_CM_ID_SelectionChanged"/>
+                    </DockPanel>
+
+                    <!-- Channels -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="通道数：" Width="90"/>
+                        <ComboBox x:Name="cb_Channels" IsEnabled="False" SelectionChanged="cb_Channels_SelectionChanged">
+                            <ComboBoxItem Content="1"/>
+                            <ComboBoxItem Content="3"/>
+                        </ComboBox>
+                    </DockPanel>
+
+                    <!-- Take Image Mode -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="取图模式：" Width="90"/>
+                        <ComboBox x:Name="cb_get_mode" SelectionChanged="cb_get_mode_SelectionChanged">
+                            <ComboBoxItem Content="Measure_Normal"/>
+                            <ComboBoxItem Content="Live"/>
+                            <ComboBoxItem Content="Measure_Fast"/>
+                            <ComboBoxItem Content="Measure_FastEx"/>
+                        </ComboBox>
+                    </DockPanel>
+
+                    <!-- BPP -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="像素位数：" Width="90"/>
+                        <ComboBox x:Name="cb_bpp" SelectionChanged="cb_bpp_SelectionChanged">
+                            <ComboBoxItem Content="8"/>
+                            <ComboBoxItem Content="16"/>
+                        </ComboBox>
+                    </DockPanel>
+
+                    <Separator Margin="0,5"/>
+
+                    <!-- Buttons: Connect / Reset / Close -->
+                    <UniformGrid Columns="2" Margin="0,3">
+                        <Button x:Name="btn_Connect" Content="连接" Click="btn_Connect_Click" Margin="0,0,3,0" Padding="5"/>
+                        <Button x:Name="btn_reset" Content="复位" Click="btn_reset_Click" Margin="3,0,0,0" Padding="5"/>
+                    </UniformGrid>
+                    <Button x:Name="btn_close" Content="关闭" Click="btn_close_Click" IsEnabled="False" Margin="0,3" Padding="5"/>
+
+                    <Separator Margin="0,5"/>
+
+                    <!-- Measure buttons -->
+                    <Button x:Name="btn_Meas" Content="测量" Click="btn_Meas_Click" IsEnabled="False" Margin="0,3" Padding="5"/>
+                    <Button x:Name="btn_MeasTif" Content="测量tif" Click="btn_MeasTif_Click" IsEnabled="False" Margin="0,3" Padding="5"/>
+                    <Button x:Name="btn_CalAutoExp" Content="计算自动曝光" Click="btn_CalAutoExp_Click" Margin="0,3" Padding="5"/>
+
+                    <!-- Calculate Position -->
+                    <DockPanel Margin="0,3">
+                        <Button x:Name="button1" Content="计算位置" Click="button1_Click" IsEnabled="False" DockPanel.Dock="Left" Width="100" Padding="5"/>
+                        <TextBlock Text="阈值(0-255)" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        <TextBox x:Name="textBox1" Text="30" Margin="5,0"/>
+                    </DockPanel>
+
+                    <Separator Margin="0,5"/>
+
+                    <!-- S/E/P fields -->
+                    <DockPanel Margin="0,3">
+                        <TextBox x:Name="tb_s" Text="1" Width="60" Margin="0,0,5,0"/>
+                        <TextBox x:Name="tb_e" Text="3" Width="60" Margin="0,0,5,0"/>
+                        <TextBox x:Name="tb_p" Text="0" Width="60"/>
+                    </DockPanel>
+
+                    <!-- TIF Name -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="TIF名称" Width="70"/>
+                        <TextBox x:Name="tb_TiffName" Text="ceshi001"/>
+                    </DockPanel>
+
+                    <!-- Count -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="次数" Width="70"/>
+                        <TextBox x:Name="tb_Count" Text="1"/>
+                    </DockPanel>
+
+                    <!-- Gain -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="增益" Width="70"/>
+                        <TextBox x:Name="tb_Gain" Text="10" Width="80" Margin="0,0,5,0"/>
+                        <TextBlock Text="dB" Width="30"/>
+                        <Button x:Name="btn_SetGain" Content="设置" Click="btn_SetGain_Click" Padding="5,2"/>
+                    </DockPanel>
+
+                    <!-- Exposure Time -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="时间" Width="70"/>
+                        <TextBox x:Name="tb_Exp" Text="100" Width="80" Margin="0,0,5,0"/>
+                        <TextBlock Text="ms" Width="30"/>
+                        <Button x:Name="btn_SetExp" Content="设置" Click="btn_SetExp_Click" Padding="5,2"/>
+                    </DockPanel>
+
+                    <!-- Exposure 2 -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="" Width="70"/>
+                        <TextBox x:Name="tb_Exp2" Text="100" Width="80" Margin="0,0,5,0"/>
+                        <TextBlock Text="ms" Width="30"/>
+                    </DockPanel>
+
+                    <!-- Exposure 3 -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="" Width="70"/>
+                        <TextBox x:Name="tb_Exp3" Text="100" Width="80" Margin="0,0,5,0"/>
+                        <TextBlock Text="ms" Width="30"/>
+                    </DockPanel>
+
+                    <Separator Margin="0,5"/>
+
+                    <!-- Calibration Checkboxes -->
+                    <TextBlock Text="校正选项" FontWeight="Bold" Margin="0,3"/>
+                    <CheckBox x:Name="cb_DSNU" Content="DSNU" Margin="0,3"/>
+                    <CheckBox x:Name="cb_DarkNoiseCorrect" Content="暗噪声校正" Margin="0,3"/>
+                    <CheckBox x:Name="cb_AutoExp" Content="自动曝光" Margin="0,3"/>
+                    <CheckBox x:Name="cb_LumCorrect" Content="Luminance校正" Margin="0,3"/>
+                    <CheckBox x:Name="cb_MonoCorrect" Content="单色校正" Margin="0,3" Checked="cb_MonoCorrect_Checked"/>
+                    <CheckBox x:Name="cb_FourColorCorrect" Content="四色校正" Margin="0,3" Checked="cb_FourColorCorrect_Checked"/>
+                    <CheckBox x:Name="cb_MulColorCorrect" Content="多色校正" Margin="0,3" Checked="cb_MulColorCorrect_Checked"/>
+                    <CheckBox x:Name="cb_BadPixelCorrect" Content="坏点校正" Margin="0,3"/>
+                    <CheckBox x:Name="cb_UniformFieldCorrect" Content="均匀场校正" Margin="0,3"/>
+                    <CheckBox x:Name="cb_DistortCorrect" Content="畸变校正" Margin="0,3"/>
+
+                    <Separator Margin="0,5"/>
+
+                    <!-- Additional controls -->
+                    <CheckBox x:Name="checkBox1" Content="框选" Margin="0,3" Checked="checkBox1_CheckedChanged"/>
+                    <UniformGrid Columns="2" Margin="0,3">
+                        <Button Content="执行FOV" Click="btn_FOV_Click" Margin="0,0,3,0" Padding="5"/>
+                        <Button Content="执行 SFR" Click="btn_SFR_Click" Margin="3,0,0,0" Padding="5"/>
+                    </UniformGrid>
+                    <UniformGrid Columns="2" Margin="0,3">
+                        <Button Content="执行Disto" Click="btn_Distortion_Click" Margin="0,0,3,0" Padding="5"/>
+                        <Button Content="显示设置" Click="button2_Click" Margin="3,0,0,0" Padding="5"/>
+                    </UniformGrid>
+
+                    <Button x:Name="btn_Test" Content="自动对焦测试" Click="btn_Test_Click" Margin="0,3" Padding="5"/>
+                    <Button x:Name="btn_ConfigFile" Content="配置文件" Click="btn_ConfigFile_Click" Margin="0,3" Padding="5"/>
+
+                    <!-- TIF Path -->
+                    <DockPanel Margin="0,3">
+                        <TextBlock Text="TIF路径" Width="70"/>
+                        <TextBox x:Name="tb_TiffPath"/>
+                    </DockPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Right Panel - ImageView -->
+            <im:ImageView Grid.Column="1" x:Name="ImageView"/>
+        </Grid>
+    </Grid>
+</Window>

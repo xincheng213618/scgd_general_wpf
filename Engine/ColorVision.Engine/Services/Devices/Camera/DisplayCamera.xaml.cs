@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using ColorVision.Database;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
@@ -991,12 +992,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
                     writeableBitmap!.Lock();
 
-                    OpenCvSharp.MatType matType;
-                    if (channels == 1 && bpp == 8) matType = OpenCvSharp.MatType.CV_8UC1;
-                    else if (channels == 1 && bpp == 16) matType = OpenCvSharp.MatType.CV_16UC1;
-                    else if (channels == 3 && bpp == 8) matType = OpenCvSharp.MatType.CV_8UC3;
-                    else if (channels == 4 && bpp == 32) matType = OpenCvSharp.MatType.CV_8UC4; // BGRA?
-                    else throw new NotSupportedException($"Unsupported format: ch={channels}, bpp={bpp}");
+                    OpenCvSharp.MatType matType = writeableBitmap.Format.GetPixelFormat();
 
                     // 2. 包装源数据 (pData) -> Zero Copy
                     // 关键点：使用传入的 lss (Line Size / Stride) 确保对齐正确

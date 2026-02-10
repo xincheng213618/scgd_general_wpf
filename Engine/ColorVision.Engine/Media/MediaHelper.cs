@@ -1,8 +1,10 @@
 ﻿using ColorVision.Core;
 using ColorVision.FileIO;
 using ColorVision.Themes.Controls;
+using ColorVision.UI.Desktop;
 using log4net;
 using OpenCvSharp;
+using OpenCvSharp.WpfExtensions;
 using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
@@ -10,13 +12,54 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using OpenCvSharp.WpfExtensions;
 namespace ColorVision.Engine.Media
 {
 
     public static class MediaHelper
     {
         private static ILog log = LogManager.GetLogger(typeof(MediaHelper));
+
+        public static MatType GetPixelFormat(this PixelFormat pixelFormat)
+        {
+            if (pixelFormat == PixelFormats.Gray8)
+            {
+                return MatType.CV_8UC1;
+            }
+            if (pixelFormat == PixelFormats.Gray16)
+            {
+                return MatType.CV_16UC1;
+            }
+            if (pixelFormat == PixelFormats.Bgr24)
+            {
+                return MatType.CV_8UC3;
+            }
+            if (pixelFormat == PixelFormats.Rgb24)
+            {
+                return MatType.CV_8UC3;
+            }
+            if (pixelFormat == PixelFormats.Bgr32)
+            {
+                return MatType.CV_8UC4;
+            }
+            if (pixelFormat == PixelFormats.Rgb48)
+            {
+                return MatType.CV_16SC3;
+            }
+            if (pixelFormat == PixelFormats.Bgra32)
+            {
+                return MatType.CV_8UC4;
+            }
+            if (pixelFormat == PixelFormats.Gray32Float)
+            {
+                return MatType.CV_32FC1;
+            }
+            if (pixelFormat == PixelFormats.Prgba64)
+            {
+                return MatType.CV_16UC4;
+            }
+            throw new Exception("Unsupported file format.");
+        }
+
         public static bool UpdateWriteableBitmap(this CVCIEFile fileInfo, WriteableBitmap writeableBitmap)
         {   
             OpenCvSharp.Mat? src = null;

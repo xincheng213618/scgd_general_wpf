@@ -13,27 +13,29 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(GammaCorrectionWindow));
         private readonly ImageView _imageView;
-
+        HImage hImage;
         public GammaCorrectionWindow(ImageView imageView)
         {
+            hImage = imageView.HImageCache ?? new HImage();
             InitializeComponent();
             _imageView = imageView;
         }
 
         private void GammaSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            DebounceTimer.AddOrResetTimer("ApplyGammaCorrection", 50, a => ApplyGammaCorrection(a), GammaSlider.Value);
+            if (!IsInitialized) return;
+            double gammaValue = e.NewValue;
+            TaskConflator.RunOrUpdate("ApplyGammaCorrection", ()=> ApplyGammaCorrection(gammaValue) );
         }
 
         private void ApplyGammaCorrection(double gamma)
-        {
-            if (_imageView.HImageCache == null) return;
-            
+        {            
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
             log.Info($"ApplyGammaCorrection - Gamma: {gamma}");
             
-            int ret = OpenCVMediaHelper.M_ApplyGammaCorrection((HImage)_imageView.HImageCache, out HImage hImageProcessed, gamma);
+            int ret = OpenCVMediaHelper.M_ApplyGammaCorrection(hImage, out HImage hImageProcessed, gamma);
+            double algoMs = stopwatch.Elapsed.TotalMilliseconds;
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 if (ret == 0)
@@ -48,8 +50,10 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
                         _imageView.FunctionImage = image;
                     }
                     _imageView.ImageShow.Source = _imageView.FunctionImage;
+                    double renderMs = stopwatch.Elapsed.TotalMilliseconds;
                     stopwatch.Stop();
-                    log.Info($"ApplyGammaCorrection 完成 - 耗时: {stopwatch.Elapsed}");
+                    string perfMsg = $"算法耗时: {algoMs:F2} ms | 渲染耗时: {renderMs - algoMs:F2} ms | 总计: {(renderMs):F2} ms";
+                    log.Info(perfMsg);
                 }
             });
         }
@@ -61,7 +65,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             {
                 _imageView.ViewBitmapSource = writeableBitmap;
                 _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
-                _imageView.HImageCache = writeableBitmap.ToHImage();
+                _imageView.HImageCache = null;
                 _imageView.FunctionImage = null;
             }
             Close();
@@ -74,5 +78,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             _imageView.FunctionImage = null;
             Close();
         }
+
+
+        
     }
 }

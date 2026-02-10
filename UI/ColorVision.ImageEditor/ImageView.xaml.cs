@@ -187,7 +187,7 @@ namespace ColorVision.ImageEditor
                 ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
             else
                 ColormapTypesImage.Source = ColormapTypesImage.Dispatcher.Invoke(() => new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative)));
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, e => RenderPseudo(), 0);
+            TaskConflator.RunOrUpdate("PseudoSlider", () => RenderPseudo());
         }
         /// <summary>
         /// 
@@ -354,8 +354,8 @@ namespace ColorVision.ImageEditor
         public void OpenImage(string? filePath)
         {
             //如果文件已经打开，不会重复打开
-            if (filePath == null || filePath.Equals(Config.GetProperties<string>("FilePath"), StringComparison.Ordinal)) return;
 
+            if (filePath == null || filePath.Equals(Config.GetProperties<string>("FilePath"), StringComparison.Ordinal)) return;
             Config.ClearProperties();
 
             Config.AddProperties("FilePath", filePath);
@@ -393,20 +393,32 @@ namespace ColorVision.ImageEditor
         {
             get
             {
-                if (_hImageCache == null && ViewBitmapSource != null && ViewBitmapSource is WriteableBitmap writeableBitmap)
+                if (_hImageCache == null)
                 {
-                    if (writeableBitmap.Dispatcher.CheckAccess())
+                    if (ImageShow.CheckAccess())
                     {
-                        _hImageCache = writeableBitmap.ToHImage();
+                        ViewBitmapSource = ImageShow.Source;
+
+                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
+                        {
+                            _hImageCache = writeableBitmap.ToHImage();
+                        }
                     }
                     else
                     {
-                        _hImageCache = writeableBitmap.Dispatcher.Invoke(() => writeableBitmap.ToHImage());
+                        ImageShow.Dispatcher.Invoke(() =>
+                        {
+                            ViewBitmapSource = ImageShow.Source;
+                            if (ImageShow.Source is WriteableBitmap writeableBitmap)
+                            {
+                                _hImageCache = writeableBitmap.ToHImage();
+                            }
+                        });
                     }
                 }
                 return _hImageCache;
             }
-            set { _hImageCache = value; }
+            set { _hImageCache?.Dispose(); _hImageCache = value; }
         }
         private HImage? _hImageCache;
 
@@ -515,11 +527,11 @@ namespace ColorVision.ImageEditor
             RenderPseudo();
         }
 
-        private int PseudoSliderTime = 50;
 
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", PseudoSliderTime, e => RenderPseudo(), 0);
+            if (!IsInitialized) return; 
+            TaskConflator.RunOrUpdate("PseudoSlider", () => RenderPseudo());
         }
         public void RenderPseudo()
         {
@@ -563,16 +575,8 @@ namespace ColorVision.ImageEditor
                                 {
                                     ImageShow.Source = FunctionImage;
                                 }
-
-
                                 sw.Stop();
                                 double renderMs = sw.Elapsed.TotalMilliseconds;
-
-                                PseudoSliderTime =(int)renderMs / 1000;
-
-                                // ================== 输出结果 ==================
-                                // 建议在界面上加一个 TextBlock (比如 TimeStatus) 显示，比看日志更直观
-
                                 if (log.IsInfoEnabled)
                                 {
                                     string perfMsg = $"算法耗时: {algoMs:F2} ms | 渲染耗时: {renderMs - algoMs:F2} ms | 总计: {(renderMs):F2} ms";
@@ -637,13 +641,18 @@ namespace ColorVision.ImageEditor
         }
         public void UpdateZoomAndScale()
         {
-            Application.Current?.Dispatcher.BeginInvoke(() =>
+            if (CheckAccess())
             {
                 Zoombox1.ZoomUniform();
-            });
+            }
+            else
+            {
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    Zoombox1.ZoomUniform();
+                });
+            }
         }
-
-
 
 
         private void Apply_Click(object sender, RoutedEventArgs e)
@@ -657,13 +666,11 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-        }
-
         private void Reload_Click(object sender, RoutedEventArgs e)
         {
-            OpenImage(Config.FilePath);
+            string filepath = Config.FilePath;
+            Config.ClearProperties();
+            OpenImage(filepath);
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
