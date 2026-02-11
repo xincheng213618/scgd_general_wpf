@@ -487,6 +487,7 @@ namespace ProjectLUX
                 {
                     if (!string.IsNullOrWhiteSpace(ReturnCode))
                     {
+                        ReturnCode += $"FlowFailed:{FlowControlData.EventName},{FlowControlData.Params};";
                         if (SocketControl.Current.Stream != null)
                             SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                     }
@@ -497,6 +498,7 @@ namespace ProjectLUX
             {
                 if (!string.IsNullOrWhiteSpace(ReturnCode))
                 {
+                    ReturnCode += $"FlowFailed:{FlowControlData.EventName},{FlowControlData.Params};";
                     if (SocketControl.Current.Stream != null)
                         SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
                 }
@@ -580,6 +582,7 @@ namespace ProjectLUX
                         {
                             log.Info("无法连接到" + ProjectLUXConfig.Instance.ResultSavePath);
                         }
+
                         ViewResultManager.Save(result);
                         ObjectiveTestResult.TotalResult = ObjectiveTestResult.TotalResult && result.Result;
 

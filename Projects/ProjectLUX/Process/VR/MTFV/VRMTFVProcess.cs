@@ -58,6 +58,127 @@ namespace ProjectLUX.Process.VR.MTFV
                                 testResult.ObjectiveTestItems.Add(objectiveTestItem);
                             }
                             testResult.MTFDetailViewReslut = mtfDetail;
+
+                            log.Info("MTF Cout:" + testResult.ObjectiveTestItems.Count);
+                            if (testResult.ObjectiveTestItems.Count == 900)
+                            {
+                                List<List<ObjectiveTestItem>> RectItems = new List<List<ObjectiveTestItem>>();
+
+                                for (int i = 0; i < 30; i += 1)
+                                {
+                                    List<ObjectiveTestItem> objectiveTestItems = new List<ObjectiveTestItem>();
+                                    for (int j = 0; j < 30; j++)
+                                    {
+                                        objectiveTestItems.Add(testResult.ObjectiveTestItems[i * 30 + j]);
+                                    }
+                                    RectItems.Add(objectiveTestItems);
+                                }
+                                const int size = 30;
+                                const double center = 14.5;
+
+                                // 半径阈值
+                                const double rA = 1.0;
+                                const double rB = 2.0;
+                                const double rC = 4.0;
+                                const double rD = 7.5;
+
+                                List<ObjectiveTestItem> regionA = new List<ObjectiveTestItem>();
+                                List<ObjectiveTestItem> regionB = new List<ObjectiveTestItem>();
+                                List<ObjectiveTestItem> regionC = new List<ObjectiveTestItem>();
+                                List<ObjectiveTestItem> regionD = new List<ObjectiveTestItem>();
+
+
+                                for (int row = 0; row < size; row++)
+                                {
+                                    for (int col = 0; col < size; col++)
+                                    {
+                                        int idx = row * size + col;
+                                        var item = testResult.ObjectiveTestItems[idx];
+
+                                        // 计算到中心的距离
+                                        double dr = row - center;
+                                        double dc = col - center;
+                                        double dist = Math.Sqrt(dr * dr + dc * dc);
+
+                                        if (dist <= rA)
+                                        {
+                                            regionA.Add(item);
+                                        }
+                                        else if (dist <= rB)
+                                        {
+                                            regionB.Add(item);
+                                        }
+                                        else if (dist <= rC)
+                                        {
+                                            regionC.Add(item);
+                                        }
+                                        else if (dist <= rD)
+                                        {
+                                            regionD.Add(item);
+                                        }
+                                    }
+                                }
+
+                                testResult.Region_A_Average.Value = regionA.Average(i => i.Value);
+                                testResult.Region_A_Average.TestValue = regionA.Average(i => i.Value).ToString();
+                                testResult.Region_A_Average.LowLimit = recipeConfig.Region_A_Average.Min;
+                                testResult.Region_A_Average.UpLimit = recipeConfig.Region_A_Average.Max;
+
+                                testResult.Region_A_Max.Value = regionA.Max(i => i.Value);
+                                testResult.Region_A_Max.TestValue = regionA.Max(i => i.Value).ToString();
+                                testResult.Region_A_Max.LowLimit = recipeConfig.Region_A_Max.Min;
+                                testResult.Region_A_Max.UpLimit = recipeConfig.Region_A_Max.Max;
+
+                                testResult.Region_A_Min.Value = regionA.Min(i => i.Value);
+                                testResult.Region_A_Min.TestValue = regionA.Min(i => i.Value).ToString();
+                                testResult.Region_A_Min.LowLimit = recipeConfig.Region_A_Min.Min;
+                                testResult.Region_A_Min.UpLimit = recipeConfig.Region_A_Min.Max;
+
+                                testResult.Region_B_Average.Value = regionB.Average(i => i.Value);
+                                testResult.Region_B_Average.TestValue = regionB.Average(i => i.Value).ToString();
+                                testResult.Region_B_Average.LowLimit = recipeConfig.Region_B_Average.Min;
+                                testResult.Region_B_Average.UpLimit = recipeConfig.Region_B_Average.Max;
+
+                                testResult.Region_B_Max.Value = regionB.Max(i => i.Value);
+                                testResult.Region_B_Max.TestValue = regionB.Max(i => i.Value).ToString();
+                                testResult.Region_B_Max.LowLimit = recipeConfig.Region_B_Max.Min;
+                                testResult.Region_B_Max.UpLimit = recipeConfig.Region_B_Max.Max;
+
+                                testResult.Region_B_Min.Value = regionB.Min(i => i.Value);
+                                testResult.Region_B_Min.TestValue = regionB.Min(i => i.Value).ToString();
+                                testResult.Region_B_Min.LowLimit = recipeConfig.Region_B_Min.Min;
+                                testResult.Region_B_Min.UpLimit = recipeConfig.Region_B_Min.Max;
+
+                                testResult.Region_C_Average.Value = regionC.Average(i => i.Value);
+                                testResult.Region_C_Average.TestValue = regionC.Average(i => i.Value).ToString();
+                                testResult.Region_C_Average.LowLimit = recipeConfig.Region_C_Average.Min;
+                                testResult.Region_C_Average.UpLimit = recipeConfig.Region_C_Average.Max;
+
+                                testResult.Region_C_Max.Value = regionC.Max(i => i.Value);
+                                testResult.Region_C_Max.TestValue = regionC.Max(i => i.Value).ToString();
+                                testResult.Region_C_Max.LowLimit = recipeConfig.Region_C_Max.Min;
+                                testResult.Region_C_Max.UpLimit = recipeConfig.Region_C_Max.Max;
+
+                                testResult.Region_C_Min.Value = regionC.Min(i => i.Value);
+                                testResult.Region_C_Min.TestValue = regionC.Min(i => i.Value).ToString();
+                                testResult.Region_C_Min.LowLimit = recipeConfig.Region_C_Min.Min;
+                                testResult.Region_C_Min.UpLimit = recipeConfig.Region_C_Min.Max;
+
+                                testResult.Region_D_Average.Value = regionD.Average(i => i.Value);
+                                testResult.Region_D_Average.TestValue = regionD.Average(i => i.Value).ToString();
+                                testResult.Region_D_Average.LowLimit = recipeConfig.Region_D_Average.Min;
+                                testResult.Region_D_Average.UpLimit = recipeConfig.Region_D_Average.Max;
+
+                                testResult.Region_D_Max.Value = regionD.Max(i => i.Value);
+                                testResult.Region_D_Max.TestValue = regionD.Max(i => i.Value).ToString();
+                                testResult.Region_D_Max.LowLimit = recipeConfig.Region_D_Max.Min;
+                                testResult.Region_D_Max.UpLimit = recipeConfig.Region_D_Max.Max;
+
+                                testResult.Region_D_Min.Value = regionD.Min(i => i.Value);
+                                testResult.Region_D_Min.TestValue = regionD.Min(i => i.Value).ToString();
+                                testResult.Region_D_Min.LowLimit = recipeConfig.Region_D_Min.Min;
+                                testResult.Region_D_Min.UpLimit = recipeConfig.Region_D_Min.Max;
+                            }
                         }
 
                     }

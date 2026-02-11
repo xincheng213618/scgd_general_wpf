@@ -193,7 +193,7 @@ namespace ProjectLUX
         [DisplayName("Chessborad_4x4")]
         public ChessboardARTestResult ChessboardARTestResult { get; set; }
 
-        [DisplayName("Chessborad_5x5")]
+        [DisplayName("Chessborad_6x6")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
 
         [DisplayName("MTF")]
@@ -203,11 +203,10 @@ namespace ProjectLUX
         public MTFHVTestResult MTFHVTestResult { get; set; }
 
 
-        [DisplayName("MTFH")]
+        [DisplayName("MTF")]
         public VRMTFHTestResult VRMTFHTestResult { get; set; }
 
-
-        [DisplayName("MTFV")]
+        [DisplayName("MTF")]
         public VRMTFVTestResult VRMTFVTestResult { get; set; }
 
         [DisplayName("Distortion")]

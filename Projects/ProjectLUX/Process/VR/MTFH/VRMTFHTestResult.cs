@@ -19,7 +19,7 @@ namespace ProjectLUX.Process.VR.MTFH
 
         public ObjectiveTestItem Region_B_Min { get;set; } = new ObjectiveTestItem { Name = "Region_B_Min" };
 
-        public ObjectiveTestItem Region_B_MAx { get;set; } = new ObjectiveTestItem { Name = "Region_B_Max" };
+        public ObjectiveTestItem Region_B_Max { get;set; } = new ObjectiveTestItem { Name = "Region_B_Max" };
 
         public ObjectiveTestItem Region_B_Average { get; set; } = new ObjectiveTestItem { Name = "Region_B_Average" };
 

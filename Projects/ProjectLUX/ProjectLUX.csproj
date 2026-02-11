@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<VersionPrefix>1.1.3.13</VersionPrefix>
+		<VersionPrefix>1.1.3.16</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -23,7 +23,7 @@
 		<Reference Include="ST.Library.UI" Condition="!Exists('..\..\Engine\ST.Library.UI\ST.Library.UI.csproj')">
 			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
 			<Private>True</Private>
-		</Reference>
+		</Reference> 
 	</ItemGroup>
 
 	<ItemGroup>
@@ -34,6 +34,7 @@
 
 	<ItemGroup>
 		<Folder Include="Assets\" />
+		<Folder Include="Process\Chessboard55\" />
 	</ItemGroup>
 
 	<ItemGroup>

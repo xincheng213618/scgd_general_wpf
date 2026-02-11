@@ -176,6 +176,7 @@ namespace ProjectLUX.Services
                         if (lastTwo == "00")
                         {
                             log.Info("拍图窗口握手");
+                            ProjectWindowInstance.WindowInstance.InitTest(sn);
                         }
                         else if (lastTwo == "11")
                         {
@@ -197,13 +198,13 @@ namespace ProjectLUX.Services
                         }
                         else if (lastTwo == "14")
                         {
-                            log.Info("MTFV切图指令");
+                            log.Info("畸变切图");
                             ProjectWindowInstance.WindowInstance.RunTemplate(3);
                             return null;
                         }
                         else if (lastTwo == "15")
                         {
-                            log.Info("畸变切图");
+                            log.Info("切图15");
                             ProjectWindowInstance.WindowInstance.RunTemplate(4);
                             return null;
                         }
