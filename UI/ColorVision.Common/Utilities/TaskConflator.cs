@@ -1,61 +1,43 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Windows; // 用于 Application.Current.Dispatcher
+using System.Windows;
 
 namespace ColorVision.Common.Utilities
 {
-
-
     public static class TaskConflator
     {
-        // 用于存储每个 key 对应的执行器
         private static readonly ConcurrentDictionary<string, SerialExecutor> _executors = new();
 
         /// <summary>
-        /// 添加或更新任务。
-        /// 如果当前没有任务在运行，立即运行。
-        /// 如果有任务在运行，将此任务标记为"待执行"（覆盖之前的待执行任务）。
+        /// [同步版] 添加或更新任务。
         /// </summary>
-        public static void RunOrUpdate(string key, Action action)
+        public static void RunOrUpdate(string key, Action action, int throttleDelayMs = 0)
+        {
+            // 将 Action 包装成返回 Task 的 Func，以便统一处理
+            RunOrUpdate(key, () => { action(); return Task.CompletedTask; }, throttleDelayMs);
+        }
+
+        /// <summary>
+        /// [异步版 - 推荐] 添加或更新异步任务。
+        /// 这里的 func 应该返回一个 Task，Conflator 会等待这个 Task 完成后才开始下一次循环。
+        /// </summary>
+        public static void RunOrUpdate(string key, Func<Task> func, int throttleDelayMs = 0)
         {
             var executor = _executors.GetOrAdd(key, _ => new SerialExecutor());
-            executor.Run(action);
+            executor.Run(func, throttleDelayMs);
         }
 
         /// <summary>
-        /// 针对带参数 Action 的重载
-        /// </summary>
-        public static void RunOrUpdate<T>(string key, Action<T> action, T parameter)
-        {
-            RunOrUpdate(key, () => action(parameter));
-        }
-
-        /// <summary>
-        /// 针对带两个参数 Action 的重载
-        /// </summary>
-        public static void RunOrUpdate<T, T1>(string key, Action<T, T1> action, T parameter, T1 parameter1)
-        {
-            RunOrUpdate(key, () => action(parameter, parameter1));
-        }
-
-        /// <summary>
-        /// 专用于 UI 更新的重载（自动切回 Dispatcher）
-        /// 注意：如果算法耗时，请不要直接把算法逻辑放进这里，而是应该把算法放在普通 Action 里，算法算完后的 UI 更新才用 Dispatcher。
-        /// </summary>
-        public static void RunOrUpdateDispatcher(string key, Action action)
-        {
-            RunOrUpdate(key, () =>
-            {
-                Application.Current?.Dispatcher.Invoke(action);
-            });
-        }
-
-        /// <summary>
-        /// 清理所有执行器（通常在页面关闭时调用）
+        /// 清理资源
         /// </summary>
         public static void DisposeAll()
         {
+            foreach (var executor in _executors.Values)
+            {
+                executor.Cancel();
+            }
             _executors.Clear();
         }
 
@@ -64,62 +46,79 @@ namespace ColorVision.Common.Utilities
         {
             private readonly object _lock = new();
             private bool _isRunning;
-            private Action _pendingAction;
+            private Func<Task> _pendingFunc;
+            private CancellationTokenSource _cts = new();
 
-            public void Run(Action action)
+            public void Run(Func<Task> func, int throttleDelayMs)
             {
                 lock (_lock)
                 {
                     if (_isRunning)
                     {
-                        // 逻辑核心：如果正在运行，更新 Pending Action 为最新的
-                        // 这相当于"保留最后一次"，中间的会被丢弃
-                        _pendingAction = action;
+                        // 如果正在运行，覆盖 Pending 任务为最新的
+                        _pendingFunc = func;
                         return;
                     }
 
-                    // 如果没在运行，标记为运行，并开始处理
+                    // 标记为运行
                     _isRunning = true;
                 }
 
-                // 在后台线程开始处理，避免阻塞调用方（如UI线程）
-                Task.Run(() => ProcessLoop(action));
+                // 启动后台处理循环
+                Task.Run(() => ProcessLoopAsync(func, throttleDelayMs, _cts.Token));
             }
 
-            private void ProcessLoop(Action firstAction)
+            public void Cancel()
             {
-                var currentAction = firstAction;
+                _cts.Cancel();
+            }
 
-                while (true)
+            private async Task ProcessLoopAsync(Func<Task> firstFunc, int delayMs, CancellationToken token)
+            {
+                var currentFunc = firstFunc;
+
+                while (!token.IsCancellationRequested)
                 {
                     try
                     {
-                        // 执行耗时算法
-                        currentAction?.Invoke();
+                        // 1. 执行任务，并【等待】它完成
+                        // 这是解决你问题的关键：直到 await 完成前，不会进入下一次循环
+                        if (currentFunc != null)
+                        {
+                            await currentFunc.Invoke();
+                        }
                     }
                     catch (Exception ex)
                     {
-                        // 建议记录日志，防止异常导致循环崩溃
                         System.Diagnostics.Debug.WriteLine($"TaskConflator Error: {ex}");
+                    }
+
+                    // 2. (可选) 节流延时
+                    // 给 CPU 一点喘息时间，对于 Slider 这种高频事件，建议设置 10-30ms
+                    if (delayMs > 0)
+                    {
+                        await Task.Delay(delayMs, token);
                     }
 
                     lock (_lock)
                     {
-                        // 当前任务执行完毕，检查有没有新的 Pending 任务
-                        if (_pendingAction != null)
+                        // 3. 检查是否有新任务插队
+                        if (_pendingFunc != null)
                         {
-                            // 取出最新的任务作为下一次循环的目标
-                            currentAction = _pendingAction;
-                            _pendingAction = null; // 清空槽位
+                            currentFunc = _pendingFunc;
+                            _pendingFunc = null; // 清空槽位
                         }
                         else
                         {
-                            // 没有后续任务了，重置状态并退出循环
+                            // 没有待处理任务，结束循环
                             _isRunning = false;
                             return;
                         }
                     }
                 }
+
+                // 如果被 Cancel，确保重置运行状态
+                lock (_lock) { _isRunning = false; }
             }
         }
     }

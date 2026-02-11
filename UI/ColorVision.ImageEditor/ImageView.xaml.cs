@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -187,7 +188,16 @@ namespace ColorVision.ImageEditor
                 ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
             else
                 ColormapTypesImage.Source = ColormapTypesImage.Dispatcher.Invoke(() => new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative)));
-            TaskConflator.RunOrUpdate("PseudoSlider", () => RenderPseudo());
+            
+            uint min = (uint)PseudoSlider.ValueStart;
+            uint max = (uint)PseudoSlider.ValueEnd;
+            int channel = ComboBoxLayers.SelectedIndex - 1;
+            bool isPseudoChecked = Pseudo.IsChecked == true;
+            TaskConflator.RunOrUpdate("PseudoSlider", () =>
+            {
+                // 这里的代码是在 TaskConflator 管理的线程池线程中运行的
+                RenderPseudoLogic(min, max, channel, isPseudoChecked);
+            });
         }
         /// <summary>
         /// 
@@ -524,72 +534,115 @@ namespace ColorVision.ImageEditor
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            RenderPseudo();
+            uint min = (uint)PseudoSlider.ValueStart;
+            uint max = (uint)PseudoSlider.ValueEnd;
+            int channel = ComboBoxLayers.SelectedIndex - 1;
+            bool isPseudoChecked = Pseudo.IsChecked == true;
+            TaskConflator.RunOrUpdate("PseudoSlider", () =>
+            {
+                // 这里的代码是在 TaskConflator 管理的线程池线程中运行的
+                RenderPseudoLogic(min, max, channel, isPseudoChecked);
+            });
         }
 
 
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            if (!IsInitialized) return; 
-            TaskConflator.RunOrUpdate("PseudoSlider", () => RenderPseudo());
-        }
-        public void RenderPseudo()
-        {
-            Application.Current.Dispatcher.Invoke(() =>
+            if (!IsInitialized) return;
+            uint min = (uint)PseudoSlider.ValueStart;
+            uint max = (uint)PseudoSlider.ValueEnd;
+            int channel = ComboBoxLayers.SelectedIndex - 1;
+            bool isPseudoChecked = Pseudo.IsChecked == true;
+            TaskConflator.RunOrUpdate("PseudoSlider", () =>
             {
-                if (Pseudo.IsChecked == false)
+                // 这里的代码是在 TaskConflator 管理的线程池线程中运行的
+                RenderPseudoLogic(min, max, channel, isPseudoChecked);
+            }, 100);
+        }
+        private async Task RenderPseudoLogic(uint min, uint max, int channel, bool isPseudoChecked)
+        {
+            // 检查是否取消显示
+            if (!isPseudoChecked)
+            {
+                // 简单的 UI 操作切回 UI 线程即可
+                Application.Current.Dispatcher.Invoke(() =>
                 {
                     ImageShow.Source = ViewBitmapSource;
-                    FunctionImage = null;
+                    FunctionImage = null; // 此时 FunctionImage 可能正在被占用，直接置空需谨慎，但在赋值 Source 后通常安全
+                });
+                return;
+            }
+
+            if (HImageCache == null) return;
+
+            Stopwatch sw = Stopwatch.StartNew();
+
+            // ---------------------------------------------------------
+            // 步骤 1: 算法处理 (后台线程 - 耗时)
+            // ---------------------------------------------------------
+
+            // 注意：假设 M_PseudoColor 内部是线程安全的，且只读取 HImageCache
+            // 最好检查 M_PseudoColor 是否支持并行调用
+            int ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes, channel);
+
+            double algoMs = sw.Elapsed.TotalMilliseconds;
+
+            if (ret != 0)
+            {
+                hImageProcessed.Dispose();
+                return;
+            }
+
+            // ---------------------------------------------------------
+            // 步骤 2: 图像渲染 (切换回 UI 线程 - 耗时优化)
+            // ---------------------------------------------------------
+
+            // 使用 InvokeAsync 而不是 Invoke，避免阻塞 TaskConflator 的线程
+            await Application.Current.Dispatcher.InvokeAsync(async () =>
+            {
+                // 再次检查开关状态，防止计算过程中用户关掉了开关
+                if (Pseudo.IsChecked == false)
+                {
+                    hImageProcessed.Dispose();
                     return;
                 }
 
-                if (HImageCache != null)
+                // 尝试复用现有的 WriteableBitmap
+                bool updateSuccess = false;
+
+                // 如果 FunctionImage 存在，尝试更新
+                if (FunctionImage is WriteableBitmap validBitmap)
                 {
-                    // 首先获取滑动条的值，这需要在UI线程中执行
-
-                    uint min = (uint)PseudoSlider.ValueStart;
-                    uint max = (uint)PseudoSlider.ValueEnd;
-                    int channel = ComboBoxLayers.SelectedIndex - 1;
-
-                    log.Info($"PseudoColor,min:{min},max:{max}");
-                    Task.Run(() =>
-                    {
-                        Stopwatch sw = Stopwatch.StartNew();
-
-                        int ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes, channel);
-                        double algoMs = sw.Elapsed.TotalMilliseconds;
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            if (ret == 0)
-                            {
-                                if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                                {
-                                    var image = hImageProcessed.ToWriteableBitmap();
-                                    hImageProcessed.Dispose();
-
-                                    FunctionImage = image;
-                                }
-
-                                if (Pseudo.IsChecked == true)
-                                {
-                                    ImageShow.Source = FunctionImage;
-                                }
-                                sw.Stop();
-                                double renderMs = sw.Elapsed.TotalMilliseconds;
-                                if (log.IsInfoEnabled)
-                                {
-                                    string perfMsg = $"算法耗时: {algoMs:F2} ms | 渲染耗时: {renderMs - algoMs:F2} ms | 总计: {(renderMs):F2} ms";
-                                    log.Info(perfMsg); // 记录日志
-                                }
-                            }
-                        });
-                    });
+                    // 使用之前优化过的 Async 方法
+                    updateSuccess = await HImageExtension.UpdateWriteableBitmapAsync(validBitmap, hImageProcessed);
                 }
-                ;
-            });
-        }
 
+                // 如果更新失败（尺寸变了，或者 FunctionImage 为空），则创建新的
+                if (!updateSuccess)
+                {
+                    // 使用之前优化过的 Async 方法创建
+                    var newBitmap = await hImageProcessed.ToWriteableBitmapAsync();
+                    FunctionImage = newBitmap;
+                    hImageProcessed.Dispose(); // 创建新图后，源数据可以释放（UpdateWriteableBitmapAsync 内部也释放了，这里要注意 API 统一）
+                }
+
+                // 绑定显示
+                if (ImageShow.Source != FunctionImage)
+                {
+                    ImageShow.Source = FunctionImage;
+                }
+
+                sw.Stop();
+
+                // 日志记录
+                if (log.IsInfoEnabled)
+                {
+                    double totalMs = sw.Elapsed.TotalMilliseconds;
+                    log.Info($"Algo: {algoMs:F2}ms | Render: {totalMs - algoMs:F2}ms | Total: {totalMs:F2}ms | Range: {min}-{max}");
+                }
+            });
+
+        }
 
         public void AddVisual(Visual visual) => ImageShow.AddVisualCommand(visual);
 
