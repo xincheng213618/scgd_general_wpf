@@ -93,11 +93,18 @@ namespace ProjectLUX.Process.W255
                                     TestValue = poi.v.ToString("F3")
                                 };
 
+                                testResult.Center_Correlated_Color_Temperature.Value = poi.CCT;
+                                testResult.Center_Correlated_Color_Temperature.TestValue = poi.CCT.ToString();
+                                testResult.Center_Correlated_Color_Temperature.LowLimit = recipeConfig.Center_Correlated_Color_Temperature.Min;
+                                testResult.Center_Correlated_Color_Temperature.UpLimit = recipeConfig.Center_Correlated_Color_Temperature.Max;
+
+
                                 ctx.Result.Result &= testResult.CenterLunimance.TestResult;
                                 ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesx.TestResult;
                                 ctx.Result.Result &= testResult.CenterCIE1931ChromaticCoordinatesy.TestResult;
                                 ctx.Result.Result &= testResult.CenterCIE1976ChromaticCoordinatesu.TestResult;
                                 ctx.Result.Result &= testResult.CenterCIE1976ChromaticCoordinatesv.TestResult;
+                                ctx.Result.Result &= testResult.Center_Correlated_Color_Temperature.TestResult;
                             }
                         }
                     }

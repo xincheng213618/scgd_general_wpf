@@ -102,5 +102,9 @@ namespace ProjectLUX.Process.W255
         /// CenterCIE1976ChromaticCoordinatesv
         /// </summary>
         public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesv { get; set; } = new ObjectiveTestItem() { Name = "Center_CIE_1931Chromatic_Coordinates_v'" };
+
+        public ObjectiveTestItem Center_Correlated_Color_Temperature { get; set; } = new ObjectiveTestItem() { Name = "Center_Correlated_Color_Temperature" ,Unit ="K"};
+
+        
     }
 }

@@ -41,6 +41,10 @@ namespace ProjectLUX.Process.W255
         public RecipeBase CenterCIE1976ChromaticCoordinatesv { get => _CenterCIE1976ChromaticCoordinatesv; set { _CenterCIE1976ChromaticCoordinatesv = value; OnPropertyChanged(); } }
         private RecipeBase _CenterCIE1976ChromaticCoordinatesv = new RecipeBase(0, 0);
 
+        public RecipeBase Center_Correlated_Color_Temperature { get => _Center_Correlated_Color_Temperature; set { _Center_Correlated_Color_Temperature = value; OnPropertyChanged(); } }
+        private RecipeBase _Center_Correlated_Color_Temperature = new RecipeBase(0, 0);
+
+
         [Category("FOV")]
         [DisplayName("Horizontal Field Of View Angle(°)")]
         public RecipeBase HorizontalFieldOfViewAngle { get => _HorizontalFieldOfViewAngle; set { _HorizontalFieldOfViewAngle = value; OnPropertyChanged(); } }

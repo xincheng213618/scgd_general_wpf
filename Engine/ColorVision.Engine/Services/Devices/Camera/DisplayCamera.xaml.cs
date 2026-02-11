@@ -995,53 +995,40 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     OpenCvSharp.MatType matType = writeableBitmap.Format.GetPixelFormat();
 
                     // 2. 包装源数据 (pData) -> Zero Copy
-                    // 关键点：使用传入的 lss (Line Size / Stride) 确保对齐正确
                     using var srcMat = OpenCvSharp.Mat.FromPixelData(height, width, matType, pData);
 
-                    // 3. 包装目标数据 (WriteableBitmap BackBuffer) -> Zero Copy
-                    // 关键点：直接指向显存/UI后台缓冲区，不分配新内存
                     using var dstMat = OpenCvSharp.Mat.FromPixelData(height, width, matType, writeableBitmap.BackBuffer, writeableBitmap.BackBufferStride);
 
-                    Task.Run(() =>
+                    if (Device.DisplayConfig.FlipMode == CVImageFlipMode.None)
                     {
-                        if (Device.DisplayConfig.FlipMode == CVImageFlipMode.None)
-                        {
-                            srcMat.CopyTo(dstMat);
-                        }
-                        else
-                        {
-                            OpenCvSharp.Cv2.Flip(srcMat, dstMat, (OpenCvSharp.FlipMode)Device.DisplayConfig.FlipMode);
-                        }
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
+                        srcMat.CopyTo(dstMat);
+                    }
+                    else
+                    {
+                        OpenCvSharp.Cv2.Flip(srcMat, dstMat, (OpenCvSharp.FlipMode)Device.DisplayConfig.FlipMode);
+                    }
 
-                            //writeableBitmap.WritePixels(new Int32Rect(0, 0, width, height),  pData, height * width * channels * (bpp / 8),   width * channels * (bpp / 8));
+                    writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, width, height));
 
-                            writeableBitmap.Unlock();
+                    writeableBitmap.Unlock();
 
-                            Interlocked.Increment(ref frameCount);
-                            if (fpsTimer.ElapsedMilliseconds >= 1000)
-                            {
-                                lastFps = (double)frameCount * 1000 / fpsTimer.ElapsedMilliseconds;
-                                logger.Info($"Current FPS: {lastFps:F2}");
-                                Interlocked.Exchange(ref frameCount, 0);
-                                fpsTimer.Restart();
-                            }
-                            Application.Current?.Dispatcher.Invoke(() =>
-                            {
-                                DVText.Attribute.Text = $"fps:{lastFps} Articulation: {articulation:F5}";
-                            });
-                            if (first)
-                            {
-                                first = false;
-                                Device.View.ImageView.Zoombox1.ZoomUniform();
-                            }
-                        });
+                    Interlocked.Increment(ref frameCount);
+                    if (fpsTimer.ElapsedMilliseconds >= 1000)
+                    {
+                        lastFps = (double)frameCount * 1000 / fpsTimer.ElapsedMilliseconds;
+                        logger.Info($"Current FPS: {lastFps:F2}");
+                        Interlocked.Exchange(ref frameCount, 0);
+                        fpsTimer.Restart();
+                    }
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        DVText.Attribute.Text = $"fps:{lastFps} Articulation: {articulation:F5}";
                     });
-
-
-
+                    if (first)
+                    {
+                        first = false;
+                        Device.View.ImageView.Zoombox1.ZoomUniform();
+                    }
                 }
             }));
             return 0;

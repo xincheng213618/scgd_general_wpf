@@ -3,6 +3,7 @@ using ProjectLUX.Process;
 using ProjectLUX.Process.AR.W51AR;
 using ProjectLUX.Process.Blue;
 using ProjectLUX.Process.Chessboard;
+using ProjectLUX.Process.Chessboard55;
 using ProjectLUX.Process.ChessboardAR;
 using ProjectLUX.Process.Distortion;
 using ProjectLUX.Process.Green;
@@ -193,8 +194,13 @@ namespace ProjectLUX
         [DisplayName("Chessborad_4x4")]
         public ChessboardARTestResult ChessboardARTestResult { get; set; }
 
+        [DisplayName("Chessborad_5x5")]
+        public Chessboard55TestResult Chessboard55TestResult { get; set; }
+
         [DisplayName("Chessborad_6x6")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
+
+
 
         [DisplayName("MTF")]
         public MTFHARVTestResult MTFHVARTestResult { get; set; }
