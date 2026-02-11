@@ -167,10 +167,10 @@ namespace ColorVision.ImageEditor
         {
             Config.IsPseudo = false;
             FunctionImage = null;
-            if (HImageCache != null)
+            if (_hImageCache != null)
             {
-                HImageCache?.Dispose();
-                HImageCache = null;
+                _hImageCache?.Dispose();
+                _hImageCache = null;
             }
             GC.Collect();
         }

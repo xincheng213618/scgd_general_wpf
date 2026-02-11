@@ -106,7 +106,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         {
             if(result.ResultType == ViewResultAlgType.OLED_FindDotsArrayOutFile)
             {
-                string filename = "D:\\CvMainwindows\\CVWindowsService\\debug\\position.tif";
+                string filename = "C:\\Users\\17917\\Desktop\\position.tif";
                 if (File.Exists(filename))
                 {
                     ctx.ImageView.OpenImage(filename);
@@ -143,8 +143,8 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
                     }
                     else
                     {
-                        ctx.ImageView.OpenImage(originalPath);
                         result.FilePath = originalPath;
+                        ctx.ImageView.OpenImage(originalPath);
                     }
                 }
                 else
