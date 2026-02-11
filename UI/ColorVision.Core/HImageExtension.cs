@@ -137,18 +137,34 @@ namespace ColorVision.Core
                 {
                     unsafe
                     {
-                        byte* pSrcBase = (byte*)srcData;
-                        byte* pDstBase = (byte*)backBuffer;
-
-                        Parallel.For(0, rows, y =>
+                        bool useParallel = (rows * bytesPerRow) > (1024 * 1024);
+                        if (useParallel)
                         {
-                            byte* src = pSrcBase + (y * srcStride);
-                            byte* dst = pDstBase + (y * backBufferStride);
+                            byte* pSrcBase = (byte*)srcData;
+                            byte* pDstBase = (byte*)backBuffer;
+                            var parallelOptions = new ParallelOptions
+                            {
+                                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1)
+                            };
+                            Parallel.For(0, rows, parallelOptions, y =>
+                            {
+                                byte* src = pSrcBase + (y * srcStride);
+                                byte* dst = pDstBase + (y * backBufferStride);
+                                Buffer.MemoryCopy(src, dst, bytesPerRow, bytesPerRow);
+                            });
+                        }
+                        else
+                        {
+                            byte* src = (byte*)hImage.pData;
+                            byte* dst = (byte*)writeableBitmap.BackBuffer;
 
-                            // Buffer.MemoryCopy is slightly cleaner than RtlMoveMemory in pure C# unsafe context
-                            // But RtlMoveMemory works fine too if you prefer keeping it
-                            Buffer.MemoryCopy(src, dst, bytesPerRow, bytesPerRow);
-                        });
+                            for (int y = 0; y < hImage.rows; y++)
+                            {
+                                RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
+                                src += hImage.stride;
+                                dst += writeableBitmap.BackBufferStride;
+                            }
+                        }
                     }
                 });
 
@@ -188,19 +204,29 @@ namespace ColorVision.Core
             // 2. Background Thread: Perform the heavy memory copy
             await Task.Run(() =>
             {
-                // Use Parallel.For to utilize multiple CPU cores
-                // We chunk the image by rows
-                Parallel.For(0, height, y =>
-                {
-                    long srcOffset = pDataSrc + (y * strideSrc);
-                    long destOffset = pDataDest + (y * strideDest);
 
-                    // Copy one row
-                    unsafe
+                var parallelOptions = new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1)
+                };
+
+                unsafe
+                {
+                    byte* pSrcBase = (byte*)pDataSrc;
+                    byte* pDstBase = (byte*)pDataDest;
+
+                    Parallel.For(0, height, parallelOptions, y =>
                     {
-                        Buffer.MemoryCopy((void*)srcOffset, (void*)destOffset, bytesPerLine, bytesPerLine);
-                    }
-                });
+                        // 指针运算：使用 long 避免 32位 溢出（虽然行偏移通常不会溢出，但习惯要好）
+                        byte* src = pSrcBase + ((long)y * strideSrc);
+                        byte* dst = pDstBase + ((long)y * strideDest);
+
+                        // Copy
+                        // 参数3: destinationSizeInBytes。这里传 bytesPerLine 是因为我们只操作这一行，
+                        // 只要保证 bytesPerLine <= strideDest 即可，这是安全的。
+                        Buffer.MemoryCopy(src, dst, bytesPerLine, bytesPerLine);
+                    });
+                }
             });
 
             // 3. UI Thread: Mark as dirty and return
