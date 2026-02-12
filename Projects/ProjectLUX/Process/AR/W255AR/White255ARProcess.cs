@@ -420,6 +420,7 @@ namespace ProjectLUX.Process.W255AR
                             ctx.Result.Result &= testResult.P9Cv.TestResult;
                         }
 
+
                         foreach (var item in poiPoints)
                         {
                             var poi = new PoiResultCIExyuvData(item) { Id = id++ };

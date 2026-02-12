@@ -107,10 +107,10 @@ namespace ProjectLUX.Process.Chessboard55
                         luminanceValues.Sort();
 
                         // The first 8 values are the dimmest (black)
-                        double averageBlackLuminance = luminanceValues.Take(8).Average();
+                        double averageBlackLuminance = luminanceValues.Take(12).Average();
 
                         // The last 8 values are the brightest (white)
-                        double averageWhiteLuminance = luminanceValues.Skip(8).Take(8).Average();
+                        double averageWhiteLuminance = luminanceValues.Skip(13).Take(12).Average();
 
                         testResult.AverageWhiteLunimance.Value = averageWhiteLuminance;
                         testResult.AverageWhiteLunimance.Value *= fixConfig.AverageWhiteLunimance;

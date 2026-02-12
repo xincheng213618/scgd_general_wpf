@@ -8,7 +8,7 @@ namespace ProjectLUX.Process.W255
         [DisplayName("Center解析Key")]
         [Description("用于解析Center数据的Key")]
         public string Key_Center { get => _Key_Center; set { _Key_Center = value; OnPropertyChanged(); } }
-        private string _Key_Center = "P_9";
+        private string _Key_Center = "P_5";
 
         [Category("解析配置")]
         [DisplayName("LuminanceUniformityTempName")]

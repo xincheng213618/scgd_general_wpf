@@ -49,7 +49,8 @@ namespace ProjectLUX.Process.VR.MTFH
                             {
                                 ObjectiveTestItem objectiveTestItem = new ObjectiveTestItem();
                                 objectiveTestItem.TestValue = mtf.mtfValue.HasValue ? mtf.mtfValue.Value.ToString("F2") : "N/A";
-                                objectiveTestItem.Name = mtf.name;
+                                //这里需要移除掉之前的_
+                                objectiveTestItem.Name = mtf.name.Replace("_","");
                                 objectiveTestItem.Value = mtf.mtfValue ?? 0;
                                 objectiveTestItem.LowLimit = 0;
                                 objectiveTestItem.UpLimit = 0;
