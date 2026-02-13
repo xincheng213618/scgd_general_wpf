@@ -3,6 +3,8 @@
 using ColorVision.Common.MVVM;
 using ProjectLUX;
 using ProjectLUX.Fix;
+using ProjectLUX.Process;
+using ProjectLUX.Process.Distortion;
 using ProjectLUX.Process.Distortion;
 using System.ComponentModel;
 

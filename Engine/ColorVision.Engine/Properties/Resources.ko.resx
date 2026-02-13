@@ -2625,4 +2625,22 @@
   <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
     <value>꼭 필요한 경우가 아니면 삭제하지 마세요. (삭제하고 싶으면 삭제하세요.)</value>
   </data>
+  <data name="InternalTools" xml:space="preserve">
+    <value>내장 도구</value>
+  </data>
+  <data name="ThirdPartyApps" xml:space="preserve">
+    <value>타사 애플리케이션 관리</value>
+  </data>
+  <data name="NotInstalled" xml:space="preserve">
+    <value>설치되지 않음</value>
+  </data>
+  <data name="OpenDirectory" xml:space="preserve">
+    <value>디렉토리 열기</value>
+  </data>
+  <data name="PortableTools" xml:space="preserve">
+    <value>휴대용 도구</value>
+  </data>
+  <data name="InstallTools" xml:space="preserve">
+    <value>설치 도구</value>
+  </data>
 </root>

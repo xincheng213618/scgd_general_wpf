@@ -342,14 +342,21 @@ namespace ProjectARVRPro
             CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
             CurrentFlowResult.Model = FlowTemplate.Text;
 
-            if (ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase)) is ProcessMeta processMeta)
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                CurrentFlowResult.TestType = ProcessMetas.IndexOf(processMeta);
-            }
-            else
-            {
-                CurrentFlowResult.TestType = CurrentTestType;
-            }
+                if (ProcessMetas.FirstOrDefault(m => string.Equals(m.FlowTemplate, FlowTemplate.Text, StringComparison.OrdinalIgnoreCase)) is ProcessMeta processMeta)
+                {
+                    CurrentFlowResult.TestType = ProcessMetas.IndexOf(processMeta);
+                    ProjectARVRProConfig.Instance.StepIndex = CurrentFlowResult.TestType;
+
+                }
+                else
+                {
+                    CurrentFlowResult.TestType = CurrentTestType;
+                    ProjectARVRProConfig.Instance.StepIndex = CurrentFlowResult.TestType;
+                }
+            });
+
 
             FlowName = FlowTemplate.Text;
 
@@ -688,7 +695,7 @@ namespace ProjectARVRPro
                 }
                 else
                 {
-                    log.Info($"匹配到不到自定义流程 {meta.Name} -> {meta.ProcessTypeName};");
+                    log.Info($"匹配到不到自定义流程");
                 }
             }
             catch (Exception ex)

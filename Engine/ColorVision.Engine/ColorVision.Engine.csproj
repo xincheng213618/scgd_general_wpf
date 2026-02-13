@@ -203,6 +203,9 @@
 		<None Update="Assets\Tool\EditJson\Editjson_files\UrlChangeTracker.js.下载">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
+		<None Update="Assets\InstallTool\Everything-1.4.1.1032.x64-Setup.exe">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 		<None Update="Assets\Tool\SpectrAdj.exe">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -214,6 +217,9 @@
 		</None>
 		<None Update="Assets\Tool\UsbTreeView.exe">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Assets\InstallTool\winrar-x64-720sc.exe">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="Properties\Settings.settings">
 			<Generator>PublicSettingsSingleFileGenerator</Generator>

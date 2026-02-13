@@ -243,4 +243,10 @@
   <data name="LastPage" xml:space="preserve">
     <value>Dernière page</value>
   </data>
+  <data name="DataSource" xml:space="preserve">
+    <value>Source de données :</value>
+  </data>
+  <data name="CurrentLog" xml:space="preserve">
+    <value>Journal actuel</value>
+  </data>
 </root>

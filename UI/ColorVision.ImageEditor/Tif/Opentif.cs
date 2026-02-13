@@ -107,39 +107,47 @@ namespace ColorVision.ImageEditor.Tif
             BitmapSource source = null;
            await Task.Run(() =>
             {
-                using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                var decoder = new TiffBitmapDecoder(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-
-                if (decoder.Frames.Count > 0)
+                try
                 {
-                    source = decoder.Frames[0];
-                    metadata = source.Metadata as BitmapMetadata;
+                    using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    var decoder = new TiffBitmapDecoder(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
 
-                    // 检查 DPI 是否为 96，允许微小误差
-                    if (Math.Abs(source.DpiX - 96.0) > 0.01 || Math.Abs(source.DpiY - 96.0) > 0.01)
+                    if (decoder.Frames.Count > 0)
                     {
-                        // 计算 stride (每行字节数)
-                        int stride = (source.PixelWidth * source.Format.BitsPerPixel + 7) / 8;
+                        source = decoder.Frames[0];
+                        metadata = source.Metadata as BitmapMetadata;
 
-                        // 创建缓冲区并复制像素数据
-                        byte[] pixels = new byte[source.PixelHeight * stride];
-                        source.CopyPixels(pixels, stride, 0);
+                        // 检查 DPI 是否为 96，允许微小误差
+                        if (Math.Abs(source.DpiX - 96.0) > 0.01 || Math.Abs(source.DpiY - 96.0) > 0.01)
+                        {
+                            // 计算 stride (每行字节数)
+                            int stride = (source.PixelWidth * source.Format.BitsPerPixel + 7) / 8;
 
-                        // 使用相同的像素数据创建新的 BitmapSource，但指定 96 DPI
-                        source = BitmapSource.Create(
-                            source.PixelWidth,
-                            source.PixelHeight,
-                            96, // DpiX
-                            96, // DpiY
-                            source.Format,
-                            source.Palette,
-                            pixels,
-                            stride);
+                            // 创建缓冲区并复制像素数据
+                            byte[] pixels = new byte[source.PixelHeight * stride];
+                            source.CopyPixels(pixels, stride, 0);
+
+                            // 使用相同的像素数据创建新的 BitmapSource，但指定 96 DPI
+                            source = BitmapSource.Create(
+                                source.PixelWidth,
+                                source.PixelHeight,
+                                96, // DpiX
+                                96, // DpiY
+                                source.Format,
+                                source.Palette,
+                                pixels,
+                                stride);
+                        }
+
+                        source.Freeze();
+                        // 这里将处理过（或原始）的 source 转换为 WriteableBitmap
                     }
-
-                    source.Freeze();
-                    // 这里将处理过（或原始）的 source 转换为 WriteableBitmap
                 }
+                catch (Exception ex) 
+                {
+                    return;
+                }
+
             });
 
             writeableBitmap = new WriteableBitmap(source);

@@ -77,7 +77,7 @@
                             </TextBlock.RenderTransform>
                         </TextBlock>
                     </Button>
-                    <ComboBox  x:Name="ComboBoxFlow" SelectedIndex="{Binding TemplateFlowParamsIndex}"  Style="{StaticResource ComboBox.Small}" ItemsSource="{Binding FlowParams}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                    <ComboBox  x:Name="ComboBoxFlow" SelectedIndex="{Binding TemplateFlowParamsIndex}"  Style="{StaticResource ComboBoxExtend.Small}" ItemsSource="{Binding FlowParams}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                 </DockPanel>
                 <Grid Margin="0,0,0,5" >
                     <Grid.ColumnDefinitions>

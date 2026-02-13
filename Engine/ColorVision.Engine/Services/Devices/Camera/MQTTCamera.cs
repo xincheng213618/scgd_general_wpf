@@ -18,9 +18,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
     public class MQTTCamera : MQTTDeviceService<ConfigCamera>
     {
+        public DeviceCamera Device { get; set; }
 
-        public MQTTCamera(ConfigCamera CameraConfig) : base(CameraConfig)
+        public MQTTCamera(DeviceCamera deviceCamera) : base(deviceCamera.Config)
         {
+            Device = deviceCamera;
+
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatusType.UnInit;
         }
@@ -66,33 +69,33 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                         {
                                             if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
                                             {
-                                                Config.ExpTimeR = msg.Data[i].result;
-                                                Config.SaturationR = msg.Data[i].resultSaturation;
+                                                Device.DisplayConfig.ExpTimeR = msg.Data[i].result;
+                                                Device.DisplayConfig.SaturationR = msg.Data[i].resultSaturation;
                                             }
                                             if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
                                             {
-                                                Config.ExpTimeG = msg.Data[i].result;
-                                                Config.SaturationG = msg.Data[i].resultSaturation;
+                                                Device.DisplayConfig.ExpTimeG = msg.Data[i].result;
+                                                Device.DisplayConfig.SaturationG = msg.Data[i].resultSaturation;
                                             }
 
                                             if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
                                             {
-                                                Config.ExpTimeB = msg.Data[i].result;
-                                                Config.SaturationB = msg.Data[i].resultSaturation;
+                                                Device.DisplayConfig.ExpTimeB = msg.Data[i].result;
+                                                Device.DisplayConfig.SaturationB = msg.Data[i].resultSaturation;
                                             }
                                         }
 
-                                        string Msg = $"SaturationR:{Config.SaturationR}  ExpTime:{Config.ExpTimeR}" + Environment.NewLine +
-                                                     $"SaturationG:{Config.SaturationG}  ExpTime:{Config.ExpTimeG}" + Environment.NewLine +
-                                                     $"SaturationB:{Config.SaturationB}  ExpTime:{Config.ExpTimeB}" + Environment.NewLine;
+                                        string Msg = $"SaturationR:{Device.DisplayConfig.SaturationR}  ExpTime:{Device.DisplayConfig.ExpTimeR}" + Environment.NewLine +
+                                                     $"SaturationG:{Device.DisplayConfig.SaturationG}  ExpTime:{Device.DisplayConfig.ExpTimeG}" + Environment.NewLine +
+                                                     $"SaturationB:{Device.DisplayConfig.SaturationB}  ExpTime:{Device.DisplayConfig.ExpTimeB}" + Environment.NewLine;
                                         MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                     }
                                     else
                                     {
-                                        Config.ExpTime = msg.Data[0].result;
-                                        Config.Saturation = msg.Data[0].resultSaturation;
+                                        Device.DisplayConfig.ExpTime = msg.Data[0].result;
+                                        Device.DisplayConfig.Saturation = msg.Data[0].resultSaturation;
 
-                                        string Msg = $"Saturation:{Config.Saturation}  ExpTime:{Config.ExpTime}";
+                                        string Msg = $"Saturation:{Device.DisplayConfig.Saturation}  ExpTime:{Device.DisplayConfig.ExpTime}";
                                         MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                     }
                                 });
@@ -109,33 +112,33 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                     {
                                         if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
                                         {
-                                            Config.ExpTimeR = msg.Data.ExpTime[i].result;
-                                            Config.SaturationR = msg.Data.ExpTime[i].resultSaturation;
+                                            Device.DisplayConfig.ExpTimeR = msg.Data.ExpTime[i].result;
+                                            Device.DisplayConfig.SaturationR = msg.Data.ExpTime[i].resultSaturation;
                                         }
                                         if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
                                         {
-                                            Config.ExpTimeG = msg.Data.ExpTime[i].result;
-                                            Config.SaturationG = msg.Data.ExpTime[i].resultSaturation;
+                                            Device.DisplayConfig.ExpTimeG = msg.Data.ExpTime[i].result;
+                                            Device.DisplayConfig.SaturationG = msg.Data.ExpTime[i].resultSaturation;
                                         }
 
                                         if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
                                         {
-                                            Config.ExpTimeB = msg.Data.ExpTime[i].result;
-                                            Config.SaturationB = msg.Data.ExpTime[i].resultSaturation;
+                                            Device.DisplayConfig.ExpTimeB = msg.Data.ExpTime[i].result;
+                                            Device.DisplayConfig.SaturationB = msg.Data.ExpTime[i].resultSaturation;
                                         }
                                     }
 
-                                    string Msg = $"SaturationR:{Config.SaturationR}  ExpTime:{Config.ExpTimeR}" + Environment.NewLine +
-                                                 $"SaturationG:{Config.SaturationG}  ExpTime:{Config.ExpTimeG}" + Environment.NewLine +
-                                                 $"SaturationB:{Config.SaturationB}  ExpTime:{Config.ExpTimeB}" + Environment.NewLine;
+                                    string Msg = $"SaturationR:{Device.DisplayConfig.SaturationR}  ExpTime:{Device.DisplayConfig.ExpTimeR}" + Environment.NewLine +
+                                                 $"SaturationG:{Device.DisplayConfig.SaturationG}  ExpTime:{Device.DisplayConfig.ExpTimeG}" + Environment.NewLine +
+                                                 $"SaturationB:{Device.DisplayConfig.SaturationB}  ExpTime:{Device.DisplayConfig.ExpTimeB}" + Environment.NewLine;
                                     MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
                                 else
                                 {
-                                    Config.ExpTime = msg.Data.ExpTime[0].result;
-                                    Config.Saturation = msg.Data.ExpTime[0].resultSaturation;
+                                    Device.DisplayConfig.ExpTime = msg.Data.ExpTime[0].result;
+                                    Device.DisplayConfig.Saturation = msg.Data.ExpTime[0].resultSaturation;
 
-                                    string Msg = $"Saturation:{Config.Saturation}  ExpTime:{Config.ExpTime}";
+                                    string Msg = $"Saturation:{Device.DisplayConfig.Saturation}  ExpTime:{Device.DisplayConfig.ExpTime}";
                                     MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
                                 if (msg.Data.NDPort != null)
@@ -213,25 +216,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         break;
                 }
             }
-            else
-            {
-                switch (msg.EventName)
-                {
-                    case "Close":
-                        DeviceStatus = DeviceStatusType.Closed;
-                        break;
-                    case "Open":
-                        DeviceStatus = DeviceStatusType.Closed;
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox1.Show(Application.Current.MainWindow, "打开失败", "ColorVision"));
-                        break;
-                    case "Init":
-                        break;
-                    case "UnInit":
-                        break;
-                    default:
-                        break;
-                }
-            }
         }
 
 
@@ -266,12 +250,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             CurrentTakeImageMode = TakeImageMode.Live;
             bool IsLocal = (host=="127.0.0.1");
+
+            var Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "Gain", Device.DisplayConfig.Gain }, { "ExpTime", Device.DisplayConfig.ExpTime }, { "IsLocal", IsLocal } };
             MsgSend msg = new()
             {
                 EventName = "OpenLive",
-                Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "Gain", Config.Gain }, { "ExpTime", Config.ExpTime }, { "IsLocal", IsLocal } }
+                Params = Params
             };
-             return PublishAsyncClient(msg);
+            Params.Add("FlipMode", Device.DisplayConfig.FlipMode);
+
+            return PublishAsyncClient(msg);
         }
         public TakeImageMode CurrentTakeImageMode { get; set; }
 
@@ -285,6 +273,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
             return PublishAsyncClient(msg);
         }
+
+        public MsgRecord SetFlip()
+        {
+            var Params = new Dictionary<string, object>() { };
+            MsgSend msg = new()
+            {
+                EventName = "SetParam",
+                Params = Params
+            };
+            var Func = new List<ParamFunction>();
+            Func.Add(new ParamFunction() { Name = "CM_SetFlip", Params = new Dictionary<string, object>() { { "FlipMode", Device.DisplayConfig.FlipMode } } });
+            Params.Add("Func", Func);
+            return PublishAsyncClient(msg);
+        }
+
 
         public MsgRecord SetExp()
         {
@@ -300,15 +303,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 var FunParams = new Dictionary<string, object>() { };
                 FunParams.Add("nIndex", 0);
-                FunParams.Add("dExp", Config.ExpTimeR);
+                FunParams.Add("dExp", Device.DisplayConfig.ExpTimeR);
 
                 var FunParams1 = new Dictionary<string, object>() { };
                 FunParams1.Add("nIndex", 1);
-                FunParams1.Add("dExp", Config.ExpTimeG);
+                FunParams1.Add("dExp", Device.DisplayConfig.ExpTimeG);
 
                 var FunParams2 = new Dictionary<string, object>() { };
                 FunParams2.Add("nIndex", 2);
-                FunParams2.Add("dExp", Config.ExpTimeB);
+                FunParams2.Add("dExp", Device.DisplayConfig.ExpTimeB);
 
                 var FunParamss = new List<Dictionary<string, object>>();
                 FunParamss.Add(FunParams);
@@ -320,15 +323,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     var Fun = new ParamFunction() { Name = "CM_SetExpTimeEx", Params = item };
                     Func.Add(Fun);
                 }
-                Func.Add(new ParamFunction() { Name = "CM_SetGain", Params = new Dictionary<string, object>() { { "Gain", Config.Gain } } });
+                Func.Add(new ParamFunction() { Name = "CM_SetGain", Params = new Dictionary<string, object>() { { "Gain", Device.DisplayConfig.Gain } } });
             }
             else
             {
                 var FunParams = new Dictionary<string, object>() { };
-                FunParams.Add("dExp", Config.ExpTime);
+                FunParams.Add("dExp", Device.DisplayConfig.ExpTime);
                 var Fun = new ParamFunction() { Name = "CM_SetExpTime", Params = FunParams };
                 Func.Add(Fun);
-                Func.Add(new ParamFunction() { Name = "CM_SetGain", Params = new Dictionary<string, object>() { { "Gain", Config.Gain } } });
+                Func.Add(new ParamFunction() { Name = "CM_SetGain", Params = new Dictionary<string, object>() { { "Gain", Device.DisplayConfig.Gain } } });
             }
 
 
@@ -379,9 +382,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 SerialNumber = SerialNumber,
                 Params = Params
             };
-            Params.Add("AvgCount", Config.AvgCount);
+            Params.Add("AvgCount", Device.DisplayConfig.AvgCount);
             Params.Add("ExpTime", expTime);
-            Params.Add("FlipMode", Config.FlipMode);
+            Params.Add("FlipMode", Device.DisplayConfig.FlipMode);
 
             if (param.Id == -1)
             {
@@ -422,7 +425,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
             Params.Add("ScaleFactor", Config.ScaleFactor);
-            Params.Add("Gain", Config.Gain);
+            Params.Add("Gain", Device.DisplayConfig.Gain);
             double timeout = 0;
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
             return PublishAsyncClient(msg, timeout + 40000);

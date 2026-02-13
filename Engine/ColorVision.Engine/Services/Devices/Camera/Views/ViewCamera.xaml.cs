@@ -206,34 +206,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
                 if (File.Exists(data.FileUrl))
                 {
-                    Task.Run(async() =>
-                    {
-                        try
-                        {
-                            var fileInfo = new FileInfo(data.FileUrl);
-                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                            {
-                            }
-                            if (fileInfo.Length > 0)
-                            {
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    ImageView.OpenImage(data.FileUrl);
-                                });
-                            }
-                        }
-                        catch
-                        {
-                            log.Info("文件还在写入");
-                            await Task.Delay(Config.ViewImageReadDelay);
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                ImageView.OpenImage(data.FileUrl);
-                            });
-                        }
-                    });
+                    ImageView.OpenImage(data.FileUrl);
                 }
-          
+
             }
         }
 

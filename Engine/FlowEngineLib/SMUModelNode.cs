@@ -11,21 +11,16 @@ public class SMUModelNode : SMUBaseNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(SMUModelNode));
 
-	private STNodeEditText<string> m_ctrl_model;
-
-	private string modelName;
-
 	[STNodeProperty("模板", "模板", true)]
 	public string ModelName
 	{
 		get
 		{
-			return modelName;
+			return _TempName;
 		}
 		set
 		{
-			modelName = value;
-			updateUI();
+			setTempName(value);
 		}
 	}
 
@@ -33,7 +28,6 @@ public class SMUModelNode : SMUBaseNode
 		: base("源表[模板]", "SMU", "SVR.SMU.Default", "DEV.SMU.Default")
 	{
 		operatorCode = "ModelGetData";
-		modelName = "";
 	}
 
 	protected override void OnCreate()
@@ -42,7 +36,7 @@ public class SMUModelNode : SMUBaseNode
 		CreateSMUNextControl();
 		Rectangle custom_item = m_custom_item;
 		custom_item.Y = 50;
-		m_ctrl_model = CreateControl(typeof(STNodeEditText<string>), custom_item, "模板:", modelName);
+		CreateTempControl(custom_item);
 		custom_item.Y += 25;
 		m_ctrl_curValue = CreateControl(typeof(STNodeEditText<string>), custom_item, "当前值:", string.Empty);
 		custom_item.Y += 25;
@@ -60,7 +54,7 @@ public class SMUModelNode : SMUBaseNode
 		{
 			m_ctrl_curValue.Value = "";
 		}
-		m_ctrl_model.Value = modelName;
+		m_ctrl_temp.Value = _TempName;
 	}
 
 	private void AddIVDataMy(CVServerResponse resp, CVStartCFC start)
@@ -117,7 +111,7 @@ public class SMUModelNode : SMUBaseNode
 			m_step_idx = 0;
 			m_op_end.TransferData(null);
 			operatorCode = "ModelGetData";
-			result = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, cVStartCFC.SerialNumber, new SMUModelData(modelName), GetToken(), base.ZIndex);
+			result = new CVMQTTRequest(GetServiceName(), m_deviceCode, operatorCode, cVStartCFC.SerialNumber, new SMUModelData(_TempName), GetToken(), base.ZIndex);
 			IsStarted = true;
 			m_step_idx++;
 			AddCFCData(cVStartCFC);

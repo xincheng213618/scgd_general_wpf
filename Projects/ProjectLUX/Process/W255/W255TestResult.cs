@@ -24,6 +24,7 @@ namespace ProjectLUX.Process.W255
         /// </summary>
         public ObjectiveTestItem DiagonalFieldOfViewAngle { get; set; } = new ObjectiveTestItem() { Name = "Diagonal_Field_of_View_Angle", Unit = "degree" };
 
+
         public ObjectiveTestItem P1Lv { get; set; } = new ObjectiveTestItem() { Name = "P1(Lv)", Unit = "cd/m^2" };
         public ObjectiveTestItem P1Cx { get; set; } = new ObjectiveTestItem() { Name = "P1(Cx)" };
         public ObjectiveTestItem P1Cy { get; set; } = new ObjectiveTestItem() { Name = "P1(Cy)"};
@@ -85,6 +86,9 @@ namespace ProjectLUX.Process.W255
         /// 中心点亮度
         /// </summary>
         public ObjectiveTestItem CenterLunimance { get; set; } = new ObjectiveTestItem() { Name = "Center_Luminance", Unit = "cd/m^2" };
+
+        public ObjectiveTestItem AverageLuminance { get; set; } = new ObjectiveTestItem() { Name = "Average_Luminance", Unit = "cd/m^2" };
+
         /// <summary>
         /// CenterCIE1931ChromaticCoordinatesx
         /// </summary>
@@ -96,10 +100,14 @@ namespace ProjectLUX.Process.W255
         /// <summary>
         /// CenterCIE1976ChromaticCoordinatesu
         /// </summary>
-        public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesu { get; set; } = new ObjectiveTestItem() { Name = "Center_CIE_1931Chromatic_Coordinates_u'" };
+        public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesu { get; set; } = new ObjectiveTestItem() { Name = "Center CIE_1976Chromatic_Coordinates_u'" };
         /// <summary>
         /// CenterCIE1976ChromaticCoordinatesv
         /// </summary>
-        public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesv { get; set; } = new ObjectiveTestItem() { Name = "Center_CIE_1931Chromatic_Coordinates_v'" };
+        public ObjectiveTestItem CenterCIE1976ChromaticCoordinatesv { get; set; } = new ObjectiveTestItem() { Name = "Center_CIE_1976Chromatic_Coordinates_v'" };
+
+        public ObjectiveTestItem Center_Correlated_Color_Temperature { get; set; } = new ObjectiveTestItem() { Name = "Center_Correlated_Color_Temperature" ,Unit ="K"};
+
+        
     }
 }

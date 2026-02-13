@@ -4,6 +4,7 @@ using log4net;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
 namespace ImageProjector
@@ -27,6 +28,8 @@ namespace ImageProjector
         {
             InitializeComponent();
             this.ApplyCaption();
+
+
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -61,8 +64,24 @@ namespace ImageProjector
                     UpdateMonitorInfo();
                 }
             }
+            InitializeCommands(); 
 
             this.Closed += (s, e) => Dispose();
+        }
+
+        private void InitializeCommands()
+        {
+            // 绑定删除命令 (自动响应 Delete 键)
+            ImageListView.CommandBindings.Add(new CommandBinding(
+                System.Windows.Input.ApplicationCommands.Delete,
+                (s, e) => RemoveSelectedImages(),
+                (s, e) => e.CanExecute = ImageListView.SelectedItems.Count > 0));
+
+            // 绑定全选命令 (自动响应 Ctrl + A)
+            ImageListView.CommandBindings.Add(new CommandBinding(
+                System.Windows.Input.ApplicationCommands.SelectAll,
+                (s, e) => ImageListView.SelectAll(),
+                (s, e) => e.CanExecute = ImageListView.Items.Count > 0));
         }
 
         private void InitializeStretchModeComboBox()
@@ -161,27 +180,37 @@ namespace ImageProjector
 
         private void RemoveImage_Click(object sender, RoutedEventArgs e)
         {
-            if (ImageListView.SelectedItem is ImageProjectorItem selectedItem)
-            {
-                int index = ImageListView.SelectedIndex;
-                ImageItems.Remove(selectedItem);
-                
-                // Select next available item
-                if (ImageItems.Count > 0)
-                {
-                    ImageListView.SelectedIndex = Math.Min(index, ImageItems.Count - 1);
-                }
-                else
-                {
-                    _currentImage = null;
-                    PreviewImage.Source = null;
-                }
-                
-                SaveConfig();
-                UpdateProjectButtonState();
-            }
+            // 按钮点击也调用同样的逻辑
+            System.Windows.Input.ApplicationCommands.Delete.Execute(null, ImageListView);
         }
 
+        // 提取出来的核心删除逻辑
+        private void RemoveSelectedImages()
+        {
+            var selectedItems = ImageListView.SelectedItems.Cast<ImageProjectorItem>().ToList();
+            if (selectedItems.Count == 0) return;
+
+            int firstSelectedIndex = ImageListView.SelectedIndex;
+
+            foreach (var item in selectedItems)
+            {
+                ImageItems.Remove(item);
+            }
+
+            // 处理删除后的选中状态
+            if (ImageItems.Count > 0)
+            {
+                ImageListView.SelectedIndex = Math.Min(firstSelectedIndex, ImageItems.Count - 1);
+            }
+            else
+            {
+                _currentImage = null;
+                PreviewImage.Source = null;
+            }
+
+            SaveConfig();
+            UpdateProjectButtonState();
+        }
         private void MoveUp_Click(object sender, RoutedEventArgs e)
         {
             int index = ImageListView.SelectedIndex;

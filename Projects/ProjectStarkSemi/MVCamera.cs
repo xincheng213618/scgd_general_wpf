@@ -1353,9 +1353,9 @@ namespace MvCamCtrl.NET
         }
 
         /// <summary>
-        /// Flip Image
+        /// FlipMode Image
         /// </summary>
-        /// <param name="pstFlipParam">Flip image parameter structure</param>
+        /// <param name="pstFlipParam">FlipMode image parameter structure</param>
         /// <returns>Success, return MV_OK. Failure, return error code</returns>
         public Int32 MV_CC_FlipImage_NET(ref MV_CC_FLIP_IMAGE_PARAM pstFlipParam)
         {

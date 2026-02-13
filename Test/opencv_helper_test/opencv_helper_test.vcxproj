@@ -158,6 +158,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="test_find_luminous_area.cpp" />
+    <ClCompile Include="DatFileReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CVCIEFile.hpp" />

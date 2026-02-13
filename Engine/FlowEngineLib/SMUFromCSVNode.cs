@@ -24,6 +24,7 @@ public class SMUFromCSVNode : SMUBaseNode
 		set
 		{
 			_source = value;
+			updateUI();
 		}
 	}
 
@@ -37,7 +38,7 @@ public class SMUFromCSVNode : SMUBaseNode
 		set
 		{
 			_channel = value;
-			m_ctrl_channel.Value = _channel;
+			updateUI();
 		}
 	}
 

@@ -7,14 +7,26 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using ProjectLUX.Fix;
+using ProjectLUX.Process.W255;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ProjectLUX.Process.ChessboardAR
 {
-    public class ChessboardARProcess : IProcess
+    public class ChessboardARProcessConfig : ProcessConfigBase
     {
-        public bool Execute(IProcessExecutionContext ctx)
+        [Category("½âÎöÅäÖÃ")]
+        [DisplayName("ChessboardContrastTempName")]
+        [Description("Chessboard_Contrast")]
+        public string ChessboardContrastTempName { get => _ChessboardContrastTempName; set { _ChessboardContrastTempName = value; OnPropertyChanged(); } }
+        private string _ChessboardContrastTempName = "Chessboard_Contrast";
+    }
+
+    public class ChessboardARProcess : ProcessBase<ChessboardARProcessConfig>
+    {
+        public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
             var log = ctx.Logger;
@@ -118,7 +130,7 @@ namespace ProjectLUX.Process.ChessboardAR
 
                     }
 
-                    if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && master.TName.Contains("Chessboard_Contrast"))
+                    if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && master.TName.Contains(Config.ChessboardContrastTempName))
                     {
                         var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
                         if (details.Count == 1)
@@ -146,7 +158,7 @@ namespace ProjectLUX.Process.ChessboardAR
             }
         }
 
-        public void Render(IProcessExecutionContext ctx)
+        public override void Render(IProcessExecutionContext ctx)
         {
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return;
             ChessboardARViewTestResult testResult = JsonConvert.DeserializeObject<ChessboardARViewTestResult>(ctx.Result.ViewResultJson);
@@ -186,7 +198,7 @@ namespace ProjectLUX.Process.ChessboardAR
             }
         }
 
-        public string GenText(IProcessExecutionContext ctx)
+        public override string GenText(IProcessExecutionContext ctx)
         {
             var result = ctx.Result;
             string outtext = string.Empty;
@@ -203,6 +215,17 @@ namespace ProjectLUX.Process.ChessboardAR
 
             outtext += $"ChessboardContrast:{testResult.ChessboardContrast.TestValue} LowLimit:{testResult.ChessboardContrast.LowLimit}  UpLimit:{testResult.ChessboardContrast.UpLimit},Rsult{(testResult.ChessboardContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
+        }
+
+
+        public override IRecipeConfig GetRecipeConfig()
+        {
+            return RecipeManager.GetInstance().RecipeConfig.GetRequiredService<ChessboardARRecipeConfig>();
+        }
+
+        public override IFixConfig GetFixConfig()
+        {
+            return FixManager.GetInstance().FixConfig.GetRequiredService<ChessboardARFixConfig>();
         }
     }
 }

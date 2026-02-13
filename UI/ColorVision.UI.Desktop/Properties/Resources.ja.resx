@@ -465,4 +465,16 @@
   <data name="Loading" xml:space="preserve">
     <value>負荷</value>
   </data>
+  <data name="ThirdPartyApps" xml:space="preserve">
+    <value>サードパーティ製アプリケーション管理</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>開ける</value>
+  </data>
+  <data name="OpenDirectory" xml:space="preserve">
+    <value>ディレクトリを開く</value>
+  </data>
+  <data name="SystemTools" xml:space="preserve">
+    <value>システムツール</value>
+  </data>
 </root>

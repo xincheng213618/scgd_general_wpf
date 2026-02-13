@@ -9,8 +9,6 @@ public class AlgorithmNode : CVBaseServerNode
 {
 	private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmNode));
 
-	private int _OrderIndex;
-
 	private AlgorithmType _Algorithm;
 
 	private string _POITempName;
@@ -112,7 +110,6 @@ public class AlgorithmNode : CVBaseServerNode
 	{
 		operatorCode = "MTF";
 		_TempName = "";
-		_OrderIndex = -1;
 		_TempId = -1;
 		_POITempId = -1;
 		_BufferLen = 1024;

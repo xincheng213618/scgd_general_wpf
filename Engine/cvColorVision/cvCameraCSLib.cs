@@ -533,6 +533,7 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetCameraIDV1",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern int GetAllCameraIDV1(CameraModel eMdl, StringBuilder sn, int len);
+      
         public static bool GetAllCameraIDV1(CameraModel eMdl, ref string szText)
         {
             StringBuilder builder = new StringBuilder(1024);
@@ -545,6 +546,7 @@ namespace cvColorVision
 
             return false;
         }
+
 
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreatCameraManagerEx",
@@ -580,6 +582,11 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetIndent", CallingConvention = CallingConvention.Cdecl)]
         public static extern void CM_SetIndent(IntPtr handle, int nL, int nT, int nR, int nB);
+
+        [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetFlip", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void CM_SetFlip(IntPtr handle, int flipCode);
+
+
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetCalibParam", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_SetCalibParam(IntPtr handle, CalibrationType cType, bool bEnabled, string filename);
 

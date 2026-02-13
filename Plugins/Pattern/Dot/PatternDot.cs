@@ -16,6 +16,14 @@ namespace Pattern.Dot
         public SolidColorBrush AltBrush { get => _AltBrush; set { _AltBrush = value; OnPropertyChanged(); } }
         private SolidColorBrush _AltBrush = Brushes.Green;
 
+
+        public int XIndex { get => _XIndex; set { _XIndex = value; OnPropertyChanged(); } }
+        private int _XIndex = 0;
+
+        public int YIndex { get => _YIndex; set { _YIndex = value; OnPropertyChanged(); } }
+        private int _YIndex = 0;
+
+
         public int Spacing { get => _Spacing; set { _Spacing = value; OnPropertyChanged(); } }
         private int _Spacing = 20;
         public int Radius { get => _Radius; set { _Radius = value; OnPropertyChanged(); } }
@@ -142,11 +150,14 @@ namespace Pattern.Dot
             int rectW = Config.RectWidth > 0 ? Config.RectWidth : Math.Max(1, 2 * radius);
             int rectH = Config.RectHeight > 0 ? Config.RectHeight : Math.Max(1, 2 * radius);
 
-            for (int i = 0; i < nRow; i++)
+            int x1 = Config.XIndex;
+            int y1 = Config.YIndex;
+
+            for (int i = x1; i < nRow; i++)
             {
                 int y = spacing / 2 + i * spacing;
                 if (y >= fovHeight) break;
-                for (int j = 0; j < nCol; j++)
+                for (int j = y1; j < nCol; j++)
                 {
                     int x = spacing / 2 + j * spacing;
                     if (x >= fovWidth) break;

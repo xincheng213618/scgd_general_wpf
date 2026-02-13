@@ -243,4 +243,10 @@
   <data name="LastPage" xml:space="preserve">
     <value>最後一頁</value>
   </data>
+  <data name="DataSource" xml:space="preserve">
+    <value>資料來源:</value>
+  </data>
+  <data name="CurrentLog" xml:space="preserve">
+    <value>當前日誌</value>
+  </data>
 </root>

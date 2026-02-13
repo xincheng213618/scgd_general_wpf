@@ -19,7 +19,7 @@ namespace ColorVision.ImageEditor.Draw
         public double FontSize { get => _FontSize; set { _FontSize = value; OnPropertyChanged(); } }
         private double _FontSize = DefalutTextAttribute.FontSize;
 
-        [Category("TextAttribute"), DisplayName("Brush")]
+        [Category("TextAttribute"), DisplayName("Brush"),JsonIgnore]
         public Brush Brush { get => _Brush; set { _Brush = value; OnPropertyChanged(); } }
         private Brush _Brush = DefalutTextAttribute.Brush;
 

@@ -3,6 +3,7 @@ using ColorVision.Core;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
+using iText.Kernel.Crypto.Securityhandler;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -32,8 +33,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public FocusAlgorithm  EvaFunc { get => _EvaFunc; set { _EvaFunc = value; OnPropertyChanged(); } }
         private FocusAlgorithm  _EvaFunc = FocusAlgorithm .Laplacian;
+
+        [JsonIgnore]
         public TextProperties TextProperties { get => _TextProperties; set { _TextProperties = value; OnPropertyChanged(); } }
-        private TextProperties _TextProperties = new TextProperties() { FontSize =200 };
+        private TextProperties _TextProperties = new TextProperties() { FontSize = 200 };
 
         [Browsable(false),JsonIgnore]
         public RectangleTextProperties RectangleTextProperties { get; set; } = new RectangleTextProperties();
@@ -75,12 +78,23 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             DVText = new DVText(Config.TextProperties);
         }
 
+        public MemoryMappedFile VideoMemoryMappedFile { get; set; }
+
+        public void CreateMemoryMappedFile(string mapNamePrefix, long capacity)
+        {
+            VideoMemoryMappedFile = MemoryMappedFile.CreateOrOpen(mapNamePrefix, 1024L * 1024 * 1000 *2, MemoryMappedFileAccess.ReadWrite);
+        }
+
+
         public int Startup(string mapNamePrefix, ImageView image)
         {
             first = true;
             Image = image;
             try
             {
+                MemoryMappedFile memoryMappedFile =  MemoryMappedFile.CreateOrOpen(mapNamePrefix, 1024 * 1024 * 1000, MemoryMappedFileAccess.ReadWrite);
+                memoryMappedFile?.Dispose();
+
                 memoryMappedFile = MemoryMappedFile.OpenExisting(mapNamePrefix);
                 memoryMappedViewStream = memoryMappedFile.CreateViewStream();
                 binaryReader = new BinaryReader(memoryMappedViewStream);
@@ -118,6 +132,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public void Close()
         {
             openVideo = false;
+            VideoMemoryMappedFile?.Dispose();
+
         }
 
         private int frameCount;
@@ -284,11 +300,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                             }
 
                             writeableBitmap!.Lock();
+
                             writeableBitmap.WritePixels(
                                 new Int32Rect(0, 0, width, height),
                                 buffer,
                                 width * channels * (bpp / 8),
                                 0);
+
+
                             writeableBitmap.Unlock();
                         }
 

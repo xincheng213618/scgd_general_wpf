@@ -2,6 +2,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Core;
 using log4net;
 using System.Windows;
+using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.EditorTools.Algorithms
 {
@@ -18,6 +19,8 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             InitializeComponent();
             _imageView = imageView;
         }
+        public ImageSource FunctionImage { get; set; }
+
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -46,16 +49,16 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             {
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
-                    if (!HImageExtension.UpdateWriteableBitmap(_imageView.FunctionImage, hImageProcessed))
+                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
                         double DpiX = _imageView.Config.GetProperties<double>("DpiX");
                         double DpiY = _imageView.Config.GetProperties<double>("DpiY");
-                        var image = hImageProcessed.ToWriteableBitmap();
+                        var image = hImageProcessed.ToWriteableBitmap(DpiX, DpiY);
                         hImageProcessed.Dispose();
 
-                        _imageView.FunctionImage = image;
+                        FunctionImage = image;
                     }
-                    _imageView.ImageShow.Source = _imageView.FunctionImage;
+                    _imageView.ImageShow.Source = FunctionImage;
                 });
             }
         }
@@ -67,7 +70,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
             {
                 _imageView.ViewBitmapSource = writeableBitmap;
                 _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
-                _imageView.HImageCache = writeableBitmap.ToHImage();
+                _imageView.HImageCache = null;
                 _imageView.FunctionImage = null;
             }
             Close();
@@ -77,7 +80,7 @@ namespace ColorVision.ImageEditor.EditorTools.Algorithms
         {
             // 取消更改，恢复原始图像
             _imageView.ImageShow.Source = _imageView.ViewBitmapSource;
-            _imageView.FunctionImage = null;
+            FunctionImage = null;
             Close();
         }
     }

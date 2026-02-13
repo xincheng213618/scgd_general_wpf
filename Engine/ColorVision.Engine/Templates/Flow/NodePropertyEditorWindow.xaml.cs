@@ -165,6 +165,9 @@ namespace ColorVision.Engine.Templates.Flow
             NodePropertyEditorVM.Config.IsPropertyEditor = !NodePropertyEditorVM.Config.IsPropertyEditor;
         }
 
-
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
     }
 }

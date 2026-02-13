@@ -5,6 +5,7 @@ using System.Windows;
 
 namespace ColorVision.Common.Utilities
 {
+
     public static class DebounceTimer
     {
         private static readonly ConcurrentDictionary<string, Timer> _timers = new();

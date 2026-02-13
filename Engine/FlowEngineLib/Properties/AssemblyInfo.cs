@@ -11,6 +11,6 @@ using log4net.Config;
 [assembly: AssemblyTrademark("")]
 [assembly: ComVisible(false)]
 [assembly: Guid("5efdebfe-0c9e-448e-bcfe-d3e3fdcc3a91")]
-[assembly: AssemblyFileVersion("2026.01.14.0")]
+[assembly: AssemblyFileVersion("2026.02.03.0")]
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
-[assembly: AssemblyVersion("2026.01.14.0")]
+[assembly: AssemblyVersion("2026.02.03.0")]

@@ -2625,4 +2625,22 @@
   <data name="AvoidDeletionUnlessNecessary" xml:space="preserve">
     <value>Veuillez ne pas supprimer sauf en cas d'absolue nécessité. (Supprimez si vous le souhaitez)</value>
   </data>
+  <data name="InternalTools" xml:space="preserve">
+    <value>Outils internes</value>
+  </data>
+  <data name="ThirdPartyApps" xml:space="preserve">
+    <value>Gestion des applications tierces</value>
+  </data>
+  <data name="NotInstalled" xml:space="preserve">
+    <value>Non installé</value>
+  </data>
+  <data name="OpenDirectory" xml:space="preserve">
+    <value>Ouvrir le répertoire</value>
+  </data>
+  <data name="PortableTools" xml:space="preserve">
+    <value>outils portables</value>
+  </data>
+  <data name="InstallTools" xml:space="preserve">
+    <value>Outils d'installation</value>
+  </data>
 </root>

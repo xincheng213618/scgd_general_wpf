@@ -32,6 +32,9 @@
                     <Button Content="{x:Static properties:Resources.ClearCache}" Click="ClearCache_Click" Margin="2,0,0,0"/>
                     <Button Content="{x:Static properties:Resources.OpenFolder}" Click="OpenFolder_Click" Margin="2,0,0,0"/>
                     <Separator Margin="5,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.DataSource}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <ComboBox x:Name="DataSourceComboBox" Width="260" VerticalAlignment="Center" SelectionChanged="DataSourceComboBox_SelectionChanged"/>
+                    <Separator Margin="5,0"/>
                     <ToggleButton x:Name="ToggleDetailPanel" Content="{x:Static properties:Resources.ShowDetail}" IsChecked="True" Click="ToggleDetailPanel_Click" Margin="2,0,0,0"/>
                 </ToolBar>
             </ToolBarTray>

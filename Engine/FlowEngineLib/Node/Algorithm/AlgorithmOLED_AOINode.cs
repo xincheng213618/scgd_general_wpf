@@ -16,6 +16,8 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 
 	private string _OutputFileName;
 
+	private string _CustomSN;
+
 	private bool _VhLineEnable;
 
 	private bool _PixelDefectEnable;
@@ -78,6 +80,19 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		}
 	}
 
+	[STNodeProperty("自定义SN", "自定义SN", true)]
+	public string CustomSN
+	{
+		get
+		{
+			return _CustomSN;
+		}
+		set
+		{
+			_CustomSN = value;
+		}
+	}
+
 	[STNodeProperty("线缺陷", "线缺陷启用/AOI总成", true)]
 	public bool VhLineEnable
 	{
@@ -122,6 +137,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 	{
 		_Algorithm = AlgorithmOLED_AOIType.线缺陷;
 		operatorCode = "OLED.FindVHLine";
+		_CustomSN = "";
 		_TempName = "";
 		_TempId = -1;
 		_OutputFileName = "result.dat";
@@ -153,6 +169,15 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 		case AlgorithmOLED_AOIType.点缺陷_Grade:
 			operatorCode = "OLED.FindPixelDefectsForRebuildPicGrading";
 			break;
+		case AlgorithmOLED_AOIType.点缺陷_GradingV2:
+			operatorCode = "OLED.FindPixelDefectsForRebuildPicGradingV2";
+			break;
+		case AlgorithmOLED_AOIType.亮点检测:
+			operatorCode = "OLED.FindPixelDefectsForQuardImg";
+			break;
+		case AlgorithmOLED_AOIType.黑画面检测:
+			operatorCode = "OLED.DetectBrightPixelsForBlackScreen";
+			break;
 		case AlgorithmOLED_AOIType.Mura:
 			operatorCode = "OLED.FindMura";
 			break;
@@ -164,7 +189,7 @@ public class AlgorithmOLED_AOINode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		AlgorithmOLEDAOIParam algorithmOLEDAOIParam = new AlgorithmOLEDAOIParam(_OutputFileName, _VhLineEnable, _MuraEnable, _PixelDefectEnable);
+		AlgorithmOLEDAOIParam algorithmOLEDAOIParam = new AlgorithmOLEDAOIParam(_CustomSN, _OutputFileName, _VhLineEnable, _MuraEnable, _PixelDefectEnable);
 		BuildImageParam(_ImgFileName, _Color, algorithmOLEDAOIParam);
 		getPreStepParam(start, algorithmOLEDAOIParam);
 		algorithmOLEDAOIParam.SMUData = GetSMUResult(start);

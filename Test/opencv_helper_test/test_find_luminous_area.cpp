@@ -291,37 +291,37 @@ void testWithRealImage(const std::string& imagePath)
     }
 }
 
-int main(int argc, char* argv[])
-{
-    std::cout << "========================================" << std::endl;
-    std::cout << "M_FindLuminousArea Adaptive Threshold Test Program" << std::endl;
-    std::cout << "========================================" << std::endl;
-    cv::Mat image = cv::imread("C:\\Users\\17917\\Desktop\\2025-12\\20251125T142736.7608573_WhiteSrc.tiff");
-
-    if (image.empty()) {
-        std::cout << "Warning: Cannot read default test image, will use generated image for testing" << std::endl;
-        image = createTestImage(640, 480, 200, 150);
-    }
-
-    // Run all tests
-    testFixedThreshold(image);
-    testAutoThresholdExplicit(image);
-    testAutoThresholdOmitted();
-    testRotatedRectWithAutoThreshold();
-    testWithROIAndAutoThreshold();
-
-    // If image path argument is provided, test real image
-    if (argc > 1) {
-        testWithRealImage(argv[1]);
-    } else {
-        std::cout << "\nHint: You can provide image path via command line argument to test real image" << std::endl;
-        std::cout << "Usage: " << argv[0] << " <image_file_path>" << std::endl;
-    }
-
-    std::cout << "\n========================================" << std::endl;
-    std::cout << "All tests completed!" << std::endl;
-    std::cout << "========================================" << std::endl;
-
-    return 0;
-}
+//int main(int argc, char* argv[])
+//{
+//    std::cout << "========================================" << std::endl;
+//    std::cout << "M_FindLuminousArea Adaptive Threshold Test Program" << std::endl;
+//    std::cout << "========================================" << std::endl;
+//    cv::Mat image = cv::imread("C:\\Users\\17917\\Desktop\\2025-12\\20251125T142736.7608573_WhiteSrc.tiff");
+//
+//    if (image.empty()) {
+//        std::cout << "Warning: Cannot read default test image, will use generated image for testing" << std::endl;
+//        image = createTestImage(640, 480, 200, 150);
+//    }
+//
+//    // Run all tests
+//    testFixedThreshold(image);
+//    testAutoThresholdExplicit(image);
+//    testAutoThresholdOmitted();
+//    testRotatedRectWithAutoThreshold();
+//    testWithROIAndAutoThreshold();
+//
+//    // If image path argument is provided, test real image
+//    if (argc > 1) {
+//        testWithRealImage(argv[1]);
+//    } else {
+//        std::cout << "\nHint: You can provide image path via command line argument to test real image" << std::endl;
+//        std::cout << "Usage: " << argv[0] << " <image_file_path>" << std::endl;
+//    }
+//
+//    std::cout << "\n========================================" << std::endl;
+//    std::cout << "All tests completed!" << std::endl;
+//    std::cout << "========================================" << std::endl;
+//
+//    return 0;
+//}
 

@@ -1,17 +1,22 @@
 ﻿using ColorVision.Common.MVVM;
+using ProjectLUX.Process;
 using ProjectLUX.Process.AR.W51AR;
 using ProjectLUX.Process.Blue;
 using ProjectLUX.Process.Chessboard;
+using ProjectLUX.Process.Chessboard55;
 using ProjectLUX.Process.ChessboardAR;
 using ProjectLUX.Process.Distortion;
-using ProjectLUX.Process.DistortionAR;
 using ProjectLUX.Process.Green;
 using ProjectLUX.Process.MTFHV;
 using ProjectLUX.Process.MTFHVAR;
 using ProjectLUX.Process.OpticCenter;
 using ProjectLUX.Process.Red;
+using ProjectLUX.Process.VR.MTFH;
+using ProjectLUX.Process.VR.MTFV;
 using ProjectLUX.Process.W255;
 using ProjectLUX.Process.W255AR;
+using SQLitePCL;
+using System.Collections;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -24,27 +29,85 @@ namespace ProjectLUX
         {
             foreach (var property in obj.GetType().GetProperties())
             {
+                var childObj = property.GetValue(obj);
+                if (childObj is IList list1 && property.PropertyType.IsGenericType)
+                {
+                    foreach (var item in list1)
+                    {
+                        if (item is ObjectiveTestItem objectiveTestItem)
+                        {
+                            rows.Add(FormatCsvRow(testScreenName, objectiveTestItem));
+                        }
+                    }
+                    continue;
+                }
                 if (property.PropertyType == typeof(ObjectiveTestItem))
                 {
                     var testItem = (ObjectiveTestItem)property.GetValue(obj);
                     if (testItem != null)
                     {
-                        rows.Add(FormatCsvRow(testScreenName, property.Name, testItem));
+                        rows.Add(FormatCsvRow(testScreenName, testItem));
+                    }
+                }
+
+                else if (property.PropertyType == typeof(List<PoixyuvData>))
+                {
+                    try
+                    {
+                        var list = (List<PoixyuvData>)property.GetValue(obj);
+                        if (list != null)
+                        {
+                            foreach (var item in list)
+                            {
+                                rows.Add($"{testScreenName},{item.Name}(Lv),{item.Y},cd/m2,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(Cx),{item.x},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(Cy),{item.y},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(u'),{item.u},None,0,0,None");
+                                rows.Add($"{testScreenName},{item.Name}(v'),{item.v},None,0,0,None");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
                     }
                 }
                 else if (!property.PropertyType.IsValueType && property.PropertyType != typeof(string))
                 {
-                    // Recursively process child objects
-                    var childObj = property.GetValue(obj);
-                    if (childObj != null)
-                    {
-                        CollectRows(childObj, testScreenName, rows);
+                    try
+                    {                    // Recursively process child objects
+                        var childObj1 = property.GetValue(obj);
+                        if (childObj1 != null)
+                        {
+                            CollectRows(childObj1, testScreenName, rows);
+                        }
+
                     }
+                    catch (Exception ex)
+                    {
+
+                    }
+                }
+
+            }
+        }
+        /// <summary>
+        /// 处理集合类型，为每个元素添加序号后缀
+        /// </summary>
+        private static void CollectRowsFromList(IList list, string baseTestScreenName, List<string> rows)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                var item = list[i];
+                if (item != null)
+                {
+                    // 生成带序号的名称，如 MTF1, MTF2, MTF3... 
+                    string indexedName = $"{baseTestScreenName}{i + 1}";
+                    CollectRows(item, indexedName, rows);
                 }
             }
         }
 
-        private static string FormatCsvRow(string testScreenName, string propertyName, ObjectiveTestItem testItem)
+        private static string FormatCsvRow(string testScreenName, ObjectiveTestItem testItem)
         {
             string testResult = testItem.TestResult ? "pass" : "fail";
             return $"{testScreenName},{testItem.Name},{testItem.Value},{testItem.Unit},{testItem.LowLimit},{testItem.UpLimit},{testResult}";
@@ -64,8 +127,14 @@ namespace ProjectLUX
 
                     // Recursively process child objects
                     var childObj = prop.GetValue(results);
-                    if (childObj != null)
+                    if (childObj == null) continue;
+                    if (childObj is IList list && prop.PropertyType.IsGenericType)
                     {
+                        CollectRowsFromList(list, raw, rows);
+                    }
+                    else
+                    {
+                        // 非集合类型，保持原有逻辑
                         CollectRows(childObj, raw, rows);
                     }
                 }
@@ -125,19 +194,29 @@ namespace ProjectLUX
         [DisplayName("Chessborad_4x4")]
         public ChessboardARTestResult ChessboardARTestResult { get; set; }
 
-        [DisplayName("Chessborad_7x7")]
+        [DisplayName("Chessborad_5x5")]
+        public Chessboard55TestResult Chessboard55TestResult { get; set; }
+
+        [DisplayName("Chessborad_6x6")]
         public ChessboardTestResult ChessboardTestResult { get; set; }
+
+
 
         [DisplayName("MTF")]
         public MTFHARVTestResult MTFHVARTestResult { get; set; }
+
         [DisplayName("MTF")]
         public MTFHVTestResult MTFHVTestResult { get; set; }
 
-        [DisplayName("Distortion")]
-        public DistortionARTestResult DistortionARTestResult { get; set; }
+
+        [DisplayName("MTF")]
+        public VRMTFHTestResult VRMTFHTestResult { get; set; }
+
+        [DisplayName("MTF")]
+        public VRMTFVTestResult VRMTFVTestResult { get; set; }
 
         [DisplayName("Distortion")]
-        public DistortionTestResult DistortionTestResult { get; set; }
+        public DistortionTestResult DistortionARTestResult { get; set; }
 
         [DisplayName("Optical_Center")]
         public OpticCenterTestResult OpticCenterTestResult { get; set; }

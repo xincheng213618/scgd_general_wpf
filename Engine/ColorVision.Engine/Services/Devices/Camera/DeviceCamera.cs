@@ -30,7 +30,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using WindowsFormsTest;
+
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -43,14 +43,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public ViewCamera View { get; set; }
         public MQTTCamera DService { get; set; }
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
-        public RelayCommand DisPlaySaveCommand { get; set; }
+
         public DisplayCameraConfig DisplayConfig => DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(Config.Code);
 
 
 
         public DeviceCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
-            DService = new MQTTCamera(Config);
+            DService = new MQTTCamera(this);
 
             View = new ViewCamera(this);
             View.View.Title = ColorVision.Engine.Properties.Resources.CameraView +$" - {Config.Code}";
@@ -60,8 +60,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             FetchLatestTemperatureCommand =  new RelayCommand(a => FetchLatestTemperature(a));
 
-
-            DisPlaySaveCommand = new RelayCommand(a => SaveDis());
             DisplayCameraControlLazy = new Lazy<DisplayCamera>(() => new DisplayCamera(this));
 
 
@@ -100,8 +98,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     licenseManagerViewModel.SaveToLincense();
                 }
 
-                Form1 form1 = new Form1();
-                form1.Show();
+                CameraLocalWindow cameraLocalWindow = new CameraLocalWindow(this);
+                cameraLocalWindow.Show();
             };
 
             ContextMenu.Items.Add(menuItem);
@@ -212,13 +210,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Config.ImageBpp = e.ImageBpp;
             Config.GainMin = e.CameraParameterLimit.GainMin;
             Config.GainMax = e.CameraParameterLimit.GainMax;
-            Config.Gain = e.CameraParameterLimit.GainDefault;
             Config.ExpTimeMax = e.CameraParameterLimit.ExpMax;
             Config.ExpTimeMin = e.CameraParameterLimit.ExpMin;
-            Config.ExpTime = e.CameraParameterLimit.ExpDefalut;
-            Config.ExpTimeR = e.CameraParameterLimit.ExpDefalut;
-            Config.ExpTimeG = e.CameraParameterLimit.ExpDefalut;
-            Config.ExpTimeB = e.CameraParameterLimit.ExpDefalut;
+
+            DisplayConfig.Gain = e.CameraParameterLimit.GainDefault;
+            DisplayConfig.ExpTime = e.CameraParameterLimit.ExpDefalut;
+            DisplayConfig.ExpTimeR = e.CameraParameterLimit.ExpDefalut;
+            DisplayConfig.ExpTimeG = e.CameraParameterLimit.ExpDefalut;
+            DisplayConfig.ExpTimeB = e.CameraParameterLimit.ExpDefalut;
             Save();
         }
 
@@ -305,12 +304,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
                 });
             });
-        }
-
-        public void SaveDis()
-        {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.SaveCurrentExposureConfigPrompt, " ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
-            SaveConfig();
         }
 
         public override void Save()

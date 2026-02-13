@@ -133,11 +133,29 @@ namespace ColorVision.Database.Properties {
         }
         
         /// <summary>
+        ///   查找类似 当前日志 的本地化字符串。
+        /// </summary>
+        public static string CurrentLog {
+            get {
+                return ResourceManager.GetString("CurrentLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 数据库名称 的本地化字符串。
         /// </summary>
         public static string Database {
             get {
                 return ResourceManager.GetString("Database", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 数据源: 的本地化字符串。
+        /// </summary>
+        public static string DataSource {
+            get {
+                return ResourceManager.GetString("DataSource", resourceCulture);
             }
         }
         

@@ -18,6 +18,7 @@ public class SMUNode : SMUBaseNode
 		set
 		{
 			_source = value;
+			updateUI();
 		}
 	}
 
@@ -31,7 +32,7 @@ public class SMUNode : SMUBaseNode
 		set
 		{
 			_channel = value;
-			m_ctrl_channel.Value = _channel;
+			updateUI();
 		}
 	}
 

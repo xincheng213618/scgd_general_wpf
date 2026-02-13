@@ -1085,6 +1085,15 @@ namespace ColorVision.Engine.Services.PhyCameras
                 Config.CFW.IsCOM = false;
             }
 
+            if (Config.CFW.IsBingNDDevice)
+            {
+                Config.CFW.SzComName = string.Empty;
+            }
+            else
+            {
+                Config.CFW.NDBindDeviceCode = string.Empty;
+            }
+
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             SysResourceDao.Instance.Save(SysResourceModel);
 
