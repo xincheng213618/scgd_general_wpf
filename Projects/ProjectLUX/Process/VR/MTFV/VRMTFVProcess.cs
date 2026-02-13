@@ -209,21 +209,6 @@ namespace ProjectLUX.Process.VR.MTFV
             VRMTFVViewTestResult testResult = JsonConvert.DeserializeObject<VRMTFVViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return;
 
-            int id = 0;
-            if (testResult.MTFDetailViewReslut.MTFResult.result.Count != 0)
-            {
-                foreach (var item in testResult.MTFDetailViewReslut.MTFResult.result)
-                {
-                    id++;
-                    DVRectangleText Rectangle = new();
-                    Rectangle.Attribute.Rect = new Rect(item.x, item.y, item.w, item.h);
-                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                    Rectangle.Attribute.Id = id;
-                    Rectangle.Render();
-                    ctx.ImageView.AddVisual(Rectangle);
-                }
-            }
         }
 
         public override string GenText(IProcessExecutionContext ctx)

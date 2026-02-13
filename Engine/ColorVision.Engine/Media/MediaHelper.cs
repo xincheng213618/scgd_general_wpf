@@ -5,7 +5,6 @@ using ColorVision.UI.Desktop;
 using log4net;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
-using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;

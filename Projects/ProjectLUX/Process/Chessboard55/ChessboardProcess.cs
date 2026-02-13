@@ -22,6 +22,10 @@ namespace ProjectLUX.Process.Chessboard55
         [Description("Chessboard_Contrast")]
         public string ChessboardContrastTempName { get => _ChessboardContrastTempName; set { _ChessboardContrastTempName = value; OnPropertyChanged(); } }
         private string _ChessboardContrastTempName = "Chessboard_Contrast";
+
+
+        public bool IsFirstBlack { get => _IsFirstBlack; set { _IsFirstBlack = value; OnPropertyChanged(); } }
+        private bool _IsFirstBlack;
     }
 
     public class Chessboard55Process : ProcessBase<Chessboard55ProcessConfig>
@@ -49,6 +53,7 @@ namespace ProjectLUX.Process.Chessboard55
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         var poiPoints = PoiPointResultDao.Instance.GetAllByPid(master.Id);
+                        testResult.PoixyuvDatas.Clear();
                         int id = 0;
 
                         if (poiPoints != null && poiPoints.Count >= 25)
@@ -83,10 +88,11 @@ namespace ProjectLUX.Process.Chessboard55
                             for (int i = 0; i < 25; i++)
                             {
                                 var poi = new PoiResultCIExyuvData(poiPoints[i]);
+                                testResult.PoixyuvDatas.Add(poi);
+
                                 var item = lvItems[i];
                                 var fix = lvFixes[i];
                                 var rc = lvRecipes[i];
-
                                 item.Value = poi.Y;
                                 item.Value *= fix;
                                 item.LowLimit = rc.Min;
@@ -103,14 +109,48 @@ namespace ProjectLUX.Process.Chessboard55
                             var poi = new PoiResultCIExyuvData(poiPoints[i]);
                             luminanceValues.Add(poi.Y);
                         }
-                        // Sort the luminance values in ascending order
-                        luminanceValues.Sort();
 
-                        // The first 8 values are the dimmest (black)
-                        double averageBlackLuminance = luminanceValues.Take(12).Average();
+                        // 初始化累加器和计数器
+                        double sumWhite = 0.0;
+                        int countWhite = 0;
+                        double sumBlack = 0.0;
+                        int countBlack = 0;
 
-                        // The last 8 values are the brightest (white)
-                        double averageWhiteLuminance = luminanceValues.Skip(13).Take(12).Average();
+                        // 遍历 5x5 = 25 个点
+                        // 逻辑：第一个点(i=0)是白色，意味着索引为偶数的是白色，索引为奇数的是黑色
+                        for (int i = 0; i < luminanceValues.Count; i++)
+                        {
+                            if (i % 2 == 0)
+                            {
+                                if (Config.IsFirstBlack)
+                                {
+                                    sumBlack += luminanceValues[i];
+                                    countBlack++;
+                                }
+                                else
+                                {
+                                    sumWhite += luminanceValues[i];
+                                    countWhite++;
+                                }
+                            }
+                            else
+                            {
+                                if (Config.IsFirstBlack)
+                                {
+                                    sumWhite += luminanceValues[i];
+                                    countWhite++;
+                                }
+                                else
+                                {
+                                    sumBlack += luminanceValues[i];
+                                    countBlack++;
+                                }
+                            }
+                        }
+
+                        // 计算平均值 (防止除以0)
+                        double averageWhiteLuminance = countWhite > 0 ? sumWhite / countWhite : 0.0;
+                        double averageBlackLuminance = countBlack > 0 ? sumBlack / countBlack : 0.0;
 
                         testResult.AverageWhiteLunimance.Value = averageWhiteLuminance;
                         testResult.AverageWhiteLunimance.Value *= fixConfig.AverageWhiteLunimance;
@@ -126,23 +166,31 @@ namespace ProjectLUX.Process.Chessboard55
                         testResult.AverageBlackLunimance.UpLimit *= recipeConfig.AverageBlackLunimance.Max;
                         ctx.Result.Result &= testResult.AverageBlackLunimance.TestResult;
 
+
+                        testResult.ChessboardContrast.Value = averageWhiteLuminance / averageBlackLuminance;
+                        testResult.ChessboardContrast.Value *= fixConfig.ChessboardContrast;
+                        testResult.ChessboardContrast.TestValue = testResult.ChessboardContrast.Value.ToString("F3");
+                        testResult.ChessboardContrast.LowLimit *= recipeConfig.ChessboardContrast.Min;
+                        testResult.ChessboardContrast.UpLimit *= recipeConfig.ChessboardContrast.Max;
+                        ctx.Result.Result &= testResult.ChessboardContrast.TestResult;
+
                     }
 
-                    if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && master.TName.Contains(Config.ChessboardContrastTempName))
-                    {
-                        var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
-                        if (details.Count == 1)
-                        {
-                            var view = new PoiAnalysisDetailViewReslut(details[0]);
+                    //if (master.ImgFileType == ViewResultAlgType.PoiAnalysis && master.TName.Contains(Config.ChessboardContrastTempName))
+                    //{
+                    //    var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);
+                    //    if (details.Count == 1)
+                    //    {
+                    //        var view = new PoiAnalysisDetailViewReslut(details[0]);
 
-                            testResult.ChessboardContrast.Value = view.PoiAnalysisResult.result.Value;
-                            testResult.ChessboardContrast.Value *= fixConfig.ChessboardContrast;
-                            testResult.ChessboardContrast.TestValue = testResult.ChessboardContrast.Value.ToString("F3");
-                            testResult.ChessboardContrast.LowLimit *= recipeConfig.ChessboardContrast.Min;
-                            testResult.ChessboardContrast.UpLimit *= recipeConfig.ChessboardContrast.Max;
-                            ctx.Result.Result &= testResult.ChessboardContrast.TestResult;
-                        }
-                    }
+                    //        testResult.ChessboardContrast.Value = view.PoiAnalysisResult.result.Value;
+                    //        testResult.ChessboardContrast.Value *= fixConfig.ChessboardContrast;
+                    //        testResult.ChessboardContrast.TestValue = testResult.ChessboardContrast.Value.ToString("F3");
+                    //        testResult.ChessboardContrast.LowLimit *= recipeConfig.ChessboardContrast.Min;
+                    //        testResult.ChessboardContrast.UpLimit *= recipeConfig.ChessboardContrast.Max;
+                    //        ctx.Result.Result &= testResult.ChessboardContrast.TestResult;
+                    //    }
+                    //}
                 }
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
@@ -210,7 +258,8 @@ namespace ProjectLUX.Process.Chessboard55
             {
                 outtext += $"{item.Name}  Y:{item.Y.ToString("F2")}{Environment.NewLine}";
             }
-
+            outtext += $"AverageWhiteLunimance:{testResult.AverageWhiteLunimance.TestValue} LowLimit:{testResult.AverageWhiteLunimance.LowLimit}  UpLimit:{testResult.AverageWhiteLunimance.UpLimit},Rsult{(testResult.AverageWhiteLunimance.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
+            outtext += $"AverageBlackLunimance:{testResult.AverageBlackLunimance.TestValue} LowLimit:{testResult.AverageBlackLunimance.LowLimit}  UpLimit:{testResult.AverageBlackLunimance.UpLimit},Rsult{(testResult.AverageBlackLunimance.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             outtext += $"ChessboardContrast:{testResult.ChessboardContrast.TestValue} LowLimit:{testResult.ChessboardContrast.LowLimit}  UpLimit:{testResult.ChessboardContrast.UpLimit},Rsult{(testResult.ChessboardContrast.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
             return outtext;
         }

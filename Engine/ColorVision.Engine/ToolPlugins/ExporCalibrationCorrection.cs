@@ -15,6 +15,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.ToolPlugins
 {
+
     public class CalibrationConfig : IConfig
     {
         public static CalibrationConfig Instance => ConfigService.Instance.GetRequiredService<CalibrationConfig>();
@@ -24,7 +25,7 @@ namespace ColorVision.Engine.ToolPlugins
     }
 
 
-    public class ExporCalibrationCorrection : MenuItemBase
+        public class ExporCalibrationCorrection : MenuItemBase
     {
         public override string OwnerGuid => "Tool";
 

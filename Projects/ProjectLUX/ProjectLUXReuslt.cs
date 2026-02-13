@@ -35,13 +35,16 @@ namespace ProjectLUX
 
             RelayCommand ViewTestResultCommand = new RelayCommand(a => ViewTestResult(), e => !string.IsNullOrEmpty(ViewResultJson));
             ContextMenu.Items.Add(new MenuItem() { Command = ViewTestResultCommand, Header = "查看测试结果" });
+
         }
+
 
         public void ViewTestResult()
         {
             if (string.IsNullOrEmpty(ViewResultJson))
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "ViewResultJson为空", "ColorVision");
+
                 return;
             }
             var window = new TestResultViewWindow(ViewResultJson)
