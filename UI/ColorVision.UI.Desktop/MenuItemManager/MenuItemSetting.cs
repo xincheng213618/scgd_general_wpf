@@ -30,5 +30,9 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         [DisplayName("Hotkey")]
         public string? HotkeyOverride { get => _hotkeyOverride; set => SetProperty(ref _hotkeyOverride, value); }
         private string? _hotkeyOverride;
+
+        [DisplayName("OwnerGuid Override")]
+        public string? OwnerGuidOverride { get => _ownerGuidOverride; set => SetProperty(ref _ownerGuidOverride, value); }
+        private string? _ownerGuidOverride;
     }
 }

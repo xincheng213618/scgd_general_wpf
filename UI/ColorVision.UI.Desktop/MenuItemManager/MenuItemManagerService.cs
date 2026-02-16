@@ -40,6 +40,12 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             {
                 menuManager.OrderOverrides[setting.GuidId] = setting.OrderOverride!.Value;
             }
+
+            // Apply OwnerGuid overrides
+            foreach (var setting in config.Settings.Where(s => !string.IsNullOrEmpty(s.OwnerGuidOverride) && !string.IsNullOrEmpty(s.GuidId)))
+            {
+                menuManager.OwnerGuidOverrides[setting.GuidId] = setting.OwnerGuidOverride!;
+            }
         }
 
         /// <summary>
@@ -154,6 +160,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             // Clear and reapply filtered guids from config
             menuManager.FilteredGuids.Clear();
             menuManager.OrderOverrides.Clear();
+            menuManager.OwnerGuidOverrides.Clear();
 
             var config = MenuItemManagerConfig.Instance;
             foreach (var setting in config.Settings.Where(s => !s.IsVisible && !string.IsNullOrEmpty(s.GuidId)))
@@ -164,6 +171,11 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             foreach (var setting in config.Settings.Where(s => s.OrderOverride.HasValue && !string.IsNullOrEmpty(s.GuidId)))
             {
                 menuManager.OrderOverrides[setting.GuidId] = setting.OrderOverride!.Value;
+            }
+
+            foreach (var setting in config.Settings.Where(s => !string.IsNullOrEmpty(s.OwnerGuidOverride) && !string.IsNullOrEmpty(s.GuidId)))
+            {
+                menuManager.OwnerGuidOverrides[setting.GuidId] = setting.OwnerGuidOverride!;
             }
 
             menuManager.LoadMenuItemFromAssembly();

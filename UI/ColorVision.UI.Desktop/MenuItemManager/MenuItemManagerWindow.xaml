@@ -6,7 +6,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision.UI.Desktop.MenuItemManager"
         mc:Ignorable="d"
-        Title="MenuItemManager" Height="600" Width="1000" 
+        Title="MenuItemManager" Height="650" Width="1100" 
         Background="{DynamicResource GlobalBackground}" 
         Initialized="Window_Initialized">
     <Grid>
@@ -38,99 +38,140 @@
         <!-- Main content -->
         <Grid Grid.Row="1" Margin="5,0,5,5">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200" MinWidth="150"/>
+                <ColumnDefinition Width="220" MinWidth="150"/>
                 <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="*" MinWidth="350"/>
+                <ColumnDefinition Width="*" MinWidth="400"/>
                 <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="280" MinWidth="200"/>
+                <ColumnDefinition Width="300" MinWidth="220"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Left: Menu tree -->
+            <!-- Left: Menu hierarchy TreeView -->
             <Border Grid.Column="0" Style="{StaticResource BorderModuleArea}" Padding="5">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="Menu Groups" FontSize="14" FontWeight="Bold" Margin="5,0,0,5" 
+                    <TextBlock Grid.Row="0" Text="Menu Structure" FontSize="14" FontWeight="Bold" Margin="5,0,0,5" 
                               Foreground="{DynamicResource PrimaryTextBrush}"/>
-                    <ListView x:Name="GroupListView" Grid.Row="1" Background="Transparent" BorderThickness="0"
-                             SelectionChanged="GroupListView_SelectionChanged"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                    <TreeView x:Name="MenuTreeView" Grid.Row="1" Background="Transparent" BorderThickness="0"
+                             SelectedItemChanged="MenuTreeView_SelectedItemChanged"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
                              ScrollViewer.VerticalScrollBarVisibility="Auto">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="Padding" Value="3"/>
-                                <Setter Property="Margin" Value="0,1"/>
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                                <Setter Property="IsExpanded" Value="True"/>
+                                <Setter Property="Padding" Value="2"/>
                             </Style>
-                        </ListView.ItemContainerStyle>
-                    </ListView>
+                        </TreeView.ItemContainerStyle>
+                    </TreeView>
                 </Grid>
             </Border>
 
             <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}" 
                          ResizeBehavior="PreviousAndNext" ResizeDirection="Columns"/>
 
-            <!-- Middle: Menu items list -->
+            <!-- Middle: Menu items DataGrid -->
             <Border Grid.Column="2" Style="{StaticResource BorderModuleArea}" Padding="5">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="Menu Items" FontSize="14" FontWeight="Bold" Margin="5,0,0,5" 
+                    <TextBlock Grid.Row="0" x:Name="ListTitle" Text="Menu Items" FontSize="14" FontWeight="Bold" Margin="5,0,0,5" 
                               Foreground="{DynamicResource PrimaryTextBrush}"/>
-                    <ListView x:Name="MenuItemListView" Grid.Row="1" Background="Transparent" BorderThickness="0"
-                             SelectionChanged="MenuItemListView_SelectionChanged"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                    <DataGrid x:Name="MenuItemDataGrid" Grid.Row="1" 
+                             AutoGenerateColumns="False"
+                             CanUserAddRows="False" CanUserDeleteRows="False"
+                             CanUserReorderColumns="False"
+                             SelectionMode="Single"
+                             SelectionChanged="MenuItemDataGrid_SelectionChanged"
+                             Background="Transparent" BorderThickness="0"
+                             GridLinesVisibility="Horizontal"
+                             HorizontalGridLinesBrush="{DynamicResource BorderBrush}"
+                             RowHeaderWidth="0"
+                             HeadersVisibility="Column"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
                              ScrollViewer.VerticalScrollBarVisibility="Auto">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="Padding" Value="3"/>
-                                <Setter Property="Margin" Value="0,1"/>
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Header="Visible" Width="55">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:MenuItemSetting}">
-                                            <CheckBox IsChecked="{Binding IsVisible}" HorizontalAlignment="Center"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Header" Width="150" DisplayMemberBinding="{Binding Header}"/>
-                                <GridViewColumn Header="GuidId" Width="140" DisplayMemberBinding="{Binding GuidId}"/>
-                                <GridViewColumn Header="Default Order" Width="80" DisplayMemberBinding="{Binding DefaultOrder}"/>
-                                <GridViewColumn Header="Order Override" Width="80">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:MenuItemSetting}">
-                                            <TextBox Text="{Binding OrderOverride, UpdateSourceTrigger=PropertyChanged}" 
-                                                    Width="60" BorderThickness="1" Padding="2"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Hotkey" Width="100">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:MenuItemSetting}">
-                                            <TextBox Text="{Binding HotkeyOverride, UpdateSourceTrigger=PropertyChanged}" 
-                                                    Width="80" BorderThickness="1" Padding="2"
-                                                    hc:InfoElement.Placeholder="e.g. Ctrl+K"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
+                        <DataGrid.Columns>
+                            <DataGridCheckBoxColumn Header="Visible" Width="55" Binding="{Binding IsVisible, UpdateSourceTrigger=PropertyChanged}"/>
+                            <DataGridTextColumn Header="Header" Width="120" Binding="{Binding Header}" IsReadOnly="True">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="Padding" Value="4,2"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="GuidId" Width="120" Binding="{Binding GuidId}" IsReadOnly="True">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                                        <Setter Property="Padding" Value="4,2"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="Order" Width="60" Binding="{Binding DefaultOrder}" IsReadOnly="True">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                        <Setter Property="Padding" Value="4,2"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="Order Override" Width="80" Binding="{Binding OrderOverride, UpdateSourceTrigger=PropertyChanged}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                        <Setter Property="Padding" Value="4,2"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="OwnerGuid" Width="100" Binding="{Binding OwnerGuid}" IsReadOnly="True">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                                        <Setter Property="Padding" Value="4,2"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTemplateColumn Header="OwnerGuid Override" Width="140">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:MenuItemSetting}">
+                                        <TextBlock Text="{Binding OwnerGuidOverride}" VerticalAlignment="Center" Padding="4,2"
+                                                  Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate DataType="{x:Type local:MenuItemSetting}">
+                                        <ComboBox IsEditable="True" 
+                                                 Text="{Binding OwnerGuidOverride, UpdateSourceTrigger=PropertyChanged}"
+                                                 ItemsSource="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=AvailableOwnerGuids}"
+                                                 Padding="2"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Hotkey" Width="100" Binding="{Binding HotkeyOverride, UpdateSourceTrigger=PropertyChanged}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="Padding" Value="4,2"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
                 </Grid>
             </Border>
 
             <GridSplitter Grid.Column="3" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}" 
                          ResizeBehavior="PreviousAndNext" ResizeDirection="Columns"/>
 
-            <!-- Right: Properties panel -->
+            <!-- Right: Detail panel -->
             <Border Grid.Column="4" Style="{StaticResource BorderModuleArea}" Padding="5">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -142,7 +183,7 @@
                               Foreground="{DynamicResource PrimaryTextBrush}"/>
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel x:Name="DetailPanel" Margin="5">
-                            <TextBlock Text="Select a menu item to view details" 
+                            <TextBlock Text="Select a menu item to view and edit details" 
                                       Foreground="{DynamicResource SecondaryTextBrush}" 
                                       TextWrapping="Wrap"/>
                         </StackPanel>
