@@ -33,6 +33,9 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
             RefreshHierarchyView();
             UpdateStatusText();
+
+            // Restore last selected tree node
+            RestoreLastSelectedTreeNode();
         }
 
         private void RefreshHierarchyView()
@@ -89,88 +92,113 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             allNode.Selected += TreeNode_Selected;
             MenuTreeView.Items.Add(allNode);
 
-            // Root: items with OwnerGuid == "Menu"
+            // First level: items with OwnerGuid == "Menu" (File, Edit, View, Tool, Help, etc.)
             var rootGuid = MenuItemConstants.Menu;
             var rootItems = effectiveOwnerLookup.ContainsKey(rootGuid) ? effectiveOwnerLookup[rootGuid] : new List<MenuItemSetting>();
 
             foreach (var item in rootItems.OrderBy(s => s.OrderOverride ?? s.DefaultOrder))
             {
-                var node = CreateTreeNode(item, effectiveOwnerLookup);
-                allNode.Items.Add(node);
-            }
+                var childCount = 0;
+                if (!string.IsNullOrEmpty(item.GuidId) && effectiveOwnerLookup.ContainsKey(item.GuidId))
+                    childCount = effectiveOwnerLookup[item.GuidId].Count;
 
-            // Also add orphan groups not under "Menu"
-            var knownOwners = new HashSet<string> { rootGuid };
-            CollectKnownOwners(rootItems, effectiveOwnerLookup, knownOwners);
+                var displayText = item.Header ?? item.GuidId;
+                if (!item.IsVisible)
+                    displayText = $"[Hidden] {displayText}";
+                if (childCount > 0)
+                    displayText = $"{displayText} ({childCount})";
 
-            foreach (var kvp in effectiveOwnerLookup.Where(k => !knownOwners.Contains(k.Key) && k.Key != rootGuid))
-            {
-                var orphanGroup = new TreeViewItem
+                var node = new TreeViewItem
                 {
-                    Header = $"[{kvp.Key}] ({kvp.Value.Count})",
-                    Tag = kvp.Key,
+                    Header = displayText,
+                    Tag = item.GuidId ?? "",
                     IsExpanded = false,
-                    FontStyle = FontStyles.Italic,
-                    Foreground = (System.Windows.Media.Brush)Application.Current.FindResource("SecondaryTextBrush")
+                    Foreground = item.IsVisible
+                        ? (System.Windows.Media.Brush)Application.Current.FindResource("PrimaryTextBrush")
+                        : (System.Windows.Media.Brush)Application.Current.FindResource("SecondaryTextBrush")
                 };
-                orphanGroup.Selected += TreeNode_Selected;
-                foreach (var item in kvp.Value.OrderBy(s => s.OrderOverride ?? s.DefaultOrder))
-                {
-                    var node = CreateTreeNode(item, effectiveOwnerLookup);
-                    orphanGroup.Items.Add(node);
-                }
-                allNode.Items.Add(orphanGroup);
-            }
-        }
+                node.Selected += TreeNode_Selected;
 
-        private void CollectKnownOwners(List<MenuItemSetting> items, Dictionary<string, List<MenuItemSetting>> lookup, HashSet<string> known)
-        {
-            foreach (var item in items)
-            {
-                if (!string.IsNullOrEmpty(item.GuidId))
+                // Second level: direct children of this item (no deeper recursion)
+                if (!string.IsNullOrEmpty(item.GuidId) && effectiveOwnerLookup.ContainsKey(item.GuidId))
                 {
-                    known.Add(item.GuidId);
-                    if (lookup.ContainsKey(item.GuidId))
+                    foreach (var child in effectiveOwnerLookup[item.GuidId].OrderBy(s => s.OrderOverride ?? s.DefaultOrder))
                     {
-                        CollectKnownOwners(lookup[item.GuidId], lookup, known);
+                        var childChildCount = 0;
+                        if (!string.IsNullOrEmpty(child.GuidId) && effectiveOwnerLookup.ContainsKey(child.GuidId))
+                            childChildCount = effectiveOwnerLookup[child.GuidId].Count;
+
+                        var childText = child.Header ?? child.GuidId;
+                        if (!child.IsVisible)
+                            childText = $"[Hidden] {childText}";
+                        if (childChildCount > 0)
+                            childText = $"{childText} ({childChildCount})";
+
+                        var childNode = new TreeViewItem
+                        {
+                            Header = childText,
+                            Tag = child.GuidId ?? "",
+                            Foreground = child.IsVisible
+                                ? (System.Windows.Media.Brush)Application.Current.FindResource("PrimaryTextBrush")
+                                : (System.Windows.Media.Brush)Application.Current.FindResource("SecondaryTextBrush")
+                        };
+                        childNode.Selected += TreeNode_Selected;
+                        node.Items.Add(childNode);
                     }
                 }
+
+                allNode.Items.Add(node);
             }
         }
 
-        private TreeViewItem CreateTreeNode(MenuItemSetting setting, Dictionary<string, List<MenuItemSetting>> lookup)
+        private void RestoreLastSelectedTreeNode()
         {
-            var childCount = 0;
-            if (!string.IsNullOrEmpty(setting.GuidId) && lookup.ContainsKey(setting.GuidId))
-                childCount = lookup[setting.GuidId].Count;
-
-            var displayText = setting.Header ?? setting.GuidId;
-            if (!setting.IsVisible)
-                displayText = $"[Hidden] {displayText}";
-            if (childCount > 0)
-                displayText = $"{displayText} ({childCount})";
-
-            var node = new TreeViewItem
+            var lastNode = MenuItemManagerConfig.Instance.LastSelectedTreeNode;
+            if (string.IsNullOrEmpty(lastNode))
             {
-                Header = displayText,
-                Tag = setting.GuidId ?? "",
-                IsExpanded = childCount > 0,
-                Foreground = setting.IsVisible
-                    ? (System.Windows.Media.Brush)Application.Current.FindResource("PrimaryTextBrush")
-                    : (System.Windows.Media.Brush)Application.Current.FindResource("SecondaryTextBrush")
-            };
-            node.Selected += TreeNode_Selected;
-
-            // Recursively add children
-            if (!string.IsNullOrEmpty(setting.GuidId) && lookup.ContainsKey(setting.GuidId))
-            {
-                foreach (var child in lookup[setting.GuidId].OrderBy(s => s.OrderOverride ?? s.DefaultOrder))
+                // Default: select (All)
+                if (MenuTreeView.Items.Count > 0 && MenuTreeView.Items[0] is TreeViewItem allNode)
                 {
-                    node.Items.Add(CreateTreeNode(child, lookup));
+                    allNode.IsSelected = true;
                 }
+                return;
             }
 
-            return node;
+            // Find the node with matching Tag
+            if (SelectTreeNodeByTag(MenuTreeView, lastNode))
+                return;
+
+            // Fallback: select (All)
+            if (MenuTreeView.Items.Count > 0 && MenuTreeView.Items[0] is TreeViewItem fallback)
+            {
+                fallback.IsSelected = true;
+            }
+        }
+
+        private static bool SelectTreeNodeByTag(ItemsControl parent, string tag)
+        {
+            foreach (var item in parent.Items)
+            {
+                if (item is TreeViewItem tvi)
+                {
+                    if (tvi.Tag is string t && t == tag)
+                    {
+                        tvi.IsSelected = true;
+                        // Expand parent so it's visible
+                        if (parent is TreeViewItem parentTvi)
+                            parentTvi.IsExpanded = true;
+                        return true;
+                    }
+                    if (SelectTreeNodeByTag(tvi, tag))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private void SaveLastSelectedTreeNode()
+        {
+            MenuItemManagerConfig.Instance.LastSelectedTreeNode = _selectedOwnerGuid;
         }
 
         private void TreeNode_Selected(object sender, RoutedEventArgs e)
@@ -179,6 +207,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             if (sender is TreeViewItem tvi && tvi.Tag is string ownerGuid)
             {
                 _selectedOwnerGuid = ownerGuid;
+                SaveLastSelectedTreeNode();
                 RefreshMenuItemList();
             }
         }
@@ -321,6 +350,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
             ConfigHandler.GetInstance().SaveConfigs();
             RefreshHierarchyView();
+            RestoreLastSelectedTreeNode();
             UpdateStatusText();
             MessageBox.Show("Settings applied and menu rebuilt.", "MenuItemManager", MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -341,6 +371,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             MenuItemManagerService.GetInstance().RebuildMenu();
             ConfigHandler.GetInstance().SaveConfigs();
             RefreshHierarchyView();
+            RestoreLastSelectedTreeNode();
             RefreshMenuItemList();
             UpdateStatusText();
         }

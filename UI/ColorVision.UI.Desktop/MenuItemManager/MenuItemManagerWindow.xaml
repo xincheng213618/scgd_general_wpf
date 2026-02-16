@@ -60,7 +60,7 @@
                              ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <TreeView.ItemContainerStyle>
                             <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
-                                <Setter Property="IsExpanded" Value="True"/>
+                                <Setter Property="IsExpanded" Value="False"/>
                                 <Setter Property="Padding" Value="2"/>
                             </Style>
                         </TreeView.ItemContainerStyle>
