@@ -5,16 +5,6 @@ using System.Windows.Controls;
 
 namespace ColorVision.UI.Desktop.MenuItemManager
 {
-    public class MenuTreeNode
-    {
-        public string GuidId { get; set; } = string.Empty;
-        public string DisplayName { get; set; } = string.Empty;
-        public int ChildCount { get; set; }
-        public ObservableCollection<MenuTreeNode> Children { get; set; } = new();
-
-        public override string ToString() => $"{DisplayName} ({ChildCount})";
-    }
-
     public partial class MenuItemManagerWindow : Window
     {
         public MenuItemManagerWindow()
@@ -30,47 +20,43 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         /// </summary>
         public List<string> AvailableOwnerGuids { get; set; } = new();
 
+        private static string GetEffectiveOwner(MenuItemSetting s) => s.OwnerGuidOverride ?? s.OwnerGuid ?? "";
+
         private void Window_Initialized(object sender, EventArgs e)
         {
             var config = MenuItemManagerConfig.Instance;
-            var menuManager = MenuManager.GetInstance();
 
             // Ensure settings are synced
             MenuItemManagerService.GetInstance().ApplySettings();
 
             _allSettings = config.Settings;
 
-            // Build available OwnerGuid list: all GuidIds that serve as parent nodes + well-known constants
-            BuildAvailableOwnerGuids();
-
-            // Build tree view
-            BuildTreeView();
-
+            RefreshHierarchyView();
             UpdateStatusText();
+        }
+
+        private void RefreshHierarchyView()
+        {
+            BuildAvailableOwnerGuids();
+            BuildTreeView();
         }
 
         private void BuildAvailableOwnerGuids()
         {
-            var guids = new HashSet<string>();
+            var guids = new HashSet<string>
+            {
+                MenuItemConstants.Menu,
+                MenuItemConstants.File,
+                MenuItemConstants.Edit,
+                MenuItemConstants.View,
+                MenuItemConstants.Tool,
+                MenuItemConstants.Help
+            };
 
-            // Add well-known top-level constants
-            guids.Add(MenuItemConstants.Menu);
-            guids.Add(MenuItemConstants.File);
-            guids.Add(MenuItemConstants.Edit);
-            guids.Add(MenuItemConstants.View);
-            guids.Add(MenuItemConstants.Tool);
-            guids.Add(MenuItemConstants.Help);
-
-            // Add all GuidIds (any item can be a parent)
             foreach (var s in _allSettings)
             {
                 if (!string.IsNullOrEmpty(s.GuidId))
                     guids.Add(s.GuidId);
-            }
-
-            // Add all OwnerGuids (existing parents)
-            foreach (var s in _allSettings)
-            {
                 if (!string.IsNullOrEmpty(s.OwnerGuid))
                     guids.Add(s.OwnerGuid);
             }
@@ -82,11 +68,11 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         {
             MenuTreeView.Items.Clear();
 
-            // Build lookup: ownerGuid -> list of settings
+            // Build lookup: effectiveOwnerGuid -> list of settings
             var effectiveOwnerLookup = new Dictionary<string, List<MenuItemSetting>>();
             foreach (var s in _allSettings)
             {
-                var owner = s.OwnerGuidOverride ?? s.OwnerGuid ?? "";
+                var owner = GetEffectiveOwner(s);
                 if (!effectiveOwnerLookup.ContainsKey(owner))
                     effectiveOwnerLookup[owner] = new List<MenuItemSetting>();
                 effectiveOwnerLookup[owner].Add(s);
@@ -210,8 +196,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
             if (_selectedOwnerGuid != null && _selectedOwnerGuid != "(All)")
             {
-                // Show items whose effective OwnerGuid matches
-                filtered = filtered.Where(s => (s.OwnerGuidOverride ?? s.OwnerGuid) == _selectedOwnerGuid);
+                filtered = filtered.Where(s => GetEffectiveOwner(s) == _selectedOwnerGuid);
             }
 
             if (!string.IsNullOrEmpty(searchText))
@@ -274,16 +259,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                 Width = double.NaN,
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
-            ownerCombo.SelectionChanged += (s, e) =>
-            {
-                if (ownerCombo.SelectedItem is string selected)
-                    setting.OwnerGuidOverride = string.IsNullOrEmpty(selected) ? null : selected;
-            };
-            ownerCombo.LostFocus += (s, e) =>
-            {
-                var text = ownerCombo.Text?.Trim();
-                setting.OwnerGuidOverride = string.IsNullOrEmpty(text) ? null : text;
-            };
+            ownerCombo.SelectionChanged += (s, _) => ApplyOwnerGuidFromCombo(setting, ownerCombo);
+            ownerCombo.LostFocus += (s, _) => ApplyOwnerGuidFromCombo(setting, ownerCombo);
             DetailPanel.Children.Add(ownerCombo);
 
             var clearBtn = new Button
@@ -293,12 +270,18 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Margin = new Thickness(0, 0, 0, 4)
             };
-            clearBtn.Click += (s, e) =>
+            clearBtn.Click += (s, _) =>
             {
                 setting.OwnerGuidOverride = null;
                 ownerCombo.Text = "";
             };
             DetailPanel.Children.Add(clearBtn);
+        }
+
+        private static void ApplyOwnerGuidFromCombo(MenuItemSetting setting, ComboBox combo)
+        {
+            var text = combo.SelectedItem as string ?? combo.Text?.Trim();
+            setting.OwnerGuidOverride = string.IsNullOrEmpty(text) ? null : text;
         }
 
         private void AddDetailRow(string label, string value)
@@ -330,7 +313,6 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         {
             MenuItemManagerService.GetInstance().RebuildMenu();
 
-            // Apply hotkeys to main window
             var mainWindow = Application.Current.MainWindow;
             if (mainWindow != null)
             {
@@ -338,10 +320,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             }
 
             ConfigHandler.GetInstance().SaveConfigs();
-
-            // Rebuild tree to reflect changes
-            BuildAvailableOwnerGuids();
-            BuildTreeView();
+            RefreshHierarchyView();
             UpdateStatusText();
             MessageBox.Show("Settings applied and menu rebuilt.", "MenuItemManager", MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -361,9 +340,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
             MenuItemManagerService.GetInstance().RebuildMenu();
             ConfigHandler.GetInstance().SaveConfigs();
-
-            BuildAvailableOwnerGuids();
-            BuildTreeView();
+            RefreshHierarchyView();
             RefreshMenuItemList();
             UpdateStatusText();
         }

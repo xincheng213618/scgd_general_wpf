@@ -211,11 +211,12 @@ UI/ColorVision.UI.Desktop/MenuItemManager/
 public class MenuItemSetting : ViewModelBase
 {
     public string GuidId { get; set; }              // 菜单项唯一标识
-    public string? OwnerGuid { get; set; }           // 父菜单标识
+    public string? OwnerGuid { get; set; }           // 父菜单标识（默认值，来自原始 IMenuItem）
     public string? Header { get; set; }              // 显示名称（只读，来自原始 IMenuItem）
     public bool IsVisible { get; set; } = true;      // 是否显示
     public int? OrderOverride { get; set; }           // 排序覆盖值 (null = 使用默认)
     public string? HotkeyOverride { get; set; }       // 快捷键覆盖 (null = 使用默认)
+    public string? OwnerGuidOverride { get; set; }    // 父菜单覆盖 (null = 使用默认，可挂载到任意位置)
 }
 ```
 
@@ -240,22 +241,25 @@ public class MenuItemManagerService
     // 2. 将隐藏项的 GuidId 添加到 MenuManager.FilteredGuids
     // 3. 注册快捷键 InputBinding
     // 4. 处理 Order 覆盖
+    // 5. 处理 OwnerGuid 覆盖（菜单项挂载位置）
     
-    public void ApplySettings(MenuManager menuManager, Window mainWindow) { ... }
-    public void SaveSettings() { ... }
+    public void ApplySettings() { ... }
+    public void RebuildMenu() { ... }
+    public void ApplyHotkeys(Window mainWindow) { ... }
 }
 ```
 
 ### UI/ColorVision.UI 层需要的最小修改
 
-为了支持 Order 覆盖，需要在 `MenuManager` 中添加少量扩展点：
+为了支持 Order 和 OwnerGuid 覆盖，需要在 `MenuManager` 中添加少量扩展点：
 
 ```csharp
 // MenuManager.cs 新增
 public Dictionary<string, int> OrderOverrides { get; } = new();
+public Dictionary<string, string> OwnerGuidOverrides { get; } = new();
 
-// 排序时使用：
-// .OrderBy(mi => OrderOverrides.TryGetValue(mi.GuidId ?? "", out var o) ? o : mi.Order)
+public int GetEffectiveOrder(IMenuItem mi) => ...;           // 检查 OrderOverrides 后回退到 mi.Order
+public string? GetEffectiveOwnerGuid(IMenuItem mi) => ...;   // 检查 OwnerGuidOverrides 后回退到 mi.OwnerGuid
 ```
 
 **注意**: 这是对 MenuManager 的最小侵入性修改。
