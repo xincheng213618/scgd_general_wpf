@@ -10,6 +10,7 @@
 		<GenerateDocumentationFile>False</GenerateDocumentationFile>
 		<PackageReadmeFile></PackageReadmeFile>
 		<UIProjectPackageVersion>*</UIProjectPackageVersion>
+		<NoWarn>WFO1000</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>

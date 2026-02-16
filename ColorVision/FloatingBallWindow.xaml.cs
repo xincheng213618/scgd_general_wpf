@@ -4,7 +4,6 @@ using System;
 using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms;
 using System.Windows.Input;
 
 namespace ColorVision.FloatingBall
@@ -29,7 +28,7 @@ namespace ColorVision.FloatingBall
             if (Config.Top == 0)
             {
                 // 获取主屏幕
-                var screen = Screen.PrimaryScreen;
+                var screen = System.Windows.Forms.Screen.PrimaryScreen;
                 // 获取主屏幕工作区（物理像素）
                 var workingArea = screen.WorkingArea;
 
