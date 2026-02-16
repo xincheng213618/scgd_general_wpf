@@ -15,6 +15,20 @@ namespace ProjectLUX.Process.VR.MTFH
 {
     public class VRMTFHProcessConfig : ProcessConfigBase
     {
+        public int Size { get => _Size; set { _Size = value; OnPropertyChanged(); } }
+        private int _Size = 30;
+
+        public double Center { get => _Center; set { _Center = value; OnPropertyChanged(); } }
+        private double _Center = 14.5;
+
+        public double RA { get => _RA; set { _RA = value; OnPropertyChanged(); } }
+        private double _RA = 1.0;
+        public double RB { get => _RB; set { _RB = value; OnPropertyChanged(); } }
+        private double _RB = 4.0;
+        public double RC { get => _RC; set { _RC = value; OnPropertyChanged(); } }
+        private double _RC = 9.0;
+        public double RD { get => _RD; set { _RD = value; OnPropertyChanged(); } }
+        private double _RD = 15.0;
 
     }
 
@@ -59,39 +73,38 @@ namespace ProjectLUX.Process.VR.MTFH
                             testResult.MTFDetailViewReslut = mtfDetail;
 
                             log.Info("MTF Cout:" + testResult.ObjectiveTestItems.Count);
-                            if (testResult.ObjectiveTestItems.Count == 900)
+                            if (testResult.ObjectiveTestItems.Count == Config.Size* Config.Size)
                             {
                                 List<List<ObjectiveTestItem>> RectItems = new List<List<ObjectiveTestItem>>();
 
-                                for (int i = 0; i < 30; i += 1)
+                                for (int i = 0; i < Config.Size; i += 1)
                                 {
                                     List<ObjectiveTestItem> objectiveTestItems = new List<ObjectiveTestItem>();
-                                    for (int j = 0; j < 30; j++)
+                                    for (int j = 0; j < Config.Size; j++)
                                     {
-                                        objectiveTestItems.Add(testResult.ObjectiveTestItems[i*30 +j]);
+                                        objectiveTestItems.Add(testResult.ObjectiveTestItems[i* Config.Size + j]);
                                     }
                                     RectItems.Add(objectiveTestItems);
                                 }
-                                const int size = 30;
-                                const double center = 14.5;
+                                int Size = Config.Size;
+                                double center = Config.Center;
 
                                 // 半径阈值
-                                const double rA = 1.0;
-                                const double rB = 2.0;
-                                const double rC = 4.0;
-                                const double rD = 7.5;
+                                double rA = Config.RA;
+                                double rB = Config.RB;
+                                double rC = Config.RC;
+                                double rD = Config.RD;
 
                                 List<ObjectiveTestItem> regionA = new List<ObjectiveTestItem>();
                                 List<ObjectiveTestItem> regionB = new List<ObjectiveTestItem>();
                                 List<ObjectiveTestItem> regionC = new List<ObjectiveTestItem>();
                                 List<ObjectiveTestItem> regionD = new List<ObjectiveTestItem>();
 
-
-                                for (int row = 0; row < size; row++)
+                                for (int row = 0; row < Size; row++)
                                 {
-                                    for (int col = 0; col < size; col++)
+                                    for (int col = 0; col < Size; col++)
                                     {
-                                        int idx = row * size + col;
+                                        int idx = row * Size + col;
                                         var item = testResult.ObjectiveTestItems[idx];
 
                                         // 计算到中心的距离
@@ -207,16 +220,67 @@ namespace ProjectLUX.Process.VR.MTFH
             VRMTFHViewTestResult testResult = JsonConvert.DeserializeObject<VRMTFHViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return;
 
+            int size = Config.Size;
+            double center = Config.Center;
+
+            // 半径阈值
+            double rA = Config.RA;
+            double rB = Config.RB;
+            double rC = Config.RC;
+            double rD = Config.RD;
+
             int id = 0;
-            if (testResult.MTFDetailViewReslut.MTFResult.result.Count != 0)
+            var results = testResult.MTFDetailViewReslut.MTFResult.result;
+            if (results.Count != 0)
             {
-                foreach (var item in testResult.MTFDetailViewReslut.MTFResult.result)
+                // 先尝试排序，保证顺序和 Execute 中一致（如果需要），这里假设数据顺序已经是 30x30 
+                // 注意：Render时如果直接遍历列表，需要确认列表是否是 900 个且顺序对应 row/col
+                // 如果列表是无序的或者数量不对应，下面计算 idx 的逻辑可能会错。
+                // 鉴于 Execute 中做了 Sort，这里通常也是 Sort 后的结果。
+                results.Sort((x, y) => Shlwapi.CompareLogical(x.name, y.name));
+
+                for (int i = 0; i < results.Count; i++)
                 {
+                    var item = results[i];
                     id++;
                     DVRectangleText Rectangle = new();
                     Rectangle.Attribute.Rect = new Rect(item.x, item.y, item.w, item.h);
                     Rectangle.Attribute.Brush = Brushes.Transparent;
-                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+
+                    // 默认红色
+                    Brush penBrush = Brushes.Red;
+
+                    // 如果总数是 900，我们尝试根据行列计算区域颜色
+                    if (results.Count == 900)
+                    {
+                        int row = i / size;
+                        int col = i % size;
+
+                        // 计算到中心的距离
+                        double dr = row - center;
+                        double dc = col - center;
+                        double dist = Math.Sqrt(dr * dr + dc * dc);
+
+                        if (dist <= rA)
+                        {
+                            penBrush = Brushes.Gray;   // A 区域 灰色
+                        }
+                        else if (dist <= rB)
+                        {
+                            penBrush = Brushes.Green;  // B 区域 绿色
+                        }
+                        else if (dist <= rC)
+                        {
+                            penBrush = Brushes.Blue;   // C 区域 蓝色
+                        }
+                        else if (dist <= rD)
+                        {
+                            penBrush = Brushes.Yellow; // D 区域 黄色
+                        }
+                        // 超过 D 区域的默认为 Red
+                    }
+
+                    Rectangle.Attribute.Pen = new Pen(penBrush, 1);
                     Rectangle.Attribute.Id = id;
                     Rectangle.Render();
                     ctx.ImageView.AddVisual(Rectangle);
