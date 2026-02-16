@@ -17,6 +17,7 @@ namespace ColorVision.UI.Menus
         public Menu Menu { get; set; }
         public List<IMenuItem> MenuItems { get; private set; } = new();
         public HashSet<string> FilteredGuids { get; } = new();
+        public Dictionary<string, int> OrderOverrides { get; } = new();
 
         private bool _initialized;
         private List<MenuItem> _menuBack = new();
@@ -31,6 +32,8 @@ namespace ColorVision.UI.Menus
         {
             MenuService.SetInstance(this);
         }
+
+        public int GetEffectiveOrder(IMenuItem mi) => mi.GuidId != null && OrderOverrides.TryGetValue(mi.GuidId, out var o) ? o : mi.Order;
 
         public void AddFilteredGuid(string guid) => FilteredGuids.Add(guid);
         public void AddFilteredGuids(IEnumerable<string> guids)
@@ -56,14 +59,14 @@ namespace ColorVision.UI.Menus
             MenuItems = GetIMenuItemsFiltered();
             var refreshedItems = MenuItems
                 .Where(mi => mi.OwnerGuid == ownerGuid && (mi.GuidId == null || !FilteredGuids.Contains(mi.GuidId)))
-                .OrderBy(mi => mi.Order).ToList();
+                .OrderBy(mi => GetEffectiveOrder(mi)).ToList();
 
             for (int i = 0; i < refreshedItems.Count; i++)
             {
                 var mi = refreshedItems[i];
                 var menuItem = CreateMenuItem(mi);
                 if (i > 0
-                    && mi.Order - refreshedItems[i - 1].Order > 4
+                    && GetEffectiveOrder(mi) - GetEffectiveOrder(refreshedItems[i - 1]) > 4
                     && menuItem.Visibility == Visibility.Visible)
                 {
                     parentMenuItem.Items.Add(new Separator());
@@ -171,7 +174,7 @@ namespace ColorVision.UI.Menus
             MenuItems = GetIMenuItemsFiltered();
 
             // 构建一级菜单
-            var rootMenuItems = MenuItems.Where(mi => mi.OwnerGuid == "Menu").OrderBy(mi => mi.Order);
+            var rootMenuItems = MenuItems.Where(mi => mi.OwnerGuid == "Menu").OrderBy(mi => GetEffectiveOrder(mi));
             foreach (var mi in rootMenuItems)
             {
                 var menuItem = CreateMenuItem(mi);
@@ -190,13 +193,13 @@ namespace ColorVision.UI.Menus
 
         private void AddChildMenuItems(MenuItem parent, string ownerGuid)
         {
-            var children = MenuItems.Where(mi => mi.OwnerGuid == ownerGuid).OrderBy(mi => mi.Order).ToList();
+            var children = MenuItems.Where(mi => mi.OwnerGuid == ownerGuid).OrderBy(mi => GetEffectiveOrder(mi)).ToList();
             for (int i = 0; i < children.Count; i++)
             {
                 var mi = children[i];
                 var menuItem = CreateMenuItem(mi);
                 if (i > 0
-                    && mi.Order - children[i - 1].Order > 4
+                    && GetEffectiveOrder(mi) - GetEffectiveOrder(children[i - 1]) > 4
                     && menuItem.Visibility == Visibility.Visible)
                 {
                     parent.Items.Add(new Separator());
