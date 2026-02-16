@@ -67,6 +67,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                     (s.GuidId?.ToLowerInvariant().Contains(searchText) == true));
             }
 
+            // Use same logic as MenuManager.GetEffectiveOrder: override first, then default
             MenuItemListView.ItemsSource = filtered.OrderBy(s => s.OrderOverride ?? s.DefaultOrder).ToList();
         }
 

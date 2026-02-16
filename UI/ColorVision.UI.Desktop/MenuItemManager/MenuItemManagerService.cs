@@ -76,7 +76,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         /// </summary>
         private static void SyncSettingsFromMenuItems(MenuManager menuManager, MenuItemManagerConfig config)
         {
-            var existingGuids = new HashSet<string>(config.Settings.Where(s => !string.IsNullOrEmpty(s.GuidId)).Select(s => s.GuidId));
+            var existingGuids = new HashSet<string>(config.Settings.Where(s => s.GuidId != null && s.GuidId.Length > 0).Select(s => s.GuidId!));
 
             foreach (var mi in menuManager.MenuItems)
             {
@@ -95,7 +95,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
             // Update Header/DefaultOrder for existing settings
             var menuItemDict = menuManager.MenuItems
-                .Where(mi => !string.IsNullOrEmpty(mi.GuidId))
+                .Where(mi => mi.GuidId != null && mi.GuidId.Length > 0)
                 .GroupBy(mi => mi.GuidId!)
                 .ToDictionary(g => g.Key, g => g.First());
 
