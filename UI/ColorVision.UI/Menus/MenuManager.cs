@@ -17,6 +17,8 @@ namespace ColorVision.UI.Menus
         public Menu Menu { get; set; }
         public List<IMenuItem> MenuItems { get; private set; } = new();
         public HashSet<string> FilteredGuids { get; } = new();
+        public Dictionary<string, int> OrderOverrides { get; } = new();
+        public Dictionary<string, string> OwnerGuidOverrides { get; } = new();
 
         private bool _initialized;
         private List<MenuItem> _menuBack = new();
@@ -31,6 +33,10 @@ namespace ColorVision.UI.Menus
         {
             MenuService.SetInstance(this);
         }
+
+        public int GetEffectiveOrder(IMenuItem mi) => mi.GuidId != null && OrderOverrides.TryGetValue(mi.GuidId, out var o) ? o : mi.Order;
+
+        public string? GetEffectiveOwnerGuid(IMenuItem mi) => mi.GuidId != null && OwnerGuidOverrides.TryGetValue(mi.GuidId, out var g) ? g : mi.OwnerGuid;
 
         public void AddFilteredGuid(string guid) => FilteredGuids.Add(guid);
         public void AddFilteredGuids(IEnumerable<string> guids)
@@ -55,15 +61,15 @@ namespace ColorVision.UI.Menus
 
             MenuItems = GetIMenuItemsFiltered();
             var refreshedItems = MenuItems
-                .Where(mi => mi.OwnerGuid == ownerGuid && (mi.GuidId == null || !FilteredGuids.Contains(mi.GuidId)))
-                .OrderBy(mi => mi.Order).ToList();
+                .Where(mi => GetEffectiveOwnerGuid(mi) == ownerGuid && (mi.GuidId == null || !FilteredGuids.Contains(mi.GuidId)))
+                .OrderBy(mi => GetEffectiveOrder(mi)).ToList();
 
             for (int i = 0; i < refreshedItems.Count; i++)
             {
                 var mi = refreshedItems[i];
                 var menuItem = CreateMenuItem(mi);
                 if (i > 0
-                    && mi.Order - refreshedItems[i - 1].Order > 4
+                    && GetEffectiveOrder(mi) - GetEffectiveOrder(refreshedItems[i - 1]) > 4
                     && menuItem.Visibility == Visibility.Visible)
                 {
                     parentMenuItem.Items.Add(new Separator());
@@ -171,7 +177,7 @@ namespace ColorVision.UI.Menus
             MenuItems = GetIMenuItemsFiltered();
 
             // 构建一级菜单
-            var rootMenuItems = MenuItems.Where(mi => mi.OwnerGuid == "Menu").OrderBy(mi => mi.Order);
+            var rootMenuItems = MenuItems.Where(mi => GetEffectiveOwnerGuid(mi) == "Menu").OrderBy(mi => GetEffectiveOrder(mi));
             foreach (var mi in rootMenuItems)
             {
                 var menuItem = CreateMenuItem(mi);
@@ -190,13 +196,13 @@ namespace ColorVision.UI.Menus
 
         private void AddChildMenuItems(MenuItem parent, string ownerGuid)
         {
-            var children = MenuItems.Where(mi => mi.OwnerGuid == ownerGuid).OrderBy(mi => mi.Order).ToList();
+            var children = MenuItems.Where(mi => GetEffectiveOwnerGuid(mi) == ownerGuid).OrderBy(mi => GetEffectiveOrder(mi)).ToList();
             for (int i = 0; i < children.Count; i++)
             {
                 var mi = children[i];
                 var menuItem = CreateMenuItem(mi);
                 if (i > 0
-                    && mi.Order - children[i - 1].Order > 4
+                    && GetEffectiveOrder(mi) - GetEffectiveOrder(children[i - 1]) > 4
                     && menuItem.Visibility == Visibility.Visible)
                 {
                     parent.Items.Add(new Separator());
@@ -284,7 +290,7 @@ namespace ColorVision.UI.Menus
             return allMenuItems.Where(mi => mi.GuidId == null || !allFilteredGuids.Contains(mi.GuidId)).ToList();
         }
 
-        private static HashSet<string> GetAllFilteredGuids(IEnumerable<IMenuItem> allMenuItems, IEnumerable<string> initialGuids)
+        private HashSet<string> GetAllFilteredGuids(IEnumerable<IMenuItem> allMenuItems, IEnumerable<string> initialGuids)
         {
             var result = new HashSet<string>(initialGuids ?? Enumerable.Empty<string>());
             bool added;
@@ -293,7 +299,8 @@ namespace ColorVision.UI.Menus
                 added = false;
                 foreach (var item in allMenuItems)
                 {
-                    if (item.OwnerGuid != null && result.Contains(item.OwnerGuid) && item.GuidId != null && result.Add(item.GuidId))
+                    var effectiveOwner = GetEffectiveOwnerGuid(item);
+                    if (effectiveOwner != null && result.Contains(effectiveOwner) && item.GuidId != null && result.Add(item.GuidId))
                         added = true;
                 }
             } while (added);

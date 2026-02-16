@@ -15,7 +15,7 @@ user_home = os.environ.get('USERPROFILE') or os.path.expanduser('~')
 desktop_dir = os.path.join(user_home, 'Desktop')
 
 # 构建相关路径（基于仓库根目录）
-new_version_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net8.0-windows')
+new_version_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net10.0-windows')
 exe_path = os.path.join(new_version_dir, 'ColorVision.exe')
 
 # 输出历史与增量包目录（基于当前用户桌面）
@@ -191,7 +191,7 @@ def find_latest_zip(directory, version):
 
 
 
-new_version_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net8.0-windows')
+new_version_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net10.0-windows')
 history_dir = os.path.join(desktop_dir, 'History')
 update_dir = os.path.join(history_dir, 'update')
 
