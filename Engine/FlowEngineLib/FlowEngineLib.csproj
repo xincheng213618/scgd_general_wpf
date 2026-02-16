@@ -5,30 +5,21 @@
 		<UseWindowsForms>True</UseWindowsForms>
 		<LangVersion>11.0</LangVersion>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<TargetFrameworks>net8.0-windows;net472</TargetFrameworks>
+		<TargetFrameworks>net10.0-windows;net8.0-windows;net472</TargetFrameworks>
 		<VersionPrefix>2026.02.03.0</VersionPrefix>
-		<NoWarn>CA1853,CA1309,CA1715,CA1716,CS0649,CS0219,CS4014,CS1717,CS850,CA1850,CA1859,CA1725,CA5351,CS1859,CS1850,CA1864,CA1854,CA1822,CA1510,CA1852,CA1310,CA1001,CA1861,CA2208,CA1805,CA1707,CA2022,CA1711,CA1051,CA2211,CA2200,CA1018,CA1010,CA1311,CA1304,CA2249,CA1806,CA1720</NoWarn>
+		<NoWarn>WFO1000,CA1853,CA1309,CA1715,CA1716,CS0649,CS0219,CS4014,CS1717,CS850,CA1850,CA1859,CA1725,CA5351,CS1859,CS1850,CA1864,CA1854,CA1822,CA1510,CA1852,CA1310,CA1001,CA1861,CA2208,CA1805,CA1707,CA2022,CA1711,CA1051,CA2211,CA2200,CA1018,CA1010,CA1311,CA1304,CA2249,CA1806,CA1720</NoWarn>
 		<SignAssembly>False</SignAssembly>
 	</PropertyGroup>
 
-	  <!-- net8.0-windows 相关引用 -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
-    <PackageReference Include="log4net" Version="3.2.0" />
-    <PackageReference Include="MQTTnet" Version="4.3.4.1084" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <ProjectReference Include="..\ST.Library.UI\ST.Library.UI.csproj" />
-  </ItemGroup>
-
   <!-- net472 相关引用 -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
-    <PackageReference Include="log4net" Version="3.2.0" />
-    <PackageReference Include="MQTTnet" Version="4.3.4.1084" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <ProjectReference Include="..\ST.Library.UI\ST.Library.UI.csproj" />
   </ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="log4net" Version="3.2.0" />
+		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="CsvHelper" Version="33.1.0" />
 	</ItemGroup>
 	<ItemGroup>
