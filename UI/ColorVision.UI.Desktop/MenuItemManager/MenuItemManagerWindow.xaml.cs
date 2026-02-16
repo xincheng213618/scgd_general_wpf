@@ -177,6 +177,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
         private static bool SelectTreeNodeByTag(ItemsControl parent, string tag)
         {
+            // Two-level iteration: (All) -> first-level -> second-level
             foreach (var item in parent.Items)
             {
                 if (item is TreeViewItem tvi)
@@ -184,13 +185,20 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                     if (tvi.Tag is string t && t == tag)
                     {
                         tvi.IsSelected = true;
-                        // Expand parent so it's visible
                         if (parent is TreeViewItem parentTvi)
                             parentTvi.IsExpanded = true;
                         return true;
                     }
-                    if (SelectTreeNodeByTag(tvi, tag))
-                        return true;
+                    // Check second level
+                    foreach (var child in tvi.Items)
+                    {
+                        if (child is TreeViewItem childTvi && childTvi.Tag is string ct && ct == tag)
+                        {
+                            tvi.IsExpanded = true;
+                            childTvi.IsSelected = true;
+                            return true;
+                        }
+                    }
                 }
             }
             return false;
@@ -199,6 +207,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         private void SaveLastSelectedTreeNode()
         {
             MenuItemManagerConfig.Instance.LastSelectedTreeNode = _selectedOwnerGuid;
+            ConfigHandler.GetInstance().SaveConfigs();
         }
 
         private void TreeNode_Selected(object sender, RoutedEventArgs e)
