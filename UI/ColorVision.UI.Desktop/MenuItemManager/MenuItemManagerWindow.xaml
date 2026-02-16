@@ -151,6 +151,7 @@
                                         <ComboBox IsEditable="True" 
                                                  Text="{Binding OwnerGuidOverride, UpdateSourceTrigger=PropertyChanged}"
                                                  ItemsSource="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=AvailableOwnerGuids}"
+                                                 DisplayMemberPath="DisplayPath"
                                                  Padding="2"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellEditingTemplate>

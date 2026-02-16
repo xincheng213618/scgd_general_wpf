@@ -5,6 +5,17 @@ using System.Windows.Controls;
 
 namespace ColorVision.UI.Desktop.MenuItemManager
 {
+    /// <summary>
+    /// Represents an OwnerGuid option with hierarchical path display (e.g. "Menu > Help > Log")
+    /// </summary>
+    public class OwnerGuidOption
+    {
+        public string GuidId { get; set; } = string.Empty;
+        public string DisplayPath { get; set; } = string.Empty;
+
+        public override string ToString() => DisplayPath;
+    }
+
     public partial class MenuItemManagerWindow : Window
     {
         public MenuItemManagerWindow()
@@ -16,9 +27,9 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         private string? _selectedOwnerGuid;
 
         /// <summary>
-        /// Available OwnerGuid values for the ComboBox dropdown in the DataGrid
+        /// Available OwnerGuid options for the ComboBox dropdown (multi-level path display)
         /// </summary>
-        public List<string> AvailableOwnerGuids { get; set; } = new();
+        public List<OwnerGuidOption> AvailableOwnerGuids { get; set; } = new();
 
         private static string GetEffectiveOwner(MenuItemSetting s) => s.OwnerGuidOverride ?? s.OwnerGuid ?? "";
 
@@ -46,6 +57,26 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 
         private void BuildAvailableOwnerGuids()
         {
+            // Build GuidId -> Header lookup from all settings
+            var headerLookup = new Dictionary<string, string>();
+            foreach (var s in _allSettings)
+            {
+                if (!string.IsNullOrEmpty(s.GuidId) && !string.IsNullOrEmpty(s.Header))
+                    headerLookup[s.GuidId] = s.Header;
+            }
+
+            // Well-known top-level names
+            headerLookup[MenuItemConstants.Menu] = "Menu";
+
+            // Build GuidId -> OwnerGuid lookup for path traversal
+            var ownerLookup = new Dictionary<string, string>();
+            foreach (var s in _allSettings)
+            {
+                if (!string.IsNullOrEmpty(s.GuidId) && !string.IsNullOrEmpty(s.OwnerGuid))
+                    ownerLookup[s.GuidId] = s.OwnerGuid;
+            }
+
+            // Collect all valid GuidIds
             var guids = new HashSet<string>
             {
                 MenuItemConstants.Menu,
@@ -64,7 +95,68 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                     guids.Add(s.OwnerGuid);
             }
 
-            AvailableOwnerGuids = guids.OrderBy(g => g).ToList();
+            // Build hierarchical path for each guid
+            var options = new List<OwnerGuidOption>();
+            foreach (var guid in guids)
+            {
+                var path = BuildMenuPath(guid, headerLookup, ownerLookup);
+                options.Add(new OwnerGuidOption { GuidId = guid, DisplayPath = path });
+            }
+
+            AvailableOwnerGuids = options.OrderBy(o => o.DisplayPath).ToList();
+        }
+
+        /// <summary>
+        /// Build a hierarchical path like "Menu > Help > Log" for a given GuidId
+        /// </summary>
+        private static string BuildMenuPath(string guidId, Dictionary<string, string> headerLookup, Dictionary<string, string> ownerLookup)
+        {
+            var parts = new List<string>();
+            var current = guidId;
+            var visited = new HashSet<string>();
+
+            while (!string.IsNullOrEmpty(current) && visited.Add(current))
+            {
+                var display = headerLookup.ContainsKey(current) ? headerLookup[current] : current;
+                parts.Add(display);
+
+                if (ownerLookup.ContainsKey(current))
+                    current = ownerLookup[current];
+                else
+                    break;
+            }
+
+            parts.Reverse();
+            return string.Join(" > ", parts);
+        }
+
+        /// <summary>
+        /// Find GuidId from display path
+        /// </summary>
+        private string? ResolveGuidIdFromDisplayPath(string displayPath)
+        {
+            if (string.IsNullOrEmpty(displayPath)) return null;
+
+            // Direct match first
+            var option = AvailableOwnerGuids.FirstOrDefault(o => o.DisplayPath == displayPath);
+            if (option != null) return option.GuidId;
+
+            // Fallback: treat as raw GuidId
+            var directMatch = AvailableOwnerGuids.FirstOrDefault(o => o.GuidId == displayPath);
+            if (directMatch != null) return directMatch.GuidId;
+
+            // User typed a raw GuidId that's not in the list
+            return displayPath;
+        }
+
+        /// <summary>
+        /// Find display path from GuidId
+        /// </summary>
+        private string GetDisplayPathForGuidId(string? guidId)
+        {
+            if (string.IsNullOrEmpty(guidId)) return "";
+            var option = AvailableOwnerGuids.FirstOrDefault(o => o.GuidId == guidId);
+            return option?.DisplayPath ?? guidId;
         }
 
         private void BuildTreeView()
@@ -268,8 +360,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             DetailPanel.Children.Clear();
 
             AddDetailRow("GuidId", setting.GuidId);
-            AddDetailRow("OwnerGuid (default)", setting.OwnerGuid ?? "");
-            AddDetailRow("OwnerGuid (override)", setting.OwnerGuidOverride ?? "(default)");
+            AddDetailRow("OwnerGuid (default)", GetDisplayPathForGuidId(setting.OwnerGuid));
+            AddDetailRow("OwnerGuid (override)", setting.OwnerGuidOverride != null ? GetDisplayPathForGuidId(setting.OwnerGuidOverride) : "(default)");
             AddDetailRow("Header", setting.Header ?? "");
             AddDetailRow("Default Order", setting.DefaultOrder.ToString());
             AddDetailRow("Order Override", setting.OrderOverride?.ToString() ?? "(default)");
@@ -288,11 +380,16 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             };
             DetailPanel.Children.Add(ownerLabel);
 
+            // Default to original OwnerGuid path when no override is set
+            var currentOverrideGuid = setting.OwnerGuidOverride ?? setting.OwnerGuid;
+            var displayText = GetDisplayPathForGuidId(currentOverrideGuid);
+
             var ownerCombo = new ComboBox
             {
                 IsEditable = true,
-                Text = setting.OwnerGuidOverride ?? "",
+                Text = displayText,
                 ItemsSource = AvailableOwnerGuids,
+                DisplayMemberPath = "DisplayPath",
                 Margin = new Thickness(0, 0, 0, 8),
                 Width = double.NaN,
                 HorizontalAlignment = HorizontalAlignment.Stretch
@@ -311,15 +408,29 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             clearBtn.Click += (s, _) =>
             {
                 setting.OwnerGuidOverride = null;
-                ownerCombo.Text = "";
+                ownerCombo.Text = GetDisplayPathForGuidId(setting.OwnerGuid);
             };
             DetailPanel.Children.Add(clearBtn);
         }
 
-        private static void ApplyOwnerGuidFromCombo(MenuItemSetting setting, ComboBox combo)
+        private void ApplyOwnerGuidFromCombo(MenuItemSetting setting, ComboBox combo)
         {
-            var text = combo.SelectedItem as string ?? combo.Text?.Trim();
-            setting.OwnerGuidOverride = string.IsNullOrEmpty(text) ? null : text;
+            string? guidId = null;
+            if (combo.SelectedItem is OwnerGuidOption option)
+            {
+                guidId = option.GuidId;
+            }
+            else
+            {
+                var text = combo.Text?.Trim();
+                guidId = ResolveGuidIdFromDisplayPath(text ?? "");
+            }
+
+            // Only set override if it differs from the original
+            if (!string.IsNullOrEmpty(guidId) && guidId != setting.OwnerGuid)
+                setting.OwnerGuidOverride = guidId;
+            else
+                setting.OwnerGuidOverride = null;
         }
 
         private void AddDetailRow(string label, string value)
