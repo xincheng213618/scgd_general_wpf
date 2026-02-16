@@ -38,19 +38,19 @@ namespace ColorVision
     }
 
 
-    public class MenuRbacManager : IRightMenuItemProvider
-    {
-        public IEnumerable<MenuItemMetadata> GetMenuItems()
-        {
-            MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
-            menuItemMetadata.Command = new RelayCommand(a => new AboutMsgWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-            var Image = new System.Windows.Controls.Image();
-            Image.Source = new BitmapImage(new Uri("/ColorVision;component/Assets/Image/ColorVision.ico", UriKind.Relative));
-            menuItemMetadata.Icon = Image;
-            menuItemMetadata.Order = 999;
-            return new MenuItemMetadata[] { menuItemMetadata };
-        }
-    }
+    //public class MenuRbacManager : IRightMenuItemProvider
+    //{
+    //    public IEnumerable<MenuItemMetadata> GetMenuItems()
+    //    {
+    //        MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
+    //        menuItemMetadata.Command = new RelayCommand(a => new AboutMsgWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+    //        var Image = new System.Windows.Controls.Image();
+    //        Image.Source = new BitmapImage(new Uri("/ColorVision;component/Assets/Image/ColorVision.ico", UriKind.Relative));
+    //        menuItemMetadata.Icon = Image;
+    //        menuItemMetadata.Order = 999;
+    //        return new MenuItemMetadata[] { menuItemMetadata };
+    //    }
+    //}
 
 
     /// <summary>
@@ -70,9 +70,9 @@ namespace ColorVision
             Topmost = true;
             CloseButton.Focus();
             #if (DEBUG == true)
-            TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly())? " (Debug) " : "(Release)")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位) - {Assembly.GetExecutingAssembly().GetName().Version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
+            TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly())? " Debug " : "Release")}{(Debugger.IsAttached ? " (调试中) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}位) - {Assembly.GetExecutingAssembly().GetName().Version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
 #else
-            TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug)" : "")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位 -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd})";
+            TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly()) ? " Debug" : "")}{(Debugger.IsAttached ? " (调试中) " : "")} {(IntPtr.Size == 4 ? "32" : "64")}位 -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
 #endif
             Icon = null;
             TextSharp1.Text = Assembly.GetExecutingAssembly().GetName().Version.ToString();
