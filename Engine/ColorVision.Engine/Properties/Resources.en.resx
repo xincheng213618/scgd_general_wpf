@@ -2643,4 +2643,25 @@
   <data name="InternalTools" xml:space="preserve">
     <value>Internal Tools</value>
   </data>
+  <data name="AlgorithmVisibilitySettings" xml:space="preserve">
+    <value>Algorithm Visibility Settings</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>Visible</value>
+  </data>
+  <data name="Group" xml:space="preserve">
+    <value>Group</value>
+  </data>
+  <data name="ShowAll" xml:space="preserve">
+    <value>Show All</value>
+  </data>
+  <data name="HideAll" xml:space="preserve">
+    <value>Hide All</value>
+  </data>
+  <data name="ShowGroup" xml:space="preserve">
+    <value>Show Group</value>
+  </data>
+  <data name="HideGroup" xml:space="preserve">
+    <value>Hide Group</value>
+  </data>
 </root>
