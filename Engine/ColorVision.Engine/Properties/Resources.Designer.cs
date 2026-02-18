@@ -304,6 +304,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 算法可见性设置 的本地化字符串。
+        /// </summary>
+        public static string AlgorithmVisibilitySettings {
+            get {
+                return ResourceManager.GetString("AlgorithmVisibilitySettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 别名 的本地化字符串。
         /// </summary>
         public static string Alias {
@@ -3220,6 +3229,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 分组 的本地化字符串。
+        /// </summary>
+        public static string Group {
+            get {
+                return ResourceManager.GetString("Group", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 半波宽 的本地化字符串。
         /// </summary>
         public static string HalfBandwidth {
@@ -3270,6 +3288,24 @@ namespace ColorVision.Engine.Properties {
         public static string height {
             get {
                 return ResourceManager.GetString("height", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 全部隐藏 的本地化字符串。
+        /// </summary>
+        public static string HideAll {
+            get {
+                return ResourceManager.GetString("HideAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 隐藏分组 的本地化字符串。
+        /// </summary>
+        public static string HideGroup {
+            get {
+                return ResourceManager.GetString("HideGroup", resourceCulture);
             }
         }
         
@@ -6424,11 +6460,29 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 全部显示 的本地化字符串。
+        /// </summary>
+        public static string ShowAll {
+            get {
+                return ResourceManager.GetString("ShowAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 显示数据列 的本地化字符串。
         /// </summary>
         public static string ShowDataColumns {
             get {
                 return ResourceManager.GetString("ShowDataColumns", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示分组 的本地化字符串。
+        /// </summary>
+        public static string ShowGroup {
+            get {
+                return ResourceManager.GetString("ShowGroup", resourceCulture);
             }
         }
         
@@ -7495,6 +7549,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 可见 的本地化字符串。
+        /// </summary>
+        public static string Visible {
+            get {
+                return ResourceManager.GetString("Visible", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 电压(V) 的本地化字符串。
         /// </summary>
         public static string Voltage {
@@ -7635,69 +7698,6 @@ namespace ColorVision.Engine.Properties {
         public static string WorkflowTemplate {
             get {
                 return ResourceManager.GetString("WorkflowTemplate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 算法可见性设置 的本地化字符串。
-        /// </summary>
-        public static string AlgorithmVisibilitySettings {
-            get {
-                return ResourceManager.GetString("AlgorithmVisibilitySettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 可见 的本地化字符串。
-        /// </summary>
-        public static string Visible {
-            get {
-                return ResourceManager.GetString("Visible", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 分组 的本地化字符串。
-        /// </summary>
-        public static string Group {
-            get {
-                return ResourceManager.GetString("Group", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 全部显示 的本地化字符串。
-        /// </summary>
-        public static string ShowAll {
-            get {
-                return ResourceManager.GetString("ShowAll", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 全部隐藏 的本地化字符串。
-        /// </summary>
-        public static string HideAll {
-            get {
-                return ResourceManager.GetString("HideAll", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 显示分组 的本地化字符串。
-        /// </summary>
-        public static string ShowGroup {
-            get {
-                return ResourceManager.GetString("ShowGroup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 隐藏分组 的本地化字符串。
-        /// </summary>
-        public static string HideGroup {
-            get {
-                return ResourceManager.GetString("HideGroup", resourceCulture);
             }
         }
     }
