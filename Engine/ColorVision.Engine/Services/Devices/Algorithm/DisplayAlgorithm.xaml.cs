@@ -63,6 +63,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+            var visibilityConfig = DisplayAlgorithmVisibilityConfig.Instance;
             List<DisplayAlgorithmMeta> algorithmMetas = new List<DisplayAlgorithmMeta>();
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
@@ -89,16 +90,21 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     }
                 }
             }
+
+            var visibleAlgorithmMetas = algorithmMetas
+                .Where(a => visibilityConfig.GetAlgorithmVisibility(a.Name))
+                .ToList();
+
             // 用于展示和分组（不需要实例化对象）
             string allAlgorithmsGroup = "All";
             var groups = new List<string> { allAlgorithmsGroup };
-            groups.AddRange(algorithmMetas.Select(a => a.Group).Distinct().Where(g => !string.IsNullOrWhiteSpace(g) && g != allAlgorithmsGroup));
+            groups.AddRange(visibleAlgorithmMetas.Select(a => a.Group).Distinct().Where(g => !string.IsNullOrWhiteSpace(g) && g != allAlgorithmsGroup));
 
             CB_AlgorithmTypes.ItemsSource = groups;
             CB_AlgorithmTypes.SelectedItem = Device.DisplayConfig.LastSelectGroup;
 
             // 按分组和排序展示算法
-            var filteredAlgorithms = algorithmMetas
+            var filteredAlgorithms = visibleAlgorithmMetas
                 .Where(a => a.Group == (string)CB_AlgorithmTypes.SelectedItem || (string)CB_AlgorithmTypes.SelectedItem == allAlgorithmsGroup)
                 .OrderBy(a => a.Order)
                 .ToList();
@@ -136,7 +142,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 if (AlgorithmDict.TryGetValue(e.Type, out IDisplayAlgorithm algorithm))
                 {
                     CB_AlgorithmTypes.SelectedItem = "All";
-                    CB_Algorithms.SelectedItem = algorithmMetas.FirstOrDefault(a=>a.Type == e.Type);
+                    CB_Algorithms.SelectedItem = visibleAlgorithmMetas.FirstOrDefault(a=>a.Type == e.Type);
                     algorithm.IsLocalFile = true;
                     algorithm.ImageFilePath = e.ImageFilePath ?? string.Empty;
                 }
@@ -151,13 +157,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     List<DisplayAlgorithmMeta> filteredAlgorithms;
                     if (selectedGroup == allAlgorithmsGroup)
                     {
-                        filteredAlgorithms = algorithmMetas
+                        filteredAlgorithms = visibleAlgorithmMetas
                             .OrderBy(a => a.Order)
                             .ToList();
                     }
                     else
                     {
-                        filteredAlgorithms = algorithmMetas
+                        filteredAlgorithms = visibleAlgorithmMetas
                             .Where(a => a.Group == selectedGroup)
                             .OrderBy(a => a.Order)
                             .ToList();
@@ -237,6 +243,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
+        }
+
+        private void ButtonVisibilitySettings_Click(object sender, RoutedEventArgs e)
+        {
+            new DisplayAlgorithmVisibilityWindow() { Owner = Window.GetWindow(this), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public void Dispose()

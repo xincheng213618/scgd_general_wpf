@@ -7637,5 +7637,50 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("WorkflowTemplate", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 算法可见性设置 的本地化字符串。
+        /// </summary>
+        public static string AlgorithmVisibilitySettings {
+            get {
+                return ResourceManager.GetString("AlgorithmVisibilitySettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 可见 的本地化字符串。
+        /// </summary>
+        public static string Visible {
+            get {
+                return ResourceManager.GetString("Visible", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 分组 的本地化字符串。
+        /// </summary>
+        public static string Group {
+            get {
+                return ResourceManager.GetString("Group", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 全部显示 的本地化字符串。
+        /// </summary>
+        public static string ShowAll {
+            get {
+                return ResourceManager.GetString("ShowAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 全部隐藏 的本地化字符串。
+        /// </summary>
+        public static string HideAll {
+            get {
+                return ResourceManager.GetString("HideAll", resourceCulture);
+            }
+        }
     }
 }

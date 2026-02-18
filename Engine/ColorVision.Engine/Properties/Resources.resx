@@ -2643,4 +2643,19 @@
   <data name="InternalTools" xml:space="preserve">
     <value>内置工具</value>
   </data>
+  <data name="AlgorithmVisibilitySettings" xml:space="preserve">
+    <value>算法可见性设置</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>可见</value>
+  </data>
+  <data name="Group" xml:space="preserve">
+    <value>分组</value>
+  </data>
+  <data name="ShowAll" xml:space="preserve">
+    <value>全部显示</value>
+  </data>
+  <data name="HideAll" xml:space="preserve">
+    <value>全部隐藏</value>
+  </data>
 </root>
