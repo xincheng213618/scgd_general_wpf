@@ -60,11 +60,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         }
         Dictionary<Type, IDisplayAlgorithm> AlgorithmDict = new Dictionary<Type, IDisplayAlgorithm>();
 
+        List<DisplayAlgorithmMeta> algorithmMetas;
+        DisplayAlgorithmVisibilityConfig visibilityConfig;
+        string allAlgorithmsGroup = "All";
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-            var visibilityConfig = DisplayAlgorithmVisibilityConfig.Instance;
-            List<DisplayAlgorithmMeta> algorithmMetas = new List<DisplayAlgorithmMeta>();
+            visibilityConfig = DisplayAlgorithmVisibilityConfig.Instance;
+            algorithmMetas = new List<DisplayAlgorithmMeta>();
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
@@ -91,26 +95,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
             }
 
-            var visibleAlgorithmMetas = algorithmMetas
-                .Where(a => visibilityConfig.GetAlgorithmVisibility(a.Name))
-                .ToList();
+            RefreshAlgorithmList();
 
-            // 用于展示和分组（不需要实例化对象）
-            string allAlgorithmsGroup = "All";
-            var groups = new List<string> { allAlgorithmsGroup };
-            groups.AddRange(visibleAlgorithmMetas.Select(a => a.Group).Distinct().Where(g => !string.IsNullOrWhiteSpace(g) && g != allAlgorithmsGroup));
-
-            CB_AlgorithmTypes.ItemsSource = groups;
-            CB_AlgorithmTypes.SelectedItem = Device.DisplayConfig.LastSelectGroup;
-
-            // 按分组和排序展示算法
-            var filteredAlgorithms = visibleAlgorithmMetas
-                .Where(a => a.Group == (string)CB_AlgorithmTypes.SelectedItem || (string)CB_AlgorithmTypes.SelectedItem == allAlgorithmsGroup)
-                .OrderBy(a => a.Order)
-                .ToList();
-
-            CB_Algorithms.ItemsSource = filteredAlgorithms;
-            CB_Algorithms.DisplayMemberPath = "Name";  // 假设绑定到 Name 显示
             CB_Algorithms.SelectionChanged += (s, e) =>
             {
                 if (CB_Algorithms.SelectedItem is DisplayAlgorithmMeta meta)
@@ -125,7 +111,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         }
                         else
                         {
-                            // 可选：异常处理或日志
                             return;
                         }
                     }
@@ -141,7 +126,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 if (AlgorithmDict.TryGetValue(e.Type, out IDisplayAlgorithm algorithm))
                 {
-                    CB_AlgorithmTypes.SelectedItem = "All";
+                    CB_AlgorithmTypes.SelectedItem = allAlgorithmsGroup;
+                    var visibleAlgorithmMetas = GetVisibleAlgorithmMetas();
                     CB_Algorithms.SelectedItem = visibleAlgorithmMetas.FirstOrDefault(a=>a.Type == e.Type);
                     algorithm.IsLocalFile = true;
                     algorithm.ImageFilePath = e.ImageFilePath ?? string.Empty;
@@ -149,51 +135,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             };
 
-            void CB_AlgorithmTypesChanged()
-            {
-                if (CB_AlgorithmTypes.SelectedItem is string selectedGroup)
-                {
-                    Device.DisplayConfig.LastSelectGroup = selectedGroup;
-                    List<DisplayAlgorithmMeta> filteredAlgorithms;
-                    if (selectedGroup == allAlgorithmsGroup)
-                    {
-                        filteredAlgorithms = visibleAlgorithmMetas
-                            .OrderBy(a => a.Order)
-                            .ToList();
-                    }
-                    else
-                    {
-                        filteredAlgorithms = visibleAlgorithmMetas
-                            .Where(a => a.Group == selectedGroup)
-                            .OrderBy(a => a.Order)
-                            .ToList();
-                    }
-
-                    CB_Algorithms.ItemsSource = filteredAlgorithms;
-                    CB_Algorithms.DisplayMemberPath = "Name";
-
-                    var lastSelectedAlgorithm = filteredAlgorithms
-                        .FirstOrDefault(a => a.Name == Device.DisplayConfig.LastSelectTemplate);
-
-                    if (lastSelectedAlgorithm != null)
-                    {
-                        CB_Algorithms.SelectedItem = lastSelectedAlgorithm;
-                    }
-                    else
-                    {
-                        CB_Algorithms.SelectedIndex = 0;
-                    }
-
-
-                }
-            }
-
             // 更新 CB_Algorithms 的绑定
             CB_AlgorithmTypes.SelectionChanged += (s, e) => CB_AlgorithmTypesChanged();
-            CB_AlgorithmTypesChanged();
 
-            // 默认选中 "All Algorithms" 组
-
+            visibilityConfig.Changed += (s, e) =>
+            {
+                Dispatcher.Invoke(() => RefreshAlgorithmList());
+            };
 
             this.AddViewConfig(Device.View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -202,6 +150,78 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             UpdateUI(Device.DService.DeviceStatus);
             Device.DService.DeviceStatusChanged += DService_DeviceStatusChanged;
         }
+
+        List<DisplayAlgorithmMeta> GetVisibleAlgorithmMetas()
+        {
+            return algorithmMetas
+                .Where(a => visibilityConfig.GetAlgorithmVisibility(a.Name))
+                .Select(a => new DisplayAlgorithmMeta
+                {
+                    Type = a.Type,
+                    Order = visibilityConfig.GetOrderOverride(a.Name, a.Order),
+                    Name = visibilityConfig.GetNameOverride(a.Name),
+                    Group = a.Group
+                })
+                .OrderBy(a => a.Order)
+                .ToList();
+        }
+
+        void RefreshAlgorithmList()
+        {
+            var visibleAlgorithmMetas = GetVisibleAlgorithmMetas();
+
+            var groups = new List<string> { allAlgorithmsGroup };
+            groups.AddRange(visibleAlgorithmMetas.Select(a => a.Group).Distinct().Where(g => !string.IsNullOrWhiteSpace(g) && g != allAlgorithmsGroup));
+
+            var previousGroup = CB_AlgorithmTypes.SelectedItem as string ?? Device.DisplayConfig.LastSelectGroup;
+            CB_AlgorithmTypes.ItemsSource = groups;
+
+            if (groups.Contains(previousGroup))
+                CB_AlgorithmTypes.SelectedItem = previousGroup;
+            else
+                CB_AlgorithmTypes.SelectedItem = allAlgorithmsGroup;
+
+            CB_AlgorithmTypesChanged();
+        }
+
+        void CB_AlgorithmTypesChanged()
+        {
+            if (CB_AlgorithmTypes.SelectedItem is string selectedGroup)
+            {
+                Device.DisplayConfig.LastSelectGroup = selectedGroup;
+                var visibleAlgorithmMetas = GetVisibleAlgorithmMetas();
+                List<DisplayAlgorithmMeta> filteredAlgorithms;
+                if (selectedGroup == allAlgorithmsGroup)
+                {
+                    filteredAlgorithms = visibleAlgorithmMetas
+                        .OrderBy(a => a.Order)
+                        .ToList();
+                }
+                else
+                {
+                    filteredAlgorithms = visibleAlgorithmMetas
+                        .Where(a => a.Group == selectedGroup)
+                        .OrderBy(a => a.Order)
+                        .ToList();
+                }
+
+                CB_Algorithms.ItemsSource = filteredAlgorithms;
+                CB_Algorithms.DisplayMemberPath = "Name";
+
+                var lastSelectedAlgorithm = filteredAlgorithms
+                    .FirstOrDefault(a => a.Name == Device.DisplayConfig.LastSelectTemplate);
+
+                if (lastSelectedAlgorithm != null)
+                {
+                    CB_Algorithms.SelectedItem = lastSelectedAlgorithm;
+                }
+                else
+                {
+                    CB_Algorithms.SelectedIndex = 0;
+                }
+            }
+        }
+
         void UpdateUI(DeviceStatusType status)
         {
             void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; }

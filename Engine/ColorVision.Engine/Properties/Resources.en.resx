@@ -2658,4 +2658,10 @@
   <data name="HideAll" xml:space="preserve">
     <value>Hide All</value>
   </data>
+  <data name="ShowGroup" xml:space="preserve">
+    <value>Show Group</value>
+  </data>
+  <data name="HideGroup" xml:space="preserve">
+    <value>Hide Group</value>
+  </data>
 </root>

@@ -7682,5 +7682,23 @@ namespace ColorVision.Engine.Properties {
                 return ResourceManager.GetString("HideAll", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 显示分组 的本地化字符串。
+        /// </summary>
+        public static string ShowGroup {
+            get {
+                return ResourceManager.GetString("ShowGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 隐藏分组 的本地化字符串。
+        /// </summary>
+        public static string HideGroup {
+            get {
+                return ResourceManager.GetString("HideGroup", resourceCulture);
+            }
+        }
     }
 }

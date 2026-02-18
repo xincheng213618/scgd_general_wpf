@@ -5,10 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.AlgorithmVisibilitySettings}" Height="500" Width="400"
+        Title="{x:Static properties:Resources.AlgorithmVisibilitySettings}" Height="550" Width="520"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource GlobalBackground}"
-        ResizeMode="NoResize"
+        ResizeMode="CanResizeWithGrip"
         Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="TextBlock">
@@ -19,16 +19,24 @@
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.AlgorithmVisibilitySettings}" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+        <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.AlgorithmVisibilitySettings}" FontSize="14" FontWeight="Bold" Margin="0,0,0,5"/>
 
-        <ListView x:Name="AlgorithmListView" Grid.Row="1" Margin="0,5" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}">
+        <DockPanel Grid.Row="1" Margin="0,0,0,5">
+            <TextBlock Text="{x:Static properties:Resources.Group}" Margin="0,0,5,0"/>
+            <ComboBox x:Name="CB_GroupFilter" Width="130" Margin="0,0,10,0" SelectionChanged="CB_GroupFilter_SelectionChanged"/>
+            <Button Content="{x:Static properties:Resources.ShowGroup}" Click="ShowGroup_Click" Margin="0,0,5,0" Width="80"/>
+            <Button Content="{x:Static properties:Resources.HideGroup}" Click="HideGroup_Click" Width="80"/>
+        </DockPanel>
+
+        <ListView x:Name="AlgorithmListView" Grid.Row="2" Margin="0,5" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Width="60">
+                    <GridViewColumn Width="50">
                         <GridViewColumn.Header>
                             <TextBlock Text="{x:Static properties:Resources.Visible}"/>
                         </GridViewColumn.Header>
@@ -38,17 +46,17 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="150">
+                    <GridViewColumn Width="140">
                         <GridViewColumn.Header>
                             <TextBlock Text="{x:Static properties:Resources.Name}"/>
                         </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Name}"/>
+                                <TextBox Text="{Binding DisplayName, UpdateSourceTrigger=LostFocus}" MinWidth="100" BorderThickness="0" Background="Transparent"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="120">
+                    <GridViewColumn Width="90">
                         <GridViewColumn.Header>
                             <TextBlock Text="{x:Static properties:Resources.Group}"/>
                         </GridViewColumn.Header>
@@ -58,11 +66,31 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
+                    <GridViewColumn Width="60">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="Order"/>
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Order, UpdateSourceTrigger=LostFocus}" MinWidth="40" BorderThickness="0" Background="Transparent"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="100">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="Key"/>
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" Foreground="Gray"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
             <Button Content="{x:Static properties:Resources.ShowAll}" Click="ShowAll_Click" Margin="0,0,10,0" Width="80"/>
             <Button Content="{x:Static properties:Resources.HideAll}" Click="HideAll_Click" Margin="0,0,10,0" Width="80"/>
             <Button Content="{x:Static properties:Resources.Close}" Click="Close_Click" Width="80" IsDefault="True"/>

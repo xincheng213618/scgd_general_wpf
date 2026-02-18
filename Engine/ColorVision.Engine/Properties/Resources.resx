@@ -2658,4 +2658,10 @@
   <data name="HideAll" xml:space="preserve">
     <value>全部隐藏</value>
   </data>
+  <data name="ShowGroup" xml:space="preserve">
+    <value>显示分组</value>
+  </data>
+  <data name="HideGroup" xml:space="preserve">
+    <value>隐藏分组</value>
+  </data>
 </root>
