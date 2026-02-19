@@ -22,8 +22,8 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Markdig.Signed" Version="0.44.0" />
-		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3650.58" />
+		<PackageReference Include="Markdig.Signed" Version="0.45.0" />
+		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3800.47" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="README.md">

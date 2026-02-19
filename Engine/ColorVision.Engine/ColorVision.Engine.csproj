@@ -19,17 +19,17 @@
 		<PackageReference Include="itext" Version="9.5.0" />
 		<PackageReference Include="itext.bouncy-castle-adapter" Version="9.5.0" />
 		<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
-		<PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
-		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
-		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.11.0.20250507" />
+		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260214" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260214" />
+		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260214" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.7.0" />
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
 		<PackageReference Include="SqlSugarCore" Version="5.1.4.211" />
-		<PackageReference Include="System.IO.Ports" Version="10.0.2" />
-		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.2" />
+		<PackageReference Include="System.IO.Ports" Version="10.0.3" />
+		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.3" />
 		<PackageReference Include="YamlDotNet" Version="16.3.0" />
 	</ItemGroup>
 
