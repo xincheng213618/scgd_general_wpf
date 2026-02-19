@@ -34,13 +34,14 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 {
 	if (!filePath || !info) return -1;
 
-	// Convert wchar_t to std::string for OpenCV
-	int len = WideCharToMultiByte(CP_ACP, 0, filePath, -1, NULL, 0, NULL, NULL);
+	// Convert wchar_t to UTF-8 for OpenCV
+	int len = WideCharToMultiByte(CP_UTF8, 0, filePath, -1, NULL, 0, NULL, NULL);
 	std::string path(len - 1, '\0');
-	WideCharToMultiByte(CP_ACP, 0, filePath, -1, &path[0], len, NULL, NULL);
+	WideCharToMultiByte(CP_UTF8, 0, filePath, -1, &path[0], len, NULL, NULL);
 
 	auto ctx = new VideoContext();
-	ctx->cap.open(path);
+	std::string gbkPath = UTF8ToGB(path.c_str());
+	ctx->cap.open(gbkPath);
 	if (!ctx->cap.isOpened()) {
 		delete ctx;
 		return -1;
@@ -159,15 +160,14 @@ COLORVISIONCORE_API int M_VideoPlay(int handle, VideoFrameCallback frameCallback
 			}
 
 			// Calculate delay based on fps and playback speed
-			double delay = 1000.0 / (ctx->fps * ctx->playbackSpeed);
+			double effectiveFps = ctx->fps * ctx->playbackSpeed;
+			if (effectiveFps <= 0) effectiveFps = 30.0;
+			double delay = 1000.0 / effectiveFps;
 			if (delay < 1) delay = 1;
 			std::this_thread::sleep_for(std::chrono::milliseconds((int)delay));
 		}
 
 		ctx->isPlaying = false;
-		if (ctx->statusCallback && !ctx->stopRequested) {
-			// Only send stopped status if not manually stopped
-		}
 	});
 
 	if (ctx->statusCallback) {

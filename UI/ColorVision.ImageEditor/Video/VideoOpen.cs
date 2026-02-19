@@ -1,16 +1,12 @@
-using ColorVision.Common.MVVM;
 using ColorVision.Core;
 using ColorVision.ImageEditor.Abstractions;
 using log4net;
 using System;
 using System.ComponentModel;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Video
@@ -26,6 +22,7 @@ namespace ColorVision.ImageEditor.Video
         private bool _isPlaying;
         private Slider? _progressSlider;
         private Button? _playPauseButton;
+        private Button? _stopButton;
         private ComboBox? _speedComboBox;
         private TextBlock? _timeTextBlock;
         private ToolBar? _videoToolBar;
@@ -64,7 +61,8 @@ namespace ColorVision.ImageEditor.Video
             context.Config.AddProperties("VideoHeight", info.height);
             context.Config.AddProperties("VideoFPS", info.fps);
             context.Config.AddProperties("VideoTotalFrames", info.totalFrames);
-            context.Config.AddProperties("VideoDuration", TimeSpan.FromSeconds(info.totalFrames / info.fps).ToString(@"hh\:mm\:ss"));
+            double fps = info.fps > 0 ? info.fps : 30.0;
+            context.Config.AddProperties("VideoDuration", TimeSpan.FromSeconds(info.totalFrames / fps).ToString(@"hh\:mm\:ss"));
 
             // Read first frame and display
             int ret = OpenCVMediaHelper.M_VideoReadFrame(handle, out HImage firstFrame);
@@ -117,10 +115,11 @@ namespace ColorVision.ImageEditor.Video
                 _progressSlider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler(Slider_DragStarted));
                 _progressSlider.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler(Slider_DragCompleted));
 
+                double displayFps = _videoInfo.fps > 0 ? _videoInfo.fps : 30.0;
                 // Time display
                 _timeTextBlock = new TextBlock
                 {
-                    Text = "00:00:00 / " + TimeSpan.FromSeconds(_videoInfo.totalFrames / _videoInfo.fps).ToString(@"hh\:mm\:ss"),
+                    Text = "00:00:00 / " + TimeSpan.FromSeconds(_videoInfo.totalFrames / displayFps).ToString(@"hh\:mm\:ss"),
                     VerticalAlignment = VerticalAlignment.Center,
                     Margin = new Thickness(5, 0, 0, 0),
                     FontSize = 11
@@ -144,7 +143,7 @@ namespace ColorVision.ImageEditor.Video
                 _speedComboBox.SelectionChanged += SpeedComboBox_SelectionChanged;
 
                 // Stop button
-                var stopButton = new Button
+                _stopButton = new Button
                 {
                     Content = "■",
                     Width = 30,
@@ -153,10 +152,10 @@ namespace ColorVision.ImageEditor.Video
                     FontSize = 12,
                     ToolTip = "Stop"
                 };
-                stopButton.Click += StopButton_Click;
+                _stopButton.Click += StopButton_Click;
 
                 _videoToolBar.Items.Add(_playPauseButton);
-                _videoToolBar.Items.Add(stopButton);
+                _videoToolBar.Items.Add(_stopButton);
                 _videoToolBar.Items.Add(_progressSlider);
                 _videoToolBar.Items.Add(_timeTextBlock);
                 _videoToolBar.Items.Add(_speedComboBox);
@@ -262,14 +261,14 @@ namespace ColorVision.ImageEditor.Video
                 // Reuse existing WriteableBitmap for performance
                 if (!HImageExtension.UpdateWriteableBitmap(_writeableBitmap, frame))
                 {
-                    _writeableBitmap = frame.ToWriteableBitmap();
+                    // UpdateWriteableBitmap failed (format mismatch), create new
+                    var newBitmap = frame.ToWriteableBitmap();
                     frame.Dispose();
-                    _imageView?.ImageShow.Dispatcher.Invoke(() =>
-                    {
-                        if (_imageView?.ImageShow != null)
-                            _imageView.ImageShow.Source = _writeableBitmap;
-                    });
+                    _writeableBitmap = newBitmap;
+                    if (_imageView?.ImageShow != null)
+                        _imageView.ImageShow.Source = _writeableBitmap;
                 }
+                // Note: UpdateWriteableBitmap already disposes frame on success
             }
             else
             {
@@ -311,30 +310,52 @@ namespace ColorVision.ImageEditor.Video
         private void UpdatePlayPauseButton(bool isPlaying)
         {
             if (_playPauseButton == null) return;
-            Application.Current?.Dispatcher.Invoke(() =>
+            if (_playPauseButton.Dispatcher.CheckAccess())
             {
                 _playPauseButton.Content = isPlaying ? "⏸" : "▶";
-            });
+            }
+            else
+            {
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    _playPauseButton.Content = isPlaying ? "⏸" : "▶";
+                });
+            }
         }
 
         private void UpdateSliderPosition(int frameIndex)
         {
             if (_progressSlider == null || _isDragging) return;
-            Application.Current?.Dispatcher.Invoke(() =>
+            if (_progressSlider.Dispatcher.CheckAccess())
             {
                 _progressSlider.Value = frameIndex;
-            });
+            }
+            else
+            {
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    _progressSlider.Value = frameIndex;
+                });
+            }
         }
 
         private void UpdateTimeDisplay(int currentFrame)
         {
-            if (_timeTextBlock == null || _videoInfo.fps <= 0) return;
-            var current = TimeSpan.FromSeconds(currentFrame / _videoInfo.fps);
-            var total = TimeSpan.FromSeconds(_videoInfo.totalFrames / _videoInfo.fps);
-            Application.Current?.Dispatcher.Invoke(() =>
+            if (_timeTextBlock == null) return;
+            double fps = _videoInfo.fps > 0 ? _videoInfo.fps : 30.0;
+            var current = TimeSpan.FromSeconds(currentFrame / fps);
+            var total = TimeSpan.FromSeconds(_videoInfo.totalFrames / fps);
+            if (_timeTextBlock.Dispatcher.CheckAccess())
             {
                 _timeTextBlock.Text = $"{current:hh\\:mm\\:ss} / {total:hh\\:mm\\:ss}";
-            });
+            }
+            else
+            {
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    _timeTextBlock.Text = $"{current:hh\\:mm\\:ss} / {total:hh\\:mm\\:ss}";
+                });
+            }
         }
 
         private void Slider_DragStarted(object sender, DragStartedEventArgs e)
@@ -396,21 +417,14 @@ namespace ColorVision.ImageEditor.Video
                     // Remove video-specific controls (keep original items like ComboxPOITemplate)
                     if (_playPauseButton != null && _videoToolBar.Items.Contains(_playPauseButton))
                         _videoToolBar.Items.Remove(_playPauseButton);
+                    if (_stopButton != null && _videoToolBar.Items.Contains(_stopButton))
+                        _videoToolBar.Items.Remove(_stopButton);
                     if (_progressSlider != null && _videoToolBar.Items.Contains(_progressSlider))
                         _videoToolBar.Items.Remove(_progressSlider);
                     if (_timeTextBlock != null && _videoToolBar.Items.Contains(_timeTextBlock))
                         _videoToolBar.Items.Remove(_timeTextBlock);
                     if (_speedComboBox != null && _videoToolBar.Items.Contains(_speedComboBox))
                         _videoToolBar.Items.Remove(_speedComboBox);
-
-                    // Remove any stop buttons we added
-                    for (int i = _videoToolBar.Items.Count - 1; i >= 0; i--)
-                    {
-                        if (_videoToolBar.Items[i] is Button btn && btn.ToolTip?.ToString() == "Stop")
-                        {
-                            _videoToolBar.Items.RemoveAt(i);
-                        }
-                    }
                 }
             });
 
