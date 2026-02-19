@@ -200,7 +200,7 @@ namespace ColorVision.ImageEditor.Video
             {
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    UpdateFrameDisplay(ref firstFrame);
+                    UpdateFrameDisplay(firstFrame);
                 });
             }
             OpenCVMediaHelper.M_VideoSeek(_videoHandle, 0);
@@ -232,11 +232,12 @@ namespace ColorVision.ImageEditor.Video
         {
             try
             {
+                HImage localFrame = frame;
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
                     if (_videoHandle <= 0) return;
 
-                    UpdateFrameDisplay(ref frame);
+                    UpdateFrameDisplay(localFrame);
 
                     if (!_isDragging)
                     {
@@ -252,7 +253,7 @@ namespace ColorVision.ImageEditor.Video
             }
         }
 
-        private void UpdateFrameDisplay(ref HImage frame)
+        private void UpdateFrameDisplay(HImage frame)
         {
             if (_writeableBitmap != null &&
                 _writeableBitmap.PixelWidth == frame.cols &&
@@ -379,7 +380,7 @@ namespace ColorVision.ImageEditor.Video
             int ret = OpenCVMediaHelper.M_VideoReadFrame(_videoHandle, out HImage seekFrame);
             if (ret == 0)
             {
-                UpdateFrameDisplay(ref seekFrame);
+                UpdateFrameDisplay(seekFrame);
             }
 
             UpdateTimeDisplay(targetFrame);
