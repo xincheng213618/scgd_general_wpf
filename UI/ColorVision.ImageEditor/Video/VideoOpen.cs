@@ -7,6 +7,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Video
@@ -23,11 +24,18 @@ namespace ColorVision.ImageEditor.Video
         private Slider? _progressSlider;
         private Button? _playPauseButton;
         private Button? _stopButton;
+        private Button? _muteButton;
         private ComboBox? _speedComboBox;
         private TextBlock? _timeTextBlock;
         private ToolBar? _videoToolBar;
         private bool _isDragging;
         private ImageView? _imageView;
+
+        // Audio playback via WPF MediaPlayer (handles audio from the same video file)
+        private MediaPlayer? _mediaPlayer;
+        private string? _currentFilePath;
+        private double _currentSpeed = 1.0;
+        private bool _isMuted;
 
         // Must keep delegate references alive to prevent GC collection during callbacks
         private OpenCVMediaHelper.VideoFrameCallback? _frameCallbackDelegate;
@@ -56,6 +64,7 @@ namespace ColorVision.ImageEditor.Video
             _videoHandle = handle;
             _videoInfo = info;
             _imageView = context.ImageView;
+            _currentFilePath = filePath;
 
             context.Config.AddProperties("VideoWidth", info.width);
             context.Config.AddProperties("VideoHeight", info.height);
@@ -88,6 +97,9 @@ namespace ColorVision.ImageEditor.Video
 
             Application.Current.Dispatcher.Invoke(() =>
             {
+                // Initialize audio player on UI thread (MediaPlayer requires STA)
+                InitAudioPlayer();
+
                 // Play/Pause button
                 _playPauseButton = new Button
                 {
@@ -154,8 +166,21 @@ namespace ColorVision.ImageEditor.Video
                 };
                 _stopButton.Click += StopButton_Click;
 
+                // Mute/Unmute button
+                _muteButton = new Button
+                {
+                    Content = "🔊",
+                    Width = 30,
+                    Height = 24,
+                    Margin = new Thickness(5, 0, 0, 0),
+                    FontSize = 12,
+                    ToolTip = "Mute/Unmute"
+                };
+                _muteButton.Click += MuteButton_Click;
+
                 _videoToolBar.Items.Add(_playPauseButton);
                 _videoToolBar.Items.Add(_stopButton);
+                _videoToolBar.Items.Add(_muteButton);
                 _videoToolBar.Items.Add(_progressSlider);
                 _videoToolBar.Items.Add(_timeTextBlock);
                 _videoToolBar.Items.Add(_speedComboBox);
@@ -165,6 +190,39 @@ namespace ColorVision.ImageEditor.Video
 
             // Subscribe to clear event to cleanup
             imageView.ClearImageEventHandler += OnImageCleared;
+        }
+
+        private void InitAudioPlayer()
+        {
+            if (string.IsNullOrEmpty(_currentFilePath)) return;
+
+            try
+            {
+                _mediaPlayer = new MediaPlayer();
+                _mediaPlayer.Open(new Uri(_currentFilePath, UriKind.Absolute));
+                _mediaPlayer.SpeedRatio = _currentSpeed;
+                _mediaPlayer.IsMuted = _isMuted;
+                // Pause immediately — audio starts only when user clicks Play
+                _mediaPlayer.Pause();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Could not initialize audio player", ex);
+                _mediaPlayer = null;
+            }
+        }
+
+        private void MuteButton_Click(object sender, RoutedEventArgs e)
+        {
+            _isMuted = !_isMuted;
+            if (_mediaPlayer != null)
+            {
+                _mediaPlayer.IsMuted = _isMuted;
+            }
+            if (_muteButton != null)
+            {
+                _muteButton.Content = _isMuted ? "🔇" : "🔊";
+            }
         }
 
         private void OnImageCleared(object? sender, EventArgs e)
@@ -194,6 +252,9 @@ namespace ColorVision.ImageEditor.Video
             OpenCVMediaHelper.M_VideoSeek(_videoHandle, 0);
             UpdateSliderPosition(0);
 
+            // Stop and reset audio
+            SyncAudioSeek(0);
+
             // Read and display first frame
             int ret = OpenCVMediaHelper.M_VideoReadFrame(_videoHandle, out HImage firstFrame);
             if (ret == 0)
@@ -217,6 +278,9 @@ namespace ColorVision.ImageEditor.Video
             _statusCallbackDelegate = OnStatusChanged;
 
             OpenCVMediaHelper.M_VideoPlay(_videoHandle, _frameCallbackDelegate, _statusCallbackDelegate, IntPtr.Zero);
+
+            // Start audio playback in sync
+            SyncAudioPlay();
         }
 
         private void PauseVideo()
@@ -226,6 +290,9 @@ namespace ColorVision.ImageEditor.Video
             OpenCVMediaHelper.M_VideoPause(_videoHandle);
             _isPlaying = false;
             UpdatePlayPauseButton(false);
+
+            // Pause audio
+            SyncAudioPause();
         }
 
         private void OnFrameReceived(int handle, ref HImage frame, int currentFrame, int totalFrames, IntPtr userData)
@@ -289,6 +356,7 @@ namespace ColorVision.ImageEditor.Video
                     case 0: // Paused
                         _isPlaying = false;
                         UpdatePlayPauseButton(false);
+                        SyncAudioPause();
                         break;
                     case 1: // Playing
                         _isPlaying = true;
@@ -297,11 +365,13 @@ namespace ColorVision.ImageEditor.Video
                     case 2: // Ended
                         _isPlaying = false;
                         UpdatePlayPauseButton(false);
+                        SyncAudioPause();
                         // Reset to beginning
                         if (_videoHandle > 0)
                         {
                             OpenCVMediaHelper.M_VideoSeek(_videoHandle, 0);
                             UpdateSliderPosition(0);
+                            SyncAudioSeek(0);
                         }
                         break;
                 }
@@ -376,6 +446,9 @@ namespace ColorVision.ImageEditor.Video
             int targetFrame = (int)_progressSlider.Value;
             OpenCVMediaHelper.M_VideoSeek(_videoHandle, targetFrame);
 
+            // Sync audio position
+            SyncAudioSeek(targetFrame);
+
             // Read and display the frame at the seek position
             int ret = OpenCVMediaHelper.M_VideoReadFrame(_videoHandle, out HImage seekFrame);
             if (ret == 0)
@@ -392,8 +465,86 @@ namespace ColorVision.ImageEditor.Video
 
             if (_speedComboBox.SelectedItem is ComboBoxItem item && item.Tag is double speed)
             {
+                _currentSpeed = speed;
                 OpenCVMediaHelper.M_VideoSetPlaybackSpeed(_videoHandle, speed);
+                SyncAudioSpeed(speed);
             }
+        }
+
+        // --- Audio sync helpers ---
+
+        private void SyncAudioPlay()
+        {
+            var player = _mediaPlayer;
+            if (player == null) return;
+            try
+            {
+                if (player.Dispatcher.CheckAccess())
+                {
+                    player.Play();
+                }
+                else
+                {
+                    Application.Current?.Dispatcher.Invoke(() => player.Play());
+                }
+            }
+            catch (Exception ex) { log.Warn("Audio play failed", ex); }
+        }
+
+        private void SyncAudioPause()
+        {
+            var player = _mediaPlayer;
+            if (player == null) return;
+            try
+            {
+                if (player.Dispatcher.CheckAccess())
+                {
+                    player.Pause();
+                }
+                else
+                {
+                    Application.Current?.Dispatcher.Invoke(() => player.Pause());
+                }
+            }
+            catch (Exception ex) { log.Warn("Audio pause failed", ex); }
+        }
+
+        private void SyncAudioSeek(int frameIndex)
+        {
+            var player = _mediaPlayer;
+            if (player == null) return;
+            try
+            {
+                double fps = _videoInfo.fps > 0 ? _videoInfo.fps : 30.0;
+                var position = TimeSpan.FromSeconds(frameIndex / fps);
+                if (player.Dispatcher.CheckAccess())
+                {
+                    player.Position = position;
+                }
+                else
+                {
+                    Application.Current?.Dispatcher.Invoke(() => player.Position = position);
+                }
+            }
+            catch (Exception ex) { log.Warn("Audio seek failed", ex); }
+        }
+
+        private void SyncAudioSpeed(double speed)
+        {
+            var player = _mediaPlayer;
+            if (player == null) return;
+            try
+            {
+                if (player.Dispatcher.CheckAccess())
+                {
+                    player.SpeedRatio = speed;
+                }
+                else
+                {
+                    Application.Current?.Dispatcher.Invoke(() => player.SpeedRatio = speed);
+                }
+            }
+            catch (Exception ex) { log.Warn("Audio speed change failed", ex); }
         }
 
         private void CloseVideo()
@@ -410,6 +561,17 @@ namespace ColorVision.ImageEditor.Video
                 _videoHandle = -1;
             }
 
+            // Close audio player
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                if (_mediaPlayer != null)
+                {
+                    _mediaPlayer.Stop();
+                    _mediaPlayer.Close();
+                    _mediaPlayer = null;
+                }
+            });
+
             // Clean up UI controls
             Application.Current?.Dispatcher.Invoke(() =>
             {
@@ -420,6 +582,8 @@ namespace ColorVision.ImageEditor.Video
                         _videoToolBar.Items.Remove(_playPauseButton);
                     if (_stopButton != null && _videoToolBar.Items.Contains(_stopButton))
                         _videoToolBar.Items.Remove(_stopButton);
+                    if (_muteButton != null && _videoToolBar.Items.Contains(_muteButton))
+                        _videoToolBar.Items.Remove(_muteButton);
                     if (_progressSlider != null && _videoToolBar.Items.Contains(_progressSlider))
                         _videoToolBar.Items.Remove(_progressSlider);
                     if (_timeTextBlock != null && _videoToolBar.Items.Contains(_timeTextBlock))
@@ -438,6 +602,7 @@ namespace ColorVision.ImageEditor.Video
             _statusCallbackDelegate = null;
             _writeableBitmap = null;
             _imageView = null;
+            _currentFilePath = null;
         }
     }
 }
