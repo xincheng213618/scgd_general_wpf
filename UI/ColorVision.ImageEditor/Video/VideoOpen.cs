@@ -312,7 +312,7 @@ namespace ColorVision.ImageEditor.Video
 
                         // Throttle slider/time updates to reduce UI overhead
                         int count = Interlocked.Increment(ref _uiUpdateCounter);
-                        if (count % 3 == 0)
+                        if (count % 60 == 0)
                         {
                             if (!_isDragging)
                             {
