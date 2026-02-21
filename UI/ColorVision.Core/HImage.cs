@@ -34,6 +34,8 @@ namespace ColorVision.Core
         public int depth; //bpp
         public int stride;
 
+        public bool isDispose;
+
         public readonly int Type => (((depth & ((1 << 3) - 1)) + ((channels - 1) << 3)));
 
         public readonly int ElemSize => ((((((((depth & ((1 << 3) - 1)) + ((channels - 1) << 3))) & ((512 - 1) << 3)) >> 3) + 1) *
@@ -48,7 +50,8 @@ namespace ColorVision.Core
             // 使用 Marshal.FreeHGlobal来释放由 Marshal.AllocHGlobal 分配的内存
             if (pData != IntPtr.Zero)
             {
-                Marshal.FreeHGlobal(pData);
+                if (!isDispose)
+                    Marshal.FreeHGlobal(pData);
                 pData = IntPtr.Zero;
             }
             GC.SuppressFinalize(this);

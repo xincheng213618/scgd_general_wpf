@@ -54,6 +54,9 @@
     <ClInclude Include="..\..\include\opencv_media_export.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\video_export.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -75,6 +78,9 @@
       <Filter>算法</Filter>
     </ClCompile>
     <ClCompile Include="opencv_media_export.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="video_export.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="custom_file.cpp">

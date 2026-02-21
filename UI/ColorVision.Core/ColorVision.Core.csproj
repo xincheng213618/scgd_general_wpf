@@ -6,7 +6,7 @@
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<VersionPrefix>1.5.1.1</VersionPrefix>
+		<VersionPrefix>1.5.1.2</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
@@ -49,6 +49,11 @@
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</Content>
 		<Content Include="..\..\packages\opencv\x64\vc17\bin\opencv_videoio4120.dll" Link="runtimes\win-x64\native\opencv_videoio4120.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</Content>
+		<Content Include="..\..\packages\opencv\x64\vc17\bin\opencv_videoio_ffmpeg4120_64.dll" Link="runtimes\win-x64\native\opencv_videoio_ffmpeg4120_64.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>

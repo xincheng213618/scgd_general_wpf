@@ -232,5 +232,45 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_FindLightBeads(HImage img, RoiRect roi, string config, out IntPtr str);
 
+        // Video functions
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct VideoInfo
+        {
+            public int totalFrames;
+            public double fps;
+            public int width;
+            public int height;
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate void VideoFrameCallback(int handle, ref HImage frame, int currentFrame, int totalFrames, IntPtr userData);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate void VideoStatusCallback(int handle, int status, IntPtr userData);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        public static extern int M_VideoOpen([MarshalAs(UnmanagedType.LPWStr)] string filePath, out VideoInfo info);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_VideoReadFrame(int handle, out HImage outImage);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_VideoSeek(int handle, int frameIndex);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_VideoGetCurrentFrame(int handle);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_VideoSetPlaybackSpeed(int handle, double speed);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_VideoPlay(int handle, VideoFrameCallback frameCallback, VideoStatusCallback statusCallback, IntPtr userData);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_VideoPause(int handle);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_VideoClose(int handle);
     }
 }
