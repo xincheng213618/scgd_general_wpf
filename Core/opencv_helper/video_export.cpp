@@ -12,18 +12,22 @@ struct VideoContext {
 	double fps;
 	int width;
 	int height;
-	std::atomic<bool> isPlaying;
-	std::atomic<bool> stopRequested;
+	std::atomic<bool> threadRunning; // 控制线程生命周期 (Close 时设为 false)
+	std::atomic<bool> isPaused;      // 控制播放状态 (Pause/Play 切换)
 	std::thread playThread;
+	std::atomic<bool> stopRequested;
 	double playbackSpeed;
+	std::mutex capMutex;
+	std::condition_variable cvPause; //用于暂停时挂起线程，避免空转占用CPU
+	std::mutex pauseMutex;
 	VideoFrameCallback frameCallback;
 	VideoStatusCallback statusCallback;
 	void* userData;
 	std::mutex seekMutex;
 	std::atomic<int> seekRequestFrame; // 新增：-1 表示无请求，>=0 表示目标帧
 	VideoContext() : totalFrames(0), fps(0), width(0), height(0),
-		isPlaying(false), stopRequested(false), playbackSpeed(1.0),
-		frameCallback(nullptr), statusCallback(nullptr), userData(nullptr) , seekRequestFrame(-1) {}
+		stopRequested(false), playbackSpeed(1.0),
+		frameCallback(nullptr), statusCallback(nullptr), userData(nullptr) , seekRequestFrame(-1), threadRunning(true), isPaused(true) {}
 };
 
 static std::unordered_map<int, VideoContext*> g_videos;
@@ -61,6 +65,77 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 	std::lock_guard<std::mutex> lock(g_mapMutex);
 	int handle = g_nextHandle++;
 	g_videos[handle] = ctx;
+
+	ctx->threadRunning = true;
+	ctx->isPaused = true; // 初始状态是暂停
+	ctx->playThread = std::thread([ctx, handle]() {
+		while (ctx->threadRunning) {
+			// 1. 处理暂停逻辑 (核心!)
+			{
+				std::unique_lock<std::mutex> lock(ctx->pauseMutex);
+				// 如果暂停且没有退出请求，就挂起线程等待
+				ctx->cvPause.wait(lock, [ctx] {
+					return !ctx->isPaused || !ctx->threadRunning || ctx->seekRequestFrame >= 0;
+					});
+			}
+
+			if (!ctx->threadRunning) break;
+
+			// 2. 处理 Seek (即使在暂停状态也能 Seek!)
+			bool justSeeked = false;
+			int seekTo = ctx->seekRequestFrame.exchange(-1);
+			if (seekTo >= 0) {
+				std::lock_guard<std::mutex> lock(ctx->capMutex);
+				if (seekTo < ctx->totalFrames) {
+					ctx->cap.set(cv::CAP_PROP_POS_FRAMES, seekTo);
+					justSeeked = true;
+				}
+			}
+
+			// 3. 读取帧 (只有在播放中，或者刚刚 Seek 完需要刷新一帧时才读)
+			if (!ctx->isPaused || justSeeked) {
+				cv::Mat frame;
+				int currentFrame;
+				bool readSuccess = false;
+
+				{
+					std::lock_guard<std::mutex> lock(ctx->capMutex);
+					currentFrame = (int)ctx->cap.get(cv::CAP_PROP_POS_FRAMES);
+					if (ctx->cap.read(frame) && !frame.empty()) {
+						readSuccess = true;
+					}
+					else {
+						// 播放结束处理 (End of Video)
+						if (!ctx->isPaused) { // 只有播放中才算结束
+							ctx->isPaused = true;
+							if (ctx->statusCallback) ctx->statusCallback(handle, 2, ctx->userData);
+						}
+					}
+				}
+
+				// 4. 回调显示
+				if (readSuccess && ctx->frameCallback) {
+					HImage hImage;
+					hImage.rows = frame.rows;
+					hImage.cols = frame.cols;
+					hImage.channels = frame.channels();
+					hImage.stride = static_cast<int>(frame.step);
+					hImage.depth = static_cast<int>(frame.elemSize1()) * 8;
+					hImage.pData = frame.data; // 指向新分配的内存
+					hImage.isDispose = true;
+					ctx->frameCallback(handle, &hImage, currentFrame, ctx->totalFrames, ctx->userData);
+				}
+			}
+
+			// 5. 帧率控制 (仅在播放时 sleep，暂停时会在 loop 头部 wait)
+			if (!ctx->isPaused) {
+				double effectiveFps = ctx->fps * ctx->playbackSpeed;
+				if (effectiveFps <= 0) effectiveFps = 30.0;
+				int delay = (int)(1000.0 / effectiveFps);
+				std::this_thread::sleep_for(std::chrono::milliseconds(std::max(1, delay)));
+			}
+		}
+		});
 	return handle;
 }
 
@@ -91,6 +166,7 @@ COLORVISIONCORE_API int M_VideoSeek(int handle, int frameIndex)
 	}
 	if (frameIndex >= 0 && frameIndex < ctx->totalFrames) {
 		ctx->seekRequestFrame = frameIndex;
+		ctx->cvPause.notify_one();
 	}
 	return 0;
 }
@@ -124,60 +200,15 @@ COLORVISIONCORE_API int M_VideoPlay(int handle, VideoFrameCallback frameCallback
 		ctx = it->second;
 	}
 
-	if (ctx->isPlaying) return 0; // Already playing
-
 	ctx->frameCallback = frameCallback;
 	ctx->statusCallback = statusCallback;
 	ctx->userData = userData;
-	ctx->stopRequested = false;
-	ctx->isPlaying = true;
 
-	// If there's an old thread, join it first
-	if (ctx->playThread.joinable()) {
-		ctx->playThread.join();
-	}
+	// 切换状态
+	ctx->isPaused = false;
+	ctx->cvPause.notify_one(); // 唤醒沉睡的线程
 
-	ctx->playThread = std::thread([ctx, handle]() {
-		while (!ctx->stopRequested) {
-			cv::Mat frame;
-			int currentFrame;
-			{
-				std::lock_guard<std::mutex> seekLock(ctx->seekMutex);
-				int seekTo = ctx->seekRequestFrame.exchange(-1); // 原子读并重置为 -1
-				if (seekTo >= 0) {
-					ctx->cap.set(cv::CAP_PROP_POS_FRAMES, seekTo);
-				}
-				currentFrame = (int)ctx->cap.get(cv::CAP_PROP_POS_FRAMES);
-				if (!ctx->cap.read(frame) || frame.empty()) {
-					// Reached end of video
-					if (ctx->statusCallback) {
-						ctx->statusCallback(handle, 2, ctx->userData); // 2 = ended
-					}
-					break;
-				}
-			}
-
-			if (ctx->frameCallback) {
-				HImage hImage;
-				if (MatToHImage(frame, &hImage) == 0) {
-					ctx->frameCallback(handle, &hImage, currentFrame, ctx->totalFrames, ctx->userData);
-				}
-			}
-
-			// Calculate delay based on fps and playback speed
-			double effectiveFps = ctx->fps * ctx->playbackSpeed;
-			if (effectiveFps <= 0) effectiveFps = 30.0;
-			double delay = 1000.0 / effectiveFps;
-			if (delay < 1) delay = 1;
-			std::this_thread::sleep_for(std::chrono::milliseconds((int)delay));
-		}
-
-		ctx->isPlaying = false;
-	});
-
-	if (ctx->statusCallback) {
-		ctx->statusCallback(handle, 1, ctx->userData); // 1 = playing
-	}
+	if (ctx->statusCallback) ctx->statusCallback(handle, 1, ctx->userData);
 
 	return 0;
 }
@@ -192,15 +223,9 @@ COLORVISIONCORE_API int M_VideoPause(int handle)
 		ctx = it->second;
 	}
 
-	ctx->stopRequested = true;
-	if (ctx->playThread.joinable()) {
-		ctx->playThread.join();
-	}
-	ctx->isPlaying = false;
+	ctx->isPaused = true;
 
-	if (ctx->statusCallback) {
-		ctx->statusCallback(handle, 0, ctx->userData); // 0 = paused
-	}
+	if (ctx->statusCallback) ctx->statusCallback(handle, 0, ctx->userData);
 	return 0;
 }
 
@@ -215,25 +240,17 @@ COLORVISIONCORE_API int M_VideoClose(int handle)
 		g_videos.erase(it); // 先从全局表中移除，防止其他线程再次获取
 	}
 
-	// 1. 设置停止标志
-	ctx->stopRequested = true;
+	ctx->threadRunning = false;
+	ctx->isPaused = false; // 确保它不卡在 wait 里
+	ctx->cvPause.notify_all(); // 唤醒所有等待
 
-	// 2. 只有在当前线程不是播放线程时才 join，防止自我 join
+	// 2. 等待线程结束 (此时因为 threadRunning=false，线程会立即退出循环)
 	if (ctx->playThread.joinable()) {
-		if (std::this_thread::get_id() != ctx->playThread.get_id()) {
-			ctx->playThread.join();
-		}
-		else {
-			// 极其罕见的情况：在回调中关闭自己，需detach防止crash，但通常设计上应避免
-			ctx->playThread.detach();
-		}
+		ctx->playThread.join();
 	}
 
-	// 3. 安全释放资源
-	{
-		std::lock_guard<std::mutex> seekLock(ctx->seekMutex);
-		ctx->cap.release();
-	}
+	// 3. 释放资源
+	ctx->cap.release();
 	delete ctx;
 	return 0;
 }

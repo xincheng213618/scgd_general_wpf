@@ -254,17 +254,6 @@ namespace ColorVision.ImageEditor.Video
 
             // Stop and reset audio
             SyncAudioSeek(0);
-
-            // Read and display first frame
-            int ret = OpenCVMediaHelper.M_VideoReadFrame(_videoHandle, out HImage firstFrame);
-            if (ret == 0)
-            {
-                Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    UpdateFrameDisplay(firstFrame);
-                });
-            }
-            OpenCVMediaHelper.M_VideoSeek(_videoHandle, 0);
         }
 
         private void PlayVideo()
@@ -432,31 +421,15 @@ namespace ColorVision.ImageEditor.Video
         private void Slider_DragStarted(object sender, DragStartedEventArgs e)
         {
             _isDragging = true;
-            if (_isPlaying)
-            {
-                PauseVideo();
-            }
         }
 
         private void Slider_DragCompleted(object sender, DragCompletedEventArgs e)
         {
             _isDragging = false;
             if (_videoHandle <= 0 || _progressSlider == null) return;
-
             int targetFrame = (int)_progressSlider.Value;
             OpenCVMediaHelper.M_VideoSeek(_videoHandle, targetFrame);
-
-            // Sync audio position
             SyncAudioSeek(targetFrame);
-
-            // Read and display the frame at the seek position
-            int ret = OpenCVMediaHelper.M_VideoReadFrame(_videoHandle, out HImage seekFrame);
-            if (ret == 0)
-            {
-                UpdateFrameDisplay(seekFrame);
-            }
-
-            UpdateTimeDisplay(targetFrame);
         }
 
         private void SpeedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
