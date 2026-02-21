@@ -20,10 +20,10 @@ struct VideoContext {
 	VideoStatusCallback statusCallback;
 	void* userData;
 	std::mutex seekMutex;
-
+	std::atomic<int> seekRequestFrame; // 新增：-1 表示无请求，>=0 表示目标帧
 	VideoContext() : totalFrames(0), fps(0), width(0), height(0),
 		isPlaying(false), stopRequested(false), playbackSpeed(1.0),
-		frameCallback(nullptr), statusCallback(nullptr), userData(nullptr) {}
+		frameCallback(nullptr), statusCallback(nullptr), userData(nullptr) , seekRequestFrame(-1) {}
 };
 
 static std::unordered_map<int, VideoContext*> g_videos;
@@ -73,7 +73,7 @@ COLORVISIONCORE_API int M_VideoReadFrame(int handle, HImage* outImage)
 	VideoContext* ctx = it->second;
 	std::lock_guard<std::mutex> seekLock(ctx->seekMutex);
 
-	cv::Mat frame;
+	cv::Mat frame; 
 	if (!ctx->cap.read(frame) || frame.empty()) return -2;
 
 	// Convert to BGR if needed (OpenCV reads as BGR by default)
@@ -82,15 +82,16 @@ COLORVISIONCORE_API int M_VideoReadFrame(int handle, HImage* outImage)
 
 COLORVISIONCORE_API int M_VideoSeek(int handle, int frameIndex)
 {
-	std::lock_guard<std::mutex> lock(g_mapMutex);
-	auto it = g_videos.find(handle);
-	if (it == g_videos.end()) return -1;
-
-	VideoContext* ctx = it->second;
-	std::lock_guard<std::mutex> seekLock(ctx->seekMutex);
-
-	if (frameIndex < 0 || frameIndex >= ctx->totalFrames) return -2;
-	ctx->cap.set(cv::CAP_PROP_POS_FRAMES, frameIndex);
+	VideoContext* ctx = nullptr;
+	{
+		std::lock_guard<std::mutex> lock(g_mapMutex); // 保护 map 查找
+		auto it = g_videos.find(handle);
+		if (it == g_videos.end()) return -1;
+		ctx = it->second;
+	}
+	if (frameIndex >= 0 && frameIndex < ctx->totalFrames) {
+		ctx->seekRequestFrame = frameIndex;
+	}
 	return 0;
 }
 
@@ -142,6 +143,10 @@ COLORVISIONCORE_API int M_VideoPlay(int handle, VideoFrameCallback frameCallback
 			int currentFrame;
 			{
 				std::lock_guard<std::mutex> seekLock(ctx->seekMutex);
+				int seekTo = ctx->seekRequestFrame.exchange(-1); // 原子读并重置为 -1
+				if (seekTo >= 0) {
+					ctx->cap.set(cv::CAP_PROP_POS_FRAMES, seekTo);
+				}
 				currentFrame = (int)ctx->cap.get(cv::CAP_PROP_POS_FRAMES);
 				if (!ctx->cap.read(frame) || frame.empty()) {
 					// Reached end of video
@@ -207,16 +212,28 @@ COLORVISIONCORE_API int M_VideoClose(int handle)
 		auto it = g_videos.find(handle);
 		if (it == g_videos.end()) return -1;
 		ctx = it->second;
-		g_videos.erase(it);
+		g_videos.erase(it); // 先从全局表中移除，防止其他线程再次获取
 	}
 
-	// Stop playback
+	// 1. 设置停止标志
 	ctx->stopRequested = true;
+
+	// 2. 只有在当前线程不是播放线程时才 join，防止自我 join
 	if (ctx->playThread.joinable()) {
-		ctx->playThread.join();
+		if (std::this_thread::get_id() != ctx->playThread.get_id()) {
+			ctx->playThread.join();
+		}
+		else {
+			// 极其罕见的情况：在回调中关闭自己，需detach防止crash，但通常设计上应避免
+			ctx->playThread.detach();
+		}
 	}
 
-	ctx->cap.release();
+	// 3. 安全释放资源
+	{
+		std::lock_guard<std::mutex> seekLock(ctx->seekMutex);
+		ctx->cap.release();
+	}
 	delete ctx;
 	return 0;
 }
