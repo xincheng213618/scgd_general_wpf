@@ -20,6 +20,7 @@ typedef struct HImage
     int channels;
     int depth; //Bpp
     int stride;
+	bool isDispose = false;
     int type()  const {
         int cv_depth = CV_8U;
         switch (depth) {

@@ -193,6 +193,7 @@
     <ClInclude Include="..\..\include\custom_structs.h" />
     <ClInclude Include="..\..\include\opencv_export.h" />
     <ClInclude Include="..\..\include\opencv_media_export.h" />
+    <ClInclude Include="..\..\include\video_export.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
@@ -208,6 +209,7 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="fusion.cpp" />
     <ClCompile Include="opencv_media_export.cpp" />
+    <ClCompile Include="video_export.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
