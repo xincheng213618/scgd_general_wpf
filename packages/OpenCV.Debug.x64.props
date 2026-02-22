@@ -4,11 +4,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <IncludePath>$(SolutionDir)packages\opencv\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)packages\opencv\x64\vc17\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)packages\opencv\x64\vc18\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>
-      <AdditionalDependencies>opencv_core4120d.lib;opencv_highgui4120d.lib;opencv_imgcodecs4120d.lib;opencv_imgproc4120d.lib;opencv_videoio4120d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opencv_core4130d.lib;opencv_highgui4130d.lib;opencv_imgcodecs4130d.lib;opencv_imgproc4130d.lib;opencv_videoio4130d.lib;opencv_calib3d4130d.lib;opencv_features2d4130d.lib;opencv_flann4130d.lib;opencv_photo4130d.lib;opencv_video4130d.lib;opencv_xfeatures2d4130.lib;opencv_ximgproc4130d.lib;opencv_xphoto4130d.lib%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />

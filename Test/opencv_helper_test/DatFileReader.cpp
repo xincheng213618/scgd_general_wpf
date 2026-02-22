@@ -84,64 +84,64 @@ int readPositionFileFromDat(std::string filename, cv::Mat& data, PositionAttribu
     }
 }
 
-int main()
-{
-    // 修改为你的文件路径
-    string filename = "C:\\Users\\Xin\\Desktop\\20260131T140254.0361975_FindLED_po.dat";
-
-    Mat data;
-    PositionAttribute attr;
-
-    if (readPositionFileFromDat(filename, data, attr) == 0)
-    {
-        cout << "========================================" << endl;
-        cout << "               C++ 读取验证              " << endl;
-        cout << "========================================" << endl;
-
-        // 1. 验证基础尺寸
-        cout << "[Header Info]" << endl;
-        cout << "Mat Size: " << data.cols << " x " << data.rows << endl;
-        cout << "Channels: " << data.channels() << endl;
-        cout << "ElemSize: " << data.elemSize() << " bytes" << endl;
-
-        // 2. 验证 Attribute 数据
-        cout << "\n[Attribute Info]" << endl;
-        cout << "Angle: " << attr.angle << endl;
-        cout << "Rows: " << attr.rows << ", Cols: " << attr.cols << endl;
-        cout << "Center: (" << attr.center.x << ", " << attr.center.y << ")" << endl;
-        cout << "Rect: [" << attr.outline.x << ", " << attr.outline.y << ", "
-            << attr.outline.width << ", " << attr.outline.height << "]" << endl;
-
-        cout << "Corner Points[0]: (" << attr.cornet_pts[0].x << ", " << attr.cornet_pts[0].y << ")" << endl;
-
-        // 3. 验证 Mat 像素数据 (CV_64FC2 -> Vec2d)
-        // 打印几个关键点的数据供对比
-        cout << "\n[Mat Data Samples (Double, Double)]" << endl;
-
-        // 左上角 (0,0)
-        if (data.rows > 0 && data.cols > 0) {
-            Vec2d p0 = data.at<Vec2d>(0, 0);
-            cout << "Pixel(0,0): X=" << p0[0] << ", Y=" << p0[1] << endl;
-        }
-
-        // 中心点
-        int cy = data.rows / 2;
-        int cx = data.cols / 2;
-        if (cy < data.rows && cx < data.cols) {
-            Vec2d pc = data.at<Vec2d>(cy, cx);
-            cout << "Pixel(" << cy << "," << cx << "): X=" << pc[0] << ", Y=" << pc[1] << endl;
-        }
-
-        // 最后一个点
-        int ly = data.rows - 1;
-        int lx = data.cols - 1;
-        if (ly >= 0 && lx >= 0) {
-            Vec2d pl = data.at<Vec2d>(ly, lx);
-            cout << "Pixel(" << ly << "," << lx << "): X=" << pl[0] << ", Y=" << pl[1] << endl;
-        }
-    }
-    else {
-    }
-
-    return 0;
-}
+// int main()
+//{
+//    // 修改为你的文件路径
+//    string filename = "C:\\Users\\Xin\\Desktop\\20260131T140254.0361975_FindLED_po.dat";
+//
+//    Mat data;
+//    PositionAttribute attr;
+//
+//    if (readPositionFileFromDat(filename, data, attr) == 0)
+//    {
+//        cout << "========================================" << endl;
+//        cout << "               C++ 读取验证              " << endl;
+//        cout << "========================================" << endl;
+//
+//        // 1. 验证基础尺寸
+//        cout << "[Header Info]" << endl;
+//        cout << "Mat Size: " << data.cols << " x " << data.rows << endl;
+//        cout << "Channels: " << data.channels() << endl;
+//        cout << "ElemSize: " << data.elemSize() << " bytes" << endl;
+//
+//        // 2. 验证 Attribute 数据
+//        cout << "\n[Attribute Info]" << endl;
+//        cout << "Angle: " << attr.angle << endl;
+//        cout << "Rows: " << attr.rows << ", Cols: " << attr.cols << endl;
+//        cout << "Center: (" << attr.center.x << ", " << attr.center.y << ")" << endl;
+//        cout << "Rect: [" << attr.outline.x << ", " << attr.outline.y << ", "
+//            << attr.outline.width << ", " << attr.outline.height << "]" << endl;
+//
+//        cout << "Corner Points[0]: (" << attr.cornet_pts[0].x << ", " << attr.cornet_pts[0].y << ")" << endl;
+//
+//        // 3. 验证 Mat 像素数据 (CV_64FC2 -> Vec2d)
+//        // 打印几个关键点的数据供对比
+//        cout << "\n[Mat Data Samples (Double, Double)]" << endl;
+//
+//        // 左上角 (0,0)
+//        if (data.rows > 0 && data.cols > 0) {
+//            Vec2d p0 = data.at<Vec2d>(0, 0);
+//            cout << "Pixel(0,0): X=" << p0[0] << ", Y=" << p0[1] << endl;
+//        }
+//
+//        // 中心点
+//        int cy = data.rows / 2;
+//        int cx = data.cols / 2;
+//        if (cy < data.rows && cx < data.cols) {
+//            Vec2d pc = data.at<Vec2d>(cy, cx);
+//            cout << "Pixel(" << cy << "," << cx << "): X=" << pc[0] << ", Y=" << pc[1] << endl;
+//        }
+//
+//        // 最后一个点
+//        int ly = data.rows - 1;
+//        int lx = data.cols - 1;
+//        if (ly >= 0 && lx >= 0) {
+//            Vec2d pl = data.at<Vec2d>(ly, lx);
+//            cout << "Pixel(" << ly << "," << lx << "): X=" << pl[0] << ", Y=" << pl[1] << endl;
+//        }
+//    }
+//    else {
+//    }
+//
+//    return 0;
+//}

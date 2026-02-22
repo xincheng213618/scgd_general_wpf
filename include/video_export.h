@@ -54,5 +54,8 @@ extern "C" COLORVISIONCORE_API int M_VideoPlay(int handle, VideoFrameCallback fr
 // Pause playback
 extern "C" COLORVISIONCORE_API int M_VideoPause(int handle);
 
+// Set resize scale for video playback (1.0 = original, 0.5 = 1/2, 0.25 = 1/4, 0.125 = 1/8)
+extern "C" COLORVISIONCORE_API int M_VideoSetResizeScale(int handle, double scale);
+
 // Close video and release resources
 extern "C" COLORVISIONCORE_API int M_VideoClose(int handle);
