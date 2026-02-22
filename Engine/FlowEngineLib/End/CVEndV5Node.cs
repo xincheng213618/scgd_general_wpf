@@ -66,7 +66,6 @@ public class CVEndV5Node : CVCommonNode
 				logger.DebugFormat("===============Flow Do Finishing => {0}/{1}", startAction.SerialNumber, startAction.FlowStatus.ToString());
 			}
 			startAction.DoFinishing();
-			SetOptionText(m_in_start, startAction.ToShortString());
 			if (logger.IsInfoEnabled)
 			{
 				logger.InfoFormat("===============Flow Finished[{0}/{1}/{2}]============", startAction.SerialNumber, startAction.FlowStatus.ToString(), startAction.GetTotalTime().ToString());
