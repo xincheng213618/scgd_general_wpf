@@ -422,6 +422,8 @@ namespace ColorVision.ImageEditor.Video
             {
                 HImage localFrame = frame;
                 int localCurrentFrame = currentFrame;
+                // Invoke: 同步等待UI线程完成渲染
+                // 消费者被阻塞没关系 — 生产者不再等待消费者，时间稳定
                 Application.Current?.Dispatcher.Invoke(() =>
                 {
                     try

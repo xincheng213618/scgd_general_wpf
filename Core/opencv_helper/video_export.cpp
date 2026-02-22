@@ -5,14 +5,7 @@
 #include <mutex>
 #include <atomic>
 #include <thread>
-
-// Frame buffer entry for producer-consumer queue
-struct FrameBufferEntry {
-	cv::Mat frame;
-	int frameIndex;
-	bool valid;
-	FrameBufferEntry() : frameIndex(0), valid(false) {}
-};
+#include <chrono>
 
 struct VideoContext {
 	cv::VideoCapture cap;
@@ -22,7 +15,7 @@ struct VideoContext {
 	int height;
 	std::atomic<bool> threadRunning; // 控制线程生命周期 (Close 时设为 false)
 	std::atomic<bool> isPaused;      // 控制播放状态 (Pause/Play 切换)
-	std::thread playThread;
+	std::thread playThread;          // 解码线程 (生产者)
 	std::thread consumerThread;      // 消费者线程 (回调UI)
 	std::atomic<bool> stopRequested;
 	double playbackSpeed;
@@ -38,21 +31,18 @@ struct VideoContext {
 	// Resize scale: 1.0 = original, 0.5 = 1/2, 0.25 = 1/4, 0.125 = 1/8
 	std::atomic<double> resizeScale;
 
-	// Producer-consumer frame buffer queue
-	static const int BUFFER_SIZE = 4;
-	FrameBufferEntry frameBuffer[BUFFER_SIZE];
-	std::atomic<int> bufferWriteIdx;
-	std::atomic<int> bufferReadIdx;
-	std::atomic<int> bufferCount;
-	std::mutex bufferMutex;
-	std::condition_variable bufferNotEmpty;
-	std::condition_variable bufferNotFull;
+	// "最新帧槽位" (Latest Frame Slot) — 生产者直接覆盖，消费者取走最新帧
+	cv::Mat latestFrame;
+	int latestFrameIndex;
+	bool latestFrameValid;
+	std::mutex slotMutex;              // 保护槽位读写
+	std::condition_variable slotReady; // 通知消费者有新帧
 
 	VideoContext() : totalFrames(0), fps(0), width(0), height(0),
 		stopRequested(false), playbackSpeed(1.0),
 		frameCallback(nullptr), statusCallback(nullptr), userData(nullptr),
 		seekRequestFrame(-1), threadRunning(true), isPaused(true),
-		resizeScale(1.0), bufferWriteIdx(0), bufferReadIdx(0), bufferCount(0) {}
+		resizeScale(1.0), latestFrameIndex(0), latestFrameValid(false) {}
 };
 
 static std::unordered_map<int, VideoContext*> g_videos;
@@ -94,13 +84,14 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 	ctx->threadRunning = true;
 	ctx->isPaused = true; // 初始状态是暂停
 
-	// Producer thread: reads frames from video and puts them into the buffer
+	// 生产者线程 (Producer): 按视频帧率解码，写入"最新帧槽位"，不等待消费者
 	ctx->playThread = std::thread([ctx, handle]() {
 		while (ctx->threadRunning) {
+			auto frameStartTime = std::chrono::steady_clock::now();
+
 			// 1. 处理暂停逻辑 (核心!)
 			{
 				std::unique_lock<std::mutex> lock(ctx->pauseMutex);
-				// 如果暂停且没有退出请求，就挂起线程等待
 				ctx->cvPause.wait(lock, [ctx] {
 					return !ctx->isPaused || !ctx->threadRunning || ctx->seekRequestFrame >= 0;
 					});
@@ -117,17 +108,9 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 					ctx->cap.set(cv::CAP_PROP_POS_FRAMES, seekTo);
 					justSeeked = true;
 				}
-				// Clear buffer on seek
-				{
-					std::lock_guard<std::mutex> bufLock(ctx->bufferMutex);
-					ctx->bufferWriteIdx = 0;
-					ctx->bufferReadIdx = 0;
-					ctx->bufferCount = 0;
-				}
-				ctx->bufferNotEmpty.notify_one();
 			}
 
-			// 3. 读取帧 (只有在播放中，或者刚刚 Seek 完需要刷新一帧时才读)
+			// 3. 读取帧
 			if (!ctx->isPaused || justSeeked) {
 				cv::Mat frame;
 				int currentFrame;
@@ -140,45 +123,53 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 						readSuccess = true;
 					}
 					else {
-						// 播放结束处理 (End of Video)
-						if (!ctx->isPaused) { // 只有播放中才算结束
+						if (!ctx->isPaused) {
 							ctx->isPaused = true;
 							if (ctx->statusCallback) ctx->statusCallback(handle, 2, ctx->userData);
 						}
 					}
 				}
 
-				// 4. Apply resize if needed and put frame into buffer
+				// 4. Resize + 写入最新帧槽位 (直接覆盖，不等待)
 				if (readSuccess) {
 					double scale = ctx->resizeScale.load();
 					if (scale > 0.0 && scale < 1.0) {
-						cv::Mat resized;
-						cv::resize(frame, resized, cv::Size(), scale, scale, cv::INTER_LINEAR);
-						frame = resized;
-					}
-
-					// Producer: wait for space in buffer (with timeout to allow exit)
-					{
-						std::unique_lock<std::mutex> bufLock(ctx->bufferMutex);
-						ctx->bufferNotFull.wait_for(bufLock, std::chrono::milliseconds(50), [ctx] {
-							return ctx->bufferCount < VideoContext::BUFFER_SIZE || !ctx->threadRunning;
-							});
-
-						if (!ctx->threadRunning) break;
-
-						if (ctx->bufferCount < VideoContext::BUFFER_SIZE) {
-							int idx = ctx->bufferWriteIdx;
-							ctx->frameBuffer[idx].frame = frame;
-							ctx->frameBuffer[idx].frameIndex = currentFrame;
-							ctx->frameBuffer[idx].valid = true;
-							ctx->bufferWriteIdx = (idx + 1) % VideoContext::BUFFER_SIZE;
-							ctx->bufferCount++;
+						// pyrDown 比 cv::resize 快很多 (SIMD优化，无逐像素插值)
+						if (scale == 0.5) {
+							cv::Mat half;
+							cv::pyrDown(frame, half);
+							frame = half;
 						}
-						// If buffer is full, drop this frame (producer-side frame dropping)
+						else if (scale == 0.25) {
+							cv::Mat half, quarter;
+							cv::pyrDown(frame, half);
+							cv::pyrDown(half, quarter);
+							frame = quarter;
+						}
+						else if (scale == 0.125) {
+							cv::Mat half, quarter, eighth;
+							cv::pyrDown(frame, half);
+							cv::pyrDown(half, quarter);
+							cv::pyrDown(quarter, eighth);
+							frame = eighth;
+						}
+						else {
+							cv::Mat resized;
+							cv::resize(frame, resized, cv::Size(), scale, scale, cv::INTER_NEAREST);
+							frame = resized;
+						}
 					}
-					ctx->bufferNotEmpty.notify_one();
 
-					// If this was a seek while paused, directly call callback for immediate display
+					// 写入槽位 — 直接覆盖，生产者永不阻塞
+					{
+						std::lock_guard<std::mutex> slotLock(ctx->slotMutex);
+						ctx->latestFrame = frame;       // cv::Mat 浅拷贝 + 引用计数
+						ctx->latestFrameIndex = currentFrame;
+						ctx->latestFrameValid = true;
+					}
+					ctx->slotReady.notify_one();
+
+					// Seek while paused: 直接回调显示一帧
 					if (justSeeked && ctx->isPaused && ctx->frameCallback) {
 						HImage hImage;
 						hImage.rows = frame.rows;
@@ -193,58 +184,56 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 				}
 			}
 
-			// 5. 帧率控制 (仅在播放时 sleep，暂停时会在 loop 头部 wait)
+			// 5. 帧率控制 — 扣除已用时间，保持稳定帧率
 			if (!ctx->isPaused) {
 				double effectiveFps = ctx->fps * ctx->playbackSpeed;
 				if (effectiveFps <= 0) effectiveFps = 30.0;
-				int delay = (int)(1000.0 / effectiveFps);
-				std::this_thread::sleep_for(std::chrono::milliseconds(std::max(1, delay)));
+				int targetDelayMs = (int)(1000.0 / effectiveFps);
+				auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+					std::chrono::steady_clock::now() - frameStartTime).count();
+				int remainingMs = targetDelayMs - (int)elapsed;
+				if (remainingMs > 1) {
+					std::this_thread::sleep_for(std::chrono::milliseconds(remainingMs));
+				}
 			}
 		}
 		});
 
-	// Consumer thread: reads frames from buffer and calls callback
+	// 消费者线程 (Consumer): 从槽位取最新帧，调用C#回调
 	ctx->consumerThread = std::thread([ctx, handle]() {
 		while (ctx->threadRunning) {
-			FrameBufferEntry entry;
+			cv::Mat frameCopy;
+			int frameIndex = 0;
+			bool gotFrame = false;
+
 			{
-				std::unique_lock<std::mutex> bufLock(ctx->bufferMutex);
-				ctx->bufferNotEmpty.wait_for(bufLock, std::chrono::milliseconds(50), [ctx] {
-					return ctx->bufferCount > 0 || !ctx->threadRunning;
+				std::unique_lock<std::mutex> slotLock(ctx->slotMutex);
+				// 等待新帧，超时50ms避免死锁
+				ctx->slotReady.wait_for(slotLock, std::chrono::milliseconds(50), [ctx] {
+					return ctx->latestFrameValid || !ctx->threadRunning;
 					});
 
 				if (!ctx->threadRunning) break;
-				if (ctx->bufferCount <= 0) continue;
 
-				// Frame dropping: if multiple frames buffered, skip to latest (discard strategy)
-				while (ctx->bufferCount > 1) {
-					ctx->bufferReadIdx = (ctx->bufferReadIdx.load() + 1) % VideoContext::BUFFER_SIZE;
-					ctx->bufferCount--;
+				if (ctx->latestFrameValid) {
+					frameCopy = ctx->latestFrame;  // cv::Mat 引用计数，快速
+					frameIndex = ctx->latestFrameIndex;
+					ctx->latestFrameValid = false; // 标记已取走
+					gotFrame = true;
 				}
-				// Notify producer that buffer space was freed by dropping frames
-				if (ctx->bufferCount < VideoContext::BUFFER_SIZE) {
-					ctx->bufferNotFull.notify_one();
-				}
-
-				int idx = ctx->bufferReadIdx;
-				entry = ctx->frameBuffer[idx];
-				ctx->frameBuffer[idx].valid = false;
-				ctx->bufferReadIdx = (idx + 1) % VideoContext::BUFFER_SIZE;
-				ctx->bufferCount--;
 			}
-			ctx->bufferNotFull.notify_one();
 
-			// Call frame callback
-			if (entry.valid && ctx->frameCallback && !ctx->isPaused) {
+			// 调用回调 (在锁外，不阻塞生产者)
+			if (gotFrame && ctx->frameCallback && !ctx->isPaused) {
 				HImage hImage;
-				hImage.rows = entry.frame.rows;
-				hImage.cols = entry.frame.cols;
-				hImage.channels = entry.frame.channels();
-				hImage.stride = static_cast<int>(entry.frame.step);
-				hImage.depth = static_cast<int>(entry.frame.elemSize1()) * 8;
-				hImage.pData = entry.frame.data;
+				hImage.rows = frameCopy.rows;
+				hImage.cols = frameCopy.cols;
+				hImage.channels = frameCopy.channels();
+				hImage.stride = static_cast<int>(frameCopy.step);
+				hImage.depth = static_cast<int>(frameCopy.elemSize1()) * 8;
+				hImage.pData = frameCopy.data;
 				hImage.isDispose = true;
-				ctx->frameCallback(handle, &hImage, entry.frameIndex, ctx->totalFrames, ctx->userData);
+				ctx->frameCallback(handle, &hImage, frameIndex, ctx->totalFrames, ctx->userData);
 			}
 		}
 		});
@@ -368,11 +357,10 @@ COLORVISIONCORE_API int M_VideoClose(int handle)
 
 	ctx->threadRunning = false;
 	ctx->isPaused = false; // 确保它不卡在 wait 里
-	ctx->cvPause.notify_all(); // 唤醒所有等待
-	ctx->bufferNotEmpty.notify_all(); // 唤醒消费者线程
-	ctx->bufferNotFull.notify_all();  // 唤醒生产者线程
+	ctx->cvPause.notify_all();   // 唤醒生产者
+	ctx->slotReady.notify_all(); // 唤醒消费者
 
-	// 2. 等待线程结束
+	// 等待线程结束
 	if (ctx->playThread.joinable()) {
 		ctx->playThread.join();
 	}
@@ -380,7 +368,7 @@ COLORVISIONCORE_API int M_VideoClose(int handle)
 		ctx->consumerThread.join();
 	}
 
-	// 3. 释放资源
+	// 释放资源
 	ctx->cap.release();
 	delete ctx;
 	return 0;
