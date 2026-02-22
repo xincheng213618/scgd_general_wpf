@@ -7,7 +7,7 @@ using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
 using MQTTMessageLib.Util;
-using MQTTnet.Client;
+using MQTTnet;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -171,7 +171,7 @@ namespace ColorVision.Engine.Services.RC
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 LastAliveTime = DateTime.Now; 
-                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
+                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
                 try
                 {
                     MQTTNodeServiceHeader json = JsonConvert.DeserializeObject<MQTTNodeServiceHeader>(Msg);

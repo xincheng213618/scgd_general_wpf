@@ -3,7 +3,7 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using log4net;
-using MQTTnet.Client;
+using MQTTnet;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Services
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
-                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
+                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
                 try
                 {
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);

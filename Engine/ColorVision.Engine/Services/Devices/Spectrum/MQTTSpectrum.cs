@@ -8,7 +8,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.Flow;
 using MQTTMessageLib;
 using MQTTMessageLib.Spectrum;
-using MQTTnet.Client;
+using MQTTnet;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
-                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
+                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
                 log.Debug(Msg);
                 try
                 {
