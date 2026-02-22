@@ -135,25 +135,21 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 					double scale = ctx->resizeScale.load();
 					if (scale > 0.0 && scale < 1.0) {
 						// pyrDown 比 cv::resize 快很多 (SIMD优化，无逐像素插值)
+						// 直接对 frame 做 in-place pyrDown 链，避免中间变量分配
 						if (scale == 0.5) {
-							cv::Mat half;
-							cv::pyrDown(frame, half);
-							frame = half;
+							cv::pyrDown(frame, frame);
 						}
 						else if (scale == 0.25) {
-							cv::Mat half, quarter;
-							cv::pyrDown(frame, half);
-							cv::pyrDown(half, quarter);
-							frame = quarter;
+							cv::pyrDown(frame, frame);
+							cv::pyrDown(frame, frame);
 						}
 						else if (scale == 0.125) {
-							cv::Mat half, quarter, eighth;
-							cv::pyrDown(frame, half);
-							cv::pyrDown(half, quarter);
-							cv::pyrDown(quarter, eighth);
-							frame = eighth;
+							cv::pyrDown(frame, frame);
+							cv::pyrDown(frame, frame);
+							cv::pyrDown(frame, frame);
 						}
 						else {
+							// 非2的幂次缩放：INTER_NEAREST最快，但会有锯齿
 							cv::Mat resized;
 							cv::resize(frame, resized, cv::Size(), scale, scale, cv::INTER_NEAREST);
 							frame = resized;
@@ -163,7 +159,7 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 					// 写入槽位 — 直接覆盖，生产者永不阻塞
 					{
 						std::lock_guard<std::mutex> slotLock(ctx->slotMutex);
-						ctx->latestFrame = frame;       // cv::Mat 浅拷贝 + 引用计数
+						ctx->latestFrame = frame;       // cv::Mat 引用计数赋值，共享数据指针
 						ctx->latestFrameIndex = currentFrame;
 						ctx->latestFrameValid = true;
 					}
