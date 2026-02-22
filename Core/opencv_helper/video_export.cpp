@@ -40,7 +40,7 @@ struct VideoContext {
 
 	// Producer-consumer frame buffer queue
 	static const int BUFFER_SIZE = 4;
-	FrameBufferEntry frameBuffer[4];
+	FrameBufferEntry frameBuffer[BUFFER_SIZE];
 	std::atomic<int> bufferWriteIdx;
 	std::atomic<int> bufferReadIdx;
 	std::atomic<int> bufferCount;
@@ -220,6 +220,10 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 				while (ctx->bufferCount > 1) {
 					ctx->bufferReadIdx = (ctx->bufferReadIdx.load() + 1) % VideoContext::BUFFER_SIZE;
 					ctx->bufferCount--;
+				}
+				// Notify producer that buffer space was freed by dropping frames
+				if (ctx->bufferCount < VideoContext::BUFFER_SIZE) {
+					ctx->bufferNotFull.notify_one();
 				}
 
 				int idx = ctx->bufferReadIdx;

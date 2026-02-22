@@ -57,6 +57,7 @@ namespace ColorVision.ImageEditor.Video
         private CheckBox? _autoHideCheckBox;
         private DateTime _lastMouseMoveTime = DateTime.Now;
         private const double MouseIdleTimeoutSeconds = 3.0;
+        private const double AudioSyncDriftThresholdSeconds = 0.5;
 
         // Audio sync drift correction
         private int _droppedFrameCount;
@@ -163,7 +164,7 @@ namespace ColorVision.ImageEditor.Video
                     FontSize = 11
                 };
 
-                // Frame info display
+                // Frame info display (shows original source dimensions)
                 _frameInfoTextBlock = new TextBlock
                 {
                     Text = $"0/{_videoInfo.totalFrames} [{_videoInfo.width}x{_videoInfo.height}]",
@@ -470,8 +471,8 @@ namespace ColorVision.ImageEditor.Video
                 double audioTimeSeconds = player.Position.TotalSeconds;
                 double drift = Math.Abs(videoTimeSeconds - audioTimeSeconds);
 
-                // If drift exceeds 0.5 seconds, re-sync audio position
-                if (drift > 0.5)
+                // If drift exceeds threshold, re-sync audio position
+                if (drift > AudioSyncDriftThresholdSeconds)
                 {
                     var position = TimeSpan.FromSeconds(videoTimeSeconds);
                     player.Position = position;
@@ -636,7 +637,10 @@ namespace ColorVision.ImageEditor.Video
         private void UpdateFrameInfoDisplay(int currentFrame, HImage frame)
         {
             if (_frameInfoTextBlock == null) return;
-            string info = $"{currentFrame}/{_videoInfo.totalFrames} [{frame.cols}x{frame.rows}]";
+            // Always show original source dimensions for consistency
+            string info = $"{currentFrame}/{_videoInfo.totalFrames} [{_videoInfo.width}x{_videoInfo.height}]";
+            if (_currentResizeScale < 1.0)
+                info += $" @{_currentResizeScale:0.###}x";
             if (_droppedFrameCount > 0)
                 info += $" D:{_droppedFrameCount}";
             if (_frameInfoTextBlock.Dispatcher.CheckAccess())
