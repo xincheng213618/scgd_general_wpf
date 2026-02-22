@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<VersionPrefix>1.4.1.7</VersionPrefix>
 		<OutputType>WinExe</OutputType>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>disable</ImplicitUsings>
