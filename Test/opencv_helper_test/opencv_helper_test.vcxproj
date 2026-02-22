@@ -159,6 +159,7 @@
     </ClCompile>
     <ClCompile Include="test_find_luminous_area.cpp" />
     <ClCompile Include="DatFileReader.cpp" />
+    <ClCompile Include="Video.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CVCIEFile.hpp" />
