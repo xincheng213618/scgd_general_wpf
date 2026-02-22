@@ -5,376 +5,318 @@
 2. [核心功能](#核心功能)
 3. [架构设计](#架构设计)
 4. [主要组件](#主要组件)
-5. [菜单系统](#菜单系统)
-6. [设置管理](#设置管理)
-7. [多语言支持](#多语言支持)
-8. [热键系统](#热键系统)
-9. [使用示例](#使用示例)
-10. [扩展机制](#扩展机制)
+5. [使用示例](#使用示例)
+6. [扩展机制](#扩展机制)
+7. [最佳实践](#最佳实践)
 
 ## 概述
 
-**ColorVision.UI** 是 ColorVision 系统的底层控件库，提供了丰富的 UI 组件、系统功能和框架支持。它是整个应用程序 UI 层的基础，包含菜单管理、配置系统、多语言支持、热键管理、日志系统等核心功能。
-
-封装的底层控件库，提供对于菜单，配置，设置，视窗，语言，主题，日志，热键，命令，工具栏，状态栏，对话框，下载，CUDA，加密等的封装，用户可以按照需求实现对映的UI，也可以直接使用封装好的UI。
+**ColorVision.UI** 是 ColorVision 系统的底层控件库和框架支持，提供丰富的 UI 组件、系统功能和基础设施。它是整个应用程序 UI 层的基础，包含配置系统、程序集管理、文件处理器工厂等核心功能。
 
 ### 基本信息
 
 - **主要功能**: 底层UI控件、系统管理、框架支持
 - **UI 框架**: WPF
-- **特色功能**: 插件化菜单、动态配置、多语言、热键、属性编辑器
-- **扩展性**: 高度可扩展的插件架构
+- **特色功能**: 配置管理、程序集加载、文件处理、显示管理
+- **版本**: 1.5.1.1
+- **目标框架**: .NET 8.0 / .NET 10.0
 
 ## 核心功能
 
-### 1. 菜单管理系统
-- **动态菜单**: 支持运行时动态添加和移除菜单项
-- **插件菜单**: 自动发现和集成插件菜单
-- **菜单配置**: 支持菜单的可见性和权限控制
-- **快捷键集成**: 菜单项与快捷键的自动关联
+### 1. 配置管理 (ConfigHandler)
+- **配置中心** - 统一的配置管理和持久化
+- **自动加载** - 应用程序启动时自动加载配置
+- **变更通知** - 配置变更事件通知机制
+- **多环境支持** - 支持开发、测试、生产环境配置
 
-### 2. 配置管理
-- **配置持久化**: 自动保存和加载应用程序配置
-- **设置界面**: 可视化的设置管理窗口
-- **导入导出**: 配置的备份和恢复功能
-- **多环境配置**: 支持开发、测试、生产环境配置
+### 2. 程序集管理 (AssemblyHandler)
+- **动态加载** - 插件程序集的动态加载和卸载
+- **类型发现** - 自动发现和注册类型
+- **依赖管理** - 程序集依赖关系管理
+- **版本控制** - 程序集版本兼容性检查
 
-### 3. 多语言支持
-- **动态语言切换**: 运行时切换界面语言
-- **资源本地化**: 支持文本、图像等资源本地化
-- **语言包管理**: 插件化的语言包支持
-- **区域设置**: 支持不同地区的格式化设置
+### 3. 文件处理工厂 (FileProcessorFactory)
+- **处理器注册** - 文件处理器的注册和管理
+- **扩展名映射** - 根据文件扩展名自动选择处理器
+- **工厂模式** - 统一的文件处理接口
 
-### 4. 热键系统
-- **全局热键**: 系统级别的快捷键支持
-- **局部热键**: 窗口或控件级别的快捷键
-- **热键配置**: 用户自定义快捷键设置
-- **冲突检测**: 自动检测和解决快捷键冲突
+### 4. 显示管理 (DisPlayManager)
+- **多显示器支持** - 检测和管理多个显示器
+- **分辨率适配** - 自动适配不同分辨率
+- **DPI 感知** - 高 DPI 显示支持
 
-### 5. 属性编辑器
-- **PropertyGrid**: 强大的属性编辑控件
-- **自定义编辑器**: 支持各种数据类型的编辑器
-- **分组显示**: 属性的分类和分组显示
-- **实时验证**: 属性值的实时验证和错误提示
-
-### 6. 系统封装功能
-- **窗口管理**: 视窗操作和状态管理
-- **工具栏**: 可自定义的工具栏组件
-- **状态栏**: 应用状态显示
-- **对话框**: 标准化的对话框控件
-- **下载管理**: 文件下载功能封装
-- **CUDA支持**: GPU计算功能集成
-- **加密功能**: 数据加密和解密工具
+### 5. 环境管理 (Environments)
+- **环境变量** - 应用程序环境变量管理
+- **运行时信息** - 获取系统和运行时信息
+- **路径管理** - 应用程序路径统一管理
 
 ## 架构设计
 
 ```mermaid
 graph TD
-    A[ColorVision.UI] --> B[基础架构]
-    A --> C[UI组件]
-    A --> D[系统服务]
-    A --> E[扩展机制]
+    A[ColorVision.UI] --> B[ConfigHandler]
+    A --> C[AssemblyHandler]
+    A --> D[FileProcessorFactory]
+    A --> E[DisPlayManager]
+    A --> F[Environments]
     
-    B --> B1[ConfigHandler]
-    B --> B2[AssemblyHandler]
-    B --> B3[FileProcessorFactory]
+    B --> B1[配置加载]
+    B --> B2[配置保存]
+    B --> B3[变更通知]
     
-    C --> C1[PropertyEditor]
-    C --> C2[Views]
-    C --> C3[Graphics]
-    C --> C4[Adorners]
+    C --> C1[插件加载]
+    C --> C2[类型发现]
+    C --> C3[依赖管理]
     
-    D --> D1[MenuManager]
-    D --> D2[LanguageManager]
-    D --> D3[HotKeyManager]
-    D --> D4[LogManager]
+    D --> D1[处理器注册]
+    D --> D2[扩展名映射]
     
-    E --> E1[Plugins]
-    E --> E2[Extensions]
-    E --> E3[Themes]
+    E --> E1[显示器检测]
+    E --> E2[DPI管理]
+    
+    F --> F1[路径管理]
+    F --> F2[运行时信息]
 ```
 
 ## 主要组件
 
-### ConfigHandler 配置处理器
+### ConfigHandler
 
-配置系统的核心组件，负责应用程序配置的管理和持久化。
-
-**主要功能：**
-- 配置文件的加载和保存
-- 配置项的注册和管理
-- 配置变更的通知机制
-- 配置验证和默认值处理
-
-**使用示例：**
-```csharp
-//读取配置
-ConfigHandler.GetInstance();
-```
-
-### AssemblyHandler 程序集处理器
-
-负责动态程序集的加载、管理和插件发现。
-
-**主要功能：**
-- 插件程序集的动态加载
-- 类型发现和实例化
-- 程序集依赖管理
-- 版本兼容性检查
-
-### PropertyGrid 属性编辑器
-
-提供对于对象属性的编辑功能，支持属性分类，属性排序，属性过滤，属性编辑器自定义等功能。
-
-**特色功能：**
-- 自动属性发现和展示
-- 属性分组和分类
-- 自定义属性编辑器
-- 实时数据绑定和验证
-
-### MenuManager 菜单管理器
-
-管理应用程序的菜单系统，支持动态菜单添加和插件菜单集成。
-
-**主要功能：**
-- 菜单结构管理
-- 插件菜单自动发现
-- 权限控制集成
-- 快捷键管理
-
-## 菜单系统
-
-### 动态菜单支持
-菜单系统支持运行时的动态修改，插件可以注册自己的菜单项：
+配置管理器的核心，负责应用程序配置的加载、保存和变更通知。
 
 ```csharp
-public interface IMenuItem
+public class ConfigHandler
 {
-    string Name { get; }
-    string Header { get; }
-    object Icon { get; }
-    ICommand Command { get; }
-    IList\\<IMenuItem\> Children { get; }
+    public static ConfigHandler Instance { get; }
+    
+    public T GetSetting<T>(string key, T defaultValue = default);
+    public void SetSetting<T>(string key, T value);
+    public void Save();
+    public void Load();
+    
+    public event EventHandler<ConfigChangedEventArgs> ConfigChanged;
 }
 ```
 
-### 插件菜单集成
-插件通过实现 `IMenuItem` 接口可以自动集成到主菜单中。
+### AssemblyHandler
 
-## 设置管理
-
-### 权限设置
-```csharp
-//设置权限
-Authorization.Instance = ConfigService.Instance.GetRequiredService\<Authorization\>();
-```
-
-### 日志配置
-```csharp
-//设置日志级别
-LogConfig.Instance.SetLog();
-```
-
-### 主题配置
-```csharp
-//设置主题
-this.ApplyTheme(ThemeConfig.Instance.Theme);
-```
-
-### 语言配置
-```csharp
-//设置语言
-Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
-```
-
-## 多语言支持
-
-ColorVision.UI 提供完整的国际化支持：
-
-### 资源管理
-- 基于 RESX 文件的资源管理
-- 运行时语言切换
-- 插件语言资源集成
-
-### 区域设置
-- 日期时间格式化
-- 数字格式化
-- 货币格式化
-
-## 热键系统
-
-ColorVision.UI 提供了完整的热键管理系统，支持全局热键和窗口热键两种模式。
-
-### 核心特性
-
-- **全局热键 (Global HotKey)**: 系统级别的快捷键注册，即使应用程序在后台也能响应
-- **窗口热键 (Window HotKey)**: 窗口或控件级别的快捷键，仅在控件获得焦点时响应
-- **快捷键配置**: 用户可以通过设置界面自定义快捷键组合
-- **配置持久化**: 自动保存和加载用户自定义的热键设置
-- **冲突检测**: 自动检测快捷键冲突并提供解决方案
-- **插件化支持**: 通过 IHotKey 接口支持插件扩展
-
-### 快速开始
+程序集管理器，负责插件的动态加载和类型发现。
 
 ```csharp
-// 注册全局热键
-var manager = GlobalHotKeyManager.GetInstance(this);
-manager.Register(
-    new Hotkey(Key.F1, ModifierKeys.Control | ModifierKeys.Alt),
-    () => ShowHelp()
-);
-
-// 注册窗口热键
-var windowManager = WindowHotKeyManager.GetInstance(this);
-windowManager.Register(
-    new Hotkey(Key.S, ModifierKeys.Control),
-    () => SaveDocument()
-);
-
-// 通过扩展方法添加热键
-this.AddHotKeys(new HotKeys("保存", 
-    new Hotkey(Key.S, ModifierKeys.Control),
-    SaveDocument));
-```
-
-### 架构组件
-
-```mermaid
-graph LR
-    A[HotKey System] --> B[Global HotKey]
-    A --> C[Window HotKey]
-    B --> D[GlobalHotKeyManager]
-    B --> E[Win32 API]
-    C --> F[WindowHotKeyManager]
-    C --> G[WPF Events]
-```
-
-### 详细文档
-
-完整的 HotKey 系统设计、API 参考、使用指南和最佳实践，请参阅：
-
-📖 **[HotKey 系统设计文档](./HotKey系统设计文档.md)**
-
-该文档包含：
-- 详细的架构设计和类图
-- 核心组件完整说明
-- 多种使用场景示例
-- 设计模式分析
-- API 完整参考
-- 最佳实践和优化建议
-- 已知问题和解决方案
-
-## 窗口操作增强
-
-### 窗口拖动
-设置窗口的实现移动到框架中来实现：
-
-```csharp
-//设置窗口可拖动
-this.MouseLeftButtonDown += (s, e) =>
+public class AssemblyHandler
 {
-    if (e.ButtonState == MouseButtonState.Pressed)
-        this.DragMove();
-};
+    public static AssemblyHandler Instance { get; }
+    
+    public void LoadAssembly(string assemblyPath);
+    public void UnloadAssembly(string assemblyName);
+    public IEnumerable<Type> GetTypes();
+    public IEnumerable<Type> GetTypes<TInterface>();
+    public T CreateInstance<T>(Type type);
+    
+    public event EventHandler<AssemblyLoadedEventArgs> AssemblyLoaded;
+}
+```
+
+### FileProcessorFactory
+
+文件处理器工厂，实现文件扩展名到处理器的映射。
+
+```csharp
+public class FileProcessorFactory
+{
+    public static FileProcessorFactory Instance { get; }
+    
+    public void Register(string extension, Type processorType);
+    public void Unregister(string extension);
+    public IFileProcessor GetProcessor(string extension);
+    
+    public IEnumerable<string> SupportedExtensions { get; }
+}
+```
+
+### DisPlayManager
+
+显示管理器，提供多显示器和 DPI 支持。
+
+```csharp
+public class DisPlayManager
+{
+    public static DisPlayManager Instance { get; }
+    
+    public DisplayInfo GetPrimaryDisplay();
+    public IEnumerable<DisplayInfo> GetAllDisplays();
+    public DisplayInfo GetDisplayAt(int x, int y);
+    
+    public event EventHandler<DisplayChangedEventArgs> DisplayChanged;
+}
+
+public class DisplayInfo
+{
+    public string Name { get; }
+    public int X { get; }
+    public int Y { get; }
+    public int Width { get; }
+    public int Height { get; }
+    public double DpiScale { get; }
+    public bool IsPrimary { get; }
+}
+```
+
+### Environments
+
+环境管理器，提供应用程序环境信息。
+
+```csharp
+public static class Environments
+{
+    public static string AppPath { get; }
+    public static string ConfigPath { get; }
+    public static string DataPath { get; }
+    public static string LogPath { get; }
+    public static string TempPath { get; }
+    
+    public static Version AppVersion { get; }
+    public static string FrameworkVersion { get; }
+    public static string OSVersion { get; }
+    public static bool Is64Bit { get; }
+}
 ```
 
 ## 使用示例
 
-### 1. 基础初始化
+### 1. 配置管理初始化
 
 ```csharp
-// 应用程序启动时的基础设置
-public partial class App : Application
+// 应用程序启动时读取配置
+ConfigHandler.GetInstance();
+
+// 访问配置
+var config = ConfigHandler.Instance;
+var setting = config.GetSetting("Key");
+
+// 保存配置
+config.SetSetting("Key", "Value");
+config.Save();
+```
+
+### 2. 程序集管理
+
+```csharp
+// 加载插件程序集
+AssemblyHandler.Instance.LoadAssembly("Plugin.dll");
+
+// 获取已加载的类型
+var types = AssemblyHandler.Instance.GetTypes()
+    .Where(t => t.GetCustomAttribute<PluginAttribute>() != null);
+
+// 创建实例
+var plugin = AssemblyHandler.Instance.CreateInstance<IPlugin>(type);
+```
+
+### 3. 文件处理工厂
+
+```csharp
+// 注册文件处理器
+FileProcessorFactory.Instance.Register(".txt", typeof(TextFileProcessor));
+FileProcessorFactory.Instance.Register(".csv", typeof(CsvFileProcessor));
+
+// 获取处理器并处理文件
+var processor = FileProcessorFactory.Instance.GetProcessor(".txt");
+processor.Process(filePath);
+```
+
+### 4. 显示管理
+
+```csharp
+// 获取主显示器信息
+var primaryDisplay = DisPlayManager.Instance.GetPrimaryDisplay();
+Console.WriteLine($"分辨率: {primaryDisplay.Width}x{primaryDisplay.Height}");
+Console.WriteLine($"DPI: {primaryDisplay.DpiScale}");
+
+// 获取所有显示器
+var displays = DisPlayManager.Instance.GetAllDisplays();
+foreach (var display in displays)
 {
-    protected override void OnStartup(StartupEventArgs e)
-    {
-        base.OnStartup(e);
-        
-        //读取配置
-        ConfigHandler.GetInstance();
-        
-        //设置权限
-        Authorization.Instance = ConfigService.Instance.GetRequiredService\<Authorization\>();
-        
-        //设置日志级别
-        LogConfig.Instance.SetLog();
-        
-        //设置主题
-        this.ApplyTheme(ThemeConfig.Instance.Theme);
-        
-        //设置语言
-        Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
-    }
+    Console.WriteLine($"显示器: {display.Name}");
 }
 ```
 
-### 2. 菜单项注册
+### 5. 环境管理
 
 ```csharp
-public class PluginMenuItem : IMenuItem
-{
-    public string Name => "MyPlugin";
-    public string Header => "My Plugin";
-    public object Icon => new BitmapImage(new Uri("pack://application:,,,/Resources/plugin.png"));
-    public ICommand Command { get; }
-    public IList\\<IMenuItem\> Children { get; }
-}
-```
+// 获取应用程序路径
+var appPath = Environments.AppPath;
+var configPath = Environments.ConfigPath;
+var dataPath = Environments.DataPath;
 
-### 3. 属性编辑器使用
-
-```xml
-<ui:PropertyGrid x:Name="propertyGrid" 
-                 SelectedObject="{Binding CurrentObject}"
-                 ShowCategories="True"
-                 ShowAdvancedOptions="False" />
+// 获取运行时信息
+var version = Environments.AppVersion;
+var framework = Environments.FrameworkVersion;
+var osVersion = Environments.OSVersion;
 ```
 
 ## 扩展机制
 
-### 插件接口
+### 自定义配置提供程序
+
 ```csharp
-public interface IPlugin
+public class CustomConfigProvider : IConfigProvider
 {
-    string Name { get; }
-    string Version { get; }
-    void Initialize();
-    void Shutdown();
+    public T GetSetting<T>(string key, T defaultValue = default)
+    {
+        // 自定义配置获取逻辑
+    }
+    
+    public void SetSetting<T>(string key, T value)
+    {
+        // 自定义配置保存逻辑
+    }
 }
+
+// 注册提供程序
+ConfigHandler.Instance.RegisterProvider(new CustomConfigProvider());
 ```
 
-### 自定义控件
-用户可以通过继承基础控件类来创建自定义UI组件：
+### 自定义文件处理器
 
 ```csharp
-public class CustomControl : BaseUserControl
+public class CustomFileProcessor : IFileProcessor
 {
-    // 自定义控件实现
+    public string[] SupportedExtensions => new[] { ".custom" };
+    
+    public void Process(string filePath)
+    {
+        // 自定义文件处理逻辑
+    }
 }
-```
 
-### 主题扩展
-支持自定义主题的开发和集成：
-
-```csharp
-public interface ITheme
-{
-    string Name { get; }
-    ResourceDictionary GetResourceDictionary();
-}
+// 注册处理器
+FileProcessorFactory.Instance.Register(".custom", typeof(CustomFileProcessor));
 ```
 
 ## 最佳实践
 
-1. **配置管理**: 使用 ConfigHandler 统一管理配置
-2. **权限控制**: 通过 Authorization 实现访问控制
-3. **日志记录**: 使用 LogConfig 配置日志级别
-4. **主题切换**: 通过 ApplyTheme 方法动态切换主题
-5. **国际化**: 使用 CultureInfo 设置区域信息
+### 1. 配置管理
+- 使用强类型配置类包装 ConfigHandler
+- 在应用启动时加载配置，退出时保存
+- 订阅配置变更事件进行动态响应
+
+### 2. 程序集加载
+- 验证程序集签名后再加载
+- 使用 AppDomain.AssemblyResolve 处理依赖
+- 记录程序集加载日志便于排查问题
+
+### 3. 文件处理
+- 处理器实现应是无状态的
+- 使用 Try-Catch 处理文件访问异常
+- 大文件处理应使用异步模式
+
+### 4. 显示管理
+- 监听 DisplayChanged 事件响应显示器变化
+- 使用 DPI 感知布局避免模糊
+- 支持多显示器间的窗口拖拽
 
 ## 相关资源
 
 - [开发者指南](../developer-guide/)
-- [插件开发指南](../developer-guide/plugin-development/)
-- [主题开发](../ui-components/ColorVision.Themes.md)
-- [故障排除](../troubleshooting/)
+- [配置管理指南](../getting-started/)

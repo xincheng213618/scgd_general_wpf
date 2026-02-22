@@ -5,10 +5,11 @@
 2. [核心功能](#核心功能)
 3. [架构设计](#架构设计)
 4. [主要组件](#主要组件)
-5. [数据访问层](#数据访问层)
-6. [UI控件](#ui控件)
+5. [UI控件](#ui控件)
+6. [数据访问层](#数据访问层)
 7. [使用示例](#使用示例)
 8. [配置管理](#配置管理)
+9. [最佳实践](#最佳实践)
 
 ## 概述
 
@@ -19,7 +20,9 @@
 - **主要功能**: 数据库连接管理、UI控件、查询工具
 - **支持数据库**: MySQL, SQLite
 - **UI 框架**: WPF
-- **特色功能**: 可视化配置、本地服务管理、通用查询界面
+- **特色功能**: 可视化配置、本地服务管理、通用查询界面、泛型DAO
+- **版本**: 1.5.1.1
+- **目标框架**: .NET 8.0 / .NET 10.0
 
 ## 核心功能
 
@@ -27,640 +30,190 @@
 - **MySQL 连接配置**: 可视化的连接参数设置
 - **连接状态监控**: 实时连接状态检测和显示
 - **连接池管理**: 高效的数据库连接复用
-- **安全认证**: 支持用户名密码和高级安全选项
+- **安全认证**: 支持用户名密码和高级安全选项，密码加密存储
+- **连接测试**: 一键测试数据库连接
 
 ### 2. 可视化管理工具
-- **数据库工具窗口**: 集成的管理界面
-- **连接向导**: 分步式连接配置流程
-- **查询工具**: 通用的SQL查询执行器
-- **本地服务管理**: MySQL 本地服务的启停控制
+- **数据库连接窗口** (`MySqlConnect`): 图形化配置数据库连接参数
+- **管理工具窗口** (`MySqlToolWindow`): 集成的数据库管理界面
+- **通用查询窗口** (`GenericQueryWindow`): 执行 SQL 查询并显示结果
+- **本地服务管理** (`MySqlLocalServicesManager`): MySQL 本地服务的启停控制
 
 ### 3. 数据访问抽象
-- **泛型 DAO**: 基于泛型的数据访问对象
-- **实体映射**: ORM 支持和实体定义
-- **事务管理**: 自动事务处理和回滚
-- **SQL 日志**: SQLite 日志记录功能
+- **泛型 DAO** (`BaseTableDao<T>`): 基于泛型的数据访问对象，支持 CRUD 操作
+- **实体接口** (`IEntity`): 标准化实体定义
+- **SQL 命令抽象** (`IMysqlCommand`): 命令模式的数据库操作
+- **配置向导** (`MysqlWizardStep`): 向导式数据库配置流程
 
 ## 架构设计
 
 ```mermaid
 graph TD
-    A[ColorVision.Database] --> B[连接管理]
-    A --> C[UI控件]
-    A --> D[数据访问]
-    A --> E[配置管理]
+    A[ColorVision.Database] --> B[UI层]
+    A --> C[数据访问层]
+    A --> D[配置管理层]
     
     B --> B1[MySqlConnect]
-    B --> B2[连接池]
-    B --> B3[状态监控]
+    B --> B2[GenericQueryWindow]
+    B --> B3[MySqlToolWindow]
     
-    C --> C1[连接配置窗口]
-    C --> C2[管理工具窗口]
-    C --> C3[查询窗口]
+    C --> C1[MySqlControl]
+    C --> C2[BaseTableDao]
+    C --> C3[IEntity]
     
-    D --> D1[BaseTableDao]
-    D --> D2[实体接口]
-    D --> D3[命令抽象]
+    D --> D1[MySQLConfig]
+    D --> D2[MySqlSetting]
+    D --> D3[MysqlWizardStep]
     
-    E --> E1[MySqlConfig]
-    E --> E2[本地服务]
-    E --> E3[向导步骤]
+    C1 --> E[MySQL]
+    C1 --> F[SQLite]
 ```
 
 ## 主要组件
 
-### MySQL连接管理器
+### MySQLConfig
 
-```csharp
-public class MySqlConnect : Window
-{
-    public MySQLConfig Config { get; set; }
-    
-    public MySqlConnect()
-    {
-        InitializeComponent();
-        Config = MySQLConfig.Instance;
-        DataContext = Config;
-    }
-    
-    private void TestConnection_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            using var connection = MySqlControl.GetConnection();
-            connection.Open();
-            
-            MessageBox.Show("数据库连接成功！", "连接测试", 
-                          MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"数据库连接失败：{ex.Message}", "连接测试", 
-                          MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-    
-    private void SaveConfig_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            Config.Save();
-            MessageBox.Show("配置保存成功！", "保存配置", 
-                          MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"配置保存失败：{ex.Message}", "保存配置", 
-                          MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-}
-```
-
-### MySQL配置类
+数据库连接配置类，采用单例模式管理连接参数。
 
 ```csharp
 public class MySQLConfig : IConfig
 {
     public static MySQLConfig Instance { get; } = new MySQLConfig();
     
-    private string _server = "localhost";
-    public string Server
-    {
-        get => _server;
-        set
-        {
-            _server = value;
-            OnPropertyChanged();
-            UpdateConnectionString();
-        }
-    }
+    public string Server { get; set; } = "localhost";
+    public int Port { get; set; } = 3306;
+    public string Database { get; set; }
+    public string Username { get; set; }
+    public string Password { get; set; }
+    public string ConnectionString { get; }
     
-    private int _port = 3306;
-    public int Port
-    {
-        get => _port;
-        set
-        {
-            _port = value;
-            OnPropertyChanged();
-            UpdateConnectionString();
-        }
-    }
-    
-    private string _database = "";
-    public string Database
-    {
-        get => _database;
-        set
-        {
-            _database = value;
-            OnPropertyChanged();
-            UpdateConnectionString();
-        }
-    }
-    
-    private string _username = "";
-    public string Username
-    {
-        get => _username;
-        set
-        {
-            _username = value;
-            OnPropertyChanged();
-            UpdateConnectionString();
-        }
-    }
-    
-    private string _password = "";
-    public string Password
-    {
-        get => _password;
-        set
-        {
-            _password = value;
-            OnPropertyChanged();
-            UpdateConnectionString();
-        }
-    }
-    
-    public string ConnectionString { get; private set; }
-    
-    private void UpdateConnectionString()
-    {
-        ConnectionString = $"Server={Server};Port={Port};Database={Database};" +
-                         $"Uid={Username};Pwd={Password};CharSet=utf8mb4;" +
-                         $"SslMode=None;AllowPublicKeyRetrieval=True;";
-        OnPropertyChanged(nameof(ConnectionString));
-    }
-    
-    public void Load()
-    {
-        var config = ConfigurationManager.AppSettings;
-        Server = config["MySQL.Server"] ?? "localhost";
-        Port = int.Parse(config["MySQL.Port"] ?? "3306");
-        Database = config["MySQL.Database"] ?? "";
-        Username = config["MySQL.Username"] ?? "";
-        Password = EncryptionHelper.Decrypt(config["MySQL.Password"] ?? "");
-    }
-    
-    public void Save()
-    {
-        var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-        var settings = config.AppSettings.Settings;
-        
-        settings["MySQL.Server"].Value = Server;
-        settings["MySQL.Port"].Value = Port.ToString();
-        settings["MySQL.Database"].Value = Database;
-        settings["MySQL.Username"].Value = Username;
-        settings["MySQL.Password"].Value = EncryptionHelper.Encrypt(Password);
-        
-        config.Save(ConfigurationSaveMode.Modified);
-        ConfigurationManager.RefreshSection("appSettings");
-    }
-    
-    public event PropertyChangedEventHandler PropertyChanged;
-    
-    protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
+    public void Save();
+    public void Load();
 }
 ```
 
-### MySQL控制类
+### MySqlControl
+
+数据库连接控制类，提供连接管理和 SQL 执行功能。
 
 ```csharp
 public static class MySqlControl
 {
-    private static readonly object LockObject = new object();
-    private static MySqlConnection _connection;
-    
-    public static MySqlConnection GetConnection()
-    {
-        lock (LockObject)
-        {
-            if (_connection == null || _connection.State != ConnectionState.Open)
-            {
-                _connection?.Dispose();
-                _connection = new MySqlConnection(MySQLConfig.Instance.ConnectionString);
-            }
-            return _connection;
-        }
-    }
-    
-    public static bool TestConnection()
-    {
-        try
-        {
-            using var connection = new MySqlConnection(MySQLConfig.Instance.ConnectionString);
-            connection.Open();
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-    
-    public static bool TestConnection(string connectionString)
-    {
-        try
-        {
-            using var connection = new MySqlConnection(connectionString);
-            connection.Open();
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-    
-    public static DataTable ExecuteQuery(string sql, Dictionary\\<string, object\> parameters = null)
-    {
-        using var connection = GetConnection();
-        using var command = new MySqlCommand(sql, connection);
-        
-        if (parameters != null)
-        {
-            foreach (var param in parameters)
-            {
-                command.Parameters.AddWithValue(param.Key, param.Value);
-            }
-        }
-        
-        using var adapter = new MySqlDataAdapter(command);
-        var dataTable = new DataTable();
-        adapter.Fill(dataTable);
-        
-        return dataTable;
-    }
-    
-    public static int ExecuteNonQuery(string sql, Dictionary\\<string, object\> parameters = null)
-    {
-        using var connection = GetConnection();
-        using var command = new MySqlCommand(sql, connection);
-        
-        if (parameters != null)
-        {
-            foreach (var param in parameters)
-            {
-                command.Parameters.AddWithValue(param.Key, param.Value);
-            }
-        }
-        
-        if (connection.State != ConnectionState.Open)
-            connection.Open();
-            
-        return command.ExecuteNonQuery();
-    }
+    public static MySqlConnection GetConnection();
+    public static bool TestConnection();
+    public static bool TestConnection(string connectionString);
+    public static DataTable ExecuteQuery(string sql, Dictionary<string, object> parameters = null);
+    public static int ExecuteNonQuery(string sql, Dictionary<string, object> parameters = null);
 }
 ```
+
+### BaseTableDao<T>
+
+泛型数据访问对象基类，提供标准 CRUD 操作。
+
+```csharp
+public abstract class BaseTableDao<T> where T : class, IEntity, new()
+{
+    public virtual List<T> GetAll();
+    public virtual T GetById(int id);
+    public virtual int Insert(T entity);
+    public virtual int Update(T entity);
+    public virtual int Delete(int id);
+    protected List<T> ExecuteQuery(string sql, Dictionary<string, object> parameters = null);
+}
+```
+
+## UI控件
+
+### MySqlConnect
+
+数据库连接配置窗口，提供可视化的连接参数设置界面。
+
+**功能特性**:
+- 服务器地址、端口、数据库名输入
+- 用户名、密码输入（密码加密显示）
+- 连接测试按钮
+- 保存配置按钮
+
+### GenericQueryWindow
+
+通用 SQL 查询窗口，支持执行查询、显示结果、导出数据。
+
+**功能特性**:
+- SQL 语句编辑区
+- 查询执行按钮
+- 结果表格显示
+- 导出到 CSV/Excel
+
+### MySqlToolWindow
+
+数据库管理工具窗口，提供常用的数据库管理功能。
+
+**功能特性**:
+- 数据库状态监控
+- 快速查询工具
+- 连接信息展示
 
 ## 数据访问层
 
-### 基础表DAO
+### IEntity 接口
 
-```csharp
-public abstract class BaseTableDao\<T\> where T : class, IEntity, new()
-{
-    protected readonly string ConnectionString;
-    protected readonly string TableName;
-    
-    public BaseTableDao(string tableName)
-    {
-        ConnectionString = MySQLConfig.Instance.ConnectionString;
-        TableName = tableName;
-    }
-    
-    public virtual List\<T\> GetAll()
-    {
-        var sql = $"SELECT * FROM {TableName}";
-        return ExecuteQuery(sql);
-    }
-    
-    public virtual T GetById(int id)
-    {
-        var sql = $"SELECT * FROM {TableName} WHERE Id = @id";
-        var parameters = new Dictionary\\<string, object\> { { "@id", id } };
-        return ExecuteQuery(sql, parameters).FirstOrDefault();
-    }
-    
-    public virtual int Insert(T entity)
-    {
-        var properties = GetInsertProperties();
-        var columns = string.Join(", ", properties.Select(p => p.Name));
-        var values = string.Join(", ", properties.Select(p => "@" + p.Name));
-        
-        var sql = $"INSERT INTO {TableName} ({columns}) VALUES ({values})";
-        var parameters = properties.ToDictionary(p => "@" + p.Name, p => p.GetValue(entity));
-        
-        return MySqlControl.ExecuteNonQuery(sql, parameters);
-    }
-    
-    public virtual int Update(T entity)
-    {
-        var properties = GetUpdateProperties();
-        var setClause = string.Join(", ", properties.Select(p => $"{p.Name} = @{p.Name}"));
-        
-        var sql = $"UPDATE {TableName} SET {setClause} WHERE Id = @Id";
-        var parameters = properties.ToDictionary(p => "@" + p.Name, p => p.GetValue(entity));
-        parameters["@Id"] = entity.Id;
-        
-        return MySqlControl.ExecuteNonQuery(sql, parameters);
-    }
-    
-    public virtual int Delete(int id)
-    {
-        var sql = $"DELETE FROM {TableName} WHERE Id = @id";
-        var parameters = new Dictionary\\<string, object\> { { "@id", id } };
-        
-        return MySqlControl.ExecuteNonQuery(sql, parameters);
-    }
-    
-    protected List\<T\> ExecuteQuery(string sql, Dictionary\\<string, object\> parameters = null)
-    {
-        var dataTable = MySqlControl.ExecuteQuery(sql, parameters);
-        return MapDataTableToEntities(dataTable);
-    }
-    
-    protected virtual List\<T\> MapDataTableToEntities(DataTable dataTable)
-    {
-        var entities = new List\<T\>();
-        var properties = typeof(T).GetProperties();
-        
-        foreach (DataRow row in dataTable.Rows)
-        {
-            var entity = new T();
-            
-            foreach (var property in properties)
-            {
-                if (dataTable.Columns.Contains(property.Name) && 
-                    row[property.Name] != DBNull.Value)
-                {
-                    var value = Convert.ChangeType(row[property.Name], property.PropertyType);
-                    property.SetValue(entity, value);
-                }
-            }
-            
-            entities.Add(entity);
-        }
-        
-        return entities;
-    }
-    
-    protected virtual PropertyInfo[] GetInsertProperties()
-    {
-        return typeof(T).GetProperties()
-                       .Where(p => p.Name != "Id" && p.CanWrite)
-                       .ToArray();
-    }
-    
-    protected virtual PropertyInfo[] GetUpdateProperties()
-    {
-        return typeof(T).GetProperties()
-                       .Where(p => p.Name != "Id" && p.CanWrite)
-                       .ToArray();
-    }
-}
-```
-
-### 实体接口
+实体类的标准接口，所有数据库实体都应实现此接口。
 
 ```csharp
 public interface IEntity
 {
     int Id { get; set; }
 }
+```
 
-// 示例实体
+### 使用 DAO 进行数据操作
+
+```csharp
+// 定义实体
 public class User : IEntity
 {
     public int Id { get; set; }
     public string Username { get; set; }
     public string Email { get; set; }
     public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-    public bool IsActive { get; set; } = true;
 }
 
-// 用户DAO实现
-public class UserDao : BaseTableDao\<User\>
+// 创建 DAO
+public class UserDao : BaseTableDao<User>
 {
     public UserDao() : base("users") { }
     
     public User GetByUsername(string username)
     {
         var sql = $"SELECT * FROM {TableName} WHERE Username = @username";
-        var parameters = new Dictionary\\<string, object\> { { "@username", username } };
+        var parameters = new Dictionary<string, object> { { "@username", username } };
         return ExecuteQuery(sql, parameters).FirstOrDefault();
     }
-    
-    public List\\<User\> GetActiveUsers()
-    {
-        var sql = $"SELECT * FROM {TableName} WHERE IsActive = 1";
-        return ExecuteQuery(sql);
-    }
 }
-```
 
-## UI控件
+// 使用 DAO
+var userDao = new UserDao();
 
-### 通用查询窗口
+// 插入
+var newUser = new User { Username = "john", Email = "john@example.com" };
+userDao.Insert(newUser);
 
-```csharp
-public partial class GenericQueryWindow : Window
-{
-    public GenericQueryWindow()
-    {
-        InitializeComponent();
-    }
-    
-    private void ExecuteQuery_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var sql = QueryTextBox.Text.Trim();
-            if (string.IsNullOrEmpty(sql))
-            {
-                MessageBox.Show("请输入SQL查询语句", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            
-            var dataTable = MySqlControl.ExecuteQuery(sql);
-            ResultDataGrid.ItemsSource = dataTable.DefaultView;
-            
-            StatusLabel.Content = $"查询完成，返回 {dataTable.Rows.Count} 行记录";
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"查询失败：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            StatusLabel.Content = "查询失败";
-        }
-    }
-    
-    private void SaveResults_Click(object sender, RoutedEventArgs e)
-    {
-        if (ResultDataGrid.ItemsSource is DataView dataView)
-        {
-            var saveFileDialog = new SaveFileDialog
-            {
-                Filter = "CSV文件|*.csv|Excel文件|*.xlsx",
-                Title = "保存查询结果"
-            };
-            
-            if (saveFileDialog.ShowDialog() == true)
-            {
-                ExportDataToFile(dataView.Table, saveFileDialog.FileName);
-            }
-        }
-    }
-    
-    private void ExportDataToFile(DataTable dataTable, string fileName)
-    {
-        var extension = Path.GetExtension(fileName).ToLowerInvariant();
-        
-        switch (extension)
-        {
-            case ".csv":
-                ExportToCsv(dataTable, fileName);
-                break;
-            case ".xlsx":
-                ExportToExcel(dataTable, fileName);
-                break;
-        }
-    }
-}
-```
+// 查询
+var users = userDao.GetAll();
+var user = userDao.GetById(1);
 
-### MySQL本地服务管理器
+// 更新
+user.Email = "new@example.com";
+userDao.Update(user);
 
-```csharp
-public class MySqlLocalServicesManager : ViewModelBase
-{
-    private string _mysqlPath;
-    public string MySqlPath
-    {
-        get => _mysqlPath;
-        set => SetProperty(ref _mysqlPath, value);
-    }
-    
-    private bool _isRunning;
-    public bool IsRunning
-    {
-        get => _isRunning;
-        set => SetProperty(ref _isRunning, value);
-    }
-    
-    public ICommand StartServiceCommand { get; }
-    public ICommand StopServiceCommand { get; }
-    public ICommand InstallServiceCommand { get; }
-    public ICommand UninstallServiceCommand { get; }
-    
-    public MySqlLocalServicesManager()
-    {
-        StartServiceCommand = new RelayCommand(StartService, CanStartService);
-        StopServiceCommand = new RelayCommand(StopService, CanStopService);
-        InstallServiceCommand = new RelayCommand(InstallService);
-        UninstallServiceCommand = new RelayCommand(UninstallService);
-        
-        CheckServiceStatus();
-    }
-    
-    private void StartService()
-    {
-        try
-        {
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "net",
-                    Arguments = "start mysql",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                }
-            };
-            
-            process.Start();
-            process.WaitForExit();
-            
-            if (process.ExitCode == 0)
-            {
-                IsRunning = true;
-                MessageBox.Show("MySQL 服务启动成功", "服务管理", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show("MySQL 服务启动失败", "服务管理", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"启动服务时发生错误：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-    
-    private void StopService()
-    {
-        try
-        {
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "net",
-                    Arguments = "stop mysql",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                }
-            };
-            
-            process.Start();
-            process.WaitForExit();
-            
-            if (process.ExitCode == 0)
-            {
-                IsRunning = false;
-                MessageBox.Show("MySQL 服务停止成功", "服务管理", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show("MySQL 服务停止失败", "服务管理", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"停止服务时发生错误：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-    
-    private void CheckServiceStatus()
-    {
-        try
-        {
-            var services = ServiceController.GetServices();
-            var mysqlService = services.FirstOrDefault(s => s.ServiceName.ToLowerInvariant().Contains("mysql"));
-            
-            IsRunning = mysqlService?.Status == ServiceControllerStatus.Running;
-        }
-        catch
-        {
-            IsRunning = false;
-        }
-    }
-    
-    private bool CanStartService() => !IsRunning;
-    private bool CanStopService() => IsRunning;
-}
+// 删除
+userDao.Delete(1);
 ```
 
 ## 使用示例
 
-### 1. 基础数据库连接
+### 1. 配置数据库连接
 
 ```csharp
 // 配置数据库连接
@@ -679,101 +232,45 @@ if (MySqlControl.TestConnection())
 }
 ```
 
-### 2. 使用DAO进行数据操作
+### 2. 显示连接配置窗口
 
 ```csharp
-// 创建用户DAO
-var userDao = new UserDao();
-
-// 添加用户
-var newUser = new User
-{
-    Username = "john_doe",
-    Email = "john@example.com",
-    CreatedAt = DateTime.Now
-};
-
-int result = userDao.Insert(newUser);
-if (result > 0)
-{
-    Console.WriteLine("用户添加成功");
-}
-
-// 查询用户
-var users = userDao.GetAll();
-foreach (var user in users)
-{
-    Console.WriteLine($"用户：{user.Username}, 邮箱：{user.Email}");
-}
-
-// 更新用户
-var userToUpdate = userDao.GetById(1);
-if (userToUpdate != null)
-{
-    userToUpdate.Email = "john.new@example.com";
-    userToUpdate.UpdatedAt = DateTime.Now;
-    userDao.Update(userToUpdate);
-}
-```
-
-### 3. 显示数据库管理窗口
-
-```csharp
-// 显示连接配置窗口
+// 显示数据库连接配置窗口
 var connectWindow = new MySqlConnect();
 if (connectWindow.ShowDialog() == true)
 {
-    // 连接配置完成
+    // 连接配置完成并保存
 }
+```
 
-// 显示数据库工具窗口
-var toolWindow = new MySqlToolWindow();
-toolWindow.Show();
+### 3. 执行自定义 SQL 查询
 
-// 显示通用查询窗口
+```csharp
+// 执行查询
+var dataTable = MySqlControl.ExecuteQuery("SELECT * FROM users WHERE IsActive = 1");
+
+// 带参数的查询
+var parameters = new Dictionary<string, object> 
+{ 
+    { "@status", "active" },
+    { "@date", DateTime.Now.AddDays(-30) }
+};
+var results = MySqlControl.ExecuteQuery(
+    "SELECT * FROM users WHERE Status = @status AND CreatedAt > @date", 
+    parameters);
+```
+
+### 4. 显示通用查询窗口
+
+```csharp
+// 显示 SQL 查询窗口
 var queryWindow = new GenericQueryWindow();
 queryWindow.Show();
 ```
 
-### 4. 自定义数据实体和DAO
-
-```csharp
-// 定义产品实体
-public class Product : IEntity
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public string Description { get; set; }
-    public decimal Price { get; set; }
-    public int CategoryId { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public bool IsAvailable { get; set; } = true;
-}
-
-// 产品DAO
-public class ProductDao : BaseTableDao\<Product\>
-{
-    public ProductDao() : base("products") { }
-    
-    public List\\<Product\> GetByCategory(int categoryId)
-    {
-        var sql = $"SELECT * FROM {TableName} WHERE CategoryId = @categoryId AND IsAvailable = 1";
-        var parameters = new Dictionary\\<string, object\> { { "@categoryId", categoryId } };
-        return ExecuteQuery(sql, parameters);
-    }
-    
-    public List\\<Product\> SearchByName(string name)
-    {
-        var sql = $"SELECT * FROM {TableName} WHERE Name LIKE @name AND IsAvailable = 1";
-        var parameters = new Dictionary\\<string, object\> { { "@name", $"%{name}%" } };
-        return ExecuteQuery(sql, parameters);
-    }
-}
-```
-
 ## 配置管理
 
-### 向导步骤实现
+### 配置向导步骤
 
 ```csharp
 public class DatabaseWizardStep : IWizardStep
@@ -781,132 +278,28 @@ public class DatabaseWizardStep : IWizardStep
     public string Title => "数据库配置";
     public string Description => "配置数据库连接参数";
     
-    private UserControl _stepContent;
-    public UserControl StepContent
-    {
-        get
-        {
-            if (_stepContent == null)
-            {
-                _stepContent = new DatabaseConfigControl();
-            }
-            return _stepContent;
-        }
-    }
+    public UserControl StepContent => new DatabaseConfigControl();
     
-    public bool CanGoNext
-    {
-        get
-        {
-            // 验证数据库配置是否正确
-            return MySqlControl.TestConnection();
-        }
-    }
-    
-    public bool CanGoPrevious => true;
+    public bool CanGoNext => MySqlControl.TestConnection();
     
     public bool Validate()
     {
         var config = MySQLConfig.Instance;
         
         if (string.IsNullOrEmpty(config.Server) ||
-            string.IsNullOrEmpty(config.Database) ||
-            string.IsNullOrEmpty(config.Username))
+            string.IsNullOrEmpty(config.Database))
         {
-            MessageBox.Show("请填写完整的数据库连接信息", "验证失败", 
-                          MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("请填写完整的数据库连接信息");
             return false;
         }
         
         if (!MySqlControl.TestConnection())
         {
-            MessageBox.Show("数据库连接测试失败，请检查连接参数", "连接失败", 
-                          MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("数据库连接测试失败");
             return false;
         }
         
         return true;
-    }
-}
-```
-
-### SQLite日志系统
-
-```csharp
-public class SqliteLog
-{
-    private readonly string _connectionString;
-    private readonly string _logTableName = "application_logs";
-    
-    public SqliteLog(string dbPath)
-    {
-        _connectionString = $"Data Source={dbPath};Version=3;";
-        InitializeLogTable();
-    }
-    
-    private void InitializeLogTable()
-    {
-        var sql = $@"
-            CREATE TABLE IF NOT EXISTS {_logTableName} (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                Level VARCHAR(10) NOT NULL,
-                Message TEXT NOT NULL,
-                Exception TEXT,
-                Source VARCHAR(255)
-            )";
-            
-        ExecuteNonQuery(sql);
-    }
-    
-    public void Log(string level, string message, string exception = null, string source = null)
-    {
-        var sql = $@"
-            INSERT INTO {_logTableName} (Level, Message, Exception, Source)
-            VALUES (@level, @message, @exception, @source)";
-            
-        var parameters = new Dictionary\\<string, object\>
-        {
-            { "@level", level },
-            { "@message", message },
-            { "@exception", exception },
-            { "@source", source }
-        };
-        
-        ExecuteNonQuery(sql, parameters);
-    }
-    
-    public void LogInfo(string message, string source = null)
-    {
-        Log("INFO", message, null, source);
-    }
-    
-    public void LogError(string message, Exception ex = null, string source = null)
-    {
-        Log("ERROR", message, ex?.ToString(), source);
-    }
-    
-    public void LogWarning(string message, string source = null)
-    {
-        Log("WARNING", message, null, source);
-    }
-    
-    private void ExecuteNonQuery(string sql, Dictionary\\<string, object\> parameters = null)
-    {
-        using var connection = new SQLiteConnection(_connectionString);
-        connection.Open();
-        
-        using var command = new SQLiteCommand(sql, connection);
-        
-        if (parameters != null)
-        {
-            foreach (var param in parameters)
-            {
-                command.Parameters.AddWithValue(param.Key, param.Value ?? DBNull.Value);
-            }
-        }
-        
-        command.ExecuteNonQuery();
     }
 }
 ```
@@ -919,9 +312,9 @@ public class SqliteLog
 - 实现连接超时和重试机制
 
 ### 2. 安全考虑
-- 密码加密存储
-- SQL注入防护
-- 参数化查询使用
+- 密码加密存储（使用 EncryptionHelper）
+- SQL 注入防护（使用参数化查询）
+- 避免在代码中硬编码连接字符串
 
 ### 3. 性能优化
 - 使用索引优化查询
@@ -933,6 +326,8 @@ public class SqliteLog
 - 用户友好的错误信息
 - 详细的日志记录
 
----
+## 相关资源
 
-*ColorVision.Database 提供了完整的数据库管理功能，通过可视化界面和抽象的数据访问层，大大简化了数据库相关的开发工作。*
+- [数据存储文档](../../05-resources/data-storage.md)
+- [配置管理指南](../../00-getting-started/README.md)
+- [RBAC 权限系统](../../ui-components/ColorVision.Solution.md#权限控制)
