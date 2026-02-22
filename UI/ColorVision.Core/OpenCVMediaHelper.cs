@@ -265,6 +265,9 @@ namespace ColorVision.Core
         public static extern int M_VideoSetPlaybackSpeed(int handle, double speed);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_VideoSetResizeScale(int handle, double scale);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_VideoPlay(int handle, VideoFrameCallback frameCallback, VideoStatusCallback statusCallback, IntPtr userData);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
