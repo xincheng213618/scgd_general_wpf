@@ -6,6 +6,14 @@
 #include <atomic>
 #include <thread>
 
+// Frame buffer entry for producer-consumer queue
+struct FrameBufferEntry {
+	cv::Mat frame;
+	int frameIndex;
+	bool valid;
+	FrameBufferEntry() : frameIndex(0), valid(false) {}
+};
+
 struct VideoContext {
 	cv::VideoCapture cap;
 	int totalFrames;
@@ -15,6 +23,7 @@ struct VideoContext {
 	std::atomic<bool> threadRunning; // 控制线程生命周期 (Close 时设为 false)
 	std::atomic<bool> isPaused;      // 控制播放状态 (Pause/Play 切换)
 	std::thread playThread;
+	std::thread consumerThread;      // 消费者线程 (回调UI)
 	std::atomic<bool> stopRequested;
 	double playbackSpeed;
 	std::mutex capMutex;
@@ -24,10 +33,26 @@ struct VideoContext {
 	VideoStatusCallback statusCallback;
 	void* userData;
 	std::mutex seekMutex;
-	std::atomic<int> seekRequestFrame; // 新增：-1 表示无请求，>=0 表示目标帧
+	std::atomic<int> seekRequestFrame; // -1 表示无请求，>=0 表示目标帧
+
+	// Resize scale: 1.0 = original, 0.5 = 1/2, 0.25 = 1/4, 0.125 = 1/8
+	std::atomic<double> resizeScale;
+
+	// Producer-consumer frame buffer queue
+	static const int BUFFER_SIZE = 4;
+	FrameBufferEntry frameBuffer[4];
+	std::atomic<int> bufferWriteIdx;
+	std::atomic<int> bufferReadIdx;
+	std::atomic<int> bufferCount;
+	std::mutex bufferMutex;
+	std::condition_variable bufferNotEmpty;
+	std::condition_variable bufferNotFull;
+
 	VideoContext() : totalFrames(0), fps(0), width(0), height(0),
 		stopRequested(false), playbackSpeed(1.0),
-		frameCallback(nullptr), statusCallback(nullptr), userData(nullptr) , seekRequestFrame(-1), threadRunning(true), isPaused(true) {}
+		frameCallback(nullptr), statusCallback(nullptr), userData(nullptr),
+		seekRequestFrame(-1), threadRunning(true), isPaused(true),
+		resizeScale(1.0), bufferWriteIdx(0), bufferReadIdx(0), bufferCount(0) {}
 };
 
 static std::unordered_map<int, VideoContext*> g_videos;
@@ -68,6 +93,8 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 
 	ctx->threadRunning = true;
 	ctx->isPaused = true; // 初始状态是暂停
+
+	// Producer thread: reads frames from video and puts them into the buffer
 	ctx->playThread = std::thread([ctx, handle]() {
 		while (ctx->threadRunning) {
 			// 1. 处理暂停逻辑 (核心!)
@@ -90,6 +117,14 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 					ctx->cap.set(cv::CAP_PROP_POS_FRAMES, seekTo);
 					justSeeked = true;
 				}
+				// Clear buffer on seek
+				{
+					std::lock_guard<std::mutex> bufLock(ctx->bufferMutex);
+					ctx->bufferWriteIdx = 0;
+					ctx->bufferReadIdx = 0;
+					ctx->bufferCount = 0;
+				}
+				ctx->bufferNotEmpty.notify_one();
 			}
 
 			// 3. 读取帧 (只有在播放中，或者刚刚 Seek 完需要刷新一帧时才读)
@@ -113,17 +148,48 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 					}
 				}
 
-				// 4. 回调显示
-				if (readSuccess && ctx->frameCallback) {
-					HImage hImage;
-					hImage.rows = frame.rows;
-					hImage.cols = frame.cols;
-					hImage.channels = frame.channels();
-					hImage.stride = static_cast<int>(frame.step);
-					hImage.depth = static_cast<int>(frame.elemSize1()) * 8;
-					hImage.pData = frame.data; // 指向新分配的内存
-					hImage.isDispose = true;
-					ctx->frameCallback(handle, &hImage, currentFrame, ctx->totalFrames, ctx->userData);
+				// 4. Apply resize if needed and put frame into buffer
+				if (readSuccess) {
+					double scale = ctx->resizeScale.load();
+					if (scale > 0.0 && scale < 1.0) {
+						cv::Mat resized;
+						cv::resize(frame, resized, cv::Size(), scale, scale, cv::INTER_LINEAR);
+						frame = resized;
+					}
+
+					// Producer: wait for space in buffer (with timeout to allow exit)
+					{
+						std::unique_lock<std::mutex> bufLock(ctx->bufferMutex);
+						ctx->bufferNotFull.wait_for(bufLock, std::chrono::milliseconds(50), [ctx] {
+							return ctx->bufferCount < VideoContext::BUFFER_SIZE || !ctx->threadRunning;
+							});
+
+						if (!ctx->threadRunning) break;
+
+						if (ctx->bufferCount < VideoContext::BUFFER_SIZE) {
+							int idx = ctx->bufferWriteIdx;
+							ctx->frameBuffer[idx].frame = frame;
+							ctx->frameBuffer[idx].frameIndex = currentFrame;
+							ctx->frameBuffer[idx].valid = true;
+							ctx->bufferWriteIdx = (idx + 1) % VideoContext::BUFFER_SIZE;
+							ctx->bufferCount++;
+						}
+						// If buffer is full, drop this frame (producer-side frame dropping)
+					}
+					ctx->bufferNotEmpty.notify_one();
+
+					// If this was a seek while paused, directly call callback for immediate display
+					if (justSeeked && ctx->isPaused && ctx->frameCallback) {
+						HImage hImage;
+						hImage.rows = frame.rows;
+						hImage.cols = frame.cols;
+						hImage.channels = frame.channels();
+						hImage.stride = static_cast<int>(frame.step);
+						hImage.depth = static_cast<int>(frame.elemSize1()) * 8;
+						hImage.pData = frame.data;
+						hImage.isDispose = true;
+						ctx->frameCallback(handle, &hImage, currentFrame, ctx->totalFrames, ctx->userData);
+					}
 				}
 			}
 
@@ -136,6 +202,49 @@ COLORVISIONCORE_API int M_VideoOpen(const wchar_t* filePath, VideoInfo* info)
 			}
 		}
 		});
+
+	// Consumer thread: reads frames from buffer and calls callback
+	ctx->consumerThread = std::thread([ctx, handle]() {
+		while (ctx->threadRunning) {
+			FrameBufferEntry entry;
+			{
+				std::unique_lock<std::mutex> bufLock(ctx->bufferMutex);
+				ctx->bufferNotEmpty.wait_for(bufLock, std::chrono::milliseconds(50), [ctx] {
+					return ctx->bufferCount > 0 || !ctx->threadRunning;
+					});
+
+				if (!ctx->threadRunning) break;
+				if (ctx->bufferCount <= 0) continue;
+
+				// Frame dropping: if multiple frames buffered, skip to latest (discard strategy)
+				while (ctx->bufferCount > 1) {
+					ctx->bufferReadIdx = (ctx->bufferReadIdx.load() + 1) % VideoContext::BUFFER_SIZE;
+					ctx->bufferCount--;
+				}
+
+				int idx = ctx->bufferReadIdx;
+				entry = ctx->frameBuffer[idx];
+				ctx->frameBuffer[idx].valid = false;
+				ctx->bufferReadIdx = (idx + 1) % VideoContext::BUFFER_SIZE;
+				ctx->bufferCount--;
+			}
+			ctx->bufferNotFull.notify_one();
+
+			// Call frame callback
+			if (entry.valid && ctx->frameCallback && !ctx->isPaused) {
+				HImage hImage;
+				hImage.rows = entry.frame.rows;
+				hImage.cols = entry.frame.cols;
+				hImage.channels = entry.frame.channels();
+				hImage.stride = static_cast<int>(entry.frame.step);
+				hImage.depth = static_cast<int>(entry.frame.elemSize1()) * 8;
+				hImage.pData = entry.frame.data;
+				hImage.isDispose = true;
+				ctx->frameCallback(handle, &hImage, entry.frameIndex, ctx->totalFrames, ctx->userData);
+			}
+		}
+		});
+
 	return handle;
 }
 
@@ -187,6 +296,19 @@ COLORVISIONCORE_API int M_VideoSetPlaybackSpeed(int handle, double speed)
 	if (it == g_videos.end()) return -1;
 
 	it->second->playbackSpeed = speed;
+	return 0;
+}
+
+COLORVISIONCORE_API int M_VideoSetResizeScale(int handle, double scale)
+{
+	std::lock_guard<std::mutex> lock(g_mapMutex);
+	auto it = g_videos.find(handle);
+	if (it == g_videos.end()) return -1;
+
+	// Clamp to valid values
+	if (scale <= 0.0) scale = 0.125;
+	if (scale > 1.0) scale = 1.0;
+	it->second->resizeScale = scale;
 	return 0;
 }
 
@@ -243,10 +365,15 @@ COLORVISIONCORE_API int M_VideoClose(int handle)
 	ctx->threadRunning = false;
 	ctx->isPaused = false; // 确保它不卡在 wait 里
 	ctx->cvPause.notify_all(); // 唤醒所有等待
+	ctx->bufferNotEmpty.notify_all(); // 唤醒消费者线程
+	ctx->bufferNotFull.notify_all();  // 唤醒生产者线程
 
-	// 2. 等待线程结束 (此时因为 threadRunning=false，线程会立即退出循环)
+	// 2. 等待线程结束
 	if (ctx->playThread.joinable()) {
 		ctx->playThread.join();
+	}
+	if (ctx->consumerThread.joinable()) {
+		ctx->consumerThread.join();
 	}
 
 	// 3. 释放资源

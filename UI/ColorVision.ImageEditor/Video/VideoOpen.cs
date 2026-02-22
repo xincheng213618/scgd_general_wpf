@@ -9,8 +9,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace ColorVision.ImageEditor.Video
 {
@@ -28,7 +30,9 @@ namespace ColorVision.ImageEditor.Video
         private Button? _stopButton;
         private Button? _muteButton;
         private ComboBox? _speedComboBox;
+        private ComboBox? _resizeComboBox;
         private TextBlock? _timeTextBlock;
+        private TextBlock? _frameInfoTextBlock;
         private ToolBar? _videoToolBar;
         private bool _isDragging;
         private ImageView? _imageView;
@@ -46,6 +50,20 @@ namespace ColorVision.ImageEditor.Video
         // Frame dropping and UI throttling for high-resolution video (e.g. 8K@60fps)
         private int _isProcessingFrame; // 0 = idle, 1 = processing (atomic via Interlocked)
         private int _uiUpdateCounter;   // throttle slider/time updates
+
+        // Auto-hide toolbar
+        private DispatcherTimer? _mouseIdleTimer;
+        private bool _autoHideEnabled = true;
+        private CheckBox? _autoHideCheckBox;
+        private DateTime _lastMouseMoveTime = DateTime.Now;
+        private const double MouseIdleTimeoutSeconds = 3.0;
+
+        // Audio sync drift correction
+        private int _droppedFrameCount;
+        private int _lastSyncFrame;
+
+        // Current resize scale
+        private double _currentResizeScale = 1.0;
 
         public void OpenImage(EditorContext context, string? filePath)
         {
@@ -118,7 +136,7 @@ namespace ColorVision.ImageEditor.Video
                 };
                 _playPauseButton.Click += PlayPauseButton_Click;
 
-                // Progress slider
+                // Progress slider - supports both drag and click-to-seek
                 _progressSlider = new Slider
                 {
                     Minimum = 0,
@@ -128,10 +146,12 @@ namespace ColorVision.ImageEditor.Video
                     Height = 20,
                     Margin = new Thickness(5, 0, 0, 0),
                     VerticalAlignment = VerticalAlignment.Center,
-                    ToolTip = "Seek"
+                    IsMoveToPointEnabled = true,
+                    ToolTip = "Seek (click or drag)"
                 };
                 _progressSlider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler(Slider_DragStarted));
                 _progressSlider.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler(Slider_DragCompleted));
+                _progressSlider.PreviewMouseLeftButtonUp += ProgressSlider_PreviewMouseLeftButtonUp;
 
                 double displayFps = _videoInfo.fps > 0 ? _videoInfo.fps : 30.0;
                 // Time display
@@ -141,6 +161,16 @@ namespace ColorVision.ImageEditor.Video
                     VerticalAlignment = VerticalAlignment.Center,
                     Margin = new Thickness(5, 0, 0, 0),
                     FontSize = 11
+                };
+
+                // Frame info display
+                _frameInfoTextBlock = new TextBlock
+                {
+                    Text = $"0/{_videoInfo.totalFrames} [{_videoInfo.width}x{_videoInfo.height}]",
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(5, 0, 0, 0),
+                    FontSize = 10,
+                    Opacity = 0.7
                 };
 
                 // Speed selector
@@ -159,6 +189,21 @@ namespace ColorVision.ImageEditor.Video
                 _speedComboBox.Items.Add(new ComboBoxItem { Content = "4x", Tag = 4.0 });
                 _speedComboBox.SelectedIndex = 2; // Default 1x
                 _speedComboBox.SelectionChanged += SpeedComboBox_SelectionChanged;
+
+                // Resize scale selector
+                _resizeComboBox = new ComboBox
+                {
+                    Width = 55,
+                    Height = 24,
+                    Margin = new Thickness(5, 0, 0, 0),
+                    ToolTip = "Display Scale (reduce for large videos)"
+                };
+                _resizeComboBox.Items.Add(new ComboBoxItem { Content = "1x", Tag = 1.0 });
+                _resizeComboBox.Items.Add(new ComboBoxItem { Content = "1/2", Tag = 0.5 });
+                _resizeComboBox.Items.Add(new ComboBoxItem { Content = "1/4", Tag = 0.25 });
+                _resizeComboBox.Items.Add(new ComboBoxItem { Content = "1/8", Tag = 0.125 });
+                _resizeComboBox.SelectedIndex = 0; // Default 1x
+                _resizeComboBox.SelectionChanged += ResizeComboBox_SelectionChanged;
 
                 // Stop button
                 _stopButton = new Button
@@ -184,18 +229,85 @@ namespace ColorVision.ImageEditor.Video
                 };
                 _muteButton.Click += MuteButton_Click;
 
+                // Auto-hide toggle
+                _autoHideCheckBox = new CheckBox
+                {
+                    Content = "Auto Hide",
+                    IsChecked = _autoHideEnabled,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(5, 0, 0, 0),
+                    FontSize = 10,
+                    ToolTip = "Auto-hide controls when mouse is idle"
+                };
+                _autoHideCheckBox.Checked += (s, e) => _autoHideEnabled = true;
+                _autoHideCheckBox.Unchecked += (s, e) =>
+                {
+                    _autoHideEnabled = false;
+                    if (_videoToolBar != null)
+                        _videoToolBar.Opacity = 0.8;
+                };
+
                 _videoToolBar.Items.Add(_playPauseButton);
                 _videoToolBar.Items.Add(_stopButton);
                 _videoToolBar.Items.Add(_muteButton);
                 _videoToolBar.Items.Add(_progressSlider);
                 _videoToolBar.Items.Add(_timeTextBlock);
+                _videoToolBar.Items.Add(_frameInfoTextBlock);
                 _videoToolBar.Items.Add(_speedComboBox);
+                _videoToolBar.Items.Add(_resizeComboBox);
+                _videoToolBar.Items.Add(_autoHideCheckBox);
 
                 _videoToolBar.Visibility = Visibility.Visible;
+
+                // Setup auto-hide mouse idle timer
+                SetupAutoHideTimer(imageView);
             });
 
             // Subscribe to clear event to cleanup
             imageView.ClearImageEventHandler += OnImageCleared;
+        }
+
+        private void SetupAutoHideTimer(ImageView imageView)
+        {
+            _lastMouseMoveTime = DateTime.Now;
+
+            _mouseIdleTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(500)
+            };
+            _mouseIdleTimer.Tick += (s, e) =>
+            {
+                if (!_autoHideEnabled || !_isPlaying) return;
+
+                double idleSeconds = (DateTime.Now - _lastMouseMoveTime).TotalSeconds;
+                if (idleSeconds > MouseIdleTimeoutSeconds)
+                {
+                    if (_videoToolBar != null && _videoToolBar.Opacity > 0)
+                        _videoToolBar.Opacity = 0;
+                }
+            };
+            _mouseIdleTimer.Start();
+
+            imageView.MouseMove += OnImageViewMouseMove;
+            imageView.MouseEnter += OnImageViewMouseMove;
+        }
+
+        private void OnImageViewMouseMove(object sender, MouseEventArgs e)
+        {
+            _lastMouseMoveTime = DateTime.Now;
+            if (_videoToolBar != null && _videoToolBar.Opacity < 0.8)
+                _videoToolBar.Opacity = 0.8;
+        }
+
+        private void ProgressSlider_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            // Click-to-seek: when user clicks (not drags) the slider, seek to that position
+            if (!_isDragging && _videoHandle > 0 && _progressSlider != null)
+            {
+                int targetFrame = (int)_progressSlider.Value;
+                OpenCVMediaHelper.M_VideoSeek(_videoHandle, targetFrame);
+                SyncAudioSeek(targetFrame);
+            }
         }
 
         private void InitAudioPlayer()
@@ -267,6 +379,8 @@ namespace ColorVision.ImageEditor.Video
             if (_videoHandle <= 0 || _isPlaying) return;
 
             _isPlaying = true;
+            _droppedFrameCount = 0;
+            _lastSyncFrame = 0;
             UpdatePlayPauseButton(true);
 
             _frameCallbackDelegate = OnFrameReceived;
@@ -286,6 +400,10 @@ namespace ColorVision.ImageEditor.Video
             _isPlaying = false;
             UpdatePlayPauseButton(false);
 
+            // Show toolbar when paused
+            if (_videoToolBar != null)
+                _videoToolBar.Opacity = 0.8;
+
             // Pause audio
             SyncAudioPause();
         }
@@ -295,6 +413,7 @@ namespace ColorVision.ImageEditor.Video
             // Frame dropping: if previous frame is still being processed by UI, skip this frame
             if (Interlocked.CompareExchange(ref _isProcessingFrame, 1, 0) != 0)
             {
+                Interlocked.Increment(ref _droppedFrameCount);
                 return;
             }
 
@@ -320,6 +439,10 @@ namespace ColorVision.ImageEditor.Video
                             }
 
                             UpdateTimeDisplay(localCurrentFrame);
+                            UpdateFrameInfoDisplay(localCurrentFrame, localFrame);
+
+                            // Audio-video sync correction when frames are dropped
+                            CorrectAudioSync(localCurrentFrame);
                         }
                     }
                     finally
@@ -332,6 +455,31 @@ namespace ColorVision.ImageEditor.Video
             {
                 Interlocked.Exchange(ref _isProcessingFrame, 0);
                 log.Error("Error in video frame callback", ex);
+            }
+        }
+
+        private void CorrectAudioSync(int currentFrame)
+        {
+            var player = _mediaPlayer;
+            if (player == null || !_isPlaying) return;
+
+            try
+            {
+                double fps = _videoInfo.fps > 0 ? _videoInfo.fps : 30.0;
+                double videoTimeSeconds = currentFrame / fps;
+                double audioTimeSeconds = player.Position.TotalSeconds;
+                double drift = Math.Abs(videoTimeSeconds - audioTimeSeconds);
+
+                // If drift exceeds 0.5 seconds, re-sync audio position
+                if (drift > 0.5)
+                {
+                    var position = TimeSpan.FromSeconds(videoTimeSeconds);
+                    player.Position = position;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Audio sync correction failed", ex);
             }
         }
 
@@ -485,6 +633,25 @@ namespace ColorVision.ImageEditor.Video
             }
         }
 
+        private void UpdateFrameInfoDisplay(int currentFrame, HImage frame)
+        {
+            if (_frameInfoTextBlock == null) return;
+            string info = $"{currentFrame}/{_videoInfo.totalFrames} [{frame.cols}x{frame.rows}]";
+            if (_droppedFrameCount > 0)
+                info += $" D:{_droppedFrameCount}";
+            if (_frameInfoTextBlock.Dispatcher.CheckAccess())
+            {
+                _frameInfoTextBlock.Text = info;
+            }
+            else
+            {
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    _frameInfoTextBlock.Text = info;
+                });
+            }
+        }
+
         private void Slider_DragStarted(object sender, DragStartedEventArgs e)
         {
             _isDragging = true;
@@ -508,6 +675,19 @@ namespace ColorVision.ImageEditor.Video
                 _currentSpeed = speed;
                 OpenCVMediaHelper.M_VideoSetPlaybackSpeed(_videoHandle, speed);
                 SyncAudioSpeed(speed);
+            }
+        }
+
+        private void ResizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_videoHandle <= 0 || _resizeComboBox == null) return;
+
+            if (_resizeComboBox.SelectedItem is ComboBoxItem item && item.Tag is double scale)
+            {
+                _currentResizeScale = scale;
+                OpenCVMediaHelper.M_VideoSetResizeScale(_videoHandle, scale);
+                // Force WriteableBitmap re-creation on next frame
+                _writeableBitmap = null;
             }
         }
 
@@ -589,6 +769,20 @@ namespace ColorVision.ImageEditor.Video
 
         private void CloseVideo()
         {
+            // Stop auto-hide timer
+            if (_mouseIdleTimer != null)
+            {
+                _mouseIdleTimer.Stop();
+                _mouseIdleTimer = null;
+            }
+
+            // Remove mouse event handlers
+            if (_imageView != null)
+            {
+                _imageView.MouseMove -= OnImageViewMouseMove;
+                _imageView.MouseEnter -= OnImageViewMouseMove;
+            }
+
             if (_videoHandle > 0)
             {
                 if (_isPlaying)
@@ -628,8 +822,17 @@ namespace ColorVision.ImageEditor.Video
                         _videoToolBar.Items.Remove(_progressSlider);
                     if (_timeTextBlock != null && _videoToolBar.Items.Contains(_timeTextBlock))
                         _videoToolBar.Items.Remove(_timeTextBlock);
+                    if (_frameInfoTextBlock != null && _videoToolBar.Items.Contains(_frameInfoTextBlock))
+                        _videoToolBar.Items.Remove(_frameInfoTextBlock);
                     if (_speedComboBox != null && _videoToolBar.Items.Contains(_speedComboBox))
                         _videoToolBar.Items.Remove(_speedComboBox);
+                    if (_resizeComboBox != null && _videoToolBar.Items.Contains(_resizeComboBox))
+                        _videoToolBar.Items.Remove(_resizeComboBox);
+                    if (_autoHideCheckBox != null && _videoToolBar.Items.Contains(_autoHideCheckBox))
+                        _videoToolBar.Items.Remove(_autoHideCheckBox);
+
+                    // Restore toolbar opacity
+                    _videoToolBar.Opacity = 0.8;
                 }
             });
 
