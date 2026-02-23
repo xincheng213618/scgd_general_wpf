@@ -1,6 +1,6 @@
 # ColorVision guide for AI agents
 
-Be immediately productive in this Windows-only WPF repo (net8.0-windows, x64). Follow the concrete patterns and paths below.
+Be immediately productive in this Windows-only WPF repo (net10.0-windows, x64). Follow the concrete patterns and paths below.
 
 ## Architecture (what goes where)
 - Main app WPF: `ColorVision/` (+ UI libs under `UI/ColorVision.*`).
@@ -11,7 +11,7 @@ Be immediately productive in this Windows-only WPF repo (net8.0-windows, x64). F
 ## Build/run/test (Windows)
 - Global props: `Directory.Build.props` (signing ON, platforms x64/ARM64, TFMs net8.0-windows). Default x64.
 - Build/run:
-  - VS2022 open `scgd_general_wpf.sln`.
+  - VS2026 open `scgd_general_wpf.sln`.
   - Or PowerShell: restore → build (`-p:Platform=x64`) → run `ColorVision/ColorVision.csproj`.
 - External deps: keep `OpenCvSharp4.runtime.win` in output; Engine references `DLL/CVCommCore.dll`, `DLL/MQTTMessageLib.dll` (CopyLocal=true) — must exist at runtime.
 - Tests: `Test/ColorVision.UI.Tests` (xUnit, WPF-bound). Run on Windows only. Clean with `./clear-bin.ps1`.
