@@ -35,7 +35,7 @@ namespace ColorVision.Update.Export
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(RegInitialized));
 
-        public static Version Version { get; set; } = new Version(1, 0, 1, 0);
+        public static Version Version { get; set; } = new Version(1, 0, 2, 0);
 
         public override Task Initialize()
         {
@@ -69,6 +69,11 @@ namespace ColorVision.Update.Export
                 // 2. 为了写入 .reg 文件，路径中的反斜杠需要转义 (例如 C:\Program 变成 C:\\Program)
                 string escapedAppPath = appPath.Replace("\\", "\\\\");
                 string escapedIconPath = iconPath.Replace("\\", "\\\\");
+
+                // Thumbnail handler COM class GUID (must match CVRawShellThumbnailProvider)
+                string thumbnailClsid = "{7B5E2A3C-8F1D-4E6A-B9C2-1D3E5F7A8B9C}";
+                string comHostPath = Path.Combine(appDir, "ColorVision.ShellExtension.comhost.dll");
+                string escapedComHostPath = comHostPath.Replace("\\", "\\\\");
 
                 // 3. 构建 .reg 文件内容
                 StringBuilder sb = new StringBuilder();
@@ -227,6 +232,19 @@ namespace ColorVision.Update.Export
 
 
                 // ------------------------------------------------------
+                //  Register COM Thumbnail Handler for .cvraw/.cvcie
+                //  This enables Windows Explorer to show dynamic thumbnails
+                // ------------------------------------------------------
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{thumbnailClsid}]");
+                sb.AppendLine($"@=\"ColorVision CVRaw/CVCie Thumbnail Handler\"");
+                sb.AppendLine();
+
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{thumbnailClsid}\\InprocServer32]");
+                sb.AppendLine($"@=\"{escapedComHostPath}\"");
+                sb.AppendLine($"\"ThreadingModel\"=\"Both\"");
+                sb.AppendLine();
+
+                // ------------------------------------------------------
                 //  4. 注册 .cvraw 
                 // ------------------------------------------------------
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvraw]");
@@ -234,7 +252,7 @@ namespace ColorVision.Update.Export
                 sb.AppendLine();
 
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvraw]");
-                sb.AppendLine($"@=\"ColorVision Launcher Package\"");
+                sb.AppendLine($"@=\"ColorVision Raw Image File\"");
                 sb.AppendLine();
 
                 // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
@@ -248,6 +266,11 @@ namespace ColorVision.Update.Export
                 sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
                 sb.AppendLine();
 
+                // Register thumbnail handler for .cvraw (Shell extension GUID for IThumbnailProvider)
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvraw\\ShellEx\\{{E357FCCD-A995-4576-B01F-234630154E96}}]");
+                sb.AppendLine($"@=\"{thumbnailClsid}\"");
+                sb.AppendLine();
+
                 // ------------------------------------------------------
                 //  5. 注册 .cvcie 
                 // ------------------------------------------------------
@@ -256,7 +279,7 @@ namespace ColorVision.Update.Export
                 sb.AppendLine();
 
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcie]");
-                sb.AppendLine($"@=\"ColorVision Launcher Package\"");
+                sb.AppendLine($"@=\"ColorVision CIE Image File\"");
                 sb.AppendLine();
 
                 // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
@@ -268,6 +291,11 @@ namespace ColorVision.Update.Export
                 // 注意：如果想区分逻辑，代码里解析 -i 后判断文件后缀即可
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcie\\shell\\open\\command]");
                 sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
+                sb.AppendLine();
+
+                // Register thumbnail handler for .cvcie (Shell extension GUID for IThumbnailProvider)
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcie\\ShellEx\\{{E357FCCD-A995-4576-B01F-234630154E96}}]");
+                sb.AppendLine($"@=\"{thumbnailClsid}\"");
                 sb.AppendLine();
 
                 // ------------------------------------------------------

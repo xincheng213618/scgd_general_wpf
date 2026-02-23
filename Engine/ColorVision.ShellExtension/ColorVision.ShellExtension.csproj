@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Platforms>x64;ARM64</Platforms>
+    <EnableComHosting>true</EnableComHosting>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Description>Windows Shell Thumbnail Provider for .cvraw and .cvcie files</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ColorVision.FileIO/ColorVision.FileIO.csproj" />
+  </ItemGroup>
+
+</Project>
