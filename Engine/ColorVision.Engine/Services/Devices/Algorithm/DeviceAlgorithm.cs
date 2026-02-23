@@ -5,7 +5,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
-using ColorVision.Engine.Extension;
+using ColorVision.UI.Extension;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             View = new AlgorithmView();
             View.View.Title = ColorVision.Engine.Properties.Resources.AlgorithmView+$" - {Config.Code}";
-            this.SetIconResource("DrawingImageAlgorithm", View.View);
+            this.SetIconResource("DrawingImageAlgorithm");
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithm>(() => { DisplayAlgorithm ??= new DisplayAlgorithm(this); return DisplayAlgorithm; });
 

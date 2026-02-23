@@ -36,7 +36,7 @@ namespace ColorVision.Solution
                 else
                 {
                     HexEditorView hexEditorView = new HexEditorView();
-                    hexEditorView.HexEditor.FileName = filePath;
+                    hexEditorView.HexEditorControl.FileName = filePath;
 
 
                     LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(filePath) };
@@ -52,8 +52,8 @@ namespace ColorVision.Solution
                     };
                     layoutDocument.Closing += (s, e) =>
                     {
-                        hexEditorView.HexEditor.CloseProvider(true);
-                        hexEditorView.HexEditor.Dispose();
+                        hexEditorView.HexEditorControl.CloseProvider(true);
+                        hexEditorView.HexEditorControl.Dispose();
                     };
                 }
             }

@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Job
             }
 
             // 定义事件处理函数，方便后续解绑
-            void Handler(MsgRecordState state)
+            void Handler(object? sender, MsgRecordState state)
             {
                 // 判断结束状态：成功、失败、或者其他终止状态
                 if (state == MsgRecordState.Success || state == MsgRecordState.Fail || state == MsgRecordState.Timeout)

@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Extension;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
@@ -10,7 +9,6 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
-using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
@@ -19,6 +17,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
 using cvColorVision;
 using log4net;
@@ -54,7 +53,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             View = new ViewCamera(this);
             View.View.Title = ColorVision.Engine.Properties.Resources.CameraView +$" - {Config.Code}";
-            this.SetIconResource("DrawingImageCamera", View.View);
+            this.SetIconResource("DrawingImageCamera");
 
             EditCommand = new RelayCommand(a => EditCameraAction() ,b => AccessControl.Check(EditCameraAction));
 
@@ -177,7 +176,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 CameraVideoControl?.Close();
                 var msgrecode = DService.Close();
                 log.Info("正在关闭视频模式");
-                msgrecode.MsgSucessed += (e) =>
+                msgrecode.MsgSucessed += (s,e) =>
                 {
                     DService.IsVideoOpen = false;
                     DService.DeviceStatus = DeviceStatusType.Closed;
@@ -229,10 +228,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (MessageBox1.Show(Application.Current.GetActiveWindow(), "文件删除后不可找回", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
             {
                 var MsgRecord = DService.ClearDataCache();
-                MsgRecord.MsgSucessed += (s) =>
+                MsgRecord.MsgSucessed += (s,e) =>
                 {
                     MessageBox1.Show(Application.Current.GetActiveWindow(), "文件服务清理完成", "ColorVison");
-                    MsgRecord.ClearMsgRecordSucessChangedHandler();
                 };
             }
         }

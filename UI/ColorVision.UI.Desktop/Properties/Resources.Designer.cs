@@ -574,6 +574,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 未安装 的本地化字符串。
+        /// </summary>
+        public static string NotInstalled {
+            get {
+                return ResourceManager.GetString("NotInstalled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 确定 的本地化字符串。
         /// </summary>
         public static string OK {

@@ -288,10 +288,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 ButtonProgressBarOpen.Start();
                 ButtonProgressBarOpen.TargetTime = DisplayCameraConfig.OpenTime; 
                 ServicesHelper.SendCommand(button,msgRecord);
-                MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
-                msgRecordStateChangedHandler = (e) =>
+
+                msgRecord.MsgRecordStateChanged += (s,e)=>
                 {
-                    msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
                     ButtonProgressBarOpen.Stop();
                     DisplayCameraConfig.OpenTime = ButtonProgressBarOpen.Elapsed;
                     if (e == MsgRecordState.Success)
@@ -305,7 +304,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         MessageBox1.Show(Application.Current.GetActiveWindow(), $"{msgRecord.MsgReturn.Message}", "ColorVision");
                     }
                 };
-                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
 
                 RotateTransform rotateTransform1 = new() { Angle = 0 };
                 View.ImageView.ImageShow.RenderTransform = rotateTransform1;
@@ -485,11 +483,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ButtonProgressBarGetData.TargetTime = Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay;
             logger.Info($"正在取图：ExpTime{Device.DisplayConfig.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
             Device.SetMsgRecordChanged(msgRecord);
-            msgRecord.MsgRecordStateChanged += (s) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 ButtonProgressBarGetData.Stop();
                 DisplayCameraConfig.TakePictureDelay = ButtonProgressBarGetData.Elapsed - Device.DisplayConfig.ExpTime;
-                if (s == MsgRecordState.Timeout)
+                if (e == MsgRecordState.Timeout)
                 {
                     if (param.Id > 0 && Device?.PhyCamera?.DeviceCalibration ==null)
                     {
@@ -500,7 +498,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         MessageBox1.Show("取图超时,请重设超时时间");
                     }
                 }
-                if (s == MsgRecordState.Fail)
+                if (e == MsgRecordState.Fail)
                 {
                     View.SearchAll();
                     MessageBox.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn.Message + Environment.NewLine + "重启服务试试","ColorVisoin");
@@ -573,7 +571,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (ComboxAutoExpTimeParamTemplate.SelectedValue is AutoExpTimeParam param)
                 {
                     var msgRecord = DService.GetAutoExpTime(param);
-                    msgRecord.MsgRecordStateChanged += (e) =>
+                    msgRecord.MsgRecordStateChanged += (s,e) =>
                     {
                         if (e == MsgRecordState.Timeout)
                         {
@@ -604,9 +602,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     if (port > 0)
                     {
                         MsgRecord msgRecord = DService.OpenVideo(host, port);
-                        msgRecord.MsgRecordStateChanged += (s) =>
+                        msgRecord.MsgRecordStateChanged += (s,e) =>
                         {
-                            if (s == MsgRecordState.Fail)
+                            if (e == MsgRecordState.Fail)
                             {
                                 MessageBox.Show(Application.Current.GetActiveWindow(), $"{msgRecord.MsgReturn.Message}", "ColorVision");
                                 Device.CameraVideoControl.Close();
@@ -642,7 +640,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (ComboxAutoFocus.SelectedValue is not AutoFocusParam param) return;
             MsgRecord msgRecord = DService.AutoFocus(param);
-            msgRecord.MsgRecordStateChanged += (e) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (e == MsgRecordState.Fail)
                 {
@@ -738,10 +736,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ButtonProgressBarClose.TargetTime = DisplayCameraConfig.CloseTime;
             if (msgRecord != null)
             {
-                MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
-                msgRecordStateChangedHandler = (e) =>
+                msgRecord.MsgRecordStateChanged += (s,e)=>
                 {
-                    if(e == MsgRecordState.Timeout)
+                    if (e == MsgRecordState.Timeout)
                     {
                         MessageBox.Show("关闭相机超时,请查看日志并排查问题");
                         return;
@@ -751,11 +748,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     ButtonOpen.Visibility = Visibility.Visible;
                     ButtonClose.Visibility = Visibility.Collapsed;
                     StackPanelOpen.Visibility = Visibility.Collapsed;
-                    msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
                     ButtonProgressBarClose.Stop();
                     DisplayCameraConfig.CloseTime = ButtonProgressBarClose.Elapsed;
                 };
-                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
             }
         }
 
@@ -815,7 +810,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void GetNDport_Click(object sender, RoutedEventArgs e)
         {
             MsgRecord msgRecord = DService.GetPort();
-            msgRecord.MsgRecordStateChanged += (e) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (e == MsgRecordState.Success)
                 {
@@ -846,7 +841,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (Device.DService.IsVideoOpen)
             {
                 MsgRecord msgRecord = DService.SetFlip();
-                msgRecord.MsgRecordStateChanged += (e) =>
+                msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
                     if (e == MsgRecordState.Success)
                     {

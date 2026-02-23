@@ -20,11 +20,6 @@ namespace ColorVision.Engine.Services
         internal static readonly ILog log = LogManager.GetLogger(typeof(MQTTServiceBase));
         public MQTTControl MQTTControl { get; set; }
 
-        private static readonly Lazy<MsgRecordManager> _lazyMsgRecordManager =
-            new Lazy<MsgRecordManager>(() => MsgRecordManager.GetInstance());
-
-        public MsgRecordManager MsgRecordManager => _lazyMsgRecordManager.Value;
-
         public virtual DeviceStatusType DeviceStatus { get; set; }
         public event EventHandler Connected;
         public event EventHandler DisConnected;
@@ -203,7 +198,7 @@ namespace ColorVision.Engine.Services
             {
                 lock (_locker)
                 {
-                    MsgRecordManager.Insertable(msgRecord);
+                    MsgRecordDataBaseHelper.Insert(msgRecord);
                     _msgRecords.Add(msgRecord);
                 }
             }));

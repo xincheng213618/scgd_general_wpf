@@ -477,4 +477,7 @@
   <data name="SystemTools" xml:space="preserve">
     <value>System Tools</value>
   </data>
+  <data name="NotInstalled" xml:space="preserve">
+    <value>Not Installed</value>
+  </data>
 </root>

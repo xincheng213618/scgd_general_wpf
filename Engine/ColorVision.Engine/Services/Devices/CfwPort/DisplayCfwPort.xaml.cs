@@ -101,7 +101,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             {
                 var msgRecord = DService.Open();
                 ServicesHelper.SendCommand(button, msgRecord);
-                msgRecord.MsgRecordStateChanged += (e) =>
+                msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
                     if (e == MsgRecordState.Fail)
                     {
@@ -117,7 +117,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             {
                 var msgRecord = DService.Clsoe();
                 ServicesHelper.SendCommand(button, msgRecord);
-                msgRecord.MsgRecordStateChanged += (e) =>
+                msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
                     if (e == MsgRecordState.Fail)
                     {
@@ -131,7 +131,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             if (sender is Button button && CombPort.SelectedValue is HoleMap holeMap)
             {
                 var msgRecord = DService.SetPort(holeMap.HoleIndex);
-                msgRecord.MsgRecordStateChanged += (e) =>
+                msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
                     if (e == MsgRecordState.Success)
                     {
@@ -156,7 +156,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             {
                 var msgRecord = DService.Open();
                 ServicesHelper.SendCommand(button, msgRecord);
-                msgRecord.MsgRecordStateChanged += (e) =>
+                msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
                     if (e == MsgRecordState.Fail)
                     {
@@ -169,7 +169,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         private void GetPort_Click(object sender, RoutedEventArgs e)
         {
             MsgRecord msgRecord = DService.GetPort();
-            msgRecord.MsgRecordStateChanged += (e) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (e == MsgRecordState.Success)
                 {

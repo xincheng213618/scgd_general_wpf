@@ -7,4 +7,6 @@ namespace ColorVision.UI
     {
         public ImageSource Icon { get; set; }
     }
+
+
 }

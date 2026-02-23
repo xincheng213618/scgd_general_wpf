@@ -142,7 +142,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 {
                     MsgRecord msgRecord = DService.Open(Config.IsNet, Config.DevName);
                     ServicesHelper.SendCommand(button, msgRecord);
-                    msgRecord.MsgRecordStateChanged += (e) =>
+                    msgRecord.MsgRecordStateChanged += (s,e) =>
                     {
                         if (e == MsgRecordState.Fail)
                         {
@@ -156,7 +156,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
                     MsgRecord msgRecord = DService.Close();
                     ServicesHelper.SendCommand(button, DService.Close());
-                    msgRecord.MsgRecordStateChanged += (e) =>
+                    msgRecord.MsgRecordStateChanged += (s,e) =>
                     {
                         if (e == MsgRecordState.Fail)
                         {
@@ -172,7 +172,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.MeasureVal, Device.DisplayConfig.LmtVal, Device.DisplayConfig.Channel);
             if(msgRecord != null)
             {
-                msgRecord.MsgRecordStateChanged += (e) =>
+                msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
                     if (e == MsgRecordState.Fail)
                     {
@@ -187,7 +187,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             MsgRecord msgRecord = DService.GetData(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.MeasureVal, Device.DisplayConfig.LmtVal, Device.DisplayConfig.Channel);
             if (msgRecord != null)
             {
-                msgRecord.MsgRecordStateChanged += (e) =>
+                msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
                     if (e == MsgRecordState.Fail)
                     {
@@ -208,7 +208,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             MsgRecord msgRecord = DService.Scan(Device.DisplayConfig.IsSourceV, Device.DisplayConfig.StartMeasureVal, Device.DisplayConfig.StopMeasureVal, Device.DisplayConfig.LimitVal, Device.DisplayConfig.Number, Device.DisplayConfig.Channel);
             if (msgRecord != null)
             {
-                msgRecord.MsgRecordStateChanged += async (e) =>
+                msgRecord.MsgRecordStateChanged += async (s,e) =>
                 {
                     if (e == MsgRecordState.Success)
                     {

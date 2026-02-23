@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS8601,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Extension;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
@@ -9,10 +8,10 @@ using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.ToolPlugins;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.Extension;
 using ColorVision.UI.LogImp;
 using cvColorVision;
 using System;
@@ -114,7 +113,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             DService = new MQTTSpectrum(this);
             View = new ViewSpectrum(this);
             View.View.Title = ColorVision.Engine.Properties.Resources.SpectrumView+$" - {Config.Code}";
-            this.SetIconResource("DISpectrumIcon", View.View);
+            this.SetIconResource("DISpectrumIcon");
 
             SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id);
 
@@ -212,7 +211,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             MsgRecord msgRecord = DService.SelfAdaptionInitDark();
             SelfAdaptionInitDarkStarted?.Invoke();
-            msgRecord.MsgRecordStateChanged +=(e) =>
+            msgRecord.MsgRecordStateChanged +=(s,e) =>
             {
                 SelfAdaptionInitDarkCompleted?.Invoke();
                 if (msgRecord.MsgReturn != null)
@@ -353,7 +352,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public void RefreshDeviceId()
         {
             MsgRecord msgRecord = DService.GetAllSnID();
-            msgRecord.MsgRecordStateChanged += (e) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (msgRecord.MsgReturn != null)
                 {

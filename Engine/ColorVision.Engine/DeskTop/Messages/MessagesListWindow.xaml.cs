@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.MQTT;
+﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.MQTT;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -10,7 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Messages
+namespace ColorVision.Engine.DeskTop.Messages
 {
     public class ExportMsgList : MenuItemBase
     {
@@ -24,6 +25,7 @@ namespace ColorVision.Engine.Messages
             new MessagesListWindow() { Owner = Application.Current.GetActiveWindow() }.Show();
         }
     }
+
 
     public class MessagesListWindowConfig : WindowConfig
     {
@@ -39,7 +41,7 @@ namespace ColorVision.Engine.Messages
     {
         public ObservableCollection<MsgRecord> MsgRecords { get; set; }
 
-        MsgRecordManager MsgRecordManager { get; set; }
+        MessagesListManager MsgRecordManager { get; set; }
 
         public MessagesListWindow()
         {
@@ -51,10 +53,16 @@ namespace ColorVision.Engine.Messages
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MsgRecordManager = MsgRecordManager.GetInstance();
+            MsgRecordManager = MessagesListManager.GetInstance();
+            MsgRecordManager.LoadAll();
+
             this.DataContext = MsgRecordManager;
             MsgRecords = MsgRecordManager.MsgRecords;
             ListView1.ItemsSource = MsgRecords;
+        }
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            MsgRecordManager.MsgRecords.Clear();
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
@@ -200,5 +208,7 @@ namespace ColorVision.Engine.Messages
         {
 
         }
+
+
     }
 }

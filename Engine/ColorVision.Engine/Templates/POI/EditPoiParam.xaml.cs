@@ -1440,9 +1440,9 @@ namespace ColorVision.Engine.Templates.POI
 
             if (msgRecord != null)
             {
-                msgRecord.MsgSucessed += (arg) =>
+                msgRecord.MsgSucessed += (s,e) =>
                 {
-                    int masterId = Convert.ToInt32(arg.Data.MasterId);
+                    int masterId = Convert.ToInt32(e.Data.MasterId);
                     List<MeasureResultImgModel> resultMaster = null;
                     if (masterId > 0)
                     {

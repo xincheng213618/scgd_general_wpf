@@ -132,7 +132,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 {
                     btn_connect.Content = ColorVision.Engine.Properties.Resources.Opening;
                     MsgRecord msgRecord = DService.Open();
-                    msgRecord.MsgRecordStateChanged += (e) =>
+                    msgRecord.MsgRecordStateChanged += (s,e) =>
                     {
                         if (e == MsgRecordState.Fail)
                         {
@@ -145,7 +145,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 {
                     btn_connect.Content = ColorVision.Engine.Properties.Resources.Closing;
                     MsgRecord msgRecord = DService.Close();
-                    msgRecord.MsgRecordStateChanged += (e) =>
+                    msgRecord.MsgRecordStateChanged += (s,e) =>
                     {
                         if (e == MsgRecordState.Fail)
                         {
@@ -158,7 +158,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
         {
             MsgRecord msgRecord = DService.GetData();
-            msgRecord.MsgRecordStateChanged += (e) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (e == MsgRecordState.Fail)
                 {
@@ -174,7 +174,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 MsgRecord msgRecord = DService.GetDataAuto();
                 btn_autoTest.Content = ColorVision.Engine.Properties.Resources.CancelAutoTest;
-                msgRecord.MsgRecordStateChanged += (e) =>
+                msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
                     if (e == MsgRecordState.Fail)
                     {
@@ -185,7 +185,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             else
             {
                 MsgRecord msgRecord = DService.GetDataAutoStop();
-                msgRecord.MsgRecordStateChanged += (e) =>
+                msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
                     if (e == MsgRecordState.Fail)
                     {
@@ -198,7 +198,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)
         {
             MsgRecord  msgRecord = DService.InitDark();
-            msgRecord.MsgRecordStateChanged += (e) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (e == MsgRecordState.Success)
                 {
@@ -216,7 +216,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Button_Click_Shutter_Connect(object sender, RoutedEventArgs e)
         {
             MsgRecord msgRecord = DService.ShutterConnect();
-            msgRecord.MsgRecordStateChanged += (e) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (e == MsgRecordState.Fail)
                 {
@@ -229,7 +229,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Button_Click_Shutter_Doopen(object sender, RoutedEventArgs e)
         {
             MsgRecord msgRecord = DService.ShutterDoopen();
-            msgRecord.MsgRecordStateChanged += (e) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (e == MsgRecordState.Fail)
                 {
@@ -245,7 +245,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Button_Click_Shutter_Doclose(object sender, RoutedEventArgs e)
         {
             MsgRecord msgRecord = DService.ShutterDoclose();
-            msgRecord.MsgRecordStateChanged += (e) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (e == MsgRecordState.Fail)
                 {
@@ -261,7 +261,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void NDport_Click(object sender, RoutedEventArgs e)
         {
             MsgRecord msgRecord = DService.SetPort();
-            msgRecord.MsgRecordStateChanged += (e) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (e == MsgRecordState.Fail)
                 {
@@ -273,7 +273,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void GetNDport_Click(object sender, RoutedEventArgs e)
         {
             MsgRecord msgRecord = DService.GetPort();
-            msgRecord.MsgRecordStateChanged += (e) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (e == MsgRecordState.Success)
                 {

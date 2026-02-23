@@ -34,10 +34,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 if (MessageBox1.Show(Application.Current.GetActiveWindow(), "文件删除后不可找回", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
                     var MsgRecord = DService.CacheClear();
-                    MsgRecord.MsgSucessed += (s) =>
+                    MsgRecord.MsgSucessed += (s,e) =>
                     {
                         MessageBox1.Show(Application.Current.GetActiveWindow(), "文件服务清理完成", "ColorVison");
-                        MsgRecord.ClearMsgRecordSucessChangedHandler();
                     };
                     ServicesHelper.SendCommand(button, MsgRecord);
                 }
