@@ -237,9 +237,17 @@ namespace ColorVision.ShellExtension
                 byte* src = (byte*)bgrMat.Data;
                 int copyLen = width * 3;
 
-                for (int y = 0; y < height; y++)
+                if (matStride == dibStride)
                 {
-                    Buffer.MemoryCopy(src + y * matStride, dst + y * dibStride, dibStride, copyLen);
+                    // Strides match - copy entire image in one call
+                    Buffer.MemoryCopy(src, dst, dibStride * height, copyLen * height);
+                }
+                else
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        Buffer.MemoryCopy(src + y * matStride, dst + y * dibStride, dibStride, copyLen);
+                    }
                 }
             }
 
