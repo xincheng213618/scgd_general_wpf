@@ -42,10 +42,14 @@ namespace ColorVision.Update.Export
             RegConfig sqlConfig = ConfigService.Instance.GetRequiredService<RegConfig>();
             if (sqlConfig.Version < Version)
             {
-                sqlConfig.Version = Version;
-                ConfigService.Instance.SaveConfigs();
-                log.Info($"RegInitialized 版本更新到 {Version}");
-                FileAssociationHelper.RegisterAssociations();
+                bool success = FileAssociationHelper.RegisterAssociations();
+                if (success)
+                {
+                    sqlConfig.Version = Version;
+                    ConfigService.Instance.SaveConfigs();
+                    log.Info($"RegInitialized 版本更新到 {Version}");
+
+                }
             }
             return Task.CompletedTask;
         }
@@ -55,7 +59,11 @@ namespace ColorVision.Update.Export
     public static class FileAssociationHelper
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FileAssociationHelper));
+        [System.Runtime.InteropServices.DllImport("shell32.dll")]
+        private static extern void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
 
+        private const int SHCNE_ASSOCCHANGED = 0x08000000;
+        private const uint SHCNF_IDLIST = 0x0000;
         /// <summary>
         /// 生成注册表文件并请求管理员权限导入
         /// </summary>
@@ -269,7 +277,7 @@ namespace ColorVision.Update.Export
                 sb.AppendLine();
 
                 // Register thumbnail handler for .cvraw (Shell extension GUID for IThumbnailProvider)
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvraw\\ShellEx\\{{E357FCCD-A995-4576-B01F-234630154E96}}]");
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvraw\\ShellEx\\{{e357fccd-a995-4576-b01f-234630154e96}}]");
                 sb.AppendLine($"@=\"{thumbnailClsid}\"");
                 sb.AppendLine();
 
@@ -296,7 +304,7 @@ namespace ColorVision.Update.Export
                 sb.AppendLine();
 
                 // Register thumbnail handler for .cvcie (Shell extension GUID for IThumbnailProvider)
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcie\\ShellEx\\{{E357FCCD-A995-4576-B01F-234630154E96}}]");
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcie\\ShellEx\\{{e357fccd-a995-4576-b01f-234630154e96}}]");
                 sb.AppendLine($"@=\"{thumbnailClsid}\"");
                 sb.AppendLine();
 
@@ -347,6 +355,11 @@ namespace ColorVision.Update.Export
                 else
                 {
                     log.Info("RegisterAssociations: file associations registered successfully");
+
+                    // 在 RegisterAssociations 成功后调用：
+                    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, IntPtr.Zero, IntPtr.Zero);
+                    log.Info("Sent SHChangeNotify to refresh file associations.");
+
                 }
                 return exitCode == 0;
 
