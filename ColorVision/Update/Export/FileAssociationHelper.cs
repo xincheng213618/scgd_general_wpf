@@ -54,6 +54,8 @@ namespace ColorVision.Update.Export
 
     public static class FileAssociationHelper
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(FileAssociationHelper));
+
         /// <summary>
         /// 生成注册表文件并请求管理员权限导入
         /// </summary>
@@ -323,6 +325,7 @@ namespace ColorVision.Update.Export
                 // 4. 保存为临时 .reg 文件
                 string tempRegFile = Path.Combine(Path.GetTempPath(), $"CV_Register_{Guid.NewGuid()}.reg");
                 File.WriteAllText(tempRegFile, sb.ToString(), Encoding.Unicode); // 注册表文件通常推荐 Unicode
+                log.Info($"RegisterAssociations: .reg file saved to {tempRegFile}");
 
                 // 5. 调用 regedit.exe 以管理员权限运行 (/s 为静默模式，不弹成功提示框)
                 ProcessStartInfo psi = new ProcessStartInfo();
@@ -333,12 +336,25 @@ namespace ColorVision.Update.Export
 
                 Process process = Process.Start(psi);
                 process?.WaitForExit();
-                return true;
+
+                int exitCode = process?.ExitCode ?? -1;
+                log.Info($"RegisterAssociations: regedit.exe exited with code {exitCode}");
+
+                if (exitCode != 0)
+                {
+                    log.Warn($"RegisterAssociations: regedit.exe returned non-zero exit code {exitCode}, registration may have failed");
+                }
+                else
+                {
+                    log.Info("RegisterAssociations: file associations registered successfully");
+                }
+                return exitCode == 0;
 
                 // 可选：稍后删除临时文件（由于 regedit 是异步的，立即删除可能导致未读取，实际中可以不删或延迟删除）
             }
             catch (Exception ex)
             {
+                log.Error($"RegisterAssociations: failed with exception: {ex}");
                 return false;
             }
         }

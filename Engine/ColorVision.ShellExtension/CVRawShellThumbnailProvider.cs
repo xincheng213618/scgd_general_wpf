@@ -1,19 +1,17 @@
 using System;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 using ColorVision.FileIO;
 using ColorVision.ShellExtension.Interop;
+using OpenCvSharp;
 
 namespace ColorVision.ShellExtension
 {
     /// <summary>
     /// Windows Shell Thumbnail Provider for .cvraw and .cvcie files.
     /// This COM class is loaded by Windows Explorer to generate file thumbnails.
-    /// It reads the custom image format using ColorVision.FileIO and returns
-    /// an HBITMAP that Explorer displays as the file thumbnail.
+    /// It reads the custom image format using ColorVision.FileIO and OpenCvSharp,
+    /// then returns an HBITMAP that Explorer displays as the file thumbnail.
     /// </summary>
     [ComVisible(true)]
     [Guid("7B5E2A3C-8F1D-4E6A-B9C2-1D3E5F7A8B9C")]
@@ -34,6 +32,7 @@ namespace ColorVision.ShellExtension
             if (string.IsNullOrEmpty(pszFilePath))
                 return E_INVALIDARG;
             _filePath = pszFilePath;
+            ShellLog.Log($"Initialize: {pszFilePath}");
             return S_OK;
         }
 
@@ -48,249 +47,239 @@ namespace ColorVision.ShellExtension
             try
             {
                 if (string.IsNullOrEmpty(_filePath) || !File.Exists(_filePath))
+                {
+                    ShellLog.Log($"GetThumbnail: file not found or empty path: {_filePath}");
                     return E_FAIL;
+                }
 
                 if (cx == 0)
                     return E_INVALIDARG;
+
+                ShellLog.Log($"GetThumbnail: start, file={_filePath}, cx={cx}");
 
                 // Read file into memory to avoid file locking issues
                 byte[] fileData = File.ReadAllBytes(_filePath);
 
                 int index = CVFileUtil.ReadCIEFileHeader(fileData, out CVCIEFile fileInfo);
                 if (index <= 0)
+                {
+                    ShellLog.Log($"GetThumbnail: ReadCIEFileHeader returned {index} for {_filePath}");
                     return E_FAIL;
+                }
+
+                Mat? mat = null;
+                Mat? thumbnail = null;
 
                 try
                 {
                     bool ret = CVFileUtil.ReadCIEFileData(fileData, ref fileInfo, index);
                     if (!ret || fileInfo.Data == null)
-                        return E_FAIL;
-
-                    using Bitmap? sourceBitmap = CreateBitmapFromCVFile(fileInfo);
-                    if (sourceBitmap == null)
-                        return E_FAIL;
-
-                    // Calculate thumbnail dimensions maintaining aspect ratio
-                    int width = sourceBitmap.Width;
-                    int height = sourceBitmap.Height;
-                    double scale = Math.Min((double)cx / width, (double)cx / height);
-                    scale = Math.Min(scale, 1.0); // Don't upscale
-                    int thumbWidth = Math.Max(1, (int)(width * scale));
-                    int thumbHeight = Math.Max(1, (int)(height * scale));
-
-                    // Create resized thumbnail
-                    using var thumbnail = new Bitmap(thumbWidth, thumbHeight, PixelFormat.Format24bppRgb);
-                    using (var g = Graphics.FromImage(thumbnail))
                     {
-                        g.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                        g.CompositingQuality = CompositingQuality.HighQuality;
-                        g.DrawImage(sourceBitmap, 0, 0, thumbWidth, thumbHeight);
+                        ShellLog.Log($"GetThumbnail: ReadCIEFileData failed for {_filePath}");
+                        return E_FAIL;
                     }
 
-                    // Return HBITMAP - Explorer takes ownership and will call DeleteObject
-                    phbmp = thumbnail.GetHbitmap();
-                    return phbmp != IntPtr.Zero ? S_OK : E_FAIL;
+                    ShellLog.Log($"GetThumbnail: file read OK, type={fileInfo.FileExtType}, {fileInfo.Cols}x{fileInfo.Rows}, bpp={fileInfo.Bpp}, ch={fileInfo.Channels}");
+
+                    mat = CreateMatFromCVCIEFile(fileInfo);
+                    if (mat == null || mat.Empty())
+                    {
+                        ShellLog.Log($"GetThumbnail: CreateMatFromCVCIEFile returned null for {_filePath}");
+                        return E_FAIL;
+                    }
+
+                    // Calculate thumbnail dimensions maintaining aspect ratio
+                    double scale = Math.Min((double)cx / mat.Cols, (double)cx / mat.Rows);
+                    scale = Math.Min(scale, 1.0); // Don't upscale
+
+                    int thumbWidth = Math.Max(1, (int)(mat.Cols * scale));
+                    int thumbHeight = Math.Max(1, (int)(mat.Rows * scale));
+
+                    // Resize using OpenCV
+                    thumbnail = new Mat();
+                    Cv2.Resize(mat, thumbnail, new Size(thumbWidth, thumbHeight), 0, 0, InterpolationFlags.Area);
+
+                    // Convert to HBITMAP via raw pixel data
+                    phbmp = MatToHBitmap(thumbnail);
+                    if (phbmp == IntPtr.Zero)
+                    {
+                        ShellLog.Log($"GetThumbnail: MatToHBitmap returned null for {_filePath}");
+                        return E_FAIL;
+                    }
+
+                    ShellLog.Log($"GetThumbnail: success, {thumbWidth}x{thumbHeight} for {_filePath}");
+                    return S_OK;
                 }
                 finally
                 {
+                    thumbnail?.Dispose();
+                    mat?.Dispose();
                     fileInfo.Dispose();
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Shell extensions must never throw - return error HRESULT
+                ShellLog.Log($"GetThumbnail: exception for {_filePath}: {ex}");
                 return E_FAIL;
             }
         }
 
         /// <summary>
-        /// Creates a System.Drawing.Bitmap from CVCIEFile data.
-        /// Handles different file types (Tif, Raw, Src, CIE) and bit depths (8, 16, 32).
+        /// Creates an OpenCV Mat from CVCIEFile data.
+        /// Matches the logic in CVRawThumbnailProvider.CreateMatFromCVCIEFile.
         /// </summary>
-        private static Bitmap? CreateBitmapFromCVFile(CVCIEFile fileInfo)
+        private static Mat? CreateMatFromCVCIEFile(CVCIEFile fileInfo)
         {
             try
             {
-                // For TIFF-encoded data, decode directly
+                Mat? src = null;
+
                 if (fileInfo.FileExtType == CVType.Tif)
                 {
-                    using var ms = new MemoryStream(fileInfo.Data);
-                    return new Bitmap(ms);
+                    src = Cv2.ImDecode(fileInfo.Data, ImreadModes.Unchanged);
                 }
-
-                // For Raw/Src/CIE formats, convert pixel data to bitmap
-                if (fileInfo.FileExtType == CVType.Raw || fileInfo.FileExtType == CVType.Src || fileInfo.FileExtType == CVType.CIE)
+                else if (fileInfo.FileExtType == CVType.Raw || fileInfo.FileExtType == CVType.Src || fileInfo.FileExtType == CVType.CIE)
                 {
-                    int width = fileInfo.Cols;
-                    int height = fileInfo.Rows;
-                    if (width <= 0 || height <= 0)
-                        return null;
+                    if (fileInfo.FileExtType == CVType.CIE)
+                    {
+                        if (fileInfo.Channels == 3)
+                        {
+                            // For 3-channel CIE, use first channel (Y component)
+                            src = Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, MatType.MakeType(fileInfo.Depth, 1), fileInfo.Data);
+                        }
+                        else
+                        {
+                            src = Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
+                        }
+                    }
+                    else
+                    {
+                        src = Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
+                    }
 
-                    byte[] grayPixels = NormalizeTo8BitGrayscale(fileInfo);
-                    if (grayPixels is null)
-                        return null;
-
-                    return CreateGrayscaleBitmap(grayPixels, width, height);
+                    // Normalize 32-bit float images to 8-bit for display
+                    if (fileInfo.Bpp == 32 && src != null)
+                    {
+                        Cv2.Normalize(src, src, 0, 255, NormTypes.MinMax);
+                        src.ConvertTo(src, MatType.CV_8U);
+                    }
                 }
 
-                return null;
+                return src;
             }
-            catch
+            catch (Exception ex)
             {
+                ShellLog.Log($"CreateMatFromCVCIEFile error: {ex.Message}");
                 return null;
             }
         }
 
         /// <summary>
-        /// Normalizes pixel data of any supported bit depth to 8-bit grayscale.
-        /// For multi-channel CIE data, uses only the first channel (luminance/Y).
+        /// Converts an OpenCV Mat to a Windows HBITMAP handle.
+        /// Creates a DIB section and copies the pixel data.
         /// </summary>
-        private static byte[]? NormalizeTo8BitGrayscale(CVCIEFile fileInfo)
+        private static IntPtr MatToHBitmap(Mat mat)
         {
-            int width = fileInfo.Cols;
-            int height = fileInfo.Rows;
-            int channels = fileInfo.Channels;
-            byte[] data = fileInfo.Data;
-
-            if (data == null || width <= 0 || height <= 0 || channels <= 0)
-                return null;
-
-            int pixelCount = width * height;
-
-            // For CIE files with 3 channels, use first channel only (Y/luminance)
-            int effectiveChannels = (fileInfo.FileExtType == CVType.CIE && channels == 3) ? 1 : channels;
-            if (effectiveChannels > 1)
-                effectiveChannels = 1; // For any multi-channel, use first channel
-
-            byte[] result = new byte[pixelCount];
-            int bytesPerSample = fileInfo.Bpp / 8;
-            int stride = channels * bytesPerSample;
-
-            switch (fileInfo.Bpp)
+            // Ensure mat is 8-bit for display
+            using var displayMat = new Mat();
+            if (mat.Depth() != MatType.CV_8U)
             {
-                case 8:
-                    for (int i = 0; i < pixelCount; i++)
-                    {
-                        int srcIdx = i * stride; // stride = channels * bytesPerSample
-                        if (srcIdx < data.Length)
-                            result[i] = data[srcIdx];
-                    }
-                    break;
-
-                case 16:
-                {
-                    // First pass: find min/max for normalization
-                    ushort min = ushort.MaxValue, max = 0;
-                    for (int i = 0; i < pixelCount; i++)
-                    {
-                        int srcIdx = i * stride;
-                        if (srcIdx + 1 < data.Length)
-                        {
-                            ushort val = BitConverter.ToUInt16(data, srcIdx);
-                            if (val < min) min = val;
-                            if (val > max) max = val;
-                        }
-                    }
-
-                    float range = max - min;
-                    if (range < 1) range = 1;
-
-                    // Second pass: normalize to 0-255
-                    for (int i = 0; i < pixelCount; i++)
-                    {
-                        int srcIdx = i * stride;
-                        if (srcIdx + 1 < data.Length)
-                        {
-                            ushort val = BitConverter.ToUInt16(data, srcIdx);
-                            result[i] = (byte)(255.0f * (val - min) / range);
-                        }
-                    }
-                    break;
-                }
-
-                case 32:
-                {
-                    // First pass: find min/max (skip NaN/Infinity)
-                    float fmin = float.MaxValue, fmax = float.MinValue;
-                    for (int i = 0; i < pixelCount; i++)
-                    {
-                        int srcIdx = i * stride;
-                        if (srcIdx + 3 < data.Length)
-                        {
-                            float val = BitConverter.ToSingle(data, srcIdx);
-                            if (!float.IsNaN(val) && !float.IsInfinity(val))
-                            {
-                                if (val < fmin) fmin = val;
-                                if (val > fmax) fmax = val;
-                            }
-                        }
-                    }
-
-                    float frange = fmax - fmin;
-                    if (frange < float.Epsilon) frange = 1;
-
-                    // Second pass: normalize to 0-255
-                    for (int i = 0; i < pixelCount; i++)
-                    {
-                        int srcIdx = i * stride;
-                        if (srcIdx + 3 < data.Length)
-                        {
-                            float val = BitConverter.ToSingle(data, srcIdx);
-                            if (float.IsNaN(val) || float.IsInfinity(val))
-                                result[i] = 0;
-                            else
-                                result[i] = (byte)Math.Clamp(255.0f * (val - fmin) / frange, 0, 255);
-                        }
-                    }
-                    break;
-                }
-
-                default:
-                    return null;
+                Cv2.Normalize(mat, displayMat, 0, 255, NormTypes.MinMax);
+                displayMat.ConvertTo(displayMat, MatType.CV_8U);
+            }
+            else
+            {
+                mat.CopyTo(displayMat);
             }
 
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a 24bpp RGB Bitmap from 8-bit grayscale pixel data (R=G=B=gray).
-        /// </summary>
-        private static Bitmap? CreateGrayscaleBitmap(byte[] grayPixels, int width, int height)
-        {
-            if (grayPixels.Length < width * height)
-                return null;
-
-            var bitmap = new Bitmap(width, height, PixelFormat.Format24bppRgb);
-            var bmpData = bitmap.LockBits(
-                new Rectangle(0, 0, width, height),
-                ImageLockMode.WriteOnly,
-                PixelFormat.Format24bppRgb);
-
-            try
+            // Convert to BGR 3-channel if needed
+            using var bgrMat = new Mat();
+            if (displayMat.Channels() == 1)
             {
-                int bmpStride = bmpData.Stride;
-                byte[] bmpPixels = new byte[bmpStride * height];
+                Cv2.CvtColor(displayMat, bgrMat, ColorConversionCodes.GRAY2BGR);
+            }
+            else if (displayMat.Channels() == 4)
+            {
+                Cv2.CvtColor(displayMat, bgrMat, ColorConversionCodes.BGRA2BGR);
+            }
+            else
+            {
+                displayMat.CopyTo(bgrMat);
+            }
+
+            int width = bgrMat.Cols;
+            int height = bgrMat.Rows;
+
+            // Create BITMAPINFO for a 24bpp DIB
+            var bmi = new BITMAPINFO();
+            bmi.bmiHeader.biSize = (uint)Marshal.SizeOf<BITMAPINFOHEADER>();
+            bmi.bmiHeader.biWidth = width;
+            bmi.bmiHeader.biHeight = -height; // top-down
+            bmi.bmiHeader.biPlanes = 1;
+            bmi.bmiHeader.biBitCount = 24;
+            bmi.bmiHeader.biCompression = 0; // BI_RGB
+
+            IntPtr hdc = CreateCompatibleDC(IntPtr.Zero);
+            IntPtr hbmp = CreateDIBSection(hdc, ref bmi, 0, out IntPtr ppvBits, IntPtr.Zero, 0);
+            DeleteDC(hdc);
+
+            if (hbmp == IntPtr.Zero || ppvBits == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            // Copy pixel data row by row (DIB stride is DWORD-aligned)
+            int dibStride = ((width * 3 + 3) / 4) * 4;
+            int matStride = (int)bgrMat.Step();
+
+            unsafe
+            {
+                byte* dst = (byte*)ppvBits;
+                byte* src = (byte*)bgrMat.Data;
+                int copyLen = width * 3;
 
                 for (int y = 0; y < height; y++)
                 {
-                    for (int x = 0; x < width; x++)
-                    {
-                        byte gray = grayPixels[y * width + x];
-                        int bmpIdx = y * bmpStride + x * 3;
-                        bmpPixels[bmpIdx] = gray;     // B
-                        bmpPixels[bmpIdx + 1] = gray;  // G
-                        bmpPixels[bmpIdx + 2] = gray;  // R
-                    }
+                    Buffer.MemoryCopy(src + y * matStride, dst + y * dibStride, dibStride, copyLen);
                 }
-
-                Marshal.Copy(bmpPixels, 0, bmpData.Scan0, bmpPixels.Length);
-            }
-            finally
-            {
-                bitmap.UnlockBits(bmpData);
             }
 
-            return bitmap;
+            return hbmp;
         }
+
+        #region Native methods
+
+        [DllImport("gdi32.dll")]
+        private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+
+        [DllImport("gdi32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool DeleteDC(IntPtr hdc);
+
+        [DllImport("gdi32.dll")]
+        private static extern IntPtr CreateDIBSection(IntPtr hdc, ref BITMAPINFO pbmi, uint usage, out IntPtr ppvBits, IntPtr hSection, uint offset);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct BITMAPINFOHEADER
+        {
+            public uint biSize;
+            public int biWidth;
+            public int biHeight;
+            public ushort biPlanes;
+            public ushort biBitCount;
+            public uint biCompression;
+            public uint biSizeImage;
+            public int biXPelsPerMeter;
+            public int biYPelsPerMeter;
+            public uint biClrUsed;
+            public uint biClrImportant;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct BITMAPINFO
+        {
+            public BITMAPINFOHEADER bmiHeader;
+        }
+
+        #endregion
     }
 }
