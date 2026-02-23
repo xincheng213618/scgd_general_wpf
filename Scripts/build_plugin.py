@@ -174,8 +174,8 @@ def build_project(project_name, type_name):
     script_path = os.path.abspath(os.path.dirname(__file__))
     base_path = os.path.abspath(os.path.join(script_path, '..'))  # 获取 base_path 的父级节点
     print("1" +type_name)
-    src_dir = os.path.join(base_path, type_name, project_name, 'bin', 'x64', 'Release', 'net8.0-windows')
-    ref_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net8.0-windows')
+    src_dir = os.path.join(base_path, type_name, project_name, 'bin', 'x64', 'Release', 'net10.0-windows')
+    ref_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net10.0-windows')
     target_dir = os.path.join("H:\\", 'ColorVision', 'Plugins')
     
         # --- Start: Update manifest.json ---

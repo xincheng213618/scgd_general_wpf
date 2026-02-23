@@ -1,22 +1,21 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager;
-using ColorVision.UI.Extension;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
+using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.Extension;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Themes.Controls.Uploads;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
-using System.ComponentModel;
-using ColorVision.Database;
-using ColorVision.Engine.Extension;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {

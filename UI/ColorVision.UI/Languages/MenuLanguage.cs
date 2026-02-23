@@ -3,15 +3,16 @@ using ColorVision.UI.Languages;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Threading;
+using System.Windows;
 
-namespace ProjectStarkSemi.Languages
+namespace ColorVision.UI.Languages
 {
     //这里隐藏掉，因为我认为频繁切换语言是不需要的
     //后面这个合并到插件中
 
     public class MenuLanguage : MenuItemBase
     {
-        public override string OwnerGuid => MenuItemConstants.Menu;
+        public override string OwnerGuid => MenuItemConstants.Tool;
         public override int Order => 1000;
         public override string Header => Properties.Resources.MenuLanguage;
         public override string InputGestureText => "Ctrl + Shift + T";

@@ -1,6 +1,5 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Sys.Dao;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Windows;
