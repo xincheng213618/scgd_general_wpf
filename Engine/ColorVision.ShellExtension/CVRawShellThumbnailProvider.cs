@@ -127,7 +127,7 @@ namespace ColorVision.ShellExtension
                         return null;
 
                     byte[] grayPixels = NormalizeTo8BitGrayscale(fileInfo);
-                    if (grayPixels == null)
+                    if (grayPixels is null)
                         return null;
 
                     return CreateGrayscaleBitmap(grayPixels, width, height);
@@ -171,7 +171,7 @@ namespace ColorVision.ShellExtension
                 case 8:
                     for (int i = 0; i < pixelCount; i++)
                     {
-                        int srcIdx = i * channels; // Use first channel
+                        int srcIdx = i * stride; // stride = channels * bytesPerSample
                         if (srcIdx < data.Length)
                             result[i] = data[srcIdx];
                     }
