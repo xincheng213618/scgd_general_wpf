@@ -87,15 +87,51 @@ namespace ColorVision.Solution.Download
 
         private void OnDownloadCompleted(object? sender, DownloadTask task)
         {
+            var config = DownloadManagerConfig.Instance;
+
+            // Auto-run file after download
+            if (task.Status == DownloadStatus.Completed && config.RunFileAfterDownload)
+            {
+                if (System.IO.File.Exists(task.SavePath))
+                {
+                    try
+                    {
+                        Application.Current?.Dispatcher.BeginInvoke(() =>
+                        {
+                            Process.Start(new ProcessStartInfo(task.SavePath) { UseShellExecute = true });
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        log4net.LogManager.GetLogger(nameof(DownloadWindow)).Error($"Auto-run failed: {ex.Message}");
+                    }
+                }
+            }
+
+            // Show notification if enabled
+            if (!config.ShowCompletedNotification) return;
+
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 if (task.Status == DownloadStatus.Completed)
                 {
-                    MessageBox.Show(
-                        string.Format(Properties.Resources.DownloadCompletedMessage, task.FileName),
+                    var result = MessageBox.Show(
+                        string.Format(Properties.Resources.DownloadCompletedMessage, task.FileName) + "\n\n" + Properties.Resources.OpenFileQuestion,
                         Properties.Resources.DownloadManager,
-                        MessageBoxButton.OK,
+                        MessageBoxButton.YesNo,
                         MessageBoxImage.Information);
+
+                    if (result == MessageBoxResult.Yes && System.IO.File.Exists(task.SavePath))
+                    {
+                        try
+                        {
+                            Process.Start(new ProcessStartInfo(task.SavePath) { UseShellExecute = true });
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                    }
                 }
                 else if (task.Status == DownloadStatus.Failed)
                 {

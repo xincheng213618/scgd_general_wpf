@@ -447,4 +447,7 @@
   <data name="DownloadFailedMessage" xml:space="preserve">
     <value>File "{0}" download failed: {1}</value>
   </data>
+  <data name="OpenFileQuestion" xml:space="preserve">
+    <value>Do you want to open the file?</value>
+  </data>
 </root>

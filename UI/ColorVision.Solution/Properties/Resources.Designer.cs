@@ -618,6 +618,12 @@ namespace ColorVision.Solution.Properties {
             }
         }
         
+        public static string OpenFileQuestion {
+            get {
+                return ResourceManager.GetString("OpenFileQuestion", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   查找类似 打开所在文件夹 的本地化字符串。
         /// </summary>

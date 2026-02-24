@@ -34,5 +34,15 @@ namespace ColorVision.Solution.Download
         [DisplayName("Authorization")]
         [Description("Default authorization credentials (user:password)")]
         public string Authorization { get; set; } = "1:1";
+
+        [DisplayName("ShowCompletedNotification")]
+        [Description("Show notification dialog when download completes")]
+        public bool ShowCompletedNotification { get => _ShowCompletedNotification; set { _ShowCompletedNotification = value; OnPropertyChanged(); } }
+        private bool _ShowCompletedNotification = true;
+
+        [DisplayName("RunFileAfterDownload")]
+        [Description("Automatically run/open file after download completes")]
+        public bool RunFileAfterDownload { get => _RunFileAfterDownload; set { _RunFileAfterDownload = value; OnPropertyChanged(); } }
+        private bool _RunFileAfterDownload;
     }
 }

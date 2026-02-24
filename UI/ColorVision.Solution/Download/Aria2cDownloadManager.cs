@@ -7,7 +7,9 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
+using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -29,8 +31,10 @@ namespace ColorVision.Solution.Download
         public string SavePath { get => _SavePath; set { _SavePath = value; OnPropertyChanged(); } }
         private string _SavePath = string.Empty;
 
-        public DownloadStatus Status { get => _Status; set { _Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); } }
+        public DownloadStatus Status { get => _Status; set { _Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); OnPropertyChanged(nameof(IsDownloading)); } }
         private DownloadStatus _Status;
+
+        public bool IsDownloading => Status == DownloadStatus.Downloading || Status == DownloadStatus.Waiting;
 
         public string StatusText => Status switch
         {
@@ -64,9 +68,14 @@ namespace ColorVision.Solution.Download
         public string TotalBytesText => FormatBytes(TotalBytes);
         public string DownloadedBytesText => FormatBytes(DownloadedBytes);
 
+        /// <summary>
+        /// The aria2c GID for this download (used with JSON-RPC)
+        /// </summary>
+        public string? Gid { get; set; }
+
         public CancellationTokenSource? CancellationTokenSource { get; set; }
 
-        private static string FormatBytes(long bytes)
+        public static string FormatBytes(long bytes)
         {
             if (bytes <= 0) return "0 B";
             string[] sizes = { "B", "KB", "MB", "GB", "TB" };
@@ -78,6 +87,15 @@ namespace ColorVision.Solution.Download
                 size /= 1024;
             }
             return $"{size:F2} {sizes[order]}";
+        }
+
+        public static string FormatSpeed(long bytesPerSecond)
+        {
+            if (bytesPerSecond <= 0) return "0 B/s";
+            if (bytesPerSecond < 1024) return $"{bytesPerSecond} B/s";
+            if (bytesPerSecond < 1024 * 1024) return $"{bytesPerSecond / 1024.0:F1} KB/s";
+            if (bytesPerSecond < 1024L * 1024 * 1024) return $"{bytesPerSecond / 1024.0 / 1024.0:F2} MB/s";
+            return $"{bytesPerSecond / 1024.0 / 1024.0 / 1024.0:F2} GB/s";
         }
     }
 
@@ -102,8 +120,17 @@ namespace ColorVision.Solution.Download
 
         public ObservableCollection<DownloadTask> Tasks { get; } = new();
         private readonly ConcurrentDictionary<int, DownloadTask> _activeTasks = new();
-        private readonly SemaphoreSlim _semaphore;
         private readonly string _aria2cPath;
+
+        // JSON-RPC state
+        private Process? _aria2cProcess;
+        private readonly object _processLock = new();
+        private readonly HttpClient _httpClient = new();
+        private const int RpcPort = 6800;
+        private const string RpcSecret = "ColorVisionDL";
+        private string RpcUrl => $"http://127.0.0.1:{RpcPort}/jsonrpc";
+        private int _rpcRequestId;
+        private Timer? _pollTimer;
 
         /// <summary>
         /// Fired when a download task completes (success or failure)
@@ -115,7 +142,6 @@ namespace ColorVision.Solution.Download
         private Aria2cDownloadManager()
         {
             Directory.CreateDirectory(DirectoryPath);
-            _semaphore = new SemaphoreSlim(Config.MaxConcurrentTasks, 16);
             _aria2cPath = FindAria2c();
             InitializeDatabase();
         }
@@ -148,6 +174,222 @@ namespace ColorVision.Solution.Download
                 InitKeyType = InitKeyType.Attribute
             });
         }
+
+        #region aria2c RPC Daemon
+
+        private async Task EnsureAria2cRunningAsync()
+        {
+            lock (_processLock)
+            {
+                if (_aria2cProcess != null && !_aria2cProcess.HasExited)
+                    return;
+            }
+
+            await StartAria2cDaemonAsync();
+        }
+
+        private async Task StartAria2cDaemonAsync()
+        {
+            lock (_processLock)
+            {
+                if (_aria2cProcess != null && !_aria2cProcess.HasExited)
+                    return;
+
+                string args = $"--enable-rpc --rpc-listen-port={RpcPort} --rpc-secret={RpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=false --allow-overwrite=true --summary-interval=0 -j {Config.MaxConcurrentTasks}";
+
+                if (Config.EnableSpeedLimit)
+                {
+                    args += $" --max-overall-download-limit={Config.SpeedLimitMB}M";
+                }
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = _aria2cPath,
+                    Arguments = args,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                _aria2cProcess = new Process { StartInfo = psi };
+                _aria2cProcess.Start();
+
+                // Discard output to prevent buffer deadlock
+                _aria2cProcess.StandardOutput.ReadToEndAsync();
+                _aria2cProcess.StandardError.ReadToEndAsync();
+            }
+
+            // Wait for RPC to be ready
+            for (int i = 0; i < 30; i++)
+            {
+                await Task.Delay(200);
+                try
+                {
+                    var response = await RpcCallAsync("aria2.getVersion", Array.Empty<object>());
+                    if (response != null)
+                    {
+                        log.Info("aria2c RPC daemon started successfully");
+                        StartPolling();
+                        return;
+                    }
+                }
+                catch { }
+            }
+
+            log.Error("Failed to start aria2c RPC daemon");
+            throw new Exception("Failed to start aria2c RPC daemon");
+        }
+
+        private void StopAria2cDaemon()
+        {
+            StopPolling();
+            lock (_processLock)
+            {
+                if (_aria2cProcess != null)
+                {
+                    try
+                    {
+                        if (!_aria2cProcess.HasExited)
+                        {
+                            // Try graceful shutdown via RPC first
+                            try { _ = RpcCallAsync("aria2.shutdown", new object[] { $"token:{RpcSecret}" }).Result; }
+                            catch { }
+
+                            if (!_aria2cProcess.WaitForExit(3000))
+                                _aria2cProcess.Kill();
+                        }
+                    }
+                    catch (InvalidOperationException) { }
+                    finally
+                    {
+                        _aria2cProcess.Dispose();
+                        _aria2cProcess = null;
+                    }
+                }
+            }
+        }
+
+        private void StartPolling()
+        {
+            _pollTimer ??= new Timer(PollCallback, null, 500, 500);
+        }
+
+        private void StopPolling()
+        {
+            _pollTimer?.Dispose();
+            _pollTimer = null;
+        }
+
+        private async void PollCallback(object? state)
+        {
+            try
+            {
+                var activeTasks = _activeTasks.Values.ToArray();
+                if (activeTasks.Length == 0)
+                {
+                    // No active downloads, stop daemon
+                    StopAria2cDaemon();
+                    return;
+                }
+
+                foreach (var task in activeTasks)
+                {
+                    if (string.IsNullOrEmpty(task.Gid)) continue;
+
+                    try
+                    {
+                        var status = await RpcCallAsync("aria2.tellStatus",
+                            new object[] { $"token:{RpcSecret}", task.Gid,
+                                new[] { "status", "totalLength", "completedLength", "downloadSpeed", "errorCode", "errorMessage" } });
+
+                        if (status == null) continue;
+
+                        var result = status.Value;
+                        string? rpcStatus = result.GetProperty("result").GetProperty("status").GetString();
+                        long totalLength = long.Parse(result.GetProperty("result").GetProperty("totalLength").GetString() ?? "0");
+                        long completedLength = long.Parse(result.GetProperty("result").GetProperty("completedLength").GetString() ?? "0");
+                        long downloadSpeed = long.Parse(result.GetProperty("result").GetProperty("downloadSpeed").GetString() ?? "0");
+
+                        int progress = totalLength > 0 ? (int)(completedLength * 100 / totalLength) : 0;
+                        string speedText = DownloadTask.FormatSpeed(downloadSpeed);
+
+                        Application.Current?.Dispatcher.BeginInvoke(() =>
+                        {
+                            task.ProgressValue = progress;
+                            task.TotalBytes = totalLength;
+                            task.DownloadedBytes = completedLength;
+                            task.SpeedText = speedText;
+                        });
+
+                        if (rpcStatus == "complete")
+                        {
+                            Application.Current?.Dispatcher.BeginInvoke(() =>
+                            {
+                                task.Status = DownloadStatus.Completed;
+                                task.ProgressValue = 100;
+                                task.SpeedText = string.Empty;
+                            });
+                            UpdateEntryCompleted(task);
+                            _activeTasks.TryRemove(task.Id, out _);
+                            DownloadCompleted?.Invoke(this, task);
+                        }
+                        else if (rpcStatus == "error")
+                        {
+                            string? errorMsg = result.GetProperty("result").GetProperty("errorMessage").GetString();
+                            Application.Current?.Dispatcher.BeginInvoke(() =>
+                            {
+                                task.Status = DownloadStatus.Failed;
+                                task.ErrorMessage = errorMsg ?? "Unknown error";
+                                task.SpeedText = string.Empty;
+                            });
+                            UpdateEntryStatus(task.Id, DownloadStatus.Failed, errorMsg);
+                            _activeTasks.TryRemove(task.Id, out _);
+                            DownloadCompleted?.Invoke(this, task);
+                        }
+                        else if (rpcStatus == "removed" || rpcStatus == "paused")
+                        {
+                            Application.Current?.Dispatcher.BeginInvoke(() =>
+                            {
+                                task.Status = DownloadStatus.Paused;
+                                task.SpeedText = string.Empty;
+                            });
+                            UpdateEntryStatus(task.Id, DownloadStatus.Paused);
+                            _activeTasks.TryRemove(task.Id, out _);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Debug($"Poll status error for task {task.Id}: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Poll callback error: {ex.Message}");
+            }
+        }
+
+        private async Task<JsonElement?> RpcCallAsync(string method, object[] parameters)
+        {
+            int id = Interlocked.Increment(ref _rpcRequestId);
+            var request = new
+            {
+                jsonrpc = "2.0",
+                id = id.ToString(),
+                method,
+                @params = parameters
+            };
+
+            string json = JsonSerializer.Serialize(request);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            using var response = await _httpClient.PostAsync(RpcUrl, content).ConfigureAwait(false);
+            string responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            return JsonSerializer.Deserialize<JsonElement>(responseBody);
+        }
+
+        #endregion
 
         /// <summary>
         /// Add a download task with default settings
@@ -193,39 +435,46 @@ namespace ColorVision.Solution.Download
 
         private async Task StartDownloadAsync(DownloadTask task, string? authorization = null)
         {
-            task.CancellationTokenSource = new CancellationTokenSource();
             try
             {
-                await _semaphore.WaitAsync(task.CancellationTokenSource.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    task.Status = DownloadStatus.Paused;
-                    task.SpeedText = string.Empty;
-                });
-                UpdateEntryStatus(task.Id, DownloadStatus.Paused);
-                return;
-            }
-            try
-            {
-                Application.Current?.Dispatcher.BeginInvoke(() => task.Status = DownloadStatus.Downloading);
-                _activeTasks[task.Id] = task;
+                await EnsureAria2cRunningAsync();
 
+                Application.Current?.Dispatcher.BeginInvoke(() => task.Status = DownloadStatus.Downloading);
                 UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
 
-                string args = BuildAria2cArgs(task, authorization);
-                await RunAria2cAsync(task, args);
-            }
-            catch (OperationCanceledException)
-            {
-                Application.Current?.Dispatcher.BeginInvoke(() =>
+                // Build options for this download
+                string dir = Path.GetDirectoryName(task.SavePath) ?? Config.DefaultDownloadPath;
+                string fileName = Path.GetFileName(task.SavePath);
+
+                var options = new System.Collections.Generic.Dictionary<string, string>
                 {
-                    task.Status = DownloadStatus.Paused;
-                    task.SpeedText = string.Empty;
-                });
-                UpdateEntryStatus(task.Id, DownloadStatus.Paused);
+                    ["dir"] = dir,
+                    ["out"] = fileName,
+                };
+
+                string auth = authorization ?? Config.Authorization;
+                if (!string.IsNullOrWhiteSpace(auth) && auth.Contains(':'))
+                {
+                    string[] parts = auth.Split(':', 2);
+                    options["http-user"] = parts[0];
+                    options["http-passwd"] = parts[1];
+                }
+
+                // Call aria2.addUri via JSON-RPC
+                var response = await RpcCallAsync("aria2.addUri",
+                    new object[] { $"token:{RpcSecret}", new[] { task.Url }, options });
+
+                if (response != null)
+                {
+                    string? gid = response.Value.GetProperty("result").GetString();
+                    task.Gid = gid;
+                    _activeTasks[task.Id] = task;
+                    log.Info($"Download started via RPC, GID: {gid}, File: {task.FileName}");
+                }
+                else
+                {
+                    throw new Exception("No response from aria2c RPC");
+                }
             }
             catch (Exception ex)
             {
@@ -239,182 +488,21 @@ namespace ColorVision.Solution.Download
                 UpdateEntryStatus(task.Id, DownloadStatus.Failed, ex.Message);
                 DownloadCompleted?.Invoke(this, task);
             }
-            finally
-            {
-                _activeTasks.TryRemove(task.Id, out _);
-                _semaphore.Release();
-            }
-        }
-
-        private string BuildAria2cArgs(DownloadTask task, string? authorization)
-        {
-            string dir = Path.GetDirectoryName(task.SavePath) ?? Config.DefaultDownloadPath;
-            string fileName = Path.GetFileName(task.SavePath);
-
-            string args = $"\"{task.Url}\" -d \"{dir}\" -o \"{fileName}\" -c --auto-file-renaming=false --allow-overwrite=true --summary-interval=1 --enable-color=false";
-
-            if (Config.EnableSpeedLimit)
-            {
-                args += $" --max-download-limit={Config.SpeedLimitMB}M";
-            }
-
-            string auth = authorization ?? Config.Authorization;
-            if (!string.IsNullOrWhiteSpace(auth) && auth.Contains(':'))
-            {
-                string[] parts = auth.Split(':', 2);
-                args += $" --http-user=\"{parts[0]}\" --http-passwd=\"{parts[1]}\"";
-            }
-
-            return args;
-        }
-
-        private async Task RunAria2cAsync(DownloadTask task, string args)
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = _aria2cPath,
-                Arguments = args,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            };
-
-            using var process = new Process { StartInfo = psi };
-            process.Start();
-
-            var outputTask = Task.Run(() => ParseAria2cOutput(process, task));
-            var errorTask = process.StandardError.ReadToEndAsync();
-
-            await Task.WhenAll(outputTask, errorTask);
-            string errorOutput = await errorTask;
-
-            if (task.CancellationTokenSource?.IsCancellationRequested == true)
-            {
-                try { if (!process.HasExited) process.Kill(); }
-                catch (InvalidOperationException) { /* process already exited */ }
-                throw new OperationCanceledException();
-            }
-
-            await process.WaitForExitAsync();
-
-            if (process.ExitCode == 0)
-            {
-                Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    task.Status = DownloadStatus.Completed;
-                    task.ProgressValue = 100;
-                    task.SpeedText = string.Empty;
-                });
-                UpdateEntryCompleted(task);
-                DownloadCompleted?.Invoke(this, task);
-            }
-            else
-            {
-                string error = !string.IsNullOrWhiteSpace(errorOutput) ? errorOutput.Trim() : $"aria2c exited with code {process.ExitCode}";
-                Application.Current?.Dispatcher.BeginInvoke(() =>
-                {
-                    task.Status = DownloadStatus.Failed;
-                    task.ErrorMessage = error;
-                    task.SpeedText = string.Empty;
-                });
-                UpdateEntryStatus(task.Id, DownloadStatus.Failed, error);
-                DownloadCompleted?.Invoke(this, task);
-            }
-        }
-
-        private void ParseAria2cOutput(Process process, DownloadTask task)
-        {
-            // aria2c outputs progress using \r (carriage return) to overwrite the same line.
-            // ReadLine() waits for \n which never comes during progress updates.
-            // We must read char-by-char and treat both \r and \n as line terminators.
-            var sizeRegex = new Regex(@"\[#\w+\s+(\d+(?:\.\d+)?)(Ki|Mi|Gi)?B/(\d+(?:\.\d+)?)(Ki|Mi|Gi)?B", RegexOptions.Compiled);
-            var progressRegex = new Regex(@"\((\d+)%\)", RegexOptions.Compiled);
-            var speedRegex = new Regex(@"DL:(\d+(?:\.\d+)?)(Ki|Mi|Gi)?B", RegexOptions.Compiled);
-
-            try
-            {
-                var reader = process.StandardOutput;
-                var sb = new System.Text.StringBuilder();
-                int ch;
-
-                while ((ch = reader.Read()) != -1)
-                {
-                    if (task.CancellationTokenSource?.IsCancellationRequested == true)
-                    {
-                        try { if (!process.HasExited) process.Kill(); }
-                        catch (InvalidOperationException) { /* process already exited */ }
-                        return;
-                    }
-
-                    if (ch == '\r' || ch == '\n')
-                    {
-                        if (sb.Length == 0) continue;
-                        string line = sb.ToString();
-                        sb.Clear();
-
-                        var progressMatch = progressRegex.Match(line);
-                        if (progressMatch.Success && int.TryParse(progressMatch.Groups[1].Value, out int progress))
-                        {
-                            Application.Current?.Dispatcher.BeginInvoke(() => task.ProgressValue = progress);
-                        }
-
-                        var sizeMatch = sizeRegex.Match(line);
-                        if (sizeMatch.Success)
-                        {
-                            long downloaded = ParseSizeToBytes(sizeMatch.Groups[1].Value, sizeMatch.Groups[2].Value);
-                            long total = ParseSizeToBytes(sizeMatch.Groups[3].Value, sizeMatch.Groups[4].Value);
-                            Application.Current?.Dispatcher.BeginInvoke(() =>
-                            {
-                                task.DownloadedBytes = downloaded;
-                                task.TotalBytes = total;
-                            });
-                        }
-
-                        var speedMatch = speedRegex.Match(line);
-                        if (speedMatch.Success)
-                        {
-                            long speed = ParseSizeToBytes(speedMatch.Groups[1].Value, speedMatch.Groups[2].Value);
-                            string speedText = FormatSpeed(speed);
-                            Application.Current?.Dispatcher.BeginInvoke(() => task.SpeedText = speedText);
-                        }
-                    }
-                    else
-                    {
-                        sb.Append((char)ch);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Debug($"Parse output error: {ex.Message}");
-            }
-        }
-
-        private static long ParseSizeToBytes(string value, string unit)
-        {
-            if (!double.TryParse(value, out double size)) return 0;
-            return unit switch
-            {
-                "Ki" => (long)(size * 1024),
-                "Mi" => (long)(size * 1024 * 1024),
-                "Gi" => (long)(size * 1024 * 1024 * 1024),
-                _ => (long)size
-            };
-        }
-
-        private static string FormatSpeed(long bytesPerSecond)
-        {
-            if (bytesPerSecond <= 0) return "0 B/s";
-            if (bytesPerSecond < 1024) return $"{bytesPerSecond} B/s";
-            if (bytesPerSecond < 1024 * 1024) return $"{bytesPerSecond / 1024.0:F1} KB/s";
-            if (bytesPerSecond < 1024L * 1024 * 1024) return $"{bytesPerSecond / 1024.0 / 1024.0:F2} MB/s";
-            return $"{bytesPerSecond / 1024.0 / 1024.0 / 1024.0:F2} GB/s";
         }
 
         public void CancelDownload(DownloadTask task)
         {
-            task.CancellationTokenSource?.Cancel();
+            if (!string.IsNullOrEmpty(task.Gid))
+            {
+                _ = RpcCallAsync("aria2.remove", new object[] { $"token:{RpcSecret}", task.Gid });
+            }
+            _activeTasks.TryRemove(task.Id, out _);
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                task.Status = DownloadStatus.Paused;
+                task.SpeedText = string.Empty;
+            });
+            UpdateEntryStatus(task.Id, DownloadStatus.Paused);
         }
 
         public void RetryDownload(DownloadTask task)
@@ -423,6 +511,7 @@ namespace ColorVision.Solution.Download
             task.ProgressValue = 0;
             task.ErrorMessage = null;
             task.SpeedText = string.Empty;
+            task.Gid = null;
             UpdateEntryStatus(task.Id, DownloadStatus.Waiting);
             _ = StartDownloadAsync(task);
         }
@@ -434,7 +523,11 @@ namespace ColorVision.Solution.Download
             var task = Tasks.FirstOrDefault(t => t.Id == id);
             if (task != null)
             {
-                task.CancellationTokenSource?.Cancel();
+                if (!string.IsNullOrEmpty(task.Gid))
+                {
+                    try { _ = RpcCallAsync("aria2.remove", new object[] { $"token:{RpcSecret}", task.Gid }); } catch { }
+                }
+                _activeTasks.TryRemove(task.Id, out _);
                 Application.Current.Dispatcher.Invoke(() => Tasks.Remove(task));
             }
         }
@@ -449,7 +542,11 @@ namespace ColorVision.Solution.Download
                 var toRemove = Tasks.Where(t => ids.Contains(t.Id)).ToList();
                 foreach (var task in toRemove)
                 {
-                    task.CancellationTokenSource?.Cancel();
+                    if (!string.IsNullOrEmpty(task.Gid))
+                    {
+                        try { _ = RpcCallAsync("aria2.remove", new object[] { $"token:{RpcSecret}", task.Gid }); } catch { }
+                    }
+                    _activeTasks.TryRemove(task.Id, out _);
                     Tasks.Remove(task);
                 }
             });
@@ -460,7 +557,13 @@ namespace ColorVision.Solution.Download
             using var db = CreateDbClient();
             db.Deleteable<DownloadEntry>().ExecuteCommand();
             foreach (var task in _activeTasks.Values)
-                task.CancellationTokenSource?.Cancel();
+            {
+                if (!string.IsNullOrEmpty(task.Gid))
+                {
+                    try { _ = RpcCallAsync("aria2.remove", new object[] { $"token:{RpcSecret}", task.Gid }); } catch { }
+                }
+            }
+            _activeTasks.Clear();
             Application.Current.Dispatcher.Invoke(() => Tasks.Clear());
         }
 

@@ -32,6 +32,18 @@ namespace ColorVision.Solution.Download
                     Order = 4,
                     BindingName = nameof(DownloadManagerConfig.SpeedLimitMB),
                     Source = DownloadManagerConfig.Instance,
+                },
+                new ConfigSettingMetadata
+                {
+                    Order = 5,
+                    BindingName = nameof(DownloadManagerConfig.ShowCompletedNotification),
+                    Source = DownloadManagerConfig.Instance,
+                },
+                new ConfigSettingMetadata
+                {
+                    Order = 6,
+                    BindingName = nameof(DownloadManagerConfig.RunFileAfterDownload),
+                    Source = DownloadManagerConfig.Instance,
                 }
             };
         }
