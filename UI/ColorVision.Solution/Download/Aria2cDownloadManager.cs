@@ -144,6 +144,18 @@ namespace ColorVision.Solution.Download
             Directory.CreateDirectory(DirectoryPath);
             _aria2cPath = FindAria2c();
             InitializeDatabase();
+
+            // Clean up aria2c process when the application exits
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => Dispose();
+        }
+
+        /// <summary>
+        /// Cleanly shut down the aria2c daemon and release resources.
+        /// Called automatically on process exit.
+        /// </summary>
+        public void Dispose()
+        {
+            StopAria2cDaemon();
         }
 
         private string FindAria2c()
@@ -295,8 +307,9 @@ namespace ColorVision.Solution.Download
                 var activeTasks = _activeTasks.Values.ToArray();
                 if (activeTasks.Length == 0)
                 {
-                    // No active downloads, stop daemon
-                    StopAria2cDaemon();
+                    // No active downloads â€” only stop the polling timer, keep aria2c process alive
+                    // for instant reuse when new downloads are added (avoids slow restart)
+                    StopPolling();
                     return;
                 }
                 foreach (var task in activeTasks)
@@ -320,10 +333,9 @@ namespace ColorVision.Solution.Download
                         int progress = totalLength > 0 ? (int)(completedLength * 100 / totalLength) : 0;
                         string speedText = DownloadTask.FormatSpeed(downloadSpeed);
 
-                        log.Info(Math.Abs(progress));
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            task.ProgressValue = Math.Abs(progress);
+                            task.ProgressValue = progress;
                             task.TotalBytes = totalLength;
                             task.DownloadedBytes = completedLength;
                             task.SpeedText = speedText;
@@ -446,6 +458,7 @@ namespace ColorVision.Solution.Download
             try
             {
                 await EnsureAria2cRunningAsync();
+                StartPolling(); // Wake up polling timer in case it was stopped due to idle
 
                 Application.Current?.Dispatcher.BeginInvoke(() => task.Status = DownloadStatus.Downloading);
                 UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
@@ -609,7 +622,7 @@ namespace ColorVision.Solution.Download
                         UpdateEntryStatus(entry.Id, DownloadStatus.FileDeleted);
                     }
 
-                    // ¡¾ºËÐÄÐÞ¸´¡¿£ºÈç¹ûÈÎÎñÕýÔÚ»îÔ¾×ÖµäÖÐ£¬Ö±½ÓÖØÓÃ¸ÃÊµÀý£¬±£³Ö UI µÄ DataBinding ÒýÓÃ²»¶Ï¿ª
+                    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú»ï¿½Ô¾ï¿½Öµï¿½ï¿½Ð£ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½Ã¸ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ UI ï¿½ï¿½ DataBinding ï¿½ï¿½ï¿½Ã²ï¿½ï¿½Ï¿ï¿½
                     if (_activeTasks.TryGetValue(entry.Id, out var activeTask))
                     {
                         Tasks.Add(activeTask);
