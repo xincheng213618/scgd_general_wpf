@@ -73,7 +73,7 @@ namespace ColorVision.Solution.Download
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            _manager = Aria2cDownloadManager.GetInstance();
+            _manager ??= Aria2cDownloadManager.GetInstance();
             DownloadListView.ItemsSource = _manager.Tasks;
             LoadData();
         }
@@ -246,6 +246,7 @@ namespace ColorVision.Solution.Download
 
         private void PageSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (!IsInitialized) return;
             if (PageSizeComboBox.SelectedItem is ComboBoxItem item && int.TryParse(item.Content.ToString(), out int pageSize))
             {
                 _pageSize = pageSize;

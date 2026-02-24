@@ -221,7 +221,7 @@
                                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Config.LoginResult.User.Id}" Margin="0,0,0,10"/>
                                     
                                     <!-- 用户名 -->
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{x:Static properties:Resources.Username}" FontWeight="SemiBold" Margin="0,0,20,10" Foreground="#666666"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{x:Static properties:Resources.UserName}" FontWeight="SemiBold" Margin="0,0,20,10" Foreground="#666666"/>
                                     <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Config.LoginResult.User.Username}" Margin="0,0,0,10"/>
                                    
                                     

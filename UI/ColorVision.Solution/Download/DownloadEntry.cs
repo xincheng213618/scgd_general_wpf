@@ -30,6 +30,7 @@ namespace ColorVision.Solution.Download
 
         public DateTime CreateTime { get; set; } = DateTime.Now;
 
+        [SugarColumn(IsNullable = true, ColumnDataType = "text")]
         public DateTime? CompleteTime { get; set; }
 
         [SugarColumn(IsNullable = true, ColumnDataType = "text")]

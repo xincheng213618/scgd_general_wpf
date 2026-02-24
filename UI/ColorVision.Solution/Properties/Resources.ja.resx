@@ -294,9 +294,6 @@
   <data name="UserCenter" xml:space="preserve">
     <value>ユーザーセンター</value>
   </data>
-  <data name="Username" xml:space="preserve">
-    <value>ユーザー名</value>
-  </data>
   <data name="Role" xml:space="preserve">
     <value>役割</value>
   </data>
