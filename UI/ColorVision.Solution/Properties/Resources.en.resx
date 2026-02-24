@@ -450,4 +450,7 @@
   <data name="OpenFileQuestion" xml:space="preserve">
     <value>Do you want to open the file?</value>
   </data>
+  <data name="DownloadSettings" xml:space="preserve">
+    <value>Download Settings</value>
+  </data>
 </root>

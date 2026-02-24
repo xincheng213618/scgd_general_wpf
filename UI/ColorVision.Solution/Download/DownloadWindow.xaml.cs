@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
+using ColorVision.UI.PropertyEditor;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -235,6 +236,11 @@ namespace ColorVision.Solution.Download
             if (!System.IO.Directory.Exists(folder))
                 System.IO.Directory.CreateDirectory(folder);
             PlatformHelper.OpenFolder(folder);
+        }
+
+        private void Settings_Click(object sender, RoutedEventArgs e)
+        {
+            new PropertyEditorWindow(DownloadManagerConfig.Instance) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         private void DownloadListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)

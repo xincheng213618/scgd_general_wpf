@@ -1,5 +1,7 @@
 using ColorVision.Common.MVVM;
 using log4net;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SqlSugar;
 using System;
 using System.Collections.Concurrent;
@@ -8,12 +10,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Json;
+using System.Net.WebSockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Threading;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.Solution.Download
 {
@@ -129,8 +130,14 @@ namespace ColorVision.Solution.Download
         private const int RpcPort = 6800;
         private const string RpcSecret = "ColorVisionDL";
         private string RpcUrl => $"http://127.0.0.1:{RpcPort}/jsonrpc";
+        private string WsUrl => $"ws://127.0.0.1:{RpcPort}/jsonrpc";
         private int _rpcRequestId;
         private Timer? _pollTimer;
+
+        // WebSocket state
+        private ClientWebSocket? _webSocket;
+        private CancellationTokenSource? _wsCts;
+        private Task? _wsListenTask;
 
         /// <summary>
         /// Fired when a download task completes (success or failure)
@@ -242,7 +249,7 @@ namespace ColorVision.Solution.Download
                     if (response != null)
                     {
                         log.Info("aria2c RPC daemon started successfully");
-                        StartPolling();
+                        await ConnectWebSocketAsync();
                         return;
                     }
                 }
@@ -256,6 +263,7 @@ namespace ColorVision.Solution.Download
         private void StopAria2cDaemon()
         {
             StopPolling();
+            DisconnectWebSocket();
             lock (_processLock)
             {
                 if (_aria2cProcess != null)
@@ -289,6 +297,200 @@ namespace ColorVision.Solution.Download
             }
         }
 
+        #region WebSocket Event Subscription
+
+        private async Task ConnectWebSocketAsync()
+        {
+            DisconnectWebSocket();
+
+            _wsCts = new CancellationTokenSource();
+            _webSocket = new ClientWebSocket();
+
+            try
+            {
+                await _webSocket.ConnectAsync(new Uri(WsUrl), _wsCts.Token);
+                log.Info("WebSocket connected to aria2c RPC");
+                _wsListenTask = Task.Run(() => WebSocketListenLoop(_wsCts.Token));
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"WebSocket connection failed, falling back to polling: {ex.Message}");
+                StartPolling();
+            }
+        }
+
+        private void DisconnectWebSocket()
+        {
+            try
+            {
+                _wsCts?.Cancel();
+                if (_webSocket != null && _webSocket.State == WebSocketState.Open)
+                {
+                    _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Shutting down", CancellationToken.None)
+                        .Wait(2000);
+                }
+            }
+            catch { }
+            finally
+            {
+                _webSocket?.Dispose();
+                _webSocket = null;
+                _wsCts?.Dispose();
+                _wsCts = null;
+            }
+        }
+
+        private async Task WebSocketListenLoop(CancellationToken ct)
+        {
+            var buffer = new byte[4096];
+            var messageBuffer = new StringBuilder();
+
+            while (!ct.IsCancellationRequested && _webSocket?.State == WebSocketState.Open)
+            {
+                try
+                {
+                    messageBuffer.Clear();
+                    WebSocketReceiveResult result;
+                    do
+                    {
+                        result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                        if (result.MessageType == WebSocketMessageType.Close)
+                            return;
+                        messageBuffer.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
+                    } while (!result.EndOfMessage);
+
+                    string message = messageBuffer.ToString();
+                    HandleWebSocketMessage(message);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    if (!ct.IsCancellationRequested)
+                        log.Debug($"WebSocket receive error: {ex.Message}");
+                    break;
+                }
+            }
+        }
+
+        private void HandleWebSocketMessage(string message)
+        {
+            try
+            {
+                var json = JObject.Parse(message);
+                string? method = json["method"]?.ToString();
+
+                if (method == null) return;
+
+                var gidToken = json["params"]?[0]?["gid"];
+                string? gid = gidToken?.ToString();
+                if (string.IsNullOrEmpty(gid)) return;
+
+                var task = _activeTasks.Values.FirstOrDefault(t => t.Gid == gid);
+                if (task == null) return;
+
+                switch (method)
+                {
+                    case "aria2.onDownloadStart":
+                        _ = Task.Run(() => PollTaskStatus(task));
+                        break;
+                    case "aria2.onDownloadComplete":
+                        _ = Task.Run(() => PollTaskStatus(task));
+                        break;
+                    case "aria2.onDownloadError":
+                        _ = Task.Run(() => PollTaskStatus(task));
+                        break;
+                    case "aria2.onDownloadPause":
+                        _ = Task.Run(() => PollTaskStatus(task));
+                        break;
+                    case "aria2.onDownloadStop":
+                        _ = Task.Run(() => PollTaskStatus(task));
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"WebSocket message handling error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Fetch the latest status of a single task via HTTP RPC and update accordingly
+        /// </summary>
+        private async Task PollTaskStatus(DownloadTask task)
+        {
+            if (string.IsNullOrEmpty(task.Gid)) return;
+
+            try
+            {
+                var status = await RpcCallAsync("aria2.tellStatus",
+                    new object[] { $"token:{RpcSecret}", task.Gid,
+                        new[] { "status", "totalLength", "completedLength", "downloadSpeed", "errorCode", "errorMessage" } });
+
+                if (status == null) return;
+
+                string? rpcStatus = status["result"]?["status"]?.ToString();
+                long totalLength = long.Parse(status["result"]?["totalLength"]?.ToString() ?? "0");
+                long completedLength = long.Parse(status["result"]?["completedLength"]?.ToString() ?? "0");
+                long downloadSpeed = long.Parse(status["result"]?["downloadSpeed"]?.ToString() ?? "0");
+
+                int progress = totalLength > 0 ? (int)(completedLength * 100 / totalLength) : 0;
+                string speedText = DownloadTask.FormatSpeed(downloadSpeed);
+
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    task.ProgressValue = progress;
+                    task.TotalBytes = totalLength;
+                    task.DownloadedBytes = completedLength;
+                    task.SpeedText = speedText;
+                });
+
+                if (rpcStatus == "complete")
+                {
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        task.TotalBytes = totalLength;
+                        task.Status = DownloadStatus.Completed;
+                        task.SpeedText = string.Empty;
+                    });
+                    UpdateEntryCompleted(task);
+                    _activeTasks.TryRemove(task.Id, out _);
+                    DownloadCompleted?.Invoke(this, task);
+                }
+                else if (rpcStatus == "error")
+                {
+                    string? errorMsg = status["result"]?["errorMessage"]?.ToString();
+                    Application.Current?.Dispatcher.BeginInvoke(() =>
+                    {
+                        task.Status = DownloadStatus.Failed;
+                        task.ErrorMessage = errorMsg ?? "Unknown error";
+                        task.SpeedText = string.Empty;
+                    });
+                    UpdateEntryStatus(task.Id, DownloadStatus.Failed, errorMsg);
+                    _activeTasks.TryRemove(task.Id, out _);
+                    DownloadCompleted?.Invoke(this, task);
+                }
+                else if (rpcStatus == "removed" || rpcStatus == "paused")
+                {
+                    Application.Current?.Dispatcher.BeginInvoke(() =>
+                    {
+                        task.Status = DownloadStatus.Paused;
+                        task.SpeedText = string.Empty;
+                    });
+                    UpdateEntryStatus(task.Id, DownloadStatus.Paused);
+                    _activeTasks.TryRemove(task.Id, out _);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Poll status error for task {task.Id}: {ex.Message}");
+            }
+        }
+
+        #endregion
+
         private void StartPolling()
         {
             _pollTimer ??= new Timer(PollCallback, null, 0, 200);
@@ -307,80 +509,12 @@ namespace ColorVision.Solution.Download
                 var activeTasks = _activeTasks.Values.ToArray();
                 if (activeTasks.Length == 0)
                 {
-                    // No active downloads — only stop the polling timer, keep aria2c process alive
-                    // for instant reuse when new downloads are added (avoids slow restart)
                     StopPolling();
                     return;
                 }
                 foreach (var task in activeTasks)
                 {
-                    if (string.IsNullOrEmpty(task.Gid)) continue;
-
-                    try
-                    {
-                        var status = await RpcCallAsync("aria2.tellStatus",
-                            new object[] { $"token:{RpcSecret}", task.Gid,
-                                new[] { "status", "totalLength", "completedLength", "downloadSpeed", "errorCode", "errorMessage" } });
-
-                        if (status == null) continue;
-
-                        var result = status.Value;
-                        string? rpcStatus = result.GetProperty("result").GetProperty("status").GetString();
-                        long totalLength = long.Parse(result.GetProperty("result").GetProperty("totalLength").GetString() ?? "0");
-                        long completedLength = long.Parse(result.GetProperty("result").GetProperty("completedLength").GetString() ?? "0");
-                        long downloadSpeed = long.Parse(result.GetProperty("result").GetProperty("downloadSpeed").GetString() ?? "0");
-
-                        int progress = totalLength > 0 ? (int)(completedLength * 100 / totalLength) : 0;
-                        string speedText = DownloadTask.FormatSpeed(downloadSpeed);
-
-                        Application.Current?.Dispatcher.Invoke(() =>
-                        {
-                            task.ProgressValue = progress;
-                            task.TotalBytes = totalLength;
-                            task.DownloadedBytes = completedLength;
-                            task.SpeedText = speedText;
-                        });
-
-                        if (rpcStatus == "complete")
-                        {
-                            Application.Current?.Dispatcher.Invoke(() =>
-                            {
-                                task.TotalBytes = totalLength;
-                                task.Status = DownloadStatus.Completed;
-                                task.SpeedText = string.Empty;
-                            });
-                            UpdateEntryCompleted(task);
-                            _activeTasks.TryRemove(task.Id, out _);
-                            DownloadCompleted?.Invoke(this, task);
-                        }
-                        else if (rpcStatus == "error")
-                        {
-                            string? errorMsg = result.GetProperty("result").GetProperty("errorMessage").GetString();
-                            Application.Current?.Dispatcher.BeginInvoke(() =>
-                            {
-                                task.Status = DownloadStatus.Failed;
-                                task.ErrorMessage = errorMsg ?? "Unknown error";
-                                task.SpeedText = string.Empty;
-                            });
-                            UpdateEntryStatus(task.Id, DownloadStatus.Failed, errorMsg);
-                            _activeTasks.TryRemove(task.Id, out _);
-                            DownloadCompleted?.Invoke(this, task);
-                        }
-                        else if (rpcStatus == "removed" || rpcStatus == "paused")
-                        {
-                            Application.Current?.Dispatcher.BeginInvoke(() =>
-                            {
-                                task.Status = DownloadStatus.Paused;
-                                task.SpeedText = string.Empty;
-                            });
-                            UpdateEntryStatus(task.Id, DownloadStatus.Paused);
-                            _activeTasks.TryRemove(task.Id, out _);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Debug($"Poll status error for task {task.Id}: {ex.Message}");
-                    }
+                    await PollTaskStatus(task);
                 }
             }
             catch (Exception ex)
@@ -389,23 +523,23 @@ namespace ColorVision.Solution.Download
             }
         }
 
-        private async Task<JsonElement?> RpcCallAsync(string method, object[] parameters)
+        private async Task<JObject?> RpcCallAsync(string method, object[] parameters)
         {
             int id = Interlocked.Increment(ref _rpcRequestId);
-            var request = new
+            var request = new JObject
             {
-                jsonrpc = "2.0",
-                id = id.ToString(),
-                method,
-                @params = parameters
+                ["jsonrpc"] = "2.0",
+                ["id"] = id.ToString(),
+                ["method"] = method,
+                ["params"] = JToken.FromObject(parameters)
             };
 
-            string json = JsonSerializer.Serialize(request);
-            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            string json = request.ToString(Formatting.None);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             using var response = await _httpClient.PostAsync(RpcUrl, content).ConfigureAwait(false);
             string responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-            return JsonSerializer.Deserialize<JsonElement>(responseBody);
+            return JObject.Parse(responseBody);
         }
 
         #endregion
@@ -458,7 +592,7 @@ namespace ColorVision.Solution.Download
             try
             {
                 await EnsureAria2cRunningAsync();
-                StartPolling(); // Wake up polling timer in case it was stopped due to idle
+                StartPolling(); // Fallback polling in case WebSocket is not connected
 
                 Application.Current?.Dispatcher.BeginInvoke(() => task.Status = DownloadStatus.Downloading);
                 UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
@@ -488,7 +622,7 @@ namespace ColorVision.Solution.Download
                 if (response != null)
                 {
                     task.Status = DownloadStatus.Downloading;
-                    string? gid = response.Value.GetProperty("result").GetString();
+                    string? gid = response["result"]?.ToString();
                     task.Gid = gid;
                     _activeTasks[task.Id] = task;
                     log.Info($"Download started via RPC, GID: {gid}, File: {task.FileName}");

@@ -331,6 +331,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 下载设置 的本地化字符串。
+        /// </summary>
+        public static string DownloadSettings {
+            get {
+                return ResourceManager.GetString("DownloadSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 下载链接: 的本地化字符串。
         /// </summary>
         public static string DownloadUrl {

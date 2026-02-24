@@ -36,6 +36,8 @@
                     <Separator Margin="5,0"/>
                     <Button Content="{x:Static properties:Resources.Refresh}" Click="Refresh_Click" Margin="2,0"/>
                     <Button Content="{x:Static properties:Resources.OpenDownloadFolder}" Click="OpenDownloadFolder_Click" Margin="2,0"/>
+                    <Separator Margin="5,0"/>
+                    <Button Content="{x:Static properties:Resources.DownloadSettings}" Click="Settings_Click" Margin="2,0"/>
                 </ToolBar>
             </ToolBarTray>
         </Grid>

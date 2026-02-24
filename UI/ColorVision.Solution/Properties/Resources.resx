@@ -430,4 +430,7 @@
   <data name="OpenFileQuestion" xml:space="preserve">
     <value>是否打开文件？</value>
   </data>
+  <data name="DownloadSettings" xml:space="preserve">
+    <value>下载设置</value>
+  </data>
 </root>
