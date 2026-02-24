@@ -80,4 +80,10 @@
 	  <Folder Include="Editor\Hex\" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="Assets\Tool\aria2c.exe">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>
