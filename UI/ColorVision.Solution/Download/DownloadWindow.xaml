@@ -66,7 +66,7 @@
                                 <Grid Width="160">
                                     <ProgressBar Value="{Binding ProgressValue}" Height="16" Minimum="0" Maximum="100"
                                                  Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisibility}}"/>
-                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"
+                                    <!--<TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"
                                                Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisibility}}">
                                         <TextBlock.Text>
                                             <MultiBinding StringFormat="{}{0}% ({1})">
@@ -74,7 +74,7 @@
                                                 <Binding Path="SpeedText"/>
                                             </MultiBinding>
                                         </TextBlock.Text>
-                                    </TextBlock>
+                                    </TextBlock>-->
                                 </Grid>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>

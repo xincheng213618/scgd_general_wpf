@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.Solution.Download
 {
@@ -278,7 +279,7 @@ namespace ColorVision.Solution.Download
 
         private void StartPolling()
         {
-            _pollTimer ??= new Timer(PollCallback, null, 500, 500);
+            _pollTimer ??= new Timer(PollCallback, null, 0, 200);
         }
 
         private void StopPolling()
@@ -298,7 +299,6 @@ namespace ColorVision.Solution.Download
                     StopAria2cDaemon();
                     return;
                 }
-
                 foreach (var task in activeTasks)
                 {
                     if (string.IsNullOrEmpty(task.Gid)) continue;
@@ -320,9 +320,10 @@ namespace ColorVision.Solution.Download
                         int progress = totalLength > 0 ? (int)(completedLength * 100 / totalLength) : 0;
                         string speedText = DownloadTask.FormatSpeed(downloadSpeed);
 
-                        Application.Current?.Dispatcher.BeginInvoke(() =>
+                        log.Info(Math.Abs(progress));
+                        Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            task.ProgressValue = progress;
+                            task.ProgressValue = Math.Abs(progress);
                             task.TotalBytes = totalLength;
                             task.DownloadedBytes = completedLength;
                             task.SpeedText = speedText;
@@ -330,10 +331,10 @@ namespace ColorVision.Solution.Download
 
                         if (rpcStatus == "complete")
                         {
-                            Application.Current?.Dispatcher.BeginInvoke(() =>
+                            Application.Current?.Dispatcher.Invoke(() =>
                             {
+                                task.TotalBytes = totalLength;
                                 task.Status = DownloadStatus.Completed;
-                                task.ProgressValue = 100;
                                 task.SpeedText = string.Empty;
                             });
                             UpdateEntryCompleted(task);
@@ -432,6 +433,7 @@ namespace ColorVision.Solution.Download
                 CreateTime = entry.CreateTime
             };
 
+            _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
             Application.Current.Dispatcher.Invoke(() => Tasks.Insert(0, task));
 
             _ = StartDownloadAsync(task, authorization);
@@ -472,6 +474,7 @@ namespace ColorVision.Solution.Download
 
                 if (response != null)
                 {
+                    task.Status = DownloadStatus.Downloading;
                     string? gid = response.Value.GetProperty("result").GetString();
                     task.Gid = gid;
                     _activeTasks[task.Id] = task;
@@ -606,19 +609,27 @@ namespace ColorVision.Solution.Download
                         UpdateEntryStatus(entry.Id, DownloadStatus.FileDeleted);
                     }
 
-                    Tasks.Add(new DownloadTask
+                    // 【核心修复】：如果任务正在活跃字典中，直接重用该实例，保持 UI 的 DataBinding 引用不断开
+                    if (_activeTasks.TryGetValue(entry.Id, out var activeTask))
                     {
-                        Id = entry.Id,
-                        Url = entry.Url,
-                        FileName = entry.FileName,
-                        SavePath = entry.SavePath,
-                        Status = status,
-                        TotalBytes = entry.TotalBytes,
-                        DownloadedBytes = entry.DownloadedBytes,
-                        ProgressValue = entry.TotalBytes > 0 ? (int)(entry.DownloadedBytes * 100 / entry.TotalBytes) : 0,
-                        CreateTime = entry.CreateTime,
-                        ErrorMessage = entry.ErrorMessage
-                    });
+                        Tasks.Add(activeTask);
+                    }
+                    else
+                    {
+                        Tasks.Add(new DownloadTask
+                        {
+                            Id = entry.Id,
+                            Url = entry.Url,
+                            FileName = entry.FileName,
+                            SavePath = entry.SavePath,
+                            Status = status,
+                            TotalBytes = entry.TotalBytes,
+                            DownloadedBytes = entry.DownloadedBytes,
+                            ProgressValue = entry.TotalBytes > 0 ? (int)(entry.DownloadedBytes * 100 / entry.TotalBytes) : 0,
+                            CreateTime = entry.CreateTime,
+                            ErrorMessage = entry.ErrorMessage
+                        });
+                    }
                 }
             });
         }
