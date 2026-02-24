@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Solution.Download;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -72,10 +73,15 @@ namespace ColorVision.Update
                 {
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Properties.Resources.SoftwareVersionIdentical);
                 }
+                else if (version.Major == AutoUpdater.CurrentVersion.Major && AutoUpdater.CurrentVersion.Minor == version.Minor && AutoUpdater.CurrentVersion.Build == version.Build)
+                {
+                    Aria2cDownloadManager.GetInstance().AddDownload($"http://xc213618.ddns.me:9999/D%3A/ColorVision/ColorVision-{version}.exe", Aria2cDownloadManager.GetInstance().Config.DefaultDownloadPath, "1:1");
+                    DownloadWindow.ShowInstance();
+                }
                 else
                 {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), ColorVision.Properties.Resources.RollbackRequiresUninstallThenInstallOrRerunPackage);
-                    PlatformHelper.Open($"http://xc213618.ddns.me:9998/upload/ColorVision/History/{version.Major}.{version.Minor}.{version.Build}");
+                    Aria2cDownloadManager.GetInstance().AddDownload($"http://xc213618.ddns.me:9999/D%3A/ColorVision/History/{version.Major}.{version.Minor}/{version.Major}.{version.Minor}.{version.Build}/ColorVision-{version}.exe", Aria2cDownloadManager.GetInstance().Config.DefaultDownloadPath, "1:1");
+                    DownloadWindow.ShowInstance();
                 }
             });
             ContextMenu = new ContextMenu();

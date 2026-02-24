@@ -21,6 +21,8 @@ namespace ColorVision.Solution.Download
         public override string Header => Properties.Resources.DownloadManager;
         public override int Order => 30;
 
+        public override object? Icon => new TextBlock() { FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"), Text = "\uE896" };
+
         public override void Execute()
         {
             DownloadWindow.ShowInstance();
@@ -35,6 +37,7 @@ namespace ColorVision.Solution.Download
             {
                 Header = Properties.Resources.DownloadManager,
                 Order = 100,
+                Icon = new TextBlock() { FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"), Text = "\uE896" },
                 Command = new RelayCommand(a => DownloadWindow.ShowInstance())
             };
             return new[] { menuItem };

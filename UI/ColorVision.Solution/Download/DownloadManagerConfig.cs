@@ -14,7 +14,7 @@ namespace ColorVision.Solution.Download
         [DisplayName("MaxConcurrentTasks")]
         [Description("Maximum number of simultaneous download tasks")]
         public int MaxConcurrentTasks { get => _MaxConcurrentTasks; set { _MaxConcurrentTasks = Math.Max(1, Math.Min(value, 16)); OnPropertyChanged(); } }
-        private int _MaxConcurrentTasks = 3;
+        private int _MaxConcurrentTasks = 5;
 
         [DisplayName("DefaultDownloadPath")]
         [Description("Default directory for saving downloaded files")]
@@ -31,9 +31,6 @@ namespace ColorVision.Solution.Download
         public int SpeedLimitMB { get => _SpeedLimitMB; set { _SpeedLimitMB = Math.Max(1, value); OnPropertyChanged(); } }
         private int _SpeedLimitMB = 100;
 
-        [DisplayName("Authorization")]
-        [Description("Default authorization credentials (user:password)")]
-        public string Authorization { get; set; } = "1:1";
 
         [DisplayName("ShowCompletedNotification")]
         [Description("Show notification dialog when download completes")]
