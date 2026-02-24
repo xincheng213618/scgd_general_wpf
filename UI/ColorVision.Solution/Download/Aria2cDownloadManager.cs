@@ -391,23 +391,9 @@ namespace ColorVision.Solution.Download
                 var task = _activeTasks.Values.FirstOrDefault(t => t.Gid == gid);
                 if (task == null) return;
 
-                switch (method)
+                if (method.StartsWith("aria2.onDownload"))
                 {
-                    case "aria2.onDownloadStart":
-                        _ = Task.Run(() => PollTaskStatus(task));
-                        break;
-                    case "aria2.onDownloadComplete":
-                        _ = Task.Run(() => PollTaskStatus(task));
-                        break;
-                    case "aria2.onDownloadError":
-                        _ = Task.Run(() => PollTaskStatus(task));
-                        break;
-                    case "aria2.onDownloadPause":
-                        _ = Task.Run(() => PollTaskStatus(task));
-                        break;
-                    case "aria2.onDownloadStop":
-                        _ = Task.Run(() => PollTaskStatus(task));
-                        break;
+                    _ = Task.Run(() => PollTaskStatus(task));
                 }
             }
             catch (Exception ex)
@@ -432,9 +418,9 @@ namespace ColorVision.Solution.Download
                 if (status == null) return;
 
                 string? rpcStatus = status["result"]?["status"]?.ToString();
-                long totalLength = long.Parse(status["result"]?["totalLength"]?.ToString() ?? "0");
-                long completedLength = long.Parse(status["result"]?["completedLength"]?.ToString() ?? "0");
-                long downloadSpeed = long.Parse(status["result"]?["downloadSpeed"]?.ToString() ?? "0");
+                long.TryParse(status["result"]?["totalLength"]?.ToString(), out long totalLength);
+                long.TryParse(status["result"]?["completedLength"]?.ToString(), out long completedLength);
+                long.TryParse(status["result"]?["downloadSpeed"]?.ToString(), out long downloadSpeed);
 
                 int progress = totalLength > 0 ? (int)(completedLength * 100 / totalLength) : 0;
                 string speedText = DownloadTask.FormatSpeed(downloadSpeed);
