@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -252,8 +251,15 @@ namespace ColorVision.Solution.Download
                     {
                         if (!_aria2cProcess.HasExited)
                         {
-                            // Try graceful shutdown via RPC first
-                            try { _ = RpcCallAsync("aria2.shutdown", new object[] { $"token:{RpcSecret}" }).Result; }
+                            // Try graceful shutdown via RPC on a thread pool thread to avoid deadlock
+                            try
+                            {
+                                Task.Run(async () =>
+                                {
+                                    try { await RpcCallAsync("aria2.shutdown", new object[] { $"token:{RpcSecret}" }); }
+                                    catch { }
+                                }).Wait(2000);
+                            }
                             catch { }
 
                             if (!_aria2cProcess.WaitForExit(3000))
@@ -494,7 +500,7 @@ namespace ColorVision.Solution.Download
         {
             if (!string.IsNullOrEmpty(task.Gid))
             {
-                _ = RpcCallAsync("aria2.remove", new object[] { $"token:{RpcSecret}", task.Gid });
+                TryRemoveGidAsync(task.Gid);
             }
             _activeTasks.TryRemove(task.Id, out _);
             Application.Current?.Dispatcher.BeginInvoke(() =>
@@ -524,9 +530,7 @@ namespace ColorVision.Solution.Download
             if (task != null)
             {
                 if (!string.IsNullOrEmpty(task.Gid))
-                {
-                    try { _ = RpcCallAsync("aria2.remove", new object[] { $"token:{RpcSecret}", task.Gid }); } catch { }
-                }
+                    TryRemoveGidAsync(task.Gid);
                 _activeTasks.TryRemove(task.Id, out _);
                 Application.Current.Dispatcher.Invoke(() => Tasks.Remove(task));
             }
@@ -543,9 +547,7 @@ namespace ColorVision.Solution.Download
                 foreach (var task in toRemove)
                 {
                     if (!string.IsNullOrEmpty(task.Gid))
-                    {
-                        try { _ = RpcCallAsync("aria2.remove", new object[] { $"token:{RpcSecret}", task.Gid }); } catch { }
-                    }
+                        TryRemoveGidAsync(task.Gid);
                     _activeTasks.TryRemove(task.Id, out _);
                     Tasks.Remove(task);
                 }
@@ -559,12 +561,22 @@ namespace ColorVision.Solution.Download
             foreach (var task in _activeTasks.Values)
             {
                 if (!string.IsNullOrEmpty(task.Gid))
-                {
-                    try { _ = RpcCallAsync("aria2.remove", new object[] { $"token:{RpcSecret}", task.Gid }); } catch { }
-                }
+                    TryRemoveGidAsync(task.Gid);
             }
             _activeTasks.Clear();
             Application.Current.Dispatcher.Invoke(() => Tasks.Clear());
+        }
+
+        /// <summary>
+        /// Best-effort removal of a download from aria2c via RPC
+        /// </summary>
+        private void TryRemoveGidAsync(string gid)
+        {
+            Task.Run(async () =>
+            {
+                try { await RpcCallAsync("aria2.remove", new object[] { $"token:{RpcSecret}", gid }); }
+                catch (Exception ex) { log.Debug($"RPC remove failed for GID {gid}: {ex.Message}"); }
+            });
         }
 
         public void LoadRecords(string? searchKeyword = null, int pageSize = 20, int page = 1)

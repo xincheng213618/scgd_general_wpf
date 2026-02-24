@@ -106,10 +106,17 @@ namespace ColorVision.Solution.Download
                         log4net.LogManager.GetLogger(nameof(DownloadWindow)).Error($"Auto-run failed: {ex.Message}");
                     }
                 }
+                // Skip notification when auto-run is enabled (file already opened)
+                Application.Current?.Dispatcher.BeginInvoke(() => LoadData());
+                return;
             }
 
             // Show notification if enabled
-            if (!config.ShowCompletedNotification) return;
+            if (!config.ShowCompletedNotification)
+            {
+                Application.Current?.Dispatcher.BeginInvoke(() => LoadData());
+                return;
+            }
 
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
