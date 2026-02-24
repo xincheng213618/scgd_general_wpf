@@ -105,6 +105,11 @@ namespace ColorVision.Solution.Download
         private readonly SemaphoreSlim _semaphore;
         private readonly string _aria2cPath;
 
+        /// <summary>
+        /// Fired when a download task completes (success or failure)
+        /// </summary>
+        public event EventHandler<DownloadTask>? DownloadCompleted;
+
         public DownloadManagerConfig Config => DownloadManagerConfig.Instance;
 
         private Aria2cDownloadManager()
@@ -195,13 +200,17 @@ namespace ColorVision.Solution.Download
             }
             catch (OperationCanceledException)
             {
-                task.Status = DownloadStatus.Paused;
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    task.Status = DownloadStatus.Paused;
+                    task.SpeedText = string.Empty;
+                });
                 UpdateEntryStatus(task.Id, DownloadStatus.Paused);
                 return;
             }
             try
             {
-                task.Status = DownloadStatus.Downloading;
+                Application.Current?.Dispatcher.BeginInvoke(() => task.Status = DownloadStatus.Downloading);
                 _activeTasks[task.Id] = task;
 
                 UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
@@ -211,15 +220,24 @@ namespace ColorVision.Solution.Download
             }
             catch (OperationCanceledException)
             {
-                task.Status = DownloadStatus.Paused;
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    task.Status = DownloadStatus.Paused;
+                    task.SpeedText = string.Empty;
+                });
                 UpdateEntryStatus(task.Id, DownloadStatus.Paused);
             }
             catch (Exception ex)
             {
                 log.Error($"Download failed: {ex.Message}", ex);
-                task.Status = DownloadStatus.Failed;
-                task.ErrorMessage = ex.Message;
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    task.Status = DownloadStatus.Failed;
+                    task.ErrorMessage = ex.Message;
+                    task.SpeedText = string.Empty;
+                });
                 UpdateEntryStatus(task.Id, DownloadStatus.Failed, ex.Message);
+                DownloadCompleted?.Invoke(this, task);
             }
             finally
             {
@@ -233,7 +251,7 @@ namespace ColorVision.Solution.Download
             string dir = Path.GetDirectoryName(task.SavePath) ?? Config.DefaultDownloadPath;
             string fileName = Path.GetFileName(task.SavePath);
 
-            string args = $"\"{task.Url}\" -d \"{dir}\" -o \"{fileName}\" -c --auto-file-renaming=false --allow-overwrite=true --summary-interval=1";
+            string args = $"\"{task.Url}\" -d \"{dir}\" -o \"{fileName}\" -c --auto-file-renaming=false --allow-overwrite=true --summary-interval=1 --enable-color=false";
 
             if (Config.EnableSpeedLimit)
             {
@@ -282,28 +300,45 @@ namespace ColorVision.Solution.Download
 
             if (process.ExitCode == 0)
             {
-                task.Status = DownloadStatus.Completed;
-                task.ProgressValue = 100;
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    task.Status = DownloadStatus.Completed;
+                    task.ProgressValue = 100;
+                    task.SpeedText = string.Empty;
+                });
                 UpdateEntryCompleted(task);
+                DownloadCompleted?.Invoke(this, task);
             }
             else
             {
                 string error = !string.IsNullOrWhiteSpace(errorOutput) ? errorOutput.Trim() : $"aria2c exited with code {process.ExitCode}";
-                task.Status = DownloadStatus.Failed;
-                task.ErrorMessage = error;
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    task.Status = DownloadStatus.Failed;
+                    task.ErrorMessage = error;
+                    task.SpeedText = string.Empty;
+                });
                 UpdateEntryStatus(task.Id, DownloadStatus.Failed, error);
+                DownloadCompleted?.Invoke(this, task);
             }
         }
 
         private void ParseAria2cOutput(Process process, DownloadTask task)
         {
+            // aria2c outputs progress using \r (carriage return) to overwrite the same line.
+            // ReadLine() waits for \n which never comes during progress updates.
+            // We must read char-by-char and treat both \r and \n as line terminators.
             var sizeRegex = new Regex(@"\[#\w+\s+(\d+(?:\.\d+)?)(Ki|Mi|Gi)?B/(\d+(?:\.\d+)?)(Ki|Mi|Gi)?B", RegexOptions.Compiled);
             var progressRegex = new Regex(@"\((\d+)%\)", RegexOptions.Compiled);
             var speedRegex = new Regex(@"DL:(\d+(?:\.\d+)?)(Ki|Mi|Gi)?B", RegexOptions.Compiled);
 
             try
             {
-                while (!process.StandardOutput.EndOfStream)
+                var reader = process.StandardOutput;
+                var sb = new System.Text.StringBuilder(256);
+                var buffer = new char[1];
+
+                while (reader.Read(buffer, 0, 1) > 0)
                 {
                     if (task.CancellationTokenSource?.IsCancellationRequested == true)
                     {
@@ -312,33 +347,42 @@ namespace ColorVision.Solution.Download
                         return;
                     }
 
-                    string? line = process.StandardOutput.ReadLine();
-                    if (string.IsNullOrEmpty(line)) continue;
-
-                    var progressMatch = progressRegex.Match(line);
-                    if (progressMatch.Success && int.TryParse(progressMatch.Groups[1].Value, out int progress))
+                    char c = buffer[0];
+                    if (c == '\r' || c == '\n')
                     {
-                        Application.Current?.Dispatcher.BeginInvoke(() => task.ProgressValue = progress);
-                    }
+                        if (sb.Length == 0) continue;
+                        string line = sb.ToString();
+                        sb.Clear();
 
-                    var sizeMatch = sizeRegex.Match(line);
-                    if (sizeMatch.Success)
-                    {
-                        long downloaded = ParseSizeToBytes(sizeMatch.Groups[1].Value, sizeMatch.Groups[2].Value);
-                        long total = ParseSizeToBytes(sizeMatch.Groups[3].Value, sizeMatch.Groups[4].Value);
-                        Application.Current?.Dispatcher.BeginInvoke(() =>
+                        var progressMatch = progressRegex.Match(line);
+                        if (progressMatch.Success && int.TryParse(progressMatch.Groups[1].Value, out int progress))
                         {
-                            task.DownloadedBytes = downloaded;
-                            task.TotalBytes = total;
-                        });
-                    }
+                            Application.Current?.Dispatcher.BeginInvoke(() => task.ProgressValue = progress);
+                        }
 
-                    var speedMatch = speedRegex.Match(line);
-                    if (speedMatch.Success)
+                        var sizeMatch = sizeRegex.Match(line);
+                        if (sizeMatch.Success)
+                        {
+                            long downloaded = ParseSizeToBytes(sizeMatch.Groups[1].Value, sizeMatch.Groups[2].Value);
+                            long total = ParseSizeToBytes(sizeMatch.Groups[3].Value, sizeMatch.Groups[4].Value);
+                            Application.Current?.Dispatcher.BeginInvoke(() =>
+                            {
+                                task.DownloadedBytes = downloaded;
+                                task.TotalBytes = total;
+                            });
+                        }
+
+                        var speedMatch = speedRegex.Match(line);
+                        if (speedMatch.Success)
+                        {
+                            long speed = ParseSizeToBytes(speedMatch.Groups[1].Value, speedMatch.Groups[2].Value);
+                            string speedText = FormatSpeed(speed);
+                            Application.Current?.Dispatcher.BeginInvoke(() => task.SpeedText = speedText);
+                        }
+                    }
+                    else
                     {
-                        long speed = ParseSizeToBytes(speedMatch.Groups[1].Value, speedMatch.Groups[2].Value);
-                        string speedText = FormatSpeed(speed);
-                        Application.Current?.Dispatcher.BeginInvoke(() => task.SpeedText = speedText);
+                        sb.Append(c);
                     }
                 }
             }

@@ -69,13 +69,43 @@ namespace ColorVision.Solution.Download
         {
             InitializeComponent();
             this.ApplyCaption();
+            Closed += (s, e) =>
+            {
+                if (_manager != null)
+                    _manager.DownloadCompleted -= OnDownloadCompleted;
+            };
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
             _manager ??= Aria2cDownloadManager.GetInstance();
+            _manager.DownloadCompleted += OnDownloadCompleted;
             DownloadListView.ItemsSource = _manager.Tasks;
             LoadData();
+        }
+
+        private void OnDownloadCompleted(object? sender, DownloadTask task)
+        {
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                if (task.Status == DownloadStatus.Completed)
+                {
+                    MessageBox.Show(
+                        string.Format(Properties.Resources.DownloadCompletedMessage, task.FileName),
+                        Properties.Resources.DownloadManager,
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                else if (task.Status == DownloadStatus.Failed)
+                {
+                    MessageBox.Show(
+                        string.Format(Properties.Resources.DownloadFailedMessage, task.FileName, task.ErrorMessage),
+                        Properties.Resources.DownloadManager,
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
+                LoadData();
+            });
         }
 
         private void LoadData()

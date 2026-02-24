@@ -441,4 +441,10 @@
   <data name="FileDeleted" xml:space="preserve">
     <value>File Deleted</value>
   </data>
+  <data name="DownloadCompletedMessage" xml:space="preserve">
+    <value>File "{0}" download completed</value>
+  </data>
+  <data name="DownloadFailedMessage" xml:space="preserve">
+    <value>File "{0}" download failed: {1}</value>
+  </data>
 </root>
