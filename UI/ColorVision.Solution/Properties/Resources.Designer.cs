@@ -295,6 +295,24 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 文件 &quot;{0}&quot; 下载完成 的本地化字符串。
+        /// </summary>
+        public static string DownloadCompletedMessage {
+            get {
+                return ResourceManager.GetString("DownloadCompletedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件 &quot;{0}&quot; 下载失败: {1} 的本地化字符串。
+        /// </summary>
+        public static string DownloadFailedMessage {
+            get {
+                return ResourceManager.GetString("DownloadFailedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 下载中 的本地化字符串。
         /// </summary>
         public static string Downloading {
@@ -372,18 +390,6 @@ namespace ColorVision.Solution.Properties {
         public static string FileDeleted {
             get {
                 return ResourceManager.GetString("FileDeleted", resourceCulture);
-            }
-        }
-        
-        public static string DownloadCompletedMessage {
-            get {
-                return ResourceManager.GetString("DownloadCompletedMessage", resourceCulture);
-            }
-        }
-        
-        public static string DownloadFailedMessage {
-            get {
-                return ResourceManager.GetString("DownloadFailedMessage", resourceCulture);
             }
         }
         
