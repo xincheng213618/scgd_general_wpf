@@ -189,7 +189,14 @@ namespace ColorVision.Solution.Download
         {
             if (DownloadListView.SelectedItem is DownloadTask task && System.IO.File.Exists(task.SavePath))
             {
-                Process.Start(new ProcessStartInfo(task.SavePath) { UseShellExecute = true });
+                try
+                {
+                    Process.Start(new ProcessStartInfo(task.SavePath) { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 

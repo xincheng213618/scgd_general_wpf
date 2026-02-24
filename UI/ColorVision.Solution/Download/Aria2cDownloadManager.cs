@@ -188,11 +188,20 @@ namespace ColorVision.Solution.Download
 
         private async Task StartDownloadAsync(DownloadTask task, string? authorization = null)
         {
-            await _semaphore.WaitAsync();
+            task.CancellationTokenSource = new CancellationTokenSource();
+            try
+            {
+                await _semaphore.WaitAsync(task.CancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                task.Status = DownloadStatus.Paused;
+                UpdateEntryStatus(task.Id, DownloadStatus.Paused);
+                return;
+            }
             try
             {
                 task.Status = DownloadStatus.Downloading;
-                task.CancellationTokenSource = new CancellationTokenSource();
                 _activeTasks[task.Id] = task;
 
                 UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
@@ -257,13 +266,15 @@ namespace ColorVision.Solution.Download
             process.Start();
 
             var outputTask = Task.Run(() => ParseAria2cOutput(process, task));
-            var errorOutput = await process.StandardError.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
 
-            await outputTask;
+            await Task.WhenAll(outputTask, errorTask);
+            string errorOutput = await errorTask;
 
             if (task.CancellationTokenSource?.IsCancellationRequested == true)
             {
-                try { if (!process.HasExited) process.Kill(); } catch { }
+                try { if (!process.HasExited) process.Kill(); }
+                catch (InvalidOperationException) { /* process already exited */ }
                 throw new OperationCanceledException();
             }
 
@@ -296,7 +307,8 @@ namespace ColorVision.Solution.Download
                 {
                     if (task.CancellationTokenSource?.IsCancellationRequested == true)
                     {
-                        try { if (!process.HasExited) process.Kill(); } catch { }
+                        try { if (!process.HasExited) process.Kill(); }
+                        catch (InvalidOperationException) { /* process already exited */ }
                         return;
                     }
 
