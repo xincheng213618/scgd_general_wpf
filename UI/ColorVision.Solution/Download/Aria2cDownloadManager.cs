@@ -335,10 +335,10 @@ namespace ColorVision.Solution.Download
             try
             {
                 var reader = process.StandardOutput;
-                var sb = new System.Text.StringBuilder(256);
-                var buffer = new char[1];
+                var sb = new System.Text.StringBuilder();
+                int ch;
 
-                while (reader.Read(buffer, 0, 1) > 0)
+                while ((ch = reader.Read()) != -1)
                 {
                     if (task.CancellationTokenSource?.IsCancellationRequested == true)
                     {
@@ -347,8 +347,7 @@ namespace ColorVision.Solution.Download
                         return;
                     }
 
-                    char c = buffer[0];
-                    if (c == '\r' || c == '\n')
+                    if (ch == '\r' || ch == '\n')
                     {
                         if (sb.Length == 0) continue;
                         string line = sb.ToString();
@@ -382,7 +381,7 @@ namespace ColorVision.Solution.Download
                     }
                     else
                     {
-                        sb.Append(c);
+                        sb.Append((char)ch);
                     }
                 }
             }

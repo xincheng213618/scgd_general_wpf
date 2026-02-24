@@ -79,6 +79,7 @@ namespace ColorVision.Solution.Download
         private void Window_Initialized(object sender, EventArgs e)
         {
             _manager ??= Aria2cDownloadManager.GetInstance();
+            _manager.DownloadCompleted -= OnDownloadCompleted;
             _manager.DownloadCompleted += OnDownloadCompleted;
             DownloadListView.ItemsSource = _manager.Tasks;
             LoadData();
