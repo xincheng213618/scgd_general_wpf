@@ -93,13 +93,6 @@
                             <Grid Grid.Row="1" Margin="0,4,0,0"
                                   Visibility="{Binding IsActiveDownloading, Converter={StaticResource BoolToVisibility}}">
                                 <ProgressBar Value="{Binding ProgressValue}" Height="16" Minimum="0" Maximum="100"/>
-                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10">
-                                    <TextBlock.Text>
-                                        <MultiBinding StringFormat="{}{0}%">
-                                            <Binding Path="ProgressValue"/>
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
                             </Grid>
 
                             <!-- Row 2: Speed (visible when downloading) -->
