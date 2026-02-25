@@ -35,7 +35,7 @@ namespace ColorVision.Solution.Download
         [DisplayName("ShowCompletedNotification")]
         [Description("Show notification dialog when download completes")]
         public bool ShowCompletedNotification { get => _ShowCompletedNotification; set { _ShowCompletedNotification = value; OnPropertyChanged(); } }
-        private bool _ShowCompletedNotification = true;
+        private bool _ShowCompletedNotification;
 
         [DisplayName("RunFileAfterDownload")]
         [Description("Automatically run/open file after download completes")]

@@ -252,7 +252,6 @@
 
 	<ItemGroup>
 	  <Folder Include="Services\Devices\SMU\Job\" />
-	  <Folder Include="ToolPlugins\" />
 	</ItemGroup>
 
 </Project>
