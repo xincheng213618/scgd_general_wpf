@@ -339,4 +339,7 @@
   <data name="RoleList" xml:space="preserve">
     <value>Liste des personnages</value>
   </data>
+  <data name="UserName" xml:space="preserve">
+    <value>nom d'utilisateur:</value>
+  </data>
 </root>

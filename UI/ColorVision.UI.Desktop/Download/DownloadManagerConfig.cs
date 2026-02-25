@@ -4,7 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System;
 
-namespace ColorVision.Solution.Download
+namespace ColorVision.UI.Desktop.Download
 {
     [DisplayName("DownloadManagerConfiguration")]
     public class DownloadManagerConfig : ViewModelBase, IConfig

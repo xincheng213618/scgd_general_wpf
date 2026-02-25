@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Solution.Download;
+using ColorVision.UI.Desktop.Download;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

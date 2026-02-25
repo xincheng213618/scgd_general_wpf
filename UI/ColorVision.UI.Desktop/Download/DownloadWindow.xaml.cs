@@ -2,17 +2,14 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Menus;
-using ColorVision.UI.PropertyEditor;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Solution.Download
+namespace ColorVision.UI.Desktop.Download
 {
     public class ExportDownloadWindow : MenuItemBase
     {
@@ -91,6 +88,13 @@ namespace ColorVision.Solution.Download
 
         private void OnDownloadCompleted(object? sender, DownloadTask task)
         {
+            // Skip global notification for tasks with per-task callback (e.g., programmatic downloads like auto-update)
+            if (task.OnCompletedCallback != null)
+            {
+                Application.Current?.Dispatcher.BeginInvoke(() => LoadData());
+                return;
+            }
+
             var config = DownloadManagerConfig.Instance;
 
             // Auto-run file after download
@@ -110,7 +114,6 @@ namespace ColorVision.Solution.Download
                         log4net.LogManager.GetLogger(nameof(DownloadWindow)).Error($"Auto-run failed: {ex.Message}");
                     }
                 }
-                // Skip notification when auto-run is enabled (file already opened)
                 Application.Current?.Dispatcher.BeginInvoke(() => LoadData());
                 return;
             }
@@ -177,7 +180,7 @@ namespace ColorVision.Solution.Download
         private void BtnAddUrl_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new AddDownloadDialog { Owner = this };
-            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.DownloadUrl))
+            if (dialog.ShowDialog() == true && dialog.DownloadUrls.Length > 0)
             {
                 string? auth = null;
                 if (!string.IsNullOrWhiteSpace(dialog.UserName) && !string.IsNullOrWhiteSpace(dialog.Password))
@@ -185,7 +188,10 @@ namespace ColorVision.Solution.Download
                     auth = $"{dialog.UserName}:{dialog.Password}";
                 }
                 string? savePath = !string.IsNullOrWhiteSpace(dialog.SaveDirectory) ? dialog.SaveDirectory : null;
-                _manager.AddDownload(dialog.DownloadUrl, savePath, auth);
+                foreach (var url in dialog.DownloadUrls)
+                {
+                    _manager.AddDownload(url, savePath, auth);
+                }
                 LoadData();
             }
         }

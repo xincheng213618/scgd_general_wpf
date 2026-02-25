@@ -1,8 +1,7 @@
-﻿#pragma warning disable CS8604,CA1822
-using ColorVision.Common.MVVM;
-using ColorVision.Properties;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.Desktop.Download;
 using log4net;
 using System;
 using System.ComponentModel;
@@ -14,7 +13,6 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -43,7 +41,7 @@ namespace ColorVision.Update
     }
 
 
-    public class AutoUpdater : ViewModelBase,IUpdate
+    public class AutoUpdater : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
         private static AutoUpdater _instance;
@@ -67,24 +65,40 @@ namespace ColorVision.Update
 
         public RelayCommand UpdateCommand { get; set; }
 
-
         public static Version? CurrentVersion { get => Assembly.GetExecutingAssembly().GetName().Version; }
 
         public void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
+
         public void Update(Version Version, string DownloadPath,bool IsIncrement = false)
         {
-            CancellationTokenSource _cancellationTokenSource = new();
-            WindowUpdate windowUpdate = new WindowUpdate(this) { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            windowUpdate.Title = $"Downding {Version} {(IsIncrement? "Incremental" : "")}Update";
-            windowUpdate.Closed += (s, e) =>
+            string downloadUrl;
+            string filePath;
+
+            if (IsIncrement)
             {
-                _cancellationTokenSource.Cancel();
+                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{Version}].cvx";
+                filePath = Path.Combine(DownloadPath, $"ColorVision-Update-[{Version}].cvx");
+            }
+            else
+            {
+                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision-{Version}.exe";
+                filePath = Path.Combine(DownloadPath, $"ColorVision-{Version}.exe");
+            }
+            Action<DownloadTask>? taskCallback;
+            taskCallback = task =>
+            {
+                if (task.Status == DownloadStatus.Completed)
+                {
+                    UpdateApplication(task.SavePath, IsIncrement);
+                }
+                else
+                {
+                    log.Error($"Download failed via IDownloadService: {downloadUrl}");
+                }
             };
-            SpeedValue = string.Empty;
-            RemainingTimeValue = string.Empty;
-            ProgressValue = 0;
-            Task.Run(() => DownloadAndUpdate(Version, DownloadPath, _cancellationTokenSource.Token, IsIncrement));
-            windowUpdate.Show();
+            string auth = "1:1";
+            DownloadWindow.ShowInstance();
+            Aria2cDownloadManager.GetInstance().AddDownload(downloadUrl, DownloadPath, "1:1", taskCallback);
         }
 
         public async Task ForceUpdate()
@@ -305,43 +319,12 @@ namespace ColorVision.Update
             return new Version(versionString.Trim());
         }
 
-        public int ProgressValue { get => _ProgressValue; set { _ProgressValue = value; OnPropertyChanged(); } }
-        private int _ProgressValue;
-
-        public string SpeedValue { get => _SpeedValue; set { _SpeedValue = value; OnPropertyChanged(); } }
-        private string _SpeedValue;
-
-        public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; OnPropertyChanged(); } }
-        private string _RemainingTimeValue;
-
-        public string DownloadTile { get => _DownloadTile; set{ _DownloadTile = value; OnPropertyChanged(); } }
-        private string _DownloadTile = Resources.ColorVisionUpdater;
-
-
-        private async Task DownloadAndUpdate(Version latestVersion, string downloadPath, CancellationToken cancellationToken, bool isIncrement = false)
-        {
-            string downloadUrl;
-            string filePath;
-
-            if (isIncrement)
-            {
-                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{latestVersion}].cvx";
-                filePath = Path.Combine(downloadPath, $"ColorVision-Update-[{latestVersion}].cvx");
-            }
-            else
-            {
-                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision-{latestVersion}.exe";
-                filePath = Path.Combine(downloadPath, $"ColorVision-{latestVersion}.exe");
-            }
-
-            await DownloadFileAsync(downloadUrl, filePath, cancellationToken);
-            UpdateApplication(filePath, isIncrement);
-        }
-
         private void UpdateApplication(string downloadPath, bool isIncrement)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
+                ConfigHandler.GetInstance().SaveConfigs();
+
                 if (isIncrement)
                 {
                     RestartIsIncrementApplication(downloadPath);
@@ -353,77 +336,10 @@ namespace ColorVision.Update
             });
         }
 
-        private async Task DownloadFileAsync(string url, string downloadPath, CancellationToken cancellationToken)
-        {
-            using var client = new HttpClient();
-
-            string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization));
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-
-            var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}");
-                return;
-            }
-
-            double totalBytes = response.Content.Headers.ContentLength ?? -1L;
-            double totalReadBytes = 0L;
-            var buffer = new byte[8192];
-            var isMoreToRead = true;
-
-            using var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None);
-            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
-
-            do
-            {
-                var readBytes = await stream.ReadAsync(buffer, cancellationToken);
-                if (readBytes == 0)
-                {
-                    isMoreToRead = false;
-                }
-                else
-                {
-                    await fileStream.WriteAsync(buffer.AsMemory(0, readBytes), cancellationToken);
-                    totalReadBytes += readBytes;
-
-                    int progressPercentage = totalBytes != -1L ? (int)((totalReadBytes * 100) / totalBytes) : -1;
-                    ProgressValue = progressPercentage;
-
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        /// 取消下载后删除未下载的文件
-                        File.Delete(downloadPath);
-                        return;
-                    }
-
-                    if (stopwatch.ElapsedMilliseconds > 200)
-                    {
-                        double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
-                        SpeedValue = $"{Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s   {totalReadBytes / 1024 / 1024:F2} MB/{totalBytes / 1024 / 1024:F2} MB";
-
-                        if (totalBytes != -1L)
-                        {
-                            double remainingBytes = totalBytes - totalReadBytes;
-                            double remainingTime = remainingBytes / speed;
-                            RemainingTimeValue = $"{Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
-                        }
-                    }
-                }
-            } while (isMoreToRead);
-
-            stopwatch.Stop();
-        }
-
 
         public static void RestartIsIncrementApplication(string downloadPath)
         {
             // 保存数据库配置
-            ConfigHandler.GetInstance().SaveConfigs();
             try
             {
                 // 解压缩 ZIP 文件到临时目录
@@ -482,15 +398,11 @@ del ""%~f0"" & exit
 
         public static void RestartApplication(string downloadPath)
         {
-            // 保存数据库配置
-            ConfigHandler.GetInstance().SaveConfigs();
-
-
-            // 启动新的实例
             ProcessStartInfo startInfo = new();
             startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
             startInfo.FileName = downloadPath;
+
             if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
             {
                 startInfo.Verb = "runas"; // 请求管理员权限

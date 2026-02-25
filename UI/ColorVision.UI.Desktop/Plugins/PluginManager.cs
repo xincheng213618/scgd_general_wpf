@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
+using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Plugins;
 using log4net;
 using Microsoft.Win32;
@@ -58,7 +59,6 @@ namespace ColorVision.UI.Desktop.Plugins
         public RelayCommand OpenViewDllViersionCommand { get; set; }
         public RelayCommand RestartCommand { get; set; }
 
-        private DownloadFile DownloadFile { get; set; }
         // 在 PluginLoader 类中添加
         public RelayCommand UpdateAllCommand { get; set; }
 
@@ -88,7 +88,6 @@ namespace ColorVision.UI.Desktop.Plugins
             OpenStoreCommand = new RelayCommand(a => OpenStore());
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
             DownloadPackageCommand = new RelayCommand(a => DownloadPackage());
-            DownloadFile = new DownloadFile();
             EditConfigCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             OpenViewDllViersionCommand = new RelayCommand(a => OpenViewDllViersion());
             RestartCommand = new RelayCommand(a => Restart());
@@ -108,20 +107,62 @@ namespace ColorVision.UI.Desktop.Plugins
                 $"检测到 {pluginsToUpdate.Count} 个插件有可用更新，是否全部更新？", 
                 "一键更新", 
                 MessageBoxButton.YesNo, 
-                MessageBoxImage.Question) == MessageBoxResult.Yes)
+                MessageBoxImage.Question) != MessageBoxResult.Yes)
             {
-                foreach (var plugin in pluginsToUpdate)
+                return;
+            }
+
+            string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+            var manager = Aria2cDownloadManager.GetInstance();
+            string auth = DownloadFileConfig.Instance.Authorization;
+
+            // Track all download tasks and their completed file paths
+            int totalCount = pluginsToUpdate.Count;
+            int completedCount = 0;
+            var completedPaths = new System.Collections.Concurrent.ConcurrentBag<string>();
+            object lockObj = new();
+
+            DownloadWindow.ShowInstance();
+
+            foreach (var plugin in pluginsToUpdate)
+            {
+                string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{plugin.PackageName}/{plugin.PackageName}-{plugin.LastVersion}.cvxp";
+
+                manager.AddDownload(url, downloadDir, auth, task =>
                 {
-                    try
+                    if (task.Status == DownloadStatus.Completed)
                     {
-                        // 异步调用，避免阻塞UI
-                        Application.Current.Dispatcher.InvokeAsync(() => plugin.Update());
+                        completedPaths.Add(task.SavePath);
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        log.Error($"更新插件 {plugin.Name} 时发生错误: {ex.Message}", ex);
+                        log.Error($"UpdateAll: Download failed for {plugin.PackageName}: {task.ErrorMessage}");
                     }
-                }
+
+                    int current;
+                    lock (lockObj)
+                    {
+                        completedCount++;
+                        current = completedCount;
+                    }
+
+                    // When all downloads have finished (success or failure), apply updates in batch
+                    if (current == totalCount)
+                    {
+                        var paths = completedPaths.ToArray();
+                        if (paths.Length > 0)
+                        {
+                            Application.Current?.Dispatcher.Invoke(() =>
+                            {
+                                PluginUpdater.UpdatePlugin(paths);
+                            });
+                        }
+                        else
+                        {
+                            log.Warn("UpdateAll: All downloads failed, no plugins to update.");
+                        }
+                    }
+                });
             }
         }
 
@@ -144,8 +185,21 @@ namespace ColorVision.UI.Desktop.Plugins
         public async void DownloadPackage()
         {
             string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath + SearchName + "/LATEST_RELEASE";
-            DownloadFile.DownloadTile = ColorVision.UI.Properties.Resources.Download + SearchName;
-            Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
+
+            Version version;
+            try
+            {
+                using var httpClient = new System.Net.Http.HttpClient();
+                var byteArray = System.Text.Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization);
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                string versionString = await httpClient.GetStringAsync(LatestReleaseUrl);
+                version = new Version(versionString.Trim());
+            }
+            catch
+            {
+                version = new Version();
+            }
+
             if (version == new Version())
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(UI.Properties.Resources.ProjectNotFound, SearchName));
@@ -156,46 +210,26 @@ namespace ColorVision.UI.Desktop.Plugins
             {
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(UI.Properties.Resources.FoundProjectDownloadConfirm, SearchName, $"{ColorVision.UI.Properties.Resources.Version}{version}"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
-                    string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.cvxp";
+                    string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
                     string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{SearchName}/{SearchName}-{version}.cvxp";
-                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner };
-                    if (File.Exists(downloadPath))
+
+                    DownloadWindow.ShowInstance();
+                    Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>
                     {
-                        File.Delete(downloadPath);
-                    }
-                    if (!File.Exists(downloadPath))
-                    {
-                        windowUpdate.Show();
-                    }
-                    Task.Run(async () =>
-                    {
-                        if (!File.Exists(downloadPath))
+                        if (task.Status == DownloadStatus.Completed)
                         {
-                            CancellationTokenSource _cancellationTokenSource = new();
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher.Invoke(() =>
                             {
-                                windowUpdate.Show();
+                                PluginUpdater.UpdatePlugin(task.SavePath);
                             });
-                            await DownloadFile.Download(url, downloadPath, _cancellationTokenSource.Token);
                         }
-                        Application.Current.Dispatcher.Invoke(() =>
+                        else
                         {
-                            windowUpdate.Close();
-                        });
-
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            PluginUpdater.UpdatePlugin( downloadPath);
-                        });
-
+                            log.Error($"DownloadPackage failed for {SearchName}: {task.ErrorMessage}");
+                        }
                     });
-
                 };
-
             });
-
-
-
         }
 
 

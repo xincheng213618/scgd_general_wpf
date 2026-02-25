@@ -10,7 +10,7 @@
         xmlns:pl="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.PluginManagerWindow}" Background="{DynamicResource GlobalBackground}" Height="720" Width="1000" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.PluginManagerWindow}" Background="{DynamicResource GlobalBackground}" Height="720" Width="1280" Initialized="Window_Initialized">
 
     <Grid>
         <Grid.ColumnDefinitions>

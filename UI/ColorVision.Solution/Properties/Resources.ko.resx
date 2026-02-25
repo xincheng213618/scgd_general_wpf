@@ -339,4 +339,7 @@
   <data name="RoleList" xml:space="preserve">
     <value>캐릭터 목록</value>
   </data>
+  <data name="UserName" xml:space="preserve">
+    <value>사용자 이름:</value>
+  </data>
 </root>

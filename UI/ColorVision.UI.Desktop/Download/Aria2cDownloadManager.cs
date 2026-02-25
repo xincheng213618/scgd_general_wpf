@@ -1,24 +1,17 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
-using System;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Threading;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
-namespace ColorVision.Solution.Download
+namespace ColorVision.UI.Desktop.Download
 {
     public class DownloadTask : ViewModelBase
     {
@@ -78,6 +71,11 @@ namespace ColorVision.Solution.Download
         public string? Gid { get; set; }
 
         public CancellationTokenSource? CancellationTokenSource { get; set; }
+
+        /// <summary>
+        /// Per-task completion callback. When set, the global ShowCompletedNotification is skipped for this task.
+        /// </summary>
+        public Action<DownloadTask>? OnCompletedCallback { get; set; }
 
         public static string FormatBytes(long bytes)
         {
@@ -354,6 +352,7 @@ namespace ColorVision.Solution.Download
                             });
                             UpdateEntryCompleted(task);
                             _activeTasks.TryRemove(task.Id, out _);
+                            task.OnCompletedCallback?.Invoke(task);
                             DownloadCompleted?.Invoke(this, task);
                         }
                         else if (rpcStatus == "error")
@@ -367,6 +366,7 @@ namespace ColorVision.Solution.Download
                             });
                             UpdateEntryStatus(task.Id, DownloadStatus.Failed, errorMsg);
                             _activeTasks.TryRemove(task.Id, out _);
+                            task.OnCompletedCallback?.Invoke(task);
                             DownloadCompleted?.Invoke(this, task);
                         }
                         else if (rpcStatus == "removed" || rpcStatus == "paused")
@@ -416,7 +416,7 @@ namespace ColorVision.Solution.Download
         /// <summary>
         /// Add a download task with default settings
         /// </summary>
-        public DownloadTask AddDownload(string url, string? savePath = null, string? authorization = null)
+        public DownloadTask AddDownload(string url, string? savePath = null, string? authorization = null, Action<DownloadTask>? onCompleted = null)
         {
             string targetDir = savePath ?? Config.DefaultDownloadPath;
             Directory.CreateDirectory(targetDir);
@@ -445,7 +445,8 @@ namespace ColorVision.Solution.Download
                 FileName = fileName,
                 SavePath = filePath,
                 Status = DownloadStatus.Waiting,
-                CreateTime = entry.CreateTime
+                CreateTime = entry.CreateTime,
+                OnCompletedCallback = onCompleted
             };
 
             _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
@@ -511,6 +512,7 @@ namespace ColorVision.Solution.Download
                     task.SpeedText = string.Empty;
                 });
                 UpdateEntryStatus(task.Id, DownloadStatus.Failed, ex.Message);
+                task.OnCompletedCallback?.Invoke(task);
                 DownloadCompleted?.Invoke(this, task);
             }
         }

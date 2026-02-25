@@ -306,9 +306,6 @@
   <data name="OpenLogFolder" xml:space="preserve">
     <value>Dossier OpenLog</value>
   </data>
-  <data name="OpenFolder" xml:space="preserve">
-    <value>Ouvrir le dossier</value>
-  </data>
   <data name="OpenContainingFolder" xml:space="preserve">
     <value>Ouvrir le dossier contenant</value>
   </data>
@@ -317,9 +314,6 @@
   </data>
   <data name="OnlineCronGenerator" xml:space="preserve">
     <value>Générateur d'expressions Cron en ligne</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
   </data>
   <data name="NoLocalLog4Output" xml:space="preserve">
     <value>Aucune sortie log4 locale configurée</value>
@@ -441,9 +435,6 @@
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Vérification des projets supplémentaires</value>
   </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>Annuler</value>
-  </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>Ressource bool2VisibilityConverter introuvable</value>
   </data>
@@ -479,5 +470,131 @@
   </data>
   <data name="NotInstalled" xml:space="preserve">
     <value>Non installé</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>rafraîchir</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>mot de passe</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Ouvrir le dossier contenant</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Bien sûr</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="DownloadManager" xml:space="preserve">
+    <value>Gestionnaire de téléchargement</value>
+  </data>
+  <data name="AddDownload" xml:space="preserve">
+    <value>Nouveau téléchargement</value>
+  </data>
+  <data name="ClearRecords" xml:space="preserve">
+    <value>Dossiers clairs</value>
+  </data>
+  <data name="DeleteSelected" xml:space="preserve">
+    <value>Supprimer la sélection</value>
+  </data>
+  <data name="SearchButton" xml:space="preserve">
+    <value>Recherche</value>
+  </data>
+  <data name="OpenDownloadFolder" xml:space="preserve">
+    <value>Ouvrez le répertoire de téléchargement</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>nom de fichier</value>
+  </data>
+  <data name="Progress" xml:space="preserve">
+    <value>calendrier</value>
+  </data>
+  <data name="StatusHeader" xml:space="preserve">
+    <value>État</value>
+  </data>
+  <data name="Speed" xml:space="preserve">
+    <value>vitesse</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>Taille du fichier</value>
+  </data>
+  <data name="CreateTimeHeader" xml:space="preserve">
+    <value>Temps de la création</value>
+  </data>
+  <data name="OpenFile" xml:space="preserve">
+    <value>Ouvrir le fichier</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>Copier le lien de téléchargement</value>
+  </data>
+  <data name="RetryDownload" xml:space="preserve">
+    <value>Réessayer le téléchargement</value>
+  </data>
+  <data name="CancelDownload" xml:space="preserve">
+    <value>Annuler le téléchargement</value>
+  </data>
+  <data name="DeleteRecord" xml:space="preserve">
+    <value>Supprimer les enregistrements</value>
+  </data>
+  <data name="TotalRecords" xml:space="preserve">
+    <value>Nombre total d'enregistrements :</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>Par page :</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>Page</value>
+  </data>
+  <data name="DownloadUrl" xml:space="preserve">
+    <value>Lien de téléchargement :</value>
+  </data>
+  <data name="SaveDirectory" xml:space="preserve">
+    <value>Répertoire de sauvegarde :</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>nom d'utilisateur:</value>
+  </data>
+  <data name="UrlRequired" xml:space="preserve">
+    <value>Veuillez saisir le lien de téléchargement.</value>
+  </data>
+  <data name="ClearRecordsConfirm" xml:space="preserve">
+    <value>Êtes-vous sûr de vouloir effacer tout l'historique de téléchargement ?</value>
+  </data>
+  <data name="Waiting" xml:space="preserve">
+    <value>En attendant</value>
+  </data>
+  <data name="Downloading" xml:space="preserve">
+    <value>Téléchargement</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>Complété</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>échouer</value>
+  </data>
+  <data name="Paused" xml:space="preserve">
+    <value>Suspendu</value>
+  </data>
+  <data name="FileDeleted" xml:space="preserve">
+    <value>Le fichier a été supprimé.</value>
+  </data>
+  <data name="DownloadCompletedMessage" xml:space="preserve">
+    <value>Le téléchargement du fichier "{0}" est terminé.</value>
+  </data>
+  <data name="DownloadFailedMessage" xml:space="preserve">
+    <value>Le téléchargement du fichier « {0} » a échoué : {1}</value>
+  </data>
+  <data name="OpenFileQuestion" xml:space="preserve">
+    <value>Voulez-vous ouvrir le fichier ?</value>
+  </data>
+  <data name="DownloadSettings" xml:space="preserve">
+    <value>Paramètres de téléchargement</value>
+  </data>
+  <data name="AdvancedOptions" xml:space="preserve">
+    <value>Options avancées</value>
+  </data>
+  <data name="UrlSeparatorHint" xml:space="preserve">
+    <value>Les liens multiples sont séparés par un point-virgule (;).</value>
   </data>
 </root>

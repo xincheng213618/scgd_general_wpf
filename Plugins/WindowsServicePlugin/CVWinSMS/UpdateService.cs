@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
@@ -17,12 +16,9 @@ namespace WindowsServicePlugin.CVWinSMS
         private static readonly ILog log = LogManager.GetLogger(typeof(UpdateService));
 
         public static UpdateService Instance { get; set; } = new UpdateService();
-        public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 
         public UpdateService()
         {
-            DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "下载最新的服务压缩包";
             if (FindPath("RegistrationCenterService"))
             {
                 
@@ -37,7 +33,7 @@ namespace WindowsServicePlugin.CVWinSMS
 
         public string DownloadPath { get => _downloadPath; set { _downloadPath = value; OnPropertyChanged(); } }
 
-        private string _downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\";
+        private string _downloadPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
 
         public Version CurrentVerision { get => _CurrentVerision; set { _CurrentVerision = value; OnPropertyChanged(); } }
         private Version _CurrentVerision = new Version();
@@ -86,7 +82,8 @@ namespace WindowsServicePlugin.CVWinSMS
 
         public async void Execute()
         {
-            Verision = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
+            var downloadFile = new DownloadFile();
+            Verision = await downloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             if (Verision > CurrentVerision)
             {
                 string filepath = $"CVWindowsService[{Verision}]-{Verision.Revision:D4}.zip";
@@ -95,34 +92,23 @@ namespace WindowsServicePlugin.CVWinSMS
                 {
                     if (MessageBox.Show(Application.Current.GetActiveWindow(), $"服务{CurrentVerision}:找到新版本{filepath}，是否更新", $"{CurrentVerision}", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                     {
-                        DownloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{filepath}";
+                        string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
                         string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CVWindowsService/{filepath}";
-                        WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                        if (!File.Exists(DownloadPath))
+
+                        var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
+                        if (service == null) return;
+
+                        service.ShowDownloadWindow();
+                        service.Download(url, downloadDir, DownloadFileConfig.Instance.Authorization, filePath =>
                         {
-                            windowUpdate.Show();
-                        }
-                        Task.Run(async () =>
-                        {
-                            if (!File.Exists(DownloadPath))
-                            {
-                                CancellationTokenSource _cancellationTokenSource = new();
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    windowUpdate.Show();
-                                });
-                                await DownloadFile.Download(url, DownloadPath, _cancellationTokenSource.Token);
-                            }
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                windowUpdate.Close();
-                            });
+                            if (filePath == null) return;
+                            DownloadPath = filePath;
                             StepIndex = 1;
-                            try
+                            Application.Current?.Dispatcher.Invoke(() =>
                             {
-                                PlatformHelper.OpenFolderAndSelectFile(DownloadPath);
-                                Application.Current.Dispatcher.Invoke(() =>
+                                try
                                 {
+                                    PlatformHelper.OpenFolderAndSelectFile(filePath);
                                     string sql = "ALTER TABLE `t_scgd_algorithm_result_master`\r\nADD COLUMN `version` varchar(16) DEFAULT NULL COMMENT '版本号' AFTER `img_file_type`;";
                                     MySqlControl.GetInstance().ExecuteNonQuery(sql);
                                     string sql1 = "ALTER TABLE `t_scgd_sys_dictionary_mod_master`\r\nADD COLUMN `version` varchar(16) DEFAULT NULL COMMENT '版本号' AFTER `cfg_json`;";
@@ -142,24 +128,20 @@ namespace WindowsServicePlugin.CVWinSMS
                                                     Directory.Delete(InstallPath, true);
                                                 }
                                             }
-                                            ColorVision.Common.NativeMethods.Clipboard.SetText(DownloadPath);
+                                            ColorVision.Common.NativeMethods.Clipboard.SetText(filePath);
                                             new InstallTool().Execute();
                                             StepIndex = 3;
                                             MessageBox.Show(Application.Current.GetActiveWindow(), "更新完成后请点击恢复数据库");
                                             new ExportMySqlTool().Execute();
                                         });
-      
                                     });
-
-                                });
-
-
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show(ex.ToString());
-                                File.Delete(DownloadPath);
-                            }
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show(ex.ToString());
+                                    File.Delete(filePath);
+                                }
+                            });
                         });
 
                     }

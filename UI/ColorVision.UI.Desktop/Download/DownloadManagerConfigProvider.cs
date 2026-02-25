@@ -1,7 +1,7 @@
 using ColorVision.UI;
 using System.Collections.Generic;
 
-namespace ColorVision.Solution.Download
+namespace ColorVision.UI.Desktop.Download
 {
     public class DownloadManagerConfigProvider : IConfigSettingProvider
     {

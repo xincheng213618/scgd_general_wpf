@@ -1,7 +1,7 @@
 using SqlSugar;
 using System;
 
-namespace ColorVision.Solution.Download
+namespace ColorVision.UI.Desktop.Download
 {
     [SugarIndex("Index_CreateTime", nameof(CreateTime), OrderByType.Desc)]
     [SugarIndex("Index_Status", nameof(Status), OrderByType.Asc)]

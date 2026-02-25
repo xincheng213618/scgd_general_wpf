@@ -49,21 +49,21 @@ namespace ColorVision.Engine.Services.PhyCameras
             EditContent.DataContext = EditConfig;
 
 
-            ComboxCameraModel.ItemsSource = from e1 in Enum.GetValues(typeof(CameraModel)).Cast<CameraModel>()
+            ComboxCameraModel.ItemsSource = from e1 in Enum.GetValues<CameraModel>().Cast<CameraModel>()
                                             select new KeyValuePair<CameraModel, string>(e1, e1.ToDescription());
 
-            ComboxCameraMode.ItemsSource = from e1 in Enum.GetValues(typeof(CameraMode)).Cast<CameraMode>()
+            ComboxCameraMode.ItemsSource = from e1 in Enum.GetValues<CameraMode>().Cast<CameraMode>()
                                            select new KeyValuePair<CameraMode, string>(e1, e1.ToDescription());
 
-            ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
+            ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues<TakeImageMode>().Cast<TakeImageMode>()
                                                     select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
 
-            ComboxCameraImageBpp.ItemsSource = from e1 in Enum.GetValues(typeof(ImageBpp)).Cast<ImageBpp>()
+            ComboxCameraImageBpp.ItemsSource = from e1 in Enum.GetValues<ImageBpp>().Cast<ImageBpp>()
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
-            ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+            ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues<ImageChannel>().Cast<ImageChannel>()
                                               select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
 
-            ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+            ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues<ImageChannel>().Cast<ImageChannel>()
                                               select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
 
             var ImageChannelTypeList = new[]{
