@@ -40,7 +40,10 @@ namespace ColorVision.UI.Desktop.Download
                             return ColorVision.Common.NativeMethods.FileIcon.GetFileIconImageSource("file" + ext);
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    log4net.LogManager.GetLogger(nameof(DownloadTask)).Debug($"Failed to get file icon for {_FileName}: {ex.Message}");
+                }
                 return null;
             }
         }
