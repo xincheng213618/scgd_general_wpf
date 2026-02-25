@@ -27,14 +27,11 @@
                 <Button x:Name="BtnAddUrl" Content="{x:Static properties:Resources.AddDownload}" Click="BtnAddUrl_Click" Margin="2,0"/>
                 <Separator Margin="5,0"/>
                 <Button Content="{x:Static properties:Resources.ClearRecords}" Click="ClearRecords_Click" Margin="2,0"/>
-                <Button Content="{x:Static properties:Resources.DeleteSelected}" Click="DeleteSelected_Click" Margin="2,0"/>
                 <Separator Margin="5,0"/>
                 <TextBlock Text="{x:Static properties:Resources.Search}" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                <TextBox x:Name="SearchTextBox" Width="200" VerticalAlignment="Center" KeyDown="SearchTextBox_KeyDown"/>
-                <Button Content="{x:Static properties:Resources.SearchButton}" Click="Search_Click" Margin="5,0,0,0"/>
+                <TextBox x:Name="SearchTextBox" Width="200" VerticalAlignment="Center" TextChanged="SearchTextBox_TextChanged"/>
                 <Separator Margin="5,0"/>
                 <Button Content="{x:Static properties:Resources.Refresh}" Click="Refresh_Click" Margin="2,0"/>
-                <Button Content="{x:Static properties:Resources.OpenDownloadFolder}" Click="OpenDownloadFolder_Click" Margin="2,0"/>
                 <Separator Margin="5,0"/>
                 <Button Content="{x:Static properties:Resources.DownloadSettings}" Click="Settings_Click" Margin="2,0"/>
             </StackPanel>
@@ -51,6 +48,8 @@
                     <Separator/>
                     <MenuItem Header="{x:Static properties:Resources.CopyUrl}" Click="ContextMenu_CopyUrl_Click"/>
                     <Separator/>
+                    <MenuItem Header="{x:Static properties:Resources.PauseDownload}" Click="ContextMenu_Pause_Click"/>
+                    <MenuItem Header="{x:Static properties:Resources.ResumeDownload}" Click="ContextMenu_Resume_Click"/>
                     <MenuItem Header="{x:Static properties:Resources.RetryDownload}" Click="ContextMenu_Retry_Click"/>
                     <MenuItem Header="{x:Static properties:Resources.CancelDownload}" Click="ContextMenu_Cancel_Click"/>
                     <Separator/>
@@ -59,30 +58,54 @@
             </ListView.ContextMenu>
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="{x:Static properties:Resources.FileName}" Width="200" DisplayMemberBinding="{Binding FileName}"/>
-                    <GridViewColumn Header="{x:Static properties:Resources.Progress}" Width="180">
+                    <GridViewColumn Header="{x:Static properties:Resources.FileName}" Width="250">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <Grid Width="160">
-                                    <ProgressBar Value="{Binding ProgressValue}" Height="16" Minimum="0" Maximum="100"
+                                <StackPanel Orientation="Horizontal" MaxWidth="240">
+                                    <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="{Binding FileName}" TextWrapping="Wrap" MaxHeight="40" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="{x:Static properties:Resources.Progress}" Width="200">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid Width="180">
+                                    <ProgressBar Value="{Binding ProgressValue}" Height="22" Minimum="0" Maximum="100"
                                                  Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisibility}}"/>
-                                    <!--<TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"
+                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11"
                                                Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisibility}}">
                                         <TextBlock.Text>
-                                            <MultiBinding StringFormat="{}{0}% ({1})">
+                                            <MultiBinding StringFormat="{}{0}%">
                                                 <Binding Path="ProgressValue"/>
-                                                <Binding Path="SpeedText"/>
                                             </MultiBinding>
                                         </TextBlock.Text>
-                                    </TextBlock>-->
+                                    </TextBlock>
                                 </Grid>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="{x:Static properties:Resources.StatusHeader}" Width="90" DisplayMemberBinding="{Binding StatusText}"/>
                     <GridViewColumn Header="{x:Static properties:Resources.Speed}" Width="100" DisplayMemberBinding="{Binding SpeedText}"/>
-                    <GridViewColumn Header="{x:Static properties:Resources.FileSize}" Width="100" DisplayMemberBinding="{Binding TotalBytesText}"/>
+                    <GridViewColumn Header="{x:Static properties:Resources.FileSize}" Width="140" DisplayMemberBinding="{Binding FileSizeDisplayText}"/>
                     <GridViewColumn Header="{x:Static properties:Resources.CreateTimeHeader}" Width="140" DisplayMemberBinding="{Binding CreateTime, StringFormat=yyyy-MM-dd HH:mm:ss}"/>
+                    <GridViewColumn Width="70">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="&#xE838;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                            Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                            ToolTip="{x:Static properties:Resources.OpenFolder}"
+                                            Click="InlineOpenFolder_Click" Padding="4,2" Margin="0,0,2,0"/>
+                                    <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                            Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                            ToolTip="{x:Static properties:Resources.DeleteRecord}"
+                                            Click="InlineDelete_Click" Padding="4,2"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
@@ -99,7 +122,8 @@
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="{x:Static properties:Resources.TotalRecords}" Margin="0,0,5,0"/>
                     <TextBlock x:Name="TotalCountText" Text="0" Margin="0,0,20,0"/>
-                    <TextBlock Text="{x:Static properties:Resources.PageSize}" Margin="0,0,5,0"/>
+                    <TextBlock x:Name="StatusBarText" Text="" Margin="10,0,0,0" Foreground="Gray"/>
+                    <TextBlock Text="{x:Static properties:Resources.PageSize}" Margin="20,0,5,0"/>
                     <ComboBox x:Name="PageSizeComboBox" Width="70" VerticalAlignment="Center" SelectionChanged="PageSizeComboBox_SelectionChanged">
                         <ComboBoxItem Content="20" IsSelected="True"/>
                         <ComboBoxItem Content="50"/>

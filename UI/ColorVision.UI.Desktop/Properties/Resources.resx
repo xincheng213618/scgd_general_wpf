@@ -467,7 +467,7 @@
     <value>新建下载</value>
   </data>
   <data name="ClearRecords" xml:space="preserve">
-    <value>清除记录</value>
+    <value>清除全部记录</value>
   </data>
   <data name="DeleteSelected" xml:space="preserve">
     <value>删除选中</value>
@@ -576,5 +576,26 @@
   </data>
   <data name="Password" xml:space="preserve">
     <value>密码</value>
+  </data>
+  <data name="PauseDownload" xml:space="preserve">
+    <value>暂停下载</value>
+  </data>
+  <data name="ResumeDownload" xml:space="preserve">
+    <value>继续下载</value>
+  </data>
+  <data name="PortSwitched" xml:space="preserve">
+    <value>端口 {0} 已被占用，已切换至端口 {1}</value>
+  </data>
+  <data name="AutoRestartingDownloads" xml:space="preserve">
+    <value>正在自动恢复 {0} 个未完成的下载</value>
+  </data>
+  <data name="Aria2cStartFailed" xml:space="preserve">
+    <value>aria2c 启动失败</value>
+  </data>
+  <data name="Aria2cReady" xml:space="preserve">
+    <value>下载服务就绪</value>
+  </data>
+  <data name="ActiveDownloads" xml:space="preserve">
+    <value>正在下载: {0}</value>
   </data>
 </root>

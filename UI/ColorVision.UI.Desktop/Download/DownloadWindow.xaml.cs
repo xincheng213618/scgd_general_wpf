@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace ColorVision.UI.Desktop.Download
 {
@@ -65,6 +66,7 @@ namespace ColorVision.UI.Desktop.Download
         private int _totalRecords;
         private int _totalPages = 1;
         private string? _searchKeyword;
+        private DispatcherTimer? _searchTimer;
 
         public DownloadWindow()
         {
@@ -73,7 +75,10 @@ namespace ColorVision.UI.Desktop.Download
             Closed += (s, e) =>
             {
                 if (_manager != null)
+                {
                     _manager.DownloadCompleted -= OnDownloadCompleted;
+                    _manager.StatusMessageChanged -= OnStatusMessageChanged;
+                }
             };
         }
 
@@ -82,8 +87,22 @@ namespace ColorVision.UI.Desktop.Download
             _manager ??= Aria2cDownloadManager.GetInstance();
             _manager.DownloadCompleted -= OnDownloadCompleted;
             _manager.DownloadCompleted += OnDownloadCompleted;
+            _manager.StatusMessageChanged -= OnStatusMessageChanged;
+            _manager.StatusMessageChanged += OnStatusMessageChanged;
             DownloadListView.ItemsSource = _manager.Tasks;
             LoadData();
+
+            // Show current status
+            if (!string.IsNullOrEmpty(_manager.StatusMessage))
+                StatusBarText.Text = _manager.StatusMessage;
+        }
+
+        private void OnStatusMessageChanged(object? sender, string message)
+        {
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                StatusBarText.Text = message;
+            });
         }
 
         private void OnDownloadCompleted(object? sender, DownloadTask task)
@@ -207,28 +226,19 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
-        private void DeleteSelected_Click(object sender, RoutedEventArgs e)
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var selected = DownloadListView.SelectedItems.Cast<DownloadTask>().ToList();
-            if (selected.Count == 0) return;
-
-            _manager.DeleteRecords(selected.Select(t => t.Id).ToArray());
-            LoadData();
-        }
-
-        private void Search_Click(object sender, RoutedEventArgs e)
-        {
-            _searchKeyword = SearchTextBox.Text?.Trim();
-            _currentPage = 1;
-            LoadData();
-        }
-
-        private void SearchTextBox_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
+            _searchTimer?.Stop();
+            _searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+            _searchTimer.Tick += (s, args) =>
             {
-                Search_Click(sender, e);
-            }
+                _searchTimer.Stop();
+                _searchKeyword = SearchTextBox.Text?.Trim();
+                if (string.IsNullOrEmpty(_searchKeyword)) _searchKeyword = null;
+                _currentPage = 1;
+                LoadData();
+            };
+            _searchTimer.Start();
         }
 
         private void Refresh_Click(object sender, RoutedEventArgs e)
@@ -237,14 +247,6 @@ namespace ColorVision.UI.Desktop.Download
             SearchTextBox.Text = string.Empty;
             _currentPage = 1;
             LoadData();
-        }
-
-        private void OpenDownloadFolder_Click(object sender, RoutedEventArgs e)
-        {
-            string folder = DownloadManagerConfig.Instance.DefaultDownloadPath;
-            if (!System.IO.Directory.Exists(folder))
-                System.IO.Directory.CreateDirectory(folder);
-            PlatformHelper.OpenFolder(folder);
         }
 
         private void Settings_Click(object sender, RoutedEventArgs e)
@@ -269,7 +271,7 @@ namespace ColorVision.UI.Desktop.Download
                 }
                 else if (System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(task.SavePath)))
                 {
-                    PlatformHelper.OpenFolder(System.IO.Path.GetDirectoryName(task.SavePath)!);
+                    PlatformHelper.OpenFolderAndSelectFile(task.SavePath);
                 }
             }
         }
@@ -293,11 +295,7 @@ namespace ColorVision.UI.Desktop.Download
         {
             if (DownloadListView.SelectedItem is DownloadTask task)
             {
-                string? dir = System.IO.Path.GetDirectoryName(task.SavePath);
-                if (dir != null && System.IO.Directory.Exists(dir))
-                {
-                    PlatformHelper.OpenFolder(dir);
-                }
+                PlatformHelper.OpenFolderAndSelectFile(task.SavePath);
             }
         }
 
@@ -306,6 +304,22 @@ namespace ColorVision.UI.Desktop.Download
             if (DownloadListView.SelectedItem is DownloadTask task)
             {
                 Clipboard.SetText(task.Url);
+            }
+        }
+
+        private void ContextMenu_Pause_Click(object sender, RoutedEventArgs e)
+        {
+            if (DownloadListView.SelectedItem is DownloadTask task && task.IsDownloading)
+            {
+                _manager.PauseDownload(task);
+            }
+        }
+
+        private void ContextMenu_Resume_Click(object sender, RoutedEventArgs e)
+        {
+            if (DownloadListView.SelectedItem is DownloadTask task && task.Status == DownloadStatus.Paused)
+            {
+                _manager.ResumeDownload(task);
             }
         }
 
@@ -331,6 +345,23 @@ namespace ColorVision.UI.Desktop.Download
             if (selected.Count == 0) return;
             _manager.DeleteRecords(selected.Select(t => t.Id).ToArray());
             LoadData();
+        }
+
+        private void InlineOpenFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
+            {
+                PlatformHelper.OpenFolderAndSelectFile(task.SavePath);
+            }
+        }
+
+        private void InlineDelete_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
+            {
+                _manager.DeleteRecords(new[] { task.Id });
+                LoadData();
+            }
         }
 
         private void PageSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
