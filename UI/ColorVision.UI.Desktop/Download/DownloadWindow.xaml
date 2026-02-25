@@ -38,10 +38,11 @@
         </Grid>
 
         <!-- Download List -->
-        <ListView x:Name="DownloadListView" Grid.Row="1" Margin="5,0,5,5"
-                  SelectionMode="Extended"
-                  MouseDoubleClick="DownloadListView_MouseDoubleClick">
-            <ListView.ContextMenu>
+        <ListBox x:Name="DownloadListView" Grid.Row="1" Margin="5,0,5,5"
+                 SelectionMode="Extended" HorizontalContentAlignment="Stretch"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 MouseDoubleClick="DownloadListView_MouseDoubleClick">
+            <ListBox.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="{x:Static properties:Resources.OpenFile}" Click="ContextMenu_OpenFile_Click"/>
                     <MenuItem Header="{x:Static properties:Resources.OpenFolder}" Click="ContextMenu_OpenFolder_Click"/>
@@ -55,60 +56,103 @@
                     <Separator/>
                     <MenuItem Header="{x:Static properties:Resources.DeleteRecord}" Click="ContextMenu_Delete_Click"/>
                 </ContextMenu>
-            </ListView.ContextMenu>
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="{x:Static properties:Resources.FileName}" Width="250">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" MaxWidth="240">
-                                    <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock Text="{Binding FileName}" TextWrapping="Wrap" MaxHeight="40" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.Progress}" Width="200">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <Grid Width="180">
-                                    <ProgressBar Value="{Binding ProgressValue}" Height="22" Minimum="0" Maximum="100"
-                                                 Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisibility}}"/>
-                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11"
-                                               Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisibility}}">
-                                        <TextBlock.Text>
-                                            <MultiBinding StringFormat="{}{0}%">
-                                                <Binding Path="ProgressValue"/>
-                                            </MultiBinding>
-                                        </TextBlock.Text>
-                                    </TextBlock>
-                                </Grid>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="{x:Static properties:Resources.StatusHeader}" Width="90" DisplayMemberBinding="{Binding StatusText}"/>
-                    <GridViewColumn Header="{x:Static properties:Resources.Speed}" Width="100" DisplayMemberBinding="{Binding SpeedText}"/>
-                    <GridViewColumn Header="{x:Static properties:Resources.FileSize}" Width="140" DisplayMemberBinding="{Binding FileSizeDisplayText}"/>
-                    <GridViewColumn Header="{x:Static properties:Resources.CreateTimeHeader}" Width="140" DisplayMemberBinding="{Binding CreateTime, StringFormat=yyyy-MM-dd HH:mm:ss}"/>
-                    <GridViewColumn Width="70">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Content="&#xE838;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                            Background="Transparent" BorderThickness="0" Cursor="Hand"
-                                            ToolTip="{x:Static properties:Resources.OpenFolder}"
-                                            Click="InlineOpenFolder_Click" Padding="4,2" Margin="0,0,2,0"/>
-                                    <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                            Background="Transparent" BorderThickness="0" Cursor="Hand"
-                                            ToolTip="{x:Static properties:Resources.DeleteRecord}"
-                                            Click="InlineDelete_Click" Padding="4,2"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
+            </ListBox.ContextMenu>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid Height="68" Margin="2,2,2,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- File Icon from OS -->
+                        <Image Grid.Column="0" Source="{Binding FileIconSource}" Width="32" Height="32" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+                        <!-- Main content area -->
+                        <Grid Grid.Column="1" Margin="6,4,6,4" VerticalAlignment="Center">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Row 0: FileName + FileSize + CreateTime -->
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding FileName}" TextTrimming="CharacterEllipsis" FontSize="13" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding FileSizeDisplayText}" Margin="10,0,0,0" FontSize="11" Foreground="Gray" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="{Binding CreateTime, StringFormat=yyyy-MM-dd HH:mm}" Margin="10,0,0,0" FontSize="11" Foreground="Gray" VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <!-- Row 1: Progress bar (visible when downloading) -->
+                            <Grid Grid.Row="1" Margin="0,4,0,0"
+                                  Visibility="{Binding IsActiveDownloading, Converter={StaticResource BoolToVisibility}}">
+                                <ProgressBar Value="{Binding ProgressValue}" Height="16" Minimum="0" Maximum="100"/>
+                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}{0}%">
+                                            <Binding Path="ProgressValue"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </Grid>
+
+                            <!-- Row 2: Speed (visible when downloading) -->
+                            <TextBlock Grid.Row="2" Text="{Binding SpeedText}" FontSize="11" Foreground="Gray" Margin="0,2,0,0"
+                                       Visibility="{Binding IsActiveDownloading, Converter={StaticResource BoolToVisibility}}"/>
+
+                            <!-- Row 1-2: Status text (visible when NOT actively downloading) -->
+                            <TextBlock Grid.Row="1" Grid.RowSpan="2" Text="{Binding StatusText}" FontSize="12" Foreground="Gray" Margin="0,4,0,0"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="Gray"/>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsActiveDownloading}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+
+                        <!-- Action buttons (right side) -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,4,0">
+                            <!-- Pause button: visible when actively downloading -->
+                            <Button Content="&#xE769;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    ToolTip="{x:Static properties:Resources.PauseDownload}"
+                                    Click="InlinePause_Click" Padding="6,4" Margin="0,0,2,0"
+                                    Visibility="{Binding IsActiveDownloading, Converter={StaticResource BoolToVisibility}}"/>
+                            <!-- Resume button: visible when paused -->
+                            <Button Content="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    ToolTip="{x:Static properties:Resources.ResumeDownload}"
+                                    Click="InlineResume_Click" Padding="6,4" Margin="0,0,2,0"
+                                    Visibility="{Binding IsPaused, Converter={StaticResource BoolToVisibility}}"/>
+                            <!-- OpenFolder button: visible when completed -->
+                            <Button Content="&#xE838;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    ToolTip="{x:Static properties:Resources.OpenFolder}"
+                                    Click="InlineOpenFolder_Click" Padding="6,4" Margin="0,0,2,0"
+                                    Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVisibility}}"/>
+                            <!-- Delete button: always visible -->
+                            <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    ToolTip="{x:Static properties:Resources.DeleteRecord}"
+                                    Click="InlineDelete_Click" Padding="6,4"/>
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
 
         <!-- Status Bar -->
         <Border Grid.Row="2" Height="30" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">

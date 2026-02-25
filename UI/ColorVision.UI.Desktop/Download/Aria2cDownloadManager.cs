@@ -24,16 +24,38 @@ namespace ColorVision.UI.Desktop.Download
         public string Url { get => _Url; set { _Url = value; OnPropertyChanged(); } }
         private string _Url = string.Empty;
 
-        public string FileName { get => _FileName; set { _FileName = value; OnPropertyChanged(); } }
+        public string FileName { get => _FileName; set { _FileName = value; OnPropertyChanged(); OnPropertyChanged(nameof(FileIconSource)); } }
         private string _FileName = string.Empty;
+
+        public System.Windows.Media.ImageSource? FileIconSource
+        {
+            get
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(_FileName))
+                    {
+                        string ext = System.IO.Path.GetExtension(_FileName);
+                        if (!string.IsNullOrEmpty(ext))
+                            return ColorVision.Common.NativeMethods.FileIcon.GetFileIconImageSource("file" + ext);
+                    }
+                }
+                catch { }
+                return null;
+            }
+        }
 
         public string SavePath { get => _SavePath; set { _SavePath = value; OnPropertyChanged(); } }
         private string _SavePath = string.Empty;
 
-        public DownloadStatus Status { get => _Status; set { _Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); OnPropertyChanged(nameof(IsDownloading)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
+        public DownloadStatus Status { get => _Status; set { _Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); OnPropertyChanged(nameof(IsDownloading)); OnPropertyChanged(nameof(IsActiveDownloading)); OnPropertyChanged(nameof(IsCompleted)); OnPropertyChanged(nameof(IsPaused)); OnPropertyChanged(nameof(IsWaitingOrFailed)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
         private DownloadStatus _Status;
 
         public bool IsDownloading => Status == DownloadStatus.Downloading || Status == DownloadStatus.Waiting;
+        public bool IsActiveDownloading => Status == DownloadStatus.Downloading;
+        public bool IsCompleted => Status == DownloadStatus.Completed || Status == DownloadStatus.FileDeleted;
+        public bool IsPaused => Status == DownloadStatus.Paused;
+        public bool IsWaitingOrFailed => Status == DownloadStatus.Waiting || Status == DownloadStatus.Failed;
 
         public string StatusText => Status switch
         {

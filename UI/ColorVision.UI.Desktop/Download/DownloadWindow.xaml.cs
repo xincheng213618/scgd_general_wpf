@@ -364,6 +364,22 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
+        private void InlinePause_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
+            {
+                _manager.PauseDownload(task);
+            }
+        }
+
+        private void InlineResume_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
+            {
+                _manager.ResumeDownload(task);
+            }
+        }
+
         private void PageSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!IsInitialized) return;
