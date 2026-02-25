@@ -309,7 +309,7 @@ namespace ColorVision.UI.Desktop.Download
                 var listeners = ipProperties.GetActiveTcpListeners();
                 return listeners.Any(ep => ep.Port == port);
             }
-            catch { return false; }
+            catch (Exception ex) { log.Debug($"Port check failed: {ex.Message}"); return false; }
         }
 
         private static int FindAvailablePort(int startPort)
