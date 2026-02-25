@@ -1,4 +1,5 @@
 using ColorVision.Themes;
+using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Solution.Download
@@ -9,6 +10,15 @@ namespace ColorVision.Solution.Download
         public string SaveDirectory => SaveDirTextBox.Text?.Trim() ?? string.Empty;
         public string UserName => UserNameTextBox.Text?.Trim() ?? string.Empty;
         public string Password => PasswordTextBox.Password?.Trim() ?? string.Empty;
+
+        /// <summary>
+        /// Returns multiple URLs split by ';' or newline, trimmed and filtered
+        /// </summary>
+        public string[] DownloadUrls => (UrlTextBox.Text ?? string.Empty)
+            .Split(new[] { ';', '\r', '\n' })
+            .Select(u => u.Trim())
+            .Where(u => !string.IsNullOrWhiteSpace(u))
+            .ToArray();
 
         public AddDownloadDialog()
         {
@@ -29,7 +39,7 @@ namespace ColorVision.Solution.Download
 
         private void OK_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(DownloadUrl))
+            if (DownloadUrls.Length == 0)
             {
                 MessageBox.Show(Properties.Resources.UrlRequired, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;

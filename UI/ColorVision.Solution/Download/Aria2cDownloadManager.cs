@@ -79,6 +79,11 @@ namespace ColorVision.Solution.Download
 
         public CancellationTokenSource? CancellationTokenSource { get; set; }
 
+        /// <summary>
+        /// Per-task completion callback. When set, the global ShowCompletedNotification is skipped for this task.
+        /// </summary>
+        public Action<DownloadTask>? OnCompletedCallback { get; set; }
+
         public static string FormatBytes(long bytes)
         {
             if (bytes <= 0) return "0 B";
@@ -354,6 +359,7 @@ namespace ColorVision.Solution.Download
                             });
                             UpdateEntryCompleted(task);
                             _activeTasks.TryRemove(task.Id, out _);
+                            task.OnCompletedCallback?.Invoke(task);
                             DownloadCompleted?.Invoke(this, task);
                         }
                         else if (rpcStatus == "error")
@@ -367,6 +373,7 @@ namespace ColorVision.Solution.Download
                             });
                             UpdateEntryStatus(task.Id, DownloadStatus.Failed, errorMsg);
                             _activeTasks.TryRemove(task.Id, out _);
+                            task.OnCompletedCallback?.Invoke(task);
                             DownloadCompleted?.Invoke(this, task);
                         }
                         else if (rpcStatus == "removed" || rpcStatus == "paused")
@@ -416,7 +423,7 @@ namespace ColorVision.Solution.Download
         /// <summary>
         /// Add a download task with default settings
         /// </summary>
-        public DownloadTask AddDownload(string url, string? savePath = null, string? authorization = null)
+        public DownloadTask AddDownload(string url, string? savePath = null, string? authorization = null, Action<DownloadTask>? onCompleted = null)
         {
             string targetDir = savePath ?? Config.DefaultDownloadPath;
             Directory.CreateDirectory(targetDir);
@@ -445,7 +452,8 @@ namespace ColorVision.Solution.Download
                 FileName = fileName,
                 SavePath = filePath,
                 Status = DownloadStatus.Waiting,
-                CreateTime = entry.CreateTime
+                CreateTime = entry.CreateTime,
+                OnCompletedCallback = onCompleted
             };
 
             _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
@@ -511,6 +519,7 @@ namespace ColorVision.Solution.Download
                     task.SpeedText = string.Empty;
                 });
                 UpdateEntryStatus(task.Id, DownloadStatus.Failed, ex.Message);
+                task.OnCompletedCallback?.Invoke(task);
                 DownloadCompleted?.Invoke(this, task);
             }
         }

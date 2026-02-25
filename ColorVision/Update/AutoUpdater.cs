@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -73,6 +74,40 @@ namespace ColorVision.Update
         public void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
         public void Update(Version Version, string DownloadPath,bool IsIncrement = false)
         {
+            string downloadUrl;
+            string filePath;
+
+            if (IsIncrement)
+            {
+                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{Version}].cvx";
+                filePath = Path.Combine(DownloadPath, $"ColorVision-Update-[{Version}].cvx");
+            }
+            else
+            {
+                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision-{Version}.exe";
+                filePath = Path.Combine(DownloadPath, $"ColorVision-{Version}.exe");
+            }
+
+            // Try using the aria2c-based download service if available
+            var downloadService = AssemblyHandler.Instance.LoadImplementations<IDownloadService>().FirstOrDefault();
+            if (downloadService != null)
+            {
+                string auth = DownloadFileConfig.Instance.Authorization;
+                downloadService.AddDownload(downloadUrl, DownloadPath, auth, (success, savedPath) =>
+                {
+                    if (success)
+                    {
+                        UpdateApplication(savedPath, IsIncrement);
+                    }
+                    else
+                    {
+                        log.Error($"Download failed via IDownloadService: {downloadUrl}");
+                    }
+                });
+                return;
+            }
+
+            // Fallback to legacy HTTP download with progress window
             CancellationTokenSource _cancellationTokenSource = new();
             WindowUpdate windowUpdate = new WindowUpdate(this) { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             windowUpdate.Title = $"Downding {Version} {(IsIncrement? "Incremental" : "")}Update";
@@ -83,7 +118,7 @@ namespace ColorVision.Update
             SpeedValue = string.Empty;
             RemainingTimeValue = string.Empty;
             ProgressValue = 0;
-            Task.Run(() => DownloadAndUpdate(Version, DownloadPath, _cancellationTokenSource.Token, IsIncrement));
+            Task.Run(() => DownloadAndUpdate(downloadUrl, filePath, _cancellationTokenSource.Token, IsIncrement));
             windowUpdate.Show();
         }
 
@@ -318,22 +353,8 @@ namespace ColorVision.Update
         private string _DownloadTile = Resources.ColorVisionUpdater;
 
 
-        private async Task DownloadAndUpdate(Version latestVersion, string downloadPath, CancellationToken cancellationToken, bool isIncrement = false)
+        private async Task DownloadAndUpdate(string downloadUrl, string filePath, CancellationToken cancellationToken, bool isIncrement = false)
         {
-            string downloadUrl;
-            string filePath;
-
-            if (isIncrement)
-            {
-                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{latestVersion}].cvx";
-                filePath = Path.Combine(downloadPath, $"ColorVision-Update-[{latestVersion}].cvx");
-            }
-            else
-            {
-                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision-{latestVersion}.exe";
-                filePath = Path.Combine(downloadPath, $"ColorVision-{latestVersion}.exe");
-            }
-
             await DownloadFileAsync(downloadUrl, filePath, cancellationToken);
             UpdateApplication(filePath, isIncrement);
         }

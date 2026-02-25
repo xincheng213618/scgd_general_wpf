@@ -1064,5 +1064,23 @@ namespace ColorVision.Solution.Properties {
                 return ResourceManager.GetString("WelcomeBack", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 高级选项 的本地化字符串。
+        /// </summary>
+        public static string AdvancedOptions {
+            get {
+                return ResourceManager.GetString("AdvancedOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 多个链接用 ; 分隔 的本地化字符串。
+        /// </summary>
+        public static string UrlSeparatorHint {
+            get {
+                return ResourceManager.GetString("UrlSeparatorHint", resourceCulture);
+            }
+        }
     }
 }

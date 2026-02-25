@@ -433,4 +433,10 @@
   <data name="DownloadSettings" xml:space="preserve">
     <value>下载设置</value>
   </data>
+  <data name="AdvancedOptions" xml:space="preserve">
+    <value>高级选项</value>
+  </data>
+  <data name="UrlSeparatorHint" xml:space="preserve">
+    <value>多个链接用 ; 分隔</value>
+  </data>
 </root>
