@@ -13,9 +13,6 @@
 		<SignAssembly>False</SignAssembly>
 	</PropertyGroup>
 	<ItemGroup>
-	  <None Include="Properties\Resources.en.resx" />
-	</ItemGroup>
-	<ItemGroup>
 	  <Compile Update="Properties\Resources.Designer.cs">
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>
