@@ -10,7 +10,7 @@ using System.Windows;
 namespace WindowsServicePlugin.CVWinSMS
 {
 
-    public class InstallTool : MenuItemBase, IWizardStep
+    public class InstallTool : MenuItemBase, IWizardStep, IMainWindowInitialized
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(InstallTool));
 
@@ -18,6 +18,8 @@ namespace WindowsServicePlugin.CVWinSMS
         public override string OwnerGuid => "ServiceLog";
 
         public override string GuidId => "InstallTool";
+
+        public string Name => GetType().Name;   
 
         public override int Order => 1;
 
