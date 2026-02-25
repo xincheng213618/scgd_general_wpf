@@ -1,5 +1,4 @@
-﻿using ColorVision.Themes.Controls;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
 using System.Diagnostics;
@@ -17,16 +16,8 @@ namespace WindowsServicePlugin.Tools
 
         public override string Header =>Properties.Resources.OpenBeyondCompare;
 
-        public DownloadFile DownloadFile { get; set; } = new DownloadFile();
-
         public static string LatestReleaseUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/BeyondCompare/LATEST_RELEASE";
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\";
 
-        public MenuBeyondCompare()
-        {
-            DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = Properties.Resources.DownLoadBeyondCompare;
-        }
         public override void Execute()
         {
             if (!File.Exists(ImageJConfig.Instance.BeyondComparePath))
@@ -35,61 +26,38 @@ namespace WindowsServicePlugin.Tools
                 {
                     string filename = "Beyond_Compare_5.zip";
                     string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/BeyondCompare/{filename}";
-                    downloadPath = Path.Combine(downloadPath, filename);
-                    Task.Run(() =>
+                    string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+
+                    var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
+                    if (service == null) return;
+
+                    service.ShowDownloadWindow();
+                    service.Download(url, downloadDir, DownloadFileConfig.Instance.Authorization, filePath =>
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
+                        if (filePath == null) return;
+                        Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                            if (!File.Exists(downloadPath))
+                            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+                            ZipFile.ExtractToDirectory(filePath, path, true);
+
+                            ImageJConfig.Instance.BeyondComparePath = Path.Combine(path, "Beyond Compare 5", "BCompare.exe");
+
+                            ProcessStartInfo startInfo = new()
                             {
-                                windowUpdate.Show();
+                                UseShellExecute = true,
+                                WorkingDirectory = Environment.CurrentDirectory,
+                                FileName = ImageJConfig.Instance.BeyondComparePath
+                            };
+                            try
+                            {
+                                Process.Start(startInfo);
                             }
-                            Task.Run(async () =>
+                            catch (Exception ex)
                             {
-                                if (!File.Exists(downloadPath))
-                                {
-                                    CancellationTokenSource _cancellationTokenSource = new();
-                                    Application.Current.Dispatcher.Invoke(() =>
-                                    {
-                                        windowUpdate.Show();
-                                    });
-                                    await DownloadFile.Download(url, downloadPath, _cancellationTokenSource.Token);
-                                }
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    windowUpdate.Close();
-                                });
-
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    string path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\";
-                                    ZipFile.ExtractToDirectory(downloadPath, path, true);
-
-                                    ImageJConfig.Instance.BeyondComparePath = path + "\\Beyond Compare 5\\BCompare.exe";
-
-                                    // 启动新的实例
-                                    ProcessStartInfo startInfo = new();
-                                    startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
-                                    startInfo.WorkingDirectory = Environment.CurrentDirectory;
-                                    startInfo.FileName = ImageJConfig.Instance.BeyondComparePath;
-
-                                    try
-                                    {
-                                        Process p = Process.Start(startInfo);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        MessageBox.Show(ex.ToString());
-                                        File.Delete(downloadPath);
-                                    }
-
-                                });
-
-                            });
+                                MessageBox.Show(ex.ToString());
+                                File.Delete(filePath);
+                            }
                         });
-
-
                     });
                     return;
                 }
@@ -107,13 +75,9 @@ namespace WindowsServicePlugin.Tools
             }
 
             ProcessStartInfo startInfo = new();
-            startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
+            startInfo.UseShellExecute = true;
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
             startInfo.FileName = ImageJConfig.Instance.BeyondComparePath;
-            //startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
-            //                          // 如果需要静默安装，添加静默安装参数
-            //                          //quiet 没法自启，桌面图标也是空                       
-            //                          //startInfo.Arguments = "/quiet";
             try
             {
                 Process p = Process.Start(startInfo);

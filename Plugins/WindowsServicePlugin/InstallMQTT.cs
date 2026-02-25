@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using System.Diagnostics;
 using System.IO;
@@ -13,63 +12,40 @@ namespace WindowsServicePlugin
         public override string Header => Properties.Resources.InstallMqtt;
         public override string Description => "Install a local MQTT service. If you are using another machine for forwarding, please skip this step";  
 
-        public DownloadFile DownloadFile { get; set; } = new DownloadFile();
-        public InstallMQTT()
-        {
-            DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "DownLoadMQTT";
-        }
-
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/MQTT/mosquitto-2.0.18-install-windows-x64.exe";
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" +  @"ColorVision\\mosquitto-2.0.18-install-windows-x64.exe";
+        private string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
 
         public override void Execute()
         {
-            WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            if (!File.Exists(downloadPath))
-            {
-                windowUpdate.Show();
-            }
+            var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
+            if (service == null) return;
 
-            Task.Run(async () =>
+            service.ShowDownloadWindow();
+            service.Download(url, downloadDir, DownloadFileConfig.Instance.Authorization, filePath =>
             {
-                if (!File.Exists(downloadPath))
+                if (filePath == null) return;
+                Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    CancellationTokenSource _cancellationTokenSource = new();
-                    Application.Current.Dispatcher.Invoke(() =>
+                    ProcessStartInfo startInfo = new()
                     {
-                        windowUpdate.Show();
-                    });
-                    await DownloadFile.Download(url, downloadPath, _cancellationTokenSource.Token);
-                }
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    windowUpdate.Close();
+                        UseShellExecute = true,
+                        WorkingDirectory = Environment.CurrentDirectory,
+                        FileName = filePath,
+                        Verb = "runas"
+                    };
+                    try
+                    {
+                        Process p = Process.Start(startInfo);
+                        p?.WaitForExit();
+                        Tool.ExecuteCommandAsAdmin("net start mosquitto");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.ToString());
+                        File.Delete(filePath);
+                    }
                 });
-                // 启动新的实例
-                ProcessStartInfo startInfo = new();
-                startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
-                startInfo.WorkingDirectory = Environment.CurrentDirectory;
-                startInfo.FileName = downloadPath;
-                startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
-                                          // 如果需要静默安装，添加静默安装参数
-                                          //quiet 没法自启，桌面图标也是空                       
-                                          //startInfo.Arguments = "/quiet";
-
-                try
-                {
-                    Process p = Process.Start(startInfo);
-                    p?.WaitForExit();
-                    Tool.ExecuteCommandAsAdmin("net start mosquitto");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.ToString());
-                    File.Delete(downloadPath);
-                }
             });
-
-
         }
 
     }
