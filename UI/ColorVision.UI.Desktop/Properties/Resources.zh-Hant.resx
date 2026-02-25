@@ -306,9 +306,6 @@
   <data name="OpenLogFolder" xml:space="preserve">
     <value>打開日誌資料夾</value>
   </data>
-  <data name="OpenFolder" xml:space="preserve">
-    <value>打開文件夾</value>
-  </data>
   <data name="OpenContainingFolder" xml:space="preserve">
     <value>打開所在文件夾</value>
   </data>
@@ -317,9 +314,6 @@
   </data>
   <data name="OnlineCronGenerator" xml:space="preserve">
     <value>在線Cron表達式生成器</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>確定</value>
   </data>
   <data name="NoLocalLog4Output" xml:space="preserve">
     <value>沒有配置本地的log4輸出</value>
@@ -441,9 +435,6 @@
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>正在檢索是否存在附加項目</value>
   </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>取消</value>
-  </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverter 資源未找到</value>
   </data>
@@ -479,5 +470,131 @@
   </data>
   <data name="NotInstalled" xml:space="preserve">
     <value>未安裝</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>重新整理</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>密碼</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>打開所在文件夾</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>確定</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="DownloadManager" xml:space="preserve">
+    <value>下載管理器</value>
+  </data>
+  <data name="AddDownload" xml:space="preserve">
+    <value>新下載</value>
+  </data>
+  <data name="ClearRecords" xml:space="preserve">
+    <value>清除記錄</value>
+  </data>
+  <data name="DeleteSelected" xml:space="preserve">
+    <value>刪除選取</value>
+  </data>
+  <data name="SearchButton" xml:space="preserve">
+    <value>搜尋</value>
+  </data>
+  <data name="OpenDownloadFolder" xml:space="preserve">
+    <value>開啟下載目錄</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>檔案名稱</value>
+  </data>
+  <data name="Progress" xml:space="preserve">
+    <value>進度</value>
+  </data>
+  <data name="StatusHeader" xml:space="preserve">
+    <value>狀態</value>
+  </data>
+  <data name="Speed" xml:space="preserve">
+    <value>速度</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>文件大小</value>
+  </data>
+  <data name="CreateTimeHeader" xml:space="preserve">
+    <value>創建時間</value>
+  </data>
+  <data name="OpenFile" xml:space="preserve">
+    <value>開啟文件</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>複製下載連結</value>
+  </data>
+  <data name="RetryDownload" xml:space="preserve">
+    <value>重試下載</value>
+  </data>
+  <data name="CancelDownload" xml:space="preserve">
+    <value>取消下載</value>
+  </data>
+  <data name="DeleteRecord" xml:space="preserve">
+    <value>刪除記錄</value>
+  </data>
+  <data name="TotalRecords" xml:space="preserve">
+    <value>總記錄數:</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>每頁:</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>頁</value>
+  </data>
+  <data name="DownloadUrl" xml:space="preserve">
+    <value>下載連結:</value>
+  </data>
+  <data name="SaveDirectory" xml:space="preserve">
+    <value>儲存目錄:</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>使用者名稱:</value>
+  </data>
+  <data name="UrlRequired" xml:space="preserve">
+    <value>請輸入下載鏈接</value>
+  </data>
+  <data name="ClearRecordsConfirm" xml:space="preserve">
+    <value>確定要清除所有下載記錄嗎？</value>
+  </data>
+  <data name="Waiting" xml:space="preserve">
+    <value>等待中</value>
+  </data>
+  <data name="Downloading" xml:space="preserve">
+    <value>下載中</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>已完成</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>失敗</value>
+  </data>
+  <data name="Paused" xml:space="preserve">
+    <value>已暫停</value>
+  </data>
+  <data name="FileDeleted" xml:space="preserve">
+    <value>文件已刪除</value>
+  </data>
+  <data name="DownloadCompletedMessage" xml:space="preserve">
+    <value>檔案 "{0}" 下載完成</value>
+  </data>
+  <data name="DownloadFailedMessage" xml:space="preserve">
+    <value>檔案 "{0}" 下載失敗: {1}</value>
+  </data>
+  <data name="OpenFileQuestion" xml:space="preserve">
+    <value>是否開啟文件？</value>
+  </data>
+  <data name="DownloadSettings" xml:space="preserve">
+    <value>下載設定</value>
+  </data>
+  <data name="AdvancedOptions" xml:space="preserve">
+    <value>進階選項</value>
+  </data>
+  <data name="UrlSeparatorHint" xml:space="preserve">
+    <value>多個連結以 ; 分隔</value>
   </data>
 </root>

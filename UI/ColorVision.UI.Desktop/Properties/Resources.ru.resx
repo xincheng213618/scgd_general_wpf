@@ -306,9 +306,6 @@
   <data name="OpenLogFolder" xml:space="preserve">
     <value>OpenLogFolder</value>
   </data>
-  <data name="OpenFolder" xml:space="preserve">
-    <value>Открыть папку</value>
-  </data>
   <data name="OpenContainingFolder" xml:space="preserve">
     <value>Открыть содержащую папку</value>
   </data>
@@ -317,9 +314,6 @@
   </data>
   <data name="OnlineCronGenerator" xml:space="preserve">
     <value>Онлайн-генератор выражений Cron</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
   </data>
   <data name="NoLocalLog4Output" xml:space="preserve">
     <value>Локальный вывод log4 не настроен</value>
@@ -441,9 +435,6 @@
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>Проверка дополнительных проектов</value>
   </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>Отмена</value>
-  </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>Ресурс bool2VisibilityConverter не найден</value>
   </data>
@@ -479,5 +470,131 @@
   </data>
   <data name="NotInstalled" xml:space="preserve">
     <value>Не установлено</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>обновить</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Пароль</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>Открыть содержащую папку</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Конечно</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="DownloadManager" xml:space="preserve">
+    <value>Менеджер загрузок</value>
+  </data>
+  <data name="AddDownload" xml:space="preserve">
+    <value>Новая загрузка</value>
+  </data>
+  <data name="ClearRecords" xml:space="preserve">
+    <value>Чистые записи</value>
+  </data>
+  <data name="DeleteSelected" xml:space="preserve">
+    <value>Удалить выбранное</value>
+  </data>
+  <data name="SearchButton" xml:space="preserve">
+    <value>поиск</value>
+  </data>
+  <data name="OpenDownloadFolder" xml:space="preserve">
+    <value>Откройте папку загрузок</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>имя файла</value>
+  </data>
+  <data name="Progress" xml:space="preserve">
+    <value>расписание</value>
+  </data>
+  <data name="StatusHeader" xml:space="preserve">
+    <value>состояние</value>
+  </data>
+  <data name="Speed" xml:space="preserve">
+    <value>скорость</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>размер файла</value>
+  </data>
+  <data name="CreateTimeHeader" xml:space="preserve">
+    <value>Время создания</value>
+  </data>
+  <data name="OpenFile" xml:space="preserve">
+    <value>Открыть файл</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>Скопировать ссылку для скачивания</value>
+  </data>
+  <data name="RetryDownload" xml:space="preserve">
+    <value>Повторить загрузку</value>
+  </data>
+  <data name="CancelDownload" xml:space="preserve">
+    <value>Отменить загрузку</value>
+  </data>
+  <data name="DeleteRecord" xml:space="preserve">
+    <value>Удалить записи</value>
+  </data>
+  <data name="TotalRecords" xml:space="preserve">
+    <value>Общее количество записей:</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>На странице:</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>Страница</value>
+  </data>
+  <data name="DownloadUrl" xml:space="preserve">
+    <value>Ссылка для скачивания:</value>
+  </data>
+  <data name="SaveDirectory" xml:space="preserve">
+    <value>Сохраните каталог:</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>имя пользователя:</value>
+  </data>
+  <data name="UrlRequired" xml:space="preserve">
+    <value>Пожалуйста, введите ссылку для скачивания.</value>
+  </data>
+  <data name="ClearRecordsConfirm" xml:space="preserve">
+    <value>Вы уверены, что хотите очистить всю историю загрузок?</value>
+  </data>
+  <data name="Waiting" xml:space="preserve">
+    <value>Ожидающий</value>
+  </data>
+  <data name="Downloading" xml:space="preserve">
+    <value>Загрузка</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>Завершенный</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>неудача</value>
+  </data>
+  <data name="Paused" xml:space="preserve">
+    <value>Приостановленный</value>
+  </data>
+  <data name="FileDeleted" xml:space="preserve">
+    <value>Файл удален.</value>
+  </data>
+  <data name="DownloadCompletedMessage" xml:space="preserve">
+    <value>Загрузка файла "{0}" завершена.</value>
+  </data>
+  <data name="DownloadFailedMessage" xml:space="preserve">
+    <value>Загрузка файла "{0}" не удалась: {1}</value>
+  </data>
+  <data name="OpenFileQuestion" xml:space="preserve">
+    <value>Вы хотите открыть файл?</value>
+  </data>
+  <data name="DownloadSettings" xml:space="preserve">
+    <value>Настройки загрузки</value>
+  </data>
+  <data name="AdvancedOptions" xml:space="preserve">
+    <value>Расширенные параметры</value>
+  </data>
+  <data name="UrlSeparatorHint" xml:space="preserve">
+    <value>Несколько ссылок разделяются точкой с запятой (;).</value>
   </data>
 </root>

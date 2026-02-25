@@ -2,7 +2,7 @@ using ColorVision.Themes;
 using System.Linq;
 using System.Windows;
 
-namespace ColorVision.Solution.Download
+namespace ColorVision.UI.Desktop.Download
 {
     public partial class AddDownloadDialog : Window
     {

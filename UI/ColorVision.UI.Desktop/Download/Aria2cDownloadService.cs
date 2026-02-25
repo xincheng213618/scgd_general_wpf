@@ -1,6 +1,7 @@
 using ColorVision.UI;
+using ColorVision.UI.Desktop.Download;
 
-namespace ColorVision.Solution.Download
+namespace ColorVision.UI.Desktop.Download
 {
     /// <summary>
     /// aria2c-based implementation of IDownloadService.

@@ -18,6 +18,7 @@
 
 
 	<ItemGroup>
+    <ProjectReference Include="..\ColorVision.Database\ColorVision.Database.csproj" />
     <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
 

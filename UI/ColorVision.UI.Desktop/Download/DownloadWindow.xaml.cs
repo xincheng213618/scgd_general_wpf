@@ -2,17 +2,14 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Menus;
-using ColorVision.UI.PropertyEditor;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Solution.Download
+namespace ColorVision.UI.Desktop.Download
 {
     public class ExportDownloadWindow : MenuItemBase
     {

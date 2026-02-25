@@ -61,6 +61,24 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 新建下载 的本地化字符串。
+        /// </summary>
+        public static string AddDownload {
+            get {
+                return ResourceManager.GetString("AddDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 高级选项 的本地化字符串。
+        /// </summary>
+        public static string AdvancedOptions {
+            get {
+                return ResourceManager.GetString("AdvancedOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 所有文件 (*.*)|*.* 的本地化字符串。
         /// </summary>
         public static string AllFiles {
@@ -124,6 +142,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 取消下载 的本地化字符串。
+        /// </summary>
+        public static string CancelDownload {
+            get {
+                return ResourceManager.GetString("CancelDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 正在检索是否存在附加项目 的本地化字符串。
         /// </summary>
         public static string CheckingForAdditionalProjects {
@@ -160,11 +187,38 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 清除记录 的本地化字符串。
+        /// </summary>
+        public static string ClearRecords {
+            get {
+                return ResourceManager.GetString("ClearRecords", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定要清除所有下载记录吗？ 的本地化字符串。
+        /// </summary>
+        public static string ClearRecordsConfirm {
+            get {
+                return ResourceManager.GetString("ClearRecordsConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 关闭 的本地化字符串。
         /// </summary>
         public static string Close {
             get {
                 return ResourceManager.GetString("Close", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已完成 的本地化字符串。
+        /// </summary>
+        public static string Completed {
+            get {
+                return ResourceManager.GetString("Completed", resourceCulture);
             }
         }
         
@@ -196,6 +250,24 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 复制下载链接 的本地化字符串。
+        /// </summary>
+        public static string CopyUrl {
+            get {
+                return ResourceManager.GetString("CopyUrl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 创建时间 的本地化字符串。
+        /// </summary>
+        public static string CreateTimeHeader {
+            get {
+                return ResourceManager.GetString("CreateTimeHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 当前速度： 的本地化字符串。
         /// </summary>
         public static string CurrentSpeed {
@@ -210,6 +282,24 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string Delete {
             get {
                 return ResourceManager.GetString("Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除记录 的本地化字符串。
+        /// </summary>
+        public static string DeleteRecord {
+            get {
+                return ResourceManager.GetString("DeleteRecord", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除选中 的本地化字符串。
+        /// </summary>
+        public static string DeleteSelected {
+            get {
+                return ResourceManager.GetString("DeleteSelected", resourceCulture);
             }
         }
         
@@ -255,6 +345,60 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string Download {
             get {
                 return ResourceManager.GetString("Download", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件 &quot;{0}&quot; 下载完成 的本地化字符串。
+        /// </summary>
+        public static string DownloadCompletedMessage {
+            get {
+                return ResourceManager.GetString("DownloadCompletedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件 &quot;{0}&quot; 下载失败: {1} 的本地化字符串。
+        /// </summary>
+        public static string DownloadFailedMessage {
+            get {
+                return ResourceManager.GetString("DownloadFailedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载中 的本地化字符串。
+        /// </summary>
+        public static string Downloading {
+            get {
+                return ResourceManager.GetString("Downloading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载管理器 的本地化字符串。
+        /// </summary>
+        public static string DownloadManager {
+            get {
+                return ResourceManager.GetString("DownloadManager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载设置 的本地化字符串。
+        /// </summary>
+        public static string DownloadSettings {
+            get {
+                return ResourceManager.GetString("DownloadSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载链接: 的本地化字符串。
+        /// </summary>
+        public static string DownloadUrl {
+            get {
+                return ResourceManager.GetString("DownloadUrl", resourceCulture);
             }
         }
         
@@ -426,6 +570,42 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string ExtractPlugin {
             get {
                 return ResourceManager.GetString("ExtractPlugin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 失败 的本地化字符串。
+        /// </summary>
+        public static string Failed {
+            get {
+                return ResourceManager.GetString("Failed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件已删除 的本地化字符串。
+        /// </summary>
+        public static string FileDeleted {
+            get {
+                return ResourceManager.GetString("FileDeleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件名 的本地化字符串。
+        /// </summary>
+        public static string FileName {
+            get {
+                return ResourceManager.GetString("FileName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件大小 的本地化字符串。
+        /// </summary>
+        public static string FileSize {
+            get {
+                return ResourceManager.GetString("FileSize", resourceCulture);
             }
         }
         
@@ -646,7 +826,34 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 打开文件夹 的本地化字符串。
+        ///   查找类似 打开下载目录 的本地化字符串。
+        /// </summary>
+        public static string OpenDownloadFolder {
+            get {
+                return ResourceManager.GetString("OpenDownloadFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开文件 的本地化字符串。
+        /// </summary>
+        public static string OpenFile {
+            get {
+                return ResourceManager.GetString("OpenFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 是否打开文件？ 的本地化字符串。
+        /// </summary>
+        public static string OpenFileQuestion {
+            get {
+                return ResourceManager.GetString("OpenFileQuestion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开所在文件夹 的本地化字符串。
         /// </summary>
         public static string OpenFolder {
             get {
@@ -687,6 +894,42 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string Options {
             get {
                 return ResourceManager.GetString("Options", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 页 的本地化字符串。
+        /// </summary>
+        public static string Page {
+            get {
+                return ResourceManager.GetString("Page", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 每页: 的本地化字符串。
+        /// </summary>
+        public static string PageSize {
+            get {
+                return ResourceManager.GetString("PageSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 密码 的本地化字符串。
+        /// </summary>
+        public static string Password {
+            get {
+                return ResourceManager.GetString("Password", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已暂停 的本地化字符串。
+        /// </summary>
+        public static string Paused {
+            get {
+                return ResourceManager.GetString("Paused", resourceCulture);
             }
         }
         
@@ -763,6 +1006,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 进度 的本地化字符串。
+        /// </summary>
+        public static string Progress {
+            get {
+                return ResourceManager.GetString("Progress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 找不到项目{0} 的本地化字符串。
         /// </summary>
         public static string ProjectNotFound {
@@ -777,6 +1029,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string ProjectSolution_P {
             get {
                 return ResourceManager.GetString("ProjectSolution_P", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 刷新 的本地化字符串。
+        /// </summary>
+        public static string Refresh {
+            get {
+                return ResourceManager.GetString("Refresh", resourceCulture);
             }
         }
         
@@ -835,6 +1096,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 重试下载 的本地化字符串。
+        /// </summary>
+        public static string RetryDownload {
+            get {
+                return ResourceManager.GetString("RetryDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Русский（俄语） 的本地化字符串。
         /// </summary>
         public static string ru {
@@ -853,6 +1123,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 保存目录: 的本地化字符串。
+        /// </summary>
+        public static string SaveDirectory {
+            get {
+                return ResourceManager.GetString("SaveDirectory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 保存单个配置 {0} 失败 的本地化字符串。
         /// </summary>
         public static string SaveSingleConfigFailed {
@@ -867,6 +1146,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string Search {
             get {
                 return ResourceManager.GetString("Search", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 搜索 的本地化字符串。
+        /// </summary>
+        public static string SearchButton {
+            get {
+                return ResourceManager.GetString("SearchButton", resourceCulture);
             }
         }
         
@@ -979,6 +1267,24 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 速度 的本地化字符串。
+        /// </summary>
+        public static string Speed {
+            get {
+                return ResourceManager.GetString("Speed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 状态 的本地化字符串。
+        /// </summary>
+        public static string StatusHeader {
+            get {
+                return ResourceManager.GetString("StatusHeader", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 系统工具 的本地化字符串。
         /// </summary>
         public static string SystemTools {
@@ -1002,6 +1308,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string TimeLeft {
             get {
                 return ResourceManager.GetString("TimeLeft", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 总记录数: 的本地化字符串。
+        /// </summary>
+        public static string TotalRecords {
+            get {
+                return ResourceManager.GetString("TotalRecords", resourceCulture);
             }
         }
         
@@ -1038,6 +1353,33 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string UpdateLog4NetLevel {
             get {
                 return ResourceManager.GetString("UpdateLog4NetLevel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入下载链接 的本地化字符串。
+        /// </summary>
+        public static string UrlRequired {
+            get {
+                return ResourceManager.GetString("UrlRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 多个链接用 ; 分隔 的本地化字符串。
+        /// </summary>
+        public static string UrlSeparatorHint {
+            get {
+                return ResourceManager.GetString("UrlSeparatorHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户名: 的本地化字符串。
+        /// </summary>
+        public static string UserName {
+            get {
+                return ResourceManager.GetString("UserName", resourceCulture);
             }
         }
         
@@ -1092,6 +1434,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string ViewMode9 {
             get {
                 return ResourceManager.GetString("ViewMode9", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 等待中 的本地化字符串。
+        /// </summary>
+        public static string Waiting {
+            get {
+                return ResourceManager.GetString("Waiting", resourceCulture);
             }
         }
         

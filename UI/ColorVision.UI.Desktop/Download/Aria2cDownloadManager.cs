@@ -1,24 +1,17 @@
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SqlSugar;
-using System;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Threading;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
-namespace ColorVision.Solution.Download
+namespace ColorVision.UI.Desktop.Download
 {
     public class DownloadTask : ViewModelBase
     {

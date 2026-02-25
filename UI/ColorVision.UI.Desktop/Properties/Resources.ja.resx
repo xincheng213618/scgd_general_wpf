@@ -306,9 +306,6 @@
   <data name="OpenLogFolder" xml:space="preserve">
     <value>ログフォルダを開く</value>
   </data>
-  <data name="OpenFolder" xml:space="preserve">
-    <value>フォルダーを開く</value>
-  </data>
   <data name="OpenContainingFolder" xml:space="preserve">
     <value>格納フォルダーを開く</value>
   </data>
@@ -317,9 +314,6 @@
   </data>
   <data name="OnlineCronGenerator" xml:space="preserve">
     <value>オンラインCron式ジェネレータ</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
   </data>
   <data name="NoLocalLog4Output" xml:space="preserve">
     <value>ローカルlog4出力が設定されていません</value>
@@ -441,9 +435,6 @@
   <data name="CheckingForAdditionalProjects" xml:space="preserve">
     <value>追加プロジェクトを確認中</value>
   </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>キャンセル</value>
-  </data>
   <data name="Bool2VisibilityConverterNotFound" xml:space="preserve">
     <value>bool2VisibilityConverterリソースが見つかりません</value>
   </data>
@@ -479,5 +470,131 @@
   </data>
   <data name="NotInstalled" xml:space="preserve">
     <value>インストールされていません</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>リフレッシュする</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>パスワード</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>格納フォルダーを開く</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>もちろん</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="DownloadManager" xml:space="preserve">
+    <value>ダウンロードマネージャー</value>
+  </data>
+  <data name="AddDownload" xml:space="preserve">
+    <value>新しいダウンロード</value>
+  </data>
+  <data name="ClearRecords" xml:space="preserve">
+    <value>記録をクリアする</value>
+  </data>
+  <data name="DeleteSelected" xml:space="preserve">
+    <value>選択した項目を削除</value>
+  </data>
+  <data name="SearchButton" xml:space="preserve">
+    <value>検索</value>
+  </data>
+  <data name="OpenDownloadFolder" xml:space="preserve">
+    <value>ダウンロードディレクトリを開く</value>
+  </data>
+  <data name="FileName" xml:space="preserve">
+    <value>ファイル名</value>
+  </data>
+  <data name="Progress" xml:space="preserve">
+    <value>スケジュール</value>
+  </data>
+  <data name="StatusHeader" xml:space="preserve">
+    <value>州</value>
+  </data>
+  <data name="Speed" xml:space="preserve">
+    <value>スピード</value>
+  </data>
+  <data name="FileSize" xml:space="preserve">
+    <value>ファイルサイズ</value>
+  </data>
+  <data name="CreateTimeHeader" xml:space="preserve">
+    <value>作成時間</value>
+  </data>
+  <data name="OpenFile" xml:space="preserve">
+    <value>ファイルを開く</value>
+  </data>
+  <data name="CopyUrl" xml:space="preserve">
+    <value>ダウンロードリンクをコピー</value>
+  </data>
+  <data name="RetryDownload" xml:space="preserve">
+    <value>ダウンロードを再試行</value>
+  </data>
+  <data name="CancelDownload" xml:space="preserve">
+    <value>ダウンロードをキャンセル</value>
+  </data>
+  <data name="DeleteRecord" xml:space="preserve">
+    <value>レコードを削除する</value>
+  </data>
+  <data name="TotalRecords" xml:space="preserve">
+    <value>レコードの総数:</value>
+  </data>
+  <data name="PageSize" xml:space="preserve">
+    <value>ページあたり:</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>ページ</value>
+  </data>
+  <data name="DownloadUrl" xml:space="preserve">
+    <value>ダウンロードリンク:</value>
+  </data>
+  <data name="SaveDirectory" xml:space="preserve">
+    <value>保存ディレクトリ:</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>ユーザー名:</value>
+  </data>
+  <data name="UrlRequired" xml:space="preserve">
+    <value>ダウンロードリンクを入力してください。</value>
+  </data>
+  <data name="ClearRecordsConfirm" xml:space="preserve">
+    <value>すべてのダウンロード履歴を消去してもよろしいですか?</value>
+  </data>
+  <data name="Waiting" xml:space="preserve">
+    <value>待っている</value>
+  </data>
+  <data name="Downloading" xml:space="preserve">
+    <value>ダウンロード中</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>完了</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>失敗</value>
+  </data>
+  <data name="Paused" xml:space="preserve">
+    <value>一時停止中</value>
+  </data>
+  <data name="FileDeleted" xml:space="preserve">
+    <value>ファイルは削除されました。</value>
+  </data>
+  <data name="DownloadCompletedMessage" xml:space="preserve">
+    <value>ファイル「{0}」のダウンロードが完了しました。</value>
+  </data>
+  <data name="DownloadFailedMessage" xml:space="preserve">
+    <value>ファイル「{0}」のダウンロードに失敗しました: {1}</value>
+  </data>
+  <data name="OpenFileQuestion" xml:space="preserve">
+    <value>ファイルを開きますか?</value>
+  </data>
+  <data name="DownloadSettings" xml:space="preserve">
+    <value>ダウンロード設定</value>
+  </data>
+  <data name="AdvancedOptions" xml:space="preserve">
+    <value>詳細オプション</value>
+  </data>
+  <data name="UrlSeparatorHint" xml:space="preserve">
+    <value>複数のリンクはセミコロン (;) で区切られます。</value>
   </data>
 </root>

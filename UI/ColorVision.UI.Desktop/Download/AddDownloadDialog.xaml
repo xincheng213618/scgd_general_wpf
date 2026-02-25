@@ -1,7 +1,7 @@
-<Window x:Class="ColorVision.Solution.Download.AddDownloadDialog"
+<Window x:Class="ColorVision.UI.Desktop.Download.AddDownloadDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
+        xmlns:properties="clr-namespace:ColorVision.UI.Desktop.Properties"
         Title="{x:Static properties:Resources.AddDownload}" Height="320" Width="560"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         Background="{DynamicResource GlobalBackground}">
