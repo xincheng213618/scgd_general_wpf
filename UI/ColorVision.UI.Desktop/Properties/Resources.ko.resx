@@ -493,7 +493,7 @@
     <value>새로운 다운로드</value>
   </data>
   <data name="ClearRecords" xml:space="preserve">
-    <value>기록을 삭제하세요</value>
+    <value>모든 기록 삭제</value>
   </data>
   <data name="DeleteSelected" xml:space="preserve">
     <value>선택한 항목 삭제</value>
@@ -596,5 +596,26 @@
   </data>
   <data name="UrlSeparatorHint" xml:space="preserve">
     <value>여러 링크는 세미콜론(;)으로 구분됩니다.</value>
+  </data>
+  <data name="PauseDownload" xml:space="preserve">
+    <value>다운로드 일시정지</value>
+  </data>
+  <data name="ResumeDownload" xml:space="preserve">
+    <value>다운로드 재개</value>
+  </data>
+  <data name="PortSwitched" xml:space="preserve">
+    <value>포트 {0}이(가) 사용 중입니다. 포트 {1}(으)로 전환했습니다</value>
+  </data>
+  <data name="AutoRestartingDownloads" xml:space="preserve">
+    <value>{0}개의 미완료 다운로드를 자동 재개 중</value>
+  </data>
+  <data name="Aria2cStartFailed" xml:space="preserve">
+    <value>aria2c 시작 실패</value>
+  </data>
+  <data name="Aria2cReady" xml:space="preserve">
+    <value>다운로드 서비스 준비 완료</value>
+  </data>
+  <data name="ActiveDownloads" xml:space="preserve">
+    <value>다운로드 중: {0}</value>
   </data>
 </root>

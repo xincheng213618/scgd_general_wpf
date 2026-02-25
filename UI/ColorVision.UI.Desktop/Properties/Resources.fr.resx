@@ -493,7 +493,7 @@
     <value>Nouveau téléchargement</value>
   </data>
   <data name="ClearRecords" xml:space="preserve">
-    <value>Dossiers clairs</value>
+    <value>Effacer tous les enregistrements</value>
   </data>
   <data name="DeleteSelected" xml:space="preserve">
     <value>Supprimer la sélection</value>
@@ -596,5 +596,26 @@
   </data>
   <data name="UrlSeparatorHint" xml:space="preserve">
     <value>Les liens multiples sont séparés par un point-virgule (;).</value>
+  </data>
+  <data name="PauseDownload" xml:space="preserve">
+    <value>Mettre en pause le téléchargement</value>
+  </data>
+  <data name="ResumeDownload" xml:space="preserve">
+    <value>Reprendre le téléchargement</value>
+  </data>
+  <data name="PortSwitched" xml:space="preserve">
+    <value>Le port {0} est occupé, basculé sur le port {1}</value>
+  </data>
+  <data name="AutoRestartingDownloads" xml:space="preserve">
+    <value>Redémarrage automatique de {0} téléchargements incomplets</value>
+  </data>
+  <data name="Aria2cStartFailed" xml:space="preserve">
+    <value>Échec du démarrage d'aria2c</value>
+  </data>
+  <data name="Aria2cReady" xml:space="preserve">
+    <value>Service de téléchargement prêt</value>
+  </data>
+  <data name="ActiveDownloads" xml:space="preserve">
+    <value>Téléchargement en cours : {0}</value>
   </data>
 </root>
