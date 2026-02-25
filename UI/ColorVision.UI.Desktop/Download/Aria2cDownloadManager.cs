@@ -40,7 +40,10 @@ namespace ColorVision.UI.Desktop.Download
                             return ColorVision.Common.NativeMethods.FileIcon.GetFileIconImageSource("file" + ext);
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    log4net.LogManager.GetLogger(nameof(DownloadTask)).Debug($"Failed to get file icon for {_FileName}: {ex.Message}");
+                }
                 return null;
             }
         }
@@ -114,6 +117,11 @@ namespace ColorVision.UI.Desktop.Download
         /// Per-task completion callback. When set, the global ShowCompletedNotification is skipped for this task.
         /// </summary>
         public Action<DownloadTask>? OnCompletedCallback { get; set; }
+
+        /// <summary>
+        /// HTTP authorization (user:password) for authenticated downloads. Persisted for resume/retry.
+        /// </summary>
+        public string? Authorization { get; set; }
 
         public static string FormatBytes(long bytes)
         {
@@ -513,7 +521,7 @@ namespace ColorVision.UI.Desktop.Download
             {
                 using var db = CreateDbClient();
                 var incompleteEntries = db.Queryable<DownloadEntry>()
-                    .Where(x => x.Status == (int)DownloadStatus.Waiting || x.Status == (int)DownloadStatus.Downloading)
+                    .Where(x => x.Status == (int)DownloadStatus.Waiting || x.Status == (int)DownloadStatus.Downloading || x.Status == (int)DownloadStatus.Paused)
                     .ToList();
 
                 if (incompleteEntries.Count == 0) return;
@@ -530,7 +538,8 @@ namespace ColorVision.UI.Desktop.Download
                         FileName = entry.FileName,
                         SavePath = entry.SavePath,
                         Status = DownloadStatus.Waiting,
-                        CreateTime = entry.CreateTime
+                        CreateTime = entry.CreateTime,
+                        Authorization = DecodeAuth(entry.Authorization)
                     };
 
                     _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
@@ -561,7 +570,8 @@ namespace ColorVision.UI.Desktop.Download
                 FileName = fileName,
                 SavePath = filePath,
                 Status = (int)DownloadStatus.Waiting,
-                CreateTime = DateTime.Now
+                CreateTime = DateTime.Now,
+                Authorization = EncodeAuth(authorization)
             };
 
             using (var db = CreateDbClient())
@@ -577,7 +587,8 @@ namespace ColorVision.UI.Desktop.Download
                 SavePath = filePath,
                 Status = DownloadStatus.Waiting,
                 CreateTime = entry.CreateTime,
-                OnCompletedCallback = onCompleted
+                OnCompletedCallback = onCompleted,
+                Authorization = authorization
             };
 
             _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
@@ -608,7 +619,7 @@ namespace ColorVision.UI.Desktop.Download
                     ["out"] = fileName,
                 };
 
-                string auth = authorization;
+                string auth = authorization ?? task.Authorization;
                 if (!string.IsNullOrWhiteSpace(auth) && auth.Contains(':'))
                 {
                     string[] parts = auth.Split(':', 2);
@@ -830,7 +841,8 @@ namespace ColorVision.UI.Desktop.Download
                             DownloadedBytes = entry.DownloadedBytes,
                             ProgressValue = entry.TotalBytes > 0 ? (int)(entry.DownloadedBytes * 100 / entry.TotalBytes) : 0,
                             CreateTime = entry.CreateTime,
-                            ErrorMessage = entry.ErrorMessage
+                            ErrorMessage = entry.ErrorMessage,
+                            Authorization = DecodeAuth(entry.Authorization)
                         });
                     }
                 }
@@ -881,6 +893,25 @@ namespace ColorVision.UI.Desktop.Download
             }
             catch { }
             return $"download_{DateTime.Now:yyyyMMddHHmmss}";
+        }
+
+        /// <summary>
+        /// Encode authorization for storage (Base64 to avoid plain text in DB)
+        /// </summary>
+        private static string? EncodeAuth(string? auth)
+        {
+            if (string.IsNullOrEmpty(auth)) return null;
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(auth));
+        }
+
+        /// <summary>
+        /// Decode authorization from storage
+        /// </summary>
+        private static string? DecodeAuth(string? encoded)
+        {
+            if (string.IsNullOrEmpty(encoded)) return null;
+            try { return Encoding.UTF8.GetString(Convert.FromBase64String(encoded)); }
+            catch { return encoded; }
         }
     }
 }

@@ -35,6 +35,9 @@ namespace ColorVision.UI.Desktop.Download
 
         [SugarColumn(IsNullable = true, ColumnDataType = "text")]
         public string? ErrorMessage { get; set; }
+
+        [SugarColumn(IsNullable = true, ColumnDataType = "text")]
+        public string? Authorization { get; set; }
     }
 
     public enum DownloadStatus
