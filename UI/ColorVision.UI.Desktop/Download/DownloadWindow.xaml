@@ -157,11 +157,11 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{x:Static properties:Resources.TotalRecords}" Margin="0,0,5,0"/>
-                    <TextBlock x:Name="TotalCountText" Text="0" Margin="0,0,20,0"/>
-                    <TextBlock x:Name="StatusBarText" Text="" Margin="10,0,0,0" Foreground="Gray"/>
-                    <TextBlock Text="{x:Static properties:Resources.PageSize}" Margin="20,0,5,0"/>
-                    <ComboBox x:Name="PageSizeComboBox" Width="70" VerticalAlignment="Center" SelectionChanged="PageSizeComboBox_SelectionChanged">
+                    <TextBlock Text="{x:Static properties:Resources.TotalRecords}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <TextBlock x:Name="TotalCountText" Text="0" VerticalAlignment="Center" Margin="0,0,20,0"/>
+                    <TextBlock x:Name="StatusBarText" Text="" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="Gray"/>
+                    <TextBlock Text="{x:Static properties:Resources.PageSize}" VerticalAlignment="Center" Margin="20,0,5,0"/>
+                    <ComboBox x:Name="PageSizeComboBox" BorderThickness="0"  Style="{StaticResource ComboBox.Small}" Width="70" VerticalAlignment="Center" SelectionChanged="PageSizeComboBox_SelectionChanged">
                         <ComboBoxItem Content="20" IsSelected="True"/>
                         <ComboBoxItem Content="50"/>
                         <ComboBoxItem Content="100"/>
@@ -169,14 +169,14 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="|&lt;" Click="FirstPage_Click" Width="30" Margin="2,0"/>
-                    <Button Content="&lt;" Click="PrevPage_Click" Width="30" Margin="2,0"/>
+                    <Button Content="|&lt;" Click="FirstPage_Click" Style="{StaticResource ButtonDefault.Small}"  BorderThickness="0" Width="30" Margin="2,0"/>
+                    <Button Content="&lt;" Click="PrevPage_Click" Style="{StaticResource ButtonDefault.Small}" BorderThickness="0"  Width="30" Margin="2,0"/>
                     <TextBlock Text="{x:Static properties:Resources.Page}" VerticalAlignment="Center" Margin="5,0"/>
-                    <TextBox x:Name="CurrentPageTextBox" Text="1" Width="50" VerticalAlignment="Center" TextAlignment="Center" KeyDown="CurrentPageTextBox_KeyDown"/>
+                    <TextBox x:Name="CurrentPageTextBox" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="1" Width="50" VerticalAlignment="Center" TextAlignment="Center" KeyDown="CurrentPageTextBox_KeyDown"/>
                     <TextBlock Text="/" VerticalAlignment="Center" Margin="5,0"/>
                     <TextBlock x:Name="TotalPagesText" Text="1" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                    <Button Content="&gt;" Click="NextPage_Click" Width="30" Margin="2,0"/>
-                    <Button Content="&gt;|" Click="LastPage_Click" Width="30" Margin="2,0"/>
+                    <Button Content="&gt;" Style="{StaticResource ButtonDefault.Small}" Click="NextPage_Click" BorderThickness="0"  Width="30" Margin="2,0"/>
+                    <Button Content="&gt;|" Style="{StaticResource ButtonDefault.Small}" Click="LastPage_Click"  BorderThickness="0"  Width="30" Margin="2,0"/>
                 </StackPanel>
             </Grid>
         </Border>
