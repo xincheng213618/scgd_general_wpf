@@ -226,7 +226,8 @@ namespace ColorVision.UI.Desktop.Download
         /// </summary>
         public void Dispose()
         {
-            Config.PropertyChanged -= OnConfigPropertyChanged;
+            try { Config.PropertyChanged -= OnConfigPropertyChanged; }
+            catch { }
             StopAria2cDaemon();
         }
 
