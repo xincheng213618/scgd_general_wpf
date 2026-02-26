@@ -184,27 +184,33 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public void GetSpectrSerialNumber()
         {
-            IntPtr Handle = Spectrometer.CM_CreateEmission((int)Config.SpectrometerType, MyCallback);
             int i = 0;
             if (int.TryParse(Config.ComPort, out int z))
             {
                 i = z;
             }
-            int iR = Spectrometer.CM_Emission_Init(Handle, i, Config.BaudRate);
             int bufferLength = 1024;
             StringBuilder stringBuilder = new StringBuilder(bufferLength);
-            cvColorVision.Spectrometer.CM_GetSpectrSerialNumber(Handle,stringBuilder);
-            Spectrometer.CM_Emission_Close(Handle);
-            Spectrometer.CM_ReleaseEmission(Handle);
-            string sn = stringBuilder.ToString();
-            if (string.IsNullOrWhiteSpace(sn))
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "No Device", "Sprectrum");
-            }
-            else
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(),stringBuilder.ToString(),"Sprectrum");
-            }
+
+            int ret = Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType,i, stringBuilder, bufferLength);
+
+            MessageBox1.Show(Application.Current.GetActiveWindow(), stringBuilder.ToString(), "Sprectrum");
+
+            //IntPtr Handle = Spectrometer.CM_CreateEmission((int)Config.SpectrometerType, MyCallback);
+
+            //int iR = Spectrometer.CM_Emission_Init(Handle, i, Config.BaudRate);
+
+            //cvColorVision.Spectrometer.CM_GetSpectrSerialNumber(Handle,stringBuilder);
+            //Spectrometer.CM_Emission_Close(Handle);
+            //Spectrometer.CM_ReleaseEmission(Handle);
+            //string sn = stringBuilder.ToString();
+            //if (string.IsNullOrWhiteSpace(sn))
+            //{
+            //    MessageBox1.Show(Application.Current.GetActiveWindow(), "No Device", "Sprectrum");
+            //}
+            //else
+            //{
+            //}
         }
 
         public void SelfAdaptionInitDark()
