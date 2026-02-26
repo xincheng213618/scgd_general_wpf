@@ -295,20 +295,20 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 文件已存在于磁盘，是否同时删除文件？ 的本地化字符串。
-        /// </summary>
-        public static string ConfirmDeleteFile {
-            get {
-                return ResourceManager.GetString("ConfirmDeleteFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 配置管理窗口 的本地化字符串。
         /// </summary>
         public static string ConfigurationManagement {
             get {
                 return ResourceManager.GetString("ConfigurationManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件已存在于磁盘，是否同时删除文件？ 的本地化字符串。
+        /// </summary>
+        public static string ConfirmDeleteFile {
+            get {
+                return ResourceManager.GetString("ConfirmDeleteFile", resourceCulture);
             }
         }
         
