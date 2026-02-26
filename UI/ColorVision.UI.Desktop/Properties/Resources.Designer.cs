@@ -133,6 +133,78 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 已连接 的本地化字符串。
+        /// </summary>
+        public static string Aria2cConnected {
+            get {
+                return ResourceManager.GetString("Aria2cConnected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未连接 的本地化字符串。
+        /// </summary>
+        public static string Aria2cDisconnected {
+            get {
+                return ResourceManager.GetString("Aria2cDisconnected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 服务: {0} | 端口: {1} 的本地化字符串。
+        /// </summary>
+        public static string Aria2cServiceStatus {
+            get {
+                return ResourceManager.GetString("Aria2cServiceStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置已应用 的本地化字符串。
+        /// </summary>
+        public static string ConfigApplied {
+            get {
+                return ResourceManager.GetString("ConfigApplied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 总速度: {0} 的本地化字符串。
+        /// </summary>
+        public static string GlobalSpeed {
+            get {
+                return ResourceManager.GetString("GlobalSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 磁力链接下载 的本地化字符串。
+        /// </summary>
+        public static string MagnetDownload {
+            get {
+                return ResourceManager.GetString("MagnetDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 RPC 端口 的本地化字符串。
+        /// </summary>
+        public static string RpcPort {
+            get {
+                return ResourceManager.GetString("RpcPort", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 支持 HTTP/HTTPS/FTP 链接、磁力链接 (magnet:)，多个链接用分号或换行分隔 的本地化字符串。
+        /// </summary>
+        public static string UrlOrMagnetHint {
+            get {
+                return ResourceManager.GetString("UrlOrMagnetHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 正在自动恢复 {0} 个未完成的下载 的本地化字符串。
         /// </summary>
         public static string AutoRestartingDownloads {
@@ -223,7 +295,7 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 清除记录 的本地化字符串。
+        ///   查找类似 清除全部记录 的本地化字符串。
         /// </summary>
         public static string ClearRecords {
             get {
@@ -255,6 +327,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string Completed {
             get {
                 return ResourceManager.GetString("Completed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置已应用 的本地化字符串。
+        /// </summary>
+        public static string ConfigApplied {
+            get {
+                return ResourceManager.GetString("ConfigApplied", resourceCulture);
             }
         }
         
@@ -673,6 +754,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 总速度: {0} 的本地化字符串。
+        /// </summary>
+        public static string GlobalSpeed {
+            get {
+                return ResourceManager.GetString("GlobalSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 导入和导出设置 的本地化字符串。
         /// </summary>
         public static string ImportExportSettings {
@@ -750,6 +840,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string LoadingPlugin {
             get {
                 return ResourceManager.GetString("LoadingPlugin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 磁力链接下载 的本地化字符串。
+        /// </summary>
+        public static string MagnetDownload {
+            get {
+                return ResourceManager.GetString("MagnetDownload", resourceCulture);
             }
         }
         
@@ -961,20 +1060,20 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 暂停下载 的本地化字符串。
-        /// </summary>
-        public static string PauseDownload {
-            get {
-                return ResourceManager.GetString("PauseDownload", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 已暂停 的本地化字符串。
         /// </summary>
         public static string Paused {
             get {
                 return ResourceManager.GetString("Paused", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 暂停下载 的本地化字符串。
+        /// </summary>
+        public static string PauseDownload {
+            get {
+                return ResourceManager.GetString("PauseDownload", resourceCulture);
             }
         }
         
@@ -1164,6 +1263,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string RetryDownload {
             get {
                 return ResourceManager.GetString("RetryDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 RPC 端口 的本地化字符串。
+        /// </summary>
+        public static string RpcPort {
+            get {
+                return ResourceManager.GetString("RpcPort", resourceCulture);
             }
         }
         
@@ -1416,6 +1524,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string UpdateLog4NetLevel {
             get {
                 return ResourceManager.GetString("UpdateLog4NetLevel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 支持 HTTP/HTTPS/FTP 链接、磁力链接 (magnet:)，多个链接用分号或换行分隔 的本地化字符串。
+        /// </summary>
+        public static string UrlOrMagnetHint {
+            get {
+                return ResourceManager.GetString("UrlOrMagnetHint", resourceCulture);
             }
         }
         
