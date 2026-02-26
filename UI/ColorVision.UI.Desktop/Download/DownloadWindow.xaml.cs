@@ -67,6 +67,7 @@ namespace ColorVision.UI.Desktop.Download
         private int _totalPages = 1;
         private string? _searchKeyword;
         private DispatcherTimer? _searchTimer;
+        private DispatcherTimer? _serviceStatusTimer;
 
         public DownloadWindow()
         {
@@ -79,6 +80,7 @@ namespace ColorVision.UI.Desktop.Download
                     _manager.DownloadCompleted -= OnDownloadCompleted;
                     _manager.StatusMessageChanged -= OnStatusMessageChanged;
                 }
+                _serviceStatusTimer?.Stop();
             };
         }
 
@@ -95,6 +97,16 @@ namespace ColorVision.UI.Desktop.Download
             // Show current status
             if (!string.IsNullOrEmpty(_manager.StatusMessage))
                 StatusBarText.Text = _manager.StatusMessage;
+            UpdateServiceStatusText();
+            _serviceStatusTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _serviceStatusTimer.Tick -= ServiceStatusTimer_Tick;
+            _serviceStatusTimer.Tick += ServiceStatusTimer_Tick;
+            _serviceStatusTimer.Start();
+        }
+
+        private void ServiceStatusTimer_Tick(object? sender, EventArgs e)
+        {
+            UpdateServiceStatusText();
         }
 
         private void OnStatusMessageChanged(object? sender, string message)
@@ -102,7 +114,14 @@ namespace ColorVision.UI.Desktop.Download
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 StatusBarText.Text = message;
+                UpdateServiceStatusText();
             });
+        }
+
+        private void UpdateServiceStatusText()
+        {
+            if (_manager != null)
+                ServiceStatusText.Text = _manager.ServiceStatusText;
         }
 
         private void OnDownloadCompleted(object? sender, DownloadTask task)

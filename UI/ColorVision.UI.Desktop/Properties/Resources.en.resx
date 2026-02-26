@@ -595,7 +595,7 @@
     <value>Advanced Options</value>
   </data>
   <data name="UrlSeparatorHint" xml:space="preserve">
-    <value>Multiple links are separated by a semicolon (;).</value>
+    <value>Multiple links are separated by ';'. Supports http/https, .torrent, and magnet links.</value>
   </data>
   <data name="PauseDownload" xml:space="preserve">
     <value>Pause Download</value>

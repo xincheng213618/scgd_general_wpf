@@ -59,7 +59,7 @@
             </ListBox.ContextMenu>
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <Grid Height="68" Margin="2,2,2,2">
+                    <Grid Height="60" Margin="2,2,2,2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="40"/>
                             <ColumnDefinition Width="*"/>
@@ -160,6 +160,7 @@
                     <TextBlock Text="{x:Static properties:Resources.TotalRecords}" VerticalAlignment="Center" Margin="0,0,5,0"/>
                     <TextBlock x:Name="TotalCountText" Text="0" VerticalAlignment="Center" Margin="0,0,20,0"/>
                     <TextBlock x:Name="StatusBarText" Text="" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="Gray"/>
+                    <TextBlock x:Name="ServiceStatusText" Text="" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="Gray"/>
                     <TextBlock Text="{x:Static properties:Resources.PageSize}" VerticalAlignment="Center" Margin="20,0,5,0"/>
                     <ComboBox x:Name="PageSizeComboBox" BorderThickness="0"  Style="{StaticResource ComboBox.Small}" Width="70" VerticalAlignment="Center" SelectionChanged="PageSizeComboBox_SelectionChanged">
                         <ComboBoxItem Content="20" IsSelected="True"/>
