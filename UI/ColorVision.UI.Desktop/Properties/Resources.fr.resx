@@ -618,4 +618,31 @@
   <data name="ActiveDownloads" xml:space="preserve">
     <value>Téléchargement en cours : {0}</value>
   </data>
+  <data name="Aria2cServiceStatus" xml:space="preserve">
+    <value>Service : {0} | Port : {1}</value>
+  </data>
+  <data name="Aria2cConnected" xml:space="preserve">
+    <value>Connecté</value>
+  </data>
+  <data name="Aria2cDisconnected" xml:space="preserve">
+    <value>Déconnecté</value>
+  </data>
+  <data name="ConfigApplied" xml:space="preserve">
+    <value>Configuration appliquée</value>
+  </data>
+  <data name="MagnetDownload" xml:space="preserve">
+    <value>Téléchargement par lien magnet</value>
+  </data>
+  <data name="RpcPort" xml:space="preserve">
+    <value>Port RPC</value>
+  </data>
+  <data name="UrlOrMagnetHint" xml:space="preserve">
+    <value>Prend en charge les liens HTTP/HTTPS/FTP, liens magnet (magnet:), séparés par des points-virgules ou des retours à la ligne</value>
+  </data>
+  <data name="GlobalSpeed" xml:space="preserve">
+    <value>Vitesse : {0}</value>
+  </data>
+  <data name="ConfirmDeleteFile" xml:space="preserve">
+    <value>Le fichier existe sur le disque. Voulez-vous également supprimer le fichier ?</value>
+  </data>
 </root>

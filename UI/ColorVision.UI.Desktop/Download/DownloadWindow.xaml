@@ -22,25 +22,39 @@
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
-        <Grid Margin="5">
-            <StackPanel Orientation="Horizontal" >
-                <Button x:Name="BtnAddUrl" Content="{x:Static properties:Resources.AddDownload}" Click="BtnAddUrl_Click" Margin="2,0"/>
-                <Separator Margin="5,0"/>
-                <Button Content="{x:Static properties:Resources.ClearRecords}" Click="ClearRecords_Click" Margin="2,0"/>
-                <Separator Margin="5,0"/>
-                <TextBlock Text="{x:Static properties:Resources.Search}" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                <TextBox x:Name="SearchTextBox" Width="200" VerticalAlignment="Center" TextChanged="SearchTextBox_TextChanged"/>
-                <Separator Margin="5,0"/>
-                <Button Content="{x:Static properties:Resources.Refresh}" Click="Refresh_Click" Margin="2,0"/>
-                <Separator Margin="5,0"/>
-                <Button Content="{x:Static properties:Resources.DownloadSettings}" Click="Settings_Click" Margin="2,0"/>
-            </StackPanel>
-        </Grid>
+        <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+            <Grid Margin="5,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button x:Name="BtnAddUrl" Content="{x:Static properties:Resources.AddDownload}" Click="BtnAddUrl_Click" Margin="2,0" Padding="8,3"/>
+                    <Separator Margin="5,0"/>
+                    <Button Content="{x:Static properties:Resources.ClearRecords}" Click="ClearRecords_Click" Margin="2,0" Padding="8,3"/>
+                </StackPanel>
+
+                <Grid Grid.Column="1" Margin="10,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="SearchTextBox" Grid.Column="1" VerticalAlignment="Center" TextChanged="SearchTextBox_TextChanged"/>
+                </Grid>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Content="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="18"  ToolTip="{x:Static properties:Resources.Refresh}" Click="Refresh_Click" Margin="2,0" Padding="6,3" Background="Transparent" BorderThickness="0"/>
+                    <Button Content="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="22" ToolTip="{x:Static properties:Resources.DownloadSettings}" Click="Settings_Click" Margin="2,0" Padding="6,3" Background="Transparent" BorderThickness="0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
 
         <!-- Download List -->
-        <ListBox x:Name="DownloadListView" Grid.Row="1" Margin="5,0,5,5"
+        <ListBox x:Name="DownloadListView" Grid.Row="1" Margin="0"
                  SelectionMode="Extended" HorizontalContentAlignment="Stretch"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" BorderThickness="0"
                  MouseDoubleClick="DownloadListView_MouseDoubleClick">
             <ListBox.ContextMenu>
                 <ContextMenu>
@@ -59,48 +73,43 @@
             </ListBox.ContextMenu>
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <Grid Height="68" Margin="2,2,2,2">
+                    <Grid Height="58" Margin="4,2,4,2">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="36"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <!-- File Icon from OS -->
-                        <Image Grid.Column="0" Source="{Binding FileIconSource}" Width="32" Height="32" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <Image Grid.Column="0" Source="{Binding FileIconSource}" Width="28" Height="28" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 
                         <!-- Main content area -->
-                        <Grid Grid.Column="1" Margin="6,4,6,4" VerticalAlignment="Center">
+                        <Grid Grid.Column="1" Margin="8,2,8,2" VerticalAlignment="Center">
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
                             <!-- Row 0: FileName + FileSize + CreateTime -->
-                            <Grid Grid.Row="0">
+                            <DockPanel Grid.Row="0">
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding CreateTime, StringFormat=yyyy-MM-dd HH:mm}" FontSize="11" Foreground="Gray" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding FileSizeDisplayText}" FontSize="11" Foreground="Gray" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" FontSize="13" VerticalAlignment="Center"/>
+                            </DockPanel>
+
+                            <!-- Row 1: Progress bar + speed (visible when downloading) -->
+                            <Grid Grid.Row="1" Margin="0,4,0,0"
+                                  Visibility="{Binding IsActiveDownloading, Converter={StaticResource BoolToVisibility}}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{Binding FileName}" TextTrimming="CharacterEllipsis" FontSize="13" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="{Binding FileSizeDisplayText}" Margin="10,0,0,0" FontSize="11" Foreground="Gray" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="{Binding CreateTime, StringFormat=yyyy-MM-dd HH:mm}" Margin="10,0,0,0" FontSize="11" Foreground="Gray" VerticalAlignment="Center"/>
+                                <ProgressBar Value="{Binding ProgressValue}" Height="14" Minimum="0" Maximum="100"/>
+                                <TextBlock Grid.Column="1" Text="{Binding SpeedText}" FontSize="11" Foreground="Gray" Margin="8,0,0,0" VerticalAlignment="Center" MinWidth="80" TextAlignment="Right"/>
                             </Grid>
 
-                            <!-- Row 1: Progress bar (visible when downloading) -->
-                            <Grid Grid.Row="1" Margin="0,4,0,0"
-                                  Visibility="{Binding IsActiveDownloading, Converter={StaticResource BoolToVisibility}}">
-                                <ProgressBar Value="{Binding ProgressValue}" Height="16" Minimum="0" Maximum="100"/>
-                            </Grid>
-
-                            <!-- Row 2: Speed (visible when downloading) -->
-                            <TextBlock Grid.Row="2" Text="{Binding SpeedText}" FontSize="11" Foreground="Gray" Margin="0,2,0,0"
-                                       Visibility="{Binding IsActiveDownloading, Converter={StaticResource BoolToVisibility}}"/>
-
-                            <!-- Row 1-2: Status text (visible when NOT actively downloading) -->
-                            <TextBlock Grid.Row="1" Grid.RowSpan="2" Text="{Binding StatusText}" FontSize="12" Foreground="Gray" Margin="0,4,0,0"
+                            <!-- Row 1: Status text (visible when NOT actively downloading) -->
+                            <TextBlock Grid.Row="1" Text="{Binding StatusText}" FontSize="11" Foreground="Gray" Margin="0,4,0,0"
                                        VerticalAlignment="Center">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
@@ -117,66 +126,76 @@
                         </Grid>
 
                         <!-- Action buttons (right side) -->
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,4,0">
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="2,0,2,0">
                             <!-- Pause button: visible when actively downloading -->
-                            <Button Content="&#xE769;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                            <Button Content="&#xE769;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                     Background="Transparent" BorderThickness="0" Cursor="Hand"
                                     ToolTip="{x:Static properties:Resources.PauseDownload}"
-                                    Click="InlinePause_Click" Padding="6,4" Margin="0,0,2,0"
+                                    Click="InlinePause_Click" Padding="5,3" Margin="0,0,1,0"
                                     Visibility="{Binding IsActiveDownloading, Converter={StaticResource BoolToVisibility}}"/>
                             <!-- Resume button: visible when paused -->
-                            <Button Content="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                            <Button Content="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                     Background="Transparent" BorderThickness="0" Cursor="Hand"
                                     ToolTip="{x:Static properties:Resources.ResumeDownload}"
-                                    Click="InlineResume_Click" Padding="6,4" Margin="0,0,2,0"
+                                    Click="InlineResume_Click" Padding="5,3" Margin="0,0,1,0"
                                     Visibility="{Binding IsPaused, Converter={StaticResource BoolToVisibility}}"/>
+                            <!-- Retry button: visible when failed -->
+                            <Button Content="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    ToolTip="{x:Static properties:Resources.RetryDownload}"
+                                    Click="InlineRetry_Click" Padding="5,3" Margin="0,0,1,0"
+                                    Visibility="{Binding IsWaitingOrFailed, Converter={StaticResource BoolToVisibility}}"/>
                             <!-- OpenFolder button: visible when completed -->
-                            <Button Content="&#xE838;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                            <Button Content="&#xE838;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                     Background="Transparent" BorderThickness="0" Cursor="Hand"
                                     ToolTip="{x:Static properties:Resources.OpenFolder}"
-                                    Click="InlineOpenFolder_Click" Padding="6,4" Margin="0,0,2,0"
+                                    Click="InlineOpenFolder_Click" Padding="5,3" Margin="0,0,1,0"
                                     Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVisibility}}"/>
                             <!-- Delete button: always visible -->
-                            <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                            <Button Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                     Background="Transparent" BorderThickness="0" Cursor="Hand"
                                     ToolTip="{x:Static properties:Resources.DeleteRecord}"
-                                    Click="InlineDelete_Click" Padding="6,4"/>
+                                    Click="InlineDelete_Click" Padding="5,3"/>
                         </StackPanel>
                     </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <!-- Status Bar -->
-        <Border Grid.Row="2" Height="30" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
-            <Grid Margin="5,0">
+        <!-- Status & Pagination Bar -->
+        <Border Grid.Row="2" Height="28" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+            <Grid Margin="8,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{x:Static properties:Resources.TotalRecords}" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                    <TextBlock x:Name="TotalCountText" Text="0" VerticalAlignment="Center" Margin="0,0,20,0"/>
-                    <TextBlock x:Name="StatusBarText" Text="" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="Gray"/>
-                    <TextBlock Text="{x:Static properties:Resources.PageSize}" VerticalAlignment="Center" Margin="20,0,5,0"/>
-                    <ComboBox x:Name="PageSizeComboBox" BorderThickness="0"  Style="{StaticResource ComboBox.Small}" Width="70" VerticalAlignment="Center" SelectionChanged="PageSizeComboBox_SelectionChanged">
+                    <Ellipse x:Name="StatusIndicator" Width="8" Height="8" Fill="Gray" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="StatusBarText" Text="" FontSize="11" Foreground="Gray" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="15,0,0,0">
+                    <TextBlock Text="{x:Static properties:Resources.TotalRecords}" VerticalAlignment="Center" Margin="0,0,3,0" FontSize="11"/>
+                    <TextBlock x:Name="TotalCountText" Text="0" VerticalAlignment="Center" FontSize="11"/>
+                    <TextBlock Text="{x:Static properties:Resources.PageSize}" VerticalAlignment="Center" Margin="15,0,3,0" FontSize="11"/>
+                    <ComboBox x:Name="PageSizeComboBox" BorderThickness="0" Style="{StaticResource ComboBox.Small}" Width="60" VerticalAlignment="Center" SelectionChanged="PageSizeComboBox_SelectionChanged">
                         <ComboBoxItem Content="20" IsSelected="True"/>
                         <ComboBoxItem Content="50"/>
                         <ComboBoxItem Content="100"/>
                     </ComboBox>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="|&lt;" Click="FirstPage_Click" Style="{StaticResource ButtonDefault.Small}"  BorderThickness="0" Width="30" Margin="2,0"/>
-                    <Button Content="&lt;" Click="PrevPage_Click" Style="{StaticResource ButtonDefault.Small}" BorderThickness="0"  Width="30" Margin="2,0"/>
-                    <TextBlock Text="{x:Static properties:Resources.Page}" VerticalAlignment="Center" Margin="5,0"/>
-                    <TextBox x:Name="CurrentPageTextBox" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="1" Width="50" VerticalAlignment="Center" TextAlignment="Center" KeyDown="CurrentPageTextBox_KeyDown"/>
-                    <TextBlock Text="/" VerticalAlignment="Center" Margin="5,0"/>
-                    <TextBlock x:Name="TotalPagesText" Text="1" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                    <Button Content="&gt;" Style="{StaticResource ButtonDefault.Small}" Click="NextPage_Click" BorderThickness="0"  Width="30" Margin="2,0"/>
-                    <Button Content="&gt;|" Style="{StaticResource ButtonDefault.Small}" Click="LastPage_Click"  BorderThickness="0"  Width="30" Margin="2,0"/>
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="|&lt;" Click="FirstPage_Click" Style="{StaticResource ButtonDefault.Small}" BorderThickness="0" Margin="1,0" Padding="2" />
+                    <Button Content="&lt;" Click="PrevPage_Click" Style="{StaticResource ButtonDefault.Small}" BorderThickness="0" Margin="1,0" Padding="2" />
+                    <TextBox x:Name="CurrentPageTextBox" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="1" FontSize="11"  VerticalAlignment="Center" TextAlignment="Center" KeyDown="CurrentPageTextBox_KeyDown"/>
+                    <TextBlock Text="/" VerticalAlignment="Center" Margin="3,0" FontSize="11"/>
+                    <TextBlock x:Name="TotalPagesText" Text="1" VerticalAlignment="Center" FontSize="11"/>
+                    <Button Content="&gt;" Style="{StaticResource ButtonDefault.Small}" Click="NextPage_Click" BorderThickness="0" Margin="1,0" Padding="2"/>
+                    <Button Content="&gt;|" Style="{StaticResource ButtonDefault.Small}" Click="LastPage_Click" BorderThickness="0" Margin="1,0" Padding="2"/>
                 </StackPanel>
             </Grid>
         </Border>

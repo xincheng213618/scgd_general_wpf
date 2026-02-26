@@ -32,6 +32,11 @@ namespace ColorVision.UI.Desktop.Download
         private int _SpeedLimitMB = 100;
 
 
+        [DisplayName("RpcPort")]
+        [Description("aria2c RPC port (default 6800)")]
+        public int RpcPort { get => _RpcPort; set { _RpcPort = Math.Max(1024, Math.Min(value, 65535)); OnPropertyChanged(); } }
+        private int _RpcPort = 6800;
+
         [DisplayName("ShowCompletedNotification")]
         [Description("Show notification dialog when download completes")]
         public bool ShowCompletedNotification { get => _ShowCompletedNotification; set { _ShowCompletedNotification = value; OnPropertyChanged(); } }
@@ -41,5 +46,15 @@ namespace ColorVision.UI.Desktop.Download
         [Description("Automatically run/open file after download completes")]
         public bool RunFileAfterDownload { get => _RunFileAfterDownload; set { _RunFileAfterDownload = value; OnPropertyChanged(); } }
         private bool _RunFileAfterDownload;
+
+        [DisplayName("PromptDeleteFile")]
+        [Description("Prompt user to delete file when removing download record")]
+        public bool PromptDeleteFile { get => _PromptDeleteFile; set { _PromptDeleteFile = value; OnPropertyChanged(); } }
+        private bool _PromptDeleteFile = true;
+
+        [DisplayName("DefaultDeleteFile")]
+        [Description("Default choice for file deletion prompt (true=delete, false=keep)")]
+        public bool DefaultDeleteFile { get => _DefaultDeleteFile; set { _DefaultDeleteFile = value; OnPropertyChanged(); } }
+        private bool _DefaultDeleteFile;
     }
 }

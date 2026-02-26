@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using SqlSugar;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -179,6 +180,10 @@ namespace ColorVision.UI.Desktop.Download
         private string RpcUrl => $"http://127.0.0.1:{_rpcPort}/jsonrpc";
         private int _rpcRequestId;
         private Timer? _pollTimer;
+        /// <summary>
+        /// Tracks whether we are connected to a reused (orphan) aria2c process
+        /// </summary>
+        private bool _reusingExistingAria2c;
 
         /// <summary>
         /// Current RPC port used by the aria2c daemon
@@ -209,6 +214,12 @@ namespace ColorVision.UI.Desktop.Download
             _aria2cPath = FindAria2c();
             InitializeDatabase();
 
+            // Use configured port
+            _rpcPort = Config.RpcPort;
+
+            // Subscribe to config changes for live updates
+            Config.PropertyChanged += OnConfigPropertyChanged;
+
             // Clean up aria2c process when the application exits
             AppDomain.CurrentDomain.ProcessExit += (_, _) => Dispose();
         }
@@ -219,7 +230,100 @@ namespace ColorVision.UI.Desktop.Download
         /// </summary>
         public void Dispose()
         {
+            try { Config.PropertyChanged -= OnConfigPropertyChanged; }
+            catch { }
             StopAria2cDaemon();
+        }
+
+        /// <summary>
+        /// Handle config property changes and apply them to the running aria2c instance via RPC
+        /// </summary>
+        private void OnConfigPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(DownloadManagerConfig.EnableSpeedLimit):
+                case nameof(DownloadManagerConfig.SpeedLimitMB):
+                    ApplySpeedLimitAsync();
+                    break;
+                case nameof(DownloadManagerConfig.MaxConcurrentTasks):
+                    ApplyMaxConcurrentTasksAsync();
+                    break;
+            }
+        }
+
+        private void ApplySpeedLimitAsync()
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    if (!IsAria2cRunning) return;
+                    string limit = Config.EnableSpeedLimit ? $"{Config.SpeedLimitMB}M" : "0";
+                    var options = new Dictionary<string, string> { ["max-overall-download-limit"] = limit };
+                    await RpcCallAsync("aria2.changeGlobalOption", new object[] { $"token:{RpcSecret}", options });
+                    Application.Current?.Dispatcher.BeginInvoke(() => StatusMessage = Properties.Resources.ConfigApplied);
+                    log.Info($"Speed limit applied: {limit}");
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Failed to apply speed limit: {ex.Message}");
+                }
+            });
+        }
+
+        private void ApplyMaxConcurrentTasksAsync()
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    if (!IsAria2cRunning) return;
+                    var options = new Dictionary<string, string> { ["max-concurrent-downloads"] = Config.MaxConcurrentTasks.ToString() };
+                    await RpcCallAsync("aria2.changeGlobalOption", new object[] { $"token:{RpcSecret}", options });
+                    Application.Current?.Dispatcher.BeginInvoke(() => StatusMessage = Properties.Resources.ConfigApplied);
+                    log.Info($"Max concurrent tasks applied: {Config.MaxConcurrentTasks}");
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Failed to apply max concurrent tasks: {ex.Message}");
+                }
+            });
+        }
+
+        /// <summary>
+        /// Whether we have a working connection to an aria2c daemon (own process or reused)
+        /// </summary>
+        public bool IsAria2cRunning
+        {
+            get
+            {
+                lock (_processLock)
+                {
+                    if (_aria2cProcess != null && !_aria2cProcess.HasExited)
+                        return true;
+                }
+                return _reusingExistingAria2c;
+            }
+        }
+
+        /// <summary>
+        /// Pre-load the aria2c daemon so it's ready when downloads are created.
+        /// Called when the DownloadWindow opens.
+        /// </summary>
+        public void PreloadAria2cAsync()
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await EnsureAria2cRunningAsync();
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Preload aria2c failed: {ex.Message}");
+                }
+            });
         }
 
         private string FindAria2c()
@@ -255,6 +359,9 @@ namespace ColorVision.UI.Desktop.Download
 
         private async Task EnsureAria2cRunningAsync()
         {
+            if (_reusingExistingAria2c)
+                return;
+
             lock (_processLock)
             {
                 if (_aria2cProcess != null && !_aria2cProcess.HasExited)
@@ -270,8 +377,23 @@ namespace ColorVision.UI.Desktop.Download
             {
                 if (_aria2cProcess != null && !_aria2cProcess.HasExited)
                     return;
+            }
 
-                // Check if the port is in use
+            // If the configured port is in use, try to connect to an existing aria2c (orphan from previous session)
+            if (IsPortInUse(_rpcPort))
+            {
+                bool reused = await TryReuseExistingAria2cAsync();
+                if (reused)
+                {
+                    _reusingExistingAria2c = true;
+                    log.Info($"Reusing existing aria2c on port {_rpcPort}");
+                    UpdateServiceStatus();
+                    StartPolling();
+                    return;
+                }
+
+                // Could not reuse - kill any orphan aria2c processes on our port range, then find a new port
+                KillOrphanAria2cProcesses();
                 if (IsPortInUse(_rpcPort))
                 {
                     int newPort = FindAvailablePort(_rpcPort + 1);
@@ -282,8 +404,15 @@ namespace ColorVision.UI.Desktop.Download
                     });
                     _rpcPort = newPort;
                 }
+            }
 
-                string args = $"--enable-rpc --rpc-listen-port={_rpcPort} --rpc-secret={RpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=false --allow-overwrite=true --summary-interval=0 -j {Config.MaxConcurrentTasks}";
+            lock (_processLock)
+            {
+                if (_aria2cProcess != null && !_aria2cProcess.HasExited)
+                    return;
+
+                string args = $"--enable-rpc --rpc-listen-port={_rpcPort} --rpc-secret={RpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=true --allow-overwrite=false --summary-interval=0 -j {Config.MaxConcurrentTasks}" +
+                    " --enable-dht=true --bt-enable-lpd=true --enable-peer-exchange=true --follow-torrent=mem --seed-time=0 --bt-save-metadata=true";
 
                 if (Config.EnableSpeedLimit)
                 {
@@ -318,7 +447,7 @@ namespace ColorVision.UI.Desktop.Download
                     if (response != null)
                     {
                         log.Info("aria2c RPC daemon started successfully");
-                        StatusMessage = Properties.Resources.Aria2cReady;
+                        UpdateServiceStatus();
                         StartPolling();
                         return;
                     }
@@ -329,6 +458,65 @@ namespace ColorVision.UI.Desktop.Download
             log.Error("Failed to start aria2c RPC daemon");
             StatusMessage = Properties.Resources.Aria2cStartFailed;
             throw new Exception("Failed to start aria2c RPC daemon");
+        }
+
+        /// <summary>
+        /// Try to connect to an existing aria2c instance on the current port.
+        /// Returns true if we can reuse it (responds to our RPC secret).
+        /// </summary>
+        private async Task<bool> TryReuseExistingAria2cAsync()
+        {
+            try
+            {
+                var response = await RpcCallAsync("aria2.getVersion", new object[] { $"token:{RpcSecret}" });
+                return response?["result"] != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Kill orphan aria2c processes that may have been left from a previous session.
+        /// Only kills processes whose executable path matches our bundled aria2c.
+        /// </summary>
+        private void KillOrphanAria2cProcesses()
+        {
+            try
+            {
+                string? ourAria2cDir = Path.GetDirectoryName(_aria2cPath);
+                var aria2cProcesses = Process.GetProcessesByName("aria2c");
+                foreach (var proc in aria2cProcesses)
+                {
+                    try
+                    {
+                        // Only kill if it's our bundled aria2c (same directory)
+                        string? procPath = null;
+                        try { procPath = proc.MainModule?.FileName; } catch { }
+
+                        if (procPath != null && ourAria2cDir != null &&
+                            Path.GetDirectoryName(procPath)?.Equals(ourAria2cDir, StringComparison.OrdinalIgnoreCase) == true)
+                        {
+                            proc.Kill();
+                            proc.WaitForExit(2000);
+                            log.Info($"Killed orphan aria2c process (PID: {proc.Id})");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Debug($"Failed to kill aria2c process {proc.Id}: {ex.Message}");
+                    }
+                    finally
+                    {
+                        proc.Dispose();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"KillOrphanAria2cProcesses failed: {ex.Message}");
+            }
         }
 
         private static bool IsPortInUse(int port)
@@ -354,6 +542,7 @@ namespace ColorVision.UI.Desktop.Download
 
         private void StopAria2cDaemon()
         {
+            _reusingExistingAria2c = false;
             StopPolling();
             lock (_processLock)
             {
@@ -386,6 +575,18 @@ namespace ColorVision.UI.Desktop.Download
                     }
                 }
             }
+            UpdateServiceStatus();
+        }
+
+        /// <summary>
+        /// Update the service status message with connection state and port
+        /// </summary>
+        private void UpdateServiceStatus()
+        {
+            bool running = IsAria2cRunning;
+            string connText = running ? Properties.Resources.Aria2cConnected : Properties.Resources.Aria2cDisconnected;
+            string status = string.Format(Properties.Resources.Aria2cServiceStatus, connText, _rpcPort);
+            Application.Current?.Dispatcher.BeginInvoke(() => StatusMessage = status);
         }
 
         private void StartPolling()
@@ -399,8 +600,11 @@ namespace ColorVision.UI.Desktop.Download
             _pollTimer = null;
         }
 
+        bool IsPollCallback;
         private async void PollCallback(object? state)
         {
+            if (IsPollCallback) return;
+            IsPollCallback = true;
             try
             {
                 var activeTasks = _activeTasks.Values.ToArray();
@@ -409,10 +613,27 @@ namespace ColorVision.UI.Desktop.Download
                     // No active downloads — only stop the polling timer, keep aria2c process alive
                     // for instant reuse when new downloads are added (avoids slow restart)
                     StopPolling();
-                    StatusMessage = Properties.Resources.Aria2cReady;
+                    UpdateServiceStatus();
+                    IsPollCallback = false;
                     return;
                 }
-                StatusMessage = string.Format(Properties.Resources.ActiveDownloads, activeTasks.Length);
+
+                // Get global stats for overall speed display
+                long globalSpeed = 0;
+                try
+                {
+                    var globalStat = await RpcCallAsync("aria2.getGlobalStat", new object[] { $"token:{RpcSecret}" });
+                    if (globalStat != null)
+                    {
+                        long.TryParse(globalStat["result"]?["downloadSpeed"]?.ToString(), out globalSpeed);
+                    }
+                }
+                catch { }
+
+                string statusText = string.Format(Properties.Resources.ActiveDownloads, activeTasks.Length);
+                if (globalSpeed > 0)
+                    statusText += " | " + string.Format(Properties.Resources.GlobalSpeed, DownloadTask.FormatSpeed(globalSpeed));
+                StatusMessage = statusText;
                 foreach (var task in activeTasks)
                 {
                     if (string.IsNullOrEmpty(task.Gid)) continue;
@@ -421,7 +642,7 @@ namespace ColorVision.UI.Desktop.Download
                     {
                         var status = await RpcCallAsync("aria2.tellStatus",
                             new object[] { $"token:{RpcSecret}", task.Gid,
-                                new[] { "status", "totalLength", "completedLength", "downloadSpeed", "errorCode", "errorMessage" } });
+                                new[] { "status", "totalLength", "completedLength", "downloadSpeed", "errorCode", "errorMessage", "bittorrent", "files" } });
 
                         if (status == null) continue;
 
@@ -429,6 +650,14 @@ namespace ColorVision.UI.Desktop.Download
                         long.TryParse(status["result"]?["totalLength"]?.ToString(), out long totalLength);
                         long.TryParse(status["result"]?["completedLength"]?.ToString(), out long completedLength);
                         long.TryParse(status["result"]?["downloadSpeed"]?.ToString(), out long downloadSpeed);
+
+                        // Update file name from BT metadata if available
+                        var btInfo = status["result"]?["bittorrent"]?["info"]?["name"]?.ToString();
+                        if (!string.IsNullOrEmpty(btInfo) && task.FileName != btInfo)
+                        {
+                            Application.Current?.Dispatcher.BeginInvoke(() => task.FileName = btInfo);
+                            UpdateEntryFileName(task.Id, btInfo);
+                        }
 
                         int progress = totalLength > 0 ? (int)(completedLength * 100 / totalLength) : 0;
                         string speedText = DownloadTask.FormatSpeed(downloadSpeed);
@@ -457,16 +686,29 @@ namespace ColorVision.UI.Desktop.Download
                         else if (rpcStatus == "error")
                         {
                             string? errorMsg = status["result"]?["errorMessage"]?.ToString();
-                            Application.Current?.Dispatcher.BeginInvoke(() =>
+                            string? errorCode = status["result"]?["errorCode"]?.ToString();
+
+                            // errorCode "15" = "no URI" / no url available — often caused by stale .aria2 cache
+                            if (errorCode == "15" && TryClearStaleCacheFiles(task.SavePath))
                             {
-                                task.Status = DownloadStatus.Failed;
-                                task.ErrorMessage = errorMsg ?? "Unknown error";
-                                task.SpeedText = string.Empty;
-                            });
-                            UpdateEntryStatus(task.Id, DownloadStatus.Failed, errorMsg);
-                            _activeTasks.TryRemove(task.Id, out _);
-                            task.OnCompletedCallback?.Invoke(task);
-                            DownloadCompleted?.Invoke(this, task);
+                                log.Info($"Cleared stale cache for task {task.Id} ({task.FileName}), auto-retrying");
+                                _activeTasks.TryRemove(task.Id, out _);
+                                task.Gid = null;
+                                _ = StartDownloadAsync(task);
+                            }
+                            else
+                            {
+                                Application.Current?.Dispatcher.BeginInvoke(() =>
+                                {
+                                    task.Status = DownloadStatus.Failed;
+                                    task.ErrorMessage = errorMsg ?? "Unknown error";
+                                    task.SpeedText = string.Empty;
+                                });
+                                UpdateEntryStatus(task.Id, DownloadStatus.Failed, errorMsg);
+                                _activeTasks.TryRemove(task.Id, out _);
+                                task.OnCompletedCallback?.Invoke(task);
+                                DownloadCompleted?.Invoke(this, task);
+                            }
                         }
                         else if (rpcStatus == "removed" || rpcStatus == "paused")
                         {
@@ -489,6 +731,8 @@ namespace ColorVision.UI.Desktop.Download
             {
                 log.Debug($"Poll callback error: {ex.Message}");
             }
+
+            IsPollCallback = false;
         }
 
         private async Task<JObject?> RpcCallAsync(string method, object[] parameters)
@@ -562,7 +806,8 @@ namespace ColorVision.UI.Desktop.Download
             Directory.CreateDirectory(targetDir);
 
             string fileName = GetFileNameFromUrl(url);
-            string filePath = Path.Combine(targetDir, fileName);
+            string filePath = GetUniqueFilePath(targetDir, fileName);
+            fileName = Path.GetFileName(filePath);
 
             var entry = new DownloadEntry
             {
@@ -599,7 +844,7 @@ namespace ColorVision.UI.Desktop.Download
             return task;
         }
 
-        private async Task StartDownloadAsync(DownloadTask task, string? authorization = null)
+        private async Task StartDownloadAsync(DownloadTask task, string? authorization = null, bool isRetryAfterCacheClean = false)
         {
             try
             {
@@ -609,15 +854,22 @@ namespace ColorVision.UI.Desktop.Download
                 Application.Current?.Dispatcher.BeginInvoke(() => task.Status = DownloadStatus.Downloading);
                 UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
 
+                bool isMagnet = task.Url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase);
+
                 // Build options for this download
                 string dir = Path.GetDirectoryName(task.SavePath) ?? Config.DefaultDownloadPath;
-                string fileName = Path.GetFileName(task.SavePath);
 
                 var options = new System.Collections.Generic.Dictionary<string, string>
                 {
                     ["dir"] = dir,
-                    ["out"] = fileName,
                 };
+
+                // For magnet/BT, don't set "out" as aria2 determines the filename from metadata
+                if (!isMagnet)
+                {
+                    string fileName = Path.GetFileName(task.SavePath);
+                    options["out"] = fileName;
+                }
 
                 string auth = authorization ?? task.Authorization;
                 if (!string.IsNullOrWhiteSpace(auth) && auth.Contains(':'))
@@ -633,6 +885,20 @@ namespace ColorVision.UI.Desktop.Download
 
                 if (response != null)
                 {
+                    // Check for RPC-level error (e.g., stale .aria2 cache conflict)
+                    var errorObj = response["error"];
+                    if (errorObj != null)
+                    {
+                        string? errorMsg = errorObj["message"]?.ToString();
+                        if (!isRetryAfterCacheClean && TryClearStaleCacheFiles(task.SavePath))
+                        {
+                            log.Info($"Cleared stale .aria2 cache for {task.FileName}, retrying download");
+                            await StartDownloadAsync(task, authorization, isRetryAfterCacheClean: true);
+                            return;
+                        }
+                        throw new Exception(errorMsg ?? "aria2c RPC error");
+                    }
+
                     task.Status = DownloadStatus.Downloading;
                     string? gid = response["result"]?.ToString();
                     task.Gid = gid;
@@ -734,7 +1000,21 @@ namespace ColorVision.UI.Desktop.Download
             task.ErrorMessage = null;
             task.SpeedText = string.Empty;
             task.Gid = null;
+
+            string fullPath = Path.Combine(Path.GetDirectoryName(task.SavePath), task.FileName);
+            string rf = fullPath + ".aria2";
+            if (File.Exists(rf))
+            {
+                File.Delete(rf);
+                if (File.Exists(fullPath))
+                    File.Delete(fullPath);
+
+            }
+
+
             UpdateEntryStatus(task.Id, DownloadStatus.Waiting);
+
+
             _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
             _ = StartDownloadAsync(task);
         }
@@ -753,8 +1033,22 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
-        public void DeleteRecords(int[] ids)
+        public void DeleteRecords(int[] ids, bool deleteFiles = false)
         {
+            // Collect file paths before removing from DB
+            List<string> filePaths = new();
+            if (deleteFiles)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    foreach (var task in Tasks.Where(t => ids.Contains(t.Id)))
+                    {
+                        if (!string.IsNullOrEmpty(task.SavePath))
+                            filePaths.Add(task.SavePath);
+                    }
+                });
+            }
+
             using var db = CreateDbClient();
             db.Deleteable<DownloadEntry>().In(ids).ExecuteCommand();
 
@@ -769,6 +1063,23 @@ namespace ColorVision.UI.Desktop.Download
                     Tasks.Remove(task);
                 }
             });
+
+            // Delete files after DB/UI cleanup
+            if (deleteFiles)
+            {
+                foreach (var path in filePaths)
+                {
+                    try
+                    {
+                        if (File.Exists(path))
+                            File.Delete(path);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Debug($"Failed to delete file {path}: {ex.Message}");
+                    }
+                }
+            }
         }
 
         public void ClearAllRecords()
@@ -870,6 +1181,15 @@ namespace ColorVision.UI.Desktop.Download
                 .ExecuteCommand();
         }
 
+        private void UpdateEntryFileName(int id, string fileName)
+        {
+            using var db = CreateDbClient();
+            db.Updateable<DownloadEntry>()
+                .SetColumns(x => x.FileName == fileName)
+                .Where(x => x.Id == id)
+                .ExecuteCommand();
+        }
+
         private void UpdateEntryCompleted(DownloadTask task)
         {
             using var db = CreateDbClient();
@@ -882,8 +1202,61 @@ namespace ColorVision.UI.Desktop.Download
                 .ExecuteCommand();
         }
 
+        /// <summary>
+        /// Try to clear stale .aria2 cache files for a given save path.
+        /// Returns true if cache files were found and deleted (warranting a retry).
+        /// </summary>
+        private bool TryClearStaleCacheFiles(string savePath)
+        {
+            try
+            {
+                string aria2CacheFile = savePath + ".aria2";
+                bool cleared = false;
+
+                if (File.Exists(aria2CacheFile))
+                {
+                    File.Delete(aria2CacheFile);
+                    log.Info($"Deleted stale .aria2 cache: {aria2CacheFile}");
+                    cleared = true;
+                }
+
+                // Also remove the partial download file if it exists (it's from a stale session)
+                if (cleared && File.Exists(savePath))
+                {
+                    File.Delete(savePath);
+                    log.Info($"Deleted stale partial file: {savePath}");
+                }
+
+                return cleared;
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Failed to clear stale cache for {savePath}: {ex.Message}");
+                return false;
+            }
+        }
+
         private static string GetFileNameFromUrl(string url)
         {
+            // Handle magnet links: extract display name from dn= parameter
+            if (url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    int dnIndex = url.IndexOf("dn=", StringComparison.OrdinalIgnoreCase);
+                    if (dnIndex >= 0)
+                    {
+                        string dn = url.Substring(dnIndex + 3);
+                        int endIndex = dn.IndexOf('&');
+                        if (endIndex >= 0) dn = dn.Substring(0, endIndex);
+                        dn = Uri.UnescapeDataString(dn).Trim();
+                        if (!string.IsNullOrWhiteSpace(dn)) return dn;
+                    }
+                }
+                catch { }
+                return $"magnet_{DateTime.Now:yyyyMMddHHmmss}";
+            }
+
             try
             {
                 var uri = new Uri(url);
@@ -893,6 +1266,28 @@ namespace ColorVision.UI.Desktop.Download
             }
             catch { }
             return $"download_{DateTime.Now:yyyyMMddHHmmss}";
+        }
+
+        /// <summary>
+        /// Generate a unique file path by appending (1), (2), etc. if the file or its .aria2 cache already exists.
+        /// </summary>
+        private static string GetUniqueFilePath(string directory, string fileName)
+        {
+            string filePath = Path.Combine(directory, fileName);
+            if (!File.Exists(filePath) && !File.Exists(filePath + ".aria2"))
+                return filePath;
+
+            string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+            string ext = Path.GetExtension(fileName);
+
+            for (int i = 1; i < 1000; i++)
+            {
+                string candidate = Path.Combine(directory, $"{nameWithoutExt}({i}){ext}");
+                if (!File.Exists(candidate) && !File.Exists(candidate + ".aria2"))
+                    return candidate;
+            }
+            // Fallback: use timestamp
+            return Path.Combine(directory, $"{nameWithoutExt}_{DateTime.Now:yyyyMMddHHmmss}{ext}");
         }
 
         /// <summary>

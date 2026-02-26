@@ -106,33 +106,6 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 升序 的本地化字符串。
-        /// </summary>
-        public static string Ascending {
-            get {
-                return ResourceManager.GetString("Ascending", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 下载服务就绪 的本地化字符串。
-        /// </summary>
-        public static string Aria2cReady {
-            get {
-                return ResourceManager.GetString("Aria2cReady", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 aria2c 启动失败 的本地化字符串。
-        /// </summary>
-        public static string Aria2cStartFailed {
-            get {
-                return ResourceManager.GetString("Aria2cStartFailed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 已连接 的本地化字符串。
         /// </summary>
         public static string Aria2cConnected {
@@ -151,6 +124,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 下载服务就绪 的本地化字符串。
+        /// </summary>
+        public static string Aria2cReady {
+            get {
+                return ResourceManager.GetString("Aria2cReady", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 服务: {0} | 端口: {1} 的本地化字符串。
         /// </summary>
         public static string Aria2cServiceStatus {
@@ -160,47 +142,20 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
-        ///   查找类似 配置已应用 的本地化字符串。
+        ///   查找类似 aria2c 启动失败 的本地化字符串。
         /// </summary>
-        public static string ConfigApplied {
+        public static string Aria2cStartFailed {
             get {
-                return ResourceManager.GetString("ConfigApplied", resourceCulture);
+                return ResourceManager.GetString("Aria2cStartFailed", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   查找类似 总速度: {0} 的本地化字符串。
+        ///   查找类似 升序 的本地化字符串。
         /// </summary>
-        public static string GlobalSpeed {
+        public static string Ascending {
             get {
-                return ResourceManager.GetString("GlobalSpeed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 磁力链接下载 的本地化字符串。
-        /// </summary>
-        public static string MagnetDownload {
-            get {
-                return ResourceManager.GetString("MagnetDownload", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 RPC 端口 的本地化字符串。
-        /// </summary>
-        public static string RpcPort {
-            get {
-                return ResourceManager.GetString("RpcPort", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 支持 HTTP/HTTPS/FTP 链接、磁力链接 (magnet:)，多个链接用分号或换行分隔 的本地化字符串。
-        /// </summary>
-        public static string UrlOrMagnetHint {
-            get {
-                return ResourceManager.GetString("UrlOrMagnetHint", resourceCulture);
+                return ResourceManager.GetString("Ascending", resourceCulture);
             }
         }
         
@@ -332,11 +287,29 @@ namespace ColorVision.UI.Desktop.Properties {
         
         
         /// <summary>
+        ///   查找类似 配置已应用 的本地化字符串。
+        /// </summary>
+        public static string ConfigApplied {
+            get {
+                return ResourceManager.GetString("ConfigApplied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 配置管理窗口 的本地化字符串。
         /// </summary>
         public static string ConfigurationManagement {
             get {
                 return ResourceManager.GetString("ConfigurationManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 文件已存在于磁盘，是否同时删除文件？ 的本地化字符串。
+        /// </summary>
+        public static string ConfirmDeleteFile {
+            get {
+                return ResourceManager.GetString("ConfirmDeleteFile", resourceCulture);
             }
         }
         
@@ -748,6 +721,15 @@ namespace ColorVision.UI.Desktop.Properties {
 
         
         /// <summary>
+        ///   查找类似 总速度: {0} 的本地化字符串。
+        /// </summary>
+        public static string GlobalSpeed {
+            get {
+                return ResourceManager.GetString("GlobalSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 导入和导出设置 的本地化字符串。
         /// </summary>
         public static string ImportExportSettings {
@@ -829,6 +811,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
 
+        
+        /// <summary>
+        ///   查找类似 磁力链接下载 的本地化字符串。
+        /// </summary>
+        public static string MagnetDownload {
+            get {
+                return ResourceManager.GetString("MagnetDownload", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 消息日志窗口 的本地化字符串。
@@ -1246,6 +1237,15 @@ namespace ColorVision.UI.Desktop.Properties {
         
         
         /// <summary>
+        ///   查找类似 RPC 端口 的本地化字符串。
+        /// </summary>
+        public static string RpcPort {
+            get {
+                return ResourceManager.GetString("RpcPort", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Русский（俄语） 的本地化字符串。
         /// </summary>
         public static string ru {
@@ -1489,6 +1489,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
 
+        /// <summary>
+        ///   查找类似 支持 HTTP/HTTPS/FTP 链接、磁力链接 (magnet:)，多个链接用分号或换行分隔 的本地化字符串。
+        /// </summary>
+        public static string UrlOrMagnetHint {
+            get {
+                return ResourceManager.GetString("UrlOrMagnetHint", resourceCulture);
+            }
+        }
+        
         /// <summary>
         ///   查找类似 请输入下载链接 的本地化字符串。
         /// </summary>
