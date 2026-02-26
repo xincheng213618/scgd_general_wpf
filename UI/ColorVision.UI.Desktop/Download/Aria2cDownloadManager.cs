@@ -248,7 +248,7 @@ namespace ColorVision.UI.Desktop.Download
             }
             catch (Exception ex)
             {
-                log.Debug($"Apply config failed: {ex.Message}");
+                log.Debug($"Failed to apply runtime configuration change for {e.PropertyName}: {ex.Message}");
             }
         }
 
@@ -267,9 +267,16 @@ namespace ColorVision.UI.Desktop.Download
 
         private async Task RestartDaemonAsync()
         {
-            StopAria2cDaemon();
-            await EnsureAria2cRunningAsync();
-            await ApplyRuntimeConfigAsync();
+            try
+            {
+                StopAria2cDaemon();
+                await EnsureAria2cRunningAsync();
+                await ApplyRuntimeConfigAsync();
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Restart aria2 daemon failed: {ex.Message}", ex);
+            }
         }
 
         /// <summary>
@@ -694,7 +701,6 @@ namespace ColorVision.UI.Desktop.Download
                     options["out"] = fileName;
                 else
                 {
-                    options["follow-torrent"] = "true";
                     options["bt-save-metadata"] = "true";
                 }
 
@@ -965,7 +971,7 @@ namespace ColorVision.UI.Desktop.Download
         {
             if (IsBitTorrentSource(url))
             {
-                return $"torrent_{DateTime.Now:yyyyMMddHHmmss}";
+                return $"bt_download_{DateTime.Now:yyyyMMddHHmmss}";
             }
             try
             {
@@ -982,7 +988,7 @@ namespace ColorVision.UI.Desktop.Download
         {
             if (string.IsNullOrWhiteSpace(url))
                 return false;
-            if (url.StartsWith("magnet:?", StringComparison.OrdinalIgnoreCase))
+            if (url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase))
                 return true;
             return url.EndsWith(".torrent", StringComparison.OrdinalIgnoreCase);
         }

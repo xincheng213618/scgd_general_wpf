@@ -98,9 +98,11 @@ namespace ColorVision.UI.Desktop.Download
             if (!string.IsNullOrEmpty(_manager.StatusMessage))
                 StatusBarText.Text = _manager.StatusMessage;
             UpdateServiceStatusText();
-            _serviceStatusTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            _serviceStatusTimer.Tick -= ServiceStatusTimer_Tick;
-            _serviceStatusTimer.Tick += ServiceStatusTimer_Tick;
+            if (_serviceStatusTimer == null)
+            {
+                _serviceStatusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+                _serviceStatusTimer.Tick += ServiceStatusTimer_Tick;
+            }
             _serviceStatusTimer.Start();
         }
 
