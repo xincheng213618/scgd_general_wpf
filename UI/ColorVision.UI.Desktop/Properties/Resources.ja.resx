@@ -493,7 +493,7 @@
     <value>新しいダウンロード</value>
   </data>
   <data name="ClearRecords" xml:space="preserve">
-    <value>記録をクリアする</value>
+    <value>全ての記録をクリア</value>
   </data>
   <data name="DeleteSelected" xml:space="preserve">
     <value>選択した項目を削除</value>
@@ -596,5 +596,26 @@
   </data>
   <data name="UrlSeparatorHint" xml:space="preserve">
     <value>複数のリンクはセミコロン (;) で区切られます。</value>
+  </data>
+  <data name="PauseDownload" xml:space="preserve">
+    <value>ダウンロードを一時停止</value>
+  </data>
+  <data name="ResumeDownload" xml:space="preserve">
+    <value>ダウンロードを再開</value>
+  </data>
+  <data name="PortSwitched" xml:space="preserve">
+    <value>ポート {0} は使用中です。ポート {1} に切り替えました</value>
+  </data>
+  <data name="AutoRestartingDownloads" xml:space="preserve">
+    <value>{0} 件の未完了ダウンロードを自動再開中</value>
+  </data>
+  <data name="Aria2cStartFailed" xml:space="preserve">
+    <value>aria2cの起動に失敗しました</value>
+  </data>
+  <data name="Aria2cReady" xml:space="preserve">
+    <value>ダウンロードサービス準備完了</value>
+  </data>
+  <data name="ActiveDownloads" xml:space="preserve">
+    <value>ダウンロード中: {0}</value>
   </data>
 </root>

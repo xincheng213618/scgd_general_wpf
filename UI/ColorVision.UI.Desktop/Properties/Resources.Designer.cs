@@ -61,6 +61,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 正在下载: {0} 的本地化字符串。
+        /// </summary>
+        public static string ActiveDownloads {
+            get {
+                return ResourceManager.GetString("ActiveDownloads", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 新建下载 的本地化字符串。
         /// </summary>
         public static string AddDownload {
@@ -102,6 +111,33 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string Ascending {
             get {
                 return ResourceManager.GetString("Ascending", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下载服务就绪 的本地化字符串。
+        /// </summary>
+        public static string Aria2cReady {
+            get {
+                return ResourceManager.GetString("Aria2cReady", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 aria2c 启动失败 的本地化字符串。
+        /// </summary>
+        public static string Aria2cStartFailed {
+            get {
+                return ResourceManager.GetString("Aria2cStartFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在自动恢复 {0} 个未完成的下载 的本地化字符串。
+        /// </summary>
+        public static string AutoRestartingDownloads {
+            get {
+                return ResourceManager.GetString("AutoRestartingDownloads", resourceCulture);
             }
         }
         
@@ -925,6 +961,15 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 暂停下载 的本地化字符串。
+        /// </summary>
+        public static string PauseDownload {
+            get {
+                return ResourceManager.GetString("PauseDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 已暂停 的本地化字符串。
         /// </summary>
         public static string Paused {
@@ -993,6 +1038,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string PluginName {
             get {
                 return ResourceManager.GetString("PluginName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 端口 {0} 已被占用，已切换至端口 {1} 的本地化字符串。
+        /// </summary>
+        public static string PortSwitched {
+            get {
+                return ResourceManager.GetString("PortSwitched", resourceCulture);
             }
         }
         
@@ -1092,6 +1146,15 @@ namespace ColorVision.UI.Desktop.Properties {
         public static string RestoreConfigFileFailed {
             get {
                 return ResourceManager.GetString("RestoreConfigFileFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 继续下载 的本地化字符串。
+        /// </summary>
+        public static string ResumeDownload {
+            get {
+                return ResourceManager.GetString("ResumeDownload", resourceCulture);
             }
         }
         

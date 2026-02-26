@@ -7,7 +7,9 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Windows;
 
@@ -22,16 +24,41 @@ namespace ColorVision.UI.Desktop.Download
         public string Url { get => _Url; set { _Url = value; OnPropertyChanged(); } }
         private string _Url = string.Empty;
 
-        public string FileName { get => _FileName; set { _FileName = value; OnPropertyChanged(); } }
+        public string FileName { get => _FileName; set { _FileName = value; OnPropertyChanged(); OnPropertyChanged(nameof(FileIconSource)); } }
         private string _FileName = string.Empty;
+
+        public System.Windows.Media.ImageSource? FileIconSource
+        {
+            get
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(_FileName))
+                    {
+                        string ext = System.IO.Path.GetExtension(_FileName);
+                        if (!string.IsNullOrEmpty(ext))
+                            return ColorVision.Common.NativeMethods.FileIcon.GetFileIconImageSource("file" + ext);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log4net.LogManager.GetLogger(nameof(DownloadTask)).Debug($"Failed to get file icon for {_FileName}: {ex.Message}");
+                }
+                return null;
+            }
+        }
 
         public string SavePath { get => _SavePath; set { _SavePath = value; OnPropertyChanged(); } }
         private string _SavePath = string.Empty;
 
-        public DownloadStatus Status { get => _Status; set { _Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); OnPropertyChanged(nameof(IsDownloading)); } }
+        public DownloadStatus Status { get => _Status; set { _Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); OnPropertyChanged(nameof(IsDownloading)); OnPropertyChanged(nameof(IsActiveDownloading)); OnPropertyChanged(nameof(IsCompleted)); OnPropertyChanged(nameof(IsPaused)); OnPropertyChanged(nameof(IsWaitingOrFailed)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
         private DownloadStatus _Status;
 
         public bool IsDownloading => Status == DownloadStatus.Downloading || Status == DownloadStatus.Waiting;
+        public bool IsActiveDownloading => Status == DownloadStatus.Downloading;
+        public bool IsCompleted => Status == DownloadStatus.Completed || Status == DownloadStatus.FileDeleted;
+        public bool IsPaused => Status == DownloadStatus.Paused;
+        public bool IsWaitingOrFailed => Status == DownloadStatus.Waiting || Status == DownloadStatus.Failed;
 
         public string StatusText => Status switch
         {
@@ -47,10 +74,10 @@ namespace ColorVision.UI.Desktop.Download
         public int ProgressValue { get => _ProgressValue; set { _ProgressValue = value; OnPropertyChanged(); } }
         private int _ProgressValue;
 
-        public long TotalBytes { get => _TotalBytes; set { _TotalBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalBytesText)); } }
+        public long TotalBytes { get => _TotalBytes; set { _TotalBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(TotalBytesText)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
         private long _TotalBytes;
 
-        public long DownloadedBytes { get => _DownloadedBytes; set { _DownloadedBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(DownloadedBytesText)); } }
+        public long DownloadedBytes { get => _DownloadedBytes; set { _DownloadedBytes = value; OnPropertyChanged(); OnPropertyChanged(nameof(DownloadedBytesText)); OnPropertyChanged(nameof(FileSizeDisplayText)); } }
         private long _DownloadedBytes;
 
         public string SpeedText { get => _SpeedText; set { _SpeedText = value; OnPropertyChanged(); } }
@@ -65,6 +92,20 @@ namespace ColorVision.UI.Desktop.Download
         public string TotalBytesText => FormatBytes(TotalBytes);
         public string DownloadedBytesText => FormatBytes(DownloadedBytes);
 
+        public string FileSizeDisplayText
+        {
+            get
+            {
+                if (Status == DownloadStatus.Completed || Status == DownloadStatus.FileDeleted)
+                    return FormatBytes(TotalBytes);
+                if (IsDownloading && TotalBytes > 0)
+                    return $"{FormatBytes(DownloadedBytes)} / {FormatBytes(TotalBytes)}";
+                if (TotalBytes > 0)
+                    return FormatBytes(TotalBytes);
+                return string.Empty;
+            }
+        }
+
         /// <summary>
         /// The aria2c GID for this download (used with JSON-RPC)
         /// </summary>
@@ -76,6 +117,11 @@ namespace ColorVision.UI.Desktop.Download
         /// Per-task completion callback. When set, the global ShowCompletedNotification is skipped for this task.
         /// </summary>
         public Action<DownloadTask>? OnCompletedCallback { get; set; }
+
+        /// <summary>
+        /// HTTP authorization (user:password) for authenticated downloads. Persisted for resume/retry.
+        /// </summary>
+        public string? Authorization { get; set; }
 
         public static string FormatBytes(long bytes)
         {
@@ -128,11 +174,27 @@ namespace ColorVision.UI.Desktop.Download
         private Process? _aria2cProcess;
         private readonly object _processLock = new();
         private readonly HttpClient _httpClient = new();
-        private const int RpcPort = 6800;
+        private int _rpcPort = 6800;
         private const string RpcSecret = "ColorVisionDL";
-        private string RpcUrl => $"http://127.0.0.1:{RpcPort}/jsonrpc";
+        private string RpcUrl => $"http://127.0.0.1:{_rpcPort}/jsonrpc";
         private int _rpcRequestId;
         private Timer? _pollTimer;
+
+        /// <summary>
+        /// Current RPC port used by the aria2c daemon
+        /// </summary>
+        public int CurrentRpcPort => _rpcPort;
+
+        /// <summary>
+        /// Status message for the download service
+        /// </summary>
+        public string StatusMessage { get => _statusMessage; private set { _statusMessage = value; StatusMessageChanged?.Invoke(this, value); } }
+        private string _statusMessage = string.Empty;
+
+        /// <summary>
+        /// Fired when the status message changes
+        /// </summary>
+        public event EventHandler<string>? StatusMessageChanged;
 
         /// <summary>
         /// Fired when a download task completes (success or failure)
@@ -209,7 +271,19 @@ namespace ColorVision.UI.Desktop.Download
                 if (_aria2cProcess != null && !_aria2cProcess.HasExited)
                     return;
 
-                string args = $"--enable-rpc --rpc-listen-port={RpcPort} --rpc-secret={RpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=false --allow-overwrite=true --summary-interval=0 -j {Config.MaxConcurrentTasks}";
+                // Check if the port is in use
+                if (IsPortInUse(_rpcPort))
+                {
+                    int newPort = FindAvailablePort(_rpcPort + 1);
+                    log.Warn($"Port {_rpcPort} is in use, switching to port {newPort}");
+                    Application.Current?.Dispatcher.BeginInvoke(() =>
+                    {
+                        StatusMessage = string.Format(Properties.Resources.PortSwitched, _rpcPort, newPort);
+                    });
+                    _rpcPort = newPort;
+                }
+
+                string args = $"--enable-rpc --rpc-listen-port={_rpcPort} --rpc-secret={RpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=false --allow-overwrite=true --summary-interval=0 -j {Config.MaxConcurrentTasks}";
 
                 if (Config.EnableSpeedLimit)
                 {
@@ -244,6 +318,7 @@ namespace ColorVision.UI.Desktop.Download
                     if (response != null)
                     {
                         log.Info("aria2c RPC daemon started successfully");
+                        StatusMessage = Properties.Resources.Aria2cReady;
                         StartPolling();
                         return;
                     }
@@ -252,7 +327,29 @@ namespace ColorVision.UI.Desktop.Download
             }
 
             log.Error("Failed to start aria2c RPC daemon");
+            StatusMessage = Properties.Resources.Aria2cStartFailed;
             throw new Exception("Failed to start aria2c RPC daemon");
+        }
+
+        private static bool IsPortInUse(int port)
+        {
+            try
+            {
+                var ipProperties = IPGlobalProperties.GetIPGlobalProperties();
+                var listeners = ipProperties.GetActiveTcpListeners();
+                return listeners.Any(ep => ep.Port == port);
+            }
+            catch (Exception ex) { log.Debug($"Port check failed: {ex.Message}"); return false; }
+        }
+
+        private static int FindAvailablePort(int startPort)
+        {
+            for (int port = startPort; port < startPort + 100; port++)
+            {
+                if (!IsPortInUse(port))
+                    return port;
+            }
+            return startPort;
         }
 
         private void StopAria2cDaemon()
@@ -312,8 +409,10 @@ namespace ColorVision.UI.Desktop.Download
                     // No active downloads — only stop the polling timer, keep aria2c process alive
                     // for instant reuse when new downloads are added (avoids slow restart)
                     StopPolling();
+                    StatusMessage = Properties.Resources.Aria2cReady;
                     return;
                 }
+                StatusMessage = string.Format(Properties.Resources.ActiveDownloads, activeTasks.Length);
                 foreach (var task in activeTasks)
                 {
                     if (string.IsNullOrEmpty(task.Gid)) continue;
@@ -414,6 +513,47 @@ namespace ColorVision.UI.Desktop.Download
         #endregion
 
         /// <summary>
+        /// Auto-restart incomplete downloads (Waiting, Downloading status) from previous session
+        /// </summary>
+        public void AutoRestartIncompleteDownloads()
+        {
+            try
+            {
+                using var db = CreateDbClient();
+                var incompleteEntries = db.Queryable<DownloadEntry>()
+                    .Where(x => x.Status == (int)DownloadStatus.Waiting || x.Status == (int)DownloadStatus.Downloading || x.Status == (int)DownloadStatus.Paused)
+                    .ToList();
+
+                if (incompleteEntries.Count == 0) return;
+
+                log.Info($"Auto-restarting {incompleteEntries.Count} incomplete downloads");
+                StatusMessage = string.Format(Properties.Resources.AutoRestartingDownloads, incompleteEntries.Count);
+
+                foreach (var entry in incompleteEntries)
+                {
+                    var task = new DownloadTask
+                    {
+                        Id = entry.Id,
+                        Url = entry.Url,
+                        FileName = entry.FileName,
+                        SavePath = entry.SavePath,
+                        Status = DownloadStatus.Waiting,
+                        CreateTime = entry.CreateTime,
+                        Authorization = DecodeAuth(entry.Authorization)
+                    };
+
+                    _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
+                    Application.Current?.Dispatcher.BeginInvoke(() => Tasks.Insert(0, task));
+                    _ = StartDownloadAsync(task);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Auto-restart incomplete downloads failed: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
         /// Add a download task with default settings
         /// </summary>
         public DownloadTask AddDownload(string url, string? savePath = null, string? authorization = null, Action<DownloadTask>? onCompleted = null)
@@ -430,7 +570,8 @@ namespace ColorVision.UI.Desktop.Download
                 FileName = fileName,
                 SavePath = filePath,
                 Status = (int)DownloadStatus.Waiting,
-                CreateTime = DateTime.Now
+                CreateTime = DateTime.Now,
+                Authorization = EncodeAuth(authorization)
             };
 
             using (var db = CreateDbClient())
@@ -446,7 +587,8 @@ namespace ColorVision.UI.Desktop.Download
                 SavePath = filePath,
                 Status = DownloadStatus.Waiting,
                 CreateTime = entry.CreateTime,
-                OnCompletedCallback = onCompleted
+                OnCompletedCallback = onCompleted,
+                Authorization = authorization
             };
 
             _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
@@ -477,7 +619,7 @@ namespace ColorVision.UI.Desktop.Download
                     ["out"] = fileName,
                 };
 
-                string auth = authorization;
+                string auth = authorization ?? task.Authorization;
                 if (!string.IsNullOrWhiteSpace(auth) && auth.Contains(':'))
                 {
                     string[] parts = auth.Split(':', 2);
@@ -531,6 +673,58 @@ namespace ColorVision.UI.Desktop.Download
             });
             UpdateEntryStatus(task.Id, DownloadStatus.Paused);
             _activeTasks.TryRemove(task.Id, out _);
+        }
+
+        public void PauseDownload(DownloadTask task)
+        {
+            if (!string.IsNullOrEmpty(task.Gid))
+            {
+                Task.Run(async () =>
+                {
+                    try { await RpcCallAsync("aria2.pause", new object[] { $"token:{RpcSecret}", task.Gid }); }
+                    catch (Exception ex) { log.Debug($"RPC pause failed for GID {task.Gid}: {ex.Message}"); }
+                });
+            }
+            _activeTasks.TryRemove(task.Id, out _);
+            Application.Current?.Dispatcher.BeginInvoke(() =>
+            {
+                task.Status = DownloadStatus.Paused;
+                task.SpeedText = string.Empty;
+            });
+            UpdateEntryStatus(task.Id, DownloadStatus.Paused);
+        }
+
+        public void ResumeDownload(DownloadTask task)
+        {
+            if (!string.IsNullOrEmpty(task.Gid))
+            {
+                _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    task.Status = DownloadStatus.Downloading;
+                    task.SpeedText = string.Empty;
+                });
+                UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await EnsureAria2cRunningAsync();
+                        StartPolling();
+                        await RpcCallAsync("aria2.unpause", new object[] { $"token:{RpcSecret}", task.Gid });
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Debug($"RPC unpause failed for GID {task.Gid}: {ex.Message}");
+                        // Fall back to retry
+                        Application.Current?.Dispatcher.BeginInvoke(() => RetryDownload(task));
+                    }
+                });
+            }
+            else
+            {
+                RetryDownload(task);
+            }
         }
 
         public void RetryDownload(DownloadTask task)
@@ -647,7 +841,8 @@ namespace ColorVision.UI.Desktop.Download
                             DownloadedBytes = entry.DownloadedBytes,
                             ProgressValue = entry.TotalBytes > 0 ? (int)(entry.DownloadedBytes * 100 / entry.TotalBytes) : 0,
                             CreateTime = entry.CreateTime,
-                            ErrorMessage = entry.ErrorMessage
+                            ErrorMessage = entry.ErrorMessage,
+                            Authorization = DecodeAuth(entry.Authorization)
                         });
                     }
                 }
@@ -698,6 +893,25 @@ namespace ColorVision.UI.Desktop.Download
             }
             catch { }
             return $"download_{DateTime.Now:yyyyMMddHHmmss}";
+        }
+
+        /// <summary>
+        /// Encode authorization for storage (Base64 to avoid plain text in DB)
+        /// </summary>
+        private static string? EncodeAuth(string? auth)
+        {
+            if (string.IsNullOrEmpty(auth)) return null;
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(auth));
+        }
+
+        /// <summary>
+        /// Decode authorization from storage
+        /// </summary>
+        private static string? DecodeAuth(string? encoded)
+        {
+            if (string.IsNullOrEmpty(encoded)) return null;
+            try { return Encoding.UTF8.GetString(Convert.FromBase64String(encoded)); }
+            catch { return encoded; }
         }
     }
 }

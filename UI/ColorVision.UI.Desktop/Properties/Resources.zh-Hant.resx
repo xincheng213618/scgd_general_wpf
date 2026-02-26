@@ -493,7 +493,7 @@
     <value>新下載</value>
   </data>
   <data name="ClearRecords" xml:space="preserve">
-    <value>清除記錄</value>
+    <value>清除全部記錄</value>
   </data>
   <data name="DeleteSelected" xml:space="preserve">
     <value>刪除選取</value>
@@ -596,5 +596,26 @@
   </data>
   <data name="UrlSeparatorHint" xml:space="preserve">
     <value>多個連結以 ; 分隔</value>
+  </data>
+  <data name="PauseDownload" xml:space="preserve">
+    <value>暫停下載</value>
+  </data>
+  <data name="ResumeDownload" xml:space="preserve">
+    <value>繼續下載</value>
+  </data>
+  <data name="PortSwitched" xml:space="preserve">
+    <value>端口 {0} 已被佔用，已切換至端口 {1}</value>
+  </data>
+  <data name="AutoRestartingDownloads" xml:space="preserve">
+    <value>正在自動恢復 {0} 個未完成的下載</value>
+  </data>
+  <data name="Aria2cStartFailed" xml:space="preserve">
+    <value>aria2c 啟動失敗</value>
+  </data>
+  <data name="Aria2cReady" xml:space="preserve">
+    <value>下載服務就緒</value>
+  </data>
+  <data name="ActiveDownloads" xml:space="preserve">
+    <value>正在下載: {0}</value>
   </data>
 </root>

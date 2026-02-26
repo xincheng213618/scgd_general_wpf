@@ -487,7 +487,7 @@
     <value>Add Download</value>
   </data>
   <data name="ClearRecords" xml:space="preserve">
-    <value>Clear Records</value>
+    <value>Clear All Records</value>
   </data>
   <data name="DeleteSelected" xml:space="preserve">
     <value>Delete Selected</value>
@@ -596,5 +596,26 @@
   </data>
   <data name="UrlSeparatorHint" xml:space="preserve">
     <value>Multiple links are separated by a semicolon (;).</value>
+  </data>
+  <data name="PauseDownload" xml:space="preserve">
+    <value>Pause Download</value>
+  </data>
+  <data name="ResumeDownload" xml:space="preserve">
+    <value>Resume Download</value>
+  </data>
+  <data name="PortSwitched" xml:space="preserve">
+    <value>Port {0} is in use, switched to port {1}</value>
+  </data>
+  <data name="AutoRestartingDownloads" xml:space="preserve">
+    <value>Auto-restarting {0} incomplete downloads</value>
+  </data>
+  <data name="Aria2cStartFailed" xml:space="preserve">
+    <value>aria2c failed to start</value>
+  </data>
+  <data name="Aria2cReady" xml:space="preserve">
+    <value>Download service ready</value>
+  </data>
+  <data name="ActiveDownloads" xml:space="preserve">
+    <value>Downloading: {0}</value>
   </data>
 </root>

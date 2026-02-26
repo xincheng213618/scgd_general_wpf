@@ -493,7 +493,7 @@
     <value>Новая загрузка</value>
   </data>
   <data name="ClearRecords" xml:space="preserve">
-    <value>Чистые записи</value>
+    <value>Очистить все записи</value>
   </data>
   <data name="DeleteSelected" xml:space="preserve">
     <value>Удалить выбранное</value>
@@ -596,5 +596,26 @@
   </data>
   <data name="UrlSeparatorHint" xml:space="preserve">
     <value>Несколько ссылок разделяются точкой с запятой (;).</value>
+  </data>
+  <data name="PauseDownload" xml:space="preserve">
+    <value>Приостановить загрузку</value>
+  </data>
+  <data name="ResumeDownload" xml:space="preserve">
+    <value>Возобновить загрузку</value>
+  </data>
+  <data name="PortSwitched" xml:space="preserve">
+    <value>Порт {0} занят, переключён на порт {1}</value>
+  </data>
+  <data name="AutoRestartingDownloads" xml:space="preserve">
+    <value>Автоматический перезапуск {0} незавершённых загрузок</value>
+  </data>
+  <data name="Aria2cStartFailed" xml:space="preserve">
+    <value>Не удалось запустить aria2c</value>
+  </data>
+  <data name="Aria2cReady" xml:space="preserve">
+    <value>Служба загрузки готова</value>
+  </data>
+  <data name="ActiveDownloads" xml:space="preserve">
+    <value>Загрузка: {0}</value>
   </data>
 </root>
