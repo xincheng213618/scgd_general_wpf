@@ -1000,7 +1000,21 @@ namespace ColorVision.UI.Desktop.Download
             task.ErrorMessage = null;
             task.SpeedText = string.Empty;
             task.Gid = null;
+
+            string fullPath = Path.Combine(Path.GetDirectoryName(task.SavePath), task.FileName);
+            string rf = fullPath + ".aria2";
+            if (File.Exists(rf))
+            {
+                File.Delete(rf);
+                if (File.Exists(fullPath))
+                    File.Delete(fullPath);
+
+            }
+
+
             UpdateEntryStatus(task.Id, DownloadStatus.Waiting);
+
+
             _activeTasks.AddOrUpdate(task.Id, task, (key, old) => task);
             _ = StartDownloadAsync(task);
         }

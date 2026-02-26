@@ -1074,27 +1074,24 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
                 cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
 
-                if (string.IsNullOrWhiteSpace(Device.Config.CameraID))
+                string szText = "";
+                if (cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
                 {
-                    string szText = "";
-                    if (cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
+                    JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
+
+                    if (jObject["ID"] != null)
                     {
-                        JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
+                        JToken[] data = jObject["ID"].ToArray();
 
-                        if (jObject["ID"] != null)
+                        for (int i = 0; i < data.Length; i++)
                         {
-                            JToken[] data = jObject["ID"].ToArray();
+                            string camerid = data[i].ToString();
 
-                            for (int i = 0; i < data.Length; i++)
+                            string MD5 = ColorVision.Common.Utilities.Tool.GetMD5(camerid);
+
+                            if (MD5.ToUpper().Contains(Device.Config.CameraCode))
                             {
-                                string camerid = data[i].ToString();
-
-                                string MD5 = ColorVision.Common.Utilities.Tool.GetMD5(camerid);
-
-                                if (MD5.ToUpper().Contains(Device.Config.CameraCode))
-                                {
-                                    Device.Config.CameraID = camerid;
-                                }
+                                Device.Config.CameraID = camerid;
                             }
                         }
                     }
