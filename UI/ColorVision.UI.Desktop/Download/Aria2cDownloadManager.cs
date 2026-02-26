@@ -177,6 +177,8 @@ namespace ColorVision.UI.Desktop.Download
         private readonly HttpClient _httpClient = new();
         private int _rpcPort = 6800;
         private const string RpcSecret = "ColorVisionDL";
+        private static readonly System.Text.RegularExpressions.Regex MagnetDnRegex =
+            new(@"[?&]dn=([^&]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
         private string RpcUrl => $"http://127.0.0.1:{_rpcPort}/jsonrpc";
         private int _rpcRequestId;
         private Timer? _pollTimer;
@@ -693,11 +695,6 @@ namespace ColorVision.UI.Desktop.Download
                 {
                     options["out"] = fileName;
                 }
-                else
-                {
-                    options["follow-torrent"] = "true";
-                    options["bt-save-metadata"] = "true";
-                }
 
                 string auth = authorization ?? task.Authorization;
                 if (!string.IsNullOrWhiteSpace(auth) && auth.Contains(':'))
@@ -968,13 +965,13 @@ namespace ColorVision.UI.Desktop.Download
             {
                 if (url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase))
                 {
-                    var dnMatch = System.Text.RegularExpressions.Regex.Match(url, @"[?&]dn=([^&]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    var dnMatch = MagnetDnRegex.Match(url);
                     if (dnMatch.Success)
                     {
                         string decoded = Uri.UnescapeDataString(dnMatch.Groups[1].Value.Replace('+', ' ')).Trim();
                         if (!string.IsNullOrWhiteSpace(decoded)) return decoded;
                     }
-                    return $"magnet_{DateTime.Now:yyyyMMddHHmmss}";
+                    return $"magnet_{DateTime.Now:yyyyMMddHHmmss}.download";
                 }
 
                 var uri = new Uri(url);

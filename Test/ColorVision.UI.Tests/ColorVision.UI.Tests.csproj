@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+    <ProjectReference Include="..\..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" />
   </ItemGroup>
 
 </Project>
