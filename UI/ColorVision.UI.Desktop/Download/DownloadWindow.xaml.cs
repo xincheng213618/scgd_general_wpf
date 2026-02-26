@@ -92,9 +92,14 @@ namespace ColorVision.UI.Desktop.Download
             DownloadListView.ItemsSource = _manager.Tasks;
             LoadData();
 
-            // Show current status
+            // Show current status and update indicator
             if (!string.IsNullOrEmpty(_manager.StatusMessage))
                 StatusBarText.Text = _manager.StatusMessage;
+
+            bool isConnected = _manager.IsAria2cRunning;
+            StatusIndicator.Fill = isConnected
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(76, 175, 80))
+                : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(158, 158, 158));
         }
 
         private void OnStatusMessageChanged(object? sender, string message)
@@ -102,6 +107,11 @@ namespace ColorVision.UI.Desktop.Download
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 StatusBarText.Text = message;
+                // Update status indicator color based on service state
+                bool isConnected = _manager.IsAria2cRunning;
+                StatusIndicator.Fill = isConnected
+                    ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(76, 175, 80))   // Green
+                    : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(158, 158, 158)); // Gray
             });
         }
 
@@ -377,6 +387,14 @@ namespace ColorVision.UI.Desktop.Download
             if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
             {
                 _manager.ResumeDownload(task);
+            }
+        }
+
+        private void InlineRetry_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
+            {
+                _manager.RetryDownload(task);
             }
         }
 

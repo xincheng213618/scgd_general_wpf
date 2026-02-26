@@ -133,6 +133,78 @@ namespace ColorVision.UI.Desktop.Properties {
         }
         
         /// <summary>
+        ///   查找类似 已连接 的本地化字符串。
+        /// </summary>
+        public static string Aria2cConnected {
+            get {
+                return ResourceManager.GetString("Aria2cConnected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未连接 的本地化字符串。
+        /// </summary>
+        public static string Aria2cDisconnected {
+            get {
+                return ResourceManager.GetString("Aria2cDisconnected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 服务: {0} | 端口: {1} 的本地化字符串。
+        /// </summary>
+        public static string Aria2cServiceStatus {
+            get {
+                return ResourceManager.GetString("Aria2cServiceStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置已应用 的本地化字符串。
+        /// </summary>
+        public static string ConfigApplied {
+            get {
+                return ResourceManager.GetString("ConfigApplied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 总速度: {0} 的本地化字符串。
+        /// </summary>
+        public static string GlobalSpeed {
+            get {
+                return ResourceManager.GetString("GlobalSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 磁力链接下载 的本地化字符串。
+        /// </summary>
+        public static string MagnetDownload {
+            get {
+                return ResourceManager.GetString("MagnetDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 RPC 端口 的本地化字符串。
+        /// </summary>
+        public static string RpcPort {
+            get {
+                return ResourceManager.GetString("RpcPort", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 支持 HTTP/HTTPS/FTP 链接、磁力链接 (magnet:)，多个链接用分号或换行分隔 的本地化字符串。
+        /// </summary>
+        public static string UrlOrMagnetHint {
+            get {
+                return ResourceManager.GetString("UrlOrMagnetHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 正在自动恢复 {0} 个未完成的下载 的本地化字符串。
         /// </summary>
         public static string AutoRestartingDownloads {

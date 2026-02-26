@@ -28,7 +28,7 @@
         <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,8">
             <TextBox x:Name="UrlTextBox" Height="80" TextWrapping="Wrap" AcceptsReturn="True"
                      VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"/>
-            <TextBlock Text="{x:Static properties:Resources.UrlSeparatorHint}" FontSize="11"
+            <TextBlock Text="{x:Static properties:Resources.UrlOrMagnetHint}" FontSize="11"
                        Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.6" Margin="0,2,0,0"/>
         </StackPanel>
 

@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using SqlSugar;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -209,6 +210,12 @@ namespace ColorVision.UI.Desktop.Download
             _aria2cPath = FindAria2c();
             InitializeDatabase();
 
+            // Use configured port
+            _rpcPort = Config.RpcPort;
+
+            // Subscribe to config changes for live updates
+            Config.PropertyChanged += OnConfigPropertyChanged;
+
             // Clean up aria2c process when the application exits
             AppDomain.CurrentDomain.ProcessExit += (_, _) => Dispose();
         }
@@ -219,7 +226,78 @@ namespace ColorVision.UI.Desktop.Download
         /// </summary>
         public void Dispose()
         {
+            Config.PropertyChanged -= OnConfigPropertyChanged;
             StopAria2cDaemon();
+        }
+
+        /// <summary>
+        /// Handle config property changes and apply them to the running aria2c instance via RPC
+        /// </summary>
+        private void OnConfigPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(DownloadManagerConfig.EnableSpeedLimit):
+                case nameof(DownloadManagerConfig.SpeedLimitMB):
+                    ApplySpeedLimitAsync();
+                    break;
+                case nameof(DownloadManagerConfig.MaxConcurrentTasks):
+                    ApplyMaxConcurrentTasksAsync();
+                    break;
+            }
+        }
+
+        private void ApplySpeedLimitAsync()
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    if (!IsAria2cRunning) return;
+                    string limit = Config.EnableSpeedLimit ? $"{Config.SpeedLimitMB}M" : "0";
+                    var options = new Dictionary<string, string> { ["max-overall-download-limit"] = limit };
+                    await RpcCallAsync("aria2.changeGlobalOption", new object[] { $"token:{RpcSecret}", options });
+                    Application.Current?.Dispatcher.BeginInvoke(() => StatusMessage = Properties.Resources.ConfigApplied);
+                    log.Info($"Speed limit applied: {limit}");
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Failed to apply speed limit: {ex.Message}");
+                }
+            });
+        }
+
+        private void ApplyMaxConcurrentTasksAsync()
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    if (!IsAria2cRunning) return;
+                    var options = new Dictionary<string, string> { ["max-concurrent-downloads"] = Config.MaxConcurrentTasks.ToString() };
+                    await RpcCallAsync("aria2.changeGlobalOption", new object[] { $"token:{RpcSecret}", options });
+                    Application.Current?.Dispatcher.BeginInvoke(() => StatusMessage = Properties.Resources.ConfigApplied);
+                    log.Info($"Max concurrent tasks applied: {Config.MaxConcurrentTasks}");
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Failed to apply max concurrent tasks: {ex.Message}");
+                }
+            });
+        }
+
+        /// <summary>
+        /// Whether the aria2c daemon process is currently running
+        /// </summary>
+        public bool IsAria2cRunning
+        {
+            get
+            {
+                lock (_processLock)
+                {
+                    return _aria2cProcess != null && !_aria2cProcess.HasExited;
+                }
+            }
         }
 
         private string FindAria2c()
@@ -283,7 +361,8 @@ namespace ColorVision.UI.Desktop.Download
                     _rpcPort = newPort;
                 }
 
-                string args = $"--enable-rpc --rpc-listen-port={_rpcPort} --rpc-secret={RpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=false --allow-overwrite=true --summary-interval=0 -j {Config.MaxConcurrentTasks}";
+                string args = $"--enable-rpc --rpc-listen-port={_rpcPort} --rpc-secret={RpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=false --allow-overwrite=true --summary-interval=0 -j {Config.MaxConcurrentTasks}" +
+                    " --enable-dht=true --bt-enable-lpd=true --enable-peer-exchange=true --follow-torrent=mem --seed-time=0 --bt-save-metadata=true";
 
                 if (Config.EnableSpeedLimit)
                 {
@@ -318,7 +397,7 @@ namespace ColorVision.UI.Desktop.Download
                     if (response != null)
                     {
                         log.Info("aria2c RPC daemon started successfully");
-                        StatusMessage = Properties.Resources.Aria2cReady;
+                        UpdateServiceStatus();
                         StartPolling();
                         return;
                     }
@@ -386,6 +465,18 @@ namespace ColorVision.UI.Desktop.Download
                     }
                 }
             }
+            UpdateServiceStatus();
+        }
+
+        /// <summary>
+        /// Update the service status message with connection state and port
+        /// </summary>
+        private void UpdateServiceStatus()
+        {
+            bool running = IsAria2cRunning;
+            string connText = running ? Properties.Resources.Aria2cConnected : Properties.Resources.Aria2cDisconnected;
+            string status = string.Format(Properties.Resources.Aria2cServiceStatus, connText, _rpcPort);
+            Application.Current?.Dispatcher.BeginInvoke(() => StatusMessage = status);
         }
 
         private void StartPolling()
@@ -409,10 +500,26 @@ namespace ColorVision.UI.Desktop.Download
                     // No active downloads — only stop the polling timer, keep aria2c process alive
                     // for instant reuse when new downloads are added (avoids slow restart)
                     StopPolling();
-                    StatusMessage = Properties.Resources.Aria2cReady;
+                    UpdateServiceStatus();
                     return;
                 }
-                StatusMessage = string.Format(Properties.Resources.ActiveDownloads, activeTasks.Length);
+
+                // Get global stats for overall speed display
+                long globalSpeed = 0;
+                try
+                {
+                    var globalStat = await RpcCallAsync("aria2.getGlobalStat", new object[] { $"token:{RpcSecret}" });
+                    if (globalStat != null)
+                    {
+                        long.TryParse(globalStat["result"]?["downloadSpeed"]?.ToString(), out globalSpeed);
+                    }
+                }
+                catch { }
+
+                string statusText = string.Format(Properties.Resources.ActiveDownloads, activeTasks.Length);
+                if (globalSpeed > 0)
+                    statusText += " | " + string.Format(Properties.Resources.GlobalSpeed, DownloadTask.FormatSpeed(globalSpeed));
+                StatusMessage = statusText;
                 foreach (var task in activeTasks)
                 {
                     if (string.IsNullOrEmpty(task.Gid)) continue;
@@ -421,7 +528,7 @@ namespace ColorVision.UI.Desktop.Download
                     {
                         var status = await RpcCallAsync("aria2.tellStatus",
                             new object[] { $"token:{RpcSecret}", task.Gid,
-                                new[] { "status", "totalLength", "completedLength", "downloadSpeed", "errorCode", "errorMessage" } });
+                                new[] { "status", "totalLength", "completedLength", "downloadSpeed", "errorCode", "errorMessage", "bittorrent", "files" } });
 
                         if (status == null) continue;
 
@@ -429,6 +536,14 @@ namespace ColorVision.UI.Desktop.Download
                         long.TryParse(status["result"]?["totalLength"]?.ToString(), out long totalLength);
                         long.TryParse(status["result"]?["completedLength"]?.ToString(), out long completedLength);
                         long.TryParse(status["result"]?["downloadSpeed"]?.ToString(), out long downloadSpeed);
+
+                        // Update file name from BT metadata if available
+                        var btInfo = status["result"]?["bittorrent"]?["info"]?["name"]?.ToString();
+                        if (!string.IsNullOrEmpty(btInfo) && task.FileName != btInfo)
+                        {
+                            Application.Current?.Dispatcher.BeginInvoke(() => task.FileName = btInfo);
+                            UpdateEntryFileName(task.Id, btInfo);
+                        }
 
                         int progress = totalLength > 0 ? (int)(completedLength * 100 / totalLength) : 0;
                         string speedText = DownloadTask.FormatSpeed(downloadSpeed);
@@ -609,15 +724,22 @@ namespace ColorVision.UI.Desktop.Download
                 Application.Current?.Dispatcher.BeginInvoke(() => task.Status = DownloadStatus.Downloading);
                 UpdateEntryStatus(task.Id, DownloadStatus.Downloading);
 
+                bool isMagnet = task.Url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase);
+
                 // Build options for this download
                 string dir = Path.GetDirectoryName(task.SavePath) ?? Config.DefaultDownloadPath;
-                string fileName = Path.GetFileName(task.SavePath);
 
                 var options = new System.Collections.Generic.Dictionary<string, string>
                 {
                     ["dir"] = dir,
-                    ["out"] = fileName,
                 };
+
+                // For magnet/BT, don't set "out" as aria2 determines the filename from metadata
+                if (!isMagnet)
+                {
+                    string fileName = Path.GetFileName(task.SavePath);
+                    options["out"] = fileName;
+                }
 
                 string auth = authorization ?? task.Authorization;
                 if (!string.IsNullOrWhiteSpace(auth) && auth.Contains(':'))
@@ -870,6 +992,15 @@ namespace ColorVision.UI.Desktop.Download
                 .ExecuteCommand();
         }
 
+        private void UpdateEntryFileName(int id, string fileName)
+        {
+            using var db = CreateDbClient();
+            db.Updateable<DownloadEntry>()
+                .SetColumns(x => x.FileName == fileName)
+                .Where(x => x.Id == id)
+                .ExecuteCommand();
+        }
+
         private void UpdateEntryCompleted(DownloadTask task)
         {
             using var db = CreateDbClient();
@@ -884,6 +1015,25 @@ namespace ColorVision.UI.Desktop.Download
 
         private static string GetFileNameFromUrl(string url)
         {
+            // Handle magnet links: extract display name from dn= parameter
+            if (url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    int dnIndex = url.IndexOf("dn=", StringComparison.OrdinalIgnoreCase);
+                    if (dnIndex >= 0)
+                    {
+                        string dn = url.Substring(dnIndex + 3);
+                        int endIndex = dn.IndexOf('&');
+                        if (endIndex >= 0) dn = dn.Substring(0, endIndex);
+                        dn = Uri.UnescapeDataString(dn).Trim();
+                        if (!string.IsNullOrWhiteSpace(dn)) return dn;
+                    }
+                }
+                catch { }
+                return $"magnet_{DateTime.Now:yyyyMMddHHmmss}";
+            }
+
             try
             {
                 var uri = new Uri(url);

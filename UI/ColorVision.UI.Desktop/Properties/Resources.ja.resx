@@ -618,4 +618,28 @@
   <data name="ActiveDownloads" xml:space="preserve">
     <value>ダウンロード中: {0}</value>
   </data>
+  <data name="Aria2cServiceStatus" xml:space="preserve">
+    <value>サービス: {0} | ポート: {1}</value>
+  </data>
+  <data name="Aria2cConnected" xml:space="preserve">
+    <value>接続済み</value>
+  </data>
+  <data name="Aria2cDisconnected" xml:space="preserve">
+    <value>未接続</value>
+  </data>
+  <data name="ConfigApplied" xml:space="preserve">
+    <value>設定が適用されました</value>
+  </data>
+  <data name="MagnetDownload" xml:space="preserve">
+    <value>マグネットリンクダウンロード</value>
+  </data>
+  <data name="RpcPort" xml:space="preserve">
+    <value>RPCポート</value>
+  </data>
+  <data name="UrlOrMagnetHint" xml:space="preserve">
+    <value>HTTP/HTTPS/FTPリンク、マグネットリンク (magnet:) に対応、セミコロンまたは改行で区切り</value>
+  </data>
+  <data name="GlobalSpeed" xml:space="preserve">
+    <value>速度: {0}</value>
+  </data>
 </root>

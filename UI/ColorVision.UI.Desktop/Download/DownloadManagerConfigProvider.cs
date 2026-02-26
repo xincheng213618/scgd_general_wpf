@@ -44,6 +44,12 @@ namespace ColorVision.UI.Desktop.Download
                     Order = 6,
                     BindingName = nameof(DownloadManagerConfig.RunFileAfterDownload),
                     Source = DownloadManagerConfig.Instance,
+                },
+                new ConfigSettingMetadata
+                {
+                    Order = 7,
+                    BindingName = nameof(DownloadManagerConfig.RpcPort),
+                    Source = DownloadManagerConfig.Instance,
                 }
             };
         }

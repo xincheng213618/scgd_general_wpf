@@ -32,6 +32,11 @@ namespace ColorVision.UI.Desktop.Download
         private int _SpeedLimitMB = 100;
 
 
+        [DisplayName("RpcPort")]
+        [Description("aria2c RPC port (default 6800)")]
+        public int RpcPort { get => _RpcPort; set { _RpcPort = Math.Max(1024, Math.Min(value, 65535)); OnPropertyChanged(); } }
+        private int _RpcPort = 6800;
+
         [DisplayName("ShowCompletedNotification")]
         [Description("Show notification dialog when download completes")]
         public bool ShowCompletedNotification { get => _ShowCompletedNotification; set { _ShowCompletedNotification = value; OnPropertyChanged(); } }

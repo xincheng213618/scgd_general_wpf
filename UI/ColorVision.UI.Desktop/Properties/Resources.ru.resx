@@ -618,4 +618,28 @@
   <data name="ActiveDownloads" xml:space="preserve">
     <value>Загрузка: {0}</value>
   </data>
+  <data name="Aria2cServiceStatus" xml:space="preserve">
+    <value>Сервис: {0} | Порт: {1}</value>
+  </data>
+  <data name="Aria2cConnected" xml:space="preserve">
+    <value>Подключено</value>
+  </data>
+  <data name="Aria2cDisconnected" xml:space="preserve">
+    <value>Отключено</value>
+  </data>
+  <data name="ConfigApplied" xml:space="preserve">
+    <value>Конфигурация применена</value>
+  </data>
+  <data name="MagnetDownload" xml:space="preserve">
+    <value>Загрузка магнет-ссылки</value>
+  </data>
+  <data name="RpcPort" xml:space="preserve">
+    <value>RPC порт</value>
+  </data>
+  <data name="UrlOrMagnetHint" xml:space="preserve">
+    <value>Поддержка HTTP/HTTPS/FTP ссылок, магнет-ссылок (magnet:), разделённых точкой с запятой или переносом строки</value>
+  </data>
+  <data name="GlobalSpeed" xml:space="preserve">
+    <value>Скорость: {0}</value>
+  </data>
 </root>

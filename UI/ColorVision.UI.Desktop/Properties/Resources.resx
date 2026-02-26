@@ -598,4 +598,28 @@
   <data name="ActiveDownloads" xml:space="preserve">
     <value>正在下载: {0}</value>
   </data>
+  <data name="Aria2cServiceStatus" xml:space="preserve">
+    <value>服务: {0} | 端口: {1}</value>
+  </data>
+  <data name="Aria2cConnected" xml:space="preserve">
+    <value>已连接</value>
+  </data>
+  <data name="Aria2cDisconnected" xml:space="preserve">
+    <value>未连接</value>
+  </data>
+  <data name="ConfigApplied" xml:space="preserve">
+    <value>配置已应用</value>
+  </data>
+  <data name="MagnetDownload" xml:space="preserve">
+    <value>磁力链接下载</value>
+  </data>
+  <data name="RpcPort" xml:space="preserve">
+    <value>RPC 端口</value>
+  </data>
+  <data name="UrlOrMagnetHint" xml:space="preserve">
+    <value>支持 HTTP/HTTPS/FTP 链接、磁力链接 (magnet:)，多个链接用分号或换行分隔</value>
+  </data>
+  <data name="GlobalSpeed" xml:space="preserve">
+    <value>总速度: {0}</value>
+  </data>
 </root>
