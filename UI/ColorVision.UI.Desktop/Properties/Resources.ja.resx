@@ -642,4 +642,7 @@
   <data name="GlobalSpeed" xml:space="preserve">
     <value>速度: {0}</value>
   </data>
+  <data name="ConfirmDeleteFile" xml:space="preserve">
+    <value>ファイルがディスクに存在します。ファイルも削除しますか？</value>
+  </data>
 </root>

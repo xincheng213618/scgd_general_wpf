@@ -622,4 +622,7 @@
   <data name="GlobalSpeed" xml:space="preserve">
     <value>总速度: {0}</value>
   </data>
+  <data name="ConfirmDeleteFile" xml:space="preserve">
+    <value>文件已存在于磁盘，是否同时删除文件？</value>
+  </data>
 </root>

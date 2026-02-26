@@ -19,7 +19,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
@@ -164,16 +163,22 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <!-- Pagination Bar -->
+        <!-- Status & Pagination Bar -->
         <Border Grid.Row="2" Height="28" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
             <Grid Margin="8,0">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse x:Name="StatusIndicator" Width="8" Height="8" Fill="Gray" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="StatusBarText" Text="" FontSize="11" Foreground="Gray" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="15,0,0,0">
                     <TextBlock Text="{x:Static properties:Resources.TotalRecords}" VerticalAlignment="Center" Margin="0,0,3,0" FontSize="11"/>
                     <TextBlock x:Name="TotalCountText" Text="0" VerticalAlignment="Center" FontSize="11"/>
                     <TextBlock Text="{x:Static properties:Resources.PageSize}" VerticalAlignment="Center" Margin="15,0,3,0" FontSize="11"/>
@@ -184,7 +189,7 @@
                     </ComboBox>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Content="|&lt;" Click="FirstPage_Click" Style="{StaticResource ButtonDefault.Small}" BorderThickness="0" Width="26" Margin="1,0"/>
                     <Button Content="&lt;" Click="PrevPage_Click" Style="{StaticResource ButtonDefault.Small}" BorderThickness="0" Width="26" Margin="1,0"/>
                     <TextBox x:Name="CurrentPageTextBox" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="1" Width="40" VerticalAlignment="Center" TextAlignment="Center" KeyDown="CurrentPageTextBox_KeyDown"/>
@@ -192,20 +197,6 @@
                     <TextBlock x:Name="TotalPagesText" Text="1" VerticalAlignment="Center" FontSize="11"/>
                     <Button Content="&gt;" Style="{StaticResource ButtonDefault.Small}" Click="NextPage_Click" BorderThickness="0" Width="26" Margin="1,0"/>
                     <Button Content="&gt;|" Style="{StaticResource ButtonDefault.Small}" Click="LastPage_Click" BorderThickness="0" Width="26" Margin="1,0"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- Service Status Bar -->
-        <Border Grid.Row="3" Height="24" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
-            <Grid Margin="8,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Ellipse x:Name="StatusIndicator" Width="8" Height="8" Fill="Gray" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                    <TextBlock x:Name="StatusBarText" Text="" FontSize="11" Foreground="Gray" VerticalAlignment="Center"/>
                 </StackPanel>
             </Grid>
         </Border>

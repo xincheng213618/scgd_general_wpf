@@ -50,6 +50,18 @@ namespace ColorVision.UI.Desktop.Download
                     Order = 7,
                     BindingName = nameof(DownloadManagerConfig.RpcPort),
                     Source = DownloadManagerConfig.Instance,
+                },
+                new ConfigSettingMetadata
+                {
+                    Order = 8,
+                    BindingName = nameof(DownloadManagerConfig.PromptDeleteFile),
+                    Source = DownloadManagerConfig.Instance,
+                },
+                new ConfigSettingMetadata
+                {
+                    Order = 9,
+                    BindingName = nameof(DownloadManagerConfig.DefaultDeleteFile),
+                    Source = DownloadManagerConfig.Instance,
                 }
             };
         }

@@ -100,6 +100,9 @@ namespace ColorVision.UI.Desktop.Download
             StatusIndicator.Fill = isConnected
                 ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(76, 175, 80))
                 : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(158, 158, 158));
+
+            // Pre-load aria2c daemon so manual downloads don't wait
+            _manager.PreloadAria2cAsync();
         }
 
         private void OnStatusMessageChanged(object? sender, string message)
@@ -353,7 +356,8 @@ namespace ColorVision.UI.Desktop.Download
         {
             var selected = DownloadListView.SelectedItems.Cast<DownloadTask>().ToList();
             if (selected.Count == 0) return;
-            _manager.DeleteRecords(selected.Select(t => t.Id).ToArray());
+            bool deleteFiles = AskDeleteFiles(selected);
+            _manager.DeleteRecords(selected.Select(t => t.Id).ToArray(), deleteFiles);
             LoadData();
         }
 
@@ -369,7 +373,8 @@ namespace ColorVision.UI.Desktop.Download
         {
             if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
             {
-                _manager.DeleteRecords(new[] { task.Id });
+                bool deleteFile = AskDeleteFiles(new[] { task });
+                _manager.DeleteRecords(new[] { task.Id }, deleteFile);
                 LoadData();
             }
         }
@@ -396,6 +401,30 @@ namespace ColorVision.UI.Desktop.Download
             {
                 _manager.RetryDownload(task);
             }
+        }
+
+        /// <summary>
+        /// Ask user whether to delete files when deleting download records.
+        /// Returns true if files should be deleted.
+        /// </summary>
+        private bool AskDeleteFiles(IEnumerable<DownloadTask> tasks)
+        {
+            var config = DownloadManagerConfig.Instance;
+            // Check if any file exists on disk
+            bool anyFileExists = tasks.Any(t => System.IO.File.Exists(t.SavePath));
+            if (!anyFileExists) return false;
+
+            if (!config.PromptDeleteFile)
+                return config.DefaultDeleteFile;
+
+            var defaultButton = config.DefaultDeleteFile ? MessageBoxResult.Yes : MessageBoxResult.No;
+            var result = MessageBox.Show(
+                Properties.Resources.ConfirmDeleteFile,
+                Properties.Resources.DownloadManager,
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question,
+                defaultButton);
+            return result == MessageBoxResult.Yes;
         }
 
         private void PageSizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

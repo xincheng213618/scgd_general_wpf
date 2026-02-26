@@ -642,4 +642,7 @@
   <data name="GlobalSpeed" xml:space="preserve">
     <value>속도: {0}</value>
   </data>
+  <data name="ConfirmDeleteFile" xml:space="preserve">
+    <value>파일이 디스크에 있습니다. 파일도 삭제하시겠습니까?</value>
+  </data>
 </root>

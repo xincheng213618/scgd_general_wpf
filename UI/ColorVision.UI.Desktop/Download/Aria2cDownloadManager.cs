@@ -301,6 +301,25 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
+        /// <summary>
+        /// Pre-load the aria2c daemon so it's ready when downloads are created.
+        /// Called when the DownloadWindow opens.
+        /// </summary>
+        public void PreloadAria2cAsync()
+        {
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await EnsureAria2cRunningAsync();
+                }
+                catch (Exception ex)
+                {
+                    log.Debug($"Preload aria2c failed: {ex.Message}");
+                }
+            });
+        }
+
         private string FindAria2c()
         {
             string appDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -349,8 +368,22 @@ namespace ColorVision.UI.Desktop.Download
             {
                 if (_aria2cProcess != null && !_aria2cProcess.HasExited)
                     return;
+            }
 
-                // Check if the port is in use
+            // If the configured port is in use, try to connect to an existing aria2c (orphan from previous session)
+            if (IsPortInUse(_rpcPort))
+            {
+                bool reused = await TryReuseExistingAria2cAsync();
+                if (reused)
+                {
+                    log.Info($"Reusing existing aria2c on port {_rpcPort}");
+                    UpdateServiceStatus();
+                    StartPolling();
+                    return;
+                }
+
+                // Could not reuse - kill any orphan aria2c processes on our port range, then find a new port
+                KillOrphanAria2cProcesses();
                 if (IsPortInUse(_rpcPort))
                 {
                     int newPort = FindAvailablePort(_rpcPort + 1);
@@ -361,8 +394,14 @@ namespace ColorVision.UI.Desktop.Download
                     });
                     _rpcPort = newPort;
                 }
+            }
 
-                string args = $"--enable-rpc --rpc-listen-port={_rpcPort} --rpc-secret={RpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=false --allow-overwrite=true --summary-interval=0 -j {Config.MaxConcurrentTasks}" +
+            lock (_processLock)
+            {
+                if (_aria2cProcess != null && !_aria2cProcess.HasExited)
+                    return;
+
+                string args = $"--enable-rpc --rpc-listen-port={_rpcPort} --rpc-secret={RpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=true --allow-overwrite=false --summary-interval=0 -j {Config.MaxConcurrentTasks}" +
                     " --enable-dht=true --bt-enable-lpd=true --enable-peer-exchange=true --follow-torrent=mem --seed-time=0 --bt-save-metadata=true";
 
                 if (Config.EnableSpeedLimit)
@@ -409,6 +448,56 @@ namespace ColorVision.UI.Desktop.Download
             log.Error("Failed to start aria2c RPC daemon");
             StatusMessage = Properties.Resources.Aria2cStartFailed;
             throw new Exception("Failed to start aria2c RPC daemon");
+        }
+
+        /// <summary>
+        /// Try to connect to an existing aria2c instance on the current port.
+        /// Returns true if we can reuse it (responds to our RPC secret).
+        /// </summary>
+        private async Task<bool> TryReuseExistingAria2cAsync()
+        {
+            try
+            {
+                var response = await RpcCallAsync("aria2.getVersion", new object[] { $"token:{RpcSecret}" });
+                return response?["result"] != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Kill orphan aria2c processes that may have been left from a previous session.
+        /// Only kills processes whose command line matches our aria2c path.
+        /// </summary>
+        private void KillOrphanAria2cProcesses()
+        {
+            try
+            {
+                var aria2cProcesses = Process.GetProcessesByName("aria2c");
+                foreach (var proc in aria2cProcesses)
+                {
+                    try
+                    {
+                        proc.Kill();
+                        proc.WaitForExit(2000);
+                        log.Info($"Killed orphan aria2c process (PID: {proc.Id})");
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Debug($"Failed to kill aria2c process {proc.Id}: {ex.Message}");
+                    }
+                    finally
+                    {
+                        proc.Dispose();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"KillOrphanAria2cProcesses failed: {ex.Message}");
+            }
         }
 
         private static bool IsPortInUse(int port)
@@ -882,8 +971,22 @@ namespace ColorVision.UI.Desktop.Download
             }
         }
 
-        public void DeleteRecords(int[] ids)
+        public void DeleteRecords(int[] ids, bool deleteFiles = false)
         {
+            // Collect file paths before removing from DB
+            List<string> filePaths = new();
+            if (deleteFiles)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    foreach (var task in Tasks.Where(t => ids.Contains(t.Id)))
+                    {
+                        if (!string.IsNullOrEmpty(task.SavePath))
+                            filePaths.Add(task.SavePath);
+                    }
+                });
+            }
+
             using var db = CreateDbClient();
             db.Deleteable<DownloadEntry>().In(ids).ExecuteCommand();
 
@@ -898,6 +1001,23 @@ namespace ColorVision.UI.Desktop.Download
                     Tasks.Remove(task);
                 }
             });
+
+            // Delete files after DB/UI cleanup
+            if (deleteFiles)
+            {
+                foreach (var path in filePaths)
+                {
+                    try
+                    {
+                        if (File.Exists(path))
+                            File.Delete(path);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Debug($"Failed to delete file {path}: {ex.Message}");
+                    }
+                }
+            }
         }
 
         public void ClearAllRecords()
