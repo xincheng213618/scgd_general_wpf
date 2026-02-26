@@ -469,20 +469,29 @@ namespace ColorVision.UI.Desktop.Download
 
         /// <summary>
         /// Kill orphan aria2c processes that may have been left from a previous session.
-        /// Only kills processes whose command line matches our aria2c path.
+        /// Only kills processes whose executable path matches our bundled aria2c.
         /// </summary>
         private void KillOrphanAria2cProcesses()
         {
             try
             {
+                string? ourAria2cDir = Path.GetDirectoryName(_aria2cPath);
                 var aria2cProcesses = Process.GetProcessesByName("aria2c");
                 foreach (var proc in aria2cProcesses)
                 {
                     try
                     {
-                        proc.Kill();
-                        proc.WaitForExit(2000);
-                        log.Info($"Killed orphan aria2c process (PID: {proc.Id})");
+                        // Only kill if it's our bundled aria2c (same directory)
+                        string? procPath = null;
+                        try { procPath = proc.MainModule?.FileName; } catch { }
+
+                        if (procPath != null && ourAria2cDir != null &&
+                            Path.GetDirectoryName(procPath)?.Equals(ourAria2cDir, StringComparison.OrdinalIgnoreCase) == true)
+                        {
+                            proc.Kill();
+                            proc.WaitForExit(2000);
+                            log.Info($"Killed orphan aria2c process (PID: {proc.Id})");
+                        }
                     }
                     catch (Exception ex)
                     {

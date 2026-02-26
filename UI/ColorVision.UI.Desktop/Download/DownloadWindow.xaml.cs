@@ -356,7 +356,7 @@ namespace ColorVision.UI.Desktop.Download
         {
             var selected = DownloadListView.SelectedItems.Cast<DownloadTask>().ToList();
             if (selected.Count == 0) return;
-            bool deleteFiles = AskDeleteFiles(selected);
+            bool deleteFiles = ShouldDeleteFiles(selected);
             _manager.DeleteRecords(selected.Select(t => t.Id).ToArray(), deleteFiles);
             LoadData();
         }
@@ -373,7 +373,7 @@ namespace ColorVision.UI.Desktop.Download
         {
             if (sender is FrameworkElement element && element.DataContext is DownloadTask task)
             {
-                bool deleteFile = AskDeleteFiles(new[] { task });
+                bool deleteFile = ShouldDeleteFiles(new[] { task });
                 _manager.DeleteRecords(new[] { task.Id }, deleteFile);
                 LoadData();
             }
@@ -407,7 +407,7 @@ namespace ColorVision.UI.Desktop.Download
         /// Ask user whether to delete files when deleting download records.
         /// Returns true if files should be deleted.
         /// </summary>
-        private bool AskDeleteFiles(IEnumerable<DownloadTask> tasks)
+        private bool ShouldDeleteFiles(IEnumerable<DownloadTask> tasks)
         {
             var config = DownloadManagerConfig.Instance;
             // Check if any file exists on disk
