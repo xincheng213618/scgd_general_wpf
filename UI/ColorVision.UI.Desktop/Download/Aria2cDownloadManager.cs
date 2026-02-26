@@ -491,8 +491,11 @@ namespace ColorVision.UI.Desktop.Download
             _pollTimer = null;
         }
 
+        bool IsPollCallback;
         private async void PollCallback(object? state)
         {
+            if (IsPollCallback) return;
+            IsPollCallback = true;
             try
             {
                 var activeTasks = _activeTasks.Values.ToArray();
@@ -502,6 +505,7 @@ namespace ColorVision.UI.Desktop.Download
                     // for instant reuse when new downloads are added (avoids slow restart)
                     StopPolling();
                     UpdateServiceStatus();
+                    IsPollCallback = false;
                     return;
                 }
 
@@ -605,6 +609,8 @@ namespace ColorVision.UI.Desktop.Download
             {
                 log.Debug($"Poll callback error: {ex.Message}");
             }
+
+            IsPollCallback = false;
         }
 
         private async Task<JObject?> RpcCallAsync(string method, object[] parameters)
