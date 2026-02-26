@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using SqlSugar;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -185,6 +186,8 @@ namespace ColorVision.UI.Desktop.Download
         /// </summary>
         public int CurrentRpcPort => _rpcPort;
 
+        public bool IsServiceConnected { get; private set; }
+
         /// <summary>
         /// Status message for the download service
         /// </summary>
@@ -208,6 +211,8 @@ namespace ColorVision.UI.Desktop.Download
             Directory.CreateDirectory(DirectoryPath);
             _aria2cPath = FindAria2c();
             InitializeDatabase();
+            _rpcPort = Config.RpcPort;
+            Config.PropertyChanged += OnConfigPropertyChanged;
 
             // Clean up aria2c process when the application exits
             AppDomain.CurrentDomain.ProcessExit += (_, _) => Dispose();
@@ -220,6 +225,11 @@ namespace ColorVision.UI.Desktop.Download
         public void Dispose()
         {
             StopAria2cDaemon();
+        }
+
+        private void OnConfigPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            _ = ApplyConfigChangesAsync(e.PropertyName);
         }
 
         private string FindAria2c()
@@ -284,6 +294,7 @@ namespace ColorVision.UI.Desktop.Download
                 }
 
                 string args = $"--enable-rpc --rpc-listen-port={_rpcPort} --rpc-secret={RpcSecret} --rpc-listen-all=false --enable-color=false -c --auto-file-renaming=false --allow-overwrite=true --summary-interval=0 -j {Config.MaxConcurrentTasks}";
+                args += " --follow-torrent=true --bt-save-metadata=true --seed-time=0";
 
                 if (Config.EnableSpeedLimit)
                 {
@@ -318,6 +329,7 @@ namespace ColorVision.UI.Desktop.Download
                     if (response != null)
                     {
                         log.Info("aria2c RPC daemon started successfully");
+                        IsServiceConnected = true;
                         StatusMessage = Properties.Resources.Aria2cReady;
                         StartPolling();
                         return;
@@ -327,6 +339,7 @@ namespace ColorVision.UI.Desktop.Download
             }
 
             log.Error("Failed to start aria2c RPC daemon");
+            IsServiceConnected = false;
             StatusMessage = Properties.Resources.Aria2cStartFailed;
             throw new Exception("Failed to start aria2c RPC daemon");
         }
@@ -386,6 +399,7 @@ namespace ColorVision.UI.Desktop.Download
                     }
                 }
             }
+            IsServiceConnected = false;
         }
 
         private void StartPolling()
@@ -409,9 +423,11 @@ namespace ColorVision.UI.Desktop.Download
                     // No active downloads — only stop the polling timer, keep aria2c process alive
                     // for instant reuse when new downloads are added (avoids slow restart)
                     StopPolling();
+                    IsServiceConnected = true;
                     StatusMessage = Properties.Resources.Aria2cReady;
                     return;
                 }
+                IsServiceConnected = true;
                 StatusMessage = string.Format(Properties.Resources.ActiveDownloads, activeTasks.Length);
                 foreach (var task in activeTasks)
                 {
@@ -487,7 +503,61 @@ namespace ColorVision.UI.Desktop.Download
             }
             catch (Exception ex)
             {
+                IsServiceConnected = false;
                 log.Debug($"Poll callback error: {ex.Message}");
+            }
+        }
+
+        private async Task ApplyConfigChangesAsync(string? propertyName)
+        {
+            if (string.IsNullOrWhiteSpace(propertyName))
+                return;
+
+            try
+            {
+                if (propertyName == nameof(DownloadManagerConfig.RpcPort))
+                {
+                    int newPort = Config.RpcPort;
+                    if (newPort == _rpcPort) return;
+
+                    _rpcPort = newPort;
+                    StatusMessage = $"aria2 RPC: 127.0.0.1:{_rpcPort}";
+
+                    bool isRunning;
+                    lock (_processLock) { isRunning = _aria2cProcess != null && !_aria2cProcess.HasExited; }
+                    if (!isRunning) return;
+
+                    var activeTasks = _activeTasks.Values.ToArray();
+                    StopAria2cDaemon();
+                    await EnsureAria2cRunningAsync();
+                    foreach (var task in activeTasks)
+                    {
+                        task.Gid = null;
+                        RetryDownload(task);
+                    }
+                    return;
+                }
+
+                if (propertyName == nameof(DownloadManagerConfig.MaxConcurrentTasks)
+                    || propertyName == nameof(DownloadManagerConfig.EnableSpeedLimit)
+                    || propertyName == nameof(DownloadManagerConfig.SpeedLimitMB))
+                {
+                    bool isRunning;
+                    lock (_processLock) { isRunning = _aria2cProcess != null && !_aria2cProcess.HasExited; }
+                    if (!isRunning) return;
+
+                    var options = new JObject
+                    {
+                        ["max-concurrent-downloads"] = Config.MaxConcurrentTasks.ToString(),
+                        ["max-overall-download-limit"] = Config.EnableSpeedLimit ? $"{Config.SpeedLimitMB}M" : "0"
+                    };
+                    await RpcCallAsync("aria2.changeGlobalOption", new object[] { $"token:{RpcSecret}", options });
+                    StatusMessage = $"aria2 options updated (port {_rpcPort})";
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Apply config changes failed: {ex.Message}");
             }
         }
 
@@ -616,8 +686,18 @@ namespace ColorVision.UI.Desktop.Download
                 var options = new System.Collections.Generic.Dictionary<string, string>
                 {
                     ["dir"] = dir,
-                    ["out"] = fileName,
                 };
+
+                bool isBitTorrent = IsBitTorrentUrl(task.Url);
+                if (!isBitTorrent)
+                {
+                    options["out"] = fileName;
+                }
+                else
+                {
+                    options["follow-torrent"] = "true";
+                    options["bt-save-metadata"] = "true";
+                }
 
                 string auth = authorization ?? task.Authorization;
                 if (!string.IsNullOrWhiteSpace(auth) && auth.Contains(':'))
@@ -886,6 +966,17 @@ namespace ColorVision.UI.Desktop.Download
         {
             try
             {
+                if (url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var dnMatch = System.Text.RegularExpressions.Regex.Match(url, @"[?&]dn=([^&]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    if (dnMatch.Success)
+                    {
+                        string decoded = Uri.UnescapeDataString(dnMatch.Groups[1].Value.Replace('+', ' ')).Trim();
+                        if (!string.IsNullOrWhiteSpace(decoded)) return decoded;
+                    }
+                    return $"magnet_{DateTime.Now:yyyyMMddHHmmss}";
+                }
+
                 var uri = new Uri(url);
                 string fileName = Path.GetFileName(uri.LocalPath);
                 if (!string.IsNullOrWhiteSpace(fileName) && fileName != "/")
@@ -893,6 +984,14 @@ namespace ColorVision.UI.Desktop.Download
             }
             catch { }
             return $"download_{DateTime.Now:yyyyMMddHHmmss}";
+        }
+
+        private static bool IsBitTorrentUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return false;
+            if (url.StartsWith("magnet:", StringComparison.OrdinalIgnoreCase)) return true;
+            if (url.EndsWith(".torrent", StringComparison.OrdinalIgnoreCase)) return true;
+            return url.Contains(".torrent?", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

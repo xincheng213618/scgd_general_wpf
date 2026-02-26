@@ -30,6 +30,8 @@
                      VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"/>
             <TextBlock Text="{x:Static properties:Resources.UrlSeparatorHint}" FontSize="11"
                        Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.6" Margin="0,2,0,0"/>
+            <TextBlock Text="Supports HTTP/HTTPS, .torrent URLs and magnet links" FontSize="11"
+                       Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.6" Margin="0,2,0,0"/>
         </StackPanel>
 
         <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.SaveDirectory}" VerticalAlignment="Center" Margin="0,0,10,8"/>

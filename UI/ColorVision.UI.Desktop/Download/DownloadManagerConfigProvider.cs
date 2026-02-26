@@ -18,30 +18,36 @@ namespace ColorVision.UI.Desktop.Download
                 new ConfigSettingMetadata
                 {
                     Order = 2,
-                    BindingName = nameof(DownloadManagerConfig.DefaultDownloadPath),
+                    BindingName = nameof(DownloadManagerConfig.RpcPort),
                     Source = DownloadManagerConfig.Instance,
                 },
                 new ConfigSettingMetadata
                 {
                     Order = 3,
-                    BindingName = nameof(DownloadManagerConfig.EnableSpeedLimit),
+                    BindingName = nameof(DownloadManagerConfig.DefaultDownloadPath),
                     Source = DownloadManagerConfig.Instance,
                 },
                 new ConfigSettingMetadata
                 {
                     Order = 4,
-                    BindingName = nameof(DownloadManagerConfig.SpeedLimitMB),
+                    BindingName = nameof(DownloadManagerConfig.EnableSpeedLimit),
                     Source = DownloadManagerConfig.Instance,
                 },
                 new ConfigSettingMetadata
                 {
                     Order = 5,
-                    BindingName = nameof(DownloadManagerConfig.ShowCompletedNotification),
+                    BindingName = nameof(DownloadManagerConfig.SpeedLimitMB),
                     Source = DownloadManagerConfig.Instance,
                 },
                 new ConfigSettingMetadata
                 {
                     Order = 6,
+                    BindingName = nameof(DownloadManagerConfig.ShowCompletedNotification),
+                    Source = DownloadManagerConfig.Instance,
+                },
+                new ConfigSettingMetadata
+                {
+                    Order = 7,
                     BindingName = nameof(DownloadManagerConfig.RunFileAfterDownload),
                     Source = DownloadManagerConfig.Instance,
                 }

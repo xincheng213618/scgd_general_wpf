@@ -16,6 +16,11 @@ namespace ColorVision.UI.Desktop.Download
         public int MaxConcurrentTasks { get => _MaxConcurrentTasks; set { _MaxConcurrentTasks = Math.Max(1, Math.Min(value, 16)); OnPropertyChanged(); } }
         private int _MaxConcurrentTasks = 5;
 
+        [DisplayName("Aria2RpcPort")]
+        [Description("Aria2 JSON-RPC port")]
+        public int RpcPort { get => _RpcPort; set { _RpcPort = Math.Max(1, Math.Min(value, 65535)); OnPropertyChanged(); } }
+        private int _RpcPort = 6800;
+
         [DisplayName("DefaultDownloadPath")]
         [Description("Default directory for saving downloaded files")]
         public string DefaultDownloadPath { get => _DefaultDownloadPath; set { _DefaultDownloadPath = value; OnPropertyChanged(); } }

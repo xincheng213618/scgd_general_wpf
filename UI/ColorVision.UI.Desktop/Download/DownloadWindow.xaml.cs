@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace ColorVision.UI.Desktop.Download
@@ -95,6 +96,7 @@ namespace ColorVision.UI.Desktop.Download
             // Show current status
             if (!string.IsNullOrEmpty(_manager.StatusMessage))
                 StatusBarText.Text = _manager.StatusMessage;
+            UpdateServiceState();
         }
 
         private void OnStatusMessageChanged(object? sender, string message)
@@ -102,7 +104,19 @@ namespace ColorVision.UI.Desktop.Download
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 StatusBarText.Text = message;
+                UpdateServiceState();
             });
+        }
+
+        private void UpdateServiceState()
+        {
+            bool isConnected = _manager.IsServiceConnected;
+            ServiceStateText.Text = isConnected
+                ? $"aria2 connected (127.0.0.1:{_manager.CurrentRpcPort})"
+                : $"aria2 disconnected (127.0.0.1:{_manager.CurrentRpcPort})";
+            ServiceStateIndicator.Foreground = isConnected
+                ? new SolidColorBrush(Color.FromRgb(34, 197, 94))
+                : new SolidColorBrush(Color.FromRgb(239, 68, 68));
         }
 
         private void OnDownloadCompleted(object? sender, DownloadTask task)
