@@ -222,7 +222,7 @@ namespace ColorVision.Engine.MQTT
                     .Build();
 
                 await MQTTClient.PublishAsync(message);
-                log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Trace, $"{DateTime.Now:HH:mm:ss.fff} Published to '{topic}', message: '{msg}'", null);
+                log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Debug, $"{DateTime.Now:HH:mm:ss.fff} Published to '{topic}', message: '{msg}'", null);
             }
             return;
         }

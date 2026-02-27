@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Services
             MQTTControl.ApplicationMessageReceivedAsync += Processing;
              _heartbeatTimer = new Timer
             {
-                Interval = TimeSpan.FromMilliseconds(30).TotalMilliseconds,
+                Interval = TimeSpan.FromMilliseconds(1000).TotalMilliseconds,
                 AutoReset = true,
             };
             _heartbeatTimer.Elapsed += Timer_Elapsed;
@@ -108,13 +108,16 @@ namespace ColorVision.Engine.Services
                         }
                         Application.Current?.Dispatcher.BeginInvoke(() =>
                         {
-                            MsgRecord foundMsgRecord = _msgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
-                            if (foundMsgRecord != null)
+                            lock (_locker) // 保持一致的锁策略
                             {
-                                foundMsgRecord.ReciveTime = DateTime.Now;
-                                foundMsgRecord.MsgReturn = json;
-                                foundMsgRecord.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
-                                _msgRecords.Remove(foundMsgRecord);
+                                MsgRecord foundMsgRecord = _msgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
+                                if (foundMsgRecord != null)
+                                {
+                                    foundMsgRecord.ReciveTime = DateTime.Now;
+                                    foundMsgRecord.MsgReturn = json;
+                                    foundMsgRecord.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
+                                    _msgRecords.Remove(foundMsgRecord);
+                                }
                             }
                         });
                     }
@@ -163,7 +166,7 @@ namespace ColorVision.Engine.Services
         /// <summary>
         /// 默认是绿色，刷新后在变颜色
         /// </summary>
-        public  bool IsAlive { get => _IsAlive; set { _IsAlive = value; OnPropertyChanged(); } }
+        public  bool IsAlive { get => _IsAlive; set { if(_IsAlive == value) return; _IsAlive = value; OnPropertyChanged(); } }
         private bool _IsAlive = true;
 
         private  Dictionary<string, Timer> _msgTimers = new();
@@ -188,20 +191,25 @@ namespace ColorVision.Engine.Services
             msg.Token ??= ServiceToken;
             msg.ServiceName ??= SendTopic;
 
-            string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { });
+            string json = JsonConvert.SerializeObject(msg, Formatting.None);
 
-            Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
+            _ = MQTTControl.PublishAsyncClient(SendTopic, json, false);
+
 
             MsgRecord msgRecord = new() { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic, MsgID = msg.MsgID, SendTime = DateTime.Now, MsgSend = msg, MsgRecordState = MsgRecordState.Sended };
 
-            Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+            Task.Run(() =>
             {
-                lock (_locker)
+                MsgRecordDataBaseHelper.Insert(msgRecord);
+
+                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    MsgRecordDataBaseHelper.Insert(msgRecord);
-                    _msgRecords.Add(msgRecord);
-                }
-            }));
+                    lock (_locker) // 仅在更新内存集合时极短地加锁
+                    {
+                        _msgRecords.Add(msgRecord);
+                    }
+                }));
+            });
 
             var timer = new Timer(timeout)
             {
