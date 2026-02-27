@@ -85,15 +85,15 @@ public class STNodeHub : STNode
 
 	protected virtual void output_Connected(object sender, STNodeOptionEventArgs e)
 	{
-		STNodeOption num = sender as STNodeOption;
-		int index = base.OutputOptions.IndexOf(num);
+		STNodeOption sTNodeOption = sender as STNodeOption;
+		int index = base.OutputOptions.IndexOf(sTNodeOption);
 		Type typeFromHandle = typeof(object);
 		if (!(base.InputOptions[index].DataType == typeFromHandle))
 		{
 			return;
 		}
-		num.DataType = e.TargetOption.DataType;
-		base.InputOptions[index].DataType = num.DataType;
+		sTNodeOption.DataType = e.TargetOption.DataType;
+		base.InputOptions[index].DataType = sTNodeOption.DataType;
 		foreach (STNodeOption inputOption in base.InputOptions)
 		{
 			if (inputOption.DataType == typeFromHandle)
@@ -106,12 +106,12 @@ public class STNodeHub : STNode
 
 	protected virtual void input_DisConnected(object sender, STNodeOptionEventArgs e)
 	{
-		STNodeOption num = sender as STNodeOption;
-		if (num.ConnectionCount != 0)
+		STNodeOption sTNodeOption = sender as STNodeOption;
+		if (sTNodeOption.ConnectionCount != 0)
 		{
 			return;
 		}
-		int index = base.InputOptions.IndexOf(num);
+		int index = base.InputOptions.IndexOf(sTNodeOption);
 		if (base.OutputOptions[index].ConnectionCount == 0)
 		{
 			base.InputOptions.RemoveAt(index);
@@ -141,13 +141,13 @@ public class STNodeHub : STNode
 
 	protected virtual void input_Connected(object sender, STNodeOptionEventArgs e)
 	{
-		STNodeOption i = sender as STNodeOption;
-		int index = base.InputOptions.IndexOf(i);
+		STNodeOption sTNodeOption = sender as STNodeOption;
+		int index = base.InputOptions.IndexOf(sTNodeOption);
 		Type typeFromHandle = typeof(object);
-		if (i.DataType == typeFromHandle)
+		if (sTNodeOption.DataType == typeFromHandle)
 		{
-			i.DataType = e.TargetOption.DataType;
-			base.OutputOptions[index].DataType = i.DataType;
+			sTNodeOption.DataType = e.TargetOption.DataType;
+			base.OutputOptions[index].DataType = sTNodeOption.DataType;
 			foreach (STNodeOption inputOption in base.InputOptions)
 			{
 				if (inputOption.DataType == typeFromHandle)

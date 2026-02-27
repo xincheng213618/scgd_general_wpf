@@ -35,7 +35,7 @@ public abstract class STNode
 
 	private int _Top;
 
-	private int _Width = 80;
+	private int _Width = 100;
 
 	private int _Height = 40;
 
@@ -45,7 +45,7 @@ public abstract class STNode
 
 	private Rectangle _MarkRectangle;
 
-	private int _TitleHeight = 25;
+	private int _TitleHeight = 20;
 
 	private STNodeOptionCollection _InputOptions;
 
@@ -385,7 +385,7 @@ public abstract class STNode
 
 	public int Bottom => _Top + _Height;
 
-	public Rectangle Rectangle => new Rectangle(_Left, _Top, _Width, _Height + _TitleHeight -20);
+	public Rectangle Rectangle => new Rectangle(_Left, _Top, _Width, _Height);
 
 	public Rectangle TitleRectangle => new Rectangle(_Left, _Top, _Width, _TitleHeight);
 
@@ -652,14 +652,12 @@ public abstract class STNode
 
 	protected internal virtual void OnDrawNode(DrawingTools dt)
 	{
-        dt.Graphics.SmoothingMode = SmoothingMode.None;
+		dt.Graphics.SmoothingMode = SmoothingMode.None;
 		if (_BackColor.A != 0)
 		{
 			dt.SolidBrush.Color = _BackColor;
-			dt.Graphics.FillRectangle(dt.SolidBrush, _Left, _Top + _TitleHeight, _Width, Height  -20);
+			dt.Graphics.FillRectangle(dt.SolidBrush, _Left, _Top + _TitleHeight, _Width, Height - _TitleHeight);
 		}
-
-
 		OnDrawTitle(dt);
 		OnDrawBody(dt);
 	}
@@ -741,8 +739,7 @@ public abstract class STNode
 				point = control.Location;
 				dt.Graphics.TranslateTransform(empty.X, empty.Y);
 				dt.Graphics.SmoothingMode = SmoothingMode.None;
-				control._Width = this.Width - 10;
-                control.OnPaint(dt);
+				control.OnPaint(dt);
 			}
 		}
 		dt.Graphics.TranslateTransform(-_Left - point.X, -_Top - _TitleHeight - point.Y);
@@ -1237,8 +1234,7 @@ public abstract class STNode
 	{
 		if (_Owner != null)
 		{
-			// enlarge invalidation padding to cover bigger dots around node edges
-			_Owner.Invalidate(_Owner.CanvasToControl(new Rectangle(_Left - 8, _Top - 8, _Width + 16, _Height + 16)));
+			_Owner.Invalidate(_Owner.CanvasToControl(new Rectangle(_Left - 5, _Top - 5, _Width + 10, _Height + 10)));
 		}
 	}
 
@@ -1249,8 +1245,8 @@ public abstract class STNode
 		if (_Owner != null)
 		{
 			rect = _Owner.CanvasToControl(rect);
-			rect.Width += 2;
-			rect.Height += 2;
+			rect.Width++;
+			rect.Height++;
 			_Owner.Invalidate(rect);
 		}
 	}
@@ -1342,18 +1338,6 @@ public abstract class STNode
 
 	public void Create()
 	{
-        string title = OnGetDrawTitle();
-        string[] lines = title.Split(new[] { '\n' }, StringSplitOptions.None);
-        int lineCount = lines.Length;
-        _TitleHeight = lineCount * 22;
-
-        // 计算每行最大字符数
-        int maxCharCount = 0;
-        foreach (string line in lines)
-        {
-            if (line.Length > maxCharCount) maxCharCount = line.Length;
-        }
-        _Width = Math.Max(_Width, maxCharCount * 11); // 最小宽度300
-        OnCreate();
+		OnCreate();
 	}
 }

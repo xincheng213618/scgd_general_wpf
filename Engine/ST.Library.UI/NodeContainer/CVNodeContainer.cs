@@ -156,7 +156,7 @@ public class CVNodeContainer
 				long key2 = (int)num6;
 				if (dictionary.ContainsKey(key) && dictionary.ContainsKey(key2))
 				{
-					dictionary[key].ConnectOptionEx(dictionary[key2]);
+					dictionary[key].ConnectOption(dictionary[key2], isOwnerOfOwner: false);
 				}
 			}
 		}

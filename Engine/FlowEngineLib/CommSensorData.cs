@@ -1,15 +1,23 @@
 namespace FlowEngineLib;
 
-public class CommSensorData
+public class CommSensorData : TempCommSensorData
 {
-	public CVTemplateParam TemplateParam { get; set; }
+	public CVPhySensorCmd Cmd { get; set; }
 
-	public CommSensorData(int tempId, string tempName)
+	public CommSensorData(int tempId, string tempName, int cmdType, string cmdSend, string cmdReceive)
+		: base(tempId, tempName)
 	{
-		TemplateParam = new CVTemplateParam
+		if (cmdType != 0 && !string.IsNullOrEmpty(cmdSend))
 		{
-			ID = tempId,
-			Name = tempName
-		};
+			Cmd = new CVPhySensorCmd
+			{
+				CmdType = (CommSensorCmdType)cmdType,
+				Request = cmdSend,
+				Response = cmdReceive,
+				Delay = 0,
+				RetryCount = 2,
+				Timeout = 100
+			};
+		}
 	}
 }

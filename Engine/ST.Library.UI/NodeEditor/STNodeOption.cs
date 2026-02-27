@@ -229,8 +229,7 @@ public class STNodeOption
 		{
 			throw new ArgumentNullException("指定的数据类型不能为空");
 		}
-		// Increase default dot size to make connection points easier to hit
-		_DotSize = 17;
+		_DotSize = 10;
 		m_hs_connected = new HashSet<STNodeOption>();
 		_DataType = dataType;
 		_Text = strText;
@@ -301,30 +300,21 @@ public class STNodeOption
 		}
 	}
 
-	protected virtual bool ConnectingOption(STNodeOption op)
+	protected virtual bool ConnectingOption(STNodeOption op, bool isOwnerOfOwner)
 	{
 		if (_Owner == null)
 		{
 			return false;
 		}
-		if (_Owner.Owner == null)
+		if (isOwnerOfOwner && _Owner.Owner == null)
 		{
 			return false;
 		}
 		STNodeEditorOptionEventArgs e = new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.Connecting);
-		_Owner.Owner.OnOptionConnecting(e);
-		OnConnecting(new STNodeOptionEventArgs(isSponsor: true, op, ConnectionStatus.Connecting));
-		op.OnConnecting(new STNodeOptionEventArgs(isSponsor: false, this, ConnectionStatus.Connecting));
-		return e.Continue;
-	}
-
-	protected virtual bool ConnectingOptionEx(STNodeOption op)
-	{
-		if (_Owner == null)
+		if (isOwnerOfOwner)
 		{
-			return false;
+			_Owner.Owner.OnOptionConnecting(e);
 		}
-		STNodeEditorOptionEventArgs e = new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.Connecting);
 		OnConnecting(new STNodeOptionEventArgs(isSponsor: true, op, ConnectionStatus.Connecting));
 		op.OnConnecting(new STNodeOptionEventArgs(isSponsor: false, this, ConnectionStatus.Connecting));
 		return e.Continue;
@@ -347,35 +337,9 @@ public class STNodeOption
 		return e.Continue;
 	}
 
-	public virtual ConnectionStatus ConnectOption(STNodeOption op)
+	public virtual ConnectionStatus ConnectOption(STNodeOption op, bool isOwnerOfOwner = true)
 	{
-		if (!ConnectingOption(op))
-		{
-			STNodeEidtorConnected(new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.Reject));
-			return ConnectionStatus.Reject;
-		}
-		ConnectionStatus connectionStatus = CanConnect(op);
-		if (connectionStatus != ConnectionStatus.Connected)
-		{
-			STNodeEidtorConnected(new STNodeEditorOptionEventArgs(op, this, connectionStatus));
-			return connectionStatus;
-		}
-		connectionStatus = op.CanConnect(this);
-		if (connectionStatus != ConnectionStatus.Connected)
-		{
-			STNodeEidtorConnected(new STNodeEditorOptionEventArgs(op, this, connectionStatus));
-			return connectionStatus;
-		}
-		op.AddConnection(this, bSponsor: false);
-		AddConnection(op, bSponsor: true);
-		ControlBuildLinePath();
-		STNodeEidtorConnected(new STNodeEditorOptionEventArgs(op, this, connectionStatus));
-		return connectionStatus;
-	}
-
-	public virtual ConnectionStatus ConnectOptionEx(STNodeOption op)
-	{
-		if (!ConnectingOptionEx(op))
+		if (!ConnectingOption(op, isOwnerOfOwner))
 		{
 			STNodeEidtorConnected(new STNodeEditorOptionEventArgs(op, this, ConnectionStatus.Reject));
 			return ConnectionStatus.Reject;
