@@ -499,8 +499,8 @@ public class STNodeTreeView : Control
 			}
 			return false;
 		}
-		STNodeAttribute array = GetNodeAttribute(stNodeType);
-		if (array == null)
+		STNodeAttribute nodeAttribute = GetNodeAttribute(stNodeType);
+		if (nodeAttribute == null)
 		{
 			if (bShowException)
 			{
@@ -508,23 +508,23 @@ public class STNodeTreeView : Control
 			}
 			return false;
 		}
-		string i = string.Empty;
+		string text = string.Empty;
 		items.STNodeCount++;
-		if (!string.IsNullOrEmpty(array.Path))
+		if (!string.IsNullOrEmpty(nodeAttribute.Path))
 		{
-			string[] array2 = array.Path.Split(m_chr_splitter);
-			for (int j = 0; j < array2.Length; j++)
+			string[] array = nodeAttribute.Path.Split(m_chr_splitter);
+			for (int i = 0; i < array.Length; i++)
 			{
-				items = items.Add(array2[j]);
+				items = items.Add(array[i]);
 				items.STNodeCount++;
-				i = i + "/" + array2[j];
+				text = text + "/" + array[i];
 			}
 		}
 		try
 		{
 			STNode sTNode = (STNode)Activator.CreateInstance(stNodeType);
 			STNodeTreeCollection sTNodeTreeCollection = new STNodeTreeCollection(sTNode.Title);
-			sTNodeTreeCollection.Path = (strLibName + "/" + array.Path).Trim('/');
+			sTNodeTreeCollection.Path = (strLibName + "/" + nodeAttribute.Path).Trim('/');
 			sTNodeTreeCollection.STNodeType = stNodeType;
 			items[sTNodeTreeCollection.Name] = sTNodeTreeCollection;
 			sTNodeTreeCollection.STNodeTypeColor = sTNode.TitleColor;
@@ -545,17 +545,17 @@ public class STNodeTreeView : Control
 	private STNodeTreeCollection AddAssemblyPrivate(string strFile)
 	{
 		strFile = Path.GetFullPath(strFile);
-		Assembly array = Assembly.LoadFrom(strFile);
-		STNodeTreeCollection i = new STNodeTreeCollection(Path.GetFileNameWithoutExtension(strFile));
-		Type[] types = array.GetTypes();
+		Assembly assembly = Assembly.LoadFrom(strFile);
+		STNodeTreeCollection sTNodeTreeCollection = new STNodeTreeCollection(Path.GetFileNameWithoutExtension(strFile));
+		Type[] types = assembly.GetTypes();
 		foreach (Type type in types)
 		{
 			if (!type.IsAbstract && type.IsSubclassOf(m_type_node_base))
 			{
-				AddSTNode(type, i, i.Name, bShowException: false);
+				AddSTNode(type, sTNodeTreeCollection, sTNodeTreeCollection.Name, bShowException: false);
 			}
 		}
-		return i;
+		return sTNodeTreeCollection;
 	}
 
 	private STNodeAttribute GetNodeAttribute(Type stNodeType)
@@ -895,50 +895,50 @@ public class STNodeTreeView : Control
 
 	protected virtual void OnDrawItemIcon(DrawingTools dt, STNodeTreeCollection items, Rectangle rect)
 	{
-		Graphics method = dt.Graphics;
+		Graphics graphics = dt.Graphics;
 		if (items.STNodeType != null)
 		{
 			m_pen.Color = (_AutoColor ? items.STNodeTypeColor : Color.DarkCyan);
 			m_brush.Color = Color.LightGray;
-			method.DrawRectangle(m_pen, rect.Left - 15, rect.Top + m_nItemHeight / 2 - 5, 11, 10);
-			method.FillRectangle(m_brush, rect.Left - 17, rect.Top + m_nItemHeight / 2 - 2, 5, 5);
-			method.FillRectangle(m_brush, rect.Left - 6, rect.Top + m_nItemHeight / 2 - 2, 5, 5);
+			graphics.DrawRectangle(m_pen, rect.Left - 15, rect.Top + m_nItemHeight / 2 - 5, 11, 10);
+			graphics.FillRectangle(m_brush, rect.Left - 17, rect.Top + m_nItemHeight / 2 - 2, 5, 5);
+			graphics.FillRectangle(m_brush, rect.Left - 6, rect.Top + m_nItemHeight / 2 - 2, 5, 5);
 			if (m_item_hover == items && m_bHoverInfo)
 			{
 				m_brush.Color = BackColor;
-				method.FillRectangle(m_brush, items.InfoRectangle);
+				graphics.FillRectangle(m_brush, items.InfoRectangle);
 			}
 			m_pen.Color = (_AutoColor ? items.STNodeTypeColor : _InfoButtonColor);
 			m_pen.Width = 2f;
-			method.DrawLine(m_pen, items.InfoRectangle.X + 4, items.InfoRectangle.Y + 3, items.InfoRectangle.X + 10, items.InfoRectangle.Y + 3);
-			method.DrawLine(m_pen, items.InfoRectangle.X + 4, items.InfoRectangle.Y + 6, items.InfoRectangle.X + 10, items.InfoRectangle.Y + 6);
-			method.DrawLine(m_pen, items.InfoRectangle.X + 4, items.InfoRectangle.Y + 11, items.InfoRectangle.X + 10, items.InfoRectangle.Y + 11);
-			method.DrawLine(m_pen, items.InfoRectangle.X + 7, items.InfoRectangle.Y + 7, items.InfoRectangle.X + 7, items.InfoRectangle.Y + 10);
+			graphics.DrawLine(m_pen, items.InfoRectangle.X + 4, items.InfoRectangle.Y + 3, items.InfoRectangle.X + 10, items.InfoRectangle.Y + 3);
+			graphics.DrawLine(m_pen, items.InfoRectangle.X + 4, items.InfoRectangle.Y + 6, items.InfoRectangle.X + 10, items.InfoRectangle.Y + 6);
+			graphics.DrawLine(m_pen, items.InfoRectangle.X + 4, items.InfoRectangle.Y + 11, items.InfoRectangle.X + 10, items.InfoRectangle.Y + 11);
+			graphics.DrawLine(m_pen, items.InfoRectangle.X + 7, items.InfoRectangle.Y + 7, items.InfoRectangle.X + 7, items.InfoRectangle.Y + 10);
 			m_pen.Width = 1f;
-			method.DrawRectangle(m_pen, items.InfoRectangle.X, items.InfoRectangle.Y, items.InfoRectangle.Width - 1, items.InfoRectangle.Height - 1);
+			graphics.DrawRectangle(m_pen, items.InfoRectangle.X, items.InfoRectangle.Y, items.InfoRectangle.Width - 1, items.InfoRectangle.Height - 1);
 		}
 		else
 		{
 			if (items.IsLibraryRoot)
 			{
 				Rectangle rect2 = new Rectangle(rect.Left - 15, rect.Top + m_nItemHeight / 2 - 5, 11, 10);
-				method.DrawRectangle(Pens.Gray, rect2);
-				method.DrawLine(Pens.Cyan, rect2.X - 2, rect2.Top, rect2.X + 2, rect2.Top);
-				method.DrawLine(Pens.Cyan, rect2.X, rect2.Y - 2, rect2.X, rect2.Y + 2);
-				method.DrawLine(Pens.Cyan, rect2.Right - 2, rect2.Bottom, rect2.Right + 2, rect2.Bottom);
-				method.DrawLine(Pens.Cyan, rect2.Right, rect2.Bottom - 2, rect2.Right, rect2.Bottom + 2);
+				graphics.DrawRectangle(Pens.Gray, rect2);
+				graphics.DrawLine(Pens.Cyan, rect2.X - 2, rect2.Top, rect2.X + 2, rect2.Top);
+				graphics.DrawLine(Pens.Cyan, rect2.X, rect2.Y - 2, rect2.X, rect2.Y + 2);
+				graphics.DrawLine(Pens.Cyan, rect2.Right - 2, rect2.Bottom, rect2.Right + 2, rect2.Bottom);
+				graphics.DrawLine(Pens.Cyan, rect2.Right, rect2.Bottom - 2, rect2.Right, rect2.Bottom + 2);
 			}
 			else
 			{
-				method.DrawRectangle(Pens.Goldenrod, new Rectangle(rect.Left - 16, rect.Top + m_nItemHeight / 2 - 6, 8, 3));
-				method.DrawRectangle(Pens.Goldenrod, new Rectangle(rect.Left - 16, rect.Top + m_nItemHeight / 2 - 3, 13, 9));
+				graphics.DrawRectangle(Pens.Goldenrod, new Rectangle(rect.Left - 16, rect.Top + m_nItemHeight / 2 - 6, 8, 3));
+				graphics.DrawRectangle(Pens.Goldenrod, new Rectangle(rect.Left - 16, rect.Top + m_nItemHeight / 2 - 3, 13, 9));
 			}
 			if (_ShowFolderCount)
 			{
 				m_sf.Alignment = StringAlignment.Far;
 				m_brush.Color = _FolderCountColor;
 				rect.X -= 4;
-				method.DrawString("[" + items.STNodeCount + "]", Font, m_brush, rect, m_sf);
+				graphics.DrawString("[" + items.STNodeCount + "]", Font, m_brush, rect, m_sf);
 				m_sf.Alignment = StringAlignment.Near;
 			}
 		}
