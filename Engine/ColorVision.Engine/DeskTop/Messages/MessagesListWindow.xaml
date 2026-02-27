@@ -109,14 +109,14 @@
                         <GridViewColumn  Header="SendTime">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:MsgRecord}">
-                                    <TextBlock Text="{ Binding  SendTime,StringFormat=HH:mm:ss}"/>
+                                    <TextBlock Text="{ Binding  SendTime,StringFormat=HH:mm:ss:fff}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn  Header="ReciveTime">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:MsgRecord}">
-                                    <TextBlock Text="{ Binding  ReciveTime,StringFormat=HH:mm:ss}" Visibility="{Binding IsRecive,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                    <TextBlock Text="{ Binding  ReciveTime,StringFormat=HH:mm:ss:fff}" Visibility="{Binding IsRecive,Converter={StaticResource bool2VisibilityConverter}}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
