@@ -2643,4 +2643,25 @@
   <data name="InstallTools" xml:space="preserve">
     <value>安裝工具</value>
   </data>
+  <data name="AlgorithmVisibilitySettings" xml:space="preserve">
+    <value>演算法可見性設定</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>可見</value>
+  </data>
+  <data name="Group" xml:space="preserve">
+    <value>分組</value>
+  </data>
+  <data name="ShowAll" xml:space="preserve">
+    <value>全部顯示</value>
+  </data>
+  <data name="HideAll" xml:space="preserve">
+    <value>全部隱藏</value>
+  </data>
+  <data name="ShowGroup" xml:space="preserve">
+    <value>顯示分組</value>
+  </data>
+  <data name="HideGroup" xml:space="preserve">
+    <value>隱藏分組</value>
+  </data>
 </root>

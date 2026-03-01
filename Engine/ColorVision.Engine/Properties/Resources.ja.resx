@@ -2643,4 +2643,25 @@
   <data name="InstallTools" xml:space="preserve">
     <value>インストールツール</value>
   </data>
+  <data name="AlgorithmVisibilitySettings" xml:space="preserve">
+    <value>アルゴリズムの可視性設定</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>見える</value>
+  </data>
+  <data name="Group" xml:space="preserve">
+    <value>グループ</value>
+  </data>
+  <data name="ShowAll" xml:space="preserve">
+    <value>すべて表示</value>
+  </data>
+  <data name="HideAll" xml:space="preserve">
+    <value>すべて隠す</value>
+  </data>
+  <data name="ShowGroup" xml:space="preserve">
+    <value>グループ化を表示</value>
+  </data>
+  <data name="HideGroup" xml:space="preserve">
+    <value>グループを非表示にする</value>
+  </data>
 </root>

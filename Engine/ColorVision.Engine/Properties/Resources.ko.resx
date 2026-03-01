@@ -2643,4 +2643,25 @@
   <data name="InstallTools" xml:space="preserve">
     <value>설치 도구</value>
   </data>
+  <data name="AlgorithmVisibilitySettings" xml:space="preserve">
+    <value>알고리즘 공개 설정</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>보이는</value>
+  </data>
+  <data name="Group" xml:space="preserve">
+    <value>그룹</value>
+  </data>
+  <data name="ShowAll" xml:space="preserve">
+    <value>모두 표시</value>
+  </data>
+  <data name="HideAll" xml:space="preserve">
+    <value>모두 숨기기</value>
+  </data>
+  <data name="ShowGroup" xml:space="preserve">
+    <value>그룹화 표시</value>
+  </data>
+  <data name="HideGroup" xml:space="preserve">
+    <value>그룹 숨기기</value>
+  </data>
 </root>
