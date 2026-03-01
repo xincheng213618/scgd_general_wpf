@@ -55,7 +55,7 @@
         <ListBox x:Name="DownloadListView" Grid.Row="1" Margin="0"
                  SelectionMode="Extended" HorizontalContentAlignment="Stretch"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled" BorderThickness="0"
-                 MouseDoubleClick="DownloadListView_MouseDoubleClick">
+                 MouseDoubleClick="DownloadListView_MouseDoubleClick" Cursor="" >
             <ListBox.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="{x:Static properties:Resources.OpenFile}" Click="ContextMenu_OpenFile_Click"/>
@@ -92,8 +92,8 @@
 
                             <!-- Row 0: FileName + FileSize + CreateTime -->
                             <DockPanel Grid.Row="0">
-                                <TextBlock DockPanel.Dock="Right" Text="{Binding CreateTime, StringFormat=yyyy-MM-dd HH:mm}" FontSize="11" Foreground="Gray" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                <TextBlock DockPanel.Dock="Right" Text="{Binding FileSizeDisplayText}" FontSize="11" Foreground="Gray" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding CreateTime, StringFormat=yyyy-MM-dd HH:mm}" FontSize="11"  VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding FileSizeDisplayText}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                 <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" FontSize="13" VerticalAlignment="Center"/>
                             </DockPanel>
 
@@ -104,16 +104,15 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <ProgressBar Value="{Binding ProgressValue}" Height="14" Minimum="0" Maximum="100"/>
-                                <TextBlock Grid.Column="1" Text="{Binding SpeedText}" FontSize="11" Foreground="Gray" Margin="8,0,0,0" VerticalAlignment="Center" MinWidth="80" TextAlignment="Right"/>
+                                <ProgressBar Value="{Binding ProgressValue}" Height="14" Minimum="0" Maximum="100"  Foreground="DodgerBlue"/>
+                                <TextBlock Grid.Column="1" Text="{Binding SpeedText}" FontSize="11"  Margin="8,0,0,0" VerticalAlignment="Center" MinWidth="80" TextAlignment="Right"/>
                             </Grid>
 
                             <!-- Row 1: Status text (visible when NOT actively downloading) -->
-                            <TextBlock Grid.Row="1" Text="{Binding StatusText}" FontSize="11" Foreground="Gray" Margin="0,4,0,0"
+                            <TextBlock Grid.Row="1" Text="{Binding StatusText}" FontSize="11"  Margin="0,4,0,0"
                                        VerticalAlignment="Center">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="Gray"/>
                                         <Setter Property="Visibility" Value="Visible"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsActiveDownloading}" Value="True">
