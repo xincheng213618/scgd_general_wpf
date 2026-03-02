@@ -1,10 +1,14 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
+using Spectrum.Config;
+using Spectrum.PropertyEditor;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 
 namespace Spectrum
@@ -50,6 +54,9 @@ namespace Spectrum
         [DisplayName("自动积分时间起始")]
         public float AutoIntTimeB { get => _AutoIntTimeB; set { _AutoIntTimeB = value; OnPropertyChanged(); } }
         private float _AutoIntTimeB = 1;
+
+        public bool IsOldVersion { get => _IsOldVersion; set { _IsOldVersion = value; OnPropertyChanged(); } }
+        private bool _IsOldVersion = false;
     }
 
     public class GetDataConfig : ViewModelBase, IConfig
@@ -78,7 +85,7 @@ namespace Spectrum
     }
 
 
-    public class AutodarkParam : ViewModelBase
+    public class AutodarkParam : ViewModelBase,IConfig
     {
         [DisplayName("起始时间(ms)")]
         public float fTimeStart { get => _fTimeStart; set { _fTimeStart = value; OnPropertyChanged(); } }
@@ -110,14 +117,18 @@ namespace Spectrum
     }
 
 
-
     public class SpectrometerManager : ViewModelBase,IConfig
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SpectrometerManager));
 
+        public static SpectrumConfig SpectrumConfig => ConfigService.Instance.GetRequiredService<SpectrumConfig>();
+
         public static SpectrometerManager Instance => ConfigService.Instance.GetRequiredService<SpectrometerManager>();
 
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
+
+        [JsonIgnore]
+        public ShutterController ShutterController { get; set; } = new ShutterController();
 
         public static SetEmissionSP100Config SetEmissionSP100Config => SetEmissionSP100Config.Instance;
 
@@ -194,6 +205,49 @@ namespace Spectrum
 
             EditGetDataConfigCommand = new RelayCommand(a => EditGetDataConfig());
             EditAutodarkParamCommand = new RelayCommand(a => EditAutodarkParam());
+
+            GetSpectrSerialNumberCommand = new RelayCommand(a => GetSpectrSerialNumber());
+
+            EditNDConfigCommand = new RelayCommand(a => new PropertyEditorWindow(NDConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            ConnectNDCommand = new RelayCommand(a => ConnectND());
+        }
+        public NDConfig NDConfig => SpectrumConfig.NDConfig;
+
+        public RelayCommand EditNDConfigCommand { get; set; }
+
+        public RelayCommand ConnectNDCommand { get; set; }
+
+        public IntPtr NDHandle { get; set; } = IntPtr.Zero;
+
+        public void ConnectND()
+        {
+            NDHandle = NdCFWPortAPI.CM_CreatNdCFWPort(NDConfig.SzComName, (uint)NDConfig.BaudRate, false);
+            if (NDHandle == IntPtr.Zero)
+            {
+                log.Info("NDConnnet failed");
+            }
+            else
+            {
+                log.Info("NDConnnet");
+            }
+        }
+
+
+
+
+        public RelayCommand GetSpectrSerialNumberCommand { get; set; }
+        public void GetSpectrSerialNumber()
+        {
+            int i = 0;
+            if (int.TryParse(SzComName.Replace("COM", ""), out int z))
+            {
+                i = z;
+            }
+            int bufferLength = 1024;
+            StringBuilder stringBuilder = new StringBuilder(bufferLength);
+
+            int ret = Spectrometer.CM_Emission_GetAllSN((int)SpectrometerType, i, stringBuilder, bufferLength);
+            MessageBox1.Show(Application.Current.GetActiveWindow(), stringBuilder.ToString(), "Sprectrum");
         }
 
         public void SetMaguideOutputFile()
@@ -283,10 +337,8 @@ namespace Spectrum
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
         private int _BaudRate = 115200;
 
-        public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsCom)); } }
+        public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); } }
         private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
-
-        public bool IsCom { get => SpectrometerType == SpectrometerType.LightModule; }
 
         public void GenerateAmplitude()  
         {
@@ -396,11 +448,6 @@ namespace Spectrum
         public string MaguideFileOutput { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFileOutput;
 
-        /// <summary>
-        /// 自适应校零
-        /// </summary>
-        public bool EnableAutodark { get => _EnableAutodark; set { _EnableAutodark = value; OnPropertyChanged(); } }
-        private bool _EnableAutodark;
 
 
         public AutodarkParam AutodarkParam { get => _AutodarkParam; set { _AutodarkParam = value; OnPropertyChanged(); } }
@@ -409,6 +456,19 @@ namespace Spectrum
         {
             new PropertyEditorWindow(AutodarkParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
+        /// <summary>
+        /// 自动校零
+        /// </summary>
+        public bool EnableAutodark { get => _EnableAutodark; set { _EnableAutodark = value; OnPropertyChanged(); if (value) EnableAdaptiveAutoDark = false;  } }
+        private bool _EnableAutodark;
+
+        /// <summary>
+        /// 自适应校零
+        /// </summary>
+        public bool EnableAdaptiveAutoDark { get => _EnableAdaptiveAutoDark; set { _EnableAdaptiveAutoDark = value; OnPropertyChanged();  if (value) EnableAutodark = false;  } }
+        private bool _EnableAdaptiveAutoDark;
+
 
 
         /// <summary>

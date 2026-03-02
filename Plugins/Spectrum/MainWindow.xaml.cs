@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
@@ -14,6 +15,7 @@ using ScottPlot.Plottables;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Ports;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -113,11 +115,14 @@ namespace Spectrum
                 }
 
             };
-
+            string[] portNames = SerialPort.GetPortNames();
             List<int> BaudRates = new List<int>() { 115200, 38400, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 57600 };
-            List<string> Serials = new List<string>() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10" };
-            ComboBoxPort.ItemsSource = BaudRates;
-            ComboBoxSerial.ItemsSource = Serials;
+            ComboBoxPort.ItemsSource = portNames;
+            ComboBoxSerial.ItemsSource = BaudRates;
+            ComboBoxNdPort.ItemsSource = portNames;
+            ComboBoxNdSerial.ItemsSource = BaudRates;
+            ComboBoxShutterPort.ItemsSource = portNames;
+            ComboBoxShutterSerial.ItemsSource = BaudRates;
 
             string title = "相对光谱曲线";
             wpfplot1.Plot.XLabel("波长[nm]");
@@ -171,11 +176,6 @@ namespace Spectrum
         int picType = 0;
         bool start = false;
         int testid = 0;
-
-        public void addtable(COLOR_PARA data)
-        {
-
-        }
 
         public static int MyCallback(IntPtr strText, int nLen)
         {
@@ -245,7 +245,7 @@ namespace Spectrum
                     using (var fs = new FileStream(latestFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (var sr = new StreamReader(fs,Encoding.GetEncoding("GB2312")))
                     {
-                        string line;
+                        string line;   
                         bool containsKeyword = false;
                         while ((line = sr.ReadLine()) != null)
                         {
@@ -300,27 +300,46 @@ namespace Spectrum
         //单次校零
         private void Button3_Click(object sender, RoutedEventArgs e)
         {
-            try
+            if (IsRun)
             {
-                int ret = Spectrometer.CM_Emission_DarkStorage(SpectrometerHandle, Manager.IntTime, Manager.Average, 0, Manager.fDarkData);
-                log.Info($"CM_Emission_DarkStorage {ret}");
-                if (ret == 1)
-                {
-                    MessageBox.Show("校零成功");
-                }
-                else
-                {
-                    MessageBox.Show("校零失败");
-                }
+                MessageBox1.Show("正在运行");
+                return;
             }
-            catch (Exception ex)
+            IsRun = true;
+
+            Task.Run(async () =>
             {
-                MessageBox.Show("校零异常" + ex.Message);
-            }
-        }
-        //处理测量数据
-        public void TestResult(COLOR_PARA data, float intTime, int resultCode)
-        {
+                try
+                {
+                    if (Manager.ShutterController.IsConnected)
+                    {
+                        log.Info("OpenShutter");
+                       await  Manager.ShutterController.OpenShutter();
+                    }
+                    int ret = Spectrometer.CM_Emission_DarkStorage(SpectrometerHandle, Manager.IntTime, Manager.Average, 0, Manager.fDarkData);
+                    if (Manager.ShutterController.IsConnected)
+                    {
+                        log.Info("CloseShutter");
+                        await Manager.ShutterController.CloseShutter();
+                    }
+                    log.Info($"CM_Emission_DarkStorage {ret}");
+                    if (ret == 1)
+                    {
+                        MessageBox1.Show("校零成功");
+                    }
+                    else
+                    {
+                        MessageBox1.Show("校零失败");
+                    }
+                    IsRun = false;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox1.Show("校零异常" + ex.Message);
+                    IsRun = false;
+                }
+            });
+
 
         }
 
@@ -357,6 +376,51 @@ namespace Spectrum
             });
             return 0;
         }
+        private void AutoIntTime_Click(object sender, RoutedEventArgs e)
+        {
+            if (IsRun)
+            {
+                MessageBox1.Show("正在运行");
+                return;
+            }
+
+            Task.Run(() =>
+            {
+                IsRun = true;
+                if (Manager.IntTimeConfig.IsOldVersion)
+                {
+                    ret = Spectrometer.CM_Emission_GetAutoTime(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, (int)Manager.MaxPercent);
+                    log.Info($"CM_Emission_GetAutoTime: {ret}");
+                    if (ret == 1)
+                    {
+                        log.Info($"自动积分：{fIntTime}");
+                        Manager.IntTime = fIntTime;
+                    }
+                    else
+                    {
+                        log.Info("自动积分获取失败：" + ret);
+                    }
+                }
+                else
+                {
+                    ret = Spectrometer.CM_Emission_GetAutoTimeEx(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, Manager.Max, MyAutoTimeCallback);
+                    log.Info($"CM_Emission_GetAutoTimeEx: {ret}");
+
+                    if (ret == 1)
+                    {
+                        log.Info($"自动积分：{fIntTime}");
+                        Manager.IntTime = fIntTime;
+                    }
+                    else
+                    {
+                        log.Info("自动积分获取失败：" + ret);
+                    }
+                }
+                IsRun = false;
+            });
+
+
+        }
         public async Task Measure()
         {
             if (IsRun)
@@ -365,24 +429,63 @@ namespace Spectrum
                 return;
             }
             IsRun = true;
+
+            if (Manager.EnableAutodark)
+            {
+                if (Manager.ShutterController.IsConnected)
+                {
+                    log.Info("OpenShutter");
+                    await Manager.ShutterController.OpenShutter();
+                }
+                int ret = Spectrometer.CM_Emission_DarkStorage(SpectrometerHandle, Manager.IntTime, Manager.Average, 0, Manager.fDarkData);
+                if (Manager.ShutterController.IsConnected)
+                {
+                    log.Info("CloseShutter");
+                    await Manager.ShutterController.CloseShutter();
+                }
+                log.Info($"CM_Emission_DarkStorage {ret}");
+            }
+
             if (Manager.EnableAutoIntegration)
             {
-                ret = Spectrometer.CM_Emission_GetAutoTimeEx(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, Manager.Max, MyAutoTimeCallback);
-                log.Info($"CM_Emission_GetAutoTimeEx: {ret}");
 
-                if (ret == 1)
+                if (Manager.IntTimeConfig.IsOldVersion)
                 {
-                    log.Info($"自动积分：{fIntTime}");
-                    Manager.IntTime = fIntTime;
+                    ret = Spectrometer.CM_Emission_GetAutoTime(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, (int)Manager.MaxPercent);
+                    log.Info($"CM_Emission_GetAutoTime: {ret}");
+                    if (ret == 1)
+                    {
+                        log.Info($"自动积分：{fIntTime}");
+                        Manager.IntTime = fIntTime;
+                    }
+                    else
+                    {
+                        log.Info("自动积分获取失败：" + ret);
+                        IsRun = false;
+                        return;
+                    }
                 }
                 else
                 {
-                    log.Info("自动积分获取失败：" + ret);
-                    IsRun = false;
-                    return;
+                    ret = Spectrometer.CM_Emission_GetAutoTimeEx(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, Manager.Max, MyAutoTimeCallback);
+                    log.Info($"CM_Emission_GetAutoTimeEx: {ret}");
+
+                    if (ret == 1)
+                    {
+                        log.Info($"自动积分：{fIntTime}");
+                        Manager.IntTime = fIntTime;
+                    }
+                    else
+                    {
+                        log.Info("自动积分获取失败：" + ret);
+                        IsRun = false;
+                        return;
+                    }
                 }
             }
-            if (Manager.EnableAutodark)
+
+
+            if (Manager.EnableAdaptiveAutoDark)
             {
                 ret = Spectrometer.CM_Emission_AutoDarkStorage(SpectrometerHandle, Manager.IntTime, Manager.Average, 0, Manager.fDarkData);
                 log.Info($"CM_Emission_AutoDarkStorage: {ret}");
@@ -521,12 +624,7 @@ namespace Spectrum
         //连续测量
         private void Button6_Click(object sender, RoutedEventArgs e)
         {
-            if (IsRun)
-            {  
-                MessageBox.Show("正在执行任务请稍后");
-                return;
-            }
-
+            IsRun = false;
             isstartAuto = true;
             button6.Visibility = Visibility.Collapsed;
             button7.Visibility = Visibility.Visible;

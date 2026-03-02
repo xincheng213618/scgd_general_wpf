@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.MVVM;
+﻿                                                     using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
