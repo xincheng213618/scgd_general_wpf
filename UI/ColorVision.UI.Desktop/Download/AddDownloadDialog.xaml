@@ -1,0 +1,69 @@
+<Window x:Class="ColorVision.UI.Desktop.Download.AddDownloadDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:properties="clr-namespace:ColorVision.UI.Desktop.Properties"
+        Title="{x:Static properties:Resources.AddDownload}" Height="400" Width="560"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="{DynamicResource GlobalBackground}">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="100"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.DownloadUrl}" VerticalAlignment="Top" Margin="0,4,10,8"/>
+        <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,8">
+            <TextBox x:Name="UrlTextBox" Height="80" TextWrapping="Wrap" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"/>
+            <TextBlock Text="{x:Static properties:Resources.UrlOrMagnetHint}" FontSize="11"
+                       Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.6" Margin="0,2,0,0"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.SaveDirectory}" VerticalAlignment="Center" Margin="0,0,10,8"/>
+        <Grid Grid.Row="1" Grid.Column="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="SaveDirTextBox"/>
+            <Button Grid.Column="1" Content="..." Width="30" Margin="5,0,0,0" Click="BrowseDir_Click"/>
+        </Grid>
+
+        <Expander Grid.Row="2" Grid.ColumnSpan="2" Header="{x:Static properties:Resources.AdvancedOptions}" Margin="0,0,0,8">
+            <Grid Margin="0,8,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.UserName}" VerticalAlignment="Center" Margin="0,0,10,8"/>
+                <TextBox x:Name="UserNameTextBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,8"/>
+
+                <TextBlock Grid.Row="1" Text="{x:Static properties:Resources.Password}" VerticalAlignment="Center" Margin="0,0,10,8"/>
+                <PasswordBox x:Name="PasswordTextBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,8"/>
+            </Grid>
+        </Expander>
+
+        <StackPanel Grid.Row="5" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="{x:Static properties:Resources.OK}" Width="80" Margin="0,0,10,0" Click="OK_Click" IsDefault="True"/>
+            <Button Content="{x:Static properties:Resources.Cancel}" Width="80" Click="Cancel_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

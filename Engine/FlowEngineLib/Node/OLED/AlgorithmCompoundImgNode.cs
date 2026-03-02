@@ -69,7 +69,7 @@ public class AlgorithmCompoundImgNode : CVBaseServerNodeIn2Hub
 	protected override void OnCreate()
 	{
 		base.OnCreate();
-		m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", base.TempDisName);
+		m_ctrl_temp = CreateStringControl(m_custom_item, "模板:", base.TempDisName);
 	}
 
 	protected override object getBaseEventData(CVStartCFC start)

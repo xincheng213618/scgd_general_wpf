@@ -80,8 +80,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
             }
 
-            tb_TiffPath.Text = System.AppDomain.CurrentDomain.BaseDirectory + "TIFF";
-            Directory.CreateDirectory(tb_TiffPath.Text);
 
             cb_CM_TYPE.SelectedIndex = (int)Device.Config.CameraModel;
             cb_CM_MODE.SelectedIndex = (int)Device.Config.CameraMode;

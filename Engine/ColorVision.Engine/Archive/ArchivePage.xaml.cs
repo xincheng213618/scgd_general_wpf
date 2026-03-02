@@ -16,7 +16,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Archive.Dao
 {
-
     /// <summary>
     /// ArchivePage.xaml 的交互逻辑
     /// </summary>
@@ -24,7 +23,6 @@ namespace ColorVision.Engine.Archive.Dao
     public partial class ArchivePage : Page, IPage
     {
         public Frame Frame { get; set; }
-
         public ArchivePage() { }
         public ArchivePage(Frame MainFrame)
         {

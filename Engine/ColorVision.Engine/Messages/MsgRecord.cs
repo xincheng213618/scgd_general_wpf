@@ -1,5 +1,4 @@
-﻿#pragma warning disable
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
@@ -7,16 +6,12 @@ using System.Windows;
 
 namespace ColorVision.Engine.Messages
 {
-    public delegate void MsgRecordStateChangedHandler(MsgRecordState msgRecordState);
-    public delegate void MsgRecordSucessChangedHandler(MsgReturn msgReturn);
 
-    [SqlSugar.SugarTable("MsgRecord")]
+    [SugarTable("MsgRecord")]
     public class MsgRecord : ViewEntity 
     {
-        public event MsgRecordStateChangedHandler MsgRecordStateChanged;
-
-        public event MsgRecordSucessChangedHandler? MsgSucessed;
-        public void ClearMsgRecordSucessChangedHandler() => MsgSucessed = null;
+        public event EventHandler<MsgRecordState> MsgRecordStateChanged;
+        public event EventHandler<MsgReturn> MsgSucessed;
 
         [SugarColumn(ColumnName = "SubscribeTopic",IsNullable =true)]
         public string SubscribeTopic { get; set; }
@@ -57,14 +52,14 @@ namespace ColorVision.Engine.Messages
                 _MsgRecordState = value;
                 OnPropertyChanged();
 
-                Application.Current.Dispatcher.Invoke(() => MsgRecordStateChanged?.Invoke(_MsgRecordState));
+                Application.Current.Dispatcher.Invoke(() => MsgRecordStateChanged?.Invoke(this,_MsgRecordState));
                 if (value == MsgRecordState.Success || value == MsgRecordState.Fail)
                 {
                     OnPropertyChanged(nameof(IsRecive));
                     OnPropertyChanged(nameof(MsgReturn));
                     if (value == MsgRecordState.Success)
                     {
-                        Application.Current.Dispatcher.Invoke(() => MsgSucessed?.Invoke(MsgReturn));
+                        Application.Current.Dispatcher.Invoke(() => MsgSucessed?.Invoke(this, MsgReturn));
                     }
                     else
                     {
@@ -81,15 +76,12 @@ namespace ColorVision.Engine.Messages
                 }
 
                 OnPropertyChanged(nameof(IsSend));
-
-                //UpdateMsgRecordToDbAsync();
             }
         }
 
         private MsgRecordState _MsgRecordState = MsgRecordState.Initial;
 
         [SugarColumn(IsIgnore = true)]
-        //[JsonIgnore]
         public bool IsSend { get => MsgRecordState == MsgRecordState.Sended; }
 
         [SugarColumn(IsIgnore = true)]

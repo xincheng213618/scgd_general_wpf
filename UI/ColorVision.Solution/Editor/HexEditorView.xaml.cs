@@ -16,13 +16,13 @@ namespace ColorVision.Solution.Editor
 
         public void Dispose()
         {
-            HexEditor.Dispose();
+            HexEditorControl.Dispose();
             GC.SuppressFinalize(this);
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            HexEditor.PreloadByteInEditorMode = PreloadByteInEditor.MaxVisibleLineExtended;
+            HexEditorControl.PreloadByteInEditorMode = PreloadByteInEditor.MaxVisibleLineExtended;
             AllowDrop = true;
             Drop += HexEditorView_Drop;
         }
@@ -36,7 +36,7 @@ namespace ColorVision.Solution.Editor
                 {
                     try
                     {
-                        HexEditor.FileName = files[0];
+                        HexEditorControl.FileName = files[0];
                     }
                     catch (Exception ex)
                     {

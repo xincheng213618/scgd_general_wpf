@@ -1,13 +1,11 @@
 ﻿#pragma warning disable CS8602,CS8603,CS8601
 using ColorVision.Database;
 using ColorVision.Engine.Batch;
-using ColorVision.Engine.Extension;
-using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Scheduler;
 using ColorVision.SocketProtocol;
 using ColorVision.UI;
+using ColorVision.UI.Extension;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -88,7 +86,7 @@ namespace ColorVision.Engine.Templates.Flow
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = FlowEngineManager;
-            this.SetIconResource("DrawingImageFlow", View.View);
+            this.SetIconResource("DrawingImageFlow");
 
             this.AddViewConfig(View, ComboxView);
             View.DisplayFlow = this;

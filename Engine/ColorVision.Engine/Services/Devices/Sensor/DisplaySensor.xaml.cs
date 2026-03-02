@@ -159,7 +159,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             }
 
             MsgRecord msgRecord = DeviceService.Open();
-            msgRecord.MsgRecordStateChanged += (e) =>
+            msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "打开成功");
             };
@@ -191,7 +191,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                     RetryCount = 1
                 };
                 MsgRecord msgRecord = DeviceService.ExecCmd(cmd);
-                msgRecord.MsgRecordStateChanged += (s) =>
+                msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
                     MessageBox.Show(s.ToString());
                 };

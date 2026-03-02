@@ -70,7 +70,7 @@ namespace ProjectLUX.Services
                             MsgRecord msgRecord = deviceCamera.DService.AutoFocus(TemplateAutoFocus.Params[displayCameraConfig.AutoFocusTemplateIndex].Value);
    
                             //MsgRecord msgRecord = deviceCamera.DService.GetPosition();
-                            msgRecord.MsgRecordStateChanged += (e) =>
+                            msgRecord.MsgRecordStateChanged += (s,e) =>
                             {
                                 log.Info("msgRecord");
 

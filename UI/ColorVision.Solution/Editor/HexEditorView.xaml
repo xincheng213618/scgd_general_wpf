@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Solution.Editor"
-             xmlns:WPFHexaEditor ="clr-namespace:WpfHexaEditor;assembly=WPFHexaEditor"
+             xmlns:hexEditor="clr-namespace:WpfHexaEditor;assembly=WPFHexaEditor"
+
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}" Initialized="UserControl_Initialized">
     <UserControl.Resources>
@@ -24,6 +25,13 @@
         </Style>
     </UserControl.Resources>
     <Grid>
-        <WPFHexaEditor:HexEditor x:Name="HexEditor" Background="Transparent" Foreground="{DynamicResource GlobalTextBrush}" BorderThickness="0"/>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <hexEditor:HexEditor x:Name="HexEditorControl"
+                                Grid.Column="1"
+                                Margin="4"/>
+
     </Grid>
 </UserControl>

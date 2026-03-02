@@ -35,17 +35,21 @@ namespace ColorVision.Update.Export
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(RegInitialized));
 
-        public static Version Version { get; set; } = new Version(1, 0, 1, 0);
+        public static Version Version { get; set; } = new Version(1, 0, 2, 0);
 
         public override Task Initialize()
         {
             RegConfig sqlConfig = ConfigService.Instance.GetRequiredService<RegConfig>();
             if (sqlConfig.Version < Version)
             {
-                sqlConfig.Version = Version;
-                ConfigService.Instance.SaveConfigs();
-                log.Info($"RegInitialized 版本更新到 {Version}");
-                FileAssociationHelper.RegisterAssociations();
+                bool success = FileAssociationHelper.RegisterAssociations();
+                if (success)
+                {
+                    sqlConfig.Version = Version;
+                    ConfigService.Instance.SaveConfigs();
+                    log.Info($"RegInitialized 版本更新到 {Version}");
+
+                }
             }
             return Task.CompletedTask;
         }
@@ -54,6 +58,12 @@ namespace ColorVision.Update.Export
 
     public static class FileAssociationHelper
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(FileAssociationHelper));
+        [System.Runtime.InteropServices.DllImport("shell32.dll")]
+        private static extern void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
+
+        private const int SHCNE_ASSOCCHANGED = 0x08000000;
+        private const uint SHCNF_IDLIST = 0x0000;
         /// <summary>
         /// 生成注册表文件并请求管理员权限导入
         /// </summary>
@@ -69,6 +79,11 @@ namespace ColorVision.Update.Export
                 // 2. 为了写入 .reg 文件，路径中的反斜杠需要转义 (例如 C:\Program 变成 C:\\Program)
                 string escapedAppPath = appPath.Replace("\\", "\\\\");
                 string escapedIconPath = iconPath.Replace("\\", "\\\\");
+
+                // Thumbnail handler COM class GUID (must match CVRawShellThumbnailProvider)
+                string thumbnailClsid = "{7B5E2A3C-8F1D-4E6A-B9C2-1D3E5F7A8B9C}";
+                string comHostPath = Path.Combine(appDir, "ColorVision.ShellExtension.comhost.dll");
+                string escapedComHostPath = comHostPath.Replace("\\", "\\\\");
 
                 // 3. 构建 .reg 文件内容
                 StringBuilder sb = new StringBuilder();
@@ -227,6 +242,19 @@ namespace ColorVision.Update.Export
 
 
                 // ------------------------------------------------------
+                //  Register COM Thumbnail Handler for .cvraw/.cvcie
+                //  This enables Windows Explorer to show dynamic thumbnails
+                // ------------------------------------------------------
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{thumbnailClsid}]");
+                sb.AppendLine($"@=\"ColorVision CVRaw/CVCie Thumbnail Handler\"");
+                sb.AppendLine();
+
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{thumbnailClsid}\\InprocServer32]");
+                sb.AppendLine($"@=\"{escapedComHostPath}\"");
+                sb.AppendLine($"\"ThreadingModel\"=\"Both\"");
+                sb.AppendLine();
+
+                // ------------------------------------------------------
                 //  4. 注册 .cvraw 
                 // ------------------------------------------------------
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvraw]");
@@ -234,7 +262,7 @@ namespace ColorVision.Update.Export
                 sb.AppendLine();
 
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvraw]");
-                sb.AppendLine($"@=\"ColorVision Launcher Package\"");
+                sb.AppendLine($"@=\"ColorVision Raw Image File\"");
                 sb.AppendLine();
 
                 // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
@@ -248,6 +276,11 @@ namespace ColorVision.Update.Export
                 sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
                 sb.AppendLine();
 
+                // Register thumbnail handler for .cvraw (Shell extension GUID for IThumbnailProvider)
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvraw\\ShellEx\\{{e357fccd-a995-4576-b01f-234630154e96}}]");
+                sb.AppendLine($"@=\"{thumbnailClsid}\"");
+                sb.AppendLine();
+
                 // ------------------------------------------------------
                 //  5. 注册 .cvcie 
                 // ------------------------------------------------------
@@ -256,7 +289,7 @@ namespace ColorVision.Update.Export
                 sb.AppendLine();
 
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcie]");
-                sb.AppendLine($"@=\"ColorVision Launcher Package\"");
+                sb.AppendLine($"@=\"ColorVision CIE Image File\"");
                 sb.AppendLine();
 
                 // 图标 (这里也设置为 0，如果你想区分，可以把 dll 里的 index 改成 1 或其他)
@@ -268,6 +301,11 @@ namespace ColorVision.Update.Export
                 // 注意：如果想区分逻辑，代码里解析 -i 后判断文件后缀即可
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\ColorVision.Launcher.cvcie\\shell\\open\\command]");
                 sb.AppendLine($"@=\"\\\"{escapedAppPath}\\\" -i \\\"%1\\\"\"");
+                sb.AppendLine();
+
+                // Register thumbnail handler for .cvcie (Shell extension GUID for IThumbnailProvider)
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcie\\ShellEx\\{{e357fccd-a995-4576-b01f-234630154e96}}]");
+                sb.AppendLine($"@=\"{thumbnailClsid}\"");
                 sb.AppendLine();
 
                 // ------------------------------------------------------
@@ -295,6 +333,7 @@ namespace ColorVision.Update.Export
                 // 4. 保存为临时 .reg 文件
                 string tempRegFile = Path.Combine(Path.GetTempPath(), $"CV_Register_{Guid.NewGuid()}.reg");
                 File.WriteAllText(tempRegFile, sb.ToString(), Encoding.Unicode); // 注册表文件通常推荐 Unicode
+                log.Info($"RegisterAssociations: .reg file saved to {tempRegFile}");
 
                 // 5. 调用 regedit.exe 以管理员权限运行 (/s 为静默模式，不弹成功提示框)
                 ProcessStartInfo psi = new ProcessStartInfo();
@@ -305,12 +344,30 @@ namespace ColorVision.Update.Export
 
                 Process process = Process.Start(psi);
                 process?.WaitForExit();
-                return true;
+
+                int exitCode = process?.ExitCode ?? -1;
+                log.Info($"RegisterAssociations: regedit.exe exited with code {exitCode}");
+
+                if (exitCode != 0)
+                {
+                    log.Warn($"RegisterAssociations: regedit.exe returned non-zero exit code {exitCode}, registration may have failed");
+                }
+                else
+                {
+                    log.Info("RegisterAssociations: file associations registered successfully");
+
+                    // 在 RegisterAssociations 成功后调用：
+                    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, IntPtr.Zero, IntPtr.Zero);
+                    log.Info("Sent SHChangeNotify to refresh file associations.");
+
+                }
+                return exitCode == 0;
 
                 // 可选：稍后删除临时文件（由于 regedit 是异步的，立即删除可能导致未读取，实际中可以不删或延迟删除）
             }
             catch (Exception ex)
             {
+                log.Error($"RegisterAssociations: failed with exception: {ex}");
                 return false;
             }
         }

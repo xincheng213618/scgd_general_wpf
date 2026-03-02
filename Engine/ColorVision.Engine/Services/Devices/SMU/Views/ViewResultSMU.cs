@@ -32,8 +32,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 }
             }
             Gen();
-
-            Type = "GetData";
+            Type = "Scan";
         }
 
 

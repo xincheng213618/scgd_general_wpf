@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Batch.PreProcess
 
                     // 定义事件处理程序
 
-                    void MsgRecord_MsgRecordStateChanged(MsgRecordState e)
+                    void MsgRecord_MsgRecordStateChanged(object? sender ,MsgRecordState e)
                     {
                         if (e == MsgRecordState.Success)
                         {
@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Batch.PreProcess
 
                     // 定义事件处理程序
 
-                    void MsgRecord_MsgRecordStateChanged1(MsgRecordState e)
+                    void MsgRecord_MsgRecordStateChanged1(object? sender, MsgRecordState e)
                     {
                         if (e == MsgRecordState.Success)
                         {

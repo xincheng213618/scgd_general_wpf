@@ -68,14 +68,7 @@
     <Page Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-	  <ProjectReference Include="..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" Condition="Exists('..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj')" />
-	  <PackageReference Include="ColorVision.UI.Desktop" Version="*" Condition="!Exists('..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj')" />
-  </ItemGroup>
-
+  </ItemGroup>    
   <ItemGroup>
     <Compile Update="App.xaml.cs">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
@@ -118,6 +111,12 @@
     <None Include="..\CHANGELOG.md" Link="CHANGELOG.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
+    <ProjectReference Include="..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" />
+    <ProjectReference Include="..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

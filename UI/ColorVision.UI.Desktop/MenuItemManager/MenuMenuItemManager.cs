@@ -6,8 +6,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
 {
     public class MenuMenuItemManager : MenuItemBase
     {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => "MenuItemManager";
+        public override string OwnerGuid => MenuItemConstants.View;
+        public override string Header => "MenuManager";
         public override int Order => 10000;
 
         public override void Execute()

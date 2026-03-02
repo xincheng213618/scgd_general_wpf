@@ -1,8 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
 using MQTTnet;
-using MQTTnet.Client;
-using MQTTnet.Server;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -33,7 +31,7 @@ namespace ColorVision.Engine.MQTT
 
         private MQTTControl()
         {
-            MQTTClient = new MqttFactory().CreateMqttClient();
+            MQTTClient = new MqttClientFactory().CreateMqttClient();
         }
 
         public async Task<bool> Connect()=> await Connect(Config);
@@ -48,7 +46,7 @@ namespace ColorVision.Engine.MQTT
             MQTTClient.ApplicationMessageReceivedAsync -= MQTTClient_ApplicationMessageReceivedAsync;
             await MQTTClient.DisconnectAsync();
             MQTTClient?.Dispose();
-            MQTTClient = new MqttFactory().CreateMqttClient();
+            MQTTClient = new MqttClientFactory().CreateMqttClient();
             var options = new MqttClientOptionsBuilder()
                 .WithTcpServer(mqttConfig.Host, mqttConfig.Port)
                 .WithCredentials(mqttConfig.UserName, mqttConfig.UserPwd)
@@ -87,7 +85,7 @@ namespace ColorVision.Engine.MQTT
         {
              if (log.IsDebugEnabled)
             {
-                var message = $"{DateTime.Now:HH:mm:ss.fff} Received: {e.ApplicationMessage.Topic} {Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment)}, QoS: [{e.ApplicationMessage.QualityOfServiceLevel}], Retain: [{e.ApplicationMessage.Retain}]";
+                var message = $"{DateTime.Now:HH:mm:ss.fff} Received: {e.ApplicationMessage.Topic} {Encoding.UTF8.GetString(e.ApplicationMessage.Payload)}, QoS: [{e.ApplicationMessage.QualityOfServiceLevel}], Retain: [{e.ApplicationMessage.Retain}]";
                 log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Trace, message, null);
             }
             if (ApplicationMessageReceivedAsync != null)
@@ -123,7 +121,7 @@ namespace ColorVision.Engine.MQTT
                 .WithClientId(Guid.NewGuid().ToString("N"))
                 .Build();
 
-            var mqttClient = new MqttFactory().CreateMqttClient();
+            var mqttClient = new MqttClientFactory().CreateMqttClient();
             bool isConnected = false;
 
             try
@@ -224,7 +222,7 @@ namespace ColorVision.Engine.MQTT
                     .Build();
 
                 await MQTTClient.PublishAsync(message);
-                log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Trace, $"{DateTime.Now:HH:mm:ss.fff} Published to '{topic}', message: '{msg}'", null);
+                log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Debug, $"{DateTime.Now:HH:mm:ss.fff} Published to '{topic}', message: '{msg}'", null);
             }
             return;
         }

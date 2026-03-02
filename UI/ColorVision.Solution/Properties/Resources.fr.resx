@@ -294,9 +294,6 @@
   <data name="UserCenter" xml:space="preserve">
     <value>Centre utilisateur</value>
   </data>
-  <data name="Username" xml:space="preserve">
-    <value>nom d'utilisateur</value>
-  </data>
   <data name="Role" xml:space="preserve">
     <value>Rôle</value>
   </data>
@@ -341,5 +338,8 @@
   </data>
   <data name="RoleList" xml:space="preserve">
     <value>Liste des personnages</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>nom d'utilisateur:</value>
   </data>
 </root>

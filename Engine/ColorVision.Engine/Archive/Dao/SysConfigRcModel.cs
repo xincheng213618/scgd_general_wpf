@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Archive.Dao;
-using ColorVision.Database;
+﻿using ColorVision.Database;
 using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -9,7 +8,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 
-namespace ColorVision.Engine.Sys.Dao
+namespace ColorVision.Engine.Archive.Dao
 {
     [SugarTable("t_scgd_sys_config_rc")]
     public class SysConfigRcModel : ViewEntity 
@@ -73,7 +72,7 @@ namespace ColorVision.Engine.Sys.Dao
             return this.GetByParam(new Dictionary<string, object>() { { "code", code } });
         }
     }
-    public class MenuConfigArchive : MenuItemBase
+    public class MenuConfigArchive1 : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuArchive);
 

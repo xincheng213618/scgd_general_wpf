@@ -45,6 +45,7 @@ namespace ColorVision.UI.Menus
             foreach (var guid in guids)
                 FilteredGuids.Add(guid);
         }
+
         public void AddFilteredGuids(params string[] guids)
         {
             if (guids == null) return;
@@ -108,39 +109,9 @@ namespace ColorVision.UI.Menus
                 IsChecked = mi.IsChecked ?? false,
                 Visibility = mi.Visibility,
             };
-
-            // 初始权限 / 可执行状态判定
-            ApplyPermissionAndCommandVisibility(menuItem, mi);
             return menuItem;
         }
 
-        // ---------------------- Incremental update support ----------------------
-        private void ApplyPermissionAndCommandVisibility(MenuItem menuItem, IMenuItem mi)
-        {
-            if (mi == null || menuItem == null) return;
-
-            if (mi.GetType().GetCustomAttributes(typeof(RequiresPermissionAttribute), true).FirstOrDefault() is RequiresPermissionAttribute attr)
-            {
-                menuItem.Visibility = mi.Visibility == Visibility.Visible && Authorization.Instance.PermissionMode == attr.RequiredPermission ? Visibility.Visible : Visibility.Collapsed;
-            }
-            else if (mi.Command is RelayCommand relayCommand)
-            {
-                // 保持原逻辑：只在可执行时显示
-                menuItem.Visibility = mi.Visibility == Visibility.Visible && relayCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed;
-            }
-        }
-
-        private void UpdateMenuItemsVisibility()
-        {
-            if (Menu == null) return;
-            foreach (var menuItem in EnumerateAllMenuItems(Menu.Items))
-            {
-                if (menuItem.Tag is IMenuItem mi)
-                {
-                    ApplyPermissionAndCommandVisibility(menuItem, mi);
-                }
-            }
-        }
 
         private static IEnumerable<MenuItem> EnumerateAllMenuItems(ItemCollection items)
         {
@@ -163,12 +134,6 @@ namespace ColorVision.UI.Menus
                 _menuBack = Menu.Items.OfType<MenuItem>().ToList();
                 foreach (var item in _menuBack)
                     Menu.Items.Remove(item);
-
-                // 权限变化 => 增量更新可见性，而不是整棵重建
-                Authorizations.Authorization.Instance.PermissionModeChanged += (s, e) =>
-                {
-                    UpdateMenuItemsVisibility();
-                };
             }
 
             _initialized = true;

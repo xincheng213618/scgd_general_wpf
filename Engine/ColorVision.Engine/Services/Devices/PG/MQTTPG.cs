@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Devices.PG.Templates;
 using ColorVision.Engine.Messages;
-using MQTTnet.Client;
+using MQTTnet;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Services.Devices.PG
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
-                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
+                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
                 try
                 {
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);

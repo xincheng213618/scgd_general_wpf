@@ -80,6 +80,7 @@ public class CommonSensorNode : CVBaseServerNode
 		operatorCode = "ExecCmd";
 		_TempName = "";
 		_TempId = -1;
+		_CmdType = CommCmdType.None;
 		_CmdSend = "";
 		_CmdReceive = "";
 		base.Width = 220;
@@ -106,6 +107,6 @@ public class CommonSensorNode : CVBaseServerNode
 
 	protected override object getBaseEventData(CVStartCFC start)
 	{
-		return new CommSensorData(_TempId, _TempName);
+		return new CommSensorData(_TempId, _TempName, (int)_CmdType, _CmdSend, _CmdReceive);
 	}
 }

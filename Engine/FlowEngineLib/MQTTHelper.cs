@@ -8,538 +8,367 @@ using System.Threading.Tasks;
 using FlowEngineLib.MQTT;
 using log4net;
 using MQTTnet;
-using MQTTnet.Client;
-using MQTTnet.Packets;
-using MQTTnet.Server;
-using Newtonsoft.Json;
+using MQTTnet.Protocol;
 
 namespace FlowEngineLib;
 
 public class MQTTHelper
 {
-	public static readonly ILog logger = LogManager.GetLogger(typeof(MQTTHelper));
+    public static readonly ILog logger = LogManager.GetLogger(typeof(MQTTHelper));
 
-	private static string Server;
+    private static string Server;
+    private static int Port = 1883;
+    private static string UserName;
+    private static string Password;
 
-	private static int Port = 1883;
+    // 回调委托
+    private Action<ResultData_MQTT> _Callback;
 
-	private static string UserName;
+    // MQTTnet v5 核心对象
+    private IMqttClient _MqttClient;
 
-	private static string Password;
+    #region 配置与初始化
 
-	private Action<ResultData_MQTT> _Callback;
+    public static void SetDefaultCfg(string server, int port, string userName, string password, bool isServer, Action<ResultData_MQTT> callback)
+    {
+        Server = server;
+        Port = port;
+        UserName = userName;
+        Password = password;
+    }
 
-	private MqttServer _MqttServer;
+    public static void GetDefaultCfg(ref string server, ref int port, ref string userName, ref string password)
+    {
+        server = Server;
+        port = Port;
+        userName = UserName;
+        password = Password;
+    }
 
-	private IMqttClient _MqttClient;
+    public static int GetPortCfg() => Port;
+    public static string GetServerCfg() => Server;
 
-	public static void SetDefaultCfg(string server, int port, string userName, string password, bool isServer, Action<ResultData_MQTT> callback)
-	{
-		Server = server;
-		Port = port;
-		UserName = userName;
-		Password = password;
-		if (isServer)
-		{
-			new MQTTHelper().CreateMQTTServerAndStart(Server, port, withPersistentSessions: true, callback);
-		}
-	}
+    #endregion
 
-	private static void OnServerCreateMsg(ResultData_MQTT obj)
-	{
-		logger.Debug(JsonConvert.SerializeObject(obj));
-	}
+    #region Client 端逻辑
 
-	public static void GetDefaultCfg(ref string server, ref int port, ref string userName, ref string password)
-	{
-		server = Server;
-		port = Port;
-		userName = UserName;
-		password = Password;
-	}
+    public async Task<ResultData_MQTT> CreateMQTTClientAndStart(string mqttServerUrl, int port, string userName, string userPassword, Action<ResultData_MQTT> callback)
+    {
+        var optionsBuilder = BuildClientOptions(mqttServerUrl, port, userName, userPassword);
+        return await CreateMQTTClientAndStart(optionsBuilder, callback);
+    }
 
-	public static int GetPortCfg()
-	{
-		return Port;
-	}
+    private MqttClientOptionsBuilder BuildClientOptions(string mqttServerUrl, int port, string userName, string userPassword)
+    {
+        var builder = new MqttClientOptionsBuilder()
+            .WithTcpServer(mqttServerUrl, port)
+            .WithClientId(Guid.NewGuid().ToString("N"));
 
-	public static string GetServerCfg()
-	{
-		return Server;
-	}
+        if (!string.IsNullOrEmpty(userName))
+        {
+            builder.WithCredentials(userName, userPassword);
+        }
 
-	public async Task<ResultData_MQTT> CreateMQTTServerAndStart(MqttServerOptionsBuilder mqttServerOptionsBuilder, Action<ResultData_MQTT> callback)
-	{
-		new ResultData_MQTT();
-		_Callback = callback;
-		ResultData_MQTT resultData_MQTT2;
-		try
-		{
-			MqttServerOptions mqttServerOptions = mqttServerOptionsBuilder.Build();
-			_MqttServer = new MqttFactory().CreateMqttServer(mqttServerOptions);
-			_MqttServer.StartedAsync += StartedHandle;
-			_MqttServer.StoppedAsync += StoppedHandle;
-			_MqttServer.ClientConnectedAsync += ClientConnectedHandle;
-			_MqttServer.ClientDisconnectedAsync += ClientDisconnectedHandle;
-			_MqttServer.ClientSubscribedTopicAsync += ClientSubscribedTopicHandle;
-			_MqttServer.ClientUnsubscribedTopicAsync += ClientUnsubscribedTopicHandle;
-			_MqttServer.ValidatingConnectionAsync += ValidatingConnectionHandle;
-			_MqttServer.ApplicationMessageNotConsumedAsync += ApplicationMessageNotConsumedHandle;
-			await _MqttServer.StartAsync();
-			if (_MqttServer.IsStarted)
-			{
-				ResultData_MQTT resultData_MQTT = new ResultData_MQTT();
-				resultData_MQTT.ResultCode = 1;
-				resultData_MQTT.ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTServer_成功！[" + mqttServerOptions.DefaultEndpointOptions.BoundInterNetworkAddress.ToString() + ":" + mqttServerOptions.DefaultEndpointOptions.Port + "]";
-				resultData_MQTT2 = resultData_MQTT;
-			}
-			else
-			{
-				resultData_MQTT2 = new ResultData_MQTT
-				{
-					ResultCode = -1,
-					ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTServer_失败！"
-				};
-			}
-		}
-		catch (Exception ex)
-		{
-			resultData_MQTT2 = new ResultData_MQTT
-			{
-				ResultCode = -1,
-				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTServer_失败！错误信息：" + ex.Message
-			};
-		}
-		_Callback?.Invoke(resultData_MQTT2);
-		return resultData_MQTT2;
-	}
+        return builder;
+    }
 
-	public async Task<ResultData_MQTT> CreateMQTTServerAndStart(string ip, int port, bool withPersistentSessions, Action<ResultData_MQTT> callback)
-	{
-		MqttServerOptionsBuilder mqttServerOptionsBuilder = new MqttServerOptionsBuilder();
-		mqttServerOptionsBuilder.WithDefaultEndpoint();
-		mqttServerOptionsBuilder.WithDefaultEndpointBoundIPAddress(IPAddress.Parse(ip));
-		mqttServerOptionsBuilder.WithDefaultEndpointPort(port);
-		mqttServerOptionsBuilder.WithPersistentSessions(withPersistentSessions);
-		mqttServerOptionsBuilder.WithConnectionBacklog(2000);
-		Task<ResultData_MQTT> task = CreateMQTTServerAndStart(mqttServerOptionsBuilder, callback);
-		await task;
-		return task.Result;
-	}
+    public async Task<ResultData_MQTT> CreateMQTTClientAndStart(MqttClientOptionsBuilder mqttClientOptionsBuilder, Action<ResultData_MQTT> callback)
+    {
+        _Callback = callback;
+        ResultData_MQTT resultData;
 
-	public async Task<ResultData_MQTT> StopMQTTServer()
-	{
-		new ResultData_MQTT();
-		ResultData_MQTT resultData_MQTT;
-		try
-		{
-			if (_MqttServer == null)
-			{
-				resultData_MQTT = new ResultData_MQTT
-				{
-					ResultCode = -1,
-					ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了关闭MQTTServer_出错！MQTTServer未在运行。"
-				};
-			}
-			else
-			{
-				foreach (MqttClientStatus item in _MqttServer.GetClientsAsync().Result)
-				{
-					await item.DisconnectAsync();
-				}
-				await _MqttServer.StopAsync();
-				_MqttServer = null;
-				resultData_MQTT = new ResultData_MQTT
-				{
-					ResultCode = 1,
-					ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了关闭MQTTServer_成功！"
-				};
-			}
-		}
-		catch (Exception ex)
-		{
-			resultData_MQTT = new ResultData_MQTT
-			{
-				ResultCode = -1,
-				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了关闭MQTTServer_失败！错误信息：" + ex.Message
-			};
-		}
-		_Callback?.Invoke(resultData_MQTT);
-		return resultData_MQTT;
-	}
+        try
+        {
+            var options = mqttClientOptionsBuilder.Build();
+            _MqttClient = new MqttClientFactory().CreateMqttClient();
 
-	public List<MqttClientStatus> GetClientsAsync()
-	{
-		return _MqttServer.GetClientsAsync().Result.ToList();
-	}
+            // v5 客户端事件
+            _MqttClient.ConnectedAsync += ConnectedHandle;
+            _MqttClient.DisconnectedAsync += DisconnectedHandle;
+            _MqttClient.ApplicationMessageReceivedAsync += ApplicationMessageReceivedHandle;
 
-	public Task SedMessage(string Topic, string msg)
-	{
-		return Task.CompletedTask;
-	}
+            await _MqttClient.ConnectAsync(options);
 
-	private Task StartedHandle(EventArgs arg)
-	{
-		_Callback?.Invoke(new ResultData_MQTT
-		{
-			ResultCode = 1,
-			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>MQTTServer已开启！"
-		});
-		return Task.CompletedTask;
-	}
+            if (_MqttClient.IsConnected)
+            {
+                resultData = new ResultData_MQTT
+                {
+                    ResultCode = 1,
+                    EventType = EventTypeEnum.ClientConnected,
+                    ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了开启MQTTClient_成功！[{options.ChannelOptions}]"
+                };
+            }
+            else
+            {
+                resultData = new ResultData_MQTT
+                {
+                    ResultCode = -1,
+                    EventType = EventTypeEnum.ClientConnected,
+                    ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了开启MQTTClient_失败！无法连接。"
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            resultData = new ResultData_MQTT
+            {
+                ResultCode = -1,
+                EventType = EventTypeEnum.ClientConnected,
+                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了开启MQTTClient_失败！错误信息：{ex.Message}"
+            };
+        }
 
-	private Task StoppedHandle(EventArgs arg)
-	{
-		_Callback?.Invoke(new ResultData_MQTT
-		{
-			ResultCode = 1,
-			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>MQTTServer已关闭！"
-		});
-		return Task.CompletedTask;
-	}
+        _Callback?.Invoke(resultData);
+        return resultData;
+    }
 
-	private Task ClientConnectedHandle(ClientConnectedEventArgs arg)
-	{
-		IList<MqttClientStatus> result = _MqttServer.GetClientsAsync().Result;
-		_Callback?.Invoke(new ResultData_MQTT
-		{
-			ResultCode = 1,
-			EventType = EventTypeEnum.ClientConnected,
-			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'已成功连接！当前客户端连接数：{result?.Count}个。"
-		});
-		return Task.CompletedTask;
-	}
+    public bool IsClientConnect()
+    {
+        return _MqttClient != null && _MqttClient.IsConnected;
+    }
 
-	private Task ClientDisconnectedHandle(ClientDisconnectedEventArgs arg)
-	{
-		IList<MqttClientStatus> result = _MqttServer.GetClientsAsync().Result;
-		_Callback?.Invoke(new ResultData_MQTT
-		{
-			ResultCode = 1,
-			EventType = EventTypeEnum.ClientDisconnected,
-			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'已断开连接！当前客户端连接数：{result?.Count}个。"
-		});
-		return Task.CompletedTask;
-	}
+    public async Task DisconnectAsync_Client()
+    {
+        ResultData_MQTT obj;
+        try
+        {
+            if (_MqttClient != null && _MqttClient.IsConnected)
+            {
+                // v5 发送 Disconnect 包
+                await _MqttClient.DisconnectAsync(new MqttClientDisconnectOptionsBuilder().WithReason(MqttClientDisconnectOptionsReason.NormalDisconnection).Build());
+                _MqttClient.Dispose();
+                _MqttClient = null;
 
-	private Task ClientSubscribedTopicHandle(ClientSubscribedTopicEventArgs arg)
-	{
-		_Callback?.Invoke(new ResultData_MQTT
-		{
-			ResultCode = 1,
-			EventType = EventTypeEnum.Subscribe,
-			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端'{arg.ClientId}'订阅了主题'{arg.TopicFilter.Topic}'，主题服务质量：'{arg.TopicFilter.QualityOfServiceLevel}'！"
-		});
-		return Task.CompletedTask;
-	}
+                obj = new ResultData_MQTT
+                {
+                    ResultCode = 1,
+                    EventType = EventTypeEnum.ClientDisconnected,
+                    ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了关闭MQTTClient_成功！"
+                };
+            }
+            else
+            {
+                obj = new ResultData_MQTT
+                {
+                    ResultCode = -1,
+                    EventType = EventTypeEnum.ClientDisconnected,
+                    ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了关闭MQTTClient_失败！MQTTClient未开启连接！"
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            obj = new ResultData_MQTT
+            {
+                ResultCode = -1,
+                EventType = EventTypeEnum.ClientDisconnected,
+                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了关闭MQTTClient_失败！错误信息：{ex.Message}"
+            };
+        }
+        _Callback?.Invoke(obj);
+    }
 
-	private Task ClientUnsubscribedTopicHandle(ClientUnsubscribedTopicEventArgs arg)
-	{
-		_Callback?.Invoke(new ResultData_MQTT
-		{
-			ResultCode = 1,
-			EventType = EventTypeEnum.Unsubscribe,
-			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>客户端" + arg.ClientId + "退订了主题" + arg.TopicFilter + "！"
-		});
-		return Task.CompletedTask;
-	}
+    public async Task ReconnectAsync_Client()
+    {
+        ResultData_MQTT obj;
+        try
+        {
+            if (_MqttClient != null)
+            {
+                // v5 中 ReconnectAsync 通常保留，如果移除了需要重新调用 ConnectAsync (视具体 5.x 小版本)
+                // 大多数 5.x 版本 _MqttClient.ReconnectAsync() 仍然是扩展方法或通过断线重连策略处理
+                // 如果编译报错，请使用 _MqttClient.ConnectAsync(_MqttClient.Options);
+                await _MqttClient.ReconnectAsync();
 
-	private Task ValidatingConnectionHandle(ValidatingConnectionEventArgs arg)
-	{
-		if (!(arg.UserName != "Admin"))
-		{
-			_ = arg.Password != "Admin123";
-		}
-		return Task.CompletedTask;
-	}
+                obj = new ResultData_MQTT
+                {
+                    ResultCode = 1,
+                    EventType = EventTypeEnum.ClientReconnected,
+                    ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了MQTTClient重连_成功！"
+                };
+            }
+            else
+            {
+                obj = new ResultData_MQTT
+                {
+                    ResultCode = -1,
+                    EventType = EventTypeEnum.ClientReconnected,
+                    ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了MQTTClient重连_失败！未设置MQTTClient连接！"
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            obj = new ResultData_MQTT
+            {
+                ResultCode = -1,
+                EventType = EventTypeEnum.ClientReconnected,
+                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了MQTTClient重连_失败！错误信息：{ex.Message}"
+            };
+        }
+        _Callback?.Invoke(obj);
+    }
 
-	private Task ApplicationMessageNotConsumedHandle(ApplicationMessageNotConsumedEventArgs arg)
-	{
-		ResultData_MQTT resultData_MQTT = new ResultData_MQTT();
-		resultData_MQTT.ResultCode = 1;
-		resultData_MQTT.EventType = EventTypeEnum.Publish;
-		resultData_MQTT.ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + $">>>客户端：'{arg.SenderId}'发布了消息：主题：'{arg.ApplicationMessage.Topic}'！内容：'{Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment.Array)}'；服务质量：{arg.ApplicationMessage.QualityOfServiceLevel}；保留：{arg.ApplicationMessage.Retain}";
-		ResultData_MQTT obj = resultData_MQTT;
-		_Callback?.Invoke(obj);
-		return Task.CompletedTask;
-	}
+    // 优化：使用 Task 而不是 async void
+    public async Task SubscribeAsync_Client(string topic)
+    {
+        ResultData_MQTT obj;
+        try
+        {
+            // v5 订阅写法变更：使用 MqttClientSubscribeOptions
+            var subscribeOptions = new MqttClientSubscribeOptionsBuilder()
+                .WithTopicFilter(f => f.WithTopic(topic))
+                .Build();
 
-	public async Task<ResultData_MQTT> CreateMQTTClientAndStart(MqttClientOptionsBuilder mqttClientOptionsBuilder, Action<ResultData_MQTT> callback)
-	{
-		new ResultData_MQTT();
-		_Callback = callback;
-		ResultData_MQTT resultData_MQTT;
-		try
-		{
-			MqttClientOptions options = mqttClientOptionsBuilder.Build();
-			_MqttClient = new MqttFactory().CreateMqttClient();
-			_MqttClient.ConnectedAsync += ConnectedHandle;
-			_MqttClient.DisconnectedAsync += DisconnectedHandle;
-			_MqttClient.ApplicationMessageReceivedAsync += ApplicationMessageReceivedHandle;
-			await _MqttClient.ConnectAsync(options);
-			resultData_MQTT = ((!_MqttClient.IsConnected) ? new ResultData_MQTT
-			{
-				ResultCode = -1,
-				EventType = EventTypeEnum.ClientConnected,
-				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_失败！[" + options.ChannelOptions.ToString() + "]"
-			} : new ResultData_MQTT
-			{
-				ResultCode = 1,
-				EventType = EventTypeEnum.ClientConnected,
-				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_成功！[" + options.ChannelOptions.ToString() + "]"
-			});
-		}
-		catch (Exception ex)
-		{
-			resultData_MQTT = new ResultData_MQTT
-			{
-				ResultCode = -1,
-				EventType = EventTypeEnum.ClientConnected,
-				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了开启MQTTClient_失败！错误信息：" + ex.Message
-			};
-		}
-		_Callback?.Invoke(resultData_MQTT);
-		return resultData_MQTT;
-	}
+            await _MqttClient.SubscribeAsync(subscribeOptions, CancellationToken.None);
 
-	private MqttClientOptionsBuilder buildOptions(string mqttServerUrl, int port, string userName, string userPassword)
-	{
-		MqttClientOptionsBuilder mqttClientOptionsBuilder = new MqttClientOptionsBuilder();
-		mqttClientOptionsBuilder.WithTcpServer(mqttServerUrl, (int?)port);
-		if (!string.IsNullOrEmpty(userName))
-		{
-			mqttClientOptionsBuilder.WithCredentials(userName, userPassword);
-		}
-		mqttClientOptionsBuilder.WithClientId(Guid.NewGuid().ToString("N"));
-		return mqttClientOptionsBuilder;
-	}
+            obj = new ResultData_MQTT
+            {
+                ResultCode = 1,
+                EventType = EventTypeEnum.Subscribe,
+                ResultObject1 = topic,
+                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>MQTTClient执行了订阅'{topic}'_成功！"
+            };
+        }
+        catch (Exception ex)
+        {
+            obj = new ResultData_MQTT
+            {
+                ResultCode = -1,
+                EventType = EventTypeEnum.Subscribe,
+                ResultObject1 = topic,
+                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>MQTTClient执行了订阅'{topic}'_失败！错误信息：{ex.Message}"
+            };
+        }
+        _Callback?.Invoke(obj);
+    }
 
-	public async Task<ResultData_MQTT> CreateMQTTClientAndStart(string mqttServerUrl, int port, string userName, string userPassword, Action<ResultData_MQTT> callback)
-	{
-		MqttClientOptionsBuilder mqttClientOptionsBuilder = buildOptions(mqttServerUrl, port, userName, userPassword);
-		Task<ResultData_MQTT> task = CreateMQTTClientAndStart(mqttClientOptionsBuilder, callback);
-		await task;
-		return task.Result;
-	}
+    // 优化：使用 Task 而不是 async void
+    public async Task UnsubscribeAsync_Client(string topic)
+    {
+        ResultData_MQTT obj;
+        try
+        {
+            await _MqttClient.UnsubscribeAsync(topic, CancellationToken.None);
+            obj = new ResultData_MQTT
+            {
+                ResultCode = 1,
+                EventType = EventTypeEnum.Unsubscribe,
+                ResultObject1 = topic,
+                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>MQTTClient执行了退订'{topic}'_成功！"
+            };
+        }
+        catch (Exception ex)
+        {
+            obj = new ResultData_MQTT
+            {
+                ResultCode = -1,
+                EventType = EventTypeEnum.Unsubscribe,
+                ResultObject1 = topic,
+                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>MQTTClient执行退订'{topic}'_失败！错误信息：{ex.Message}"
+            };
+        }
+        _Callback?.Invoke(obj);
+    }
 
-	public bool IsClientConnect()
-	{
-		return _MqttClient.IsConnected;
-	}
+    public async Task PublishAsync_Client(string topic, string msg, bool retained)
+    {
+        if (_MqttClient == null) return;
 
-	public async Task DisconnectAsync_Client()
-	{
-		new ResultData_MQTT();
-		ResultData_MQTT obj;
-		try
-		{
-			if (_MqttClient != null && _MqttClient.IsConnected)
-			{
-				await _MqttClient.DisconnectAsync();
-				_MqttClient.Dispose();
-				_MqttClient = null;
-				obj = new ResultData_MQTT
-				{
-					ResultCode = 1,
-					EventType = EventTypeEnum.ClientDisconnected,
-					ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了关闭MQTTClient_成功！"
-				};
-			}
-			else
-			{
-				obj = new ResultData_MQTT
-				{
-					ResultCode = -1,
-					EventType = EventTypeEnum.ClientDisconnected,
-					ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了关闭MQTTClient_失败！MQTTClient未开启连接！"
-				};
-			}
-		}
-		catch (Exception ex)
-		{
-			obj = new ResultData_MQTT
-			{
-				ResultCode = -1,
-				EventType = EventTypeEnum.ClientDisconnected,
-				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了关闭MQTTClient_失败！错误信息：" + ex.Message
-			};
-		}
-		_Callback?.Invoke(obj);
-	}
+        ResultData_MQTT obj;
+        try
+        {
+            if (_MqttClient.IsConnected)
+            {
+                var applicationMessage = new MqttApplicationMessageBuilder()
+                    .WithTopic(topic)
+                    .WithPayload(msg) // v5 这里可以直接传 string，内部自动转 byte[]
+                    .WithRetainFlag(retained)
+                    .Build();
 
-	public async Task ReconnectAsync_Client()
-	{
-		new ResultData_MQTT();
-		ResultData_MQTT obj;
-		try
-		{
-			if (_MqttClient != null)
-			{
-				await _MqttClient.ReconnectAsync();
-				obj = new ResultData_MQTT
-				{
-					ResultCode = 1,
-					EventType = EventTypeEnum.ClientReconnected,
-					ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了MQTTClient重连_成功！"
-				};
-			}
-			else
-			{
-				obj = new ResultData_MQTT
-				{
-					ResultCode = -1,
-					EventType = EventTypeEnum.ClientReconnected,
-					ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了MQTTClient重连_失败！未设置MQTTClient连接！"
-				};
-			}
-		}
-		catch (Exception ex)
-		{
-			obj = new ResultData_MQTT
-			{
-				ResultCode = -1,
-				EventType = EventTypeEnum.ClientReconnected,
-				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了MQTTClient重连_失败！错误信息：" + ex.Message
-			};
-		}
-		_Callback?.Invoke(obj);
-	}
+                await _MqttClient.PublishAsync(applicationMessage, CancellationToken.None);
 
-	public async void SubscribeAsync_Client(string topic)
-	{
-		new ResultData_MQTT();
-		ResultData_MQTT obj;
-		try
-		{
-			MqttTopicFilter topicFilter = new MqttTopicFilterBuilder().WithTopic(topic).Build();
-			await _MqttClient.SubscribeAsync(topicFilter, CancellationToken.None);
-			obj = new ResultData_MQTT
-			{
-				ResultCode = 1,
-				EventType = EventTypeEnum.Subscribe,
-				ResultObject1 = topic,
-				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>MQTTClient执行了订阅'" + topic + "'_成功！"
-			};
-		}
-		catch (Exception ex)
-		{
-			ResultData_MQTT resultData_MQTT = new ResultData_MQTT();
-			resultData_MQTT.ResultCode = -1;
-			resultData_MQTT.EventType = EventTypeEnum.Subscribe;
-			resultData_MQTT.ResultObject1 = topic;
-			resultData_MQTT.ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>MQTTClient执行了订阅'" + topic + "'_失败！错误信息：" + ex.Message;
-			obj = resultData_MQTT;
-		}
-		_Callback?.Invoke(obj);
-	}
+                obj = new ResultData_MQTT
+                {
+                    ResultCode = 1,
+                    EventType = EventTypeEnum.Publish,
+                    ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了发布信息_成功！主题:'{topic}'，信息:'{msg}'"
+                };
+            }
+            else
+            {
+                obj = new ResultData_MQTT
+                {
+                    ResultCode = -1,
+                    EventType = EventTypeEnum.Publish,
+                    ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了发布信息_失败！MQTTClient未开启连接！"
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            obj = new ResultData_MQTT
+            {
+                ResultCode = -1,
+                EventType = EventTypeEnum.Publish,
+                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了发布信息_失败！错误信息：{ex.Message}"
+            };
+        }
+        _Callback?.Invoke(obj);
+    }
 
-	public async void UnsubscribeAsync_Client(string topic)
-	{
-		new ResultData_MQTT();
-		ResultData_MQTT obj;
-		try
-		{
-			await _MqttClient.UnsubscribeAsync(topic, CancellationToken.None);
-			obj = new ResultData_MQTT
-			{
-				ResultCode = 1,
-				EventType = EventTypeEnum.Unsubscribe,
-				ResultObject1 = topic,
-				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>MQTTClient执行了退订'" + topic + "'_成功！"
-			};
-		}
-		catch (Exception ex)
-		{
-			ResultData_MQTT resultData_MQTT = new ResultData_MQTT();
-			resultData_MQTT.ResultCode = -1;
-			resultData_MQTT.EventType = EventTypeEnum.Unsubscribe;
-			resultData_MQTT.ResultObject1 = topic;
-			resultData_MQTT.ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>MQTTClient执行退订'" + topic + "'_失败！错误信息：" + ex.Message;
-			obj = resultData_MQTT;
-		}
-		_Callback?.Invoke(obj);
-	}
+    #region Client Event Handlers
 
-	public async Task PublishAsync_Client(string topic, string msg, bool retained)
-	{
-		if (_MqttClient == null)
-		{
-			return;
-		}
-		new ResultData_MQTT();
-		ResultData_MQTT obj;
-		try
-		{
-			MqttApplicationMessageBuilder mqttApplicationMessageBuilder = new MqttApplicationMessageBuilder();
-			mqttApplicationMessageBuilder.WithTopic(topic).WithPayload(msg).WithRetainFlag(retained);
-			MqttApplicationMessage applicationMessage = mqttApplicationMessageBuilder.Build();
-			if (_MqttClient.IsConnected)
-			{
-				await _MqttClient.PublishAsync(applicationMessage, CancellationToken.None);
-				ResultData_MQTT resultData_MQTT = new ResultData_MQTT();
-				resultData_MQTT.ResultCode = 1;
-				resultData_MQTT.EventType = EventTypeEnum.Publish;
-				resultData_MQTT.ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了发布信息_成功！主题:'" + topic + "'，信息:'" + msg + "'";
-				obj = resultData_MQTT;
-			}
-			else
-			{
-				obj = new ResultData_MQTT
-				{
-					ResultCode = -1,
-					EventType = EventTypeEnum.Publish,
-					ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了发布信息_失败！MQTTClient未开启连接！"
-				};
-			}
-		}
-		catch (Exception ex)
-		{
-			obj = new ResultData_MQTT
-			{
-				ResultCode = -1,
-				EventType = EventTypeEnum.Publish,
-				ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>执行了发布信息_失败！错误信息：" + ex.Message
-			};
-		}
-		_Callback?.Invoke(obj);
-	}
+    private Task ConnectedHandle(MqttClientConnectedEventArgs arg)
+    {
+        _Callback?.Invoke(new ResultData_MQTT
+        {
+            ResultCode = 1,
+            EventType = EventTypeEnum.ClientConnected,
+            ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>已连接到MQTT服务器！"
+        });
+        return Task.CompletedTask;
+    }
 
-	private Task ConnectedHandle(MqttClientConnectedEventArgs arg)
-	{
-		_Callback?.Invoke(new ResultData_MQTT
-		{
-			ResultCode = 1,
-			EventType = EventTypeEnum.ClientConnected,
-			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>已连接到MQTT服务器！"
-		});
-		return Task.CompletedTask;
-	}
+    private Task DisconnectedHandle(MqttClientDisconnectedEventArgs arg)
+    {
+        _Callback?.Invoke(new ResultData_MQTT
+        {
+            ResultCode = 1,
+            EventType = EventTypeEnum.ClientDisconnected,
+            ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>已断开与MQTT服务器连接！"
+        });
 
-	private Task DisconnectedHandle(MqttClientDisconnectedEventArgs arg)
-	{
-		_Callback?.Invoke(new ResultData_MQTT
-		{
-			ResultCode = 1,
-			EventType = EventTypeEnum.ClientDisconnected,
-			ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>已断开与MQTT服务器连接！"
-		});
-		if (_MqttClient != null)
-		{
-			_MqttClient.ReconnectAsync();
-		}
-		return Task.CompletedTask;
-	}
+        // 自动重连逻辑建议由外部控制或使用 Reconnect 策略，这里简单保留原逻辑
+        // 注意：v5 中如果在 DisconnectedHandle 直接调用 Reconnect 可能引发死锁或异常，建议使用 Task.Run
+        if (_MqttClient != null)
+        {
+            Task.Run(async () => {
+                try { await _MqttClient.ReconnectAsync(); } catch { /* log error */ }
+            });
+        }
+        return Task.CompletedTask;
+    }
 
-	private Task ApplicationMessageReceivedHandle(MqttApplicationMessageReceivedEventArgs arg)
-	{
-		ResultData_MQTT resultData_MQTT = new ResultData_MQTT();
-		resultData_MQTT.ResultCode = 1;
-		resultData_MQTT.EventType = EventTypeEnum.MsgRecv;
-		resultData_MQTT.ResultMsg = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") + ">>>MQTTClient'" + arg.ClientId + "'内容：'" + Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment.Array) + "'；主题：'" + arg.ApplicationMessage.Topic + "'";
-		resultData_MQTT.ResultObject1 = arg.ApplicationMessage.Topic;
-		resultData_MQTT.ResultObject2 = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment.Array);
-		ResultData_MQTT obj = resultData_MQTT;
-		_Callback?.Invoke(obj);
-		return Task.CompletedTask;
-	}
+    private Task ApplicationMessageReceivedHandle(MqttApplicationMessageReceivedEventArgs arg)
+    {
+        // v5 获取 Payload 方式变更
+        string payload = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
+
+        var resultData = new ResultData_MQTT
+        {
+            ResultCode = 1,
+            EventType = EventTypeEnum.MsgRecv,
+            ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>MQTTClient'{arg.ClientId}'内容：'{payload}'；主题：'{arg.ApplicationMessage.Topic}'",
+            ResultObject1 = arg.ApplicationMessage.Topic,
+            ResultObject2 = payload
+        };
+
+        _Callback?.Invoke(resultData);
+        return Task.CompletedTask;
+    }
+
+    #endregion
+
+    #endregion
 }

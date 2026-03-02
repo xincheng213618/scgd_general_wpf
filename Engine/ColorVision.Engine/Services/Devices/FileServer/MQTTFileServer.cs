@@ -2,12 +2,12 @@
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Messages;
 using MQTTMessageLib.FileServer;
-using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using MQTTnet;
 
 namespace ColorVision.Engine.Services.Devices.FileServer
 {
@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
-                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
+                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.Payload);
                 try
                 {
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);

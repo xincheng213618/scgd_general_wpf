@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using System.IO;
 using System.Windows;
@@ -14,53 +13,31 @@ namespace WindowsServicePlugin
 
         public override string Description => "Download mysql-5.7.37-winx64.ziplocally to install later through management tools";
 
-        public DownloadFile DownloadFile { get; set; } = new DownloadFile();
-
-        public InstallMySql()
-        {
-            DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "Download mysql-5.7.37-winx64";
-        }
-
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/Mysql/mysql-5.7.37-winx64.zip";
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\mysql-5.7.37-winx64.zip";
+        private string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
 
         public override void Execute()
         {
-            WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            if (!File.Exists(downloadPath))
-            {
-                windowUpdate.Show();
-            }
+            var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
+            if (service == null) return;
 
-            Task.Run(async () =>
+            service.ShowDownloadWindow();
+            service.Download(url, downloadDir, DownloadFileConfig.Instance.Authorization, filePath =>
             {
-                if (!File.Exists(downloadPath))
+                if (filePath == null) return;
+                Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    CancellationTokenSource _cancellationTokenSource = new();
-                    Application.Current.Dispatcher.Invoke(() =>
+                    try
                     {
-                        windowUpdate.Show();
-                    });
-                    await DownloadFile.Download(url, downloadPath, _cancellationTokenSource.Token);
-                }
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    windowUpdate.Close();
+                        PlatformHelper.OpenFolder(Directory.GetParent(filePath).FullName);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.ToString());
+                        File.Delete(filePath);
+                    }
                 });
-
-                try
-                {
-                    PlatformHelper.OpenFolder(Directory.GetParent(downloadPath).FullName);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.ToString());
-                    File.Delete(downloadPath);
-                }
             });
-
-
         }
 
     }

@@ -75,7 +75,6 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 	public STNodeOption Add(string strText, Type dataType, bool bSingle)
 	{
 		int num = Add(new STNodeOption(strText, dataType, bSingle));
-		// ensure option dot size follows editor preference if owner exists
 		return m_options[num];
 	}
 
@@ -92,11 +91,6 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 			num = _Count;
 			option.Owner = m_owner;
 			option.IsInput = m_isInput;
-			// if the node has a larger item height, enlarge dots a bit for better UX
-			if (option.DotSize < 12 && m_owner != null && m_owner.ItemHeight > 20)
-			{
-				option.GetType().GetProperty("DotSize", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)?.SetValue(option, 16);
-			}
 			m_options[_Count++] = option;
 			Invalidate();
 		}
@@ -120,10 +114,6 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 			{
 				sTNodeOption.Owner = m_owner;
 				sTNodeOption.IsInput = m_isInput;
-				if (sTNodeOption.DotSize < 12 && m_owner != null && m_owner.ItemHeight > 20)
-				{
-					sTNodeOption.GetType().GetProperty("DotSize", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)?.SetValue(sTNodeOption, 16);
-				}
 				m_options[_Count++] = sTNodeOption;
 			}
 		}
@@ -162,9 +152,9 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 			throw new ArgumentNullException("插入对象不能为空");
 		}
 		EnsureSpace(1);
-		for (int propertyType = _Count; propertyType > index; propertyType--)
+		for (int num = _Count; num > index; num--)
 		{
-			m_options[propertyType] = m_options[propertyType - 1];
+			m_options[num] = m_options[num - 1];
 		}
 		option.Owner = m_owner;
 		m_options[index] = option;
@@ -174,10 +164,10 @@ public class STNodeOptionCollection : IList, ICollection, IEnumerable
 
 	public void Remove(STNodeOption option)
 	{
-		int stringFromValue = IndexOf(option);
-		if (stringFromValue != -1)
+		int num = IndexOf(option);
+		if (num != -1)
 		{
-			RemoveAt(stringFromValue);
+			RemoveAt(num);
 		}
 	}
 

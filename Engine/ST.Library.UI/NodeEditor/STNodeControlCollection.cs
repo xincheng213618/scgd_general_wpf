@@ -141,9 +141,9 @@ public class STNodeControlCollection : IList, ICollection, IEnumerable
 			throw new ArgumentNullException("插入对象不能为空");
 		}
 		EnsureSpace(1);
-		for (int graphics = _Count; graphics > index; graphics--)
+		for (int num = _Count; num > index; num--)
 		{
-			m_controls[graphics] = m_controls[graphics - 1];
+			m_controls[num] = m_controls[num - 1];
 		}
 		control.Owner = m_owner;
 		m_controls[index] = control;
@@ -153,10 +153,10 @@ public class STNodeControlCollection : IList, ICollection, IEnumerable
 
 	public void Remove(STNodeControl control)
 	{
-		int graphics = IndexOf(control);
-		if (graphics != -1)
+		int num = IndexOf(control);
+		if (num != -1)
 		{
-			RemoveAt(graphics);
+			RemoveAt(num);
 		}
 	}
 
@@ -168,10 +168,10 @@ public class STNodeControlCollection : IList, ICollection, IEnumerable
 		}
 		_Count--;
 		m_controls[index].Owner = null;
-		int graphics = index;
-		for (int sizeF = _Count; graphics < sizeF; graphics++)
+		int i = index;
+		for (int count = _Count; i < count; i++)
 		{
-			m_controls[graphics] = m_controls[graphics + 1];
+			m_controls[i] = m_controls[i + 1];
 		}
 		Redraw();
 	}
@@ -198,9 +198,9 @@ public class STNodeControlCollection : IList, ICollection, IEnumerable
 	{
 		if (elements + _Count > m_controls.Length)
 		{
-			STNodeControl[] foreColor = new STNodeControl[Math.Max(m_controls.Length * 2, elements + _Count)];
-			m_controls.CopyTo(foreColor, 0);
-			m_controls = foreColor;
+			STNodeControl[] array = new STNodeControl[Math.Max(m_controls.Length * 2, elements + _Count)];
+			m_controls.CopyTo(array, 0);
+			m_controls = array;
 		}
 	}
 

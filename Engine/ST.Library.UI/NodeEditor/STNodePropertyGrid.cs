@@ -293,13 +293,13 @@ public class STNodePropertyGrid : Control
 
 	private List<STNodePropertyDescriptor> GetProperties(STNode node)
 	{
-		List<STNodePropertyDescriptor> graphics = new List<STNodePropertyDescriptor>();
+		List<STNodePropertyDescriptor> list = new List<STNodePropertyDescriptor>();
 		if (node == null)
 		{
-			return graphics;
+			return list;
 		}
-		Type num = node.GetType();
-		PropertyInfo[] properties = num.GetProperties();
+		Type type = node.GetType();
+		PropertyInfo[] properties = type.GetProperties();
 		foreach (PropertyInfo propertyInfo in properties)
 		{
 			object[] customAttributes = propertyInfo.GetCustomAttributes(inherit: true);
@@ -325,12 +325,12 @@ public class STNodePropertyGrid : Control
 					sTNodePropertyDescriptor.Control = this;
 					if (IsEditEnable || !sTNodePropertyAttribute.IsHide)
 					{
-						graphics.Add(sTNodePropertyDescriptor);
+						list.Add(sTNodePropertyDescriptor);
 					}
 				}
 			}
 		}
-		return graphics;
+		return list;
 	}
 
 	private STNodeAttribute GetNodeAttribute(STNode node)
@@ -339,13 +339,13 @@ public class STNodePropertyGrid : Control
 		{
 			return null;
 		}
-		Type graphics = node.GetType();
-		object[] num = graphics.GetCustomAttributes(inherit: true);
-		foreach (object array in num)
+		Type type = node.GetType();
+		object[] customAttributes = type.GetCustomAttributes(inherit: true);
+		foreach (object obj in customAttributes)
 		{
-			if (array is STNodeAttribute)
+			if (obj is STNodeAttribute)
 			{
-				return (STNodeAttribute)array;
+				return (STNodeAttribute)obj;
 			}
 		}
 		return null;
@@ -353,35 +353,35 @@ public class STNodePropertyGrid : Control
 
 	private void SetItemRectangle()
 	{
-		int graphics = 0;
 		int num = 0;
-		using Graphics rect2 = CreateGraphics();
+		int num2 = 0;
+		using Graphics graphics = CreateGraphics();
 		foreach (STNodePropertyDescriptor item in m_lst_item)
 		{
-			SizeF sizeF = rect2.MeasureString(item.Name, Font);
-			if (sizeF.Width > (float)graphics)
+			SizeF sizeF = graphics.MeasureString(item.Name, Font);
+			if (sizeF.Width > (float)num)
 			{
-				graphics = (int)Math.Ceiling(sizeF.Width);
+				num = (int)Math.Ceiling(sizeF.Width);
 			}
 		}
 		for (int i = 0; i < m_KeysString.Length - 1; i++)
 		{
-			SizeF sizeF2 = rect2.MeasureString(m_KeysString[i], Font);
-			if (sizeF2.Width > (float)num)
+			SizeF sizeF2 = graphics.MeasureString(m_KeysString[i], Font);
+			if (sizeF2.Width > (float)num2)
 			{
-				num = (int)Math.Ceiling(sizeF2.Width);
+				num2 = (int)Math.Ceiling(sizeF2.Width);
 			}
 		}
-		graphics += 5;
 		num += 5;
-		graphics = Math.Min(graphics, base.Width >> 1);
-		m_nInfoLeft = Math.Min(num, base.Width >> 1);
-		int num2 = (_ShowTitle ? m_nTitleHeight : 0);
+		num2 += 5;
+		num = Math.Min(num, base.Width >> 1);
+		m_nInfoLeft = Math.Min(num2, base.Width >> 1);
+		int num3 = (_ShowTitle ? m_nTitleHeight : 0);
 		for (int j = 0; j < m_lst_item.Count; j++)
 		{
 			STNodePropertyDescriptor sTNodePropertyDescriptor = m_lst_item[j];
-			Rectangle rectangle = (sTNodePropertyDescriptor.Rectangle = new Rectangle(0, j * m_item_height + num2, base.Width, m_item_height));
-			rectangle.Width = graphics;
+			Rectangle rectangle = (sTNodePropertyDescriptor.Rectangle = new Rectangle(0, j * m_item_height + num3, base.Width, m_item_height));
+			rectangle.Width = num;
 			sTNodePropertyDescriptor.RectangleL = rectangle;
 			rectangle.X = rectangle.Right;
 			rectangle.Width = base.Width - rectangle.Left - 1;
@@ -460,10 +460,10 @@ public class STNodePropertyGrid : Control
 		base.OnMouseDown(e);
 		m_pt_down = e.Location;
 		Focus();
-		bool sTNodeTreeCollection = false;
+		bool flag = false;
 		if (m_str_err != null)
 		{
-			sTNodeTreeCollection = true;
+			flag = true;
 			m_str_err = null;
 		}
 		if (_ShowTitle)
@@ -501,7 +501,7 @@ public class STNodePropertyGrid : Control
 		{
 			OnProcessPropertyMouseDown(e2);
 		}
-		if (sTNodeTreeCollection)
+		if (flag)
 		{
 			Invalidate();
 		}
@@ -699,7 +699,8 @@ public class STNodePropertyGrid : Control
 			rectangle.Inflate(-4, 0);
 			m_brush.Color = ForeColor;
 			m_sf.Alignment = StringAlignment.Near;
-			graphics.DrawString(m_str_desc, Font, m_brush, rectangle, m_sf);
+			string s = Lang.Get(m_str_desc);
+			graphics.DrawString(s, Font, m_brush, rectangle, m_sf);
 		}
 	}
 

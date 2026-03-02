@@ -718,11 +718,11 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
-        ///   查找类似 用户名 的本地化字符串。
+        ///   查找类似 用户名: 的本地化字符串。
         /// </summary>
-        public static string Username {
+        public static string UserName {
             get {
-                return ResourceManager.GetString("Username", resourceCulture);
+                return ResourceManager.GetString("UserName", resourceCulture);
             }
         }
         

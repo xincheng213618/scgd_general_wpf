@@ -103,6 +103,11 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetSerialNumber", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern bool CM_GetSpectrSerialNumber(IntPtr handle, StringBuilder szSerialNum);
 
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetAllSN", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public static extern int CM_Emission_GetAllSN(int nType, int nComPort, StringBuilder sn, int len);
+
+
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_AutoDarkStorage", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_AutoDarkStorage(IntPtr handle, float fIntTime, int iAveNum, int iFilterBW, float[] fDarkData);
 

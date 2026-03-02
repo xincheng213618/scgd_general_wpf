@@ -1,5 +1,7 @@
 # ColorVision.Solution
 
+> 版本: 1.5.1.1 | 目标框架: .NET 8.0 / .NET 10.0 Windows | UI框架: WPF
+
 ## 🎯 功能定位
 
 解决方案和工程文件管理模块，提供项目文件的组织、管理和预览功能。类似于 Visual Studio 的解决方案资源管理器，为 ColorVision 系统提供强大的工程管理能力。
@@ -24,7 +26,14 @@
 - **文件监控** - 实时监控文件系统变化并自动更新视图
 - **终端集成** - 内置终端管理窗口
 
-## 架构设计
+### 新增功能 (v1.5+)
+- **多图像查看器** (`MultiImageViewer`) - 支持文件夹内多张图片的预览和缩略图缓存
+- **缩略图缓存管理** (`ThumbnailCacheManager`) - 高效的图像缩略图生成和缓存
+- **Markdown 查看器** (`MarkdownViewWindow`) - 支持 Markdown 文件的预览
+- **工作区管理** (`WorkspaceManager`) - 多工作区切换管理
+- **可编辑文本块** (`EditableTextBlock`) - 支持点击编辑的文件名显示
+
+## 技术架构
 
 ### 核心组件
 
@@ -35,27 +44,85 @@ ColorVision.Solution/
 │   ├── VFile.cs                # 文件对象
 │   ├── VFolder.cs              # 文件夹对象
 │   ├── SolutionExplorer.cs     # 解决方案资源管理器
+│   ├── SolutionEnvironments.cs # 解决方案环境变量
 │   └── VObjectFactory.cs       # 对象工厂
 ├── Editor/                     # 编辑器系统
 │   ├── EditorManager.cs        # 编辑器管理器
 │   ├── IEditor.cs              # 编辑器接口
 │   ├── TextEditor.cs           # 文本编辑器
 │   ├── ImageEditor.cs          # 图像编辑器
+│   ├── HexEditor.cs            # Hex编辑器
+│   ├── WebEditor.cs            # Web编辑器
+│   ├── ProjectEditor.cs        # 项目编辑器
+│   ├── SystemEditor.cs         # 系统编辑器
+│   ├── EditorSelectionWindow   # 编辑器选择窗口
+│   ├── FolderEditorSelectionWindow # 文件夹编辑器选择
 │   └── AvalonEditor/           # AvalonEdit 集成
+│       ├── AvalonEditWindow    # 代码编辑窗口
+│       ├── AvalonEditControll  # 代码编辑控件
+│       └── TextJsonPropertiesEditor # JSON属性编辑
 ├── FileMeta/                   # 文件元数据
 │   ├── IFileMeta.cs            # 文件元数据接口
-│   └── FileMetaRegistry.cs     # 文件元数据注册表
+│   ├── FileMetaRegistry.cs     # 文件元数据注册表
+│   ├── CommonFile.cs           # 通用文件
+│   ├── FileImage.cs            # 图像文件
+│   ├── FileProcessorImage.cs   # 图像处理器
+│   └── FileProcessorText.cs    # 文本处理器
 ├── FolderMeta/                 # 文件夹元数据
 │   ├── IFolderMeta.cs          # 文件夹元数据接口
-│   └── FolderMetaRegistry.cs   # 文件夹元数据注册表
+│   ├── FolderMetaRegistry.cs   # 文件夹元数据注册表
+│   ├── BaseFolder.cs           # 基础文件夹
+│   └── ProjectFolders.cs       # 项目文件夹
 ├── Rbac/                       # 权限控制系统
 │   ├── RbacManager.cs          # RBAC管理器
+│   ├── RbacManagerConfig.cs    # RBAC配置
+│   ├── LoginWindow             # 登录窗口
+│   ├── RegisterWindow          # 注册窗口
+│   ├── UserManagerWindow       # 用户管理窗口
+│   ├── CreateUserWindow        # 创建用户窗口
+│   ├── EditUserRolesWindow     # 编辑用户角色窗口
+│   ├── PermissionManagerWindow # 权限管理窗口
 │   ├── Entity/                 # 实体模型
-│   └── Services/               # 服务层
-├── Searches/                   # 搜索功能
-│   └── SolutionView.xaml       # 解决方案视图
-└── RecentFile/                 # 最近文件管理
-    └── RecentFileList.cs       # 最近文件列表
+│   │   ├── UserEntity.cs       # 用户实体
+│   │   ├── RoleEntity.cs       # 角色实体
+│   │   ├── PermissionEntity.cs # 权限实体
+│   │   ├── UserRoleEntity.cs   # 用户角色关联
+│   │   ├── UserDetailEntity.cs # 用户详情
+│   │   ├── TenantEntity.cs     # 租户实体
+│   │   ├── UserTenantEntity.cs # 用户租户关联
+│   │   ├── SessionEntity.cs    # 会话实体
+│   │   └── AuditLogEntity.cs   # 审计日志实体
+│   ├── Services/               # 服务层
+│   │   ├── AuthService         # 认证服务
+│   │   ├── UserService         # 用户服务
+│   │   ├── RoleService         # 角色服务
+│   │   ├── PermissionService   # 权限服务
+│   │   ├── SessionService      # 会话服务
+│   │   ├── TenantService       # 租户服务
+│   │   ├── AuditLogService     # 审计日志服务
+│   │   └── PermissionChecker   # 权限检查器
+│   └── Security/               # 安全相关
+│       └── PasswordHashing.cs  # 密码哈希
+├── MultiImageViewer/           # 多图像查看器 (v1.5+)
+│   ├── MultiImageViewer        # 多图像查看控件
+│   ├── MultiImageViewerConfig  # 查看器配置
+│   ├── ImageFileInfo           # 图像文件信息
+│   ├── ThumbnailCacheManager   # 缩略图缓存管理
+│   └── ThumbnailCacheEntry     # 缓存条目
+├── RecentFile/                 # 最近文件管理
+│   ├── RecentFileList.cs       # 最近文件列表
+│   ├── IRecentFile.cs          # 最近文件接口
+│   ├── MenuRecentFile.cs       # 菜单最近文件
+│   └── RegistryPersister.cs    # 注册表持久化
+├── Workspace/                  # 工作区管理
+│   ├── WorkspaceManager.cs     # 工作区管理器
+│   ├── WorkspaceMainView       # 工作区主视图
+│   └── SoloutionEditorControl  # 解决方案编辑控件
+├── TreeViewControl             # 树视图控件
+├── SolutionManager             # 解决方案管理器
+├── NewCreatWindow              # 新建解决方案窗口
+├── OpenSolutionWindow          # 打开解决方案窗口
+└── MarkdownViewWindow          # Markdown查看窗口
 ```
 
 ## 与主程序的依赖关系
@@ -67,11 +134,14 @@ ColorVision.Solution/
 
 **引用的程序集**:
 - `ColorVision.UI` - 基础UI组件和扩展
+- `ColorVision.UI.Desktop` - 桌面应用程序服务
 - `ColorVision.Database` - 数据库支持
 - `ColorVision.ImageEditor` - 图像编辑功能
+- `ColorVision.Themes` - 主题支持
 - `AvalonEdit` - 代码编辑器控件
 - `WPFHexaEditor` - Hex编辑器控件
 - `Microsoft.Web.WebView2` - Web视图支持
+- `Markdig` - Markdown解析
 
 ## 使用方式
 
@@ -125,6 +195,23 @@ public class MyCustomEditor : EditorBase
 var editor = EditorManager.Instance.GetDefaultEditor(".txt");
 ```
 
+#### 使用多图像查看器 (v1.5+)
+```csharp
+// 创建多图像查看器
+var viewer = new MultiImageViewer();
+viewer.LoadFolder(@"C:\Images");
+viewer.Show();
+
+// 或使用配置
+var config = new MultiImageViewerConfig
+{
+    ThumbnailSize = 128,
+    CacheEnabled = true,
+    ShowFileName = true
+};
+viewer.ApplyConfig(config);
+```
+
 #### 处理解决方案事件
 ```csharp
 var solutionManager = SolutionManager.GetInstance();
@@ -140,6 +227,23 @@ solutionManager.SolutionLoaded += (sender, args) =>
 {
     Console.WriteLine("解决方案已加载");
 };
+```
+
+#### RBAC 权限使用
+```csharp
+// 登录
+var authService = new AuthService();
+var result = await authService.LoginAsync("username", "password");
+
+// 检查权限
+if (RbacManager.Instance.HasPermission("FILE_DELETE"))
+{
+    // 允许删除文件
+}
+
+// 记录审计日志
+var auditService = new AuditLogService();
+auditService.LogAction("FILE_DELETE", $"删除文件: {filePath}");
 ```
 
 ## 开发调试
@@ -166,10 +270,10 @@ dotnet test
 - `FileMeta/` - 文件元数据定义和注册
 - `FolderMeta/` - 文件夹元数据定义和注册
 - `Rbac/` - 基于角色的访问控制系统
-- `Searches/` - 搜索和解决方案视图
+- `MultiImageViewer/` - 多图像查看器
 - `RecentFile/` - 最近文件历史管理
-- `Plugins/` - 插件管理系统
-- `Properties/` - 资源文件
+- `Workspace/` - 工作区管理
+- `Properties/` - 资源文件和多语言支持
 
 ## 配置文件
 
@@ -183,6 +287,17 @@ dotnet test
   "Paths": []
 }
 ```
+
+## 多语言支持
+
+支持以下语言：
+- 简体中文 (zh-Hans)
+- 繁体中文 (zh-Hant)
+- 英语 (en)
+- 法语 (fr)
+- 日语 (ja)
+- 韩语 (ko)
+- 俄语 (ru)
 
 ## 相关文档链接
 
@@ -199,14 +314,35 @@ dotnet test
 - ✅ 命令模式（RelayCommand）
 - ✅ 事件驱动架构
 - ✅ 可扩展的插件系统
+- ✅ 多语言支持（7种语言）
+- ✅ 缩略图缓存管理
+- ✅ 完整的 RBAC 权限系统
+
+## 更新日志
+
+### v1.5.1.1 (2025-02)
+- ✅ 新增多图像查看器 (`MultiImageViewer`)
+- ✅ 新增缩略图缓存管理 (`ThumbnailCacheManager`)
+- ✅ 新增 Markdown 查看器 (`MarkdownViewWindow`)
+- ✅ 新增工作区管理 (`WorkspaceManager`)
+- ✅ 新增可编辑文本块 (`EditableTextBlock`)
+- ✅ 支持 .NET 10.0
+- ✅ 优化文件系统监控性能
+- ✅ 改进 RBAC 权限系统
+
+### v1.4.1.1 (2025-02)
+- 新增图像文件夹预览
+- 优化解决方案加载速度
+- 改进编辑器选择逻辑
+
+### v1.3.18.1 (2025-02)
+- 增加 RBAC 权限系统
+- 增加多语言支持
+- 增加 AvalonEdit 代码编辑器
 
 ## 维护者
 
 ColorVision UI团队
-
-## 版本历史
-
-当前版本：1.3.8.5
 
 ## License
 

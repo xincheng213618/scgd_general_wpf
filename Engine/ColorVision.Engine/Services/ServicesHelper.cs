@@ -59,13 +59,7 @@ namespace ColorVision.Engine.Services
                 var temp = button.Content;
                 button.Content = Properties.Resources.ResourceManager.GetString(msgRecord.MsgRecordState.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
 
-                MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
-                msgRecordStateChangedHandler = (e) =>
-                {
-                    button.Content = temp;
-                    msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
-                };
-                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+                msgRecord.MsgRecordStateChanged += (s,e) => button.Content = temp; 
             }
         }
 
@@ -73,14 +67,7 @@ namespace ColorVision.Engine.Services
         {
             var temp = button.Content;
             button.Content = Properties.Resources.ResourceManager.GetString(msgRecord.MsgRecordState.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
-
-            MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
-            msgRecordStateChangedHandler = (e) =>
-            {
-                button.Content = temp;
-                msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
-            };
-            msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+            msgRecord.MsgRecordStateChanged += (s,e) => button.Content = temp;
         }
 
         public static bool IsInvalidPath(string Path, string Hint = "名称")

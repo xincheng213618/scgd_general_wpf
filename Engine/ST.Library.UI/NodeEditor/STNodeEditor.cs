@@ -810,38 +810,38 @@ public class STNodeEditor : Control
 			}
 			return;
 		}
-		NodeFindInfo graphics = FindNodeFromPoint(m_pt_down_in_canvas);
-		if (!string.IsNullOrEmpty(graphics.Mark))
+		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_down_in_canvas);
+		if (!string.IsNullOrEmpty(nodeFindInfo.Mark))
 		{
 			m_ca = CanvasAction.DrawMarkDetails;
 			Invalidate();
 		}
-		else if (graphics.NodeOption != null)
+		else if (nodeFindInfo.NodeOption != null)
 		{
 			if (m_enableEdit)
 			{
-				StartConnect(graphics.NodeOption);
+				StartConnect(nodeFindInfo.NodeOption);
 			}
 		}
-		else if (graphics.Node != null)
+		else if (nodeFindInfo.Node != null)
 		{
-			graphics.Node.OnMouseDown(new MouseEventArgs(e.Button, e.Clicks, (int)m_pt_down_in_canvas.X - graphics.Node.Left, (int)m_pt_down_in_canvas.Y - graphics.Node.Top, e.Delta));
+			nodeFindInfo.Node.OnMouseDown(new MouseEventArgs(e.Button, e.Clicks, (int)m_pt_down_in_canvas.X - nodeFindInfo.Node.Left, (int)m_pt_down_in_canvas.Y - nodeFindInfo.Node.Top, e.Delta));
 			if ((Control.ModifierKeys & Keys.Control) == Keys.Control)
 			{
-				if (graphics.Node.IsSelected)
+				if (nodeFindInfo.Node.IsSelected)
 				{
-					if (graphics.Node == _ActiveNode)
+					if (nodeFindInfo.Node == _ActiveNode)
 					{
 						SetActiveNode(null);
 					}
 				}
 				else
 				{
-					graphics.Node.SetSelected(bSelected: true, bRedraw: true);
+					nodeFindInfo.Node.SetSelected(bSelected: true, bRedraw: true);
 				}
 				return;
 			}
-			if (!graphics.Node.IsSelected)
+			if (!nodeFindInfo.Node.IsSelected)
 			{
 				STNode[] array = m_hs_node_selected.ToArray();
 				foreach (STNode sTNode in array)
@@ -849,15 +849,15 @@ public class STNodeEditor : Control
 					sTNode.SetSelected(bSelected: false, bRedraw: false);
 				}
 			}
-			graphics.Node.SetSelected(bSelected: true, bRedraw: false);
-			SetActiveNode(graphics.Node);
-			if (PointInRectangle(graphics.Node.Rectangle, m_pt_down_in_canvas.X, m_pt_down_in_canvas.Y))
+			nodeFindInfo.Node.SetSelected(bSelected: true, bRedraw: false);
+			SetActiveNode(nodeFindInfo.Node);
+			if (PointInRectangle(nodeFindInfo.Node.Rectangle, m_pt_down_in_canvas.X, m_pt_down_in_canvas.Y))
 			{
 				if (e.Button == MouseButtons.Right)
 				{
-					if (graphics.Node.ContextMenuStrip != null)
+					if (nodeFindInfo.Node.ContextMenuStrip != null)
 					{
-						graphics.Node.ContextMenuStrip.Show(PointToScreen(e.Location));
+						nodeFindInfo.Node.ContextMenuStrip.Show(PointToScreen(e.Location));
 					}
 					return;
 				}
@@ -877,7 +877,7 @@ public class STNodeEditor : Control
 			}
 			else
 			{
-				m_node_down = graphics.Node;
+				m_node_down = nodeFindInfo.Node;
 			}
 		}
 		else
@@ -1188,21 +1188,21 @@ public class STNodeEditor : Control
 
 	protected virtual void OnDrawNodeBorder(DrawingTools dt, STNode node)
 	{
-		Image g = null;
-		g = ((_ActiveNode == node) ? m_img_border_active : (node.IsSelected ? m_img_border_selected : ((_HoverNode != node) ? m_img_border : m_img_border_hover)));
-		RenderBorder(dt.Graphics, node.Rectangle, g);
+		Image image = null;
+		image = ((_ActiveNode == node) ? m_img_border_active : (node.IsSelected ? m_img_border_selected : ((_HoverNode != node) ? m_img_border : m_img_border_hover)));
+		RenderBorder(dt.Graphics, node.Rectangle, image);
 		if (!string.IsNullOrEmpty(node.Mark))
 		{
-			RenderBorder(dt.Graphics, node.MarkRectangle, g);
+			RenderBorder(dt.Graphics, node.MarkRectangle, image);
 		}
 	}
 
 	protected virtual void OnDrawConnectedLine(DrawingTools dt)
 	{
-		Graphics sTNodeHubOption = dt.Graphics;
-		sTNodeHubOption.SmoothingMode = SmoothingMode.HighQuality;
+		Graphics graphics = dt.Graphics;
+		graphics.SmoothingMode = SmoothingMode.HighQuality;
 		m_p_line_hover.Color = Color.FromArgb(50, 0, 0, 0);
-		Type sTNodeHubOption2 = typeof(object);
+		Type typeFromHandle = typeof(object);
 		foreach (STNode node in _Nodes)
 		{
 			foreach (STNodeOption outputOption in node.OutputOptions)
@@ -1215,7 +1215,7 @@ public class STNodeEditor : Control
 				{
 					m_p_line.Color = outputOption.DotColor;
 				}
-				else if (outputOption.DataType == sTNodeHubOption2)
+				else if (outputOption.DataType == typeFromHandle)
 				{
 					m_p_line.Color = _UnknownTypeColor;
 				}
@@ -1225,8 +1225,8 @@ public class STNodeEditor : Control
 				}
 				foreach (STNodeOption item in outputOption.ConnectedOption)
 				{
-					DrawBezier(sTNodeHubOption, m_p_line_hover, outputOption.DotLeft + outputOption.DotSize, outputOption.DotTop + outputOption.DotSize / 2, item.DotLeft - 1, item.DotTop + item.DotSize / 2, _Curvature);
-					DrawBezier(sTNodeHubOption, m_p_line, outputOption.DotLeft + outputOption.DotSize, outputOption.DotTop + outputOption.DotSize / 2, item.DotLeft - 1, item.DotTop + item.DotSize / 2, _Curvature);
+					DrawBezier(graphics, m_p_line_hover, outputOption.DotLeft + outputOption.DotSize, outputOption.DotTop + outputOption.DotSize / 2, item.DotLeft - 1, item.DotTop + item.DotSize / 2, _Curvature);
+					DrawBezier(graphics, m_p_line, outputOption.DotLeft + outputOption.DotSize, outputOption.DotTop + outputOption.DotSize / 2, item.DotLeft - 1, item.DotTop + item.DotSize / 2, _Curvature);
 					if (m_is_buildpath)
 					{
 						GraphicsPath key = CreateBezierPath(outputOption.DotLeft + outputOption.DotSize, outputOption.DotTop + outputOption.DotSize / 2, item.DotLeft - 1, item.DotTop + item.DotSize / 2, _Curvature);
@@ -1242,16 +1242,16 @@ public class STNodeEditor : Control
 		m_p_line_hover.Color = _HighLineColor;
 		if (m_gp_hover != null)
 		{
-			sTNodeHubOption.DrawPath(m_p_line_hover, m_gp_hover);
+			graphics.DrawPath(m_p_line_hover, m_gp_hover);
 		}
 		m_is_buildpath = false;
 	}
 
 	protected virtual void OnDrawMark(DrawingTools dt)
 	{
-		Graphics sTNodeOption = dt.Graphics;
-		SizeF index = sTNodeOption.MeasureString(m_find.Mark, Font);
-		Rectangle rectangle = new Rectangle(m_pt_in_control.X + 15, m_pt_in_control.Y + 10, (int)index.Width + 6, 4 + (Font.Height + 4) * m_find.MarkLines.Length);
+		Graphics graphics = dt.Graphics;
+		SizeF sizeF = graphics.MeasureString(m_find.Mark, Font);
+		Rectangle rectangle = new Rectangle(m_pt_in_control.X + 15, m_pt_in_control.Y + 10, (int)sizeF.Width + 6, 4 + (Font.Height + 4) * m_find.MarkLines.Length);
 		if (rectangle.Right > base.Width)
 		{
 			rectangle.X = base.Width - rectangle.Width;
@@ -1269,12 +1269,12 @@ public class STNodeEditor : Control
 			rectangle.Y = 0;
 		}
 		dt.SolidBrush.Color = _MarkBackColor;
-		sTNodeOption.SmoothingMode = SmoothingMode.None;
-		sTNodeOption.FillRectangle(dt.SolidBrush, rectangle);
+		graphics.SmoothingMode = SmoothingMode.None;
+		graphics.FillRectangle(dt.SolidBrush, rectangle);
 		rectangle.Width--;
 		rectangle.Height--;
 		dt.Pen.Color = Color.FromArgb(255, _MarkBackColor);
-		sTNodeOption.DrawRectangle(dt.Pen, rectangle);
+		graphics.DrawRectangle(dt.Pen, rectangle);
 		dt.SolidBrush.Color = _MarkForeColor;
 		m_sf.LineAlignment = StringAlignment.Center;
 		rectangle.X += 2;
@@ -1284,7 +1284,7 @@ public class STNodeEditor : Control
 		for (int i = 0; i < m_find.MarkLines.Length; i++)
 		{
 			rectangle.Y = num + i * (Font.Height + 4);
-			sTNodeOption.DrawString(m_find.MarkLines[i], Font, dt.SolidBrush, rectangle, m_sf);
+			graphics.DrawString(m_find.MarkLines[i], Font, dt.SolidBrush, rectangle, m_sf);
 		}
 	}
 
@@ -1294,12 +1294,12 @@ public class STNodeEditor : Control
 		{
 			return;
 		}
-		Graphics sTNodeOption = dt.Graphics;
-		Pen index = m_drawing_tools.Pen;
-		SolidBrush typeFromHandle = dt.SolidBrush;
-		index.Color = _MagnetColor;
-		typeFromHandle.Color = Color.FromArgb(_MagnetColor.A / 3, _MagnetColor);
-		sTNodeOption.SmoothingMode = SmoothingMode.None;
+		Graphics graphics = dt.Graphics;
+		Pen pen = m_drawing_tools.Pen;
+		SolidBrush solidBrush = dt.SolidBrush;
+		pen.Color = _MagnetColor;
+		solidBrush.Color = Color.FromArgb(_MagnetColor.A / 3, _MagnetColor);
+		graphics.SmoothingMode = SmoothingMode.None;
 		int left = _ActiveNode.Left;
 		int num = _ActiveNode.Left + _ActiveNode.Width / 2;
 		int right = _ActiveNode.Right;
@@ -1308,21 +1308,21 @@ public class STNodeEditor : Control
 		int bottom = _ActiveNode.Bottom;
 		if (mi.XMatched)
 		{
-			sTNodeOption.DrawLine(index, CanvasToControl(mi.X, isX: true), 0f, CanvasToControl(mi.X, isX: true), base.Height);
+			graphics.DrawLine(pen, CanvasToControl(mi.X, isX: true), 0f, CanvasToControl(mi.X, isX: true), base.Height);
 		}
 		if (mi.YMatched)
 		{
-			sTNodeOption.DrawLine(index, 0f, CanvasToControl(mi.Y, isX: false), base.Width, CanvasToControl(mi.Y, isX: false));
+			graphics.DrawLine(pen, 0f, CanvasToControl(mi.Y, isX: false), base.Width, CanvasToControl(mi.Y, isX: false));
 		}
-		sTNodeOption.TranslateTransform(_CanvasOffsetX, _CanvasOffsetY);
-		sTNodeOption.ScaleTransform(_CanvasScale, _CanvasScale);
+		graphics.TranslateTransform(_CanvasOffsetX, _CanvasOffsetY);
+		graphics.ScaleTransform(_CanvasScale, _CanvasScale);
 		if (mi.XMatched)
 		{
 			foreach (STNode node in _Nodes)
 			{
 				if (node.Left == mi.X || node.Right == mi.X || node.Left + node.Width / 2 == mi.X)
 				{
-					sTNodeOption.FillRectangle(typeFromHandle, node.Rectangle);
+					graphics.FillRectangle(solidBrush, node.Rectangle);
 				}
 			}
 		}
@@ -1332,38 +1332,38 @@ public class STNodeEditor : Control
 			{
 				if (node2.Top == mi.Y || node2.Bottom == mi.Y || node2.Top + node2.Height / 2 == mi.Y)
 				{
-					sTNodeOption.FillRectangle(typeFromHandle, node2.Rectangle);
+					graphics.FillRectangle(solidBrush, node2.Rectangle);
 				}
 			}
 		}
-		sTNodeOption.ResetTransform();
+		graphics.ResetTransform();
 	}
 
 	protected virtual void OnDrawSelectedRectangle(DrawingTools dt, RectangleF rectf)
 	{
-		Graphics sTNodeOption = dt.Graphics;
-		SolidBrush index = dt.SolidBrush;
+		Graphics graphics = dt.Graphics;
+		SolidBrush solidBrush = dt.SolidBrush;
 		dt.Pen.Color = _SelectedRectangleColor;
-		sTNodeOption.DrawRectangle(dt.Pen, rectf.Left, rectf.Y, rectf.Width, rectf.Height);
-		index.Color = Color.FromArgb(_SelectedRectangleColor.A / 3, _SelectedRectangleColor);
-		sTNodeOption.FillRectangle(index, CanvasToControl(m_rect_select));
+		graphics.DrawRectangle(dt.Pen, rectf.Left, rectf.Y, rectf.Width, rectf.Height);
+		solidBrush.Color = Color.FromArgb(_SelectedRectangleColor.A / 3, _SelectedRectangleColor);
+		graphics.FillRectangle(solidBrush, CanvasToControl(m_rect_select));
 	}
 
 	protected virtual void OnDrawNodeOutLocation(DrawingTools dt, Size sz, List<Point> lstPts)
 	{
-		Graphics option = dt.Graphics;
-		SolidBrush index = dt.SolidBrush;
-		index.Color = _LocationBackColor;
-		option.SmoothingMode = SmoothingMode.None;
+		Graphics graphics = dt.Graphics;
+		SolidBrush solidBrush = dt.SolidBrush;
+		solidBrush.Color = _LocationBackColor;
+		graphics.SmoothingMode = SmoothingMode.None;
 		if (lstPts.Count == _Nodes.Count && _Nodes.Count != 0)
 		{
-			option.FillRectangle(index, CanvasToControl(_CanvasValidBounds));
+			graphics.FillRectangle(solidBrush, CanvasToControl(_CanvasValidBounds));
 		}
-		option.FillRectangle(index, 0, 0, 4, sz.Height);
-		option.FillRectangle(index, sz.Width - 4, 0, 4, sz.Height);
-		option.FillRectangle(index, 4, 0, sz.Width - 8, 4);
-		option.FillRectangle(index, 4, sz.Height - 4, sz.Width - 8, 4);
-		index.Color = _LocationForeColor;
+		graphics.FillRectangle(solidBrush, 0, 0, 4, sz.Height);
+		graphics.FillRectangle(solidBrush, sz.Width - 4, 0, 4, sz.Height);
+		graphics.FillRectangle(solidBrush, 4, 0, sz.Width - 8, 4);
+		graphics.FillRectangle(solidBrush, 4, sz.Height - 4, sz.Width - 8, 4);
+		solidBrush.Color = _LocationForeColor;
 		foreach (Point lstPt in lstPts)
 		{
 			Point point = CanvasToControl(lstPt);
@@ -1383,7 +1383,7 @@ public class STNodeEditor : Control
 			{
 				point.Y = sz.Height - 4;
 			}
-			option.FillRectangle(index, point.X, point.Y, 4, 4);
+			graphics.FillRectangle(solidBrush, point.X, point.Y, 4, 4);
 		}
 	}
 
@@ -1391,18 +1391,18 @@ public class STNodeEditor : Control
 	{
 		if (m_alpha_alert != 0)
 		{
-			Graphics sTNodeOption = dt.Graphics;
-			SolidBrush index = dt.SolidBrush;
-			sTNodeOption.SmoothingMode = SmoothingMode.None;
-			index.Color = backColor;
-			dt.Pen.Color = index.Color;
-			sTNodeOption.FillRectangle(index, rect);
-			sTNodeOption.DrawRectangle(dt.Pen, rect.Left, rect.Top, rect.Width - 1, rect.Height - 1);
-			index.Color = foreColor;
+			Graphics graphics = dt.Graphics;
+			SolidBrush solidBrush = dt.SolidBrush;
+			graphics.SmoothingMode = SmoothingMode.None;
+			solidBrush.Color = backColor;
+			dt.Pen.Color = solidBrush.Color;
+			graphics.FillRectangle(solidBrush, rect);
+			graphics.DrawRectangle(dt.Pen, rect.Left, rect.Top, rect.Width - 1, rect.Height - 1);
+			solidBrush.Color = foreColor;
 			m_sf.Alignment = StringAlignment.Center;
 			m_sf.LineAlignment = StringAlignment.Center;
-			sTNodeOption.SmoothingMode = SmoothingMode.HighQuality;
-			sTNodeOption.DrawString(strText, Font, index, rect, m_sf);
+			graphics.SmoothingMode = SmoothingMode.HighQuality;
+			graphics.DrawString(strText, Font, solidBrush, rect, m_sf);
 		}
 	}
 
@@ -1549,15 +1549,15 @@ public class STNodeEditor : Control
 				m_pt_canvas_old.X = _CanvasOffsetX;
 				m_pt_canvas_old.Y = _CanvasOffsetY;
 				Invalidate();
-				Thread.Sleep(10);
+				Thread.Sleep(30);
 			}
 			else
 			{
-				Thread.Sleep(10);
+				Thread.Sleep(100);
 			}
 		}
 	}
-	
+
 	private void ShowAlertThread()
 	{
 		while (true)
@@ -1622,12 +1622,12 @@ public class STNodeEditor : Control
 		if (op.IsInput)
 		{
 			m_pt_dot_down.X = op.DotLeft;
-			m_pt_dot_down.Y = op.DotTop + op.DotSize / 2;
+			m_pt_dot_down.Y = op.DotTop + 5;
 		}
 		else
 		{
 			m_pt_dot_down.X = op.DotLeft + op.DotSize;
-			m_pt_dot_down.Y = op.DotTop + op.DotSize / 2;
+			m_pt_dot_down.Y = op.DotTop + 5;
 		}
 		m_ca = CanvasAction.ConnectOption;
 		m_option_down = op;
@@ -1639,14 +1639,14 @@ public class STNodeEditor : Control
 		{
 			return;
 		}
-		STNode g = m_hs_node_selected.First();
+		STNode sTNode = m_hs_node_selected.First();
 		lock (m_hs_node_selected)
 		{
 			foreach (STNode item in m_hs_node_selected)
 			{
-				if (item != g)
+				if (item != sTNode)
 				{
-					item.Top = g.Top;
+					item.Top = sTNode.Top;
 				}
 			}
 		}
@@ -1658,14 +1658,14 @@ public class STNodeEditor : Control
 		{
 			return;
 		}
-		STNode sTNodeHubOption = m_hs_node_selected.First();
+		STNode sTNode = m_hs_node_selected.First();
 		lock (m_hs_node_selected)
 		{
 			foreach (STNode item in m_hs_node_selected)
 			{
-				if (item != sTNodeHubOption)
+				if (item != sTNode)
 				{
-					item.Left = sTNodeHubOption.Left;
+					item.Left = sTNode.Left;
 				}
 			}
 		}
@@ -1697,15 +1697,15 @@ public class STNodeEditor : Control
 		{
 			return;
 		}
-		STNode sTNodeOption = m_hs_node_selected.First();
-		int index = sTNodeOption.Top + sTNodeOption.Height / 2;
+		STNode sTNode = m_hs_node_selected.First();
+		int num = sTNode.Top + sTNode.Height / 2;
 		lock (m_hs_node_selected)
 		{
 			foreach (STNode item in m_hs_node_selected)
 			{
-				if (item != sTNodeOption)
+				if (item != sTNode)
 				{
-					item.Top = index - item.Height / 2;
+					item.Top = num - item.Height / 2;
 				}
 			}
 		}
@@ -1803,33 +1803,33 @@ public class STNodeEditor : Control
 			_CanvasValidBounds = ControlToCanvas(DisplayRectangle);
 			return;
 		}
-		int sTNodeOption = int.MaxValue;
-		int typeFromHandle = int.MaxValue;
-		int num = int.MinValue;
-		int num2 = int.MinValue;
+		int num = int.MaxValue;
+		int num2 = int.MaxValue;
+		int num3 = int.MinValue;
+		int num4 = int.MinValue;
 		foreach (STNode node in _Nodes)
 		{
-			if (sTNodeOption > node.Left)
+			if (num > node.Left)
 			{
-				sTNodeOption = node.Left;
+				num = node.Left;
 			}
-			if (typeFromHandle > node.Top)
+			if (num2 > node.Top)
 			{
-				typeFromHandle = node.Top;
+				num2 = node.Top;
 			}
-			if (num < node.Right)
+			if (num3 < node.Right)
 			{
-				num = node.Right;
+				num3 = node.Right;
 			}
-			if (num2 < node.Bottom)
+			if (num4 < node.Bottom)
 			{
-				num2 = node.Bottom;
+				num4 = node.Bottom;
 			}
 		}
-		_CanvasValidBounds.X = sTNodeOption - 60;
-		_CanvasValidBounds.Y = typeFromHandle - 60;
-		_CanvasValidBounds.Width = num - sTNodeOption + 120;
-		_CanvasValidBounds.Height = num2 - typeFromHandle + 120;
+		_CanvasValidBounds.X = num - 60;
+		_CanvasValidBounds.Y = num2 - 60;
+		_CanvasValidBounds.Width = num3 - num + 120;
+		_CanvasValidBounds.Height = num4 - num2 + 120;
 	}
 
 	private bool PointInRectangle(Rectangle rect, float x, float y)
@@ -2159,8 +2159,8 @@ public class STNodeEditor : Control
 
 	public static bool CanFindNodePath(STNode nodeStart, STNode nodeFind)
 	{
-		HashSet<STNode> type = new HashSet<STNode>();
-		return CanFindNodePath(nodeStart, nodeFind, type);
+		HashSet<STNode> hs = new HashSet<STNode>();
+		return CanFindNodePath(nodeStart, nodeFind, hs);
 	}
 
 	private static bool CanFindNodePath(STNode nodeStart, STNode nodeFind, HashSet<STNode> hs)

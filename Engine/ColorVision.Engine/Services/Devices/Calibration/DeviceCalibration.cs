@@ -1,18 +1,18 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.PhyCameras;
-using log4net;
-using System;
-using System.Windows;
-using System.Windows.Controls;
-using ColorVision.UI.Authorizations;
-using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
-using System.ComponentModel;
 using ColorVision.Themes.Controls;
-using ColorVision.Engine.Extension;
+using ColorVision.UI;
+using ColorVision.UI.Authorizations;
+using ColorVision.UI.Extension;
+using log4net;
+using System;
+using System.ComponentModel;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             DService = new MQTTCalibration(Config);
             View = new ViewCalibration(this);
             View.View.Title = $"{Config.Code}";
-            this.SetIconResource("DICalibrationIcon", View.View);;
+            this.SetIconResource("DICalibrationIcon");;
 
             EditCommand = new RelayCommand(a =>
             {

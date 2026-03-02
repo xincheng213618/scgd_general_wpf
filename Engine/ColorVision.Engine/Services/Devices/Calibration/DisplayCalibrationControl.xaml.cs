@@ -199,7 +199,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
                         MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, fileExtType, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.DisplayConfig.ExpTimeR, (float)Device.DisplayConfig.ExpTimeG, (float)Device.DisplayConfig.ExpTimeB);
                         ServicesHelper.SendCommand(button, msgRecord);
-                        msgRecord.MsgRecordStateChanged += (e) =>
+                        msgRecord.MsgRecordStateChanged += (s,e) =>
                         {
                             if (e == MsgRecordState.Fail)
                             {

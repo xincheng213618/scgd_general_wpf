@@ -2,7 +2,6 @@
 using ColorVision.Engine.Media;
 using ColorVision.ImageEditor;
 using ColorVision.FileIO;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
@@ -114,16 +113,9 @@ namespace WindowsServicePlugin.Tools
         public override string OwnerGuid => MenuItemConstants.View;
         public override int Order => 99;
         public override string Header => "Open ImageJ";
-        public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 
         public static string LatestReleaseUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/ImageJ/LATEST_RELEASE";
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\";
 
-        public MenuImageJ()
-        {
-            DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "Down ImageJ";
-        }
         public override void Execute()
         {
             if (!File.Exists(ImageJConfig.Instance.ImageJPath))
@@ -132,61 +124,38 @@ namespace WindowsServicePlugin.Tools
                 {
                     string filename = "ij154-win-java8.zip";
                     string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/ImageJ/{filename}";
-                    downloadPath = Path.Combine(downloadPath, filename);
-                    Task.Run(() =>
+                    string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+
+                    var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
+                    if (service == null) return;
+
+                    service.ShowDownloadWindow();
+                    service.Download(url, downloadDir, DownloadFileConfig.Instance.Authorization, filePath =>
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
+                        if (filePath == null) return;
+                        Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) {  Owner =Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner};
-                            if (!File.Exists(downloadPath))
+                            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+                            ZipFile.ExtractToDirectory(filePath, path, true);
+
+                            ImageJConfig.Instance.ImageJPath = Path.Combine(path, "ImageJ", "ImageJ.exe");
+
+                            ProcessStartInfo startInfo = new()
                             {
-                                windowUpdate.Show();
+                                UseShellExecute = true,
+                                WorkingDirectory = Environment.CurrentDirectory,
+                                FileName = ImageJConfig.Instance.ImageJPath
+                            };
+                            try
+                            {
+                                Process.Start(startInfo);
                             }
-                            Task.Run(async () =>
+                            catch (Exception ex)
                             {
-                                if (!File.Exists(downloadPath))
-                                {
-                                    CancellationTokenSource _cancellationTokenSource = new();
-                                    Application.Current.Dispatcher.Invoke(() =>
-                                    {
-                                        windowUpdate.Show();
-                                    });
-                                    await DownloadFile.Download(url, downloadPath, _cancellationTokenSource.Token);
-                                }
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    windowUpdate.Close();
-                                });
-
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    string path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\";
-                                    ZipFile.ExtractToDirectory(downloadPath, path, true);
-
-                                    ImageJConfig.Instance.ImageJPath = path + "\\ImageJ\\ImageJ.exe";
-
-                                    // 启动新的实例
-                                    ProcessStartInfo startInfo = new();
-                                    startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
-                                    startInfo.WorkingDirectory = Environment.CurrentDirectory;
-                                    startInfo.FileName = ImageJConfig.Instance.ImageJPath;
-
-                                    try
-                                    {
-                                        Process p = Process.Start(startInfo);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        MessageBox.Show(ex.ToString());
-                                        File.Delete(downloadPath);
-                                    }
-
-                                });
-
-                            });
+                                MessageBox.Show(ex.ToString());
+                                File.Delete(filePath);
+                            }
                         });
-
-
                     });
                     return;
                 }
@@ -207,10 +176,6 @@ namespace WindowsServicePlugin.Tools
             startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
             startInfo.FileName = ImageJConfig.Instance.ImageJPath;
-            //startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
-            //                          // 如果需要静默安装，添加静默安装参数
-            //                          //quiet 没法自启，桌面图标也是空                       
-            //                          //startInfo.Arguments = "/quiet";
             try
             {
                 Process p = Process.Start(startInfo);

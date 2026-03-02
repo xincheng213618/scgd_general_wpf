@@ -1,22 +1,21 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Database;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager;
-using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
+using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.Extension;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Themes.Controls.Uploads;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
-using System.ComponentModel;
-using ColorVision.Database;
-using ColorVision.Engine.Extension;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
@@ -38,7 +37,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
             View = new ThirdPartyAlgorithmsView();
             View.View.Title = ColorVision.Engine.Properties.Resources.ThirdPartAlgView+$" - {Config.Code}";
-            this.SetIconResource("DrawingImageAlgorithm", View.View);
+            this.SetIconResource("DrawingImageAlgorithm");
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayThirdPartyAlgorithms>(() => { DisplayAlgorithmControl ??= new DisplayThirdPartyAlgorithms(this); return DisplayAlgorithmControl; });
 
@@ -98,17 +97,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 Application.Current.Dispatcher.Invoke(()=> UploadMsgManager.UploadList.Add(uploadMeta));
                 ;
                 await Task.Delay(1);
-                var msgRecord = await DService.UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, uploadMeta.FileName, uploadMeta.FilePath, 3);
-                if (msgRecord != null && msgRecord.MsgRecordState == MsgRecordState.Success)
-                {
-                    uploadMeta.UploadStatus = UploadStatus.Completed;
-                    string FileName = msgRecord.MsgReturn.Data.FileName;
-
-                }
-                else
-                {
-                    uploadMeta.UploadStatus = UploadStatus.Failed;
-                }
                 UploadMsgManager.Msg = "1s 后关闭窗口";
                 await Task.Delay(1000);
                 UploadMsgManager.Close();

@@ -2,7 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
-using ColorVision.Themes.Controls;
+using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Plugins;
 using log4net;
@@ -47,7 +47,6 @@ namespace ColorVision.UI.Desktop.Plugins
         public RelayCommand OpenLocalPathCommand { get; set; }
         public RelayCommand ExtractPluginCommand { get; set; }
 
-        DownloadFile DownloadFile { get; set; }
         public PluginInfoVM(PluginInfo pluginInfo)
         {
             PluginInfo = pluginInfo;
@@ -65,9 +64,6 @@ namespace ColorVision.UI.Desktop.Plugins
             OpenLocalPathCommand = new RelayCommand(a => OpenLocalPath());
             ExtractPluginCommand = new RelayCommand(a => ExtractPlugin());
             ContextMenu = new ContextMenu();
-
-            DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = Resources.Update + Name ;
 
             if (PluginInfo.Enabled)
             {
@@ -140,53 +136,46 @@ namespace ColorVision.UI.Desktop.Plugins
         public async void CheckVersion()
         {
             string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath  + PackageName + "/LATEST_RELEASE";
-            LastVersion = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
+            try
+            {
+                using var httpClient = new System.Net.Http.HttpClient();
+                var byteArray = System.Text.Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization);
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                string versionString = await httpClient.GetStringAsync(LatestReleaseUrl);
+                if (!string.IsNullOrWhiteSpace(versionString))
+                    LastVersion = new Version(versionString.Trim());
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"CheckVersion failed for {PackageName}: {ex.Message}");
+            }
         }
 
 
-        public async void Update()
+        public void Update()
         {
-            string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath + PackageName + "/LATEST_RELEASE";
-            Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
-            Application.Current.Dispatcher.Invoke(() =>
+            if (!HasUpdate || LastVersion == null) return;
+
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmUpdate, Name, MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+                return;
+
+            string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+            string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{PackageName}/{PackageName}-{LastVersion}.cvxp";
+
+            DownloadWindow.ShowInstance();
+            Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmUpdate, Name, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (task.Status == DownloadStatus.Completed)
                 {
-                    string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{PackageName}-{version}.cvxp";
-                    string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{PackageName}/{PackageName}-{version}.cvxp";
-                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                    if (File.Exists(downloadPath))
+                    Application.Current?.Dispatcher.Invoke(() =>
                     {
-                        File.Delete(downloadPath);
-                    }
-                    if (!File.Exists(downloadPath))
-                    {
-                        windowUpdate.Show();
-                    }
-                    Task.Run(async () =>
-                    {
-                        if (!File.Exists(downloadPath))
-                        {
-                            CancellationTokenSource _cancellationTokenSource = new();
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                windowUpdate.Show();
-                            });
-                            await DownloadFile.Download(url, downloadPath, _cancellationTokenSource.Token);
-                        }
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            windowUpdate.Close();
-                        });
-
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            PluginUpdater.UpdatePlugin(downloadPath);
-                        });
+                        PluginUpdater.UpdatePlugin(task.SavePath);
                     });
-
-                };
-
+                }
+                else
+                {
+                    log.Error($"Plugin download failed for {PackageName}: {task.ErrorMessage}");
+                }
             });
         }
 

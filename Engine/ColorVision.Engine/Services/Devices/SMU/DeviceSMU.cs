@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Database;
-using ColorVision.Engine.Extension;
+using ColorVision.UI.Extension;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Views;
@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             DService = new MQTTSMU(this);
             View = new ViewSMU();
             View.View.Title = ColorVision.Engine.Properties.Resources.SMUView+$" - {Config.Code}";
-            this.SetIconResource("SMUDrawingImage", View.View);
+            this.SetIconResource("SMUDrawingImage");
 
 
             EditCommand = new RelayCommand(a =>

@@ -53,11 +53,11 @@ public class STNodeInHub : STNode
 
 	private void Addhub()
 	{
-		STNodeHubOption graphics = new STNodeHubOption(m_strIn, typeof(object), m_bSingle);
-		base.InputOptions.Add(graphics);
-		graphics.Connected += input_Connected;
-		graphics.DataTransfer += input_DataTransfer;
-		graphics.DisConnected += input_DisConnected;
+		STNodeHubOption sTNodeHubOption = new STNodeHubOption(m_strIn, typeof(object), m_bSingle);
+		base.InputOptions.Add(sTNodeHubOption);
+		sTNodeHubOption.Connected += input_Connected;
+		sTNodeHubOption.DataTransfer += input_DataTransfer;
+		sTNodeHubOption.DisConnected += input_DisConnected;
 		base.Height = base.TitleHeight + base.InputOptions.Count * 20;
 	}
 
@@ -67,20 +67,20 @@ public class STNodeInHub : STNode
 
 	private void input_DisConnected(object sender, STNodeOptionEventArgs e)
 	{
-		STNodeOption graphics = sender as STNodeOption;
-		if (graphics.ConnectionCount != 0)
+		STNodeOption sTNodeOption = sender as STNodeOption;
+		if (sTNodeOption.ConnectionCount != 0)
 		{
-			DoInputDisConnected(graphics, e);
+			DoInputDisConnected(sTNodeOption, e);
 			return;
 		}
-		int solidBrush = base.InputOptions.IndexOf(graphics);
-		base.InputOptions.RemoveAt(solidBrush);
+		int index = base.InputOptions.IndexOf(sTNodeOption);
+		base.InputOptions.RemoveAt(index);
 		if (base.Owner != null)
 		{
 			base.Owner.BuildLinePath();
 		}
 		base.Height -= 20;
-		DoInputDisConnected(graphics, e);
+		DoInputDisConnected(sTNodeOption, e);
 	}
 
 	protected virtual void DoInputDataTransfer(STNodeOption sender, STNodeOptionEventArgs e)

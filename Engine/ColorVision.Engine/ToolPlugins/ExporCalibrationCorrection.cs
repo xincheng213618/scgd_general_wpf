@@ -1,6 +1,5 @@
 ﻿using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
@@ -36,15 +35,8 @@ namespace ColorVision.Engine.ToolPlugins
         public override string Header => Properties.Resources.CalibrationCorrection;
 
 
-        public DownloadFile DownloadFile { get; set; } = new DownloadFile();
-        public ExporCalibrationCorrection()
-        {
-            DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = ColorVision.Engine.Properties.Resources.DownloadCalibrationTool+"240906";
-        }
-
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CalibTool/generateCaliFileTool240906.zip";
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\generateCaliFileTool240906.zip";
+        private string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
 
 
         [RequiresPermission(PermissionMode.User)]
@@ -54,30 +46,14 @@ namespace ColorVision.Engine.ToolPlugins
             {
                 if (MessageBox.Show(ColorVision.Engine.Properties.Resources.CalibrationToolNotFound_DownloadPrompt,"ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
-                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
-                    if (!File.Exists(downloadPath))
+                    var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
+                    if (service == null) return;
+
+                    service.ShowDownloadWindow();
+                    service.Download(url, downloadDir, DownloadFileConfig.Instance.Authorization, filePath =>
                     {
-                        windowUpdate.Show();
-                    }
-
-                    Task.Run(async () =>
-                    {
-                        if (!File.Exists(downloadPath))
-                        {
-                            CancellationTokenSource _cancellationTokenSource = new();
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                windowUpdate.Show();
-                            });
-                            await DownloadFile.Download(url, downloadPath, _cancellationTokenSource.Token);
-                        }
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            windowUpdate.Close();
-                        });
-
-
-                        Application.Current.Dispatcher.Invoke(() =>
+                        if (filePath == null) return;
+                        Application.Current?.Dispatcher.Invoke(() =>
                         {
                             Process.GetProcessesByName("CalibTools").ToList().ForEach(p => p.Kill());
                             using (System.Windows.Forms.FolderBrowserDialog folderBrowser = new System.Windows.Forms.FolderBrowserDialog())
@@ -90,31 +66,27 @@ namespace ColorVision.Engine.ToolPlugins
                                 if (!Directory.Exists(folderBrowser.SelectedPath + "\\generateCaliFileTool240906"))
                                     Directory.CreateDirectory(folderBrowser.SelectedPath + "\\generateCaliFileTool240906");
 
-                                ZipFile.ExtractToDirectory(downloadPath, folderBrowser.SelectedPath + "\\generateCaliFileTool240906", true);
+                                ZipFile.ExtractToDirectory(filePath, folderBrowser.SelectedPath + "\\generateCaliFileTool240906", true);
 
                                 CalibrationConfig.Instance.CalibToolsPath = folderBrowser.SelectedPath + "\\generateCaliFileTool240906\\CalibTools.exe";
                             }
 
-                            // 启动新的实例
-                            ProcessStartInfo startInfo = new();
-                            startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
-                            startInfo.WorkingDirectory = Environment.CurrentDirectory;
-                            startInfo.FileName = CalibrationConfig.Instance.CalibToolsPath;
-                            startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
-                                                      // 如果需要静默安装，添加静默安装参数
-                                                      //quiet 没法自启，桌面图标也是空                       
-                                                      //startInfo.Arguments = "/quiet";
-
+                            ProcessStartInfo startInfo = new()
+                            {
+                                UseShellExecute = true,
+                                WorkingDirectory = Environment.CurrentDirectory,
+                                FileName = CalibrationConfig.Instance.CalibToolsPath,
+                                Verb = "runas"
+                            };
                             try
                             {
-                                Process p = Process.Start(startInfo);
+                                Process.Start(startInfo);
                             }
                             catch (Exception ex)
                             {
                                 MessageBox.Show(ex.ToString());
-                                File.Delete(downloadPath);
+                                File.Delete(filePath);
                             }
-
                         });
                     });
                     return;

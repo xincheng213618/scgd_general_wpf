@@ -177,11 +177,11 @@ namespace ProjectStarkSemi
 
         private void Item_MsgRecordChanged(object? sender, MsgRecord e)
         {
-            e.MsgSucessed += (arg) =>
+            e.MsgSucessed += (s,e) =>
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    int masterId = Convert.ToInt32(arg.Data.MasterId);
+                    int masterId = Convert.ToInt32(e.Data.MasterId);
                     List<MeasureResultImgModel> resultMaster = null;
 
                     if (masterId > 0)
@@ -317,7 +317,7 @@ namespace ProjectStarkSemi
                 }
                 log.Info($"准备获取图像 - 相机: {Device.Name}, 校正: {param.Name}");
               
-                double[] expTime = new double[] { Device.Config.ExpTime };
+                double[] expTime = new double[] { Device.DisplayConfig.ExpTime };
                 AutoExpTimeParam autoExpTimeParam = new AutoExpTimeParam { Id = -1 };
                 ParamBase hdrParam = new ParamBase { Id = -1 };
 
@@ -327,11 +327,11 @@ namespace ProjectStarkSemi
                 {
                     tbMeasurementCameraStatus.Text = "正在获取...";
                     tbMeasurementCameraStatus.Foreground = new SolidColorBrush(Colors.Orange);
-                    msgRecord.MsgSucessed += (arg) =>
+                    msgRecord.MsgSucessed += (s,e) =>
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            int masterId = Convert.ToInt32(arg.Data.MasterId);
+                            int masterId = Convert.ToInt32(e.Data.MasterId);
                             List<MeasureResultImgModel> resultMaster = null;
                             
                             if (masterId > 0)
