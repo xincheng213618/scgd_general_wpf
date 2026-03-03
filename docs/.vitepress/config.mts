@@ -222,6 +222,7 @@ export default withMermaid(
               items: [
                 { text: 'UI 组件概览', link: '/04-api-reference/ui-components/README' },
                 { text: 'ColorVision.UI', link: '/04-api-reference/ui-components/ColorVision.UI' },
+                { text: 'ColorVision.UI.Desktop', link: '/04-api-reference/ui-components/ColorVision.UI.Desktop' },
                 { text: 'ColorVision.Common', link: '/04-api-reference/ui-components/ColorVision.Common' },
                 { text: 'ColorVision.Core', link: '/04-api-reference/ui-components/ColorVision.Core' },
                 { text: 'ColorVision.Themes', link: '/04-api-reference/ui-components/ColorVision.Themes' },
