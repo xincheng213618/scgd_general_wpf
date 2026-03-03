@@ -40,12 +40,64 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public double LimitVal { get => _limitVal; set { _limitVal = value; OnPropertyChanged(); } }
         private double _limitVal = 5;
 
-        public SMUChannelType Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); } }
+        public SMUChannelType Channel { get => _Channel; set {
+                _Channel = value; OnPropertyChanged(); 
+                if (value == SMUChannelType.A)
+                {
+                    V = AV;
+                    I = AI;
+
+                }else if (value == SMUChannelType.B)
+                {
+                    V = BV;
+                    I = BI;
+
+                }
+            } }
         private SMUChannelType _Channel = SMUChannelType.A;
 
-        public double? V { get => _V; set { _V = value; OnPropertyChanged(); } }
+
+
+        public double? AV { get => _AV; set { _AV = value; OnPropertyChanged(); } }
+        private double? _AV;
+        public double? AI { get => _AI; set { _AI = value; OnPropertyChanged(); } }
+        private double? _AI;
+
+        public double? BV { get => _BV; set { _BV = value; OnPropertyChanged(); } }
+        private double? _BV;
+        public double? BI { get => _BI; set { _BI = value; OnPropertyChanged(); } }
+        private double? _BI;
+
+
+        public double? V { get => _V; set
+            { 
+                _V = value;
+                OnPropertyChanged();
+                if (_Channel == SMUChannelType.A)
+                {
+                    AV = value;
+                }
+                else if (_Channel == SMUChannelType.B)
+                {
+                    BV = value; 
+                }
+            }
+        }
         private double? _V;
-        public double? I { get => _I; set { _I = value; OnPropertyChanged(); } }
+        public double? I { get => _I; set
+            { 
+                _I = value; 
+                OnPropertyChanged();
+                if (_Channel == SMUChannelType.A)
+                {
+                    AI = value;
+                }
+                else if (_Channel == SMUChannelType.B)
+                {
+                    BI = value;
+                }
+            } 
+        }
         private double? _I;
     }
 
