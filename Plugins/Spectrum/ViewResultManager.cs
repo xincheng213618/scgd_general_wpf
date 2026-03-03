@@ -142,7 +142,7 @@ namespace Spectrum
             //    {
             //        string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
             //        string regexPattern = $"[{Regex.Escape(invalidChars)}]";
-            //        string csvpath = Config.SavePathCsv + $"\\{Regex.Replace(kbItemMaster.Model, regexPattern, "")}_{kbItemMaster.CreateTime:yyyyMMdd}.csv";
+            //        string csvpath = Configs.SavePathCsv + $"\\{Regex.Replace(kbItemMaster.Model, regexPattern, "")}_{kbItemMaster.CreateTime:yyyyMMdd}.csv";
                     
             //        using var dialog = new System.Windows.Forms.SaveFileDialog();
             //        dialog.Filter = "CSV files (*.csv) | *.csv";

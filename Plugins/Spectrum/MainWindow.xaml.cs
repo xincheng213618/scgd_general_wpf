@@ -10,6 +10,7 @@ using cvColorVision;
 using log4net;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
+using OpenTK.Graphics.OpenGL;
 using ScottPlot;
 using ScottPlot.Plottables;
 using System.Collections.ObjectModel;
@@ -23,6 +24,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Spectrum
 {
@@ -192,8 +194,8 @@ namespace Spectrum
             {
                 Manager.Handle = Spectrometer.CM_CreateEmission(0, MyCallback);
 
-                int ncom = int.Parse(Manager.SzComName.Replace("COM", ""));
-                int iR = Spectrometer.CM_Emission_Init(SpectrometerHandle, ncom, Manager.BaudRate);
+                int ncom = int.Parse(Manager.Config.SzComName.Replace("COM", ""));
+                int iR = Spectrometer.CM_Emission_Init(SpectrometerHandle, ncom, Manager.Config.BaudRate);
                 log.Info($"CM_Emission_Init:{iR}");
                 if (iR == 1)
                 {
@@ -515,10 +517,10 @@ namespace Spectrum
             {
                 ret = Spectrometer.CM_Emission_GetData(SpectrometerHandle, 0, Manager.IntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
                 log.Info($"CM_Emission_GetData: {ret}");
-                if (ret == 0)
+                if (ret == -13007)
                 {
-                    await ReConnet();
-                    return;
+                    ret = Spectrometer.CM_Emission_GetData(SpectrometerHandle, 0, Manager.IntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
+                    log.Info($"CM_Emission_ReGetData: {ret}");
                 }
             }
             if (ret == 1)
@@ -539,10 +541,13 @@ namespace Spectrum
             }
             else
             {
-                MessageBox.Show("结果错误");
+                errornum++;
+                log.Info($"{ret} SA_GetSpectum 失败!");
             }
             IsRun = false;
         }
+
+        int errornum = 0;
 
         public async Task ReConnet()
         {
@@ -555,8 +560,12 @@ namespace Spectrum
                 log.Debug($"CM_ReleaseEmission {ret}");
                 await Task.Delay(200);
                 Manager.Handle = Spectrometer.CM_CreateEmission(0, MyCallback);
-                int ncom = int.Parse(Manager.SzComName.Replace("COM", ""));
-                int iR = Spectrometer.CM_Emission_Init(SpectrometerHandle, ncom, Manager.BaudRate);
+                int ncom = 0;
+                if (Manager.Config.IsComPort)
+                {
+                     ncom = int.Parse(Manager.Config.SzComName.Replace("COM", ""));
+                }
+                int iR = Spectrometer.CM_Emission_Init(SpectrometerHandle, ncom, Manager.Config.BaudRate);
                 log.Debug($"CM_Emission_Init:{iR}");
                 if (iR == 1)
                 {
@@ -626,6 +635,7 @@ namespace Spectrum
         {
             IsRun = false;
             isstartAuto = true;
+            errornum = 0;
             button6.Visibility = Visibility.Collapsed;
             button7.Visibility = Visibility.Visible;
             Task.Run(()=> LoopMeasure());
@@ -633,20 +643,21 @@ namespace Spectrum
         public async void LoopMeasure()
         {
             log.Info($"LoopMeasure Start All Count {Manager.MeasurementNum}");
-
             while (isstartAuto)
             {
                 if (Manager.MeasurementNum > 0)
                 {
                     if (Manager.LoopMeasureNum >= Manager.MeasurementNum)
                     {
-                        isstartAuto=false;
+
+                        isstartAuto = false;
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             button6.Visibility = Visibility.Visible;
                             button7.Visibility = Visibility.Collapsed;
                             Manager.LoopMeasureNum = 0;
-                            MessageBox.Show(Application.Current.MainWindow,"连续测试执行完毕");
+                            errornum = 0;
+                            MessageBox.Show(Application.Current.MainWindow, $"连续测试执行完毕,执行失败{errornum}");
                         });
                         break;
                     }
@@ -655,7 +666,6 @@ namespace Spectrum
                 await Measure();
                 await Task.Delay(Manager.MeasurementInterval);
             }
-
         }
 
         //停止连续测量
@@ -802,11 +812,6 @@ namespace Spectrum
         }
 
         bool isstartAuto;
-
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-        }
-
         private void Delete()
         {
             if (ViewResultList.SelectedItems.Count == ViewResultList.Items.Count)

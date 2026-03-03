@@ -4,7 +4,7 @@ using ColorVision.UI;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
-using Spectrum.Config;
+using Spectrum.Configs;
 using Spectrum.PropertyEditor;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -121,7 +121,7 @@ namespace Spectrum
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SpectrometerManager));
 
-        public static SpectrumConfig SpectrumConfig => ConfigService.Instance.GetRequiredService<SpectrumConfig>();
+        public SpectrumConfig Config => ConfigService.Instance.GetRequiredService<SpectrumConfig>();
 
         public static SpectrometerManager Instance => ConfigService.Instance.GetRequiredService<SpectrometerManager>();
 
@@ -211,7 +211,7 @@ namespace Spectrum
             EditNDConfigCommand = new RelayCommand(a => new PropertyEditorWindow(NDConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             ConnectNDCommand = new RelayCommand(a => ConnectND());
         }
-        public NDConfig NDConfig => SpectrumConfig.NDConfig;
+        public NDConfig NDConfig => Config.NDConfig;
 
         public RelayCommand EditNDConfigCommand { get; set; }
 
@@ -239,14 +239,17 @@ namespace Spectrum
         public void GetSpectrSerialNumber()
         {
             int i = 0;
-            if (int.TryParse(SzComName.Replace("COM", ""), out int z))
+
+            if (Config.IsComPort)
             {
-                i = z;
+                if (int.TryParse(Config.SzComName.Replace("COM", ""), out int z))
+                {
+                    i = z;
+                }
             }
             int bufferLength = 1024;
             StringBuilder stringBuilder = new StringBuilder(bufferLength);
-
-            int ret = Spectrometer.CM_Emission_GetAllSN((int)SpectrometerType, i, stringBuilder, bufferLength);
+            int ret = Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, i, stringBuilder, bufferLength);
             MessageBox1.Show(Application.Current.GetActiveWindow(), stringBuilder.ToString(), "Sprectrum");
         }
 
@@ -308,9 +311,14 @@ namespace Spectrum
 
         public void Connect()
         {
-            Handle = Spectrometer.CM_CreateEmission((int)SpectrometerType, MyCallback);
-            int ncom = int.Parse(SzComName.Replace("COM",""));
-            int iR = Spectrometer.CM_Emission_Init(Handle, ncom, BaudRate);
+            Handle = Spectrometer.CM_CreateEmission((int)Config.SpectrometerType, MyCallback);
+            int ncom = 0;
+            if (Config.IsComPort)
+            {
+                 ncom = int.Parse(Config.SzComName.Replace("COM", ""));
+
+            }
+            int iR = Spectrometer.CM_Emission_Init(Handle, ncom, Config.BaudRate);
             if (iR == 1)
             {
                 MessageBox.Show("连接成功");
@@ -330,15 +338,6 @@ namespace Spectrum
             }
             return -1;
         }
-
-        public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
-        private string _szComName = "COM1";
-
-        public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
-        private int _BaudRate = 115200;
-
-        public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); } }
-        private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
 
         public void GenerateAmplitude()  
         {

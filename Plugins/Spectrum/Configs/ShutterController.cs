@@ -6,7 +6,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Input;
 
-namespace Spectrum.Config
+namespace Spectrum.Configs
 {
     public class ShutterController : ViewModelBase, IDisposable
     {
@@ -113,7 +113,7 @@ namespace Spectrum.Config
                     string receiveBuffer = "";
 
                     // 3. 循环等待接收
-                    // 根据 Config.DelayTime 计算循环次数，例如 1000ms / 16ms ≈ 62次
+                    // 根据 Configs.DelayTime 计算循环次数，例如 1000ms / 16ms ≈ 62次
                     int maxLoops = (Config.DelayTime > 0 ? Config.DelayTime : 1000) / 16;
                     if (maxLoops < 10) maxLoops = 60; // 保底循环次数
 

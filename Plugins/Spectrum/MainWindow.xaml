@@ -57,31 +57,31 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <ScrollViewer Margin="0,0,0,5">
+                <ScrollViewer Margin="3,0,3,5">
                     <StackPanel x:Name="MainStackPanel">
-                        <Grid Margin="5">
+                        <Button Command="{Binding GetSpectrSerialNumberCommand}" Content="GetAllSN" Margin="0,0,0,5"  Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                        <Grid Margin="0,0,0,5">
                             <StackPanel>
                                 <StackPanel Grid.Row="0" Orientation="Horizontal" >
                                     <DockPanel >
-                                        <TextBlock Text="类型" VerticalAlignment="Center" Width="40" />
-                                        <ComboBox x:Name="ComboBoxSpectrometerType" Width="200"  Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding SpectrometerType}" SelectedValuePath="Key"  DisplayMemberPath="Value"/>
+                                        <ComboBox x:Name="ComboBoxSpectrometerType" Width="140"  Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Config.SpectrometerType}" SelectedValuePath="Key"  DisplayMemberPath="Value"/>
                                     </DockPanel>
+                                    <CheckBox Content="IsCom" IsChecked="{Binding Config.IsComPort}" Margin="10,0,0,0" VerticalAlignment="Center" />
                                 </StackPanel>
-                                <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+                                <StackPanel Margin="0,5,0,0" Orientation="Horizontal" Visibility="{Binding Config.IsComPort,Converter={StaticResource bool2VisibilityConverter}}">
                                     <DockPanel>
                                         <TextBlock Text="串口" VerticalAlignment="Center"  Width="40" />
-                                        <ComboBox  x:Name="ComboBoxPort" Style="{StaticResource ComboBox.Small}"  IsEditable="True" Text="{Binding SzComName}"  Width="80"   />
+                                        <ComboBox  x:Name="ComboBoxPort" Style="{StaticResource ComboBox.Small}"  IsEditable="True" Text="{Binding Config.SzComName}"  Width="80"   />
                                     </DockPanel>
                                     <DockPanel Margin="5,0,0,0">
                                         <TextBlock Text="波特率" VerticalAlignment="Center" Width="45" />
-                                        <ComboBox  x:Name="ComboBoxSerial" Style="{StaticResource ComboBox.Small}"  Width="70"   IsEditable="True" Text="{Binding BaudRate}" />
+                                        <ComboBox  x:Name="ComboBoxSerial" Style="{StaticResource ComboBox.Small}"  Width="70"   IsEditable="True" Text="{Binding Config.BaudRate}" />
                                     </DockPanel>
                                 </StackPanel>
                             </StackPanel>
                             <Button Content="{x:Static properties:Resources.连接光谱仪}" Click="Button_Click" HorizontalAlignment="Right" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter1}}" />
                             <Button x:Name="ButtonClose" Content="{x:Static properties:Resources.断开光谱仪}" Background="Red" Foreground="White" Click="ButtonClose_Click" HorizontalAlignment="Right" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}" />
                         </Grid>
-                        <Button Command="{Binding GetSpectrSerialNumberCommand}" Content="GetAllSN" Margin="5,0,0,5"  Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter1}}"/>
                         <DockPanel Margin="5,0,0,5">
                             <Button DockPanel.Dock="Right" Content="加载" Style="{StaticResource ButtonDefault.Small}" Margin="5,0,0,0" Command="{Binding LoadWavelengthFileCommand}" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}" />
                             <Button DockPanel.Dock="Right" Content="..." Style="{StaticResource ButtonDefault.Small}" Margin="5,0,0,0" Command="{Binding SetWavelengthFileCommand}"/>

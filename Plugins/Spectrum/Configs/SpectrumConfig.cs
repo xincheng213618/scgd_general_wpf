@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 
-namespace Spectrum.Config
+namespace Spectrum.Configs
 {
     public class ShutterConfig : ViewModelBase
     {
@@ -31,6 +31,18 @@ namespace Spectrum.Config
     public class SpectrumConfig : ViewModelBase, IConfig
     {
         public static SpectrumConfig Instance => ConfigService.Instance.GetRequiredService<SpectrumConfig>();
+        public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); } }
+        private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
+
+        public bool IsComPort { get => _IsComPort; set { _IsComPort = value; OnPropertyChanged(); } }   
+        private bool _IsComPort;
+
+        public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
+        private string _szComName = "COM1";
+
+        public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
+        private int _BaudRate = 115200;
+
 
 
         public ShutterConfig ShutterConfig { get => _ShutterConfig; set { _ShutterConfig = value; OnPropertyChanged(); } }
