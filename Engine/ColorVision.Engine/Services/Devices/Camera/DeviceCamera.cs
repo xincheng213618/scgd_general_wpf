@@ -285,7 +285,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 int bufferSize = 10240; // 10KB 缓冲区，视你相机的数量而定
                 StringBuilder sbJson = new StringBuilder(bufferSize);
 
-                int ret = cvCameraCSLib.CM_GetAllCameraIDMD5(sbJson, bufferSize);
+                int ret = cvCameraCSLib.CM_GetAllCameraIDMD5Ex(sbJson, bufferSize);
                 _isRefreshing = false;
                 // 回到UI线程
                 Application.Current.Dispatcher.Invoke(() =>

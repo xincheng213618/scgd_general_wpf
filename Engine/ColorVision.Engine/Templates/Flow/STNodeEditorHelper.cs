@@ -281,7 +281,7 @@ namespace ColorVision.Engine.Templates.Flow
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == cVAOICameraNode.DeviceCode);
                 if (reuslt?.PhyCamera != null)
                     AddStackPanel(name => cVAOICameraNode.CalibTempName = name, cVAOICameraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
-                AddStackPanel(name => cVAOICameraNode.AlgTempName = name, cVAOICameraNode.AlgTempName, "AOI", new TemplateOLEDAOI());
+                AddStackPanel(name => cVAOICameraNode.AlgTempName = name, cVAOICameraNode.AlgTempName, "亚像素灯珠检测", new TemplateLedCheck2());
 
             }
 
@@ -294,8 +294,8 @@ namespace ColorVision.Engine.Templates.Flow
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == cVAOI2CameraNode.DeviceCode);
                 if (reuslt?.PhyCamera != null)
                     AddStackPanel(name => cVAOI2CameraNode.CalibTempName = name, cVAOI2CameraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
+                AddStackPanel(name => cVAOI2CameraNode.AlgTempName = name, cVAOI2CameraNode.AlgTempName, "AOI", new TemplateOLEDAOI());
 
-                AddStackPanel(name => cVAOI2CameraNode.AlgTempName = name, cVAOI2CameraNode.AlgTempName, "亚像素灯珠检测", new TemplateLedCheck2());
             }
 
 

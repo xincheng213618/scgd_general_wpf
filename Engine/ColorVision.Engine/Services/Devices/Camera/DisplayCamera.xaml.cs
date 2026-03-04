@@ -42,6 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 {
     public class DisplayCameraConfig: IDisplayConfigBase
     {
+        private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCameraConfig));
         public double TakePictureDelay { get; set; }
         public int CalibrationTemplateIndex { get; set; }
         public int ExpTimeParamTemplateIndex { get; set; }
@@ -1078,9 +1079,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 int bufferSize = 10240; // 10KB 缓冲区，视你相机的数量而定
                 StringBuilder sbJson = new StringBuilder(bufferSize);
 
-                if (cvCameraCSLib.CM_GetAllCameraIDMD5(sbJson, bufferSize) ==1)
+                if (cvCameraCSLib.CM_GetAllCameraIDMD5Ex(sbJson, bufferSize) ==1)
                 {
                     string szText = sbJson.ToString();
+                    logger.Info(szText);
                     JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
 
                     if (jObject != null && jObject["CameraID"] != null && jObject["CameraModel"] != null)
