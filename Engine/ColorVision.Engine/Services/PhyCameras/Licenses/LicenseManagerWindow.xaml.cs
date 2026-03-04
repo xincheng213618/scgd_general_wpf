@@ -219,12 +219,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                 return;
             }
             _isRefreshing = true;
-            Task.Run(() =>
+            Task.Run((Action)(() =>
             {
                 int bufferLength = 1024;
                 StringBuilder snBuilder = new StringBuilder(bufferLength);
 
-                int ret = cvCameraCSLib.CM_GetAllCameraIDMD5Ex(snBuilder, bufferLength);
+                int ret = cvCameraCSLib.CM_GetAllCameraIDMD5(snBuilder, bufferLength);
                 _isRefreshing = true;
                 // 回到UI线程
                 Application.Current.Dispatcher.Invoke(() =>
@@ -240,7 +240,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                         MessageBox1.Show("获取相机ID MD5失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 });
-            });
+            }));
         }
         public int MyCallback(IntPtr strText, int nLen)
         {

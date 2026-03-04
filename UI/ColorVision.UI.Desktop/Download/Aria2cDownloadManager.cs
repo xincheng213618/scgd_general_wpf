@@ -382,15 +382,15 @@ namespace ColorVision.UI.Desktop.Download
             // If the configured port is in use, try to connect to an existing aria2c (orphan from previous session)
             if (IsPortInUse(_rpcPort))
             {
-                bool reused = await TryReuseExistingAria2cAsync();
-                if (reused)
-                {
-                    _reusingExistingAria2c = true;
-                    log.Info($"Reusing existing aria2c on port {_rpcPort}");
-                    UpdateServiceStatus();
-                    StartPolling();
-                    return;
-                }
+                //bool reused = await TryReuseExistingAria2cAsync();
+                //if (reused)
+                //{
+                //    _reusingExistingAria2c = true;
+                //    log.Info($"Reusing existing aria2c on port {_rpcPort}");
+                //    UpdateServiceStatus();
+                //    StartPolling();
+                //    return;
+                //}
 
                 // Could not reuse - kill any orphan aria2c processes on our port range, then find a new port
                 KillOrphanAria2cProcesses();

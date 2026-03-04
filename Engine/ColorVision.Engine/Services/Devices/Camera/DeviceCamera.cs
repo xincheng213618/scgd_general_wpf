@@ -280,12 +280,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
             // 异步执行，避免阻塞UI线程
-            Task.Run(() =>
+            Task.Run((Action)(() =>
             {
                 int bufferSize = 10240; // 10KB 缓冲区，视你相机的数量而定
                 StringBuilder sbJson = new StringBuilder(bufferSize);
 
-                int ret = cvCameraCSLib.CM_GetAllCameraIDMD5Ex(sbJson, bufferSize);
+                int ret = cvCameraCSLib.CM_GetAllCameraIDMD5(sbJson, bufferSize);
                 _isRefreshing = false;
                 // 回到UI线程
                 Application.Current.Dispatcher.Invoke(() =>
@@ -301,7 +301,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         MessageBox1.Show("获取相机ID MD5失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 });
-            });
+            }));
         }
 
         public override void Save()

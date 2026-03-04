@@ -26,7 +26,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -40,9 +39,8 @@ using System.Windows.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
-    public class DisplayCameraConfig: IDisplayConfigBase
+    public class DisplayCameraConfig : IDisplayConfigBase
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCameraConfig));
         public double TakePictureDelay { get; set; }
         public int CalibrationTemplateIndex { get; set; }
         public int ExpTimeParamTemplateIndex { get; set; }
@@ -106,7 +104,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
-    public partial class DisplayCamera : UserControl,IDisPlayControl,IDisposable
+    public partial class DisplayCamera : UserControl, IDisPlayControl, IDisposable
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCamera));
         public DeviceCamera Device { get; set; }
@@ -133,7 +131,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _timer.Interval = TimeSpan.FromMilliseconds(100);
             _timer.Tick += Timer_Tick;
             CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, GetData_Click, (s, e) => e.CanExecute = Device.DService.DeviceStatus == DeviceStatusType.Opened));
-            
+
             // Initialize video display components
             VideoConfig = ConfigService.Instance.GetRequiredService<VideoReaderConfig>();
             DVRectangleText = new DVRectangleText(VideoConfig.RectangleTextProperties);
@@ -179,16 +177,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ComboBoxHDRTemplate.DataContext = Device.DisplayConfig;
 
             CBFilp.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
-                                              select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
+                                 select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
             CBFilp1.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
-                                select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
+                                  select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
             CBFilp2.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
                                   select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
 
-            DService_DeviceStatusChanged(sender,DService.DeviceStatus);
+            DService_DeviceStatusChanged(sender, DService.DeviceStatus);
             DService.DeviceStatusChanged += DService_DeviceStatusChanged;
             this.ApplyChangedSelectedColor(DisPlayBorder);
             var vb = new Binding("DService.DeviceStatus")
@@ -288,10 +286,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
                 ButtonProgressBarOpen.Start();
-                ButtonProgressBarOpen.TargetTime = DisplayCameraConfig.OpenTime; 
-                ServicesHelper.SendCommand(button,msgRecord);
+                ButtonProgressBarOpen.TargetTime = DisplayCameraConfig.OpenTime;
+                ServicesHelper.SendCommand(button, msgRecord);
 
-                msgRecord.MsgRecordStateChanged += (s,e)=>
+                msgRecord.MsgRecordStateChanged += (s, e) =>
                 {
                     ButtonProgressBarOpen.Stop();
                     DisplayCameraConfig.OpenTime = ButtonProgressBarOpen.Elapsed;
@@ -485,13 +483,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ButtonProgressBarGetData.TargetTime = Device.DisplayConfig.ExpTime + DisplayCameraConfig.TakePictureDelay;
             logger.Info($"正在取图：ExpTime{Device.DisplayConfig.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
             Device.SetMsgRecordChanged(msgRecord);
-            msgRecord.MsgRecordStateChanged += (s,e) =>
+            msgRecord.MsgRecordStateChanged += (s, e) =>
             {
                 ButtonProgressBarGetData.Stop();
                 DisplayCameraConfig.TakePictureDelay = ButtonProgressBarGetData.Elapsed - Device.DisplayConfig.ExpTime;
                 if (e == MsgRecordState.Timeout)
                 {
-                    if (param.Id > 0 && Device?.PhyCamera?.DeviceCalibration ==null)
+                    if (param.Id > 0 && Device?.PhyCamera?.DeviceCalibration == null)
                     {
                         MessageBox1.Show("取图超时,是否为物理相机配置校正");
                     }
@@ -503,14 +501,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (e == MsgRecordState.Fail)
                 {
                     View.SearchAll();
-                    MessageBox.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn.Message + Environment.NewLine + "重启服务试试","ColorVisoin");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn.Message + Environment.NewLine + "重启服务试试", "ColorVisoin");
                 }
             };
             ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
 
         }
 
-        public MsgRecord? TakePhoto(double exp =0)
+        public MsgRecord? TakePhoto(double exp = 0)
         {
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return null;
 
@@ -546,7 +544,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return null;
 
-            return DService.GetData(expTime, param, autoExpTimeParam,HDRparamBase);
+            return DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
 
         }
 
@@ -563,7 +561,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return null;
 
-            return DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);       
+            return DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
         }
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
@@ -573,16 +571,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (ComboxAutoExpTimeParamTemplate.SelectedValue is AutoExpTimeParam param)
                 {
                     var msgRecord = DService.GetAutoExpTime(param);
-                    msgRecord.MsgRecordStateChanged += (s,e) =>
+                    msgRecord.MsgRecordStateChanged += (s, e) =>
                     {
                         if (e == MsgRecordState.Timeout)
                         {
                             MessageBox1.Show("自动曝光超时，请检查服务日志", "ColorVision");
-                        };
+                        }
+                        ;
                         if (e == MsgRecordState.Fail)
                         {
-                            MessageBox1.Show($"自动曝光失败，请检查服务日志{Environment.NewLine}{msgRecord.MsgReturn.Message}" , "ColorVision");
-                        };
+                            MessageBox1.Show($"自动曝光失败，请检查服务日志{Environment.NewLine}{msgRecord.MsgReturn.Message}", "ColorVision");
+                        }
+                        ;
                     };
                     ServicesHelper.SendCommand(button, msgRecord);
 
@@ -604,7 +604,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     if (port > 0)
                     {
                         MsgRecord msgRecord = DService.OpenVideo(host, port);
-                        msgRecord.MsgRecordStateChanged += (s,e) =>
+                        msgRecord.MsgRecordStateChanged += (s, e) =>
                         {
                             if (e == MsgRecordState.Fail)
                             {
@@ -642,7 +642,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (ComboxAutoFocus.SelectedValue is not AutoFocusParam param) return;
             MsgRecord msgRecord = DService.AutoFocus(param);
-            msgRecord.MsgRecordStateChanged += (s,e) =>
+            msgRecord.MsgRecordStateChanged += (s, e) =>
             {
                 if (e == MsgRecordState.Fail)
                 {
@@ -738,7 +738,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ButtonProgressBarClose.TargetTime = DisplayCameraConfig.CloseTime;
             if (msgRecord != null)
             {
-                msgRecord.MsgRecordStateChanged += (s,e)=>
+                msgRecord.MsgRecordStateChanged += (s, e) =>
                 {
                     if (e == MsgRecordState.Timeout)
                     {
@@ -812,7 +812,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void GetNDport_Click(object sender, RoutedEventArgs e)
         {
             MsgRecord msgRecord = DService.GetPort();
-            msgRecord.MsgRecordStateChanged += (s,e) =>
+            msgRecord.MsgRecordStateChanged += (s, e) =>
             {
                 if (e == MsgRecordState.Success)
                 {
@@ -829,7 +829,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public void Dispose()
         {
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
-            
+
             // Clean up video display resources
             Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
             _videoCancellationTokenSource?.Cancel();
@@ -843,7 +843,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (Device.DService.IsVideoOpen)
             {
                 MsgRecord msgRecord = DService.SetFlip();
-                msgRecord.MsgRecordStateChanged += (s,e) =>
+                msgRecord.MsgRecordStateChanged += (s, e) =>
                 {
                     if (e == MsgRecordState.Success)
                     {
@@ -879,10 +879,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         /// </summary>
         private bool NeedsHImageReallocation(int width, int height, int channels, int bpp)
         {
-            return _calculationHImage == null 
-                || _calculationHImage.Value.cols != width 
-                || _calculationHImage.Value.rows != height 
-                || _calculationHImage.Value.channels != channels 
+            return _calculationHImage == null
+                || _calculationHImage.Value.cols != width
+                || _calculationHImage.Value.rows != height
+                || _calculationHImage.Value.channels != channels
                 || _calculationHImage.Value.depth != bpp / 8;
         }
         ulong QHYCCDProcCallBackFunction(int enumImgType, IntPtr pData, int width, int height, int lss, int bpp, int channels, IntPtr buffer)
@@ -1047,7 +1047,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 _videoCancellationTokenSource?.Cancel();
                 _videoCancellationTokenSource?.Dispose();
                 _videoCancellationTokenSource = null;
-                
+
                 cvCameraCSLib.CM_UnregisterCallBack(m_hCamHandle);
                 cvCameraCSLib.CM_Close(m_hCamHandle);
                 button.Content = "LocalVideo";
@@ -1055,16 +1055,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 fpsTimer.Stop();
                 // Unsubscribe from pseudo-color changes
                 Device.View.ImageView.Config.PseudoChanged -= VideoConfig_PseudoChanged;
-                
+
                 // Cleanup visuals
                 if (_visualsAdded)
                 {
                     Device.View.ImageView.ImageShow.RemoveVisualCommand(DVRectangleText);
                     Device.View.ImageView.ImageShow.RemoveVisualCommand(DVText);
                     _visualsAdded = false;
-                } 
+                }
                 _calculationHImage = null;
-                
+
                 return;
             }
             logger.Info("初始化视频模式");
@@ -1076,36 +1076,24 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
                 cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
 
-                int bufferSize = 10240; // 10KB 缓冲区，视你相机的数量而定
-                StringBuilder sbJson = new StringBuilder(bufferSize);
-
-                if (cvCameraCSLib.CM_GetAllCameraIDMD5Ex(sbJson, bufferSize) ==1)
+                string szText = "";
+                if (cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
                 {
-                    string szText = sbJson.ToString();
-                    logger.Info(szText);
                     JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
 
-                    if (jObject != null && jObject["CameraID"] != null && jObject["CameraModel"] != null)
+                    if (jObject["ID"] != null)
                     {
-                        JToken[] cameraIds = jObject["CameraID"].ToArray();
-                        JToken[] md5Ids = jObject["MD5ID"]?.ToArray(); // 现在 C++ 直接返回了 MD5
-                        JToken[] cameraModels = jObject["CameraModel"].ToArray();
+                        JToken[] data = jObject["ID"].ToArray();
 
-                        for (int i = 0; i < cameraIds.Length; i++)
+                        for (int i = 0; i < data.Length; i++)
                         {
-                            string camerid = cameraIds[i].ToString().Trim();
-                            int cameraModel = cameraModels[i].Value<int>();
+                            string camerid = data[i].ToString();
 
-                            // 优先使用 C++ 返回的 MD5，如果没有则退化为 C# 计算（双重保险）
-                            string md5 = (md5Ids != null && i < md5Ids.Length)
-                                         ? md5Ids[i].ToString()
-                                         : ColorVision.Common.Utilities.Tool.GetMD5(camerid);
-                            // 5. 匹配配置文件中的 CameraCode 并设置选中项
-                            if (md5.ToUpper().Contains(Device.Config.CameraCode.ToUpper()))
+                            string MD5 = ColorVision.Common.Utilities.Tool.GetMD5(camerid);
+
+                            if (MD5.ToUpper().Contains(Device.Config.CameraCode))
                             {
                                 Device.Config.CameraID = camerid;
-                                cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, (CameraModel)cameraModel, Device.Config.CameraMode);
-
                             }
                         }
                     }
@@ -1135,7 +1123,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             IntPtr intPtrHandle = GCHandle.ToIntPtr(hander);
             callback = new cvCameraCSLib.QHYCCDProcCallBack(QHYCCDProcCallBackFunction);
             cvCameraCSLib.CM_SetCallBack(m_hCamHandle, callback, intPtrHandle);
-            
+
             // Initialize cancellation token for background tasks
             _videoCancellationTokenSource = new CancellationTokenSource();
 
@@ -1149,15 +1137,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 VideoConfig.IsUseCacheFile = true;
                 VideoConfig.IsCalArtculation = true;
             }
-            
+
             Device.View.ImageView.Config.PseudoChanged += VideoConfig_PseudoChanged;
-            
+
             button.Content = "Close Video";
             fpsTimer.Start();
             logger.Info("视频模式初始化结束");
             Device.DisplayConfig.IsLocalVideoOpen = true;
         }
-        
+
         private void VideoConfig_PseudoChanged(object? sender, EventArgs e)
         {
             if (Device.View.ImageView.Config.IsPseudo)
