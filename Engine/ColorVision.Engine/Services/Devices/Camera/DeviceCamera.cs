@@ -282,10 +282,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             // 异步执行，避免阻塞UI线程
             Task.Run(() =>
             {
-                int bufferLength = 1024;
-                StringBuilder snBuilder = new StringBuilder(bufferLength);
+                int bufferSize = 10240; // 10KB 缓冲区，视你相机的数量而定
+                StringBuilder sbJson = new StringBuilder(bufferSize);
 
-                int ret = cvCameraCSLib.GetAllCameraIDMD5(snBuilder, bufferLength);
+                int ret = cvCameraCSLib.CM_GetAllCameraIDMD5(sbJson, bufferSize);
                 _isRefreshing = false;
                 // 回到UI线程
                 Application.Current.Dispatcher.Invoke(() =>
@@ -293,7 +293,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     log.Info($"GetAllCameraIDMD5 返回值: {ret}");
                     if (ret == 1)
                     {
-                        string cameraIdsMd5 = snBuilder.ToString();
+                        string cameraIdsMd5 = sbJson.ToString();
                         MessageBox1.Show(cameraIdsMd5, "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                     else

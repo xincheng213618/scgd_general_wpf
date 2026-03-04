@@ -528,8 +528,9 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetAllCameraID", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int GetAllCameraID(StringBuilder sn, int len);
 
-        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetAllCameraIDMD5", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int GetAllCameraIDMD5(StringBuilder sn, int len);
+        [DllImport(LIBRARY_CVCAMERA, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        public static extern int CM_GetAllCameraIDMD5(StringBuilder jsonCfg, int strLen);
+
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetCameraIDV1",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private unsafe static extern int GetAllCameraIDV1(CameraModel eMdl, StringBuilder sn, int len);

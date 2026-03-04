@@ -224,7 +224,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Licenses
                 int bufferLength = 1024;
                 StringBuilder snBuilder = new StringBuilder(bufferLength);
 
-                int ret = cvCameraCSLib.GetAllCameraIDMD5(snBuilder, bufferLength);
+                int ret = cvCameraCSLib.CM_GetAllCameraIDMD5(snBuilder, bufferLength);
                 _isRefreshing = true;
                 // 回到UI线程
                 Application.Current.Dispatcher.Invoke(() =>

@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -1074,24 +1075,35 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 cvCameraCSLib.CM_InitXYZ(m_hCamHandle);
                 cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, Device.Config.CameraModel, Device.Config.CameraMode);
 
-                string szText = "";
-                if (cvCameraCSLib.GetAllCameraIDV1(Device.Config.CameraModel, ref szText))
+                int bufferSize = 10240; // 10KB 缓冲区，视你相机的数量而定
+                StringBuilder sbJson = new StringBuilder(bufferSize);
+
+                if (cvCameraCSLib.CM_GetAllCameraIDMD5(sbJson, bufferSize) ==1)
                 {
+                    string szText = sbJson.ToString();
                     JObject jObject = (JObject)JsonConvert.DeserializeObject(szText);
 
-                    if (jObject["ID"] != null)
+                    if (jObject != null && jObject["CameraID"] != null && jObject["CameraModel"] != null)
                     {
-                        JToken[] data = jObject["ID"].ToArray();
+                        JToken[] cameraIds = jObject["CameraID"].ToArray();
+                        JToken[] md5Ids = jObject["MD5ID"]?.ToArray(); // 现在 C++ 直接返回了 MD5
+                        JToken[] cameraModels = jObject["CameraModel"].ToArray();
 
-                        for (int i = 0; i < data.Length; i++)
+                        for (int i = 0; i < cameraIds.Length; i++)
                         {
-                            string camerid = data[i].ToString();
+                            string camerid = cameraIds[i].ToString().Trim();
+                            int cameraModel = cameraModels[i].Value<int>();
 
-                            string MD5 = ColorVision.Common.Utilities.Tool.GetMD5(camerid);
-
-                            if (MD5.ToUpper().Contains(Device.Config.CameraCode))
+                            // 优先使用 C++ 返回的 MD5，如果没有则退化为 C# 计算（双重保险）
+                            string md5 = (md5Ids != null && i < md5Ids.Length)
+                                         ? md5Ids[i].ToString()
+                                         : ColorVision.Common.Utilities.Tool.GetMD5(camerid);
+                            // 5. 匹配配置文件中的 CameraCode 并设置选中项
+                            if (md5.ToUpper().Contains(Device.Config.CameraCode.ToUpper()))
                             {
                                 Device.Config.CameraID = camerid;
+                                cvCameraCSLib.CM_SetCameraModel(m_hCamHandle, (CameraModel)cameraModel, Device.Config.CameraMode);
+
                             }
                         }
                     }
