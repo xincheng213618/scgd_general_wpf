@@ -19,10 +19,22 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public bool IsUseLimitSigned { get => _IsUseLimitSigned; set { _IsUseLimitSigned = value; OnPropertyChanged(); } }
         private bool _IsUseLimitSigned = true;
 
-        public double MeasureVal { get => _MeasureVal; set { _MeasureVal = value; OnPropertyChanged(); } }
+        public double MeasureVal { get => _MeasureVal; set { 
+                _MeasureVal = value; OnPropertyChanged();
+                if (_Channel == SMUChannelType.A)
+                    AMeasureVal = value;
+                else if (_Channel == SMUChannelType.B)
+                    BMeasureVal = value;
+            } }
         private double _MeasureVal = 5;
 
-        public double LmtVal { get => _lmtVal; set { _lmtVal = value; OnPropertyChanged(); } }
+        public double LmtVal { get => _lmtVal; set { 
+                _lmtVal = value; OnPropertyChanged();
+                if (_Channel == SMUChannelType.A)
+                    ALmtVal = value;
+                else if (_Channel == SMUChannelType.B)
+                    BLmtVal = value;
+            } }
         private double _lmtVal = 5;
 
 
@@ -46,12 +58,14 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 {
                     V = AV;
                     I = AI;
-
+                    MeasureVal = AMeasureVal;
+                    LmtVal = ALmtVal;
                 }else if (value == SMUChannelType.B)
                 {
                     V = BV;
                     I = BI;
-
+                    MeasureVal = BMeasureVal;
+                    LmtVal = BLmtVal;
                 }
             } }
         private SMUChannelType _Channel = SMUChannelType.A;
@@ -67,6 +81,16 @@ namespace ColorVision.Engine.Services.Devices.SMU
         private double? _BV;
         public double? BI { get => _BI; set { _BI = value; OnPropertyChanged(); } }
         private double? _BI;
+
+        public double AMeasureVal { get => _AMeasureVal; set { _AMeasureVal = value; OnPropertyChanged(); } }
+        private double _AMeasureVal = 5;
+        public double ALmtVal { get => _ALmtVal; set { _ALmtVal = value; OnPropertyChanged(); } }
+        private double _ALmtVal = 5;
+
+        public double BMeasureVal { get => _BMeasureVal; set { _BMeasureVal = value; OnPropertyChanged(); } }
+        private double _BMeasureVal = 5;
+        public double BLmtVal { get => _BLmtVal; set { _BLmtVal = value; OnPropertyChanged(); } }
+        private double _BLmtVal = 5;
 
 
         public double? V { get => _V; set
