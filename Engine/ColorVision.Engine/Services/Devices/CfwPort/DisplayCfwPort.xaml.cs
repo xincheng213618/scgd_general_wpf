@@ -101,11 +101,16 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             {
                 var msgRecord = DService.Open();
                 ServicesHelper.SendCommand(button, msgRecord);
+                IsRun = false;
                 msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
                     if (e == MsgRecordState.Fail)
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                    }
+                    else if (e == MsgRecordState.Success) 
+                    {
+                        ButtonClose.Visibility =Visibility.Visible;
                     }
                 };
             }
@@ -116,12 +121,17 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             if (sender is Button button)
             {
                 var msgRecord = DService.Clsoe();
+                IsRun = false;
                 ServicesHelper.SendCommand(button, msgRecord);
                 msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
                     if (e == MsgRecordState.Fail)
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                    }
+                    else if (e == MsgRecordState.Success)
+                    {
+                        ButtonOpen.Visibility = Visibility.Visible;
                     }
                 };
             }
@@ -130,9 +140,17 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         {
             if (sender is Button button && CombPort.SelectedValue is HoleMap holeMap)
             {
+                if (IsRun == true)
+                {
+                    MessageBox.Show("正在执行");
+                    return;
+                }
+
                 var msgRecord = DService.SetPort(holeMap.HoleIndex);
+                IsRun = true;
                 msgRecord.MsgRecordStateChanged += (s,e) =>
                 {
+                    IsRun = false;
                     if (e == MsgRecordState.Success)
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.Success, "ColorVision");
@@ -149,7 +167,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
-
+        bool IsRun;
         private void CameraOffline_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
@@ -168,7 +186,13 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 
         private void GetPort_Click(object sender, RoutedEventArgs e)
         {
+            if (IsRun == true)
+            {
+                MessageBox.Show("正在执行");
+                return;
+            }
             MsgRecord msgRecord = DService.GetPort();
+            IsRun = true;
             msgRecord.MsgRecordStateChanged += (s,e) =>
             {
                 if (e == MsgRecordState.Success)
