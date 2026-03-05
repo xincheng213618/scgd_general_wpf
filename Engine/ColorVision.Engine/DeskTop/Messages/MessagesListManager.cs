@@ -54,6 +54,37 @@ namespace ColorVision.Engine.DeskTop.Messages
 
         }
 
+        private bool _isListening;
+
+        public void StartListening()
+        {
+            if (!_isListening)
+            {
+                MsgRecordDataBaseHelper.Inserted += OnMsgRecordInserted;
+                _isListening = true;
+            }
+        }
+
+        public void StopListening()
+        {
+            if (_isListening)
+            {
+                MsgRecordDataBaseHelper.Inserted -= OnMsgRecordInserted;
+                _isListening = false;
+            }
+        }
+
+        private void OnMsgRecordInserted(object sender, MsgRecord item)
+        {
+            Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (Config.OrderByType == OrderByType.Desc)
+                    MsgRecords.Insert(0, item);
+                else
+                    MsgRecords.Add(item);
+            }));
+        }
+
         public void EditConfig()
         {
             new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
@@ -84,6 +115,7 @@ namespace ColorVision.Engine.DeskTop.Messages
 
         public void Dispose()
         {
+            StopListening();
             _db?.Dispose();
             GC.SuppressFinalize(this);
         }

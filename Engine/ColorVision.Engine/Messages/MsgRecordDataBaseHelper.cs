@@ -9,6 +9,8 @@ namespace ColorVision.Engine.Messages
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MsgRecordDataBaseHelper));
 
+        public static event EventHandler<MsgRecord> Inserted;
+
         public static void Insert(MsgRecord item)
         {
             MsgRecordManagerConfig msgRecordManagerConfig = ConfigService.Instance.GetRequiredService<MsgRecordManagerConfig>();
@@ -37,7 +39,9 @@ namespace ColorVision.Engine.Messages
             catch (Exception ex)
             {
                 log.Error(ex);
+                return;
             }
+            Inserted?.Invoke(null, item);
         }           
     }
 }
