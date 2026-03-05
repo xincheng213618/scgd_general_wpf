@@ -350,6 +350,7 @@ namespace Spectrum
                 MessageBox.Show("获取LightData失败");
                 return;
             }
+            log.Info($"IntTime{IntTime}CSFile: {CSFile},WavelengthFile{WavelengthFile},MaguideFileOutput{MaguideFileOutput}");
             bool ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, MaguideFileOutput);
             if (ret1)
             {
@@ -421,6 +422,7 @@ namespace Spectrum
 
         public float AutoIntTimeB { get => _AutoIntTimeB; set { _AutoIntTimeB = value; OnPropertyChanged(); } }
         private float _AutoIntTimeB = 1;
+
         public float IntTime { get => _IntTime; set { _IntTime = value; OnPropertyChanged(); } }
         private float _IntTime = 100;
 

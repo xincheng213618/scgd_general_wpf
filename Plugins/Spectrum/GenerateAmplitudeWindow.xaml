@@ -25,9 +25,9 @@
             </DockPanel>
 
             <DockPanel Margin="0,0,0,10">
-                <Button  DockPanel.Dock="Right" Content="选择" Margin="5,0,0,0"  Command="{Binding SetMaguideFileCommand}"/>
+                <Button  DockPanel.Dock="Right" Content="选择" Margin="5,0,0,0"  Command="{Binding SetMaguideOutputFileCommand}"/>
                 <TextBlock Text="幅值标定文件保存路径" VerticalAlignment="Center"  MinWidth="150"/>
-                <TextBox Text="{Binding MaguideFile}" />
+                <TextBox Text="{Binding MaguideFileOutput}" />
             </DockPanel>
             <DockPanel Margin="0,0,0,10">
                 <Button Content="生成幅值标定文件" Height="30" Command="{Binding GenerateAmplitudeCommand}" Margin="150,0,0,0"/>

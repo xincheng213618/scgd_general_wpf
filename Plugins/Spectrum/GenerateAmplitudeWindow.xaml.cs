@@ -17,9 +17,7 @@ namespace Spectrum
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            SpectrometerManager generateAmplitudeParam = new SpectrometerManager();
-            generateAmplitudeParam.Handle = SpectrometerHandle;
-            this.DataContext = generateAmplitudeParam;
+            this.DataContext = SpectrometerManager.Instance;
         }
     }
 }
