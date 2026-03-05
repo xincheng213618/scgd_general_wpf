@@ -55,6 +55,7 @@ namespace ColorVision.Engine.DeskTop.Messages
         {
             MsgRecordManager = MessagesListManager.GetInstance();
             MsgRecordManager.LoadAll();
+            MsgRecordManager.StartListening();
 
             this.DataContext = MsgRecordManager;
             MsgRecords = MsgRecordManager.MsgRecords;
@@ -62,6 +63,7 @@ namespace ColorVision.Engine.DeskTop.Messages
         }
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            MsgRecordManager.StopListening();
             MsgRecordManager.MsgRecords.Clear();
         }
 
