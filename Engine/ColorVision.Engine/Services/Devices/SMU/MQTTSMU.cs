@@ -67,13 +67,28 @@ namespace ColorVision.Engine.Services.Devices.SMU
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
                                     Device.View.AddViewResultSMU(viewResultSpectrum);
-                                    Device.DisplayConfig.I = model.IResult;
-                                    Device.DisplayConfig.V = model.VResult;
 
-                                    foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>())
+                                    if (model.ChannelType == SMUChannelType.A)
                                     {
-                                        item.DisplayConfig.V = Device.DisplayConfig.V ??0;
-                                        item.DisplayConfig.I = Device.DisplayConfig.I ?? 0;
+                                        Device.DisplayConfig.AV = model.VResult;
+                                        Device.DisplayConfig.AI = model.IResult;
+                                    }
+                                    else if (model.ChannelType == SMUChannelType.B)
+                                    {
+                                        Device.DisplayConfig.BV = model.VResult;
+                                        Device.DisplayConfig.BI = model.IResult;
+                                    }
+
+                                    if (model.ChannelType == Device.DisplayConfig.Channel)
+                                    {
+                                        Device.DisplayConfig.V = model.VResult;
+                                        Device.DisplayConfig.I = model.IResult;
+
+                                        foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>())
+                                        {
+                                            item.DisplayConfig.V = Device.DisplayConfig.V ?? 0;
+                                            item.DisplayConfig.I = Device.DisplayConfig.I ?? 0;
+                                        }
                                     }
                                 });
                             }
