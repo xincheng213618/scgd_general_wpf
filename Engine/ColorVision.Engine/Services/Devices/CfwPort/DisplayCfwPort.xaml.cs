@@ -100,7 +100,6 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             if (sender is Button button)
             {
                 var msgRecord = DService.Open();
-                ServicesHelper.SendCommand(button, msgRecord);
                 msgRecord.MsgRecordStateChanged += (s, e) =>
                 {
                     if (e == MsgRecordState.Fail)
@@ -116,7 +115,6 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             if (sender is Button button)
             {
                 var msgRecord = DService.Clsoe();
-                ServicesHelper.SendCommand(button, msgRecord);
                 msgRecord.MsgRecordStateChanged += (s, e) =>
                 {
                     if (e == MsgRecordState.Fail)
@@ -155,7 +153,6 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             if (sender is Button button)
             {
                 var msgRecord = DService.Open();
-                ServicesHelper.SendCommand(button, msgRecord);
                 msgRecord.MsgRecordStateChanged += (s, e) =>
                 {
                     if (e == MsgRecordState.Fail)
