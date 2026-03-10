@@ -194,6 +194,7 @@ namespace Spectrum
             if (currentA == 0)
             {
                 Eqe = 0;
+                OnPropertyChanged(nameof(Eqe));
                 return;
             }
 
@@ -215,20 +216,12 @@ namespace Spectrum
                 sum_P_times_Lambda += val * lambda_nm;
             }
 
-            double divisor = 1;
-            double K_constant = (fPlambda * divisor * step_nm * 1.0e-9) / (h * c);
+            double K_constant = (fPlambda * step_nm * 1.0e-9) / (h * c);
 
             double total_photons_per_sec = sum_P_times_Lambda * K_constant;
             double total_electrons_per_sec = currentA / q;
 
-            if (total_electrons_per_sec != 0)
-            {
-                Eqe = (total_photons_per_sec / total_electrons_per_sec);
-            }
-            else
-            {
-                Eqe = 0;
-            }
+            Eqe = (total_photons_per_sec / total_electrons_per_sec);
             OnPropertyChanged(nameof(Eqe));
         }
 
@@ -240,6 +233,10 @@ namespace Spectrum
             if (currentMA != 0 && fPL != null && fPL.Length > 0)
             {
                 CalculateEqe(currentMA / 1000f);
+            }
+            else
+            {
+                Eqe = 0;
             }
 
             LuminousFlux = fPh;

@@ -541,9 +541,9 @@ namespace Spectrum
                     if (MainWindowConfig.Instance.EqeEnabled && ViewResultSpectrums.Count > 0)
                     {
                         var latest = ViewResultManager.Config.OrderByType == SqlSugar.OrderByType.Desc
-                            ? ViewResultSpectrums.First()
-                            : ViewResultSpectrums.Last();
-                        latest.CalculateEqeParams(MainWindowConfig.Instance.EqeVoltage, MainWindowConfig.Instance.EqeCurrentMA);
+                            ? ViewResultSpectrums.FirstOrDefault()
+                            : ViewResultSpectrums.LastOrDefault();
+                        latest?.CalculateEqeParams(MainWindowConfig.Instance.EqeVoltage, MainWindowConfig.Instance.EqeCurrentMA);
                     }
                 });
             }
@@ -1050,6 +1050,7 @@ namespace Spectrum
         private void UpdateEqeColumnsVisibility(bool eqeEnabled)
         {
             EqePanel.Visibility = eqeEnabled ? Visibility.Visible : Visibility.Collapsed;
+            // double.NaN = auto-size (visible), 0 = hidden
             double width = eqeEnabled ? double.NaN : 0;
             ColEqe.Width = width;
             ColLuminousFlux.Width = width;
