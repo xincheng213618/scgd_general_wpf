@@ -177,6 +177,100 @@ namespace Spectrum
             Gen();
         }
 
+        // EQE properties
+        public double? Eqe { get; set; }
+
+        [DisplayName("光通量(lm)")]
+        public float? LuminousFlux { get; set; }
+
+        [DisplayName("辐射通量(W)")]
+        public double? RadiantFlux { get; set; }
+
+        [DisplayName("光效(lm/W)")]
+        public double? LuminousEfficacy { get; set; }
+
+        public void CalculateEqe(float currentA)
+        {
+            if (currentA == 0)
+            {
+                Eqe = 0;
+                return;
+            }
+
+            const double h = 6.62607015e-34;
+            const double c = 299792458.0;
+            const double q = 1.602176634e-19;
+            double step_nm = 1.0;
+            if (fPL.Length > 2000)
+            {
+                step_nm = 0.1;
+            }
+
+            double sum_P_times_Lambda = 0.0;
+
+            for (int i = 0; i < fPL.Length; i++)
+            {
+                double val = fPL[i];
+                double lambda_nm = 380.0 + step_nm * i;
+                sum_P_times_Lambda += val * lambda_nm;
+            }
+
+            double divisor = 1;
+            double K_constant = (fPlambda * divisor * step_nm * 1.0e-9) / (h * c);
+
+            double total_photons_per_sec = sum_P_times_Lambda * K_constant;
+            double total_electrons_per_sec = currentA / q;
+
+            if (total_electrons_per_sec != 0)
+            {
+                Eqe = (total_photons_per_sec / total_electrons_per_sec);
+            }
+            else
+            {
+                Eqe = 0;
+            }
+            OnPropertyChanged(nameof(Eqe));
+        }
+
+        public void CalculateEqeParams(float voltage, float currentMA)
+        {
+            V = voltage;
+            I = currentMA;
+
+            if (currentMA != 0 && fPL != null && fPL.Length > 0)
+            {
+                CalculateEqe(currentMA / 1000f);
+            }
+
+            LuminousFlux = fPh;
+
+            if (fPL != null && fPL.Length > 0)
+            {
+                double step_nm = fPL.Length > 2000 ? 0.1 : 1.0;
+                double sum_Power = 0.0;
+                for (int i = 0; i < fPL.Length; i++)
+                {
+                    double P_val = fPlambda * fPL[i];
+                    sum_Power += P_val;
+                }
+                RadiantFlux = sum_Power * step_nm;
+            }
+
+            if (V != 0 && I != 0)
+            {
+                double power_W = V * I / 1000.0;
+                if (power_W != 0)
+                {
+                    LuminousEfficacy = fPh / power_W;
+                }
+            }
+
+            OnPropertyChanged(nameof(Eqe));
+            OnPropertyChanged(nameof(LuminousFlux));
+            OnPropertyChanged(nameof(RadiantFlux));
+            OnPropertyChanged(nameof(LuminousEfficacy));
+        }
+
         public float V { get; set; }
         public float I { get; set; }
         /// <summary>
