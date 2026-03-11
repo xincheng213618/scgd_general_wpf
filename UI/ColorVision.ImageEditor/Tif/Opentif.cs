@@ -70,19 +70,36 @@ namespace ColorVision.ImageEditor.Tif
             // 从BitmapSource中读取像素数据
             bitmapSource.CopyPixels(floatPixels, width * 4, 0);
 
-
             // 创建一个新的16位整数数组来存储转换后的像素值
             ushort[] ushortPixels = new ushort[width * height];
 
-            // 将浮点值转换为0-65535范围的16位整数
+            // 1. 遍历一遍，找出实际的最大值和最小值
+            float min = float.MaxValue;
+            float max = float.MinValue;
             for (int i = 0; i < floatPixels.Length; i++)
             {
                 float v = floatPixels[i];
-                if (v < 0) v = 0; if (v > 1) v = 1;
-                ushortPixels[i] = (ushort)(v * 65535);
+                if (v < min) min = v;
+                if (v > max) max = v;
             }
+
+            // 计算极差，防止全纯色图导致除以0
+            float range = max - min;
+            if (range <= 0) range = 1f;
+
+            // 2. 将浮点值根据最大最小值动态映射到 0-65535 范围的16位整数
+            for (int i = 0; i < floatPixels.Length; i++)
+            {
+                // 归一化到 0.0 - 1.0 之间
+                float normalized = (floatPixels[i] - min) / range;
+
+                // 映射到 16 位整数 (0 - 65535)
+                ushortPixels[i] = (ushort)(normalized * 65535f);
+            }
+
             // 创建一个新的WriteableBitmap对象
             WriteableBitmap writeableBitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Gray16, null);
+
             // 写入像素数据
             int stride = width * 2; // 每行像素数据的字节数（16位，即2字节）
             writeableBitmap.WritePixels(new Int32Rect(0, 0, width, height), ushortPixels, stride, 0);
@@ -105,7 +122,7 @@ namespace ColorVision.ImageEditor.Tif
             WriteableBitmap? writeableBitmap = null;
             BitmapMetadata? metadata = null;
             BitmapSource source = null;
-           await Task.Run(() =>
+            await Task.Run(() =>
             {
                 try
                 {
@@ -140,17 +157,29 @@ namespace ColorVision.ImageEditor.Tif
                         }
 
                         source.Freeze();
-                        // 这里将处理过（或原始）的 source 转换为 WriteableBitmap
                     }
                 }
-                catch (Exception ex) 
+                catch (Exception ex)
                 {
                     return;
                 }
 
             });
 
-            writeableBitmap = new WriteableBitmap(source);
+            if (source == null) return;
+
+            // 【修改点】判断格式，应用转换
+            if (source.Format == PixelFormats.Gray32Float)
+            {
+                RenderOptions.SetBitmapScalingMode(context.DrawCanvas, BitmapScalingMode.NearestNeighbor);
+
+                writeableBitmap = ConvertGray32FloatToBitmapSource(source);
+            }
+            else
+            {
+                writeableBitmap = new WriteableBitmap(source);
+            }
+
             if (writeableBitmap == null) return;
 
             // Add image dimensions

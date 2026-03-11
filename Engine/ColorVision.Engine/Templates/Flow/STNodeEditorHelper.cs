@@ -42,6 +42,9 @@ using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.LEDStripDetectionV2;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.OLEDAOI;
+using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForBlackScreen;
+using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForQuardImg;
+using ColorVision.Engine.Templates.Jsons.OLEDAOI.FPForRePicGradingV2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using ColorVision.Engine.Templates.LedCheck;
@@ -423,6 +426,10 @@ namespace ColorVision.Engine.Templates.Flow
 
                 AddStackPanel(name => oledaoi.DeviceCode = name, oledaoi.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => oledaoi.TempName = name, oledaoi.TempName, "AOI", new TemplateOLEDAOI());
+
+                AddStackPanel(name => oledaoi.TempName = name, oledaoi.TempName, "缺陷检测V2", new TemplateFPForRePicGradingV2());
+                AddStackPanel(name => oledaoi.TempName = name, oledaoi.TempName, "亮点检测", new TemplateFPForQuardImg());
+                AddStackPanel(name => oledaoi.TempName = name, oledaoi.TempName, "黑画面检测", new TemplateFPForBlackScreen());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.AlgorithmARVRNode algorithmNode1)

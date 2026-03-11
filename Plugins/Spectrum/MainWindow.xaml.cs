@@ -171,6 +171,7 @@ namespace Spectrum
 
             this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1931; });
 
+            UpdateEqeColumnsVisibility(MainWindowConfig.Instance.EqeEnabled);
         }
 
         float fIntTime = 0;
@@ -537,6 +538,13 @@ namespace Spectrum
                 {
                     SprectrumModel sprectrumModel = new SprectrumModel() { ColorParam = cOLOR_PARA };
                     ViewResultManager.Save(sprectrumModel);
+                    if (MainWindowConfig.Instance.EqeEnabled && ViewResultSpectrums.Count > 0)
+                    {
+                        var latest = ViewResultManager.Config.OrderByType == SqlSugar.OrderByType.Desc
+                            ? ViewResultSpectrums.FirstOrDefault()
+                            : ViewResultSpectrums.LastOrDefault();
+                        latest?.CalculateEqeParams(MainWindowConfig.Instance.EqeVoltage, MainWindowConfig.Instance.EqeCurrentMA);
+                    }
                 });
             }
             else
@@ -942,7 +950,11 @@ namespace Spectrum
             {
                 DrawPlot();
                 listView2.ItemsSource = ViewResultSpectrums[listview.SelectedIndex].SpectralDatas;
-                DrawCIEPoinr(ViewResultSpectrums[listview.SelectedIndex].fx, ViewResultSpectrums[listview.SelectedIndex].fy, ViewResultSpectrums[listview.SelectedIndex].fu, ViewResultSpectrums[listview.SelectedIndex].fv);
+                if (MainWindowConfig.Instance.CiePointEnabled)
+                {
+                    DrawCIEPoinr(ViewResultSpectrums[listview.SelectedIndex].fx, ViewResultSpectrums[listview.SelectedIndex].fy, ViewResultSpectrums[listview.SelectedIndex].fu, ViewResultSpectrums[listview.SelectedIndex].fv);
+                    this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1931; });
+                }
             }
         }
 
@@ -1027,6 +1039,36 @@ namespace Spectrum
                 ViewResultList.SelectedIndex = 0;
             }
             ReDrawPlot();
+        }
+
+        private void EqeCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            bool isEnabled = EqeCheckBox.IsChecked == true;
+            UpdateEqeColumnsVisibility(isEnabled);
+        }
+
+        private void UpdateEqeColumnsVisibility(bool eqeEnabled)
+        {
+            EqePanel.Visibility = eqeEnabled ? Visibility.Visible : Visibility.Collapsed;
+            // double.NaN = auto-size (visible), 0 = hidden
+            double width = eqeEnabled ? double.NaN : 0;
+            ColEqe.Width = width;
+            ColLuminousFlux.Width = width;
+            ColRadiantFlux.Width = width;
+            ColLuminousEfficacy.Width = width;
+            ColVoltage.Width = width;
+            ColCurrent.Width = width;
+        }
+
+        private void CalculateEqe_Click(object sender, RoutedEventArgs e)
+        {
+            float voltage = MainWindowConfig.Instance.EqeVoltage;
+            float currentMA = MainWindowConfig.Instance.EqeCurrentMA;
+
+            foreach (var item in ViewResultSpectrums)
+            {
+                item.CalculateEqeParams(voltage, currentMA);
+            }
         }
 
         public void Dispose()
