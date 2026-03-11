@@ -118,7 +118,7 @@ namespace Spectrum
 
             };
             string[] portNames = SerialPort.GetPortNames();
-            List<int> BaudRates = new List<int>() { 115200, 38400, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 57600 };
+            List<int> BaudRates = new List<int>() { 9600,115200, 38400, 300, 600, 1200, 2400, 4800, 14400, 19200, 57600 };
             ComboBoxPort.ItemsSource = portNames;
             ComboBoxSerial.ItemsSource = BaudRates;
             ComboBoxNdPort.ItemsSource = portNames;

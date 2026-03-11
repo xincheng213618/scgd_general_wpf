@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 
         [DisplayName("BaudRate"), PropertyEditorType(typeof(TextBaudRatePropertiesEditor))]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
-        private int _BaudRate = 115200;
+        private int _BaudRate = 9600;
 
         [DisplayName("Timeout")]
         public int Timeout { get => _Timeout; set { _Timeout = value; OnPropertyChanged(); } }

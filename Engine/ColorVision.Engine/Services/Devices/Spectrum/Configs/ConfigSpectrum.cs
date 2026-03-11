@@ -222,7 +222,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         [PropertyEditorType(typeof(TextBaudRatePropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice), true)]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
-        private int _BaudRate = 115200;
+        private int _BaudRate = 9600;
 
         public bool EnableResetND { get => _EnableResetND; set { _EnableResetND = value; OnPropertyChanged(); } }
         private bool _EnableResetND;
