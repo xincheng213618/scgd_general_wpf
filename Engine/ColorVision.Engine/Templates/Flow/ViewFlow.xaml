@@ -57,7 +57,7 @@
                             </Button.Triggers>
                             <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"  ToolTip="{x:Static properties:Resources.Refresh}">
                                 <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform1" CenterX="15" CenterY="15"/>
+                                    <RotateTransform x:Name="rotateTransform1" CenterX="8" CenterY="8"/>
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Button>
@@ -76,7 +76,7 @@
                             </Button.Triggers>
                             <Image  Source="{DynamicResource DrawingImageFlow}">
                                 <Image.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform3" CenterX="15" CenterY="15"/>
+                                    <RotateTransform x:Name="rotateTransform3" CenterX="12" CenterY="12"/>
                                 </Image.RenderTransform>
                             </Image>
                         </Button>

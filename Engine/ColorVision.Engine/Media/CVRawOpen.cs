@@ -596,6 +596,8 @@ namespace ColorVision.Engine.Media
                             }
                             else
                             {
+                                //这里需要强制切换过来
+                                context.ImageView.ImageShow.Source = writeableBitmap;
                                 mat.Dispose();
                             }
                         }
