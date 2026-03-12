@@ -81,15 +81,19 @@ namespace ColorVision.Engine.Media
 
                     if (export.IsExportSrc)
                     {
-                        cvcie.SrcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.SrcFileName);
-                        if (File.Exists(cvcie.SrcFileName) && CVFileUtil.IsCIEFile(cvcie.SrcFileName))
+                        if (cvcie.SrcFileName != null)
                         {
-                            if (CVFileUtil.Read(cvcie.SrcFileName, out CVCIEFile cvraw))
+                            cvcie.SrcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.SrcFileName);
+                            if (File.Exists(cvcie.SrcFileName) && CVFileUtil.IsCIEFile(cvcie.SrcFileName))
                             {
-                                src = Mat.FromPixelData(cvraw.Cols, cvraw.Rows, MatType.MakeType(cvraw.Depth, cvraw.Channels), cvraw.Data);
-                                SaveTo(export, src, SavePath + "\\" + Name + "_Src.");
+                                if (CVFileUtil.Read(cvcie.SrcFileName, out CVCIEFile cvraw))
+                                {
+                                    src = Mat.FromPixelData(cvraw.Cols, cvraw.Rows, MatType.MakeType(cvraw.Depth, cvraw.Channels), cvraw.Data);
+                                    SaveTo(export, src, SavePath + "\\" + Name + "_Src.");
+                                }
                             }
                         }
+
                     }
                     if (CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index))
                     {
@@ -160,6 +164,7 @@ namespace ColorVision.Engine.Media
                         IsChannelOne = _CVCIEFile.Channels == 0;
                     }
                 }
+                _CVCIEFile = cVCIEFile;
 
             }
             else if (FileExtType == CVType.Raw)
