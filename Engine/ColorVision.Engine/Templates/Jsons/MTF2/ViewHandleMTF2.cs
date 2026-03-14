@@ -9,6 +9,7 @@ using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Solution.Editor.AvalonEditor;
 using log4net;
+using log4net.Repository.Hierarchy;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -62,6 +63,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
     public class MTFDetailViewReslut : IViewResult
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(TemplateInitializer));
         public DetailCommonModel DetailCommonModel { get; set; }
 
         public MTFDetailViewReslut()
@@ -78,7 +80,12 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
             if (File.Exists(ResultFileName))
             {
+                log.Info($"加载MTF结果文件: {ResultFileName}");
                 MTFResult = JsonConvert.DeserializeObject<MTFResult>(File.ReadAllText(ResultFileName));
+            }
+            else
+            {
+                log.Info($"找不到MTF结果文件: {ResultFileName}");
             }
 
         }
@@ -152,7 +159,9 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
                 List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
-                if (detailCommonModels.Count == 1)
+                log.Info($"查询到 {detailCommonModels.Count} 条 DetailCommonModel 记录，Pid={result.Id}");
+
+                if (detailCommonModels.Count > 1)
                 {
                     MTFDetailViewReslut mtfresult = new MTFDetailViewReslut(detailCommonModels[0]);
                     result.ViewResults.Add(mtfresult);
