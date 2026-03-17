@@ -636,7 +636,19 @@ ProcessManager.ActiveGroupChanged += (s, e) =>
 
 ---
 
-## 11. 开放问题
+## 11. 实施注意事项
+
+以下要点需在编码实施时注意:
+
+1. **属性变更通知**: 所有 setter 中应先检查值是否变化（`if (_field != value)`），避免冗余通知
+2. **ProcessMetas 空安全**: `ActiveGroup` 为 null 时 `ProcessMetas` 返回的空集合应为只读或每次新建，防止误修改
+3. **一键执行错误处理**: `RunAllAsync` 的每个步骤都需要完整的错误处理（超时、异常、取消），并在日志中包含流程名、步骤名、动作类型等诊断信息
+4. **RunTemplateAndWaitAsync**: 需要基于 `TaskCompletionSource` 实现，将 `FlowCompleted` 事件转换为 async/await 模式，包含超时处理
+5. **WaitForSwitchPGCompleted**: 同样使用 `TaskCompletionSource`，监听 `SwitchPGCompleted` 调用并转换为 awaitable
+6. **ActiveGroupIndex 边界检查**: setter 中需验证索引范围有效性
+7. **执行中锁定**: 流程执行期间禁止切换组，UI 上要有明确的禁用状态反馈
+
+## 12. 开放问题
 
 以下问题需要在确认设计时决定:
 
@@ -660,7 +672,7 @@ ProcessManager.ActiveGroupChanged += (s, e) =>
 
 ---
 
-## 12. 附录: 类图
+## 13. 附录: 类图
 
 ```
 ProcessManager (Singleton)
