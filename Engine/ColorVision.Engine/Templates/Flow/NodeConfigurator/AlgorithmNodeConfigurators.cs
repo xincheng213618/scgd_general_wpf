@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddImagePath(name => node.ImgFileName = name, node.ImgFileName);
             context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "寻找AA区", new TemplateAAFindPoints());
-            context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "发光区定位", new TemplateRoi());
+            context.AddTemplatePanel(name => node.TempName = name, node.TempName, "发光区定位", new TemplateRoi());
             context.AddTemplatePanel(name => node.TempName = name, node.TempName, "FocusPoints", new TemplateFocusPoints());
             context.AddTemplatePanel(name => node.SavePOITempName = name, node.SavePOITempName, "保存POI", new TemplatePoi());
         }
@@ -243,7 +243,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                         context.AddTemplatePanel(name => node.TempName = name, node.TempName, "发光区检测", new TemplateFocusPoints());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.发光区检测OLED:
-                        context.AddTemplateJsonPanel(name => node.TempName = name, node.TempName, "发光区检测OLED", new TemplateRoi());
+                        context.AddTemplatePanel(name => node.TempName = name, node.TempName, "发光区检测OLED", new TemplateRoi());
                         break;
                     case FlowEngineLib.Algorithm.AlgorithmType.JND:
                         context.AddTemplatePanel(name => node.TempName = name, node.TempName, "JND", new TemplateJND());

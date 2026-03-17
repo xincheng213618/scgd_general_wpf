@@ -166,7 +166,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
 
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
-                DisplayMemberPath = "Code",
+                DisplayMemberPath = "Name",
                 Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
             };
 
