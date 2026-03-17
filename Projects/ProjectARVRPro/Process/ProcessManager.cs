@@ -217,18 +217,7 @@ namespace ProjectARVRPro.Process
                     Process = newProc,
                     IsEnabled = meta.IsEnabled,
                     ConfigJson = meta.ConfigJson,
-                    InterStepAction = meta.InterStepAction != null ? new InterStepAction
-                    {
-                        IsEnabled = meta.InterStepAction.IsEnabled,
-                        ActionType = meta.InterStepAction.ActionType,
-                        Command = meta.InterStepAction.Command,
-                        ExpectedResponse = meta.InterStepAction.ExpectedResponse,
-                        TimeoutMs = meta.InterStepAction.TimeoutMs,
-                        Host = meta.InterStepAction.Host,
-                        Port = meta.InterStepAction.Port,
-                        SerialPortName = meta.InterStepAction.SerialPortName,
-                        BaudRate = meta.InterStepAction.BaudRate
-                    } : null
+                    InterStepAction = meta.InterStepAction?.Clone()
                 };
                 newGroup.ProcessMetas.Add(newMeta);
             }
@@ -421,13 +410,6 @@ namespace ProjectARVRPro.Process
                 else if (File.Exists(PersistFilePath))
                 {
                     MigrateFromOldFormat();
-                }
-                else
-                {
-                    // No data, create default group
-                    var defaultGroup = new ProcessGroup { Name = "Default" };
-                    ProcessGroups.Add(defaultGroup);
-                    _ActiveGroupIndex = 0;
                 }
 
                 // Ensure we have at least one group

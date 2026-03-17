@@ -1139,8 +1139,20 @@ namespace ProjectARVRPro
                     flowControl.Start(CurrentFlowResult.Code);
                     timer.Change(0, 500);
 
-                    // 等待流程完成
-                    FlowControlData flowResult = await tcs.Task;
+                    // 等待流程完成（带超时保护，默认10分钟）
+                    var timeoutTask = Task.Delay(TimeSpan.FromMinutes(10));
+                    var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+                    FlowControlData flowResult;
+                    if (completedTask == timeoutTask)
+                    {
+                        flowControl.FlowCompleted -= completedHandler;
+                        log.Error($"流程 {meta.Name} 执行超时(10min)");
+                        flowResult = new FlowControlData { EventName = "OverTime" };
+                    }
+                    else
+                    {
+                        flowResult = await tcs.Task;
+                    }
 
                     stopwatch.Stop();
                     timer.Change(Timeout.Infinite, 500);
@@ -1204,7 +1216,7 @@ namespace ProjectARVRPro
 
                     case InterStepActionType.SwitchPG:
                         SwitchPG();
-                        // 等待 SwitchPGCompleted 事件，但在一键模式下用延时代替
+                        // 使用延时等待外部PG切换完成（非事件驱动，基于超时近似）
                         await Task.Delay(action.TimeoutMs > 0 ? action.TimeoutMs : 5000);
                         return true;
 
@@ -1292,7 +1304,9 @@ namespace ProjectARVRPro
 
                 if (!string.IsNullOrEmpty(action.ExpectedResponse))
                 {
-                    await Task.Delay(200); // 等待设备响应
+                    // 等待串口设备响应
+                    int responseDelayMs = Math.Max(200, action.TimeoutMs / 10);
+                    await Task.Delay(responseDelayMs);
                     string response = port.ReadExisting();
                     log.Info($"串口步间指令应答: {response}");
                     if (!response.Contains(action.ExpectedResponse))

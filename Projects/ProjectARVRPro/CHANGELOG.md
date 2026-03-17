@@ -1,5 +1,34 @@
 # CHANGELOG
 
+## [1.2.0.0] 2026.03.17
+
+1. **ProcessGroup（流程组）功能：**
+   - 新增ProcessGroup概念，支持将ProcessMeta组织为不同的组
+   - 用户可切换不同的组来执行不同的测试方案（如不同产品）
+   - 支持组的添加、删除、重命名、复制操作
+   - 旧版ProcessMetas.json自动迁移为Default组，完全向后兼容
+
+2. **一键执行功能：**
+   - 新增"一键执行"按钮，可一键执行当前组所有启用的流程并解析结果
+   - 执行过程中自动管理异步等待、错误处理和超时
+   - 支持失败跳过（基于AllowTestFailures配置）
+
+3. **步间通信指令（InterStepAction）：**
+   - 支持在两个流程之间插入通信指令，触发外部设备切图后再执行下一步
+   - 支持Socket通信、串口通信、SwitchPG协议和延时四种类型
+   - 每个ProcessMeta可独立配置步间指令
+   - 在ProcessManagerWindow中可通过"编辑"按钮配置
+
+4. **Socket协议扩展：**
+   - 新增SwitchGroup事件，支持外部系统切换流程组
+   - 新增RunAll事件，支持外部系统触发一键执行
+   - 现有协议（ProjectARVRInit/SwitchPGCompleted/ProjectARVRResult）保持不变
+
+5. **UI增强：**
+   - ARVRWindow状态栏增加组选择器ComboBox
+   - ProcessManagerWindow增加组管理工具栏
+   - ProcessManagerWindow ListView增加步间指令编辑列
+
 ## [1.1.2.14] 2025.12.27
 
 1.修复一些BUG

@@ -92,5 +92,24 @@ namespace ProjectARVRPro.Process
         [DisplayName("波特率")]
         public int BaudRate { get => _BaudRate; set { if (_BaudRate != value) { _BaudRate = value; OnPropertyChanged(); } } }
         private int _BaudRate = 9600;
+
+        /// <summary>
+        /// 创建深拷贝
+        /// </summary>
+        public InterStepAction Clone()
+        {
+            return new InterStepAction
+            {
+                IsEnabled = IsEnabled,
+                ActionType = ActionType,
+                Command = Command,
+                ExpectedResponse = ExpectedResponse,
+                TimeoutMs = TimeoutMs,
+                Host = Host,
+                Port = Port,
+                SerialPortName = SerialPortName,
+                BaudRate = BaudRate
+            };
+        }
     }
 }
