@@ -7,5 +7,6 @@
         public string ProcessTypeFullName { get; set; }
         public bool IsEnabled { get; set; } = true;
         public string ConfigJson { get; set; }
+        public InterStepAction InterStepAction { get; set; }
     }
 }

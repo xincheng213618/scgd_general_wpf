@@ -260,6 +260,18 @@
             <StatusBarItem>
                 <Button Content="ProcessManager" Command="{Binding ProcessManager.EditCommand}"/>
             </StatusBarItem>
+            <StatusBarItem>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="当前组:" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                    <ComboBox x:Name="GroupSelector" ItemsSource="{Binding ProcessManager.ProcessGroups}" 
+                              DisplayMemberPath="Name"
+                              SelectedIndex="{Binding ProcessManager.ActiveGroupIndex}"
+                              Width="120" SelectionChanged="GroupSelector_SelectionChanged"/>
+                </StackPanel>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="▶ 一键执行" Click="RunAllClick" Background="#FF4CAF50" Foreground="White" FontWeight="Bold" Padding="10,2"/>
+            </StatusBarItem>
         </StatusBar>
 
     </Grid>

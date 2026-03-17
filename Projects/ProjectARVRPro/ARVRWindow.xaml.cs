@@ -24,6 +24,8 @@ using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Ports;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
 using System.Windows;
@@ -172,6 +174,7 @@ namespace ProjectARVRPro
         private void Window_Initialized(object sender, EventArgs e)
         {
             ProcessManager.GenStepBar(stepBar);
+            ProcessManager.ActiveGroupChanged += (s, ev) => ProcessManager.GenStepBar(stepBar);
             this.DataContext = ProjectARVRProConfig.Instance;
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
@@ -1015,6 +1018,299 @@ namespace ProjectARVRPro
                 e.Handled = true;
             }
         }
+
+        private void GroupSelector_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            ProcessManager.GenStepBar(stepBar);
+        }
+
+        private bool _isRunAllRunning;
+
+        private async void RunAllClick(object sender, RoutedEventArgs e)
+        {
+            await RunAllAsync();
+        }
+
+        /// <summary>
+        /// 一键执行当前组的所有启用的 ProcessMeta
+        /// </summary>
+        public async Task RunAllAsync()
+        {
+            if (_isRunAllRunning)
+            {
+                log.Info("一键执行已在运行中，忽略重复调用");
+                return;
+            }
+            if (flowControl.IsFlowRun)
+            {
+                log.Info("当前存在流程执行，无法一键执行");
+                return;
+            }
+
+            _isRunAllRunning = true;
+            try
+            {
+                InitTest(ProjectARVRProConfig.Instance.SN);
+
+                var enabledMetas = ProcessMetas.Where(m => m.IsEnabled).ToList();
+                log.Info($"一键执行开始，共 {enabledMetas.Count} 个启用的流程");
+
+                for (int i = 0; i < enabledMetas.Count; i++)
+                {
+                    ProcessMeta meta = enabledMetas[i];
+                    CurrentTestType = ProcessMetas.IndexOf(meta);
+                    ProjectConfig.StepIndex = CurrentTestType;
+
+                    log.Info($"一键执行 [{i + 1}/{enabledMetas.Count}]: {meta.Name} ({meta.FlowTemplate})");
+
+                    // 执行步间通信指令（如有配置）
+                    if (meta.InterStepAction != null && meta.InterStepAction.IsEnabled && meta.InterStepAction.ActionType != InterStepActionType.None)
+                    {
+                        log.Info($"执行步间通信指令: {meta.InterStepAction.ActionType}");
+                        bool actionResult = await ExecuteInterStepAction(meta.InterStepAction);
+                        if (!actionResult)
+                        {
+                            log.Error($"步间通信指令执行失败: {meta.Name}, ActionType={meta.InterStepAction.ActionType}");
+                            if (!ProjectARVRProConfig.Instance.AllowTestFailures)
+                                break;
+                            continue;
+                        }
+                    }
+
+                    // 设置流程模板
+                    var templateParam = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(meta.FlowTemplate));
+                    if (templateParam == null)
+                    {
+                        log.Error($"找不到流程模板: {meta.FlowTemplate}");
+                        continue;
+                    }
+                    FlowTemplate.SelectedValue = templateParam.Value;
+
+                    // 执行流程并等待完成
+                    var tcs = new TaskCompletionSource<FlowControlData>();
+                    void completedHandler(object? s, FlowControlData data)
+                    {
+                        flowControl.FlowCompleted -= completedHandler;
+                        tcs.TrySetResult(data);
+                    }
+
+                    // Reset state for this template run
+                    TryCount = 0;
+                    CurrentFlowResult = new ProjectARVRReuslt();
+                    CurrentFlowResult.SN = ProjectARVRProConfig.Instance.SN;
+                    CurrentFlowResult.Model = FlowTemplate.Text;
+                    CurrentFlowResult.TestType = CurrentTestType;
+                    ProjectARVRProConfig.Instance.StepIndex = CurrentTestType;
+
+                    FlowName = FlowTemplate.Text;
+                    string sn = ViewResultManager.Config.CodeUseSN ? ProjectARVRProConfig.Instance.SN + "_" : "";
+                    CurrentFlowResult.Code = sn + DateTime.Now.ToString(ViewResultManager.Config.CodeDateFormat);
+
+                    await Refresh();
+
+                    if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName()))
+                    {
+                        log.Info($"找不到完整流程 {meta.FlowTemplate}，跳过");
+                        continue;
+                    }
+
+                    if (!flowEngine.IsReady)
+                    {
+                        flowEngine.LoadFromBase64(string.Empty);
+                        await Refresh();
+                    }
+
+                    CurrentFlowResult.FlowStatus = FlowStatus.Ready;
+
+                    LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
+
+                    MeasureBatchModel measureBatchModel = new MeasureBatchModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code };
+                    using (var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true }))
+                    {
+                        int id = Db.Insertable(measureBatchModel).ExecuteReturnIdentity();
+                        CurrentFlowResult.BatchId = id;
+                    }
+
+                    await PreProcessing(FlowName, sn);
+
+                    flowControl.FlowCompleted += completedHandler;
+                    stopwatch.Reset();
+                    stopwatch.Start();
+                    flowControl.Start(CurrentFlowResult.Code);
+                    timer.Change(0, 500);
+
+                    // 等待流程完成
+                    FlowControlData flowResult = await tcs.Task;
+
+                    stopwatch.Stop();
+                    timer.Change(Timeout.Infinite, 500);
+                    FlowEngineConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
+                    log.Info($"流程 {meta.Name} 完成: {flowResult.EventName}, 耗时 {stopwatch.ElapsedMilliseconds}ms");
+
+                    CurrentFlowResult.RunTime = stopwatch.ElapsedMilliseconds;
+                    logTextBox.Text = FlowName + Environment.NewLine + flowResult.EventName;
+
+                    if (flowResult.EventName == "Completed")
+                    {
+                        CurrentFlowResult.Msg = "Completed";
+                        Processing(flowResult.SerialNumber);
+                    }
+                    else
+                    {
+                        CurrentFlowResult.FlowStatus = flowResult.EventName == "OverTime" ? FlowStatus.OverTime : FlowStatus.Failed;
+                        CurrentFlowResult.Msg = flowResult.Params ?? flowResult.EventName;
+                        ViewResultManager.Save(CurrentFlowResult);
+
+                        if (!ProjectARVRProConfig.Instance.AllowTestFailures)
+                        {
+                            log.Error($"流程 {meta.Name} 失败且不允许失败，终止一键执行");
+                            break;
+                        }
+                    }
+                }
+
+                log.Info($"一键执行完成, TotalResult={ObjectiveTestResult.TotalResult}");
+
+                // 如果有 Socket 连接，发送结果
+                if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
+                {
+                    TestCompleted();
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("一键执行异常", ex);
+            }
+            finally
+            {
+                _isRunAllRunning = false;
+            }
+        }
+
+        /// <summary>
+        /// 执行步间通信指令
+        /// </summary>
+        private async Task<bool> ExecuteInterStepAction(InterStepAction action)
+        {
+            try
+            {
+                switch (action.ActionType)
+                {
+                    case InterStepActionType.Socket:
+                        return await ExecuteSocketInterStepAction(action);
+
+                    case InterStepActionType.SerialPort:
+                        return await ExecuteSerialPortInterStepAction(action);
+
+                    case InterStepActionType.SwitchPG:
+                        SwitchPG();
+                        // 等待 SwitchPGCompleted 事件，但在一键模式下用延时代替
+                        await Task.Delay(action.TimeoutMs > 0 ? action.TimeoutMs : 5000);
+                        return true;
+
+                    case InterStepActionType.Delay:
+                        log.Info($"步间延时 {action.TimeoutMs}ms");
+                        await Task.Delay(action.TimeoutMs > 0 ? action.TimeoutMs : 1000);
+                        return true;
+
+                    default:
+                        return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error($"步间通信指令异常: {action.ActionType}", ex);
+                return false;
+            }
+        }
+
+        private async Task<bool> ExecuteSocketInterStepAction(InterStepAction action)
+        {
+            if (string.IsNullOrWhiteSpace(action.Host) || action.Port <= 0)
+            {
+                log.Error("Socket步间指令配置错误: 地址或端口无效");
+                return false;
+            }
+
+            try
+            {
+                using var client = new TcpClient();
+                await client.ConnectAsync(action.Host, action.Port);
+                using var stream = client.GetStream();
+                stream.ReadTimeout = action.TimeoutMs > 0 ? action.TimeoutMs : 5000;
+                stream.WriteTimeout = action.TimeoutMs > 0 ? action.TimeoutMs : 5000;
+
+                if (!string.IsNullOrEmpty(action.Command))
+                {
+                    byte[] data = Encoding.UTF8.GetBytes(action.Command);
+                    await stream.WriteAsync(data);
+                    log.Info($"Socket步间指令已发送: {action.Command}");
+                }
+
+                if (!string.IsNullOrEmpty(action.ExpectedResponse))
+                {
+                    byte[] buffer = new byte[4096];
+                    int bytesRead = await stream.ReadAsync(buffer);
+                    string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    log.Info($"Socket步间指令应答: {response}");
+                    if (!response.Contains(action.ExpectedResponse))
+                    {
+                        log.Warn($"Socket应答不匹配，期望包含: {action.ExpectedResponse}");
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Socket步间指令异常: {action.Host}:{action.Port}", ex);
+                return false;
+            }
+        }
+
+        private async Task<bool> ExecuteSerialPortInterStepAction(InterStepAction action)
+        {
+            if (string.IsNullOrWhiteSpace(action.SerialPortName))
+            {
+                log.Error("串口步间指令配置错误: 串口名称无效");
+                return false;
+            }
+
+            try
+            {
+                using var port = new SerialPort(action.SerialPortName, action.BaudRate > 0 ? action.BaudRate : 9600);
+                port.ReadTimeout = action.TimeoutMs > 0 ? action.TimeoutMs : 5000;
+                port.WriteTimeout = action.TimeoutMs > 0 ? action.TimeoutMs : 5000;
+                port.Open();
+
+                if (!string.IsNullOrEmpty(action.Command))
+                {
+                    port.Write(action.Command);
+                    log.Info($"串口步间指令已发送: {action.Command}");
+                }
+
+                if (!string.IsNullOrEmpty(action.ExpectedResponse))
+                {
+                    await Task.Delay(200); // 等待设备响应
+                    string response = port.ReadExisting();
+                    log.Info($"串口步间指令应答: {response}");
+                    if (!response.Contains(action.ExpectedResponse))
+                    {
+                        log.Warn($"串口应答不匹配，期望包含: {action.ExpectedResponse}");
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Error($"串口步间指令异常: {action.SerialPortName}", ex);
+                return false;
+            }
+        }
+
         public void Dispose()
         {
             flowControl.Stop();
