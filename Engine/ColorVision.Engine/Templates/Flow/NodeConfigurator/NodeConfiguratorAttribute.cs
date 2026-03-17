@@ -39,20 +39,18 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
 
     public static class NodeConfiguratorRegistry
     {
-        private static ConcurrentDictionary<Type, INodeConfigurator> _configurators;
+        private static readonly Lazy<ConcurrentDictionary<Type, INodeConfigurator>> _configurators = new(InitializeConfigurators);
 
         public static INodeConfigurator? GetConfigurator(Type nodeType)
         {
-            EnsureInitialized();
-            if (_configurators.TryGetValue(nodeType, out var configurator))
+            if (_configurators.Value.TryGetValue(nodeType, out var configurator))
                 return configurator;
             return null;
         }
 
-        private static void EnsureInitialized()
+        private static ConcurrentDictionary<Type, INodeConfigurator> InitializeConfigurators()
         {
-            if (_configurators != null) return;
-            _configurators = new ConcurrentDictionary<Type, INodeConfigurator>();
+            var dict = new ConcurrentDictionary<Type, INodeConfigurator>();
 
             var assemblies = AssemblyHandler.Instance.GetAssemblies();
             foreach (var assembly in assemblies)
@@ -68,10 +66,11 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
                     var attr = type.GetCustomAttribute<NodeConfiguratorAttribute>();
                     if (attr != null && Activator.CreateInstance(type) is INodeConfigurator configurator)
                     {
-                        _configurators[attr.NodeType] = configurator;
+                        dict[attr.NodeType] = configurator;
                     }
                 }
             }
+            return dict;
         }
     }
 

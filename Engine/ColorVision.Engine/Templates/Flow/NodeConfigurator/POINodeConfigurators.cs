@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Templates.Flow.NodeConfigurator
             var node = (FlowEngineLib.Node.POI.RealPOINode)context.Node;
             context.AddDevicePanel(name => node.DeviceCode = name, node.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
             context.AddTemplatePanel(name => node.FilterTemplateName = name, node.FilterTemplateName, "POI过滤", new TemplatePoiFilterParam());
-            context.AddTemplatePanel(name => node.ReviseTemplateName = name, node.OutputTemplateName, "POI修正", new TemplatePoiReviseParam());
+            context.AddTemplatePanel(name => node.ReviseTemplateName = name, node.ReviseTemplateName, "POI修正", new TemplatePoiReviseParam());
             context.AddTemplatePanel(name => node.OutputTemplateName = name, node.OutputTemplateName, "文件输出模板", new TemplatePoiOutputParam());
         }
     }
