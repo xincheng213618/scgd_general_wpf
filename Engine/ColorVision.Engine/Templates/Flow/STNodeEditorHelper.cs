@@ -799,7 +799,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
-                DisplayMemberPath = "Code",
+                DisplayMemberPath = "Name",
                 Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
             };
 
