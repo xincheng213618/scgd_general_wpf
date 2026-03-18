@@ -111,7 +111,7 @@
                             <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  IsChecked="{Binding Config.IsPseudo}" Margin="0,0,0,2" >
                                 <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Margin="-5"/>
                             </ToggleButton>
-                            <ToggleButton x:Name="AutoSetRange" Click="AutoSetRange_Click" IsChecked="{Binding Config.IsAutoSetRange}" Margin="0,0,0,2" Visibility="{Binding Config.IsPseudo,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="Auto Range" FontSize="9" Padding="3" Content="A" />
+                            <ToggleButton x:Name="AutoSetRange" Click="AutoSetRange_Click" IsChecked="{Binding Config.IsAutoSetRange}" Margin="0,0,0,2" Visibility="{Binding Config.IsPseudo,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="Auto Range" FontSize="9" Padding="3" Content="A" HorizontalAlignment="Stretch" />
                             <Grid  Height="200"  Visibility="{Binding Config.IsPseudo,Converter={StaticResource bool2VisibilityConverter}}">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
