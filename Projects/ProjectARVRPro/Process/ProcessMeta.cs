@@ -40,6 +40,12 @@ namespace ProjectARVRPro.Process
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged(); } }
         private bool _IsEnabled = true;
 
+        /// <summary>
+        /// 执行此流程前的步间通信指令（可选）
+        /// </summary>
+        public InterStepAction InterStepAction { get => _InterStepAction; set { _InterStepAction = value; OnPropertyChanged(); } }
+        private InterStepAction _InterStepAction;
+
         public string ProcessTypeName => Process?.GetType().Name ?? string.Empty;
         public string ProcessTypeFullName => Process?.GetType().FullName ?? string.Empty;
 
