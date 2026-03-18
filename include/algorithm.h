@@ -50,6 +50,8 @@ int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointC
 /// <returns></returns>
 int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types);
 
+int pseudoColorAutoRange(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types, uint dataMin, uint dataMax);
+
 /// <summary>
 ///�Զ��Աȶȵ���
 /// </summary>

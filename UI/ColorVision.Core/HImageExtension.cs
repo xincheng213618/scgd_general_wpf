@@ -107,32 +107,42 @@ namespace ColorVision.Core
         {
             if (imageSource is not WriteableBitmap writeableBitmap) return false;
 
-            // 1. Validation (Fast, on UI thread)
-            if (!FormatInfoMap.TryGetValue(writeableBitmap.Format, out var formatInfo) ||
-                hImage.channels != formatInfo.channels ||
-                hImage.depth != formatInfo.depth)
+            bool isValid = false;
+            IntPtr backBuffer = IntPtr.Zero;
+            int backBufferStride = 0;
+
+            // 提前提取 HImage 的数据，避免后续跨线程问题
+            int rows = hImage.rows;
+            int cols = hImage.cols;
+            int channels = hImage.channels;
+            int depth = hImage.depth;
+            int bytesPerRow = cols * channels * (depth / 8);
+            int srcStride = hImage.stride;
+            IntPtr srcData = hImage.pData;
+
+            // 1. Validation & Lock (必须在 UI 线程)
+            // 无论此方法从哪个线程被调用，都能保证安全跑到主线程验证和上锁
+            writeableBitmap.Dispatcher.Invoke(() =>
             {
-                return false;
-            }
+                if (FormatInfoMap.TryGetValue(writeableBitmap.Format, out var formatInfo) &&
+                    channels == formatInfo.channels &&
+                    depth == formatInfo.depth &&
+                    writeableBitmap.PixelHeight == rows &&
+                    writeableBitmap.PixelWidth == cols)
+                {
+                    isValid = true;
+                    writeableBitmap.Lock();
+                    // 提取指针和步长供后台线程使用
+                    backBuffer = writeableBitmap.BackBuffer;
+                    backBufferStride = writeableBitmap.BackBufferStride;
+                }
+            });
 
-            if (writeableBitmap.PixelHeight != hImage.rows || writeableBitmap.PixelWidth != hImage.cols)
-                return false;
-
-            // 2. Lock Buffer (Must be on UI Thread)
-            writeableBitmap.Lock();
+            if (!isValid) return false;
 
             try
             {
-                // Capture pointers and dimensions for background thread
-                IntPtr backBuffer = writeableBitmap.BackBuffer;
-                int backBufferStride = writeableBitmap.BackBufferStride;
-                IntPtr srcData = hImage.pData;
-                int srcStride = hImage.stride;
-                int rows = hImage.rows;
-                int bytesPerRow = hImage.cols * hImage.channels * (hImage.depth / 8);
-
-                // 3. Heavy Lifting (Background Thread)
-                // Parallel copy reduces time from ~35ms to ~8ms for 9000x4000
+                // 2. Heavy Lifting (在后台线程执行内存拷贝，释放 UI 线程)
                 await Task.Run(() =>
                 {
                     unsafe
@@ -155,34 +165,35 @@ namespace ColorVision.Core
                         }
                         else
                         {
-                            byte* src = (byte*)hImage.pData;
-                            byte* dst = (byte*)writeableBitmap.BackBuffer;
+                            // 【修复点】：使用提取好的指针变量，千万不要在这里访问 writeableBitmap
+                            byte* src = (byte*)srcData;
+                            byte* dst = (byte*)backBuffer;
 
-                            for (int y = 0; y < hImage.rows; y++)
+                            for (int y = 0; y < rows; y++)
                             {
-                                RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
-                                src += hImage.stride;
-                                dst += writeableBitmap.BackBufferStride;
+                                RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)bytesPerRow);
+                                src += srcStride;
+                                dst += backBufferStride; // 使用提取的 backBufferStride
                             }
                         }
                     }
                 });
-
-                // 4. Mark Dirty (Must be on UI Thread)
-                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, hImage.cols, hImage.rows));
             }
             finally
             {
-                // 5. Unlock (Must be on UI Thread)
-                writeableBitmap.Unlock();
+                // 3. Mark Dirty and Unlock (必须回到 UI 线程执行)
+                writeableBitmap.Dispatcher.Invoke(() =>
+                {
+                    writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, cols, rows));
+                    writeableBitmap.Unlock();
+                });
 
-                // Dispose HImage as requested in original code
+                // 释放 HImage 资源
                 hImage.Dispose();
             }
 
             return true;
         }
-
 
         public static async Task<WriteableBitmap> ToWriteableBitmapAsync(this HImage hImage, double DpiX = 96, double DpiY = 96)
         {
