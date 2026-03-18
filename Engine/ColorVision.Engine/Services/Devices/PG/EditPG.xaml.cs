@@ -44,6 +44,8 @@ namespace ColorVision.Engine.Services.Devices.PG
 
             Device.DService.ReLoadCategoryLib();
 
+            CH341_Stream_SpeedComboBox.ItemsSource = Enum.GetValues(typeof(CH341_Stream_Speed));
+
             pgCategory.SelectionChanged += (s, e) =>
             {
                 if (pgCategory.SelectedIndex == 4)
@@ -54,9 +56,13 @@ namespace ColorVision.Engine.Services.Devices.PG
 
                     TextBlockPGIP.Text = "串口id";
                     TextBlockPGPort.Text = "设备地址";
+
+                    CH341_Stream_SpeedDock.Visibility = Visibility.Visible;
+
                 }
                 else
                 {
+                    CH341_Stream_SpeedDock.Visibility = Visibility.Collapsed;
                     RegisterAddressDockPanel.Visibility = Visibility.Collapsed;
                 }
             };
