@@ -83,6 +83,31 @@ namespace ProjectARVRPro.Process
             RefreshConfigPanels();
         }
 
+        private void GroupComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Rebind the ListView when group changes
+            RefreshConfigPanels();
+        }
+
+        private void EditInterStepAction_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is ProcessMeta meta)
+            {
+                if (meta.InterStepAction == null)
+                {
+                    meta.InterStepAction = new InterStepAction();
+                }
+
+                var editor = new PropertyEditorWindow(meta.InterStepAction)
+                {
+                    Title = $"步间通信指令 - {meta.Name}",
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                editor.ShowDialog();
+            }
+        }
+
         private void RefreshConfigPanels()
         {
             // Clear all panels

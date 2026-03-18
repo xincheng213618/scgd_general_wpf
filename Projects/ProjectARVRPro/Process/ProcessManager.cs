@@ -18,8 +18,10 @@ namespace ProjectARVRPro.Process
     {
         private static readonly ILog log = LogManager.GetLogger(nameof(ProcessManager));
         private const string PersistFileName = "ProcessMetas.json";
-        private static string PersistDirectory => ViewResultManager.DirectoryPath; // 复用配置目录
+        private const string GroupPersistFileName = "ProcessGroups.json";
+        private static string PersistDirectory => ViewResultManager.DirectoryPath;
         private static string PersistFilePath => Path.Combine(PersistDirectory, PersistFileName);
+        private static string GroupPersistFilePath => Path.Combine(PersistDirectory, GroupPersistFileName);
 
         private static ProcessManager _instance;
         private static readonly object _locker = new();
@@ -27,7 +29,55 @@ namespace ProjectARVRPro.Process
 
         public ObservableCollection<IProcess> Processes { get; } = new ObservableCollection<IProcess>();
 
-        public ObservableCollection<ProcessMeta> ProcessMetas { get; } = new ObservableCollection<ProcessMeta>();
+        /// <summary>
+        /// 所有流程组
+        /// </summary>
+        public ObservableCollection<ProcessGroup> ProcessGroups { get; } = new ObservableCollection<ProcessGroup>();
+
+        /// <summary>
+        /// 当前激活的组索引
+        /// </summary>
+        public int ActiveGroupIndex
+        {
+            get => _ActiveGroupIndex;
+            set
+            {
+                if (value < 0 || (ProcessGroups.Count > 0 && value >= ProcessGroups.Count))
+                    return;
+                if (_ActiveGroupIndex != value)
+                {
+                    // Unhook old group events
+                    UnhookProcessMetasEvents();
+                    _ActiveGroupIndex = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(ActiveGroup));
+                    OnPropertyChanged(nameof(ProcessMetas));
+                    // Hook new group events
+                    HookProcessMetasEvents();
+                    ActiveGroupChanged?.Invoke(this, EventArgs.Empty);
+                    SavePersistedGroups();
+                }
+            }
+        }
+        private int _ActiveGroupIndex;
+
+        /// <summary>
+        /// 当前激活组
+        /// </summary>
+        [JsonIgnore]
+        public ProcessGroup ActiveGroup => (ProcessGroups.Count > 0 && _ActiveGroupIndex >= 0 && _ActiveGroupIndex < ProcessGroups.Count)
+            ? ProcessGroups[_ActiveGroupIndex] : null;
+
+        /// <summary>
+        /// 当前组的 ProcessMetas（兼容属性，与 ActiveGroup.ProcessMetas 同步）
+        /// </summary>
+        public ObservableCollection<ProcessMeta> ProcessMetas => ActiveGroup?.ProcessMetas ?? _emptyMetas;
+        private static readonly ObservableCollection<ProcessMeta> _emptyMetas = new();
+
+        /// <summary>
+        /// 组切换事件
+        /// </summary>
+        public event EventHandler ActiveGroupChanged;
 
         public ObservableCollection<TemplateModel<FlowParam>> templateModels { get; set; } = TemplateFlow.Params;
 
@@ -58,18 +108,151 @@ namespace ProjectARVRPro.Process
         public RelayCommand MoveUpCommand { get; set; }
         public RelayCommand MoveDownCommand { get; set; }
 
+        // Group management commands
+        public RelayCommand AddGroupCommand { get; set; }
+        public RelayCommand RemoveGroupCommand { get; set; }
+        public RelayCommand RenameGroupCommand { get; set; }
+        public RelayCommand DuplicateGroupCommand { get; set; }
+
+        /// <summary>
+        /// 新组名称（UI绑定）
+        /// </summary>
+        public string NewGroupName { get => _NewGroupName; set { _NewGroupName = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); } }
+        private string _NewGroupName;
+
         public ProcessManager()
         {
             LoadProcesses();
-            ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged;
             EditCommand = new RelayCommand(a => Edit());
             AddMetaCommand = new RelayCommand(a => AddMeta(), a => CanAddMeta());
             RemoveMetaCommand = new RelayCommand(a => RemoveMeta(), a => SelectedProcessMeta != null);
             UpdateMetaCommand = new RelayCommand(a => UpdateMeta(), a => CanUpdateMeta());
             MoveUpCommand = new RelayCommand(a => MoveUp(), a => CanMoveUp());
             MoveDownCommand = new RelayCommand(a => MoveDown(), a => CanMoveDown());
-            LoadPersistedMetas();
+
+            AddGroupCommand = new RelayCommand(a => AddGroup(), a => !string.IsNullOrWhiteSpace(NewGroupName));
+            RemoveGroupCommand = new RelayCommand(a => RemoveGroup(), a => ProcessGroups.Count > 1);
+            RenameGroupCommand = new RelayCommand(a => RenameGroup(), a => ActiveGroup != null && !string.IsNullOrWhiteSpace(NewGroupName));
+            DuplicateGroupCommand = new RelayCommand(a => DuplicateGroup(), a => ActiveGroup != null);
+
+            LoadPersistedGroups();
         }
+
+        #region Group Management
+
+        private void AddGroup()
+        {
+            if (string.IsNullOrWhiteSpace(NewGroupName)) return;
+            if (ProcessGroups.Any(g => g.Name.Equals(NewGroupName, StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "组名重复", "ColorVision");
+                return;
+            }
+            var group = new ProcessGroup { Name = NewGroupName };
+            ProcessGroups.Add(group);
+            ActiveGroupIndex = ProcessGroups.Count - 1;
+            NewGroupName = string.Empty;
+            SavePersistedGroups();
+        }
+
+        private void RemoveGroup()
+        {
+            if (ProcessGroups.Count <= 1)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "至少保留一个组", "ColorVision");
+                return;
+            }
+            if (ActiveGroup == null) return;
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"确定要删除组 \"{ActiveGroup.Name}\" 吗？", "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+                return;
+
+            UnhookProcessMetasEvents();
+            int idx = _ActiveGroupIndex;
+            ProcessGroups.RemoveAt(idx);
+            _ActiveGroupIndex = Math.Min(idx, ProcessGroups.Count - 1);
+            OnPropertyChanged(nameof(ActiveGroupIndex));
+            OnPropertyChanged(nameof(ActiveGroup));
+            OnPropertyChanged(nameof(ProcessMetas));
+            HookProcessMetasEvents();
+            ActiveGroupChanged?.Invoke(this, EventArgs.Empty);
+            SavePersistedGroups();
+        }
+
+        private void RenameGroup()
+        {
+            if (ActiveGroup == null || string.IsNullOrWhiteSpace(NewGroupName)) return;
+            if (ProcessGroups.Any(g => g != ActiveGroup && g.Name.Equals(NewGroupName, StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "组名重复", "ColorVision");
+                return;
+            }
+            ActiveGroup.Name = NewGroupName;
+            NewGroupName = string.Empty;
+            SavePersistedGroups();
+        }
+
+        private void DuplicateGroup()
+        {
+            if (ActiveGroup == null) return;
+            string baseName = ActiveGroup.Name + "_Copy";
+            string newName = baseName;
+            int counter = 1;
+            while (ProcessGroups.Any(g => g.Name.Equals(newName, StringComparison.OrdinalIgnoreCase)))
+            {
+                newName = $"{baseName}_{counter++}";
+            }
+
+            var newGroup = new ProcessGroup { Name = newName };
+            foreach (var meta in ActiveGroup.ProcessMetas)
+            {
+                var newProc = meta.Process?.CreateInstance();
+                if (newProc != null && !string.IsNullOrEmpty(meta.ConfigJson))
+                {
+                    newProc.SetProcessConfig(meta.ConfigJson);
+                }
+                var newMeta = new ProcessMeta
+                {
+                    Name = meta.Name,
+                    FlowTemplate = meta.FlowTemplate,
+                    Process = newProc,
+                    IsEnabled = meta.IsEnabled,
+                    ConfigJson = meta.ConfigJson,
+                    InterStepAction = meta.InterStepAction?.Clone()
+                };
+                newGroup.ProcessMetas.Add(newMeta);
+            }
+            ProcessGroups.Add(newGroup);
+            ActiveGroupIndex = ProcessGroups.Count - 1;
+            SavePersistedGroups();
+        }
+
+        #endregion
+
+        #region ProcessMeta Events
+
+        private void HookProcessMetasEvents()
+        {
+            var metas = ActiveGroup?.ProcessMetas;
+            if (metas == null) return;
+            metas.CollectionChanged += ProcessMetas_CollectionChanged;
+            foreach (var meta in metas)
+            {
+                meta.PropertyChanged += Meta_PropertyChanged;
+            }
+        }
+
+        private void UnhookProcessMetasEvents()
+        {
+            var metas = ActiveGroup?.ProcessMetas;
+            if (metas == null) return;
+            metas.CollectionChanged -= ProcessMetas_CollectionChanged;
+            foreach (var meta in metas)
+            {
+                meta.PropertyChanged -= Meta_PropertyChanged;
+            }
+        }
+
+        #endregion
 
         private void LoadProcesses()
         {
@@ -108,13 +291,12 @@ namespace ProjectARVRPro.Process
                     meta.PropertyChanged -= Meta_PropertyChanged;
                 }
             }
-            SavePersistedMetas();
+            SavePersistedGroups();
         }
 
         private void Meta_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            // 任意属性变更即持久化，避免频繁：可加节流，这里简单实现
-            SavePersistedMetas();
+            SavePersistedGroups();
         }
 
         public void Edit()
@@ -126,7 +308,7 @@ namespace ProjectARVRPro.Process
 
         private bool CanAddMeta()
         {
-            return !string.IsNullOrWhiteSpace(NewMetaName) && SelectedTemplate != null && SelectedProcess != null;
+            return !string.IsNullOrWhiteSpace(NewMetaName) && SelectedTemplate != null && SelectedProcess != null && ActiveGroup != null;
         }
 
         private void AddMeta()
@@ -137,7 +319,6 @@ namespace ProjectARVRPro.Process
                 MessageBox.Show(Application.Current.GetActiveWindow(), "名称重复", "ColorVision");
                 return;
             }
-            // Create a new instance of the process to ensure independent config
             var newProcessInstance = SelectedProcess.CreateInstance();
             ProcessMetas.Add(new ProcessMeta
             {
@@ -161,7 +342,6 @@ namespace ProjectARVRPro.Process
         {
             if (SelectedProcessMeta != null)
             {
-                // Populate update fields when a ProcessMeta is selected
                 UpdateTemplate = templateModels.FirstOrDefault(t => t.Key == SelectedProcessMeta.FlowTemplate);
                 UpdateProcess = Processes.FirstOrDefault(p => p.GetType().FullName == SelectedProcessMeta.Process?.GetType().FullName);
             }
@@ -176,13 +356,10 @@ namespace ProjectARVRPro.Process
         {
             if (!CanUpdateMeta()) return;
             
-            // Update the selected ProcessMeta with new values
             SelectedProcessMeta.FlowTemplate = UpdateTemplate.Key;
             
-            // Create a new instance of the process to ensure independent config
             var newProcessInstance = UpdateProcess.CreateInstance();
             
-            // If the same process type, preserve the existing config
             if (SelectedProcessMeta.Process?.GetType().FullName == newProcessInstance.GetType().FullName 
                 && !string.IsNullOrEmpty(SelectedProcessMeta.ConfigJson))
             {
@@ -216,84 +393,159 @@ namespace ProjectARVRPro.Process
             ProcessMetas.Move(index, index + 1);
         }
 
-        private void LoadPersistedMetas()
+        #region Persistence
+
+        private void LoadPersistedGroups()
         {
             try
             {
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
-                if (!File.Exists(PersistFilePath)) return;
-                string json = File.ReadAllText(PersistFilePath);
-                var list = JsonConvert.DeserializeObject<List<ProcessMetaPersist>>(json) ?? new List<ProcessMetaPersist>();
-                ProcessMetas.CollectionChanged -= ProcessMetas_CollectionChanged; // 暂停事件
-                foreach (var item in list)
+
+                // Try new format first
+                if (File.Exists(GroupPersistFilePath))
                 {
-                    IProcess templateProc = Processes.FirstOrDefault(p => p.GetType().FullName == item.ProcessTypeFullName);
-                    if (templateProc == null)
-                    {
-                        // 尝试反射创建
-                        try
-                        {
-                            var t = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).FirstOrDefault(x => x.FullName == item.ProcessTypeFullName && typeof(IProcess).IsAssignableFrom(x));
-                            if (t != null)
-                            {
-                                templateProc = Activator.CreateInstance(t) as IProcess;
-                                if (templateProc != null && !Processes.Any(p => p.GetType().FullName == templateProc.GetType().FullName))
-                                    Processes.Add(templateProc);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Warn($"无法实例化进程类型 {item.ProcessTypeFullName}: {ex.Message}");
-                        }
-                    }
-                    
-                    // Create a new instance for each meta to ensure independent config
-                    IProcess proc = templateProc?.CreateInstance();
-                    
-                    ProcessMeta meta = new ProcessMeta() 
-                    { 
-                        Name = item.Name, 
-                        FlowTemplate = item.FlowTemplate, 
-                        Process = proc, 
-                        IsEnabled = item.IsEnabled,
-                        ConfigJson = item.ConfigJson
-                    };
-                    
-                    // Apply the stored config to the process
-                    meta.ApplyConfig();
-                    
-                    meta.PropertyChanged += Meta_PropertyChanged;
-                    ProcessMetas.Add(meta);
+                    LoadFromGroupsFile();
                 }
-                ProcessMetas.CollectionChanged += ProcessMetas_CollectionChanged; // 恢复事件
+                // Fall back to old format (auto-migrate)
+                else if (File.Exists(PersistFilePath))
+                {
+                    MigrateFromOldFormat();
+                }
+
+                // Ensure we have at least one group
+                if (ProcessGroups.Count == 0)
+                {
+                    ProcessGroups.Add(new ProcessGroup { Name = "Default" });
+                    _ActiveGroupIndex = 0;
+                }
+
+                OnPropertyChanged(nameof(ActiveGroupIndex));
+                OnPropertyChanged(nameof(ActiveGroup));
+                OnPropertyChanged(nameof(ProcessMetas));
+                HookProcessMetasEvents();
             }
             catch (Exception ex)
             {
-                log.Error("加载ProcessMetas失败", ex);
+                log.Error("加载ProcessGroups失败", ex);
             }
         }
 
-        private void SavePersistedMetas()
+        private void LoadFromGroupsFile()
+        {
+            string json = File.ReadAllText(GroupPersistFilePath);
+            var root = JsonConvert.DeserializeObject<ProcessGroupsRoot>(json);
+            if (root == null || root.Groups == null || root.Groups.Count == 0)
+            {
+                ProcessGroups.Add(new ProcessGroup { Name = "Default" });
+                _ActiveGroupIndex = 0;
+                return;
+            }
+
+            foreach (var gp in root.Groups)
+            {
+                var group = new ProcessGroup { Name = gp.Name };
+                foreach (var item in gp.Metas)
+                {
+                    var meta = DeserializeProcessMeta(item);
+                    group.ProcessMetas.Add(meta);
+                }
+                ProcessGroups.Add(group);
+            }
+
+            _ActiveGroupIndex = Math.Max(0, Math.Min(root.ActiveGroupIndex, ProcessGroups.Count - 1));
+        }
+
+        private void MigrateFromOldFormat()
+        {
+            log.Info("检测到旧格式 ProcessMetas.json，自动迁移到 ProcessGroups.json");
+            string json = File.ReadAllText(PersistFilePath);
+            var list = JsonConvert.DeserializeObject<List<ProcessMetaPersist>>(json) ?? new List<ProcessMetaPersist>();
+
+            var defaultGroup = new ProcessGroup { Name = "Default" };
+            foreach (var item in list)
+            {
+                var meta = DeserializeProcessMeta(item);
+                defaultGroup.ProcessMetas.Add(meta);
+            }
+            ProcessGroups.Add(defaultGroup);
+            _ActiveGroupIndex = 0;
+
+            // Save in new format
+            SavePersistedGroups();
+        }
+
+        private ProcessMeta DeserializeProcessMeta(ProcessMetaPersist item)
+        {
+            IProcess templateProc = Processes.FirstOrDefault(p => p.GetType().FullName == item.ProcessTypeFullName);
+            if (templateProc == null)
+            {
+                try
+                {
+                    var t = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).FirstOrDefault(x => x.FullName == item.ProcessTypeFullName && typeof(IProcess).IsAssignableFrom(x));
+                    if (t != null)
+                    {
+                        templateProc = Activator.CreateInstance(t) as IProcess;
+                        if (templateProc != null && !Processes.Any(p => p.GetType().FullName == templateProc.GetType().FullName))
+                            Processes.Add(templateProc);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log.Warn($"无法实例化进程类型 {item.ProcessTypeFullName}: {ex.Message}");
+                }
+            }
+
+            IProcess proc = templateProc?.CreateInstance();
+
+            ProcessMeta meta = new ProcessMeta()
+            {
+                Name = item.Name,
+                FlowTemplate = item.FlowTemplate,
+                Process = proc,
+                IsEnabled = item.IsEnabled,
+                ConfigJson = item.ConfigJson,
+                InterStepAction = item.InterStepAction
+            };
+
+            meta.ApplyConfig();
+            return meta;
+        }
+
+        private void SavePersistedGroups()
         {
             try
             {
                 if (!Directory.Exists(PersistDirectory)) Directory.CreateDirectory(PersistDirectory);
-                var list = ProcessMetas.Select(m => new ProcessMetaPersist
+
+                var root = new ProcessGroupsRoot
                 {
-                    Name = m.Name,
-                    FlowTemplate = m.FlowTemplate,
-                    ProcessTypeFullName = m.Process?.GetType().FullName,
-                    IsEnabled = m.IsEnabled,
-                    ConfigJson = m.ConfigJson
-                }).ToList();
-                string json = JsonConvert.SerializeObject(list, Formatting.Indented);
-                File.WriteAllText(PersistFilePath, json);
+                    Version = 1,
+                    ActiveGroupIndex = _ActiveGroupIndex,
+                    Groups = ProcessGroups.Select(g => new ProcessGroupPersist
+                    {
+                        Name = g.Name,
+                        Metas = g.ProcessMetas.Select(m => new ProcessMetaPersist
+                        {
+                            Name = m.Name,
+                            FlowTemplate = m.FlowTemplate,
+                            ProcessTypeFullName = m.Process?.GetType().FullName,
+                            IsEnabled = m.IsEnabled,
+                            ConfigJson = m.ConfigJson,
+                            InterStepAction = m.InterStepAction
+                        }).ToList()
+                    }).ToList()
+                };
+
+                string json = JsonConvert.SerializeObject(root, Formatting.Indented);
+                File.WriteAllText(GroupPersistFilePath, json);
             }
             catch (Exception ex)
             {
-                log.Error("保存ProcessMetas失败", ex);
+                log.Error("保存ProcessGroups失败", ex);
             }
         }
+
+        #endregion
 
         public void GenStepBar(HandyControl.Controls.StepBar stepBar)
         {
