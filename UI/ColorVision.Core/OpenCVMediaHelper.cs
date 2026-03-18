@@ -63,6 +63,18 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_PseudoColor(HImage image, out HImage hImage, uint min, uint max, ColormapTypes colormapTypes ,int channel);
 
+        /// <summary>
+        /// 伪彩色（自动范围模式）：使用 dataMin/dataMax 映射并拉伸颜色映射表
+        /// </summary>
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_PseudoColorAutoRange(HImage image, out HImage hImage, uint min, uint max, ColormapTypes colormapTypes, int channel, uint dataMin, uint dataMax);
+
+        /// <summary>
+        /// 从图像数据中获取最小最大值
+        /// </summary>
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_GetMinMax(HImage image, out uint outMin, out uint outMax, int channel);
+
 
 
         /// <summary>

@@ -435,7 +435,24 @@ int extractChannel(cv::Mat& input, cv::Mat& dst ,int channel)
 
 void GetOptimizedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& outLut)
 {
-    // Generate the full 0-255 colormap
+    cv::Mat range(1, 256, CV_8U);
+    std::iota(range.ptr<uint8_t>(), range.ptr<uint8_t>() + 256, 0);
+
+    cv::applyColorMap(range, outLut, mapType);
+
+    cv::Vec3b* ptr = outLut.ptr<cv::Vec3b>();
+
+    if (minTh > 0) {
+        std::memset(ptr, 0, std::min(minTh, 256) * 3);
+    }
+
+    for (int i = std::max(maxTh + 1, 0); i < 256; i++) {
+        ptr[i] = cv::Vec3b(255, 255, 255);
+    }
+}
+
+void GetStretchedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& outLut)
+{
     cv::Mat range(1, 256, CV_8U);
     std::iota(range.ptr<uint8_t>(), range.ptr<uint8_t>() + 256, 0);
 
@@ -443,7 +460,6 @@ void GetOptimizedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& o
     cv::applyColorMap(range, fullColormap, mapType);
     const cv::Vec3b* cmPtr = fullColormap.ptr<cv::Vec3b>();
 
-    // Build output LUT: stretch the colormap across [minTh, maxTh]
     outLut.create(1, 256, CV_8UC3);
     cv::Vec3b* ptr = outLut.ptr<cv::Vec3b>();
 
@@ -457,7 +473,6 @@ void GetOptimizedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& o
             ptr[i] = cv::Vec3b(255, 255, 255);
         }
         else {
-            // Map [minTh, maxTh] to [0, 255] in the colormap
             int cmIdx = (rangeSize > 0) ? (int)((double)(i - minTh) / rangeSize * 255.0) : 128;
             cmIdx = std::clamp(cmIdx, 0, 255);
             ptr[i] = cmPtr[cmIdx];
@@ -465,44 +480,10 @@ void GetOptimizedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& o
     }
 }
 
-int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
+static void applyLUT(const cv::Mat& image, const cv::Mat& lut, cv::Mat& result)
 {
-    if (image.empty()) return -1;
-
-    // 转灰度
-    if (image.channels() > 1) {
-        cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
-    }
-
-    // 处理深度
-    switch (image.depth()) {
-    case CV_16U:
-    {
-        // Map [min1, max1] to [0, 255] for full pseudo-color resolution
-        double scale = (max1 > min1) ? 255.0 / (max1 - min1) : 1.0;
-        double offset = -((double)min1) * scale;
-        image.convertTo(image, CV_8U, scale, offset);
-        min1 = 0;
-        max1 = 255;
-        break;
-    }
-    case CV_32F:
-    case CV_64F:
-        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
-        min1 = 0;
-        max1 = 255;
-        break;
-    }
-
-    min1 = std::min(min1, 255u);
-    max1 = std::min(max1, 255u);
-
-    cv::Mat customLut;
-    GetOptimizedLUT(types, (int)min1, (int)max1, customLut);
-
-    // OpenMP 并行
-    cv::Mat result(image.rows, image.cols, CV_8UC3);
-    const cv::Vec3b* lutPtr = customLut.ptr<cv::Vec3b>();
+    result.create(image.rows, image.cols, CV_8UC3);
+    const cv::Vec3b* lutPtr = lut.ptr<cv::Vec3b>();
 
     cv::parallel_for_(cv::Range(0, image.rows), [&](const cv::Range& range) {
         for (int y = range.start; y < range.end; y++) {
@@ -512,7 +493,82 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
                 dstRow[x] = lutPtr[srcRow[x]];
             }
         }
-        });
+    });
+}
+
+int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
+{
+    if (image.empty()) return -1;
+
+    if (image.channels() > 1) {
+        cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
+    }
+
+    switch (image.depth()) {
+    case CV_16U:
+        min1 >>= 8;
+        max1 >>= 8;
+        image.convertTo(image, CV_8U, 1.0 / 257.0);
+        break;
+    case CV_32F:
+    case CV_64F:
+        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
+        break;
+    }
+
+    min1 = std::min(min1, 255u);
+    max1 = std::min(max1, 255u);
+
+    cv::Mat customLut;
+    GetOptimizedLUT(types, (int)min1, (int)max1, customLut);
+
+    cv::Mat result;
+    applyLUT(image, customLut, result);
+    image = std::move(result);
+    return 0;
+}
+
+int pseudoColorAutoRange(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types, uint dataMin, uint dataMax)
+{
+    if (image.empty()) return -1;
+
+    if (image.channels() > 1) {
+        cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
+    }
+
+    switch (image.depth()) {
+    case CV_16U:
+    {
+        double scale = (dataMax > dataMin) ? 255.0 / (dataMax - dataMin) : 1.0;
+        double offset = -((double)dataMin) * scale;
+        image.convertTo(image, CV_8U, scale, offset);
+        // Remap slider min/max from [dataMin, dataMax] to [0, 255]
+        if (dataMax > dataMin) {
+            double range = (double)dataMax - (double)dataMin;
+            min1 = (uint)std::clamp(((double)min1 - (double)dataMin) / range * 255.0, 0.0, 255.0);
+            max1 = (uint)std::clamp(((double)max1 - (double)dataMin) / range * 255.0, 0.0, 255.0);
+        }
+        break;
+    }
+    case CV_32F:
+    case CV_64F:
+        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
+        min1 = 0;
+        max1 = 255;
+        break;
+    default:
+        // 8-bit: no conversion needed, slider values are already in [0, 255] range
+        break;
+    }
+
+    min1 = std::min(min1, 255u);
+    max1 = std::min(max1, 255u);
+
+    cv::Mat customLut;
+    GetStretchedLUT(types, (int)min1, (int)max1, customLut);
+
+    cv::Mat result;
+    applyLUT(image, customLut, result);
     image = std::move(result);
     return 0;
 }

@@ -118,6 +118,12 @@ namespace ColorVision.ImageEditor
         public bool IsAutoSetRange { get => _IsAutoSetRange; set { _IsAutoSetRange = value; OnPropertyChanged(); AutoSetRangeChanged?.Invoke(this, new EventArgs()); } }
         private bool _IsAutoSetRange;
 
+        [JsonIgnore]
+        public uint DataMin { get; set; }
+
+        [JsonIgnore]
+        public uint DataMax { get; set; }
+
 
         public event EventHandler<bool> LayoutUpdatedChanged;
         public bool IsLayoutUpdated{ get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; OnPropertyChanged(); ShowMsgChanged?.Invoke(this, _IsLayoutUpdated); } }

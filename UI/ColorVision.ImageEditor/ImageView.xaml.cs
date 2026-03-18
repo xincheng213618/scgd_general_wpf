@@ -194,10 +194,12 @@ namespace ColorVision.ImageEditor
             uint max = (uint)PseudoSlider.ValueEnd;
             int channel = ComboBoxLayers.SelectedIndex - 1;
             bool isPseudoChecked = Pseudo.IsChecked == true;
+            bool isAutoRange = Config.IsAutoSetRange;
+            uint dataMin = Config.DataMin;
+            uint dataMax = Config.DataMax;
             TaskConflator.RunOrUpdate("PseudoSlider", () =>
             {
-                // 这里的代码是在 TaskConflator 管理的线程池线程中运行的
-                RenderPseudoLogic(min, max, channel, isPseudoChecked);
+                RenderPseudoLogic(min, max, channel, isPseudoChecked, isAutoRange, dataMin, dataMax);
             });
         }
         /// <summary>
@@ -522,7 +524,7 @@ namespace ColorVision.ImageEditor
 
                 if (Config.IsAutoSetRange)
                 {
-                    ApplyAutoRange(writeableBitmap, depth, channels);
+                    ApplyAutoRange();
                 }
 
                 Config.AddProperties("PixelFormat", writeableBitmap.Format);
@@ -539,64 +541,46 @@ namespace ColorVision.ImageEditor
         public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
-        private void ApplyAutoRange(WriteableBitmap writeableBitmap, int depth, int channels)
+        private void ApplyAutoRange()
         {
-            var (minVal, maxVal) = ComputeImageMinMax(writeableBitmap, depth, channels);
+            if (HImageCache == null) return;
+
+            int channel = ComboBoxLayers.SelectedIndex - 1;
+            int ret = OpenCVMediaHelper.M_GetMinMax((HImage)HImageCache, out uint minVal, out uint maxVal, channel);
+            if (ret != 0) return;
+
             if (minVal >= maxVal)
             {
+                int depth = Config.GetProperties<int>("Depth");
                 maxVal = (depth == 16) ? Math.Min(minVal + 1, (uint)65535) : Math.Min(minVal + 1, 255u);
             }
+
+            Config.DataMin = minVal;
+            Config.DataMax = maxVal;
+
+            PseudoSlider.Minimum = minVal;
+            PseudoSlider.Maximum = maxVal;
             PseudoSlider.ValueStart = minVal;
             PseudoSlider.ValueEnd = maxVal;
         }
 
-        private static (uint min, uint max) ComputeImageMinMax(WriteableBitmap bitmap, int depth, int channels)
+        private void ResetSliderRange()
         {
-            int width = bitmap.PixelWidth;
-            int height = bitmap.PixelHeight;
-            int stride = bitmap.BackBufferStride;
-            IntPtr backBuffer = bitmap.BackBuffer;
-
+            int depth = Config.GetProperties<int>("Depth");
+            Config.DataMin = 0;
+            Config.DataMax = 0;
+            PseudoSlider.Minimum = 0;
             if (depth == 16)
             {
-                ushort minVal = ushort.MaxValue;
-                ushort maxVal = ushort.MinValue;
-                unsafe
-                {
-                    for (int y = 0; y < height; y++)
-                    {
-                        ushort* row = (ushort*)((byte*)backBuffer + y * stride);
-                        int pixelCount = width * channels;
-                        for (int x = 0; x < pixelCount; x++)
-                        {
-                            ushort val = row[x];
-                            if (val < minVal) minVal = val;
-                            if (val > maxVal) maxVal = val;
-                        }
-                    }
-                }
-                return (minVal, maxVal);
+                PseudoSlider.Maximum = 65535;
+                PseudoSlider.ValueEnd = 65535;
             }
             else
             {
-                byte minVal = byte.MaxValue;
-                byte maxVal = byte.MinValue;
-                unsafe
-                {
-                    for (int y = 0; y < height; y++)
-                    {
-                        byte* row = (byte*)backBuffer + y * stride;
-                        int pixelCount = width * channels;
-                        for (int x = 0; x < pixelCount; x++)
-                        {
-                            byte val = row[x];
-                            if (val < minVal) minVal = val;
-                            if (val > maxVal) maxVal = val;
-                        }
-                    }
-                }
-                return (minVal, maxVal);
+                PseudoSlider.Maximum = 255;
+                PseudoSlider.ValueEnd = 255;
             }
+            PseudoSlider.ValueStart = 0;
         }
 
         private void AutoSetRange_Click(object sender, RoutedEventArgs e)
@@ -612,14 +596,13 @@ namespace ColorVision.ImageEditor
 
         private void TryApplyAutoRange()
         {
-            if (Config.IsAutoSetRange && ViewBitmapSource is WriteableBitmap writeableBitmap)
+            if (Config.IsAutoSetRange)
             {
-                int depth = Config.GetProperties<int>("Depth");
-                int channels = Config.GetProperties<int>("Channel");
-                if (depth > 0 && channels > 0)
-                {
-                    ApplyAutoRange(writeableBitmap, depth, channels);
-                }
+                ApplyAutoRange();
+            }
+            else
+            {
+                ResetSliderRange();
             }
         }
 
@@ -629,10 +612,12 @@ namespace ColorVision.ImageEditor
             uint max = (uint)PseudoSlider.ValueEnd;
             int channel = ComboBoxLayers.SelectedIndex - 1;
             bool isPseudoChecked = Pseudo.IsChecked == true;
+            bool isAutoRange = Config.IsAutoSetRange;
+            uint dataMin = Config.DataMin;
+            uint dataMax = Config.DataMax;
             TaskConflator.RunOrUpdate("PseudoSlider", () =>
             {
-                // 这里的代码是在 TaskConflator 管理的线程池线程中运行的
-                RenderPseudoLogic(min, max, channel, isPseudoChecked);
+                RenderPseudoLogic(min, max, channel, isPseudoChecked, isAutoRange, dataMin, dataMax);
             });
         }
 
@@ -644,13 +629,15 @@ namespace ColorVision.ImageEditor
             uint max = (uint)PseudoSlider.ValueEnd;
             int channel = ComboBoxLayers.SelectedIndex - 1;
             bool isPseudoChecked = Pseudo.IsChecked == true;
+            bool isAutoRange = Config.IsAutoSetRange;
+            uint dataMin = Config.DataMin;
+            uint dataMax = Config.DataMax;
             TaskConflator.RunOrUpdate("PseudoSlider", () =>
             {
-                // 这里的代码是在 TaskConflator 管理的线程池线程中运行的
-                RenderPseudoLogic(min, max, channel, isPseudoChecked);
+                RenderPseudoLogic(min, max, channel, isPseudoChecked, isAutoRange, dataMin, dataMax);
             }, 100);
         }
-        private async Task RenderPseudoLogic(uint min, uint max, int channel, bool isPseudoChecked)
+        private async Task RenderPseudoLogic(uint min, uint max, int channel, bool isPseudoChecked, bool isAutoRange = false, uint dataMin = 0, uint dataMax = 0)
         {
             // 检查是否取消显示
             if (!isPseudoChecked)
@@ -674,7 +661,16 @@ namespace ColorVision.ImageEditor
 
             // 注意：假设 M_PseudoColor 内部是线程安全的，且只读取 HImageCache
             // 最好检查 M_PseudoColor 是否支持并行调用
-            int ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes, channel);
+            int ret;
+            HImage hImageProcessed;
+            if (isAutoRange && dataMin < dataMax)
+            {
+                ret = OpenCVMediaHelper.M_PseudoColorAutoRange((HImage)HImageCache, out hImageProcessed, min, max, Config.ColormapTypes, channel, dataMin, dataMax);
+            }
+            else
+            {
+                ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out hImageProcessed, min, max, Config.ColormapTypes, channel);
+            }
 
             double algoMs = sw.Elapsed.TotalMilliseconds;
 

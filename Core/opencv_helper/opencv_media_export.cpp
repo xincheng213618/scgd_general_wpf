@@ -394,6 +394,62 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 	return MatToHImage(out, outImage);
 }
 
+COLORVISIONCORE_API int M_PseudoColorAutoRange(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel, uint dataMin, uint dataMax)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+
+	if (mat.empty())
+		return -1;
+
+	cv::Mat out;
+
+	if (mat.channels() != 1) {
+		if (channel >= 0 && channel < mat.channels()) {
+			cv::extractChannel(mat, out, channel);
+		}
+		else {
+			cv::cvtColor(mat, out, cv::COLOR_BGR2GRAY);
+		}
+	}
+	else {
+		out = mat.clone();
+	}
+
+	pseudoColorAutoRange(out, min, max, types, dataMin, dataMax);
+
+	return MatToHImage(out, outImage);
+}
+
+COLORVISIONCORE_API int M_GetMinMax(HImage img, uint* outMin, uint* outMax, int channel)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+
+	if (mat.empty())
+		return -1;
+
+	cv::Mat gray;
+
+	if (mat.channels() != 1) {
+		if (channel >= 0 && channel < mat.channels()) {
+			cv::extractChannel(mat, gray, channel);
+		}
+		else {
+			cv::cvtColor(mat, gray, cv::COLOR_BGR2GRAY);
+		}
+	}
+	else {
+		gray = mat;
+	}
+
+	double minVal, maxVal;
+	cv::minMaxLoc(gray, &minVal, &maxVal);
+
+	*outMin = (uint)std::max(minVal, 0.0);
+	*outMax = (uint)std::max(maxVal, 0.0);
+
+	return 0;
+}
+
 COLORVISIONCORE_API int M_AutoLevelsAdjust(HImage img, HImage* outImage)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
