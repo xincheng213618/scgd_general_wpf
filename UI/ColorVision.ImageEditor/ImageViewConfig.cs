@@ -113,6 +113,11 @@ namespace ColorVision.ImageEditor
         public bool IsPseudo { get => _IsPseudo; set { _IsPseudo = value; OnPropertyChanged(); PseudoChanged?.Invoke(this, new EventArgs()); } }
         private bool _IsPseudo ;
 
+        public event EventHandler AutoSetRangeChanged;
+
+        public bool IsAutoSetRange { get => _IsAutoSetRange; set { _IsAutoSetRange = value; OnPropertyChanged(); AutoSetRangeChanged?.Invoke(this, new EventArgs()); } }
+        private bool _IsAutoSetRange;
+
 
         public event EventHandler<bool> LayoutUpdatedChanged;
         public bool IsLayoutUpdated{ get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; OnPropertyChanged(); ShowMsgChanged?.Invoke(this, _IsLayoutUpdated); } }

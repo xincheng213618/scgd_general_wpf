@@ -89,6 +89,7 @@ namespace ColorVision.ImageEditor
 
             Config.Cleared += Config_Cleared;
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
+            Config.AutoSetRangeChanged += Config_AutoSetRangeChanged;
 
             foreach (var item in ImageViewModel.IEditorToolFactory.IImageComponents)
                 item.Execute(this);
@@ -518,6 +519,12 @@ namespace ColorVision.ImageEditor
                     PseudoSlider.ValueEnd = 255;
 
                 }
+
+                if (Config.IsAutoSetRange)
+                {
+                    ApplyAutoRange(writeableBitmap, depth, channels);
+                }
+
                 Config.AddProperties("PixelFormat", writeableBitmap.Format);
             }
 
@@ -531,6 +538,93 @@ namespace ColorVision.ImageEditor
 
         public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
+
+        private void ApplyAutoRange(WriteableBitmap writeableBitmap, int depth, int channels)
+        {
+            var (minVal, maxVal) = ComputeImageMinMax(writeableBitmap, depth, channels);
+            if (minVal == maxVal)
+            {
+                maxVal = minVal + 1;
+            }
+            PseudoSlider.ValueStart = minVal;
+            PseudoSlider.ValueEnd = maxVal;
+        }
+
+        private static (uint min, uint max) ComputeImageMinMax(WriteableBitmap bitmap, int depth, int channels)
+        {
+            int width = bitmap.PixelWidth;
+            int height = bitmap.PixelHeight;
+            int stride = bitmap.BackBufferStride;
+            IntPtr backBuffer = bitmap.BackBuffer;
+
+            if (depth == 16)
+            {
+                ushort minVal = ushort.MaxValue;
+                ushort maxVal = ushort.MinValue;
+                unsafe
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        ushort* row = (ushort*)((byte*)backBuffer + y * stride);
+                        int pixelCount = width * channels;
+                        for (int x = 0; x < pixelCount; x++)
+                        {
+                            ushort val = row[x];
+                            if (val < minVal) minVal = val;
+                            if (val > maxVal) maxVal = val;
+                        }
+                    }
+                }
+                return (minVal, maxVal);
+            }
+            else
+            {
+                byte minVal = byte.MaxValue;
+                byte maxVal = byte.MinValue;
+                unsafe
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        byte* row = (byte*)backBuffer + y * stride;
+                        int pixelCount = width * channels;
+                        for (int x = 0; x < pixelCount; x++)
+                        {
+                            byte val = row[x];
+                            if (val < minVal) minVal = val;
+                            if (val > maxVal) maxVal = val;
+                        }
+                    }
+                }
+                return (minVal, maxVal);
+            }
+        }
+
+        private void AutoSetRange_Click(object sender, RoutedEventArgs e)
+        {
+            if (Config.IsAutoSetRange && ViewBitmapSource is WriteableBitmap writeableBitmap)
+            {
+                int depth = Config.GetProperties<int>("Depth");
+                int channels = Config.GetProperties<int>("Channel");
+                if (depth > 0 && channels > 0)
+                {
+                    ApplyAutoRange(writeableBitmap, depth, channels);
+                }
+            }
+        }
+
+        private void Config_AutoSetRangeChanged(object? sender, EventArgs e)
+        {
+            if (!IsInitialized) return;
+            if (Config.IsAutoSetRange && ViewBitmapSource is WriteableBitmap writeableBitmap)
+            {
+                int depth = Config.GetProperties<int>("Depth");
+                int channels = Config.GetProperties<int>("Channel");
+                if (depth > 0 && channels > 0)
+                {
+                    ApplyAutoRange(writeableBitmap, depth, channels);
+                }
+            }
+        }
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
