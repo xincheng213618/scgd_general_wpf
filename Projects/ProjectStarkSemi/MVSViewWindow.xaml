@@ -124,6 +124,13 @@
                     <Run Text=" FPS"/>
                 </TextBlock>
             </StatusBarItem>
+
+            <StatusBarItem>
+                <TextBlock>
+                    <Run Text="图像数: "/>
+                    <Run  Text="{Binding Count}"/>
+                </TextBlock>
+            </StatusBarItem>
         </StatusBar>
     </Grid>
 </Window>
