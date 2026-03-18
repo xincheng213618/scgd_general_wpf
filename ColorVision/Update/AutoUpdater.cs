@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Desktop.Download;
@@ -352,7 +353,7 @@ namespace ColorVision.Update
 
                 // 创建批处理文件内容
                 string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-                string programDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                string programDirectory = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
                 string? executableName = Path.GetFileName(Environment.ProcessPath);
 
                 string batchContent = $@"
@@ -375,7 +376,7 @@ del ""%~f0"" & exit
                     WindowStyle = ProcessWindowStyle.Hidden // 隐藏命令行窗口
                 };
 
-                if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+                if (Tool.HasWritePermission(AppDomain.CurrentDomain.BaseDirectory))
                 {
                     startInfo.Verb = "runas"; // 请求管理员权限
                     startInfo.WindowStyle = ProcessWindowStyle.Normal;
@@ -403,7 +404,7 @@ del ""%~f0"" & exit
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
             startInfo.FileName = downloadPath;
 
-            if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+            if (Tool.HasWritePermission(AppDomain.CurrentDomain.BaseDirectory))
             {
                 startInfo.Verb = "runas"; // 请求管理员权限
                 startInfo.WindowStyle = ProcessWindowStyle.Normal;

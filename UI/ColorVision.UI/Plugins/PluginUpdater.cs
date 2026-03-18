@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604
+using ColorVision.Common.Utilities;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -138,16 +139,12 @@ del ""%~f0"" & exit
                     WorkingDirectory = tempRoot
                 };
 
-                if (baseDir.StartsWith(@"C:\Program Files", StringComparison.OrdinalIgnoreCase)
-                    || baseDir.StartsWith(@"C:\Program Files (x86)", StringComparison.OrdinalIgnoreCase))
+                if (Tool.HasWritePermission(AppDomain.CurrentDomain.BaseDirectory))
                 {
                     psi.Verb = "runas";
                     psi.WindowStyle = ProcessWindowStyle.Normal;
                 }
-
                 Process.Start(psi);
-
-                // 7. 退出当前进程，等待批处理替换
                 Environment.Exit(0);
             }
             catch (Exception ex)
