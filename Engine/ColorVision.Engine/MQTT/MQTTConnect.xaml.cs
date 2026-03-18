@@ -22,7 +22,7 @@ namespace ColorVision.Engine.MQTT
         public override int Order => 20;
         public override void Execute()
         {
-            new MySqlConnect() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new MQTTConnect() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 
@@ -35,7 +35,7 @@ namespace ColorVision.Engine.MQTT
         public override int Order => 2;
         public override void Execute()
         {
-            new MySqlConnect() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new MQTTConnect() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 
