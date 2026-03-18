@@ -542,9 +542,9 @@ namespace ColorVision.ImageEditor
         private void ApplyAutoRange(WriteableBitmap writeableBitmap, int depth, int channels)
         {
             var (minVal, maxVal) = ComputeImageMinMax(writeableBitmap, depth, channels);
-            if (minVal == maxVal)
+            if (minVal >= maxVal)
             {
-                maxVal = minVal + 1;
+                maxVal = (depth == 16) ? Math.Min(minVal + 1, (uint)65535) : Math.Min(minVal + 1, 255u);
             }
             PseudoSlider.ValueStart = minVal;
             PseudoSlider.ValueEnd = maxVal;
@@ -601,20 +601,17 @@ namespace ColorVision.ImageEditor
 
         private void AutoSetRange_Click(object sender, RoutedEventArgs e)
         {
-            if (Config.IsAutoSetRange && ViewBitmapSource is WriteableBitmap writeableBitmap)
-            {
-                int depth = Config.GetProperties<int>("Depth");
-                int channels = Config.GetProperties<int>("Channel");
-                if (depth > 0 && channels > 0)
-                {
-                    ApplyAutoRange(writeableBitmap, depth, channels);
-                }
-            }
+            TryApplyAutoRange();
         }
 
         private void Config_AutoSetRangeChanged(object? sender, EventArgs e)
         {
             if (!IsInitialized) return;
+            TryApplyAutoRange();
+        }
+
+        private void TryApplyAutoRange()
+        {
             if (Config.IsAutoSetRange && ViewBitmapSource is WriteableBitmap writeableBitmap)
             {
                 int depth = Config.GetProperties<int>("Depth");
