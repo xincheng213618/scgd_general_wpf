@@ -581,6 +581,8 @@ namespace ColorVision.Engine.Media
                     context.Config.AddProperties("exp", cVCIEFile.Exp);
                     context.Config.AddProperties("FileExtType", cVCIEFile.FileExtType);
                     context.Config.AddProperties("srcFileName", cVCIEFile.SrcFileName);
+
+
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (context.ImageView.ViewBitmapSource is WriteableBitmap writeableBitmap)
@@ -596,6 +598,9 @@ namespace ColorVision.Engine.Media
                             }
                             else
                             {
+                                context.Config.AddProperties("Depth", cVCIEFile.Bpp);
+                                context.Config.AddProperties("DpiX", writeableBitmap.DpiX);
+                                context.Config.AddProperties("DpiY", writeableBitmap.DpiY);
                                 //这里需要强制切换过来
                                 context.ImageView.ImageShow.Source = writeableBitmap;
                                 mat.Dispose();
