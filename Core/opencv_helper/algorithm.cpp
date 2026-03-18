@@ -435,21 +435,33 @@ int extractChannel(cv::Mat& input, cv::Mat& dst ,int channel)
 
 void GetOptimizedLUT(cv::ColormapTypes mapType, int minTh, int maxTh, cv::Mat& outLut)
 {
+    // Generate the full 0-255 colormap
     cv::Mat range(1, 256, CV_8U);
-    std::iota(range.ptr<uint8_t>(), range.ptr<uint8_t>() + 256, 0); // 更简洁
+    std::iota(range.ptr<uint8_t>(), range.ptr<uint8_t>() + 256, 0);
 
-    cv::applyColorMap(range, outLut, mapType);
+    cv::Mat fullColormap;
+    cv::applyColorMap(range, fullColormap, mapType);
+    const cv::Vec3b* cmPtr = fullColormap.ptr<cv::Vec3b>();
 
+    // Build output LUT: stretch the colormap across [minTh, maxTh]
+    outLut.create(1, 256, CV_8UC3);
     cv::Vec3b* ptr = outLut.ptr<cv::Vec3b>();
 
-    // 使用 memset 批量设置（黑色）
-    if (minTh > 0) {
-        std::memset(ptr, 0, std::min(minTh, 256) * 3);
-    }
+    int rangeSize = maxTh - minTh;
 
-    // 白色需要循环（因为是 255）
-    for (int i = std::max(maxTh + 1, 0); i < 256; i++) {
-        ptr[i] = cv::Vec3b(255, 255, 255);
+    for (int i = 0; i < 256; i++) {
+        if (i < minTh) {
+            ptr[i] = cv::Vec3b(0, 0, 0);
+        }
+        else if (i > maxTh) {
+            ptr[i] = cv::Vec3b(255, 255, 255);
+        }
+        else {
+            // Map [minTh, maxTh] to [0, 255] in the colormap
+            int cmIdx = (rangeSize > 0) ? (int)((double)(i - minTh) / rangeSize * 255.0) : 128;
+            cmIdx = std::clamp(cmIdx, 0, 255);
+            ptr[i] = cmPtr[cmIdx];
+        }
     }
 }
 
@@ -465,13 +477,20 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
     // 处理深度
     switch (image.depth()) {
     case CV_16U:
-        min1 >>= 8;  // 位运算替代除法
-        max1 >>= 8;
-        image.convertTo(image, CV_8U, 1.0 / 257.0); // 255/65535 ≈ 1/257
+    {
+        // Map [min1, max1] to [0, 255] for full pseudo-color resolution
+        double scale = (max1 > min1) ? 255.0 / (max1 - min1) : 1.0;
+        double offset = -((double)min1) * scale;
+        image.convertTo(image, CV_8U, scale, offset);
+        min1 = 0;
+        max1 = 255;
         break;
+    }
     case CV_32F:
     case CV_64F:
         cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
+        min1 = 0;
+        max1 = 255;
         break;
     }
 
