@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.FileIO;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using MQTTMessageLib.FileServer;
@@ -76,6 +77,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
+
+            ImageFile.TextChanged += ImageFile_TextChanged;
 
 
             DService_DeviceStatusChanged(sender,Device.DService.DeviceStatus);
@@ -223,6 +226,34 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             }
         }
 
+        private void UpdateFileExposureInfo(string filePath)
+        {
+            bool isCVFile = false;
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                string ext = Path.GetExtension(filePath).ToLowerInvariant();
+                if ((ext == ".cvraw" || ext == ".cvcie") && File.Exists(filePath))
+                {
+                    int headerEnd = CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile cvcie);
+                    if (headerEnd > 0 && cvcie.Exp != null)
+                    {
+                        isCVFile = true;
+                        if (cvcie.Channels >= 1 && cvcie.Exp.Length >= 1) Device.DisplayConfig.ExpTimeR = cvcie.Exp[0];
+                        if (cvcie.Channels >= 2 && cvcie.Exp.Length >= 2) Device.DisplayConfig.ExpTimeG = cvcie.Exp[1];
+                        if (cvcie.Channels >= 3 && cvcie.Exp.Length >= 3) Device.DisplayConfig.ExpTimeB = cvcie.Exp[2];
+                    }
+                }
+            }
+            TextBoxExpR.IsReadOnly = isCVFile;
+            SliderExpR.IsEnabled = !isCVFile;
+            TextBoxExpG.IsReadOnly = isCVFile;
+            SliderExpG.IsEnabled = !isCVFile;
+            TextBoxExpB.IsReadOnly = isCVFile;
+            SliderExpB.IsEnabled = !isCVFile;
+        }
+
+        private void ImageFile_TextChanged(object sender, TextChangedEventArgs e) => UpdateFileExposureInfo(ImageFile.Text);
+
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
@@ -339,7 +370,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public void Dispose()
         {
-            Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged; ;
+            Device.DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+            ImageFile.TextChanged -= ImageFile_TextChanged;
         }
     }
 }
