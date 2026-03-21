@@ -15,6 +15,7 @@ using ScottPlot;
 using ScottPlot.Plottables;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
 using System.Reflection;
@@ -206,6 +207,33 @@ namespace Spectrum
                 if (iR == 1)
                 {
                     Manager.IsConnected = true;
+
+                    // Retrieve the SN
+                    try
+                    {
+                        int bufferLength = 1024;
+                        StringBuilder snBuilder = new StringBuilder(bufferLength);
+                        int snRet = Spectrometer.CM_Emission_GetAllSN((int)Manager.Config.SpectrometerType, com, snBuilder, bufferLength);
+                        string sn = snBuilder.ToString().Trim();
+                        if (!string.IsNullOrEmpty(sn))
+                        {
+                            Manager.SerialNumber = sn;
+                            log.Info($"Spectrometer SN: {sn}");
+                        }
+                        else
+                        {
+                            Manager.SerialNumber = "Unknown";
+                        }
+                    }
+                    catch (Exception snEx)
+                    {
+                        log.Warn("Failed to read SN", snEx);
+                        Manager.SerialNumber = "Unknown";
+                    }
+
+                    // Load per-SN calibration groups and apply
+                    Manager.LoadCalibrationConfig();
+
                     iR = Spectrometer.CM_Emission_LoadWavaLengthFile(SpectrometerHandle, Manager.WavelengthFile);
                     log.Info($"CM_Emission_LoadWavaLengthFile{Manager.WavelengthFile},ret{iR}");
                     iR = Spectrometer.CM_Emission_LoadMagiudeFile(SpectrometerHandle, Manager.MaguideFile);
@@ -224,11 +252,6 @@ namespace Spectrum
                 }
                 else
                 {
-                    //int bufferLength = 1024;
-                    //StringBuilder stringBuilder = new StringBuilder(bufferLength);
-                    //cvColorVision.Spectrometer.CM_GetSpectrSerialNumber(SpectrometerHandle, stringBuilder);
-                    //MessageBox.Show(stringBuilder.ToString());
-
                     Manager.IsConnected = false;
                     string logDir = "log";
                     string logPrefix = "Spectrum_Main";
@@ -285,12 +308,9 @@ namespace Spectrum
             testid = 0;
             IsRun = false;
             ret = Manager.Disconnect();
-            if (ret == 1)
-            {
-                MessageBox.Show(Spectrum.Properties.Resources.已成功断开连接);
-                State2.Text = Spectrum.Properties.Resources.未连接;
-                State4.Text = Spectrum.Properties.Resources.未连接;
-            }
+            Manager.SerialNumber = string.Empty;
+            State2.Text = Spectrum.Properties.Resources.未连接;
+            State4.Text = "---";
         }
             
         //按钮显示1976图
@@ -1073,6 +1093,35 @@ namespace Spectrum
             foreach (var item in ViewResultSpectrums)
             {
                 item.CalculateEqeParams(voltage, currentMA);
+            }
+        }
+
+        private void StatusBarConnectionType_DoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                // Open Device Manager on double-click (useful for USB connections)
+                Process.Start(new ProcessStartInfo("devmgmt.msc") { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Failed to open Device Manager", ex);
+            }
+        }
+
+        private void StatusBarSN_DoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(Manager.SerialNumber) && Manager.SerialNumber != "---")
+            {
+                try
+                {
+                    Clipboard.SetText(Manager.SerialNumber);
+                    log.Info($"SN copied to clipboard: {Manager.SerialNumber}");
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("Failed to copy SN to clipboard", ex);
+                }
             }
         }
 

@@ -136,8 +136,140 @@ namespace Spectrum
         public IntPtr Handle { get; set; } = IntPtr.Zero;
         
         [JsonIgnore]
-        public bool IsConnected { get => _IsConnected; set { _IsConnected = value; OnPropertyChanged(); } }
+        public bool IsConnected { get => _IsConnected; set { _IsConnected = value; OnPropertyChanged(); OnPropertyChanged(nameof(ConnectionTypeDisplay)); } }
         private bool _IsConnected = false;
+
+        /// <summary>
+        /// The serial number of the currently connected spectrometer.
+        /// </summary>
+        [JsonIgnore]
+        public string SerialNumber { get => _SerialNumber; set { _SerialNumber = value; OnPropertyChanged(); } }
+        private string _SerialNumber = string.Empty;
+
+        /// <summary>
+        /// Readable connection type string for the status bar.
+        /// </summary>
+        [JsonIgnore]
+        public string ConnectionTypeDisplay
+        {
+            get
+            {
+                if (!IsConnected) return "未连接";
+                return Config.IsComPort ? $"COM: {Config.SzComName}" : "USB";
+            }
+        }
+
+        /// <summary>
+        /// Calibration group config, loaded per-SN from Documents/Spectrometer/{SN}/
+        /// </summary>
+        [JsonIgnore]
+        public CalibrationGroupConfig CalibrationGroupConfig { get => _CalibrationGroupConfig; set { _CalibrationGroupConfig = value; OnPropertyChanged(); OnPropertyChanged(nameof(CalibrationGroupNames)); } }
+        private CalibrationGroupConfig _CalibrationGroupConfig = CreateDefaultCalibrationGroupConfig();
+
+        private static CalibrationGroupConfig CreateDefaultCalibrationGroupConfig()
+        {
+            var config = new CalibrationGroupConfig();
+            config.Groups.Add(new CalibrationGroup { GroupName = "Default" });
+            return config;
+        }
+
+        /// <summary>
+        /// The group names for ComboBox binding.
+        /// </summary>
+        [JsonIgnore]
+        public IEnumerable<string> CalibrationGroupNames => CalibrationGroupConfig.Groups.Select(g => g.GroupName);
+
+        /// <summary>
+        /// The active calibration group name. Changing this triggers file reload when connected.
+        /// </summary>
+        [JsonIgnore]
+        public string ActiveCalibrationGroupName
+        {
+            get => CalibrationGroupConfig.ActiveGroupName;
+            set
+            {
+                if (CalibrationGroupConfig.ActiveGroupName == value) return;
+                CalibrationGroupConfig.ActiveGroupName = value;
+                OnPropertyChanged();
+                ApplyActiveGroup();
+                SaveCalibrationConfig();
+            }
+        }
+
+        [JsonIgnore]
+        public RelayCommand AddCalibrationGroupCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand RemoveCalibrationGroupCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand SetGroupWavelengthFileCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand SetGroupMaguideFileCommand { get; set; }
+
+        /// <summary>
+        /// Loads calibration config for the current SN.
+        /// </summary>
+        public void LoadCalibrationConfig()
+        {
+            if (string.IsNullOrEmpty(SerialNumber)) return;
+            CalibrationGroupConfig = CalibrationGroupConfig.Load(SerialNumber);
+            OnPropertyChanged(nameof(CalibrationGroupNames));
+            OnPropertyChanged(nameof(ActiveCalibrationGroupName));
+            ApplyActiveGroup();
+        }
+
+        /// <summary>
+        /// Saves calibration config for the current SN.
+        /// </summary>
+        public void SaveCalibrationConfig()
+        {
+            if (string.IsNullOrEmpty(SerialNumber)) return;
+            CalibrationGroupConfig.Save(SerialNumber);
+        }
+
+        /// <summary>
+        /// Applies the active calibration group: updates WavelengthFile/MaguideFile and reloads if connected.
+        /// </summary>
+        private void ApplyActiveGroup()
+        {
+            var group = CalibrationGroupConfig.ActiveGroup;
+            if (group == null) return;
+
+            WavelengthFile = group.WavelengthFile;
+            MaguideFile = group.MaguideFile;
+
+            if (IsConnected && Handle != IntPtr.Zero)
+            {
+                int r1 = Spectrometer.CM_Emission_LoadWavaLengthFile(Handle, WavelengthFile);
+                log.Info($"Group switch: CM_Emission_LoadWavaLengthFile {WavelengthFile}, ret={r1}");
+                int r2 = Spectrometer.CM_Emission_LoadMagiudeFile(Handle, MaguideFile);
+                log.Info($"Group switch: CM_Emission_LoadMagiudeFile {MaguideFile}, ret={r2}");
+            }
+        }
+
+        /// <summary>
+        /// Called when the CFW (filter wheel) switches to a position. If a calibration group
+        /// matches the ND position name, it auto-switches.
+        /// </summary>
+        public void OnNDPositionChanged(string ndPositionName)
+        {
+            var group = CalibrationGroupConfig.FindGroupForNDPosition(ndPositionName);
+            if (group != null)
+            {
+                log.Info($"ND position changed to '{ndPositionName}', auto-switching to calibration group '{group.GroupName}'");
+                ActiveCalibrationGroupName = group.GroupName;
+            }
+            else
+            {
+                log.Info($"ND position changed to '{ndPositionName}', no matching calibration group found");
+            }
+        }
+
+        /// <summary>
+        /// Whether the CFW (filter wheel) is connected.
+        /// </summary>
+        [JsonIgnore]
+        public bool IsNDConnected { get => _IsNDConnected; set { _IsNDConnected = value; OnPropertyChanged(); } }
+        private bool _IsNDConnected;
 
         [JsonIgnore]
         public RelayCommand SetWavelengthFileCommand { get; set; }
@@ -210,6 +342,11 @@ namespace Spectrum
 
             EditNDConfigCommand = new RelayCommand(a => new PropertyEditorWindow(NDConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             ConnectNDCommand = new RelayCommand(a => ConnectND());
+
+            AddCalibrationGroupCommand = new RelayCommand(a => AddCalibrationGroup());
+            RemoveCalibrationGroupCommand = new RelayCommand(a => RemoveCalibrationGroup());
+            SetGroupWavelengthFileCommand = new RelayCommand(a => SetActiveGroupFile(isWavelength: true));
+            SetGroupMaguideFileCommand = new RelayCommand(a => SetActiveGroupFile(isWavelength: false));
         }
         public NDConfig NDConfig => Config.NDConfig;
 
@@ -225,10 +362,60 @@ namespace Spectrum
             if (NDHandle == IntPtr.Zero)
             {
                 log.Info("NDConnnet failed");
+                IsNDConnected = false;
             }
             else
             {
                 log.Info("NDConnnet");
+                IsNDConnected = true;
+            }
+        }
+
+        private void AddCalibrationGroup()
+        {
+            string newName = $"Group{CalibrationGroupConfig.Groups.Count}";
+            // If connected, pre-fill with current files
+            CalibrationGroupConfig.Groups.Add(new CalibrationGroup
+            {
+                GroupName = newName,
+                WavelengthFile = WavelengthFile,
+                MaguideFile = MaguideFile,
+            });
+            OnPropertyChanged(nameof(CalibrationGroupNames));
+            SaveCalibrationConfig();
+        }
+
+        private void RemoveCalibrationGroup()
+        {
+            if (CalibrationGroupConfig.Groups.Count <= 1) return; // keep at least one
+            var group = CalibrationGroupConfig.ActiveGroup;
+            if (group == null) return;
+            CalibrationGroupConfig.Groups.Remove(group);
+            ActiveCalibrationGroupName = CalibrationGroupConfig.Groups.First().GroupName;
+            OnPropertyChanged(nameof(CalibrationGroupNames));
+            SaveCalibrationConfig();
+        }
+
+        private void SetActiveGroupFile(bool isWavelength)
+        {
+            var group = CalibrationGroupConfig.ActiveGroup;
+            if (group == null) return;
+
+            using var dialog = new System.Windows.Forms.OpenFileDialog();
+            dialog.Filter = "DAT files (*.dat)|*.dat|All Files|*.*";
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                if (isWavelength)
+                {
+                    group.WavelengthFile = dialog.FileName;
+                    WavelengthFile = dialog.FileName;
+                }
+                else
+                {
+                    group.MaguideFile = dialog.FileName;
+                    MaguideFile = dialog.FileName;
+                }
+                SaveCalibrationConfig();
             }
         }
 

@@ -110,16 +110,22 @@
                         <GroupBox Header="标定文件">
                             <StackPanel>
                                 <DockPanel Margin="0,0,0,6">
+                                    <TextBlock Text="分组" MinWidth="42"/>
+                                    <Button DockPanel.Dock="Right" Content="−" Width="24" Margin="4,0,0,0" Command="{Binding RemoveCalibrationGroupCommand}" ToolTip="移除当前分组" />
+                                    <Button DockPanel.Dock="Right" Content="+" Width="24" Margin="4,0,0,0" Command="{Binding AddCalibrationGroupCommand}" ToolTip="添加新分组" />
+                                    <ComboBox Style="{StaticResource ComboBox.Small}" ItemsSource="{Binding CalibrationGroupNames}" SelectedItem="{Binding ActiveCalibrationGroupName, Mode=TwoWay}" />
+                                </DockPanel>
+                                <DockPanel Margin="0,0,0,6">
                                     <Button DockPanel.Dock="Right" Content="加载" Style="{StaticResource ButtonDefault.Small}" Margin="5,0,0,0" Command="{Binding LoadWavelengthFileCommand}" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}" />
-                                    <Button DockPanel.Dock="Right" Content="..." Style="{StaticResource ButtonDefault.Small}" Margin="5,0,0,0" Command="{Binding SetWavelengthFileCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="..." Style="{StaticResource ButtonDefault.Small}" Margin="5,0,0,0" Command="{Binding SetGroupWavelengthFileCommand}"/>
                                     <TextBlock Text="波长标定" MinWidth="60"/>
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding WavelengthFile}" ToolTip="{Binding WavelengthFile}" />
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding WavelengthFile}" ToolTip="{Binding WavelengthFile}" IsReadOnly="True"/>
                                 </DockPanel>
                                 <DockPanel>
                                     <Button DockPanel.Dock="Right" Content="加载" Margin="5,0,0,0" Style="{StaticResource ButtonDefault.Small}" Command="{Binding LoadMaguideFileCommand}" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}" />
-                                    <Button DockPanel.Dock="Right" Content="..." Margin="5,0,0,0" Style="{StaticResource ButtonDefault.Small}" Command="{Binding SetMaguideFileCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="..." Margin="5,0,0,0" Style="{StaticResource ButtonDefault.Small}" Command="{Binding SetGroupMaguideFileCommand}"/>
                                     <TextBlock Text="幅值标定" MinWidth="60"/>
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MaguideFile}" ToolTip="{Binding MaguideFile}" />
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MaguideFile}" ToolTip="{Binding MaguideFile}" IsReadOnly="True"/>
                                 </DockPanel>
                             </StackPanel>
                         </GroupBox>
@@ -678,16 +684,83 @@
 
         <StatusBar Grid.Row="2">
             <StatusBarItem>
-                <DockPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="10" Height="10" Margin="0,0,4,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="#E53935"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                        <Setter Property="Fill" Value="#27AE60"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
                     <TextBlock x:Name="State1" Text="{x:Static properties:Resources.连接状态}" />
-                    <TextBlock x:Name="State2" Text="{x:Static properties:Resources.未连接}"/>
-                </DockPanel>
+                    <TextBlock x:Name="State2" Text="{x:Static properties:Resources.未连接}" Margin="2,0,0,0"/>
+                </StackPanel>
             </StatusBarItem>
+            <Separator/>
+            <StatusBarItem ToolTip="双击打开设备管理器" MouseDoubleClick="StatusBarConnectionType_DoubleClick">
+                <TextBlock x:Name="StateConnectionType" Text="{Binding ConnectionTypeDisplay}" />
+            </StatusBarItem>
+            <Separator/>
             <StatusBarItem>
-                <DockPanel>
+                <StackPanel Orientation="Horizontal">
                     <TextBlock x:Name="State3" Text="{x:Static properties:Resources.硬件型号}" />
-                    <TextBlock x:Name="State4" Text="xxx:xxx:xxx" />
-                </DockPanel>
+                    <TextBlock x:Name="State4" Text="---" Margin="2,0,0,0"/>
+                </StackPanel>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem ToolTip="SN序列号，双击复制" MouseDoubleClick="StatusBarSN_DoubleClick">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="SN: "/>
+                    <TextBlock x:Name="StateSN" Text="{Binding SerialNumber, FallbackValue='---'}"/>
+                </StackPanel>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="标定: "/>
+                    <TextBlock Text="{Binding ActiveCalibrationGroupName, FallbackValue='Default'}" Foreground="#3498DB"/>
+                </StackPanel>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Shutter: "/>
+                    <Ellipse Width="8" Height="8" Margin="2,0,0,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="#E53935"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ShutterController.IsConnected}" Value="True">
+                                        <Setter Property="Fill" Value="#27AE60"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                </StackPanel>
+            </StatusBarItem>
+            <Separator/>
+            <StatusBarItem>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="CFW: "/>
+                    <Ellipse Width="8" Height="8" Margin="2,0,0,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="#E53935"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsNDConnected}" Value="True">
+                                        <Setter Property="Fill" Value="#27AE60"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                </StackPanel>
             </StatusBarItem>
         </StatusBar>
 
