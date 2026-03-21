@@ -110,20 +110,17 @@
                         <GroupBox Header="标定文件">
                             <StackPanel>
                                 <DockPanel Margin="0,0,0,6">
-                                    <TextBlock Text="分组" MinWidth="42"/>
-                                    <Button DockPanel.Dock="Right" Content="−" Width="24" Margin="4,0,0,0" Command="{Binding RemoveCalibrationGroupCommand}" ToolTip="移除当前分组" />
-                                    <Button DockPanel.Dock="Right" Content="+" Width="24" Margin="4,0,0,0" Command="{Binding AddCalibrationGroupCommand}" ToolTip="添加新分组" />
+                                    <Button DockPanel.Dock="Right" Content="管理..." Command="{Binding OpenCalibrationGroupWindowCommand}" Margin="4,0,0,0" Padding="8,2" ToolTip="打开标定分组管理窗口"/>
+                                    <TextBlock Text="当前分组: " Width="60"/>
                                     <ComboBox Style="{StaticResource ComboBox.Small}" ItemsSource="{Binding CalibrationGroupNames}" SelectedItem="{Binding ActiveCalibrationGroupName, Mode=TwoWay}" />
                                 </DockPanel>
-                                <DockPanel Margin="0,0,0,6">
+                                <DockPanel Margin="0,0,0,4">
                                     <Button DockPanel.Dock="Right" Content="加载" Style="{StaticResource ButtonDefault.Small}" Margin="5,0,0,0" Command="{Binding LoadWavelengthFileCommand}" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}" />
-                                    <Button DockPanel.Dock="Right" Content="..." Style="{StaticResource ButtonDefault.Small}" Margin="5,0,0,0" Command="{Binding SetGroupWavelengthFileCommand}"/>
                                     <TextBlock Text="波长标定" MinWidth="60"/>
                                     <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding WavelengthFile}" ToolTip="{Binding WavelengthFile}" IsReadOnly="True"/>
                                 </DockPanel>
                                 <DockPanel>
                                     <Button DockPanel.Dock="Right" Content="加载" Margin="5,0,0,0" Style="{StaticResource ButtonDefault.Small}" Command="{Binding LoadMaguideFileCommand}" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}" />
-                                    <Button DockPanel.Dock="Right" Content="..." Margin="5,0,0,0" Style="{StaticResource ButtonDefault.Small}" Command="{Binding SetGroupMaguideFileCommand}"/>
                                     <TextBlock Text="幅值标定" MinWidth="60"/>
                                     <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MaguideFile}" ToolTip="{Binding MaguideFile}" IsReadOnly="True"/>
                                 </DockPanel>
@@ -355,6 +352,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <ScottPlot:WpfPlot  x:Name="wpfplot1" Panel.ZIndex="9" />
+                        <ScottPlot:WpfPlot  x:Name="wpfplot2" Panel.ZIndex="9" Visibility="Collapsed" />
                         <ListView x:Name="listView2"  Grid.Column="1"  Padding="2,0,2,2"  Style="{StaticResource ListView.Small}" BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
                             <ListView.Resources>
                                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" >
@@ -405,6 +403,9 @@
                             <ToolBar Padding="3,2">
                                 <ToggleButton Click="ButtonMul_Click"  IsChecked="True" Margin="2,0,0,0" >
                                     <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
+                                </ToggleButton>
+                                <ToggleButton x:Name="ToggleSpectrumType" Click="ToggleSpectrumType_Click" Margin="2,0,0,0" ToolTip="切换相对/绝对光谱">
+                                    <TextBlock Text="相对光谱" x:Name="SpectrumTypeText"/>
                                 </ToggleButton>
                                 <Button  Content="查询" Command="{Binding ViewResultManager.QueryCommand}" Margin="2,0,0,0"/>
                                 <Button  Content="通用查询" Command="{Binding ViewResultManager.GenericQueryCommand}" Margin="2,0,0,0"/>

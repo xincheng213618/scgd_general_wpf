@@ -22,6 +22,8 @@ namespace Spectrum
         public int? BatchID { get; set; }
         [JsonIgnore]
         public Scatter ScatterPlot { get; set; }
+        [JsonIgnore]
+        public Scatter AbsoluteScatterPlot { get; set; }
 
         public ObservableCollection<SpectralData> SpectralDatas { get; set; } = new ObservableCollection<SpectralData>();
 
@@ -57,14 +59,26 @@ namespace Spectrum
 
             double[] xs = new double[fPL.Length];
             double[] ys = new double[fPL.Length];
+            double[] ysAbsolute = new double[fPL.Length];
             for (int i = 0; i < fPL.Length; i++)
             {
                 xs[i] = ((double)fSpect1 + Math.Round(fInterval, 1) * i);
                 ys[i] = fPL[i];
+                ysAbsolute[i] = fPL[i] * fPlambda;
             }
 
             ScatterSourceDoubleArray source = new(xs, ys);
             ScatterPlot = new Scatter(source)
+            {
+                Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
+                LineWidth = 1,
+                MarkerSize = 1,
+                LegendText = string.Empty,
+                MarkerShape = MarkerShape.None,
+            };
+
+            ScatterSourceDoubleArray sourceAbsolute = new(xs, ysAbsolute);
+            AbsoluteScatterPlot = new Scatter(sourceAbsolute)
             {
                 Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
                 LineWidth = 1,

@@ -143,12 +143,24 @@ namespace Spectrum
             wpfplot1.Plot.Axes.Left.Min = 0;
             wpfplot1.Plot.Axes.Left.Max = 1;
 
+            string titleAbsolute = "绝对光谱曲线";
+            wpfplot2.Plot.XLabel("波长[nm]");
+            wpfplot2.Plot.YLabel("绝对光谱");
+            wpfplot2.Plot.Axes.Title.Label.Text = titleAbsolute;
+            wpfplot2.Plot.Axes.Title.Label.FontName = Fonts.Detect(titleAbsolute);
+            wpfplot2.Plot.Axes.Left.Label.FontName = Fonts.Detect(titleAbsolute);
+            wpfplot2.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(titleAbsolute);
+            wpfplot2.Plot.Axes.SetLimitsX(380, 780);
+            wpfplot2.Plot.Axes.Bottom.Min = 370;
+            wpfplot2.Plot.Axes.Bottom.Max = 1000;
+
             if (ViewResultSpectrums.Count != 0)
             {
                 foreach (var item in ViewResultSpectrums)
                 {
                     item.Gen();
                     ScatterPlots.Add(item.ScatterPlot);
+                    AbsoluteScatterPlots.Add(item.AbsoluteScatterPlot);
                 }
 
             }
@@ -722,6 +734,7 @@ namespace Spectrum
         {
             ViewResultSpectrums.Clear();
             ScatterPlots.Clear();
+            AbsoluteScatterPlots.Clear();
             listView2.ItemsSource = new ObservableCollection<SpectralData>();
             if (ViewResultSpectrums.Count > 0)
             {
@@ -731,6 +744,8 @@ namespace Spectrum
             {
                 wpfplot1.Plot.Clear();
                 wpfplot1.Refresh();
+                wpfplot2.Plot.Clear();
+                wpfplot2.Refresh();
             }
             ReDrawPlot();
         }
@@ -903,13 +918,22 @@ namespace Spectrum
         }
 
         public List<Scatter> ScatterPlots => ViewResultManager.ScatterPlots;
+        public List<Scatter> AbsoluteScatterPlots => ViewResultManager.AbsoluteScatterPlots;
 
         bool MulComparison;
         Scatter? LastMulSelectComparsion;
+        private bool IsShowingAbsoluteSpectrum { get; set; } = false;
 
         private void DrawPlot()
         {
             if (ViewResultList.SelectedIndex < 0) return;
+
+            if (IsShowingAbsoluteSpectrum)
+            {
+                DrawAbsolutePlot();
+                return;
+            }
+
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
             wpfplot1.Plot.Axes.SetLimitsY(0, 1);
             wpfplot1.Plot.Axes.Bottom.Min = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect1;
@@ -952,29 +976,109 @@ namespace Spectrum
             wpfplot1.Refresh();
         }
 
+        private void DrawAbsolutePlot()
+        {
+            if (ViewResultList.SelectedIndex < 0) return;
+
+            wpfplot2.Plot.Axes.SetLimitsX(380, 780);
+            wpfplot2.Plot.Axes.Bottom.Min = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect1;
+            wpfplot2.Plot.Axes.Bottom.Max = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect2;
+
+            if (AbsoluteScatterPlots.Count > 0)
+            {
+                if (MulComparison)
+                {
+                    if (LastMulSelectComparsion != null)
+                    {
+                        LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                        LastMulSelectComparsion.LineWidth = 1;
+                        LastMulSelectComparsion.MarkerSize = 1;
+                    }
+
+                    LastMulSelectComparsion = AbsoluteScatterPlots[ViewResultList.SelectedIndex];
+                    LastMulSelectComparsion.LineWidth = 3;
+                    LastMulSelectComparsion.MarkerSize = 3;
+                    LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.Red);
+                    wpfplot2.Plot.PlottableList.Add(LastMulSelectComparsion);
+                }
+                else
+                {
+                    var temp = AbsoluteScatterPlots[ViewResultList.SelectedIndex];
+                    temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                    temp.LineWidth = 1;
+                    temp.MarkerSize = 1;
+
+                    wpfplot2.Plot.PlottableList.Add(temp);
+                    wpfplot2.Plot.Remove(LastMulSelectComparsion);
+                    LastMulSelectComparsion = temp;
+                }
+            }
+
+            wpfplot2.Refresh();
+        }
+
+        private void ToggleSpectrumType_Click(object sender, RoutedEventArgs e)
+        {
+            IsShowingAbsoluteSpectrum = !IsShowingAbsoluteSpectrum;
+
+            if (IsShowingAbsoluteSpectrum)
+            {
+                wpfplot1.Visibility = Visibility.Collapsed;
+                wpfplot2.Visibility = Visibility.Visible;
+                SpectrumTypeText.Text = "绝对光谱";
+            }
+            else
+            {
+                wpfplot1.Visibility = Visibility.Visible;
+                wpfplot2.Visibility = Visibility.Collapsed;
+                SpectrumTypeText.Text = "相对光谱";
+            }
+
+            ReDrawPlot();
+        }
+
         private void ReDrawPlot()
         {
             if (ViewResultList.SelectedIndex < 0) return;
 
-            wpfplot1.Plot.Clear();
-
-            LastMulSelectComparsion = null;
-            if (MulComparison)
+            if (IsShowingAbsoluteSpectrum)
             {
-                ViewResultList.SelectedIndex = ViewResultList.Items.Count > 0 && ViewResultList.SelectedIndex == -1 ? 0 : ViewResultList.SelectedIndex;
-                for (int i = 0; i < ViewResultSpectrums.Count; i++)
+                wpfplot2.Plot.Clear();
+                LastMulSelectComparsion = null;
+                if (MulComparison)
                 {
-                    if (i == ViewResultList.SelectedIndex)
-                        continue;
-                    var plot = ScatterPlots[i];
-                    plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
-                    plot.LineWidth = 1;
-                    plot.MarkerSize = 1;
-
-                    wpfplot1.Plot.PlottableList.Add(plot);
+                    ViewResultList.SelectedIndex = ViewResultList.Items.Count > 0 && ViewResultList.SelectedIndex == -1 ? 0 : ViewResultList.SelectedIndex;
+                    for (int i = 0; i < ViewResultSpectrums.Count; i++)
+                    {
+                        if (i == ViewResultList.SelectedIndex) continue;
+                        var plot = AbsoluteScatterPlots[i];
+                        plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                        plot.LineWidth = 1;
+                        plot.MarkerSize = 1;
+                        wpfplot2.Plot.PlottableList.Add(plot);
+                    }
                 }
+                DrawAbsolutePlot();
             }
-            DrawPlot();
+            else
+            {
+                wpfplot1.Plot.Clear();
+                LastMulSelectComparsion = null;
+                if (MulComparison)
+                {
+                    ViewResultList.SelectedIndex = ViewResultList.Items.Count > 0 && ViewResultList.SelectedIndex == -1 ? 0 : ViewResultList.SelectedIndex;
+                    for (int i = 0; i < ViewResultSpectrums.Count; i++)
+                    {
+                        if (i == ViewResultList.SelectedIndex) continue;
+                        var plot = ScatterPlots[i];
+                        plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                        plot.LineWidth = 1;
+                        plot.MarkerSize = 1;
+                        wpfplot1.Plot.PlottableList.Add(plot);
+                    }
+                }
+                DrawPlot();
+            }
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)

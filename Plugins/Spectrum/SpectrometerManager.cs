@@ -204,6 +204,8 @@ namespace Spectrum
         public RelayCommand SetGroupWavelengthFileCommand { get; set; }
         [JsonIgnore]
         public RelayCommand SetGroupMaguideFileCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand OpenCalibrationGroupWindowCommand { get; set; }
 
         /// <summary>
         /// Loads calibration config for the current SN.
@@ -347,6 +349,7 @@ namespace Spectrum
             RemoveCalibrationGroupCommand = new RelayCommand(a => RemoveCalibrationGroup());
             SetGroupWavelengthFileCommand = new RelayCommand(a => SetActiveGroupFile(isWavelength: true));
             SetGroupMaguideFileCommand = new RelayCommand(a => SetActiveGroupFile(isWavelength: false));
+            OpenCalibrationGroupWindowCommand = new RelayCommand(a => OpenCalibrationGroupWindow());
         }
         public NDConfig NDConfig => Config.NDConfig;
 
@@ -430,7 +433,13 @@ namespace Spectrum
             }
         }
 
-
+        private void OpenCalibrationGroupWindow()
+        {
+            new CalibrationGroupWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            // After dialog closed, refresh bindings
+            OnPropertyChanged(nameof(CalibrationGroupNames));
+            OnPropertyChanged(nameof(ActiveCalibrationGroupName));
+        }
 
 
         public RelayCommand GetSpectrSerialNumberCommand { get; set; }
