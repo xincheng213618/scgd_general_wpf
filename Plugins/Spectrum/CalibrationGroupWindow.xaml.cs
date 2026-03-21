@@ -108,6 +108,10 @@ namespace Spectrum
             string newName = TextBoxGroupName.Text.Trim();
             if (newName != group.GroupName)
             {
+                // Check for duplicate group names
+                if (Manager.CalibrationGroupConfig.Groups.Any(g => g != group && g.GroupName == newName))
+                    return;
+
                 group.GroupName = newName;
                 // Use the public setter which triggers OnPropertyChanged internally
                 Manager.ActiveCalibrationGroupName = newName;
