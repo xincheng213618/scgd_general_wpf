@@ -12,7 +12,7 @@
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SpectrometerManager}"
-        Title="光谱仪软件" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="光谱仪软件" Height="1080" Width="1920" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}" >
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -57,7 +57,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="330"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="230"/>
+                <ColumnDefinition Width="400"/>
 
             </Grid.ColumnDefinitions>
             <Grid  Grid.Column="2"  >
