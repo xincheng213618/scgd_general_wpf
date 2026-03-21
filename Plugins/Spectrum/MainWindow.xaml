@@ -319,11 +319,11 @@
                                 <CheckBox x:Name="EqeCheckBox" Content="EQE模式" IsChecked="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeEnabled}" Checked="EqeCheckBox_Changed" Unchecked="EqeCheckBox_Changed" Margin="0,0,0,4"/>
                                 <StackPanel x:Name="EqePanel" Visibility="Collapsed">
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                        <TextBlock Text="电压V (V)" Width="80"/>
+                                        <TextBlock Text="电压 (V)" Width="80"/>
                                         <TextBox x:Name="TextBoxVoltage" Style="{StaticResource TextBox.Small}" Width="80" Text="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeVoltage, UpdateSourceTrigger=PropertyChanged}" />
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                        <TextBlock Text="电流I (mA)" Width="80"/>
+                                        <TextBlock Text="电流 (mA)" Width="80"/>
                                         <TextBox x:Name="TextBoxCurrentMA" Style="{StaticResource TextBox.Small}" Width="80" Text="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeCurrentMA, UpdateSourceTrigger=PropertyChanged}" />
                                     </StackPanel>
                                     <Button Content="计算EQE" Click="CalculateEqe_Click" Margin="0,4,0,0" HorizontalAlignment="Left" />
