@@ -15,6 +15,7 @@ using ScottPlot;
 using ScottPlot.Plottables;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
 using System.Reflection;
@@ -136,11 +137,25 @@ namespace Spectrum
             wpfplot1.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(title);
 
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot1.Plot.Axes.SetLimitsY(0, 1);
+            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
             wpfplot1.Plot.Axes.Bottom.Min = 370;
             wpfplot1.Plot.Axes.Bottom.Max = 1000;
-            wpfplot1.Plot.Axes.Left.Min = 0;
+            wpfplot1.Plot.Axes.Left.Min = -0.05;
             wpfplot1.Plot.Axes.Left.Max = 1;
+
+            // Add visible spectrum rainbow color bar below the plot
+            AddSpectrumColorBar(wpfplot1);
+
+            string titleAbsolute = "绝对光谱曲线";
+            wpfplot2.Plot.XLabel("波长[nm]");
+            wpfplot2.Plot.YLabel("绝对光谱");
+            wpfplot2.Plot.Axes.Title.Label.Text = titleAbsolute;
+            wpfplot2.Plot.Axes.Title.Label.FontName = Fonts.Detect(titleAbsolute);
+            wpfplot2.Plot.Axes.Left.Label.FontName = Fonts.Detect(titleAbsolute);
+            wpfplot2.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(titleAbsolute);
+            wpfplot2.Plot.Axes.SetLimitsX(380, 780);
+            wpfplot2.Plot.Axes.Bottom.Min = 370;
+            wpfplot2.Plot.Axes.Bottom.Max = 1000;
 
             if (ViewResultSpectrums.Count != 0)
             {
@@ -148,6 +163,7 @@ namespace Spectrum
                 {
                     item.Gen();
                     ScatterPlots.Add(item.ScatterPlot);
+                    AbsoluteScatterPlots.Add(item.AbsoluteScatterPlot);
                 }
 
             }
@@ -206,6 +222,41 @@ namespace Spectrum
                 if (iR == 1)
                 {
                     Manager.IsConnected = true;
+
+                    // Retrieve the SN
+                    try
+                    {
+                        int bufferLength = 1024;
+                        StringBuilder snBuilder = new StringBuilder(bufferLength);
+                        int snRet = Spectrometer.CM_Emission_GetAllSN((int)Manager.Config.SpectrometerType, com, snBuilder, bufferLength);
+                        if (snRet == 1)
+                        {
+                            string sn = snBuilder.ToString().Trim();
+                            if (!string.IsNullOrEmpty(sn))
+                            {
+                                Manager.SerialNumber = sn;
+                                log.Info($"Spectrometer SN: {sn}");
+                            }
+                            else
+                            {
+                                Manager.SerialNumber = "Unknown";
+                            }
+                        }
+                        else
+                        {
+                            log.Warn($"CM_Emission_GetAllSN returned {snRet}");
+                            Manager.SerialNumber = "Unknown";
+                        }
+                    }
+                    catch (Exception snEx)
+                    {
+                        log.Warn("Failed to read SN", snEx);
+                        Manager.SerialNumber = "Unknown";
+                    }
+
+                    // Load per-SN calibration groups and apply
+                    Manager.LoadCalibrationConfig();
+
                     iR = Spectrometer.CM_Emission_LoadWavaLengthFile(SpectrometerHandle, Manager.WavelengthFile);
                     log.Info($"CM_Emission_LoadWavaLengthFile{Manager.WavelengthFile},ret{iR}");
                     iR = Spectrometer.CM_Emission_LoadMagiudeFile(SpectrometerHandle, Manager.MaguideFile);
@@ -224,11 +275,6 @@ namespace Spectrum
                 }
                 else
                 {
-                    //int bufferLength = 1024;
-                    //StringBuilder stringBuilder = new StringBuilder(bufferLength);
-                    //cvColorVision.Spectrometer.CM_GetSpectrSerialNumber(SpectrometerHandle, stringBuilder);
-                    //MessageBox.Show(stringBuilder.ToString());
-
                     Manager.IsConnected = false;
                     string logDir = "log";
                     string logPrefix = "Spectrum_Main";
@@ -285,12 +331,9 @@ namespace Spectrum
             testid = 0;
             IsRun = false;
             ret = Manager.Disconnect();
-            if (ret == 1)
-            {
-                MessageBox.Show(Spectrum.Properties.Resources.已成功断开连接);
-                State2.Text = Spectrum.Properties.Resources.未连接;
-                State4.Text = Spectrum.Properties.Resources.未连接;
-            }
+            Manager.SerialNumber = string.Empty;
+            State2.Text = Spectrum.Properties.Resources.未连接;
+            State4.Text = "---";
         }
             
         //按钮显示1976图
@@ -361,11 +404,11 @@ namespace Spectrum
                 OpenCvSharp.Point p1, p2;
                 p1.X = Convert.ToInt32(Math.Round((fx * 10 * 97 + 104)));
                 p1.Y = Convert.ToInt32(Math.Round((881 - fy * 10 * 97)));
-                Cv2.Circle(cir1931, p1.X, p1.Y, 5, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
+                Cv2.Circle(cir1931, p1.X, p1.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
                 p2.X = Convert.ToInt32(Math.Round((fu * 10 * 154 + 49)));
                 //p2.X = 203;//49+154*6
                 p2.Y = Convert.ToInt32(Math.Round((973 - fv * 10 * 154)));
-                Cv2.Circle(cir1976, p2.X, p2.Y, 5, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
+                Cv2.Circle(cir1976, p2.X, p2.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
                 pic1931 = cir1931.ToWriteableBitmap();
                 pic1976 = cir1976.ToWriteableBitmap();
             }
@@ -694,6 +737,7 @@ namespace Spectrum
         {
             ViewResultSpectrums.Clear();
             ScatterPlots.Clear();
+            AbsoluteScatterPlots.Clear();
             listView2.ItemsSource = new ObservableCollection<SpectralData>();
             if (ViewResultSpectrums.Count > 0)
             {
@@ -702,7 +746,10 @@ namespace Spectrum
             else
             {
                 wpfplot1.Plot.Clear();
+                AddSpectrumColorBar(wpfplot1);
                 wpfplot1.Refresh();
+                wpfplot2.Plot.Clear();
+                wpfplot2.Refresh();
             }
             ReDrawPlot();
         }
@@ -875,18 +922,27 @@ namespace Spectrum
         }
 
         public List<Scatter> ScatterPlots => ViewResultManager.ScatterPlots;
+        public List<Scatter> AbsoluteScatterPlots => ViewResultManager.AbsoluteScatterPlots;
 
         bool MulComparison;
         Scatter? LastMulSelectComparsion;
+        private bool IsShowingAbsoluteSpectrum { get; set; } = false;
 
         private void DrawPlot()
         {
             if (ViewResultList.SelectedIndex < 0) return;
+
+            if (IsShowingAbsoluteSpectrum)
+            {
+                DrawAbsolutePlot();
+                return;
+            }
+
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot1.Plot.Axes.SetLimitsY(0, 1);
+            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
             wpfplot1.Plot.Axes.Bottom.Min = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect1;
             wpfplot1.Plot.Axes.Bottom.Max = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect2;
-            wpfplot1.Plot.Axes.Left.Min = 0;
+            wpfplot1.Plot.Axes.Left.Min = -0.05;
             wpfplot1.Plot.Axes.Left.Max = 1;
 
             if (ScatterPlots.Count > 0)
@@ -924,29 +980,111 @@ namespace Spectrum
             wpfplot1.Refresh();
         }
 
+        private void DrawAbsolutePlot()
+        {
+            if (ViewResultList.SelectedIndex < 0) return;
+
+            wpfplot2.Plot.Axes.SetLimitsX(380, 780);
+            wpfplot2.Plot.Axes.Bottom.Min = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect1;
+            wpfplot2.Plot.Axes.Bottom.Max = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect2;
+
+            if (AbsoluteScatterPlots.Count > 0)
+            {
+                if (MulComparison)
+                {
+                    if (LastMulSelectComparsion != null)
+                    {
+                        LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                        LastMulSelectComparsion.LineWidth = 1;
+                        LastMulSelectComparsion.MarkerSize = 1;
+                    }
+
+                    LastMulSelectComparsion = AbsoluteScatterPlots[ViewResultList.SelectedIndex];
+                    LastMulSelectComparsion.LineWidth = 3;
+                    LastMulSelectComparsion.MarkerSize = 3;
+                    LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.Red);
+                    wpfplot2.Plot.PlottableList.Add(LastMulSelectComparsion);
+                }
+                else
+                {
+                    var temp = AbsoluteScatterPlots[ViewResultList.SelectedIndex];
+                    temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                    temp.LineWidth = 1;
+                    temp.MarkerSize = 1;
+
+                    wpfplot2.Plot.PlottableList.Add(temp);
+                    wpfplot2.Plot.Remove(LastMulSelectComparsion);
+                    LastMulSelectComparsion = temp;
+                }
+            }
+
+            wpfplot2.Refresh();
+        }
+
+        private void ToggleSpectrumType_Click(object sender, RoutedEventArgs e)
+        {
+            IsShowingAbsoluteSpectrum = !IsShowingAbsoluteSpectrum;
+
+            if (IsShowingAbsoluteSpectrum)
+            {
+                wpfplot1.Visibility = Visibility.Collapsed;
+                wpfplot2.Visibility = Visibility.Visible;
+                SpectrumTypeText.Text = "绝对光谱";
+            }
+            else
+            {
+                wpfplot1.Visibility = Visibility.Visible;
+                wpfplot2.Visibility = Visibility.Collapsed;
+                SpectrumTypeText.Text = "相对光谱";
+            }
+
+            ReDrawPlot();
+        }
+
         private void ReDrawPlot()
         {
             if (ViewResultList.SelectedIndex < 0) return;
 
-            wpfplot1.Plot.Clear();
-
-            LastMulSelectComparsion = null;
-            if (MulComparison)
+            if (IsShowingAbsoluteSpectrum)
             {
-                ViewResultList.SelectedIndex = ViewResultList.Items.Count > 0 && ViewResultList.SelectedIndex == -1 ? 0 : ViewResultList.SelectedIndex;
-                for (int i = 0; i < ViewResultSpectrums.Count; i++)
+                wpfplot2.Plot.Clear();
+                LastMulSelectComparsion = null;
+                if (MulComparison)
                 {
-                    if (i == ViewResultList.SelectedIndex)
-                        continue;
-                    var plot = ScatterPlots[i];
-                    plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
-                    plot.LineWidth = 1;
-                    plot.MarkerSize = 1;
-
-                    wpfplot1.Plot.PlottableList.Add(plot);
+                    ViewResultList.SelectedIndex = ViewResultList.Items.Count > 0 && ViewResultList.SelectedIndex == -1 ? 0 : ViewResultList.SelectedIndex;
+                    for (int i = 0; i < ViewResultSpectrums.Count; i++)
+                    {
+                        if (i == ViewResultList.SelectedIndex) continue;
+                        var plot = AbsoluteScatterPlots[i];
+                        plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                        plot.LineWidth = 1;
+                        plot.MarkerSize = 1;
+                        wpfplot2.Plot.PlottableList.Add(plot);
+                    }
                 }
+                DrawAbsolutePlot();
             }
-            DrawPlot();
+            else
+            {
+                wpfplot1.Plot.Clear();
+                // Re-add spectrum color bar after clearing
+                AddSpectrumColorBar(wpfplot1);
+                LastMulSelectComparsion = null;
+                if (MulComparison)
+                {
+                    ViewResultList.SelectedIndex = ViewResultList.Items.Count > 0 && ViewResultList.SelectedIndex == -1 ? 0 : ViewResultList.SelectedIndex;
+                    for (int i = 0; i < ViewResultSpectrums.Count; i++)
+                    {
+                        if (i == ViewResultList.SelectedIndex) continue;
+                        var plot = ScatterPlots[i];
+                        plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
+                        plot.LineWidth = 1;
+                        plot.MarkerSize = 1;
+                        wpfplot1.Plot.PlottableList.Add(plot);
+                    }
+                }
+                DrawPlot();
+            }
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -955,11 +1093,9 @@ namespace Spectrum
             {
                 DrawPlot();
                 listView2.ItemsSource = ViewResultSpectrums[listview.SelectedIndex].SpectralDatas;
-                if (MainWindowConfig.Instance.CiePointEnabled)
-                {
-                    DrawCIEPoinr(ViewResultSpectrums[listview.SelectedIndex].fx, ViewResultSpectrums[listview.SelectedIndex].fy, ViewResultSpectrums[listview.SelectedIndex].fu, ViewResultSpectrums[listview.SelectedIndex].fv);
-                    this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1931; });
-                }
+                // Always draw CIE point on selection
+                DrawCIEPoinr(ViewResultSpectrums[listview.SelectedIndex].fx, ViewResultSpectrums[listview.SelectedIndex].fy, ViewResultSpectrums[listview.SelectedIndex].fu, ViewResultSpectrums[listview.SelectedIndex].fv);
+                this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1931; });
             }
         }
 
@@ -978,6 +1114,7 @@ namespace Spectrum
                 else
                 {
                     wpfplot1.Plot.Clear();
+                    AddSpectrumColorBar(wpfplot1);
                     wpfplot1.Refresh();
                 }
 
@@ -1006,6 +1143,40 @@ namespace Spectrum
         private void ContextMenu1_Opened(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void DominantColor_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is string hex)
+            {
+                try
+                {
+                    Clipboard.SetText(hex);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Failed to copy color to clipboard", ex);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds a visible spectrum rainbow color bar to the bottom of the chart.
+        /// Uses ScottPlot Rectangle annotations for each wavelength step.
+        /// </summary>
+        private void AddSpectrumColorBar(ScottPlot.WPF.WpfPlot plotControl)
+        {
+            // Add colored rectangles from 380 to 780 nm
+            for (int wl = 380; wl < 780; wl += 2)
+            {
+                var color = WavelengthToColor.Convert(wl);
+                var scottColor = new ScottPlot.Color(color.R, color.G, color.B);
+
+                var rect = plotControl.Plot.Add.Rectangle(wl, wl + 2, -0.03, 0.0);
+                rect.FillColor = scottColor;
+                rect.LineColor = scottColor;
+                rect.LineWidth = 0;
+            }
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -1073,6 +1244,35 @@ namespace Spectrum
             foreach (var item in ViewResultSpectrums)
             {
                 item.CalculateEqeParams(voltage, currentMA);
+            }
+        }
+
+        private void StatusBarConnectionType_DoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                // Open Device Manager on double-click (useful for USB connections)
+                Process.Start(new ProcessStartInfo("devmgmt.msc") { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Failed to open Device Manager", ex);
+            }
+        }
+
+        private void StatusBarSN_DoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(Manager.SerialNumber) && Manager.SerialNumber != "---")
+            {
+                try
+                {
+                    Clipboard.SetText(Manager.SerialNumber);
+                    log.Info($"SN copied to clipboard: {Manager.SerialNumber}");
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("Failed to copy SN to clipboard", ex);
+                }
             }
         }
 

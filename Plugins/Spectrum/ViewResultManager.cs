@@ -79,6 +79,7 @@ namespace Spectrum
 
         public ObservableCollection<ViewResultSpectrum> ViewResluts { get; set; } = new ObservableCollection<ViewResultSpectrum>();
         public List<Scatter> ScatterPlots { get; set; } = new List<Scatter>();
+        public List<Scatter> AbsoluteScatterPlots { get; set; } = new List<Scatter>();
 
         public int ViewReslutsSelectedIndex { get => _ViewReslutsSelectedIndex; set { _ViewReslutsSelectedIndex = value; OnPropertyChanged(); } }
         private int _ViewReslutsSelectedIndex = -1;
@@ -123,6 +124,7 @@ namespace Spectrum
             ViewReslutsSelectedIndex = -1;
             ViewResluts.Clear();
             ScatterPlots.Clear();
+            AbsoluteScatterPlots.Clear();
         }
         public void Query()
         {
@@ -168,6 +170,7 @@ namespace Spectrum
                 ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(dbItem);
                 ViewResluts.Add(viewResultSpectrum);
                 ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
+                AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
             }
         }
 
@@ -181,6 +184,7 @@ namespace Spectrum
             if (Config.OrderByType == OrderByType.Desc)
             {
                 ScatterPlots.Insert(0,viewResultSpectrum.ScatterPlot);
+                AbsoluteScatterPlots.Insert(0, viewResultSpectrum.AbsoluteScatterPlot);
                 ViewResluts.Insert(0, viewResultSpectrum); //倒序插入
 
                 if (Config.AutoRefresh)
@@ -191,6 +195,7 @@ namespace Spectrum
             else
             {
                 ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
+                AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
                 ViewResluts.Add(viewResultSpectrum);
                 if (Config.AutoRefresh)
                 {
@@ -223,6 +228,7 @@ namespace Spectrum
             {
                 ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(dbItem);
                 ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
+                AbsoluteScatterPlots.Add(viewResultSpectrum.AbsoluteScatterPlot);
                 ViewResluts.Add(viewResultSpectrum);
             }
         }
