@@ -195,8 +195,13 @@ namespace Spectrum
             {
                 Manager.Handle = Spectrometer.CM_CreateEmission(0, MyCallback);
 
-                int ncom = int.Parse(Manager.Config.SzComName.Replace("COM", ""));
-                int iR = Spectrometer.CM_Emission_Init(SpectrometerHandle, ncom, Manager.Config.BaudRate);
+                int com = 0;
+                if (Manager.Config.IsComPort)
+                {
+                     com = int.Parse(Manager.Config.SzComName.Replace("COM", ""));
+                }
+
+                int iR = Spectrometer.CM_Emission_Init(SpectrometerHandle, com, Manager.Config.BaudRate);
                 log.Info($"CM_Emission_Init:{iR}");
                 if (iR == 1)
                 {

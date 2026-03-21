@@ -49,9 +49,28 @@
 
         <Grid Grid.Row="1" >
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="350"/>
+                <ColumnDefinition Width="300"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="230"/>
+
             </Grid.ColumnDefinitions>
+            <Grid  Grid.Column="2"  >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" x:Name="LogGrid">
+                </Grid>
+                <Grid Grid.Row="1">
+                    <Image x:Name="image" HorizontalAlignment="Left" Height="250"  Width="230" Margin="0" Source="Assets\Image\CIE-1931.jpg" Grid.Column="1" />
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Panel.ZIndex="999">
+                        <Button x:Name="button1" Content="CIE1931" Click="Button1_Click"/>
+                        <Button x:Name="button2" Content="CIE1976" Click="Button2_Click"/>
+                        <CheckBox x:Name="CiePointCheckBox" Content="标注" IsChecked="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=CiePointEnabled}" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+
+            </Grid>
             <Grid Grid.Column="0">
                 <ScrollViewer Margin="3,0,3,5">
                     <StackPanel x:Name="MainStackPanel">
@@ -283,10 +302,7 @@
                 
             </Grid>
             <Grid Grid.Column="1" Background="{DynamicResource BorderBrush}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="250"/>
-                </Grid.ColumnDefinitions>
+
 
                 <Grid Grid.Column="0" >
                     <Grid.RowDefinitions>
@@ -294,7 +310,51 @@
                         <RowDefinition x:Name="ListRow2" Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Grid Grid.Column="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
                         <ScottPlot:WpfPlot  x:Name="wpfplot1" Panel.ZIndex="9" />
+                        <ListView x:Name="listView2"  Grid.Column="1"  Padding="2,0,2,2"  Style="{StaticResource ListView.Small}" BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
+                            <ListView.Resources>
+                                <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" >
+                                </ContextMenu>
+                            </ListView.Resources>
+                            <ListView.View >
+                                <GridView >
+                                    <GridView.ColumnHeaderContainerStyle>
+                                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                        </Style>
+                                    </GridView.ColumnHeaderContainerStyle>
+                                    <GridViewColumn  Header="波长" >
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type local:SpectralData}">
+                                                <TextBlock Text="{ Binding  Wavelength}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn  Header="相对光谱">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type local:SpectralData}">
+                                                <TextBlock Text="{Binding  RelativeSpectrum, StringFormat={}{0:F4}}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn  Header="绝对光谱" >
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type local:SpectralData}">
+                                                <TextBlock Text="{ Binding   AbsoluteSpectrum, StringFormat={}{0:F4}}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+
                     </Grid>
                     <Grid x:Name="Grid1" Grid.Row="1" >
                         <Grid.RowDefinitions>
@@ -577,67 +637,6 @@
                     <GridSplitter  Grid.Row="1" Background="#01FFFFFF"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
                 </Grid>
 
-                <Grid Grid.Column="1" Margin="0,0,0,0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="300"/>
-                    </Grid.RowDefinitions>
-                    <ListView x:Name="listView2"  Grid.Column="1"  Padding="2,0,2,2"  Style="{StaticResource ListView.Small}" BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
-                        <ListView.Resources>
-                            <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" >
-                            </ContextMenu>
-                        </ListView.Resources>
-                        <ListView.View >
-                            <GridView >
-                                <GridView.ColumnHeaderContainerStyle>
-                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <Setter Property="BorderThickness" Value="0"/>
-                                        <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
-                                    </Style>
-                                </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn  Header="波长" >
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate  DataType="{x:Type local:SpectralData}">
-                                            <TextBlock Text="{ Binding  Wavelength}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn  Header="相对光谱">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate  DataType="{x:Type local:SpectralData}">
-                                            <TextBlock Text="{Binding  RelativeSpectrum, StringFormat={}{0:F4}}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn  Header="绝对光谱" >
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate  DataType="{x:Type local:SpectralData}">
-                                            <TextBlock Text="{ Binding   AbsoluteSpectrum, StringFormat={}{0:F4}}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
-                    <Grid  Grid.Row="1" Height="300" >
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <Grid>
-                            <Image x:Name="image" HorizontalAlignment="Left" Height="250"  Width="250" Margin="0" Source="Assets\Image\CIE-1931.jpg" Grid.Column="1" />
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Panel.ZIndex="999">
-                                <Button x:Name="button1" Content="CIE1931" Click="Button1_Click"/>
-                                <Button x:Name="button2" Content="CIE1976" Click="Button2_Click"/>
-                                <CheckBox x:Name="CiePointCheckBox" Content="标注" IsChecked="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=CiePointEnabled}" Margin="5,0,0,0" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Grid>
-                        <Grid Grid.Row="1" x:Name="LogGrid">
-                        </Grid>
-                    </Grid>
-                </Grid>
             </Grid>
 
 
