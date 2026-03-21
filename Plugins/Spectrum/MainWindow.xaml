@@ -590,6 +590,24 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
+                                    <GridViewColumn  Header="主波长颜色" >
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                                <Border Background="{Binding DominantWavelengthColor}" Width="40" Height="16" CornerRadius="2" Cursor="Hand" ToolTip="{Binding DominantWavelengthHex}" MouseLeftButtonDown="DominantColor_Click">
+                                                    <Border.Tag>
+                                                        <Binding Path="DominantWavelengthHex"/>
+                                                    </Border.Tag>
+                                                </Border>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn  Header="兴奋纯度" >
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                                <TextBlock Text="{ Binding ExcitationPurity, StringFormat={}{0:F4}}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
                                     <GridViewColumn  Header="色纯度(%)" >
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">

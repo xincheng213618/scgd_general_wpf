@@ -137,11 +137,14 @@ namespace Spectrum
             wpfplot1.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(title);
 
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot1.Plot.Axes.SetLimitsY(0, 1);
+            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
             wpfplot1.Plot.Axes.Bottom.Min = 370;
             wpfplot1.Plot.Axes.Bottom.Max = 1000;
-            wpfplot1.Plot.Axes.Left.Min = 0;
+            wpfplot1.Plot.Axes.Left.Min = -0.05;
             wpfplot1.Plot.Axes.Left.Max = 1;
+
+            // Add visible spectrum rainbow color bar below the plot
+            AddSpectrumColorBar(wpfplot1);
 
             string titleAbsolute = "绝对光谱曲线";
             wpfplot2.Plot.XLabel("波长[nm]");
@@ -401,11 +404,11 @@ namespace Spectrum
                 OpenCvSharp.Point p1, p2;
                 p1.X = Convert.ToInt32(Math.Round((fx * 10 * 97 + 104)));
                 p1.Y = Convert.ToInt32(Math.Round((881 - fy * 10 * 97)));
-                Cv2.Circle(cir1931, p1.X, p1.Y, 5, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
+                Cv2.Circle(cir1931, p1.X, p1.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
                 p2.X = Convert.ToInt32(Math.Round((fu * 10 * 154 + 49)));
                 //p2.X = 203;//49+154*6
                 p2.Y = Convert.ToInt32(Math.Round((973 - fv * 10 * 154)));
-                Cv2.Circle(cir1976, p2.X, p2.Y, 5, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
+                Cv2.Circle(cir1976, p2.X, p2.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
                 pic1931 = cir1931.ToWriteableBitmap();
                 pic1976 = cir1976.ToWriteableBitmap();
             }
@@ -743,6 +746,7 @@ namespace Spectrum
             else
             {
                 wpfplot1.Plot.Clear();
+                AddSpectrumColorBar(wpfplot1);
                 wpfplot1.Refresh();
                 wpfplot2.Plot.Clear();
                 wpfplot2.Refresh();
@@ -935,10 +939,10 @@ namespace Spectrum
             }
 
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot1.Plot.Axes.SetLimitsY(0, 1);
+            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
             wpfplot1.Plot.Axes.Bottom.Min = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect1;
             wpfplot1.Plot.Axes.Bottom.Max = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect2;
-            wpfplot1.Plot.Axes.Left.Min = 0;
+            wpfplot1.Plot.Axes.Left.Min = -0.05;
             wpfplot1.Plot.Axes.Left.Max = 1;
 
             if (ScatterPlots.Count > 0)
@@ -1063,6 +1067,8 @@ namespace Spectrum
             else
             {
                 wpfplot1.Plot.Clear();
+                // Re-add spectrum color bar after clearing
+                AddSpectrumColorBar(wpfplot1);
                 LastMulSelectComparsion = null;
                 if (MulComparison)
                 {
@@ -1087,11 +1093,9 @@ namespace Spectrum
             {
                 DrawPlot();
                 listView2.ItemsSource = ViewResultSpectrums[listview.SelectedIndex].SpectralDatas;
-                if (MainWindowConfig.Instance.CiePointEnabled)
-                {
-                    DrawCIEPoinr(ViewResultSpectrums[listview.SelectedIndex].fx, ViewResultSpectrums[listview.SelectedIndex].fy, ViewResultSpectrums[listview.SelectedIndex].fu, ViewResultSpectrums[listview.SelectedIndex].fv);
-                    this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1931; });
-                }
+                // Always draw CIE point on selection
+                DrawCIEPoinr(ViewResultSpectrums[listview.SelectedIndex].fx, ViewResultSpectrums[listview.SelectedIndex].fy, ViewResultSpectrums[listview.SelectedIndex].fu, ViewResultSpectrums[listview.SelectedIndex].fv);
+                this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1931; });
             }
         }
 
@@ -1110,6 +1114,7 @@ namespace Spectrum
                 else
                 {
                     wpfplot1.Plot.Clear();
+                    AddSpectrumColorBar(wpfplot1);
                     wpfplot1.Refresh();
                 }
 
@@ -1138,6 +1143,40 @@ namespace Spectrum
         private void ContextMenu1_Opened(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void DominantColor_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is string hex)
+            {
+                try
+                {
+                    Clipboard.SetText(hex);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("Failed to copy color to clipboard", ex);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds a visible spectrum rainbow color bar to the bottom of the chart.
+        /// Uses ScottPlot Rectangle annotations for each wavelength step.
+        /// </summary>
+        private void AddSpectrumColorBar(ScottPlot.WPF.WpfPlot plotControl)
+        {
+            // Add colored rectangles from 380 to 780 nm
+            for (int wl = 380; wl < 780; wl += 2)
+            {
+                var color = WavelengthToColor.Convert(wl);
+                var scottColor = new ScottPlot.Color(color.R, color.G, color.B);
+
+                var rect = plotControl.Plot.Add.Rectangle(wl, wl + 2, -0.03, 0.0);
+                rect.FillColor = scottColor;
+                rect.LineColor = scottColor;
+                rect.LineWidth = 0;
+            }
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
