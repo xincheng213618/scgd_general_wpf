@@ -214,14 +214,22 @@ namespace Spectrum
                         int bufferLength = 1024;
                         StringBuilder snBuilder = new StringBuilder(bufferLength);
                         int snRet = Spectrometer.CM_Emission_GetAllSN((int)Manager.Config.SpectrometerType, com, snBuilder, bufferLength);
-                        string sn = snBuilder.ToString().Trim();
-                        if (!string.IsNullOrEmpty(sn))
+                        if (snRet == 1)
                         {
-                            Manager.SerialNumber = sn;
-                            log.Info($"Spectrometer SN: {sn}");
+                            string sn = snBuilder.ToString().Trim();
+                            if (!string.IsNullOrEmpty(sn))
+                            {
+                                Manager.SerialNumber = sn;
+                                log.Info($"Spectrometer SN: {sn}");
+                            }
+                            else
+                            {
+                                Manager.SerialNumber = "Unknown";
+                            }
                         }
                         else
                         {
+                            log.Warn($"CM_Emission_GetAllSN returned {snRet}");
                             Manager.SerialNumber = "Unknown";
                         }
                     }

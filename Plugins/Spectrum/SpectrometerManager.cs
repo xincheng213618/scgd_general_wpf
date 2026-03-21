@@ -373,8 +373,15 @@ namespace Spectrum
 
         private void AddCalibrationGroup()
         {
-            string newName = $"Group{CalibrationGroupConfig.Groups.Count}";
-            // If connected, pre-fill with current files
+            // Generate a unique group name
+            int idx = CalibrationGroupConfig.Groups.Count;
+            string newName;
+            do
+            {
+                newName = $"Group{idx}";
+                idx++;
+            } while (CalibrationGroupConfig.Groups.Any(g => g.GroupName == newName));
+
             CalibrationGroupConfig.Groups.Add(new CalibrationGroup
             {
                 GroupName = newName,
@@ -387,11 +394,15 @@ namespace Spectrum
 
         private void RemoveCalibrationGroup()
         {
-            if (CalibrationGroupConfig.Groups.Count <= 1) return; // keep at least one
+            if (CalibrationGroupConfig.Groups.Count <= 1)
+            {
+                log.Info("Cannot remove the last calibration group");
+                return;
+            }
             var group = CalibrationGroupConfig.ActiveGroup;
             if (group == null) return;
             CalibrationGroupConfig.Groups.Remove(group);
-            ActiveCalibrationGroupName = CalibrationGroupConfig.Groups.First().GroupName;
+            ActiveCalibrationGroupName = CalibrationGroupConfig.Groups.FirstOrDefault()?.GroupName ?? "Default";
             OnPropertyChanged(nameof(CalibrationGroupNames));
             SaveCalibrationConfig();
         }
