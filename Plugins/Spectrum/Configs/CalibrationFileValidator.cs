@@ -68,8 +68,11 @@ namespace Spectrum.Configs
                 }
 
                 // nCount = (DataLength - 4) / sizeof(double)
-                // Note: C++ code uses "DataLength - 4" which appears to be a legacy quirk (header is 8 bytes for uint64)
-                // We keep the same calculation for compatibility
+                // The C++ code reads 8 bytes as uint64_t for DataLength but then subtracts 4 (not 8).
+                // This appears to be the actual binary format specification — the file was originally
+                // designed with a 4-byte header field that was later widened to 8 bytes, but the
+                // count formula was never updated. We match the C++ implementation exactly for
+                // binary compatibility with existing calibration files.
                 ulong nCount = (dataLength - 4) / sizeof(double);
 
                 long remainingBytes = fileLength - sizeof(ulong);
