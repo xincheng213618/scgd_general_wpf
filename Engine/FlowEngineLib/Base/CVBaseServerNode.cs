@@ -152,7 +152,7 @@ public class CVBaseServerNode : CVCommonNode
 	{
 		if (!string.IsNullOrWhiteSpace(Subtitle))
 		{
-            return $"{base.Title}{Environment.NewLine}{Subtitle}";
+            return $"{Subtitle}";
 
         }
         return $"{base.Title}";
