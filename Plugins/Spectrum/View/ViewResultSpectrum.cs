@@ -455,6 +455,13 @@ namespace Spectrum
         /// </summary>
         public void ComputeExcitationPurity()
         {
+            // Validate inputs
+            if (float.IsNaN(fx) || float.IsNaN(fy) || float.IsNaN(fLd) || fLd < 380 || fLd > 780)
+            {
+                ExcitationPurity = 0;
+                return;
+            }
+
             // D65 illuminant white point
             const double xn = 0.3127;
             const double yn = 0.3290;
