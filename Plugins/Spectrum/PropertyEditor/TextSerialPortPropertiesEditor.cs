@@ -1,12 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.NativeMethods;
 using ColorVision.UI;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO.Ports;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -18,13 +15,16 @@ namespace Spectrum.PropertyEditor
     {
         public string Name { get; set; }
 
+        // 新增：用于显示总线概述或设备描述
+        public string BusDescription { get => _BusDescription; set { _BusDescription = value; OnPropertyChanged(); } }
+        private string _BusDescription;
+
         public string Status { get => _Status; set { _Status = value; OnPropertyChanged(); } }
         private string _Status;
 
         public Brush Color { get => _Color; set { _Color = value; OnPropertyChanged(); } }
         private Brush _Color;
 
-        // 新增：用于显示详细错误信息的 ToolTip
         public string ErrorDetail { get => _ErrorDetail; set { _ErrorDetail = value; OnPropertyChanged(); } }
         private string _ErrorDetail;
     }
@@ -58,18 +58,30 @@ namespace Spectrum.PropertyEditor
             combo.SetBinding(ComboBox.TextProperty, PropertyEditorHelper.CreateTwoWayBinding(obj, property.Name));
             System.Windows.Controls.TextSearch.SetTextPath(combo, "Name");
 
+            // UI 布局：水平 StackPanel
             DataTemplate itemTemplate = new DataTemplate();
             FrameworkElementFactory stackPanelFactory = new FrameworkElementFactory(typeof(StackPanel));
             stackPanelFactory.SetValue(StackPanel.OrientationProperty, Orientation.Horizontal);
-
-            // 给整个条目添加 ToolTip
             stackPanelFactory.SetBinding(FrameworkElement.ToolTipProperty, new Binding("ErrorDetail"));
 
+            // 1. 端口号 (如 COM3)
             FrameworkElementFactory nameBlock = new FrameworkElementFactory(typeof(TextBlock));
             nameBlock.SetBinding(TextBlock.TextProperty, new Binding("Name"));
-            nameBlock.SetValue(TextBlock.WidthProperty, 70.0);
+            nameBlock.SetValue(TextBlock.WidthProperty, 60.0);
+            nameBlock.SetValue(TextBlock.FontWeightProperty, FontWeights.Bold);
             stackPanelFactory.AppendChild(nameBlock);
 
+            // 2. 详细描述 (如 BusDescription)
+            FrameworkElementFactory descBlock = new FrameworkElementFactory(typeof(TextBlock));
+            descBlock.SetBinding(TextBlock.TextProperty, new Binding("BusDescription"));
+            descBlock.SetValue(TextBlock.WidthProperty, 150.0);
+            descBlock.SetValue(TextBlock.ForegroundProperty, Brushes.Gray);
+            descBlock.SetValue(TextBlock.MarginProperty, new Thickness(5, 0, 5, 0));
+            // 如果描述过长，显示省略号
+            descBlock.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
+            stackPanelFactory.AppendChild(descBlock);
+
+            // 3. 状态 (如 可用/占用)
             FrameworkElementFactory statusBlock = new FrameworkElementFactory(typeof(TextBlock));
             statusBlock.SetBinding(TextBlock.TextProperty, new Binding("Status"));
             statusBlock.SetBinding(TextBlock.ForegroundProperty, new Binding("Color"));
@@ -82,14 +94,29 @@ namespace Spectrum.PropertyEditor
 
             void RefreshPorts()
             {
-                string[] portNames = SerialPort.GetPortNames();
-
-                var initialModels = portNames.Select(p => new SerialPortModel
+                // 使用我们编写好的底层 API 获取详细的设备列表
+                List<Win32DeviceMgmt.DeviceInfo> devices = new List<Win32DeviceMgmt.DeviceInfo>();
+                try
                 {
-                    Name = p,
-                    Status = "可用",
-                    Color = Brushes.Green,
-                    ErrorDetail = "端口状态正常"
+                    devices = Win32DeviceMgmt.GetAllCOMPorts();
+                }
+                catch
+                {
+                    // 降级处理：如果底层获取失败，回退到原生的 GetPortNames
+                    foreach (var p in SerialPort.GetPortNames())
+                    {
+                        devices.Add(new Win32DeviceMgmt.DeviceInfo { name = p, description = "未知设备", bus_description = "" });
+                    }
+                }
+
+                var initialModels = devices.Select(d => new SerialPortModel
+                {
+                    Name = d.name,
+                    // 优先显示 BusDescription，如果没有则显示 Description
+                    BusDescription = !string.IsNullOrWhiteSpace(d.bus_description) ? d.bus_description : d.description,
+                    Status = "检测中...",
+                    Color = Brushes.Gray,
+                    ErrorDetail = "正在检测端口状态..."
                 }).ToList();
 
                 combo.ItemsSource = initialModels;
@@ -98,7 +125,6 @@ namespace Spectrum.PropertyEditor
                 {
                     foreach (var model in initialModels)
                     {
-                        // 传入 model 以便更新详细错误信息
                         CheckPortStatus(model);
                     }
                 });
@@ -117,7 +143,6 @@ namespace Spectrum.PropertyEditor
                 using (SerialPort serialPort = new SerialPort(model.Name))
                 {
                     serialPort.Open();
-                    // 成功打开，不需要做任何改变，默认就是绿色可用
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         model.Status = "可用";
@@ -128,7 +153,6 @@ namespace Spectrum.PropertyEditor
             }
             catch (UnauthorizedAccessException)
             {
-                // 这是最常见的“被占用”
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     model.Status = "占用";
@@ -138,11 +162,10 @@ namespace Spectrum.PropertyEditor
             }
             catch (Exception ex)
             {
-                // 其他错误（如驱动问题、参数错误等）
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     model.Status = "异常";
-                    model.Color = Brushes.Orange; // 用橙色区分未知错误
+                    model.Color = Brushes.Orange;
                     model.ErrorDetail = $"无法打开端口: {ex.Message}";
                 });
             }

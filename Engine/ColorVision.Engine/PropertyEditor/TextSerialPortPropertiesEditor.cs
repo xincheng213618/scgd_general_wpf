@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.NativeMethods;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
