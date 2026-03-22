@@ -139,7 +139,7 @@ namespace Spectrum
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
             wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
             wpfplot1.Plot.Axes.Bottom.Min = 370;
-            wpfplot1.Plot.Axes.Bottom.Max = 1000;
+            wpfplot1.Plot.Axes.Bottom.Max = 780;
             wpfplot1.Plot.Axes.Left.Min = -0.05;
             wpfplot1.Plot.Axes.Left.Max = 1;
 
@@ -155,7 +155,7 @@ namespace Spectrum
             wpfplot2.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(titleAbsolute);
             wpfplot2.Plot.Axes.SetLimitsX(380, 780);
             wpfplot2.Plot.Axes.Bottom.Min = 370;
-            wpfplot2.Plot.Axes.Bottom.Max = 1000;
+            wpfplot2.Plot.Axes.Bottom.Max = 780;
 
             if (ViewResultSpectrums.Count != 0)
             {
@@ -191,9 +191,6 @@ namespace Spectrum
         }
 
         float fIntTime = 0;
-        int testType = 0;
-        int picType = 0;
-        bool start = false;
         int testid = 0;
 
         public static int MyCallback(IntPtr strText, int nLen)
@@ -421,12 +418,10 @@ namespace Spectrum
 
         public int MyAutoTimeCallback(int time, double spectum)
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                log.Info($"当前自动积分时间: {time},光谱强度:{spectum}");
-            });
+            log.Info($"当前自动积分时间: {time},光谱强度:{spectum}");
             return 0;
         }
+
         private void AutoIntTime_Click(object sender, RoutedEventArgs e)
         {
             if (IsRun)

@@ -15,7 +15,7 @@ namespace Spectrum.Configs
         private SerialPort? _serialPort;
 
         // 绑定到界面的配置
-        public ShutterConfig Config { get; set; }
+        public ShutterConfig Config=> SpectrumConfig.Instance.ShutterConfig;
 
         // 连接状态
         private bool _isConnected;
@@ -35,7 +35,6 @@ namespace Spectrum.Configs
 
         public ShutterController()
         {
-            Config = SpectrumConfig.Instance.ShutterConfig;
             ConnectCommand = new RelayCommand(_ => Connect(), _ => !IsConnected);
             DisconnectCommand = new RelayCommand(_ => Disconnect(), _ => IsConnected);
             OpenShutterCommand = new RelayCommand(_ => SendCommand(Config.OpenCmd), _ => IsConnected);

@@ -31,6 +31,9 @@ namespace Spectrum.Configs
     public class SpectrumConfig : ViewModelBase, IConfig
     {
         public static SpectrumConfig Instance => ConfigService.Instance.GetRequiredService<SpectrumConfig>();
+
+
+
         public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); } }
         private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
 
