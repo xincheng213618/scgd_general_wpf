@@ -4,7 +4,7 @@ using ColorVision.UI.Json;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
+using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -28,12 +28,14 @@ namespace ColorVision.UI
         private static readonly object _locker = new();
         public static ConfigHandler GetInstance() 
         {
-            lock (_locker) 
+            if (_instance != null) return _instance;
+            lock (_locker)
             {
-                _instance ??= new ConfigHandler();
+                if (_instance != null) return _instance;
+                _instance = new ConfigHandler();
                 ConfigService.SetInstance(_instance);
                 AssemblyHandler.GetInstance();
-                return _instance; 
+                return _instance;
             }
         }
         public ConfigOptions Options => GetRequiredService<ConfigOptions>();
@@ -75,8 +77,9 @@ namespace ColorVision.UI
             LoadConfigs(ConfigFilePath);
             if (IsAutoSave && Options.EnableBackup)
             {
-                Task.Delay(100000).ContinueWith(t =>
+                _ = Task.Run(async () =>
                 {
+                    await Task.Delay(TimeSpan.FromMinutes(2));
                     BackupConfigs();
                 });
             }
@@ -101,9 +104,10 @@ namespace ColorVision.UI
 
         public void SaveConfigs() => SaveConfigs(ConfigFilePath);
 
-        internal JsonSerializerSettings JsonSerializerSettings { get; set; } 
+        internal JsonSerializerSettings JsonSerializerSettings { get; set; }
 
-        public Dictionary<Type, IConfig> Configs { get; set; }
+        public ConcurrentDictionary<Type, IConfig> Configs { get; set; } = new();
+
 
         public IConfig GetRequiredService(Type type)
         {
@@ -112,88 +116,44 @@ namespace ColorVision.UI
                 throw new ArgumentException("Type must implement IConfig.", nameof(type));
 
             if (Configs.TryGetValue(type, out var service))
-            {
-                return (IConfig)service;
-            }
+                return service;
 
-            var configName = type.Name;
+            IConfig result;
             try
             {
-                if (jsonObject.TryGetValue(configName, out JToken configToken))
-                {
-                    var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
-                    if (config is IConfigSecure configSecure)
-                    {
-                        configSecure.Decrypt();
-                        Configs[type] = configSecure;
-                    }
-                    else if (config is IConfig configInstance)
-                    {
-                        Configs[type] = configInstance;
-                    }
-                }
-                else
-                {
-                    if (Activator.CreateInstance(type) is IConfig defaultConfig)
-                    {
-                        Configs[type] = defaultConfig;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Warn(ex);
-                if (Activator.CreateInstance(type) is IConfig defaultConfig)
-                {
-                    Configs[type] = defaultConfig;
-                }
-            }
-            // 此处递归调用是为了确保缓存和异常处理逻辑一致
-            return GetRequiredService(type);
-        }
-
-        public T1 GetRequiredService<T1>() where T1 : IConfig
-        {
-            var type = typeof(T1);
-            if (Configs.TryGetValue(type, out var service))
-            {
-                return (T1)service;
-            }
-
-            var configName = type.Name;
-            try
-            {
-                if (jsonObject.TryGetValue(configName, out JToken configToken))
+                if (jsonObject.TryGetValue(type.Name, out JToken configToken))
                 {
                     var config = configToken.ToObject(type, JsonSerializer.Create(JsonSerializerSettings));
                     if (config is IConfigSecure configSecure)
                     {
                         configSecure.Decrypt();
-                        Configs[type] = configSecure;
+                        result = configSecure;
                     }
                     else if (config is IConfig configInstance)
                     {
-                        Configs[type] = configInstance;
+                        result = configInstance;
+                    }
+                    else
+                    {
+                        result = (IConfig)Activator.CreateInstance(type)!;
                     }
                 }
                 else
                 {
-                    if (Activator.CreateInstance(type) is IConfig defaultConfig)
-                    {
-                        Configs[type] = defaultConfig;
-                    }
+                    result = (IConfig)Activator.CreateInstance(type)!;
                 }
             }
             catch (Exception ex)
             {
                 log.Warn(ex);
-                if (Activator.CreateInstance(type) is IConfig defaultConfig)
-                {
-                    Configs[type] = defaultConfig;
-                }
+                result = (IConfig)Activator.CreateInstance(type)!;
             }
-            return GetRequiredService<T1>();
+
+            Configs[type] = result;
+            return result;
         }
+
+        public T1 GetRequiredService<T1>() where T1 : IConfig  => (T1)GetRequiredService(typeof(T1));
 
         public void SaveConfigs(string fileName)
         {
@@ -208,7 +168,6 @@ namespace ColorVision.UI
                 catch (Exception ex)
                 {
                     log.Error(ex);
-                    MessageBox.Show(Properties.Resources.ConfigFileResetDueToError);
                 }
             }
 
@@ -293,7 +252,6 @@ namespace ColorVision.UI
                 {
                     LoadConfigs(files.First());
                     File.Copy(files.First(), ConfigFilePath, true);
-                    MessageBox.Show(Properties.Resources.ConfigFileRestored, Properties.Resources.ConfirmUpdate);
                 }
                 else
                 {
@@ -319,7 +277,6 @@ namespace ColorVision.UI
             catch (Exception ex)
             {
                 log.Error(Properties.Resources.RestoreConfigFileFailed, ex);
-                MessageBox.Show(Properties.Resources.RestoreConfigFileFailed);
             }
 
 
@@ -344,7 +301,7 @@ namespace ColorVision.UI
         {
             try
             {
-                var files = Directory.GetFiles(BackupFolderPath, "ConfigBackup_*.json")
+                var files = Directory.GetFiles(BackupFolderPath, $"{ConfigDIFileName}Backup_*.json")
                     .OrderByDescending(f => f)
                     .ToList();
                 if (files.Count > 10)
@@ -366,7 +323,7 @@ namespace ColorVision.UI
 
         public void LoadConfigs(string fileName)
         {
-            Configs = new Dictionary<Type, IConfig>();
+            Configs = new ConcurrentDictionary<Type, IConfig>();
             if (File.Exists(fileName))
             {
                 try
@@ -396,7 +353,7 @@ namespace ColorVision.UI
 
             if (Configs == null)
             {
-                Configs = new Dictionary<Type, IConfig>();
+                Configs = new ConcurrentDictionary<Type, IConfig>();
             }
 
             // Ensure the config instance exists (will load or create default)

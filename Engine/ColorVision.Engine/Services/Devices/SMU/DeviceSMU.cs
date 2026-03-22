@@ -19,10 +19,22 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public bool IsUseLimitSigned { get => _IsUseLimitSigned; set { _IsUseLimitSigned = value; OnPropertyChanged(); } }
         private bool _IsUseLimitSigned = true;
 
-        public double MeasureVal { get => _MeasureVal; set { _MeasureVal = value; OnPropertyChanged(); } }
+        public double MeasureVal { get => _MeasureVal; set { 
+                _MeasureVal = value; OnPropertyChanged();
+                if (_Channel == SMUChannelType.A)
+                    AMeasureVal = value;
+                else if (_Channel == SMUChannelType.B)
+                    BMeasureVal = value;
+            } }
         private double _MeasureVal = 5;
 
-        public double LmtVal { get => _lmtVal; set { _lmtVal = value; OnPropertyChanged(); } }
+        public double LmtVal { get => _lmtVal; set { 
+                _lmtVal = value; OnPropertyChanged();
+                if (_Channel == SMUChannelType.A)
+                    ALmtVal = value;
+                else if (_Channel == SMUChannelType.B)
+                    BLmtVal = value;
+            } }
         private double _lmtVal = 5;
 
 
@@ -40,12 +52,76 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public double LimitVal { get => _limitVal; set { _limitVal = value; OnPropertyChanged(); } }
         private double _limitVal = 5;
 
-        public SMUChannelType Channel { get => _Channel; set { _Channel = value; OnPropertyChanged(); } }
+        public SMUChannelType Channel { get => _Channel; set {
+                _Channel = value; OnPropertyChanged(); 
+                if (value == SMUChannelType.A)
+                {
+                    V = AV;
+                    I = AI;
+                    MeasureVal = AMeasureVal;
+                    LmtVal = ALmtVal;
+                }else if (value == SMUChannelType.B)
+                {
+                    V = BV;
+                    I = BI;
+                    MeasureVal = BMeasureVal;
+                    LmtVal = BLmtVal;
+                }
+            } }
         private SMUChannelType _Channel = SMUChannelType.A;
 
-        public double? V { get => _V; set { _V = value; OnPropertyChanged(); } }
+
+
+        public double? AV { get => _AV; set { _AV = value; OnPropertyChanged(); } }
+        private double? _AV;
+        public double? AI { get => _AI; set { _AI = value; OnPropertyChanged(); } }
+        private double? _AI;
+
+        public double? BV { get => _BV; set { _BV = value; OnPropertyChanged(); } }
+        private double? _BV;
+        public double? BI { get => _BI; set { _BI = value; OnPropertyChanged(); } }
+        private double? _BI;
+
+        public double AMeasureVal { get => _AMeasureVal; set { _AMeasureVal = value; OnPropertyChanged(); } }
+        private double _AMeasureVal = 5;
+        public double ALmtVal { get => _ALmtVal; set { _ALmtVal = value; OnPropertyChanged(); } }
+        private double _ALmtVal = 5;
+
+        public double BMeasureVal { get => _BMeasureVal; set { _BMeasureVal = value; OnPropertyChanged(); } }
+        private double _BMeasureVal = 5;
+        public double BLmtVal { get => _BLmtVal; set { _BLmtVal = value; OnPropertyChanged(); } }
+        private double _BLmtVal = 5;
+
+
+        public double? V { get => _V; set
+            { 
+                _V = value;
+                OnPropertyChanged();
+                if (_Channel == SMUChannelType.A)
+                {
+                    AV = value;
+                }
+                else if (_Channel == SMUChannelType.B)
+                {
+                    BV = value; 
+                }
+            }
+        }
         private double? _V;
-        public double? I { get => _I; set { _I = value; OnPropertyChanged(); } }
+        public double? I { get => _I; set
+            { 
+                _I = value; 
+                OnPropertyChanged();
+                if (_Channel == SMUChannelType.A)
+                {
+                    AI = value;
+                }
+                else if (_Channel == SMUChannelType.B)
+                {
+                    BI = value;
+                }
+            } 
+        }
         private double? _I;
     }
 

@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         [PropertyEditorType(typeof(TextBaudRatePropertiesEditor)), PropertyVisibility(nameof(IsBingNDDevice),true)]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
-        private int _BaudRate = 115200;
+        private int _BaudRate = 9600;
 
         public int CFWNum
         {

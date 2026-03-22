@@ -107,7 +107,7 @@ public static class MySqlControl
 }
 ```
 
-### BaseTableDao<T>
+### BaseTableDao\<T\>
 
 泛型数据访问对象基类，提供标准 CRUD 操作。
 

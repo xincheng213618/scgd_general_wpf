@@ -634,6 +634,32 @@ namespace ColorVision.Common.Utilities
             return (T)retval;
         }
 
+        public static bool HasWritePermission(string directoryPath)
+        {
+            try
+            {
+                // 尝试生成一个随机文件名的临时文件
+                string testFile = Path.Combine(directoryPath, Guid.NewGuid().ToString() + ".tmp");
+
+                // FileOptions.DeleteOnClose 确保流关闭时文件会自动被物理删除，非常干净
+                using (FileStream fs = File.Create(testFile, 1, FileOptions.DeleteOnClose))
+                {
+                    // 如果能执行到这里，说明有写入权限
+                }
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // 捕获到权限拒绝异常，说明需要管理员权限
+                return false;
+            }
+            catch
+            {
+                // 其他异常（如路径不存在、被占用等），安全起见认为需要提权
+                return false;
+            }
+        }
+
         public static bool IsHasDefaultOpenWay(string filePath)
         {
             if (string.IsNullOrEmpty(filePath))

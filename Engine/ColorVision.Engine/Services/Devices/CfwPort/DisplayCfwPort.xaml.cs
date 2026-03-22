@@ -11,11 +11,11 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
     /// <summary>
     /// DisplayCfwPort.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayCfwPort : UserControl,IDisPlayControl,IDisposable
+    public partial class DisplayCfwPort : UserControl, IDisPlayControl, IDisposable
     {
 
         public DeviceCfwPort Device { get; set; }
-        private MQTTCfwPort DService { get => Device.DService;  }
+        private MQTTCfwPort DService { get => Device.DService; }
 
         public string DisPlayName => Device.Config.Code;
 
@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
                 CombPort.DisplayMemberPath = "HoleName";
             };
 
-            DService_DeviceStatusChanged(sender,DService.DeviceStatus);
+            DService_DeviceStatusChanged(sender, DService.DeviceStatus);
             DService.DeviceStatusChanged += DService_DeviceStatusChanged; ;
 
 
@@ -100,8 +100,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             if (sender is Button button)
             {
                 var msgRecord = DService.Open();
-                ServicesHelper.SendCommand(button, msgRecord);
-                msgRecord.MsgRecordStateChanged += (s,e) =>
+                msgRecord.MsgRecordStateChanged += (s, e) =>
                 {
                     if (e == MsgRecordState.Fail)
                     {
@@ -116,8 +115,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             if (sender is Button button)
             {
                 var msgRecord = DService.Clsoe();
-                ServicesHelper.SendCommand(button, msgRecord);
-                msgRecord.MsgRecordStateChanged += (s,e) =>
+                msgRecord.MsgRecordStateChanged += (s, e) =>
                 {
                     if (e == MsgRecordState.Fail)
                     {
@@ -131,7 +129,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             if (sender is Button button && CombPort.SelectedValue is HoleMap holeMap)
             {
                 var msgRecord = DService.SetPort(holeMap.HoleIndex);
-                msgRecord.MsgRecordStateChanged += (s,e) =>
+                msgRecord.MsgRecordStateChanged += (s, e) =>
                 {
                     if (e == MsgRecordState.Success)
                     {
@@ -155,8 +153,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             if (sender is Button button)
             {
                 var msgRecord = DService.Open();
-                ServicesHelper.SendCommand(button, msgRecord);
-                msgRecord.MsgRecordStateChanged += (s,e) =>
+                msgRecord.MsgRecordStateChanged += (s, e) =>
                 {
                     if (e == MsgRecordState.Fail)
                     {
@@ -169,7 +166,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
         private void GetPort_Click(object sender, RoutedEventArgs e)
         {
             MsgRecord msgRecord = DService.GetPort();
-            msgRecord.MsgRecordStateChanged += (s,e) =>
+            msgRecord.MsgRecordStateChanged += (s, e) =>
             {
                 if (e == MsgRecordState.Success)
                 {

@@ -7,7 +7,7 @@
     <UseWPF>true</UseWPF>
     <Company>Spectromer</Company>
 	<ApplicationIcon>pic.ico</ApplicationIcon>
-	<VersionPrefix>1.1.5.1</VersionPrefix>
+	<VersionPrefix>2.0.0.0</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +21,7 @@
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260222" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260222" />
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
+		<PackageReference Include="System.IO.Ports" Version="10.0.3" />
 	</ItemGroup>
 
   <ItemGroup>

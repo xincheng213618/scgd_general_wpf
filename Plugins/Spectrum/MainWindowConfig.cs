@@ -15,6 +15,19 @@ namespace Spectrum
 
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility  =value;OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
+
+        public bool EqeEnabled { get => _EqeEnabled; set { _EqeEnabled = value; OnPropertyChanged(); } }
+        private bool _EqeEnabled;
+
+        public float EqeVoltage { get => _EqeVoltage; set { _EqeVoltage = value; OnPropertyChanged(); } }
+        private float _EqeVoltage = 5.0f;
+
+        public float EqeCurrentMA { get => _EqeCurrentMA; set { _EqeCurrentMA = value; OnPropertyChanged(); } }
+        private float _EqeCurrentMA = 20.0f;
+
+        public bool CiePointEnabled { get => _CiePointEnabled; set { _CiePointEnabled = value; OnPropertyChanged(); } }
+        private bool _CiePointEnabled = true;
+
         [JsonIgnore]
         public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
         private bool _IsFull;

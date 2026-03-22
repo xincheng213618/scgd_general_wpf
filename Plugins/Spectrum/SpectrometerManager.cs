@@ -1,10 +1,14 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
+using Spectrum.Configs;
+using Spectrum.PropertyEditor;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
 
 namespace Spectrum
@@ -50,6 +54,9 @@ namespace Spectrum
         [DisplayName("自动积分时间起始")]
         public float AutoIntTimeB { get => _AutoIntTimeB; set { _AutoIntTimeB = value; OnPropertyChanged(); } }
         private float _AutoIntTimeB = 1;
+
+        public bool IsOldVersion { get => _IsOldVersion; set { _IsOldVersion = value; OnPropertyChanged(); } }
+        private bool _IsOldVersion = false;
     }
 
     public class GetDataConfig : ViewModelBase, IConfig
@@ -78,7 +85,7 @@ namespace Spectrum
     }
 
 
-    public class AutodarkParam : ViewModelBase
+    public class AutodarkParam : ViewModelBase,IConfig
     {
         [DisplayName("起始时间(ms)")]
         public float fTimeStart { get => _fTimeStart; set { _fTimeStart = value; OnPropertyChanged(); } }
@@ -110,14 +117,18 @@ namespace Spectrum
     }
 
 
-
     public class SpectrometerManager : ViewModelBase,IConfig
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SpectrometerManager));
 
+        public SpectrumConfig Config => ConfigService.Instance.GetRequiredService<SpectrumConfig>();
+
         public static SpectrometerManager Instance => ConfigService.Instance.GetRequiredService<SpectrometerManager>();
 
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
+
+        [JsonIgnore]
+        public ShutterController ShutterController { get; set; } = new ShutterController();
 
         public static SetEmissionSP100Config SetEmissionSP100Config => SetEmissionSP100Config.Instance;
 
@@ -125,8 +136,142 @@ namespace Spectrum
         public IntPtr Handle { get; set; } = IntPtr.Zero;
         
         [JsonIgnore]
-        public bool IsConnected { get => _IsConnected; set { _IsConnected = value; OnPropertyChanged(); } }
+        public bool IsConnected { get => _IsConnected; set { _IsConnected = value; OnPropertyChanged(); OnPropertyChanged(nameof(ConnectionTypeDisplay)); } }
         private bool _IsConnected = false;
+
+        /// <summary>
+        /// The serial number of the currently connected spectrometer.
+        /// </summary>
+        [JsonIgnore]
+        public string SerialNumber { get => _SerialNumber; set { _SerialNumber = value; OnPropertyChanged(); } }
+        private string _SerialNumber = string.Empty;
+
+        /// <summary>
+        /// Readable connection type string for the status bar.
+        /// </summary>
+        [JsonIgnore]
+        public string ConnectionTypeDisplay
+        {
+            get
+            {
+                if (!IsConnected) return "未连接";
+                return Config.IsComPort ? $"COM: {Config.SzComName}" : "USB";
+            }
+        }
+
+        /// <summary>
+        /// Calibration group config, loaded per-SN from Documents/Spectrometer/{SN}/
+        /// </summary>
+        [JsonIgnore]
+        public CalibrationGroupConfig CalibrationGroupConfig { get => _CalibrationGroupConfig; set { _CalibrationGroupConfig = value; OnPropertyChanged(); OnPropertyChanged(nameof(CalibrationGroupNames)); } }
+        private CalibrationGroupConfig _CalibrationGroupConfig = CreateDefaultCalibrationGroupConfig();
+
+        private static CalibrationGroupConfig CreateDefaultCalibrationGroupConfig()
+        {
+            var config = new CalibrationGroupConfig();
+            config.Groups.Add(new CalibrationGroup { GroupName = "Default" });
+            return config;
+        }
+
+        /// <summary>
+        /// The group names for ComboBox binding.
+        /// </summary>
+        [JsonIgnore]
+        public IEnumerable<string> CalibrationGroupNames => CalibrationGroupConfig.Groups.Select(g => g.GroupName);
+
+        /// <summary>
+        /// The active calibration group name. Changing this triggers file reload when connected.
+        /// </summary>
+        [JsonIgnore]
+        public string ActiveCalibrationGroupName
+        {
+            get => CalibrationGroupConfig.ActiveGroupName;
+            set
+            {
+                if (CalibrationGroupConfig.ActiveGroupName == value) return;
+                CalibrationGroupConfig.ActiveGroupName = value;
+                OnPropertyChanged();
+                ApplyActiveGroup();
+                SaveCalibrationConfig();
+            }
+        }
+
+        [JsonIgnore]
+        public RelayCommand AddCalibrationGroupCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand RemoveCalibrationGroupCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand SetGroupWavelengthFileCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand SetGroupMaguideFileCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand OpenCalibrationGroupWindowCommand { get; set; }
+
+        /// <summary>
+        /// Loads calibration config for the current SN.
+        /// </summary>
+        public void LoadCalibrationConfig()
+        {
+            if (string.IsNullOrEmpty(SerialNumber)) return;
+            CalibrationGroupConfig = CalibrationGroupConfig.Load(SerialNumber);
+            OnPropertyChanged(nameof(CalibrationGroupNames));
+            OnPropertyChanged(nameof(ActiveCalibrationGroupName));
+            ApplyActiveGroup();
+        }
+
+        /// <summary>
+        /// Saves calibration config for the current SN.
+        /// </summary>
+        public void SaveCalibrationConfig()
+        {
+            if (string.IsNullOrEmpty(SerialNumber)) return;
+            CalibrationGroupConfig.Save(SerialNumber);
+        }
+
+        /// <summary>
+        /// Applies the active calibration group: updates WavelengthFile/MaguideFile and reloads if connected.
+        /// </summary>
+        private void ApplyActiveGroup()
+        {
+            var group = CalibrationGroupConfig.ActiveGroup;
+            if (group == null) return;
+
+            WavelengthFile = group.WavelengthFile;
+            MaguideFile = group.MaguideFile;
+
+            if (IsConnected && Handle != IntPtr.Zero)
+            {
+                int r1 = Spectrometer.CM_Emission_LoadWavaLengthFile(Handle, WavelengthFile);
+                log.Info($"Group switch: CM_Emission_LoadWavaLengthFile {WavelengthFile}, ret={r1}");
+                int r2 = Spectrometer.CM_Emission_LoadMagiudeFile(Handle, MaguideFile);
+                log.Info($"Group switch: CM_Emission_LoadMagiudeFile {MaguideFile}, ret={r2}");
+            }
+        }
+
+        /// <summary>
+        /// Called when the CFW (filter wheel) switches to a position. If a calibration group
+        /// matches the ND position name, it auto-switches.
+        /// </summary>
+        public void OnNDPositionChanged(string ndPositionName)
+        {
+            var group = CalibrationGroupConfig.FindGroupForNDPosition(ndPositionName);
+            if (group != null)
+            {
+                log.Info($"ND position changed to '{ndPositionName}', auto-switching to calibration group '{group.GroupName}'");
+                ActiveCalibrationGroupName = group.GroupName;
+            }
+            else
+            {
+                log.Info($"ND position changed to '{ndPositionName}', no matching calibration group found");
+            }
+        }
+
+        /// <summary>
+        /// Whether the CFW (filter wheel) is connected.
+        /// </summary>
+        [JsonIgnore]
+        public bool IsNDConnected { get => _IsNDConnected; set { _IsNDConnected = value; OnPropertyChanged(); } }
+        private bool _IsNDConnected;
 
         [JsonIgnore]
         public RelayCommand SetWavelengthFileCommand { get; set; }
@@ -194,6 +339,125 @@ namespace Spectrum
 
             EditGetDataConfigCommand = new RelayCommand(a => EditGetDataConfig());
             EditAutodarkParamCommand = new RelayCommand(a => EditAutodarkParam());
+
+            GetSpectrSerialNumberCommand = new RelayCommand(a => GetSpectrSerialNumber());
+
+            EditNDConfigCommand = new RelayCommand(a => new PropertyEditorWindow(NDConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            ConnectNDCommand = new RelayCommand(a => ConnectND());
+
+            AddCalibrationGroupCommand = new RelayCommand(a => AddCalibrationGroup());
+            RemoveCalibrationGroupCommand = new RelayCommand(a => RemoveCalibrationGroup());
+            SetGroupWavelengthFileCommand = new RelayCommand(a => SetActiveGroupFile(isWavelength: true));
+            SetGroupMaguideFileCommand = new RelayCommand(a => SetActiveGroupFile(isWavelength: false));
+            OpenCalibrationGroupWindowCommand = new RelayCommand(a => OpenCalibrationGroupWindow());
+        }
+        public NDConfig NDConfig => Config.NDConfig;
+
+        public RelayCommand EditNDConfigCommand { get; set; }
+
+        public RelayCommand ConnectNDCommand { get; set; }
+
+        public IntPtr NDHandle { get; set; } = IntPtr.Zero;
+
+        public void ConnectND()
+        {
+            NDHandle = NdCFWPortAPI.CM_CreatNdCFWPort(NDConfig.SzComName, (uint)NDConfig.BaudRate, false);
+            if (NDHandle == IntPtr.Zero)
+            {
+                log.Info("NDConnnet failed");
+                IsNDConnected = false;
+            }
+            else
+            {
+                log.Info("NDConnnet");
+                IsNDConnected = true;
+            }
+        }
+
+        private void AddCalibrationGroup()
+        {
+            // Generate a unique group name
+            int idx = CalibrationGroupConfig.Groups.Count;
+            string newName;
+            do
+            {
+                newName = $"Group{idx}";
+                idx++;
+            } while (CalibrationGroupConfig.Groups.Any(g => g.GroupName == newName));
+
+            CalibrationGroupConfig.Groups.Add(new CalibrationGroup
+            {
+                GroupName = newName,
+                WavelengthFile = WavelengthFile,
+                MaguideFile = MaguideFile,
+            });
+            OnPropertyChanged(nameof(CalibrationGroupNames));
+            SaveCalibrationConfig();
+        }
+
+        private void RemoveCalibrationGroup()
+        {
+            if (CalibrationGroupConfig.Groups.Count <= 1)
+            {
+                log.Info("Cannot remove the last calibration group");
+                return;
+            }
+            var group = CalibrationGroupConfig.ActiveGroup;
+            if (group == null) return;
+            CalibrationGroupConfig.Groups.Remove(group);
+            ActiveCalibrationGroupName = CalibrationGroupConfig.Groups.FirstOrDefault()?.GroupName ?? "Default";
+            OnPropertyChanged(nameof(CalibrationGroupNames));
+            SaveCalibrationConfig();
+        }
+
+        private void SetActiveGroupFile(bool isWavelength)
+        {
+            var group = CalibrationGroupConfig.ActiveGroup;
+            if (group == null) return;
+
+            using var dialog = new System.Windows.Forms.OpenFileDialog();
+            dialog.Filter = "DAT files (*.dat)|*.dat|All Files|*.*";
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                if (isWavelength)
+                {
+                    group.WavelengthFile = dialog.FileName;
+                    WavelengthFile = dialog.FileName;
+                }
+                else
+                {
+                    group.MaguideFile = dialog.FileName;
+                    MaguideFile = dialog.FileName;
+                }
+                SaveCalibrationConfig();
+            }
+        }
+
+        private void OpenCalibrationGroupWindow()
+        {
+            new CalibrationGroupWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            // After dialog closed, refresh bindings
+            OnPropertyChanged(nameof(CalibrationGroupNames));
+            OnPropertyChanged(nameof(ActiveCalibrationGroupName));
+        }
+
+
+        public RelayCommand GetSpectrSerialNumberCommand { get; set; }
+        public void GetSpectrSerialNumber()
+        {
+            int i = 0;
+
+            if (Config.IsComPort)
+            {
+                if (int.TryParse(Config.SzComName.Replace("COM", ""), out int z))
+                {
+                    i = z;
+                }
+            }
+            int bufferLength = 1024;
+            StringBuilder stringBuilder = new StringBuilder(bufferLength);
+            int ret = Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, i, stringBuilder, bufferLength);
+            MessageBox1.Show(Application.Current.GetActiveWindow(), stringBuilder.ToString(), "Sprectrum");
         }
 
         public void SetMaguideOutputFile()
@@ -254,9 +518,14 @@ namespace Spectrum
 
         public void Connect()
         {
-            Handle = Spectrometer.CM_CreateEmission((int)SpectrometerType, MyCallback);
-            int ncom = int.Parse(SzComName.Replace("COM",""));
-            int iR = Spectrometer.CM_Emission_Init(Handle, ncom, BaudRate);
+            Handle = Spectrometer.CM_CreateEmission((int)Config.SpectrometerType, MyCallback);
+            int ncom = 0;
+            if (Config.IsComPort)
+            {
+                 ncom = int.Parse(Config.SzComName.Replace("COM", ""));
+
+            }
+            int iR = Spectrometer.CM_Emission_Init(Handle, ncom, Config.BaudRate);
             if (iR == 1)
             {
                 MessageBox.Show("连接成功");
@@ -277,17 +546,6 @@ namespace Spectrum
             return -1;
         }
 
-        public string SzComName { get => _szComName; set { _szComName = value; OnPropertyChanged(); } }
-        private string _szComName = "COM1";
-
-        public int BaudRate { get => _BaudRate; set { _BaudRate = value; OnPropertyChanged(); } }
-        private int _BaudRate = 115200;
-
-        public SpectrometerType SpectrometerType { get => _SpectrometerType; set { _SpectrometerType = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsCom)); } }
-        private SpectrometerType _SpectrometerType = SpectrometerType.CMvSpectra;
-
-        public bool IsCom { get => SpectrometerType == SpectrometerType.LightModule; }
-
         public void GenerateAmplitude()  
         {
             int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fLightData);
@@ -299,6 +557,7 @@ namespace Spectrum
                 MessageBox.Show("获取LightData失败");
                 return;
             }
+            log.Info($"IntTime{IntTime}CSFile: {CSFile},WavelengthFile{WavelengthFile},MaguideFileOutput{MaguideFileOutput}");
             bool ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, MaguideFileOutput);
             if (ret1)
             {
@@ -370,6 +629,7 @@ namespace Spectrum
 
         public float AutoIntTimeB { get => _AutoIntTimeB; set { _AutoIntTimeB = value; OnPropertyChanged(); } }
         private float _AutoIntTimeB = 1;
+
         public float IntTime { get => _IntTime; set { _IntTime = value; OnPropertyChanged(); } }
         private float _IntTime = 100;
 
@@ -396,11 +656,6 @@ namespace Spectrum
         public string MaguideFileOutput { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFileOutput;
 
-        /// <summary>
-        /// 自适应校零
-        /// </summary>
-        public bool EnableAutodark { get => _EnableAutodark; set { _EnableAutodark = value; OnPropertyChanged(); } }
-        private bool _EnableAutodark;
 
 
         public AutodarkParam AutodarkParam { get => _AutodarkParam; set { _AutodarkParam = value; OnPropertyChanged(); } }
@@ -409,6 +664,19 @@ namespace Spectrum
         {
             new PropertyEditorWindow(AutodarkParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
+        /// <summary>
+        /// 自动校零
+        /// </summary>
+        public bool EnableAutodark { get => _EnableAutodark; set { _EnableAutodark = value; OnPropertyChanged(); if (value) EnableAdaptiveAutoDark = false;  } }
+        private bool _EnableAutodark;
+
+        /// <summary>
+        /// 自适应校零
+        /// </summary>
+        public bool EnableAdaptiveAutoDark { get => _EnableAdaptiveAutoDark; set { _EnableAdaptiveAutoDark = value; OnPropertyChanged();  if (value) EnableAutodark = false;  } }
+        private bool _EnableAdaptiveAutoDark;
+
 
 
         /// <summary>

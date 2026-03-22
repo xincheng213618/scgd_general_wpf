@@ -7,7 +7,7 @@ namespace System.ComponentModel
 {
     public class TextBaudRatePropertiesEditor : IPropertyEditor
     {
-        private static readonly List<int> BaudRates = new() { 921600, 460800, 230400, 115200, 57600, 38400, 19200, 14400, 9600, 4800, 2400, 1200, 600, 300 };
+        private static readonly List<int> BaudRates = new() {9600 ,115200,38400,921600, 460800, 230400, 57600, 38400, 19200, 14400, 4800, 2400, 1200, 600, 300 };
         public DockPanel GenProperties(PropertyInfo property, object obj)
         {
             var rm = PropertyEditorHelper.GetResourceManager(obj);

@@ -1,12 +1,18 @@
 ﻿using ColorVision.UI.Menus;
+using Microsoft.Win32;
 using OpenCvSharp;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using static ColorVision.Engine.ToolPlugins.DatFileReader;
 
 namespace ColorVision.Engine.ToolPlugins
 {
+
+
+
+
 
 
 
@@ -41,7 +47,7 @@ namespace ColorVision.Engine.ToolPlugins
         }
     }
 
-    public class DatFileReader
+    public partial class DatFileReader
     {
         // C++: PositionAttribute 对应结构体
         // 注意：虽然可以使用 StructLayout 整体读取，但为了避免 C++ 编译器的字节对齐(Padding)陷阱，

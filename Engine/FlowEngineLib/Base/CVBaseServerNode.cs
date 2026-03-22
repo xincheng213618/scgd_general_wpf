@@ -104,9 +104,13 @@ public class CVBaseServerNode : CVCommonNode
 		{
 			_IsPublishStatus = value;
 		}
-	}
+    }
 
-	public string TempDisName => _TempName;
+    [STNodeProperty("Subtitle", "Subtitle", false, true)]
+    public string Subtitle { get => _Subtitle; set { _Subtitle = value; } }
+    private string _Subtitle = string.Empty;
+
+    public string TempDisName => _TempName;
 
 	public string DefaultPublishTopic => m_nodeType + "/CMD/" + m_nodeName;
 
@@ -141,9 +145,17 @@ public class CVBaseServerNode : CVCommonNode
 		m_custom_item = new Rectangle(5, 30, 140, 18);
 	}
 
-	protected override string OnGetDrawTitle()
+
+
+
+    protected override string OnGetDrawTitle()
 	{
-		return $"{base.Title}";
+		if (!string.IsNullOrWhiteSpace(Subtitle))
+		{
+            return $"{Subtitle}";
+
+        }
+        return $"{base.Title}";
 	}
 
 	protected override void OnCreate()

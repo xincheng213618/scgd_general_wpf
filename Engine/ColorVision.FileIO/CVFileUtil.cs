@@ -170,14 +170,8 @@ namespace ColorVision.FileIO
                         cvcie.FilePath = filePath;
                         return (int)fs.Position;
                     }
-                    else
-                    {
-                        Debug.WriteLine($"unknowVersion");
-                        return -1;
-                    }
-
-
                 }
+                return -1;
             }
             catch (Exception ex)
             {
