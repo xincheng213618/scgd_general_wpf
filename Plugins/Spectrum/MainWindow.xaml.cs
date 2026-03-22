@@ -138,7 +138,7 @@ namespace Spectrum
 
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
             wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
-            wpfplot1.Plot.Axes.Bottom.Min = 370;
+            wpfplot1.Plot.Axes.Bottom.Min = 380;
             wpfplot1.Plot.Axes.Bottom.Max = 780;
             wpfplot1.Plot.Axes.Left.Min = -0.05;
             wpfplot1.Plot.Axes.Left.Max = 1;
@@ -154,8 +154,10 @@ namespace Spectrum
             wpfplot2.Plot.Axes.Left.Label.FontName = Fonts.Detect(titleAbsolute);
             wpfplot2.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(titleAbsolute);
             wpfplot2.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot2.Plot.Axes.Bottom.Min = 370;
+            wpfplot2.Plot.Axes.Bottom.Min = 380;
             wpfplot2.Plot.Axes.Bottom.Max = 780;
+
+            AddSpectrumColorBar(wpfplot2);
 
             if (ViewResultSpectrums.Count != 0)
             {
@@ -1167,7 +1169,7 @@ namespace Spectrum
                 var color = WavelengthToColor.Convert(wl);
                 var scottColor = new ScottPlot.Color(color.R, color.G, color.B);
 
-                var rect = plotControl.Plot.Add.Rectangle(wl, wl + 2, -0.03, 0.0);
+                var rect = plotControl.Plot.Add.Rectangle(wl, wl + 2, -0.01, -0.06);
                 rect.FillColor = scottColor;
                 rect.LineColor = scottColor;
                 rect.LineWidth = 0;
