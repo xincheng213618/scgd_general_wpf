@@ -225,6 +225,13 @@
                                         <TextBlock Text="{Binding MeasurementNum}"/>
                                     </StackPanel>
                                 </Grid>
+                                <ProgressBar x:Name="ContinuousProgressBar" Height="8" Margin="0,4,0,4" Minimum="0" Maximum="100" Value="0" Foreground="#3498DB"/>
+                                <StackPanel x:Name="TimeEstimationPanel" Orientation="Horizontal" Margin="0,0,0,4" Visibility="Collapsed">
+                                    <TextBlock Text="已用: " FontSize="11"/>
+                                    <TextBlock x:Name="ElapsedTimeText" Text="--:--" FontSize="11" FontWeight="SemiBold" Foreground="#2196F3"/>
+                                    <TextBlock Text="  预计剩余: " FontSize="11"/>
+                                    <TextBlock x:Name="RemainingTimeText" Text="--:--" FontSize="11" FontWeight="SemiBold" Foreground="#E67E22"/>
+                                </StackPanel>
 
                                 <Grid Margin="0,2,0,0" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}">
                                     <Button x:Name="button6" Content="{x:Static properties:Resources.连续测试}" Click="Button6_Click" Padding="10,6" Background="#27AE60" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Stretch"/>
