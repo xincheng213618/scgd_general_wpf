@@ -69,8 +69,12 @@ namespace Spectrum
 
         public MainWindow()
         {
-            src1931 = new BitmapImage(new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Assets\Image\CIE-1931.jpg"), UriKind.Absolute));
-            src1976 = new BitmapImage(new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Assets\Image\CIE-1976.jpg"), UriKind.Absolute));
+            string path1931 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Assets\Image\CIE-1931.jpg");
+            string path1976 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Assets\Image\CIE-1976.jpg");
+            if (File.Exists(path1931))
+                src1931 = new BitmapImage(new Uri(path1931, UriKind.Absolute));
+            if (File.Exists(path1976))
+                src1976 = new BitmapImage(new Uri(path1976, UriKind.Absolute));
             InitializeComponent();
             Config.SetWindow(this);
             this.SizeChanged += (s, e) => Config.SetConfig(this);
@@ -394,15 +398,17 @@ namespace Spectrum
             try
             {
                 // Draw on CIE 1931
-                pic1931 = DrawCircleOnImage(src1931, 
-                    Convert.ToInt32(Math.Round(fx * 10 * 97 + 104)),
-                    Convert.ToInt32(Math.Round(881 - fy * 10 * 97)),
-                    10);
+                if (src1931 != null)
+                    pic1931 = DrawCircleOnImage(src1931, 
+                        Convert.ToInt32(Math.Round(fx * 10 * 97 + 104)),
+                        Convert.ToInt32(Math.Round(881 - fy * 10 * 97)),
+                        10);
                 // Draw on CIE 1976
-                pic1976 = DrawCircleOnImage(src1976,
-                    Convert.ToInt32(Math.Round(fu * 10 * 154 + 49)),
-                    Convert.ToInt32(Math.Round(973 - fv * 10 * 154)),
-                    10);
+                if (src1976 != null)
+                    pic1976 = DrawCircleOnImage(src1976,
+                        Convert.ToInt32(Math.Round(fu * 10 * 154 + 49)),
+                        Convert.ToInt32(Math.Round(973 - fv * 10 * 154)),
+                        10);
             }
             catch (Exception ex)
             {

@@ -134,8 +134,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 };
 
                 // Compute dominant wavelength color
-                DominantWavelengthColor = WavelengthToColor.ToBrush(fLd);
-                DominantWavelengthHex = WavelengthToColor.ToHex(fLd);
+                if (fLd >= 380 && fLd <= 780)
+                {
+                    DominantWavelengthColor = WavelengthToColor.ToBrush(fLd);
+                    DominantWavelengthHex = WavelengthToColor.ToHex(fLd);
+                }
 
                 // Compute excitation purity
                 ComputeExcitationPurity();
