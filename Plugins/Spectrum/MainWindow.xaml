@@ -97,6 +97,7 @@
                             <StackPanel>
                                 <DockPanel Margin="0,0,0,6">
                                     <Button DockPanel.Dock="Right" Content="管理..." Command="{Binding OpenCalibrationGroupWindowCommand}" Margin="4,0,0,0" Padding="8,2" ToolTip="打开标定分组管理窗口"/>
+                                    <Button DockPanel.Dock="Right" Content="加载分组" Command="{Binding ApplyActiveGroupCommand}" Margin="4,0,0,0" Padding="8,2" ToolTip="加载当前选择分组的标定文件" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}"/>
                                     <TextBlock Text="当前分组: " Width="60"/>
                                     <ComboBox Style="{StaticResource ComboBox.Small}" ItemsSource="{Binding CalibrationGroupNames}" SelectedItem="{Binding ActiveCalibrationGroupName, Mode=TwoWay}" />
                                 </DockPanel>
@@ -139,7 +140,7 @@
                                             </TextBlock.RenderTransform>
                                         </TextBlock>
                                     </Button>
-                                    <Button Content="自动积分" Click="AutoIntTime_Click"/>
+                                    <Button x:Name="ButtonAutoInt" Content="自动积分" Click="AutoIntTime_Click" Padding="10,4" Background="#E67E22" Foreground="White"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="平均次数" Width="110" />

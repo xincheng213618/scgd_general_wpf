@@ -8,6 +8,8 @@ using ColorVision.UI.Menus;
 using ColorVision.UI.Sorts;
 using cvColorVision;
 using log4net;
+using OpenCvSharp;
+using OpenCvSharp.WpfExtensions;
 using ScottPlot;
 using ScottPlot.Plottables;
 using System.Collections.ObjectModel;
@@ -22,7 +24,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
-using WpfMedia = System.Windows.Media;
 
 namespace Spectrum
 {
@@ -64,17 +65,17 @@ namespace Spectrum
         public static MainWindowConfig Config => MainWindowConfig.Instance;
         BitmapSource pic1931;
         BitmapSource pic1976;
-        BitmapImage src1931;
-        BitmapImage src1976;
+        Mat src1931;
+        Mat src1976;
 
         public MainWindow()
         {
             string path1931 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Assets\Image\CIE-1931.jpg");
             string path1976 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Assets\Image\CIE-1976.jpg");
             if (File.Exists(path1931))
-                src1931 = new BitmapImage(new Uri(path1931, UriKind.Absolute));
+                src1931 = new Mat(path1931, ImreadModes.Color);
             if (File.Exists(path1976))
-                src1976 = new BitmapImage(new Uri(path1976, UriKind.Absolute));
+                src1976 = new Mat(path1976, ImreadModes.Color);
             InitializeComponent();
             Config.SetWindow(this);
             this.SizeChanged += (s, e) => Config.SetConfig(this);
@@ -105,7 +106,7 @@ namespace Spectrum
                 LogGrid.Children.Add(logOutput);
             }
 
-            image.Source = src1931;
+            image.Source = src1931?.ToBitmapSource();
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues(typeof(SpectrometerType)).Cast<SpectrometerType>()
                                                    select new KeyValuePair<SpectrometerType, string>(e1, e1.ToString());
 
@@ -183,8 +184,8 @@ namespace Spectrum
             }
             this.DataContext = Manager;
 
-            pic1931 = src1931;
-            pic1976 = src1976;
+            pic1931 = src1931?.ToBitmapSource();
+            pic1976 = src1976?.ToBitmapSource();
 
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ViewResultList.SelectedIndex > -1));
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => ViewResultList.SelectAll(), (s, e) => e.CanExecute = true));
@@ -356,6 +357,7 @@ namespace Spectrum
                 return;
             }
             IsRun = true;
+            SetOperationButtonsEnabled(false);
 
             Task.Run(async () =>
             {
@@ -382,11 +384,13 @@ namespace Spectrum
                         MessageBox.Show(Application.Current.GetActiveWindow(), "校零失败");
                     }
                     IsRun = false;
+                    SetOperationButtonsEnabled(true);
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "校零异常" + ex.Message);
                     IsRun = false;
+                    SetOperationButtonsEnabled(true);
                 }
             });
 
@@ -397,41 +401,30 @@ namespace Spectrum
         {
             try
             {
-                // Draw on CIE 1931
                 if (src1931 != null)
-                    pic1931 = DrawCircleOnImage(src1931, 
-                        Convert.ToInt32(Math.Round(fx * 10 * 97 + 104)),
-                        Convert.ToInt32(Math.Round(881 - fy * 10 * 97)),
-                        10);
-                // Draw on CIE 1976
+                {
+                    Mat cir1931 = src1931.Clone();
+                    OpenCvSharp.Point p1;
+                    p1.X = Convert.ToInt32(Math.Round(fx * 10 * 97 + 104));
+                    p1.Y = Convert.ToInt32(Math.Round(881 - fy * 10 * 97));
+                    Cv2.Circle(cir1931, p1.X, p1.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
+                    pic1931 = cir1931.ToWriteableBitmap();
+                }
                 if (src1976 != null)
-                    pic1976 = DrawCircleOnImage(src1976,
-                        Convert.ToInt32(Math.Round(fu * 10 * 154 + 49)),
-                        Convert.ToInt32(Math.Round(973 - fv * 10 * 154)),
-                        10);
+                {
+                    Mat cir1976 = src1976.Clone();
+                    OpenCvSharp.Point p2;
+                    p2.X = Convert.ToInt32(Math.Round(fu * 10 * 154 + 49));
+                    p2.Y = Convert.ToInt32(Math.Round(973 - fv * 10 * 154));
+                    Cv2.Circle(cir1976, p2.X, p2.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
+                    pic1976 = cir1976.ToWriteableBitmap();
+                }
             }
             catch (Exception ex)
             {
                 log.Error(ex);
             }
 
-        }
-
-        /// <summary>
-        /// Draws a red filled circle on a BitmapImage using WPF DrawingVisual (no OpenCvSharp needed).
-        /// </summary>
-        private static BitmapSource DrawCircleOnImage(BitmapImage source, int cx, int cy, int radius)
-        {
-            var visual = new WpfMedia.DrawingVisual();
-            using (var dc = visual.RenderOpen())
-            {
-                dc.DrawImage(source, new Rect(0, 0, source.PixelWidth, source.PixelHeight));
-                dc.DrawEllipse(WpfMedia.Brushes.Red, null, new System.Windows.Point(cx, cy), radius, radius);
-            }
-            var rtb = new RenderTargetBitmap(source.PixelWidth, source.PixelHeight, source.DpiX, source.DpiY, WpfMedia.PixelFormats.Pbgra32);
-            rtb.Render(visual);
-            rtb.Freeze();
-            return rtb;
         }
 
         public int MyAutoTimeCallback(int time, double spectum)
@@ -447,6 +440,7 @@ namespace Spectrum
                 MessageBox1.Show("正在运行");
                 return;
             }
+            SetOperationButtonsEnabled(false);
 
             Task.Run(() =>
             {
@@ -481,6 +475,7 @@ namespace Spectrum
                     }
                 }
                 IsRun = false;
+                SetOperationButtonsEnabled(true);
             });
 
 
@@ -666,12 +661,30 @@ namespace Spectrum
                 MessageBox.Show("正在执行任务请稍后");
                 return;
             }
-            Task.Run(() =>
+            SetOperationButtonsEnabled(false);
+            Task.Run(async () =>
             {
-                Measure();
+                await Measure();
+                SetOperationButtonsEnabled(true);
             });
         }
         bool IsRun;
+
+        /// <summary>
+        /// Disables/enables all C++ operation buttons to prevent concurrent spectrometer calls.
+        /// Must be called on the UI thread.
+        /// </summary>
+        private void SetOperationButtonsEnabled(bool enabled)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                button3.IsEnabled = enabled;
+                button4.IsEnabled = enabled;
+                button5.IsEnabled = enabled;
+                button6.IsEnabled = enabled;
+                ButtonAutoInt.IsEnabled = enabled;
+            });
+        }
         //自适应校零
         private void Button4_Click_1(object sender, RoutedEventArgs e)
         {
@@ -681,12 +694,14 @@ namespace Spectrum
                 return;
             }
             log.Info($"CM_Emission_Init_Auto_Dark Start");
+            SetOperationButtonsEnabled(false);
             Task.Run(() =>
             {
                 IsRun = true;
                 int ret = Spectrometer.CM_Emission_Init_Auto_Dark(SpectrometerHandle, Manager.AutodarkParam.fTimeStart, Manager.AutodarkParam.nStepTime, Manager.AutodarkParam.nStepCount, Manager.Average);
                 log.Info($"CM_Emission_Init_Auto_Dark {ret}");
                 IsRun = false;
+                SetOperationButtonsEnabled(true);
                 if (ret == 1)
                 {
                     MessageBox.Show("自适应校零成功");
@@ -711,6 +726,11 @@ namespace Spectrum
             TimeEstimationPanel.Visibility = Visibility.Visible;
             ElapsedTimeText.Text = "--:--";
             RemainingTimeText.Text = "--:--";
+            // Disable other operation buttons during continuous testing
+            button3.IsEnabled = false;
+            button4.IsEnabled = false;
+            button5.IsEnabled = false;
+            ButtonAutoInt.IsEnabled = false;
             Task.Run(()=> LoopMeasure());
         }
         public async void LoopMeasure()
@@ -733,6 +753,12 @@ namespace Spectrum
                             TimeEstimationPanel.Visibility = Visibility.Collapsed;
                             Manager.LoopMeasureNum = 0;
                             errornum = 0;
+                            // Re-enable operation buttons
+                            button3.IsEnabled = true;
+                            button4.IsEnabled = true;
+                            button5.IsEnabled = true;
+                            button6.IsEnabled = true;
+                            ButtonAutoInt.IsEnabled = true;
                             MessageBox.Show(Application.Current.MainWindow, $"连续测试执行完毕,执行失败{errornum}");
                         });
                         break;
@@ -778,6 +804,12 @@ namespace Spectrum
             button7.Visibility = Visibility.Collapsed;
             TimeEstimationPanel.Visibility = Visibility.Collapsed;
             Manager.LoopMeasureNum = 0;
+            // Re-enable operation buttons
+            button3.IsEnabled = true;
+            button4.IsEnabled = true;
+            button5.IsEnabled = true;
+            button6.IsEnabled = true;
+            ButtonAutoInt.IsEnabled = true;
         }
         //清空数据
         private void Cleartable_Click(object sender, RoutedEventArgs e)

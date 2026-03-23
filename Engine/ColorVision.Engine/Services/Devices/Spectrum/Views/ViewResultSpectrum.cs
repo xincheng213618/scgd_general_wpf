@@ -142,6 +142,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
                 // Compute excitation purity
                 ComputeExcitationPurity();
+
+                // Compute Ra if C++ didn't calculate it
+                if (fRa == 0 && fPL != null && fPL.Length > 0 && fCCT > 0)
+                {
+                    fRa = RaCalculator.ComputeRa(fPL, fSpect1, fInterval, fCCT);
+                }
             }
             catch(Exception ex)
             {
