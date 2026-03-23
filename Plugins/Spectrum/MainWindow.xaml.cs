@@ -10,7 +10,6 @@ using cvColorVision;
 using log4net;
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
-using OpenTK.Graphics.OpenGL;
 using ScottPlot;
 using ScottPlot.Plottables;
 using System.Collections.ObjectModel;
@@ -25,7 +24,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Spectrum
 {
@@ -67,11 +65,17 @@ namespace Spectrum
         public static MainWindowConfig Config => MainWindowConfig.Instance;
         BitmapSource pic1931;
         BitmapSource pic1976;
-        Mat src1931 = new Mat(@"Assets\Image\CIE-1931.jpg", ImreadModes.Color);
-        Mat src1976 = new Mat(@"Assets\Image\CIE-1976.jpg", ImreadModes.Color);
+        Mat src1931;
+        Mat src1976;
 
         public MainWindow()
         {
+            string path1931 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Assets\Image\CIE-1931.jpg");
+            string path1976 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Assets\Image\CIE-1976.jpg");
+            if (File.Exists(path1931))
+                src1931 = new Mat(path1931, ImreadModes.Color);
+            if (File.Exists(path1976))
+                src1976 = new Mat(path1976, ImreadModes.Color);
             InitializeComponent();
             Config.SetWindow(this);
             this.SizeChanged += (s, e) => Config.SetConfig(this);
@@ -102,7 +106,7 @@ namespace Spectrum
                 LogGrid.Children.Add(logOutput);
             }
 
-            image.Source = src1931.ToBitmapSource();
+            image.Source = src1931?.ToBitmapSource();
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues(typeof(SpectrometerType)).Cast<SpectrometerType>()
                                                    select new KeyValuePair<SpectrometerType, string>(e1, e1.ToString());
 
@@ -180,8 +184,8 @@ namespace Spectrum
             }
             this.DataContext = Manager;
 
-            pic1931 = src1931.ToBitmapSource();
-            pic1976 = src1976.ToBitmapSource();
+            pic1931 = src1931?.ToBitmapSource();
+            pic1976 = src1976?.ToBitmapSource();
 
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ViewResultList.SelectedIndex > -1));
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => ViewResultList.SelectAll(), (s, e) => e.CanExecute = true));
@@ -353,6 +357,7 @@ namespace Spectrum
                 return;
             }
             IsRun = true;
+            SetOperationButtonsEnabled(false);
 
             Task.Run(async () =>
             {
@@ -379,11 +384,13 @@ namespace Spectrum
                         MessageBox.Show(Application.Current.GetActiveWindow(), "校零失败");
                     }
                     IsRun = false;
+                    SetOperationButtonsEnabled(true);
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "校零异常" + ex.Message);
                     IsRun = false;
+                    SetOperationButtonsEnabled(true);
                 }
             });
 
@@ -394,23 +401,28 @@ namespace Spectrum
         {
             try
             {
-                Mat cir1931 = src1931.Clone();
-                Mat cir1976 = src1976.Clone();
-                //Cv2.ImShow("Demo", src);
-                OpenCvSharp.Point p1, p2;
-                p1.X = Convert.ToInt32(Math.Round((fx * 10 * 97 + 104)));
-                p1.Y = Convert.ToInt32(Math.Round((881 - fy * 10 * 97)));
-                Cv2.Circle(cir1931, p1.X, p1.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
-                p2.X = Convert.ToInt32(Math.Round((fu * 10 * 154 + 49)));
-                //p2.X = 203;//49+154*6
-                p2.Y = Convert.ToInt32(Math.Round((973 - fv * 10 * 154)));
-                Cv2.Circle(cir1976, p2.X, p2.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
-                pic1931 = cir1931.ToWriteableBitmap();
-                pic1976 = cir1976.ToWriteableBitmap();
+                if (src1931 != null)
+                {
+                    Mat cir1931 = src1931.Clone();
+                    OpenCvSharp.Point p1;
+                    p1.X = Convert.ToInt32(Math.Round(fx * 10 * 97 + 104));
+                    p1.Y = Convert.ToInt32(Math.Round(881 - fy * 10 * 97));
+                    Cv2.Circle(cir1931, p1.X, p1.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
+                    pic1931 = cir1931.ToWriteableBitmap();
+                }
+                if (src1976 != null)
+                {
+                    Mat cir1976 = src1976.Clone();
+                    OpenCvSharp.Point p2;
+                    p2.X = Convert.ToInt32(Math.Round(fu * 10 * 154 + 49));
+                    p2.Y = Convert.ToInt32(Math.Round(973 - fv * 10 * 154));
+                    Cv2.Circle(cir1976, p2.X, p2.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
+                    pic1976 = cir1976.ToWriteableBitmap();
+                }
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+
             }
 
         }
@@ -428,6 +440,7 @@ namespace Spectrum
                 MessageBox1.Show("正在运行");
                 return;
             }
+            SetOperationButtonsEnabled(false);
 
             Task.Run(() =>
             {
@@ -462,6 +475,7 @@ namespace Spectrum
                     }
                 }
                 IsRun = false;
+                SetOperationButtonsEnabled(true);
             });
 
 
@@ -647,12 +661,36 @@ namespace Spectrum
                 MessageBox.Show("正在执行任务请稍后");
                 return;
             }
-            Task.Run(() =>
+            SetOperationButtonsEnabled(false);
+            Task.Run(async () =>
             {
-                Measure();
+                try
+                {
+                    await Measure();
+                }
+                finally
+                {
+                    SetOperationButtonsEnabled(true);
+                }
             });
         }
         bool IsRun;
+
+        /// <summary>
+        /// Disables/enables all C++ operation buttons to prevent concurrent spectrometer calls.
+        /// Must be called on the UI thread.
+        /// </summary>
+        private void SetOperationButtonsEnabled(bool enabled)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                button3.IsEnabled = enabled;
+                button4.IsEnabled = enabled;
+                button5.IsEnabled = enabled;
+                button6.IsEnabled = enabled;
+                ButtonAutoInt.IsEnabled = enabled;
+            });
+        }
         //自适应校零
         private void Button4_Click_1(object sender, RoutedEventArgs e)
         {
@@ -662,12 +700,14 @@ namespace Spectrum
                 return;
             }
             log.Info($"CM_Emission_Init_Auto_Dark Start");
+            SetOperationButtonsEnabled(false);
             Task.Run(() =>
             {
                 IsRun = true;
                 int ret = Spectrometer.CM_Emission_Init_Auto_Dark(SpectrometerHandle, Manager.AutodarkParam.fTimeStart, Manager.AutodarkParam.nStepTime, Manager.AutodarkParam.nStepCount, Manager.Average);
                 log.Info($"CM_Emission_Init_Auto_Dark {ret}");
                 IsRun = false;
+                SetOperationButtonsEnabled(true);
                 if (ret == 1)
                 {
                     MessageBox.Show("自适应校零成功");
@@ -688,11 +728,21 @@ namespace Spectrum
             errornum = 0;
             button6.Visibility = Visibility.Collapsed;
             button7.Visibility = Visibility.Visible;
+            ContinuousProgressBar.Value = 0;
+            TimeEstimationPanel.Visibility = Visibility.Visible;
+            ElapsedTimeText.Text = "--:--";
+            RemainingTimeText.Text = "--:--";
+            // Disable other operation buttons during continuous testing
+            button3.IsEnabled = false;
+            button4.IsEnabled = false;
+            button5.IsEnabled = false;
+            ButtonAutoInt.IsEnabled = false;
             Task.Run(()=> LoopMeasure());
         }
         public async void LoopMeasure()
         {
             log.Info($"LoopMeasure Start All Count {Manager.MeasurementNum}");
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             while (isstartAuto)
             {
                 if (Manager.MeasurementNum > 0)
@@ -705,17 +755,51 @@ namespace Spectrum
                         {
                             button6.Visibility = Visibility.Visible;
                             button7.Visibility = Visibility.Collapsed;
+                            ContinuousProgressBar.Value = 100;
+                            TimeEstimationPanel.Visibility = Visibility.Collapsed;
                             Manager.LoopMeasureNum = 0;
                             errornum = 0;
+                            // Re-enable operation buttons
+                            button3.IsEnabled = true;
+                            button4.IsEnabled = true;
+                            button5.IsEnabled = true;
+                            button6.IsEnabled = true;
+                            ButtonAutoInt.IsEnabled = true;
                             MessageBox.Show(Application.Current.MainWindow, $"连续测试执行完毕,执行失败{errornum}");
                         });
                         break;
                     }
                     Manager.LoopMeasureNum++;
+
+                    // Update progress bar and time estimation
+                    int current = Manager.LoopMeasureNum;
+                    int total = Manager.MeasurementNum;
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        double progress = (double)current / total * 100;
+                        ContinuousProgressBar.Value = progress;
+
+                        var elapsed = stopwatch.Elapsed;
+                        ElapsedTimeText.Text = FormatTimeSpan(elapsed);
+
+                        if (current > 0)
+                        {
+                            double avgPerItem = elapsed.TotalSeconds / current;
+                            double remainingSeconds = avgPerItem * (total - current);
+                            RemainingTimeText.Text = FormatTimeSpan(TimeSpan.FromSeconds(remainingSeconds));
+                        }
+                    });
                 }
                 await Measure();
                 await Task.Delay(Manager.MeasurementInterval);
             }
+        }
+
+        private static string FormatTimeSpan(TimeSpan ts)
+        {
+            if (ts.TotalHours >= 1)
+                return $"{(int)ts.TotalHours}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+            return $"{ts.Minutes:D2}:{ts.Seconds:D2}";
         }
 
         //停止连续测量
@@ -724,7 +808,14 @@ namespace Spectrum
             isstartAuto = false;
             button6.Visibility = Visibility.Visible;
             button7.Visibility = Visibility.Collapsed;
+            TimeEstimationPanel.Visibility = Visibility.Collapsed;
             Manager.LoopMeasureNum = 0;
+            // Re-enable operation buttons
+            button3.IsEnabled = true;
+            button4.IsEnabled = true;
+            button5.IsEnabled = true;
+            button6.IsEnabled = true;
+            ButtonAutoInt.IsEnabled = true;
         }
         //清空数据
         private void Cleartable_Click(object sender, RoutedEventArgs e)
@@ -779,6 +870,8 @@ namespace Spectrum
                 properties.Add("峰值波长Lp(nm");
                 properties.Add("显色性指数Ra");
                 properties.Add("半波宽");
+                properties.Add("兴奋纯度");
+                properties.Add("主波长颜色");
                 properties.Add("CIE2015X");
                 properties.Add("CIE2015Y");
                 properties.Add("CIE2015Z");
@@ -835,6 +928,8 @@ namespace Spectrum
                         csvBuilder.Append(result.fLp + ",");
                         csvBuilder.Append(result.fRa + ",");
                         csvBuilder.Append(result.fHW + ",");
+                        csvBuilder.Append(result.ExcitationPurity + ",");
+                        csvBuilder.Append(result.DominantWavelengthHex + ",");
                         csvBuilder.Append(result.fCIEx2015 + ",");
                         csvBuilder.Append(result.fCIEy2015 + ",");
                         csvBuilder.Append(result.fCIEz2015 + ",");

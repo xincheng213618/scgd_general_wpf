@@ -206,6 +206,8 @@ namespace Spectrum
         public RelayCommand SetGroupMaguideFileCommand { get; set; }
         [JsonIgnore]
         public RelayCommand OpenCalibrationGroupWindowCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand ApplyActiveGroupCommand { get; set; }
 
         /// <summary>
         /// Loads calibration config for the current SN.
@@ -350,6 +352,7 @@ namespace Spectrum
             SetGroupWavelengthFileCommand = new RelayCommand(a => SetActiveGroupFile(isWavelength: true));
             SetGroupMaguideFileCommand = new RelayCommand(a => SetActiveGroupFile(isWavelength: false));
             OpenCalibrationGroupWindowCommand = new RelayCommand(a => OpenCalibrationGroupWindow());
+            ApplyActiveGroupCommand = new RelayCommand(a => ApplyActiveGroup());
         }
         public NDConfig NDConfig => Config.NDConfig;
 

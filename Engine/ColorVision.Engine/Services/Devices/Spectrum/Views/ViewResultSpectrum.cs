@@ -12,6 +12,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using WpfBrush = System.Windows.Media.SolidColorBrush;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
@@ -132,6 +133,21 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                     MarkerShape = MarkerShape.None,
                 };
 
+                // Compute dominant wavelength color
+                if (fLd >= 380 && fLd <= 780)
+                {
+                    DominantWavelengthColor = WavelengthToColor.ToBrush(fLd);
+                    DominantWavelengthHex = WavelengthToColor.ToHex(fLd);
+                }
+
+                // Compute excitation purity
+                ComputeExcitationPurity();
+
+                // Compute Ra if C++ didn't calculate it
+                if (fRa == 0 && fPL != null && fPL.Length > 0 && fCCT > 0)
+                {
+                    fRa = RaCalculator.ComputeRa(fPL, fSpect1, fInterval, fCCT);
+                }
             }
             catch(Exception ex)
             {
@@ -543,6 +559,33 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         /// </summary>
         public float[] fPL { get; set; }
 
+        /// <summary>
+        /// 主波长对应颜色 (WPF Brush)
+        /// </summary>
+        [JsonIgnore]
+        [Browsable(false)]
+        public WpfBrush DominantWavelengthColor { get; set; }
+
+        /// <summary>
+        /// 主波长对应颜色 Hex string
+        /// </summary>
+        [DisplayName("DominantWavelengthColor")]
+        public string DominantWavelengthHex { get; set; }
+
+        /// <summary>
+        /// 兴奋纯度 (excitation purity), computed from CIE 1931 x,y coordinates.
+        /// </summary>
+        [DisplayName("ExcitationPurity")]
+        public double ExcitationPurity { get; set; }
+
+        /// <summary>
+        /// Computes excitation purity and dominant wavelength color from CIE 1931 chromaticity coordinates.
+        /// </summary>
+        public void ComputeExcitationPurity()
+        {
+            double wave = ColorimetryHelper.CalculateDominantWavelength(fx, fy);
+            ExcitationPurity = ColorimetryHelper.CalculateExcitationPurity(fx, fy, wave);
+        }
     }
 
 }
