@@ -200,7 +200,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         private static double PlanckianSPD(double wavelength, double T)
         {
-            // Planck's law: B(λ,T) = 2hc²/λ⁵ · 1/(exp(hc/λkT) - 1)
+            // Planck's law (spectral radiance) · 1/(exp(hc/λkT) - 1)
             // Simplified with constants for nm
             double lambda = wavelength * 1e-9; // nm to m
             double c1 = 3.7418e-16; // 2πhc² in W·m²

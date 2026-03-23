@@ -664,8 +664,14 @@ namespace Spectrum
             SetOperationButtonsEnabled(false);
             Task.Run(async () =>
             {
-                await Measure();
-                SetOperationButtonsEnabled(true);
+                try
+                {
+                    await Measure();
+                }
+                finally
+                {
+                    SetOperationButtonsEnabled(true);
+                }
             });
         }
         bool IsRun;
