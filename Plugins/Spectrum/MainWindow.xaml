@@ -225,7 +225,7 @@
                                         <TextBlock Text="{Binding MeasurementNum}"/>
                                     </StackPanel>
                                 </Grid>
-                                <ProgressBar x:Name="ContinuousProgressBar" Height="8" Margin="0,4,0,4" Minimum="0" Maximum="100" Value="0" Foreground="#3498DB"/>
+                                <ProgressBar x:Name="ContinuousProgressBar" Height="15" Margin="0,4,0,4" Minimum="0" Maximum="100" Value="0" Foreground="#3498DB"/>
                                 <StackPanel x:Name="TimeEstimationPanel" Orientation="Horizontal" Margin="0,0,0,4" Visibility="Collapsed">
                                     <TextBlock Text="已用: " FontSize="11"/>
                                     <TextBlock x:Name="ElapsedTimeText" Text="--:--" FontSize="11" FontWeight="SemiBold" Foreground="#2196F3"/>
