@@ -422,7 +422,7 @@ namespace Spectrum
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+
             }
 
         }
