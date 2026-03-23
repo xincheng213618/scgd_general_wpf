@@ -222,12 +222,11 @@ namespace Spectrum
                 {
                     Manager.IsConnected = true;
 
-                    // Retrieve the SN
                     try
                     {
                         int bufferLength = 1024;
                         StringBuilder snBuilder = new StringBuilder(bufferLength);
-                        int snRet = Spectrometer.CM_Emission_GetAllSN((int)Manager.Config.SpectrometerType, com, snBuilder, bufferLength);
+                        int snRet = Spectrometer.CM_GetSpectrSerialNumber(SpectrometerHandle, snBuilder);
                         if (snRet == 1)
                         {
                             string sn = snBuilder.ToString().Trim();
@@ -252,8 +251,6 @@ namespace Spectrum
                         log.Warn("Failed to read SN", snEx);
                         Manager.SerialNumber = "Unknown";
                     }
-
-                    // Load per-SN calibration groups and apply
                     Manager.LoadCalibrationConfig();
 
                     iR = Spectrometer.CM_Emission_LoadWavaLengthFile(SpectrometerHandle, Manager.WavelengthFile);
@@ -352,7 +349,7 @@ namespace Spectrum
         {
             if (IsRun)
             {
-                MessageBox1.Show("正在运行");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "正在运行");
                 return;
             }
             IsRun = true;
@@ -375,17 +372,17 @@ namespace Spectrum
                     log.Info($"CM_Emission_DarkStorage {ret}");
                     if (ret == 1)
                     {
-                        MessageBox1.Show("校零成功");
+                        MessageBox.Show(Application.Current.GetActiveWindow(),"校零成功");
                     }
                     else
                     {
-                        MessageBox1.Show("校零失败");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "校零失败");
                     }
                     IsRun = false;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox1.Show("校零异常" + ex.Message);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "校零异常" + ex.Message);
                     IsRun = false;
                 }
             });
@@ -984,7 +981,8 @@ namespace Spectrum
             wpfplot2.Plot.Axes.SetLimitsX(380, 780);
             wpfplot2.Plot.Axes.Bottom.Min = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect1;
             wpfplot2.Plot.Axes.Bottom.Max = ViewResultSpectrums[ViewResultList.SelectedIndex].fSpect2;
-
+            wpfplot2.Plot.Axes.Left.Min = -0.05;
+            wpfplot2.Plot.Axes.Left.Max = double.NaN;
             if (AbsoluteScatterPlots.Count > 0)
             {
                 if (MulComparison)

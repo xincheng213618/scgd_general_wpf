@@ -4,10 +4,11 @@ using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.DataSources;
 using ScottPlot.Plottables;
+using Spectrum.View;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using WpfColor = System.Windows.Media.Color;
 using WpfBrush = System.Windows.Media.SolidColorBrush;
+using WpfColor = System.Windows.Media.Color;
 
 namespace Spectrum
 {
@@ -455,111 +456,21 @@ namespace Spectrum
         /// </summary>
         public void ComputeExcitationPurity()
         {
-            // Validate inputs
-            if (float.IsNaN(fx) || float.IsNaN(fy) || float.IsNaN(fLd) || fLd < 380 || fLd > 780)
-            {
-                ExcitationPurity = 0;
-                return;
-            }
-
-            // D65 illuminant white point
-            const double xn = 0.3127;
-            const double yn = 0.3290;
-
-            double dx = fx - xn;
-            double dy = fy - yn;
-            double distSample = Math.Sqrt(dx * dx + dy * dy);
-
-            if (distSample < 1e-10)
-            {
-                ExcitationPurity = 0;
-                return;
-            }
-
-            // Find the dominant wavelength point on the spectrum locus
-            // by extending the line from white point through sample point
-            // We approximate using the known spectrum locus boundary
-            double angle = Math.Atan2(dy, dx);
-
-            // Approximate dominant wavelength CIE coordinates on the locus
-            // Use the fLd (dominant wavelength) if available
-            double xd, yd;
-            GetSpectrumLocusPoint(fLd, out xd, out yd);
-
-            double dxd = xd - xn;
-            double dyd = yd - yn;
-            double distDominant = Math.Sqrt(dxd * dxd + dyd * dyd);
-
-            if (distDominant < 1e-10)
-            {
-                ExcitationPurity = 0;
-                return;
-            }
-
-            ExcitationPurity = Math.Round(distSample / distDominant, 4);
-            if (ExcitationPurity > 1.0) ExcitationPurity = 1.0;
+            // 使用辅助类，代码十分干净
+            // 注意如果传入 fLd 之前没算或者算错了，这里可以直接重新算一次 wave : ColorimetryHelper.CalculateDominantWavelength(fx, fy)
+            double wave = ColorimetryHelper.CalculateDominantWavelength(fx, fy);
+            ExcitationPurity = ColorimetryHelper.CalculateExcitationPurity(fx, fy, wave);
         }
 
         /// <summary>
-        /// Approximate CIE 1931 chromaticity coordinates for a monochromatic wavelength
-        /// on the spectrum locus. Uses a simplified piecewise linear approximation.
+        /// 验证从 C++ 计算传来的相关色温 CCT 和 主波长。
         /// </summary>
-        private static void GetSpectrumLocusPoint(double wavelength, out double x, out double y)
+        public void VerifyCPlusPlusCalculations()
         {
-            // Simplified spectrum locus approximation (CIE 1931 2-degree observer)
-            // Key wavelength -> (x, y) mapping
-            double[][] locus = new double[][]
-            {
-                new[] { 380, 0.1741, 0.0050 },
-                new[] { 400, 0.1733, 0.0048 },
-                new[] { 420, 0.1714, 0.0051 },
-                new[] { 440, 0.1644, 0.0109 },
-                new[] { 460, 0.1440, 0.0297 },
-                new[] { 470, 0.1241, 0.0578 },
-                new[] { 480, 0.0913, 0.1327 },
-                new[] { 490, 0.0454, 0.2950 },
-                new[] { 500, 0.0082, 0.5384 },
-                new[] { 510, 0.0139, 0.7502 },
-                new[] { 520, 0.0743, 0.8338 },
-                new[] { 530, 0.1547, 0.8059 },
-                new[] { 540, 0.2296, 0.7543 },
-                new[] { 550, 0.3016, 0.6923 },
-                new[] { 560, 0.3731, 0.6245 },
-                new[] { 570, 0.4441, 0.5547 },
-                new[] { 580, 0.5125, 0.4866 },
-                new[] { 590, 0.5752, 0.4242 },
-                new[] { 600, 0.6270, 0.3725 },
-                new[] { 610, 0.6658, 0.3340 },
-                new[] { 620, 0.6915, 0.3083 },
-                new[] { 630, 0.7079, 0.2920 },
-                new[] { 640, 0.7190, 0.2809 },
-                new[] { 650, 0.7260, 0.2740 },
-                new[] { 660, 0.7300, 0.2700 },
-                new[] { 680, 0.7320, 0.2680 },
-                new[] { 700, 0.7347, 0.2653 },
-                new[] { 780, 0.7347, 0.2653 },
-            };
-
-            // Clamp wavelength
-            double wl = Math.Max(380, Math.Min(780, wavelength));
-
-            // Find bounding entries
-            for (int i = 0; i < locus.Length - 1; i++)
-            {
-                if (wl >= locus[i][0] && wl <= locus[i + 1][0])
-                {
-                    double t = (wl - locus[i][0]) / (locus[i + 1][0] - locus[i][0]);
-                    x = locus[i][1] + t * (locus[i + 1][1] - locus[i][1]);
-                    y = locus[i][2] + t * (locus[i + 1][2] - locus[i][2]);
-                    return;
-                }
-            }
-
-            // Fallback
-            x = locus[locus.Length - 1][1];
-            y = locus[locus.Length - 1][2];
+            // 用色度坐标验证算出的 CCT
+            double csharpCalculatedCCT = ColorimetryHelper.CalculateCCT(fx, fy);
+            double csharpCalculatedWave = ColorimetryHelper.CalculateDominantWavelength(fx, fy);
         }
-
     }
 
 }
