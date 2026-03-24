@@ -126,8 +126,6 @@ namespace Spectrum
             List<int> BaudRates = new List<int>() { 9600,115200, 38400, 300, 600, 1200, 2400, 4800, 14400, 19200, 57600 };
             ComboBoxPort.ItemsSource = portNames;
             ComboBoxSerial.ItemsSource = BaudRates;
-            ComboBoxNdPort.ItemsSource = portNames;
-            ComboBoxNdSerial.ItemsSource = BaudRates;
             ComboBoxShutterPort.ItemsSource = portNames;
             ComboBoxShutterSerial.ItemsSource = BaudRates;
 

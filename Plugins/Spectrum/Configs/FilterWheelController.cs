@@ -168,7 +168,7 @@ namespace Spectrum.Configs
         }
 
         private const int PollingIntervalMs = 16;
-        private const int CommandTimeoutMs = 2000;
+        private const int CommandTimeoutMs = 10000;
 
         private async Task<string?> SendCommandAsync(string cmd)
         {
