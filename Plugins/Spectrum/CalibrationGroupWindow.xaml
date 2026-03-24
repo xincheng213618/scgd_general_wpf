@@ -41,6 +41,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
@@ -68,8 +69,22 @@
                 </DockPanel>
                 <TextBlock Grid.Row="4" x:Name="TextMaguideValidation" Margin="80,0,0,6" FontSize="11" Foreground="Gray"/>
 
+                <!-- Filter Wheel Position -->
+                <DockPanel Grid.Row="5" Margin="0,0,0,8">
+                    <TextBlock Text="滤色轮位置" Width="80"/>
+                    <ComboBox x:Name="ComboBoxFilterWheelPosition" SelectionChanged="ComboBoxFilterWheelPosition_SelectionChanged" Width="160" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="无关联" Tag="-1"/>
+                        <ComboBoxItem Content="0: ND0" Tag="0"/>
+                        <ComboBoxItem Content="1: ND10" Tag="1"/>
+                        <ComboBoxItem Content="2: ND100" Tag="2"/>
+                        <ComboBoxItem Content="3: ND1000" Tag="3"/>
+                        <ComboBoxItem Content="4: Empty" Tag="4"/>
+                    </ComboBox>
+                    <TextBlock Text=" (切换滤色轮时自动加载)" Foreground="Gray" FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                </DockPanel>
+
                 <!-- Validation status summary -->
-                <GroupBox Grid.Row="5" Header="标定文件信息" Margin="0,6,0,0" Padding="6">
+                <GroupBox Grid.Row="6" Header="标定文件信息" Margin="0,6,0,0" Padding="6">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,4">
                             <TextBlock Text="波长文件状态: " Width="100"/>
@@ -90,7 +105,7 @@
 
         <!-- ND association hint -->
         <TextBlock Grid.Row="2" TextWrapping="Wrap" FontSize="11" Foreground="Gray" Margin="0,0,0,8"
-                   Text="提示: 如果分组名称与滤色轮(CFW)位置名称匹配(如 ND0, ND10, ND100, Empty)，切换ND时将自动加载对应分组的标定文件。"/>
+                   Text="提示: 配置滤色轮位置后，切换滤色轮时将自动加载对应分组的标定文件。也可使分组名称与滤色轮位置名称匹配(如 ND0, ND10, ND100, Empty)实现自动关联。"/>
 
         <!-- Bottom buttons -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">

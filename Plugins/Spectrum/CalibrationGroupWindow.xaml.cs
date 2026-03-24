@@ -49,12 +49,20 @@ namespace Spectrum
                 TextMaguideValidation.Text = string.Empty;
                 TextWavelengthStatus.Text = "---";
                 TextMaguideStatus.Text = "---";
+                ComboBoxFilterWheelPosition.SelectedIndex = 0; // "无关联"
                 return;
             }
 
             TextBoxGroupName.Text = group.GroupName;
             TextBoxWavelengthFile.Text = group.WavelengthFile;
             TextBoxMaguideFile.Text = group.MaguideFile;
+
+            // Set filter wheel position combo (-1 maps to index 0 "无关联", 0-4 maps to index 1-5)
+            int fwIndex = group.FilterWheelPosition + 1;
+            if (fwIndex >= 0 && fwIndex < ComboBoxFilterWheelPosition.Items.Count)
+                ComboBoxFilterWheelPosition.SelectedIndex = fwIndex;
+            else
+                ComboBoxFilterWheelPosition.SelectedIndex = 0;
 
             // Auto-validate on selection
             ValidateWavelength(group.WavelengthFile);
@@ -196,6 +204,19 @@ namespace Spectrum
             TextMaguideStatus.Foreground = result.IsValid
                 ? System.Windows.Media.Brushes.Green
                 : System.Windows.Media.Brushes.OrangeRed;
+        }
+
+        private void ComboBoxFilterWheelPosition_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressSelectionChanged) return;
+            var group = ComboBoxGroups.SelectedItem as CalibrationGroup;
+            if (group == null) return;
+
+            if (ComboBoxFilterWheelPosition.SelectedItem is ComboBoxItem item && item.Tag is string tagStr && int.TryParse(tagStr, out int pos))
+            {
+                group.FilterWheelPosition = pos;
+                Manager.SaveCalibrationConfig();
+            }
         }
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)
