@@ -281,32 +281,40 @@
 
                         <!-- ═══ 滤光轮 (CFW) ═══ -->
                         <GroupBox Header="滤光轮 (CFW)">
-                            <StackPanel Orientation="Horizontal">
-                                <DockPanel>
-                                    <TextBlock Text="串口" VerticalAlignment="Center" Width="40" />
-                                    <ComboBox x:Name="ComboBoxNdPort" Style="{StaticResource ComboBox.Small}" IsEditable="True" Text="{Binding NDConfig.SzComName}" Width="80" />
-                                </DockPanel>
-                                <DockPanel Margin="8,0,0,0">
-                                    <TextBlock Text="波特率" VerticalAlignment="Center" Width="45" />
-                                    <ComboBox x:Name="ComboBoxNdSerial" Style="{StaticResource ComboBox.Small}" Width="70" IsEditable="True" Text="{Binding NDConfig.BaudRate}" />
-                                </DockPanel>
-                                <Button Margin="4,0,0,0" Content="CFW连接" Command="{Binding ConnectNDCommand}"/>
-                                <Button Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditNDConfigCommand}" Padding="0" Height="20" Width="20" >
-                                    <Button.Triggers>
-                                        <EventTrigger RoutedEvent="Button.Click">
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform25" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-                                    </Button.Triggers>
-                                    <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
-                                        <TextBlock.RenderTransform>
-                                            <RotateTransform x:Name="rotateTransform25"/>
-                                        </TextBlock.RenderTransform>
-                                    </TextBlock>
-                                </Button>
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4" >
+                                    <DockPanel>
+                                        <TextBlock Text="串口" VerticalAlignment="Center" Width="40" />
+                                        <ComboBox x:Name="ComboBoxNdPort" Style="{StaticResource ComboBox.Small}" IsEditable="True" Text="{Binding NDConfig.SzComName}" Width="80" />
+                                    </DockPanel>
+                                    <DockPanel Margin="8,0,0,0">
+                                        <TextBlock Text="波特率" VerticalAlignment="Center" Width="45" />
+                                        <ComboBox x:Name="ComboBoxNdSerial" Style="{StaticResource ComboBox.Small}" Width="70" IsEditable="True" Text="{Binding NDConfig.BaudRate}" />
+                                    </DockPanel>
+
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Margin="4,0,0,0" Content="CFW连接" Command="{Binding ConnectNDCommand}"/>
+                                    <Button Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditNDConfigCommand}" Padding="0" Height="20" Width="20" >
+                                        <Button.Triggers>
+                                            <EventTrigger RoutedEvent="Button.Click">
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="rotateTransform25" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </EventTrigger>
+                                        </Button.Triggers>
+                                        <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
+                                            <TextBlock.RenderTransform>
+                                                <RotateTransform x:Name="rotateTransform25"/>
+                                            </TextBlock.RenderTransform>
+                                        </TextBlock>
+                                    </Button>
+
+                                </StackPanel>
+
+                                
                             </StackPanel>
                         </GroupBox>
 
