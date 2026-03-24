@@ -69,6 +69,7 @@ namespace ColorVision.Engine.Templates.Flow
             "AlgTempName",
             "AutoFocusTemp",
             "ModelName",
+            "LayoutROITemplate",
         };
 
         /// <summary>
