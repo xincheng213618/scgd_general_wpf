@@ -139,7 +139,7 @@ del ""%~f0"" & exit
                     WorkingDirectory = tempRoot
                 };
 
-                if (Tool.HasWritePermission(AppDomain.CurrentDomain.BaseDirectory))
+                if (!Tool.HasWritePermission(AppDomain.CurrentDomain.BaseDirectory))
                 {
                     psi.Verb = "runas";
                     psi.WindowStyle = ProcessWindowStyle.Normal;
