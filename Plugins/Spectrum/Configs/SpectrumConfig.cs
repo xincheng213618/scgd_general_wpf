@@ -52,6 +52,9 @@ namespace Spectrum.Configs
         private ShutterConfig _ShutterConfig = new ShutterConfig();
         public NDConfig NDConfig { get => _NDConfig; set { _NDConfig = value; OnPropertyChanged(); } }
         private NDConfig _NDConfig = new NDConfig();
+
+        public FilterWheelConfig FilterWheelConfig { get => _FilterWheelConfig; set { _FilterWheelConfig = value; OnPropertyChanged(); } }
+        private FilterWheelConfig _FilterWheelConfig = new FilterWheelConfig();
     }
 
     public class NDConfig : ViewModelBase, IConfig

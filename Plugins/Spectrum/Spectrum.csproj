@@ -7,7 +7,7 @@
     <UseWPF>true</UseWPF>
     <Company>Spectromer</Company>
 	<ApplicationIcon>pic.ico</ApplicationIcon>
-	<VersionPrefix>2.0.2.0</VersionPrefix>
+	<VersionPrefix>2.0.3.0</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>

@@ -279,42 +279,63 @@
                             </StackPanel>
                         </GroupBox>
 
-                        <!-- ═══ 滤光轮 (CFW) ═══ -->
-                        <GroupBox Header="滤光轮 (CFW)">
+                        <!-- ═══ 滤色轮 (Filter Wheel) ═══ -->
+                        <GroupBox Header="滤色轮 (Filter Wheel)">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4" >
-                                    <DockPanel>
-                                        <TextBlock Text="串口" VerticalAlignment="Center" Width="40" />
-                                        <ComboBox x:Name="ComboBoxNdPort" Style="{StaticResource ComboBox.Small}" IsEditable="True" Text="{Binding NDConfig.SzComName}" Width="80" />
-                                    </DockPanel>
-                                    <DockPanel Margin="8,0,0,0">
-                                        <TextBlock Text="波特率" VerticalAlignment="Center" Width="45" />
-                                        <ComboBox x:Name="ComboBoxNdSerial" Style="{StaticResource ComboBox.Small}" Width="70" IsEditable="True" Text="{Binding NDConfig.BaudRate}" />
-                                    </DockPanel>
-
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Margin="4,0,0,0" Content="CFW连接" Command="{Binding ConnectNDCommand}"/>
-                                    <Button Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditNDConfigCommand}" Padding="0" Height="20" Width="20" >
-                                        <Button.Triggers>
-                                            <EventTrigger RoutedEvent="Button.Click">
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="rotateTransform25" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Button.Triggers>
-                                        <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
-                                            <TextBlock.RenderTransform>
-                                                <RotateTransform x:Name="rotateTransform25"/>
-                                            </TextBlock.RenderTransform>
-                                        </TextBlock>
-                                    </Button>
-
+                                <!-- Connection controls (visible when NOT connected) -->
+                                <StackPanel Visibility="{Binding FilterWheelController.IsConnected,Converter={StaticResource bool2VisibilityConverter1}}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <Button Content="连接" Command="{Binding FilterWheelController.ConnectCommand}" Padding="10,4" Background="#2196F3" Foreground="White"/>
+                                        <Button Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditFilterWheelConfigCommand}" Padding="0" Height="20" Width="20" >
+                                            <Button.Triggers>
+                                                <EventTrigger RoutedEvent="Button.Click">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="rotateTransformFW" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Button.Triggers>
+                                            <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
+                                                <TextBlock.RenderTransform>
+                                                    <RotateTransform x:Name="rotateTransformFW"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                        </Button>
+                                    </StackPanel>
                                 </StackPanel>
 
-                                
+                                <!-- Connected state controls -->
+                                <StackPanel Visibility="{Binding FilterWheelController.IsConnected,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="当前位置: " VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding FilterWheelController.CurrentPositionName}" FontWeight="SemiBold" Foreground="#2196F3" VerticalAlignment="Center" Margin="4,0,8,0"/>
+                                        <Button Content="查询" Command="{Binding FilterWheelController.QueryPositionCommand}" Padding="8,2" Margin="0,0,4,0"/>
+                                        <Button Content="断开" Command="{Binding FilterWheelController.DisconnectCommand}" Padding="8,2" Background="#E53935" Foreground="White"/>
+                                    </StackPanel>
+
+                                    <!-- Position buttons -->
+                                    <TextBlock Text="切换位置:" Margin="0,2,0,2"/>
+                                    <ItemsControl ItemsSource="{Binding FilterWheelConfig.HoleMapping}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Margin="0,0,4,4" Padding="10,4"
+                                                        Command="{Binding DataContext.FilterWheelController.SetPositionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding HoleIndex}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding HoleIndex, StringFormat='{}{0}: '}"/>
+                                                        <TextBlock Text="{Binding HoleName}"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
                             </StackPanel>
                         </GroupBox>
 
