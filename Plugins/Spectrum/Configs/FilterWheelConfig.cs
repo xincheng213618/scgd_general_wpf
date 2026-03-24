@@ -37,17 +37,14 @@ namespace Spectrum.Configs
     {
         public FilterWheelConfig()
         {
-            if (HoleMapping == null)
+            HoleMapping ??= new ObservableCollection<FilterWheelHoleMap>
             {
-                HoleMapping = new ObservableCollection<FilterWheelHoleMap>
-                {
-                    new FilterWheelHoleMap { HoleIndex = 0, HoleName = "ND0" },
-                    new FilterWheelHoleMap { HoleIndex = 1, HoleName = "ND10" },
-                    new FilterWheelHoleMap { HoleIndex = 2, HoleName = "ND100" },
-                    new FilterWheelHoleMap { HoleIndex = 3, HoleName = "ND1000" },
-                    new FilterWheelHoleMap { HoleIndex = 4, HoleName = "Empty" },
-                };
-            }
+                new FilterWheelHoleMap { HoleIndex = 0, HoleName = "ND0" },
+                new FilterWheelHoleMap { HoleIndex = 1, HoleName = "ND10" },
+                new FilterWheelHoleMap { HoleIndex = 2, HoleName = "ND100" },
+                new FilterWheelHoleMap { HoleIndex = 3, HoleName = "ND1000" },
+                new FilterWheelHoleMap { HoleIndex = 4, HoleName = "Empty" },
+            };
         }
 
         [DisplayName("Serial"), PropertyEditorType(typeof(TextSerialPortPropertiesEditor))]

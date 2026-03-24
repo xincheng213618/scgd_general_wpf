@@ -167,6 +167,9 @@ namespace Spectrum.Configs
             return false;
         }
 
+        private const int PollingIntervalMs = 16;
+        private const int CommandTimeoutMs = 2000;
+
         private async Task<string?> SendCommandAsync(string cmd)
         {
             if (_serialPort == null || !_serialPort.IsOpen)
@@ -179,11 +182,11 @@ namespace Spectrum.Configs
                 _serialPort.Write(cmd);
 
                 string receiveBuffer = "";
-                int maxLoops = 125; // ~2 seconds (125 * 16ms)
+                int maxLoops = CommandTimeoutMs / PollingIntervalMs;
 
                 for (int i = 0; i < maxLoops; i++)
                 {
-                    await Task.Delay(16);
+                    await Task.Delay(PollingIntervalMs);
 
                     if (_serialPort == null || !_serialPort.IsOpen) break;
 
