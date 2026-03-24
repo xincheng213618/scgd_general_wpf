@@ -12,6 +12,7 @@ using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
 using ScottPlot;
 using ScottPlot.Plottables;
+using Spectrum.Menus;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -27,27 +28,22 @@ using System.Windows.Media.Imaging;
 
 namespace Spectrum
 {
-    public class MenuChangeCali : MenuItemBase
+    public class MenuSpectrumWindow : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => "生成幅值标定文件";
+        public override string Header => "光谱仪测试";
         public override int Order => 1;
         public override void Execute()
         {
-            if (Application.Current.MainWindow is MainWindow mainWindow)
-            {
-                new GenerateAmplitudeWindow(mainWindow.SpectrometerHandle).ShowDialog();
-            }
+            new MainWindow().Show();
         }
     }
+
 
     public class MainWindowResult : ViewModelBase, IConfig
     {
         public static MainWindowResult Instance => ConfigService.Instance.GetRequiredService<MainWindowResult>();
-
     }
-
-
 
     /// <summary>
     /// MainWindow.xaml 的交互逻辑
@@ -96,9 +92,7 @@ namespace Spectrum
 
             ViewResultManager.ListView = ViewResultList;
 
-            MenuManager.GetInstance().Menu = menu;
-            MenuManager.GetInstance().AddFilteredGuid(MenuItemConstants.File);
-            MenuManager.GetInstance().LoadMenuItemFromAssembly();
+            MenuManager.GetInstance().LoadMenuForWindow("Spectrum", menu);
 
             if (MainWindowConfig.Instance.LogControlVisibility)
             {

@@ -5,7 +5,7 @@ using System.Windows;
 
 namespace ColorVision.UI.Desktop.ThirdPartyApps
 {
-    public class MenuThirdPartyApps : MenuItemBase
+    public class MenuThirdPartyApps : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
         public override string Header => Properties.Resources.ThirdPartyApps;

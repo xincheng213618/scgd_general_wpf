@@ -2,7 +2,7 @@
 
 namespace ColorVision.UI.Menus.Base
 {
-    public class MenuHelp : MenuItemMenuBase
+    public class MenuHelp : GlobalMenuBase
     {
         public override string GuidId => MenuItemConstants.Help;
         public override string Header => Resources.MenuHelp;

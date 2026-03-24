@@ -5,7 +5,7 @@ using System.Windows;
 
 namespace ColorVision.UI.Desktop.Plugins
 {
-    public class MenuPluginManager : MenuItemBase
+    public class MenuPluginManager : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 9000;

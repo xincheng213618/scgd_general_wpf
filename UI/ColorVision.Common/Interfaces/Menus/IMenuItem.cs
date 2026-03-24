@@ -37,6 +37,9 @@ namespace ColorVision.UI.Menus
 
     public static class MenuItemConstants
     {
+        public const string MainWindowTarget = "MainWindow";
+        public const string GlobalTarget = "Global"; // 新增：代表全局/通用，所有窗口都会加载
+
         public const string Menu = "Menu";
         public const string File = "File";
         public const string Edit = "Edit";
@@ -48,6 +51,8 @@ namespace ColorVision.UI.Menus
 
     public interface IMenuItem
     {
+        public string TargetName { get; }
+
         public string? OwnerGuid { get; }
         public string? GuidId { get; }
         public int Order { get; }

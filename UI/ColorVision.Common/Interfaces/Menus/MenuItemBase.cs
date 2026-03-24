@@ -9,6 +9,8 @@ namespace ColorVision.UI.Menus
 
     public abstract class MenuItemBase : ViewModelBase,IMenuItem
     {
+        public virtual string TargetName => MenuItemConstants.MainWindowTarget;
+
         public virtual string OwnerGuid => MenuItemConstants.Menu;
         public virtual string GuidId  => GetType().Name;
         public virtual int Order => 1;

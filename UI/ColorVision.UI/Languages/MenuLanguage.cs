@@ -10,7 +10,7 @@ namespace ColorVision.UI.Languages
     //这里隐藏掉，因为我认为频繁切换语言是不需要的
     //后面这个合并到插件中
 
-    public class MenuLanguage : MenuItemBase
+    public class MenuLanguage : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override int Order => 1000;
@@ -44,6 +44,7 @@ namespace ColorVision.UI.Languages
 
                 MenuItemMetadata menuItemMeta = new MenuItemMetadata
                 {
+                    TargetName = MenuItemConstants.GlobalTarget,
                     OwnerGuid = nameof(MenuLanguage),
                     GuidId = item,
                     Header = LanguageManager.keyValuePairs.TryGetValue(item, out string value) ? value : item,

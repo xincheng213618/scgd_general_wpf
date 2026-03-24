@@ -2,7 +2,7 @@
 
 namespace ColorVision.UI.Menus.Base
 {
-    public class MenuFile : MenuItemMenuBase
+    public class MenuFile : GlobalMenuBase
     {
         public override string GuidId => MenuItemConstants.File;
         public override string Header => Resources.MenuFile;
@@ -11,6 +11,8 @@ namespace ColorVision.UI.Menus.Base
 
     public abstract class MenuItemFileBase : MenuItemBase
     {
+        public override string TargetName => MenuItemConstants.GlobalTarget;
+
         public override string OwnerGuid => MenuItemConstants.File;
     }
 

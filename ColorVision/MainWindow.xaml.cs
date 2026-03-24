@@ -20,8 +20,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -96,7 +94,6 @@ namespace ColorVision
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MenuManager.GetInstance().Menu = Menu1;
             this.SizeChanged += (s, e) =>
             {
                 SearchGrid.Visibility = this.ActualWidth < 700 ? Visibility.Collapsed : Visibility.Visible;
@@ -120,7 +117,7 @@ namespace ColorVision
             
             SolutionTab1.Content = new TreeViewControl();
 
-            MenuManager.GetInstance().LoadMenuItemFromAssembly();
+            MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget,Menu1);
             this.LoadHotKeyFromAssembly();
             StatusBarManager.GetInstance().Init(StatusBarGrid, StatusBarTextDocker);
 

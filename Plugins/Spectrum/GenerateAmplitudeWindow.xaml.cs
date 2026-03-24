@@ -1,18 +1,26 @@
-﻿using System.Windows;
+﻿using ColorVision.UI.Menus;
+using Spectrum.Menus;
+using System.Windows;
 
 namespace Spectrum
 {
-    /// <summary>
-    /// GenerateAmplitudeWindow.xaml 的交互逻辑
-    /// </summary>
+    public class MenuGenerateAmplitudeWindow : SpectrumMenuIBase
+    {
+
+        public override string OwnerGuid => MenuItemConstants.Tool;
+        public override string Header => "生成幅值标定文件";
+        public override int Order => 1;
+        public override void Execute()
+        {
+            new GenerateAmplitudeWindow().ShowDialog();
+        }
+    }
+
+
     public partial class GenerateAmplitudeWindow : Window
     {
-        public IntPtr SpectrometerHandle { get; set; } = IntPtr.Zero;
-
-
-        public GenerateAmplitudeWindow(IntPtr spectrometerHandle)
+        public GenerateAmplitudeWindow()
         {
-            SpectrometerHandle = spectrometerHandle;
             InitializeComponent();
         }
         private void Window_Initialized(object sender, EventArgs e)

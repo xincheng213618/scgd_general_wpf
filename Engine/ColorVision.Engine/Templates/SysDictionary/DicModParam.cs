@@ -1,6 +1,7 @@
 ﻿
 using ColorVision.Common.MVVM;
 using ColorVision.Database;
+using ColorVision.Engine.Templates.Menus;
 using ColorVision.UI.Menus;
 using SqlSugar;
 using System.Collections.Generic;
@@ -50,7 +51,7 @@ namespace ColorVision.Engine.Templates
         public override void Save(TemplateModel<DicModParam> item)
         {
             base.Save(item);
-            MenuManager.GetInstance().LoadMenuItemFromAssembly();
+            MenuManager.GetInstance().RefreshMenuItemsByGuid(nameof(MenuTemplate));
         }
 
         public override void Load()

@@ -4,7 +4,7 @@ using System.Windows;
 
 namespace ColorVision.UI.Desktop.MenuItemManager
 {
-    public class MenuMenuItemManager : MenuItemBase
+    public class MenuMenuItemManager : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
         public override string Header => "MenuManager";

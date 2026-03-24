@@ -2,7 +2,7 @@
 
 namespace ColorVision.UI.Desktop.Settings.ExportAndImport
 {
-    public class MenuConfigExportAndImport : MenuItemBase
+    public class MenuConfigExportAndImport : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override int Order => 99998;

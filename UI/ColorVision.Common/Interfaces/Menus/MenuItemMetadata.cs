@@ -6,6 +6,8 @@ namespace ColorVision.UI.Menus
 {
     public class MenuItemMetadata : IMenuItem
     {
+        public string TargetName { get; set; } = MenuItemConstants.MainWindowTarget;
+
         public string? OwnerGuid { get; set; } = MenuItemConstants.Menu;
 
         public string? GuidId { get; set; } = new Guid().ToString();

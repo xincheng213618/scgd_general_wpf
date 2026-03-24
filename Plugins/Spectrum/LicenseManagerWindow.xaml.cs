@@ -1,12 +1,13 @@
 ﻿using ColorVision.UI.Menus;
 using Microsoft.Win32;
+using Spectrum.Menus;
 using System.IO;
 using System.Windows;
 
 namespace Spectrum
 {
 
-    public class MenuLicenseManager : MenuItemBase
+    public class MenuLicenseManager : SpectrumMenuIBase
     {
         public override string OwnerGuid => MenuItemConstants.Help;
 

@@ -4,7 +4,7 @@ using System.Windows;
 
 namespace ColorVision.UI.Desktop.Wizards
 {
-    public class WizardExport : MenuItemBase
+    public class WizardExport : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 9000;
