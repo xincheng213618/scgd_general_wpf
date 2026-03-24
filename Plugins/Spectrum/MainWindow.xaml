@@ -67,24 +67,27 @@
                         <!-- ═══ 光谱仪连接 (Spectrometer Connection) ═══ -->
                         <GroupBox Header="光谱仪连接">
                             <StackPanel>
-                                <Button Command="{Binding GetSpectrSerialNumberCommand}" Content="GetAllSN" Margin="0,0,0,4" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter1}}"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                    <ComboBox x:Name="ComboBoxSpectrometerType" Width="140" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Config.SpectrometerType}" SelectedValuePath="Key" DisplayMemberPath="Value"/>
-                                    <CheckBox Content="IsCom" IsChecked="{Binding Config.IsComPort}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                <StackPanel Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter1}}">
+                                    <Button Command="{Binding GetSpectrSerialNumberCommand}" Content="GetAllSN" Margin="0,0,0,4"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4" >
+                                        <ComboBox x:Name="ComboBoxSpectrometerType" Width="140" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Config.SpectrometerType}" SelectedValuePath="Key" DisplayMemberPath="Value"/>
+                                        <CheckBox Content="IsCom" IsChecked="{Binding Config.IsComPort}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,4" Orientation="Horizontal" Visibility="{Binding Config.IsComPort,Converter={StaticResource bool2VisibilityConverter}}">
+                                        <DockPanel>
+                                            <TextBlock Text="串口" VerticalAlignment="Center" Width="40" />
+                                            <ComboBox x:Name="ComboBoxPort" Style="{StaticResource ComboBox.Small}" IsEditable="True" Text="{Binding Config.SzComName}" Width="80" />
+                                        </DockPanel>
+                                        <DockPanel Margin="8,0,0,0">
+                                            <TextBlock Text="波特率" VerticalAlignment="Center" Width="45" />
+                                            <ComboBox x:Name="ComboBoxSerial" Style="{StaticResource ComboBox.Small}" Width="70" IsEditable="True" Text="{Binding Config.BaudRate}" />
+                                        </DockPanel>
+                                    </StackPanel>
                                 </StackPanel>
-                                <StackPanel Margin="0,0,0,4" Orientation="Horizontal" Visibility="{Binding Config.IsComPort,Converter={StaticResource bool2VisibilityConverter}}">
-                                    <DockPanel>
-                                        <TextBlock Text="串口" VerticalAlignment="Center" Width="40" />
-                                        <ComboBox x:Name="ComboBoxPort" Style="{StaticResource ComboBox.Small}" IsEditable="True" Text="{Binding Config.SzComName}" Width="80" />
-                                    </DockPanel>
-                                    <DockPanel Margin="8,0,0,0">
-                                        <TextBlock Text="波特率" VerticalAlignment="Center" Width="45" />
-                                        <ComboBox x:Name="ComboBoxSerial" Style="{StaticResource ComboBox.Small}" Width="70" IsEditable="True" Text="{Binding Config.BaudRate}" />
-                                    </DockPanel>
-                                </StackPanel>
+
                                 <Grid Margin="0,4,0,0">
-                                    <Button Content="{x:Static properties:Resources.连接光谱仪}" Click="Button_Click" HorizontalAlignment="Right" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter1}}" Padding="12,4" Background="#2196F3" Foreground="White" />
-                                    <Button x:Name="ButtonClose" Content="{x:Static properties:Resources.断开光谱仪}" Background="#E53935" Foreground="White" Click="ButtonClose_Click" HorizontalAlignment="Right" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}" Padding="12,4" />
+                                    <Button Content="{x:Static properties:Resources.连接光谱仪}" Click="Button_Click"  Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter1}}" Padding="12,4" Background="#2196F3" Foreground="White" />
+                                    <Button x:Name="ButtonClose" Content="{x:Static properties:Resources.断开光谱仪}" Background="#E53935" Foreground="White" Click="ButtonClose_Click" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}" Padding="12,4" />
                                 </Grid>
                             </StackPanel>
                         </GroupBox>
@@ -94,6 +97,7 @@
                             <StackPanel>
                                 <DockPanel Margin="0,0,0,6">
                                     <Button DockPanel.Dock="Right" Content="管理..." Command="{Binding OpenCalibrationGroupWindowCommand}" Margin="4,0,0,0" Padding="8,2" ToolTip="打开标定分组管理窗口"/>
+                                    <Button DockPanel.Dock="Right" Content="加载分组" Command="{Binding ApplyActiveGroupCommand}" Margin="4,0,0,0" Padding="8,2" ToolTip="加载当前选择分组的标定文件" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}"/>
                                     <TextBlock Text="当前分组: " Width="60"/>
                                     <ComboBox Style="{StaticResource ComboBox.Small}" ItemsSource="{Binding CalibrationGroupNames}" SelectedItem="{Binding ActiveCalibrationGroupName, Mode=TwoWay}" />
                                 </DockPanel>
@@ -136,7 +140,7 @@
                                             </TextBlock.RenderTransform>
                                         </TextBlock>
                                     </Button>
-                                    <Button Content="自动积分" Click="AutoIntTime_Click"/>
+                                    <Button x:Name="ButtonAutoInt" Content="自动积分" Click="AutoIntTime_Click" Padding="10,4" Background="#E67E22" Foreground="White"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="平均次数" Width="110" />
@@ -222,6 +226,13 @@
                                         <TextBlock Text="{Binding MeasurementNum}"/>
                                     </StackPanel>
                                 </Grid>
+                                <ProgressBar x:Name="ContinuousProgressBar" Height="15" Margin="0,4,0,4" Minimum="0" Maximum="100" Value="0" Foreground="#3498DB"/>
+                                <StackPanel x:Name="TimeEstimationPanel" Orientation="Horizontal" Margin="0,0,0,4" Visibility="Collapsed">
+                                    <TextBlock Text="已用: " FontSize="11"/>
+                                    <TextBlock x:Name="ElapsedTimeText" Text="--:--" FontSize="11" FontWeight="SemiBold" Foreground="#2196F3"/>
+                                    <TextBlock Text="  预计剩余: " FontSize="11"/>
+                                    <TextBlock x:Name="RemainingTimeText" Text="--:--" FontSize="11" FontWeight="SemiBold" Foreground="#E67E22"/>
+                                </StackPanel>
 
                                 <Grid Margin="0,2,0,0" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}">
                                     <Button x:Name="button6" Content="{x:Static properties:Resources.连续测试}" Click="Button6_Click" Padding="10,6" Background="#27AE60" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Stretch"/>
@@ -268,34 +279,63 @@
                             </StackPanel>
                         </GroupBox>
 
-                        <!-- ═══ 滤光轮 (CFW) ═══ -->
-                        <GroupBox Header="滤光轮 (CFW)">
-                            <StackPanel Orientation="Horizontal">
-                                <DockPanel>
-                                    <TextBlock Text="串口" VerticalAlignment="Center" Width="40" />
-                                    <ComboBox x:Name="ComboBoxNdPort" Style="{StaticResource ComboBox.Small}" IsEditable="True" Text="{Binding NDConfig.SzComName}" Width="80" />
-                                </DockPanel>
-                                <DockPanel Margin="8,0,0,0">
-                                    <TextBlock Text="波特率" VerticalAlignment="Center" Width="45" />
-                                    <ComboBox x:Name="ComboBoxNdSerial" Style="{StaticResource ComboBox.Small}" Width="70" IsEditable="True" Text="{Binding NDConfig.BaudRate}" />
-                                </DockPanel>
-                                <Button Margin="4,0,0,0" Content="CFW连接" Command="{Binding ConnectNDCommand}"/>
-                                <Button Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditNDConfigCommand}" Padding="0" Height="20" Width="20" >
-                                    <Button.Triggers>
-                                        <EventTrigger RoutedEvent="Button.Click">
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform25" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-                                    </Button.Triggers>
-                                    <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
-                                        <TextBlock.RenderTransform>
-                                            <RotateTransform x:Name="rotateTransform25"/>
-                                        </TextBlock.RenderTransform>
-                                    </TextBlock>
-                                </Button>
+                        <!-- ═══ 滤色轮 (Filter Wheel) ═══ -->
+                        <GroupBox Header="滤色轮 (Filter Wheel)">
+                            <StackPanel>
+                                <!-- Connection controls (visible when NOT connected) -->
+                                <StackPanel Visibility="{Binding FilterWheelController.IsConnected,Converter={StaticResource bool2VisibilityConverter1}}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <Button Content="连接" Command="{Binding FilterWheelController.ConnectCommand}" Padding="10,4" Background="#2196F3" Foreground="White"/>
+                                        <Button Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditFilterWheelConfigCommand}" Padding="0" Height="20" Width="20" >
+                                            <Button.Triggers>
+                                                <EventTrigger RoutedEvent="Button.Click">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="rotateTransformFW" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Button.Triggers>
+                                            <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
+                                                <TextBlock.RenderTransform>
+                                                    <RotateTransform x:Name="rotateTransformFW"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Connected state controls -->
+                                <StackPanel Visibility="{Binding FilterWheelController.IsConnected,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="当前位置: " VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding FilterWheelController.CurrentPositionName}" FontWeight="SemiBold" Foreground="#2196F3" VerticalAlignment="Center" Margin="4,0,8,0"/>
+                                        <Button Content="查询" Command="{Binding FilterWheelController.QueryPositionCommand}" Padding="8,2" Margin="0,0,4,0"/>
+                                        <Button Content="断开" Command="{Binding FilterWheelController.DisconnectCommand}" Padding="8,2" Background="#E53935" Foreground="White"/>
+                                    </StackPanel>
+
+                                    <!-- Position buttons -->
+                                    <TextBlock Text="切换位置:" Margin="0,2,0,2"/>
+                                    <ItemsControl ItemsSource="{Binding FilterWheelConfig.HoleMapping}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Margin="0,0,4,4" Padding="10,4"
+                                                        Command="{Binding DataContext.FilterWheelController.SetPositionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding HoleIndex}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding HoleIndex, StringFormat='{}{0}: '}"/>
+                                                        <TextBlock Text="{Binding HoleName}"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
                             </StackPanel>
                         </GroupBox>
 

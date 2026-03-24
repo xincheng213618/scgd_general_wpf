@@ -130,6 +130,9 @@ namespace Spectrum
         [JsonIgnore]
         public ShutterController ShutterController { get; set; } = new ShutterController();
 
+        [JsonIgnore]
+        public FilterWheelController FilterWheelController { get; set; } = new FilterWheelController();
+
         public static SetEmissionSP100Config SetEmissionSP100Config => SetEmissionSP100Config.Instance;
 
         [JsonIgnore]
@@ -206,6 +209,8 @@ namespace Spectrum
         public RelayCommand SetGroupMaguideFileCommand { get; set; }
         [JsonIgnore]
         public RelayCommand OpenCalibrationGroupWindowCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand ApplyActiveGroupCommand { get; set; }
 
         /// <summary>
         /// Loads calibration config for the current SN.
@@ -263,6 +268,33 @@ namespace Spectrum
             else
             {
                 log.Info($"ND position changed to '{ndPositionName}', no matching calibration group found");
+            }
+        }
+
+        /// <summary>
+        /// Called when the filter wheel controller changes position.
+        /// Auto-switches calibration group if a mapping exists (by FilterWheelPosition or by ND name).
+        /// </summary>
+        private void OnFilterWheelPositionChanged(int position)
+        {
+            // First try to find a group by FilterWheelPosition
+            var group = CalibrationGroupConfig.FindGroupForFilterWheelPosition(position);
+            if (group != null)
+            {
+                log.Info($"FilterWheel position changed to {position}, auto-switching to calibration group '{group.GroupName}'");
+                Application.Current.Dispatcher.Invoke(() => ActiveCalibrationGroupName = group.GroupName);
+                return;
+            }
+
+            // Fallback: try to find by ND name
+            string? ndName = FilterWheelConfig.GetHoleName(position);
+            if (!string.IsNullOrEmpty(ndName))
+            {
+                OnNDPositionChanged(ndName);
+            }
+            else
+            {
+                log.Info($"FilterWheel position changed to {position}, no matching calibration group found");
             }
         }
 
@@ -350,10 +382,19 @@ namespace Spectrum
             SetGroupWavelengthFileCommand = new RelayCommand(a => SetActiveGroupFile(isWavelength: true));
             SetGroupMaguideFileCommand = new RelayCommand(a => SetActiveGroupFile(isWavelength: false));
             OpenCalibrationGroupWindowCommand = new RelayCommand(a => OpenCalibrationGroupWindow());
+            ApplyActiveGroupCommand = new RelayCommand(a => ApplyActiveGroup());
+
+            EditFilterWheelConfigCommand = new RelayCommand(a => new PropertyEditorWindow(FilterWheelConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+
+            // Subscribe to filter wheel position changes for auto-switching calibration groups
+            FilterWheelController.PositionChanged += OnFilterWheelPositionChanged;
         }
         public NDConfig NDConfig => Config.NDConfig;
+        public FilterWheelConfig FilterWheelConfig => Config.FilterWheelConfig;
 
         public RelayCommand EditNDConfigCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand EditFilterWheelConfigCommand { get; set; }
 
         public RelayCommand ConnectNDCommand { get; set; }
 

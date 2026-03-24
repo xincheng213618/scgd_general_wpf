@@ -19,6 +19,13 @@ namespace Spectrum.Configs
 
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile = "Magiude.dat";
+
+        /// <summary>
+        /// Filter wheel position (0-4) associated with this calibration group.
+        /// -1 means no association.
+        /// </summary>
+        public int FilterWheelPosition { get => _FilterWheelPosition; set { _FilterWheelPosition = value; OnPropertyChanged(); } }
+        private int _FilterWheelPosition = -1;
     }
 
     /// <summary>
@@ -119,6 +126,15 @@ namespace Spectrum.Configs
             if (string.IsNullOrEmpty(ndPositionName)) return null;
             return Groups.FirstOrDefault(g =>
                 string.Equals(g.GroupName, ndPositionName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Finds a calibration group associated with a specific filter wheel position (0-4).
+        /// Returns the group if found, null otherwise.
+        /// </summary>
+        public CalibrationGroup? FindGroupForFilterWheelPosition(int position)
+        {
+            return Groups.FirstOrDefault(g => g.FilterWheelPosition == position);
         }
 
         private static string SanitizeFolderName(string name)
