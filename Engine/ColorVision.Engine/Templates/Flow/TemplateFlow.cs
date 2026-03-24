@@ -204,15 +204,26 @@ namespace ColorVision.Engine.Templates.Flow
             if (selectedCount <= 1)
             {
                 using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
-                sfd.DefaultExt = "stn";
-                sfd.Filter = "*.stn|*.stn";
+                sfd.DefaultExt = "cvflow";
+                sfd.Filter = "流程包 (*.cvflow)|*.cvflow|STN文件 (*.stn)|*.stn";
                 sfd.AddExtension = true;
                 sfd.RestoreDirectory = true;
                 sfd.Title = "导出流程";
                 sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
                 if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
                 byte[] fileBytes = Convert.FromBase64String(TemplateParams[index].Value.DataBase64);
-                File.WriteAllBytes(sfd.FileName, fileBytes);
+
+                if (sfd.FileName.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
+                {
+                    // 导出流程包 (STN + 关联模板)
+                    var manifest = FlowPackageHelper.CollectTemplatesForExport(TemplateParams[index].Key, fileBytes);
+                    FlowPackageHelper.ExportFlowPackage(sfd.FileName, TemplateParams[index].Key, fileBytes, manifest);
+                }
+                else
+                {
+                    File.WriteAllBytes(sfd.FileName, fileBytes);
+                }
             }
             else
             {
@@ -233,7 +244,7 @@ namespace ColorVision.Engine.Templates.Flow
                     foreach (var kvp in TemplateParams.Where(item => item.IsSelected == true))
                     {
                         string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(kvp.Key)}.stn");
-                        byte[] fileBytes = Convert.FromBase64String(kvp.Value.DataBase64);  // ✅ Use kvp instead
+                        byte[] fileBytes = Convert.FromBase64String(kvp.Value.DataBase64);
                         File.WriteAllBytes(filePath, fileBytes);
                     }
 
@@ -260,7 +271,7 @@ namespace ColorVision.Engine.Templates.Flow
         public override bool Import()
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-            ofd.Filter = "*.stn|*.stn";
+            ofd.Filter = "流程文件 (*.cvflow;*.stn)|*.cvflow;*.stn|流程包 (*.cvflow)|*.cvflow|STN文件 (*.stn)|*.stn";
             ofd.Title = ColorVision.Engine.Properties.Resources.ImportFlow;
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
@@ -270,6 +281,12 @@ namespace ColorVision.Engine.Templates.Flow
         public override bool ImportFile(string filePath)
         {
             if (!File.Exists(filePath)) return false;
+
+            if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
+            {
+                return ImportFlowPackage(filePath);
+            }
+
             ImportName = Path.GetFileNameWithoutExtension(filePath);
             byte[] fileBytes = File.ReadAllBytes(filePath);
             string base64 = Convert.ToBase64String(fileBytes);
@@ -277,6 +294,50 @@ namespace ColorVision.Engine.Templates.Flow
             param.DataBase64 = base64;
             ImportTemp = param;
             return true;
+        }
+
+        /// <summary>
+        /// 导入 .cvflow 流程包文件，自动创建关联模板并更新流程中的模板引用
+        /// </summary>
+        private bool ImportFlowPackage(string filePath)
+        {
+            try
+            {
+                var (stnData, manifest) = FlowPackageHelper.ImportFlowPackage(filePath);
+                if (stnData == null || stnData.Length == 0)
+                    return false;
+
+                string flowName = Path.GetFileNameWithoutExtension(filePath);
+                if (manifest != null && !string.IsNullOrEmpty(manifest.FlowName))
+                    flowName = manifest.FlowName;
+
+                ImportName = flowName;
+
+                // 导入关联模板，获取名称映射 (旧名称 → 新名称)
+                Dictionary<string, string> nameMap = new Dictionary<string, string>();
+                if (manifest?.Templates != null && manifest.Templates.Count > 0)
+                {
+                    nameMap = FlowPackageHelper.ImportTemplates(manifest, flowName);
+                }
+
+                // 如果有模板名称发生了变更，更新 STN 中的引用
+                byte[] finalStnData = stnData;
+                if (nameMap.Count > 0)
+                {
+                    finalStnData = FlowPackageHelper.ReplaceTemplateNames(stnData, nameMap);
+                }
+
+                string base64 = Convert.ToBase64String(finalStnData);
+                FlowParam param = new FlowParam();
+                param.DataBase64 = base64;
+                ImportTemp = param;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"导入流程包时出错: {ex.Message}", "ColorVision");
+                return false;
+            }
         }
 
 
