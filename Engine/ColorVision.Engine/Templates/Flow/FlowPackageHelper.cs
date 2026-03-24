@@ -164,7 +164,7 @@ namespace ColorVision.Engine.Templates.Flow
         /// <summary>
         /// 解压 STN 数据 (跳过5字节header后GZip解压)
         /// </summary>
-        private static byte[] DecompressSTN(byte[] stnData)
+        private static byte[]? DecompressSTN(byte[] stnData)
         {
             if (stnData.Length < 5)
                 return null;
@@ -173,11 +173,18 @@ namespace ColorVision.Engine.Templates.Flow
             if (stnData[0] != 83 || stnData[1] != 84 || stnData[2] != 78 || stnData[3] != 68)
                 return null;
 
-            using var ms = new MemoryStream(stnData, 5, stnData.Length - 5);
-            using var gzip = new GZipStream(ms, CompressionMode.Decompress);
-            using var output = new MemoryStream();
-            gzip.CopyTo(output);
-            return output.ToArray();
+            try
+            {
+                using var ms = new MemoryStream(stnData, 5, stnData.Length - 5);
+                using var gzip = new GZipStream(ms, CompressionMode.Decompress);
+                using var output = new MemoryStream();
+                gzip.CopyTo(output);
+                return output.ToArray();
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -553,6 +560,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
             }
 
+            // 清除默认创建的detail，替换为导入的数据 (与 ITemplate<T>.Create 中的模式一致)
             Db.Deleteable<ModDetailModel>().Where(x => x.Pid == modMaster.Id).ExecuteCommand();
             Db.Insertable(details).ExecuteCommand();
 

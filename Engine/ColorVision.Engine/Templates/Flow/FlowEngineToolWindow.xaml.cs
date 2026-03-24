@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Templates.Flow
                         flowEngineToolWindow.OpenFlowBase64(tempParam);
                     }
                 }
-                catch
+                catch (Exception)
                 {
                     // 兼容旧格式 (.cvflow 可能是直接的 STN 文件)
                     flowEngineToolWindow.OpenFlow(filePath);
