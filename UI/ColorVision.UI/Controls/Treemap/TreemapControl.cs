@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -95,6 +96,11 @@ namespace ColorVision.UI.Controls
 
         private TreemapNode? _hoveredNode;
 
+        // ─── Mouse-tracking tooltip (Popup tracks cursor; ToolTip does not) ──────
+
+        private readonly Popup _hoverPopup;
+        private readonly TextBlock _hoverText;
+
         // ─── Construction ─────────────────────────────────────────────────────
 
         public TreemapControl()
@@ -104,8 +110,33 @@ namespace ColorVision.UI.Controls
             AddVisualChild(_overlayVisual);
             AddLogicalChild(_overlayVisual);
 
-            ToolTip = new ToolTip { Content = string.Empty };
-            ToolTipService.SetInitialShowDelay(this, 200);
+            // Build a floating popup for hover info that follows the mouse cursor.
+            // WPF's built-in ToolTip only repositions when it is first opened; the
+            // Popup approach updates HorizontalOffset/VerticalOffset every MouseMove.
+            _hoverText = new TextBlock
+            {
+                Foreground = Brushes.White,
+                FontSize = 11,
+                LineHeight = 17,
+            };
+            _hoverPopup = new Popup
+            {
+                Child = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromArgb(230, 28, 28, 28)),
+                    BorderBrush = new SolidColorBrush(Color.FromArgb(100, 180, 180, 180)),
+                    BorderThickness = new Thickness(1),
+                    Padding = new Thickness(8, 5, 8, 5),
+                    CornerRadius = new CornerRadius(3),
+                    Child = _hoverText,
+                },
+                Placement = PlacementMode.AbsolutePoint,
+                AllowsTransparency = true,
+                IsHitTestVisible = false,
+                StaysOpen = true,
+                PlacementTarget = this,
+            };
+
             MouseMove += OnMouseMove;
             MouseLeave += OnMouseLeave;
             MouseRightButtonUp += OnMouseRightButtonUp;
@@ -143,7 +174,7 @@ namespace ColorVision.UI.Controls
             Color.FromRgb(0xE1, 0x57, 0x59),
             Color.FromRgb(0x76, 0xB7, 0xB2),
             Color.FromRgb(0xB0, 0x7A, 0xA1),
-            Color.FromRgb(0xBA, 0xB0, 0xAC),   // distinct from index 1
+            Color.FromRgb(0xBA, 0xB0, 0xAC),   // neutral grey-taupe (replaces duplicate green at index 1)
             Color.FromRgb(0xD3, 0x7C, 0x2D),
             Color.FromRgb(0x8C, 0xD1, 0x7D),
             Color.FromRgb(0x9C, 0x75, 0x5F),
@@ -224,50 +255,35 @@ namespace ColorVision.UI.Controls
             var typeface = new Typeface("Segoe UI");
             double dpi = _pixelsPerDip;
 
-            // Iterate in parent-before-child order so children are drawn on top.
+            // ── Pass 1: draws (in parent-before-child order):
+            //   • node fill + border
+            //   • folder header-band background
+            //   • file labels (leaves have no children drawn on top)
+            // Folder labels are intentionally NOT drawn here so that they don't get
+            // covered by child rectangles drawn in subsequent iterations.
             foreach (var (node, rect) in _layout.RenderOrder)
             {
                 if (rect.Width < 2 || rect.Height < 2) continue;
 
                 bool isFolder = !node.IsLeaf;
                 Color baseColor = GetBaseColor(node);
-
-                // Files are a darker shade of the parent folder's colour.
                 Color fillColor = isFolder ? baseColor : Darken(baseColor, 0.22f);
                 dc.DrawRectangle(GetBrush(fillColor), isFolder ? folderBorderPen : fileBorderPen, rect);
 
-                // Header band: a darker strip at the top of folder nodes that have
-                // enough height (the layout already reserved the space).
-                bool showHeader = isFolder && rect.Height >= TreemapLayout.FolderHeaderHeight + 4;
-                if (showHeader)
+                if (isFolder)
                 {
-                    var hdrRect = new Rect(rect.X, rect.Y, rect.Width, TreemapLayout.FolderHeaderHeight);
-                    dc.DrawRectangle(GetBrush(Darken(fillColor, 0.30f)), null, hdrRect);
+                    // Header-band background — darker strip reserved by the layout.
+                    if (rect.Height >= TreemapLayout.FolderHeaderHeight + 4)
+                    {
+                        var hdrRect = new Rect(rect.X, rect.Y, rect.Width, TreemapLayout.FolderHeaderHeight);
+                        dc.DrawRectangle(GetBrush(Darken(fillColor, 0.30f)), null, hdrRect);
+                    }
+                    // Folder label drawn in Pass 2 so it appears on top of children.
                 }
-
-                if (!ShowLabels) continue;
-
-                if (showHeader && rect.Width >= 28)
+                else if (ShowLabels && rect.Width >= 32 && rect.Height >= 12)
                 {
-                    // Label inside the header band
-                    string text = rect.Width >= 80
-                        ? $"{node.Name}  {FormatSize(node.Size)}"
-                        : node.Name;
-                    double fsize = Math.Max(7.0, TreemapLayout.FolderHeaderHeight - 4.0);
-                    var ft = new FormattedText(text, CultureInfo.CurrentCulture,
-                        FlowDirection.LeftToRight, typeface, fsize, Brushes.White, dpi);
-                    ft.MaxTextWidth = Math.Max(1, rect.Width - 6);
-                    ft.MaxTextHeight = TreemapLayout.FolderHeaderHeight - 2;
-                    ft.Trimming = TextTrimming.CharacterEllipsis;
-                    dc.DrawText(ft, new Point(
-                        rect.X + 3,
-                        rect.Y + (TreemapLayout.FolderHeaderHeight - ft.Height) / 2));
-                }
-                else if (!showHeader && rect.Width >= 32 && rect.Height >= 14)
-                {
-                    // Centred label for small folders or individual files
-                    double fsize = Math.Max(7.0, Math.Min(
-                        rect.Height * 0.32, rect.Width / 7.0));
+                    // Leaf file label: nothing will be drawn on top of it.
+                    double fsize = Math.Max(7.0, Math.Min(rect.Height * 0.32, rect.Width / 7.0));
                     fsize = Math.Min(fsize, 11.0);
                     var ft = new FormattedText(node.Name, CultureInfo.CurrentCulture,
                         FlowDirection.LeftToRight, typeface, fsize, Brushes.White, dpi);
@@ -278,6 +294,47 @@ namespace ColorVision.UI.Controls
                         rect.X + 2,
                         rect.Y + (rect.Height - ft.Height) / 2));
                 }
+            }
+
+            if (!ShowLabels) return;
+
+            // ── Pass 2: draw folder labels on top of all children.
+            // Because this runs AFTER Pass 1 (which drew all children), the text
+            // rendered here always appears on top regardless of how deep the folder is.
+            foreach (var (node, rect) in _layout.RenderOrder)
+            {
+                if (node.IsLeaf || rect.Width < 24 || rect.Height < 10) continue;
+
+                bool hasHeaderSpace = rect.Height >= TreemapLayout.FolderHeaderHeight + 4;
+
+                double labelAreaY, labelAreaH;
+                if (hasHeaderSpace)
+                {
+                    // Use the dedicated header band reserved by the layout.
+                    labelAreaY = rect.Y;
+                    labelAreaH = TreemapLayout.FolderHeaderHeight;
+                }
+                else
+                {
+                    // Small folder: use whatever vertical space is available at the top.
+                    labelAreaY = rect.Y + 1;
+                    labelAreaH = Math.Min(rect.Height - 2, 12.0);
+                }
+
+                // For wider folders, append the size to the name.
+                string text = (hasHeaderSpace && rect.Width >= 80)
+                    ? $"{node.Name}  {FormatSize(node.Size)}"
+                    : node.Name;
+                double fsize = Math.Max(7.0, Math.Min(labelAreaH - 2.0, 11.0));
+
+                var ft = new FormattedText(text, CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight, typeface, fsize, Brushes.White, dpi);
+                ft.MaxTextWidth = Math.Max(1, rect.Width - 6);
+                ft.MaxTextHeight = labelAreaH;
+                ft.Trimming = TextTrimming.CharacterEllipsis;
+                dc.DrawText(ft, new Point(
+                    rect.X + 3,
+                    labelAreaY + (labelAreaH - ft.Height) / 2));
             }
         }
 
@@ -339,26 +396,37 @@ namespace ColorVision.UI.Controls
                 RenderOverlay();  // Fast: draws at most one rectangle.
             }
 
-            if (ToolTip is ToolTip tt)
+            // Update the floating popup to follow the mouse cursor.
+            // Using a Popup with PlacementMode.AbsolutePoint lets us update the
+            // screen position on every MouseMove, unlike the WPF ToolTip which
+            // keeps the position from when it was first opened.
+            if (hit != null)
             {
-                if (hit != null)
+                try
                 {
+                    Point screenPos = PointToScreen(pos);
+                    _hoverPopup.HorizontalOffset = screenPos.X + 15;
+                    _hoverPopup.VerticalOffset = screenPos.Y + 15;
+
+                    string typeStr = hit.IsLeaf ? "文件" : "文件夹";
                     string sizeStr = FormatSize(hit.Size);
-                    string pathInfo = hit.FullPath != null ? $"\n{hit.FullPath}" : string.Empty;
-                    tt.Content = $"{hit.Name}  {sizeStr}{pathInfo}";
-                    tt.IsOpen = true;
+                    string pathLine = hit.FullPath != null ? $"\n{hit.FullPath}" : string.Empty;
+                    _hoverText.Text = $"{hit.Name}\n{typeStr}  {sizeStr}{pathLine}";
+
+                    if (!_hoverPopup.IsOpen)
+                        _hoverPopup.IsOpen = true;
                 }
-                else
-                {
-                    tt.IsOpen = false;
-                }
+                catch { /* PointToScreen can fail before element is visible */ }
+            }
+            else
+            {
+                _hoverPopup.IsOpen = false;
             }
         }
 
         private void OnMouseLeave(object sender, MouseEventArgs e)
         {
-            if (ToolTip is ToolTip tt)
-                tt.IsOpen = false;
+            _hoverPopup.IsOpen = false;
             if (_hoveredNode != null)
             {
                 _hoveredNode = null;

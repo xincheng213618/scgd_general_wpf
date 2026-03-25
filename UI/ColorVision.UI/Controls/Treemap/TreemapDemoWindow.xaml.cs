@@ -282,6 +282,50 @@ namespace ColorVision.UI.Controls
             bool isFile = hasPath && File.Exists(node.FullPath);
             bool isDir = hasPath && Directory.Exists(node.FullPath);
 
+            // ── Open file / folder directly ──
+            if (isFile)
+            {
+                var miOpenFile = new MenuItem
+                {
+                    Header = "打开文件",
+                    Icon = new TextBlock { Text = "📄", FontSize = 13 }
+                };
+                miOpenFile.Click += (_, _) =>
+                {
+                    try
+                    {
+                        // Only open paths that still exist as files (defense-in-depth).
+                        if (node.FullPath != null && File.Exists(node.FullPath))
+                            System.Diagnostics.Process.Start(
+                                new System.Diagnostics.ProcessStartInfo(node.FullPath)
+                                { UseShellExecute = true });
+                    }
+                    catch { }
+                };
+                cm.Items.Add(miOpenFile);
+            }
+            if (isDir)
+            {
+                var miOpenDir = new MenuItem
+                {
+                    Header = "打开文件夹",
+                    Icon = new TextBlock { Text = "📁", FontSize = 13 }
+                };
+                miOpenDir.Click += (_, _) =>
+                {
+                    try
+                    {
+                        // Only open paths that still exist as directories (defense-in-depth).
+                        if (node.FullPath != null && Directory.Exists(node.FullPath))
+                            System.Diagnostics.Process.Start(
+                                new System.Diagnostics.ProcessStartInfo(node.FullPath)
+                                { UseShellExecute = true });
+                    }
+                    catch { }
+                };
+                cm.Items.Add(miOpenDir);
+            }
+
             // ── Open containing folder / directory in Explorer ──
             if (hasPath)
             {
