@@ -7,29 +7,57 @@ namespace ColorVision.UI.Controls
     /// <summary>
     /// Calculates squarified treemap layout.
     /// Each node receives a <see cref="Rect"/> stored in <see cref="LayoutResult"/>.
+    /// <see cref="RenderOrder"/> exposes the same data in parent-before-child order,
+    /// which is required for correct z-order when rendering.
     /// </summary>
     public class TreemapLayout
     {
         /// <summary>Minimum side length (pixels) below which a node is not rendered.</summary>
         private const double MinNodeSide = 2.0;
 
+        /// <summary>
+        /// Height (pixels) reserved at the top of a folder node for its header band.
+        /// Only applied when the node is tall enough to show the header and still
+        /// leave room for children.
+        /// </summary>
+        public const double FolderHeaderHeight = 15.0;
+
+        /// <summary>Uniform inset applied to the non-header sides of a folder node.</summary>
+        public const double Inset = 2.0;
+
+        // ─── Results ──────────────────────────────────────────────────────────
+
+        /// <summary>Map from node to its layout rect (for O(1) hit-test lookup).</summary>
         public Dictionary<TreemapNode, Rect> LayoutResult { get; } =
             new Dictionary<TreemapNode, Rect>();
+
+        /// <summary>
+        /// All laid-out nodes in parent-before-child insertion order.
+        /// Use this list when rendering so that children are drawn on top of parents.
+        /// </summary>
+        public List<(TreemapNode node, Rect rect)> RenderOrder { get; } =
+            new List<(TreemapNode, Rect)>();
+
+        // ─── Public API ───────────────────────────────────────────────────────
 
         public void Calculate(TreemapNode root, Rect bounds)
         {
             LayoutResult.Clear();
+            RenderOrder.Clear();
             if (root == null || root.Size <= 0) return;
 
             if (root.IsLeaf)
             {
                 LayoutResult[root] = bounds;
+                RenderOrder.Add((root, bounds));
             }
             else
             {
                 LayoutChildren(root.Children, root.Size, bounds);
             }
         }
+
+        // ─── Internal layout ──────────────────────────────────────────────────
 
         private void LayoutChildren(List<TreemapNode> nodes, double parentSize, Rect bounds)
         {
@@ -38,7 +66,6 @@ namespace ColorVision.UI.Controls
 
             double totalArea = bounds.Width * bounds.Height;
 
-            // Build a list of (node, normalised area) pairs, filtering out zero-size nodes.
             var items = new List<(TreemapNode node, double area)>();
             foreach (var n in nodes)
             {
@@ -49,6 +76,10 @@ namespace ColorVision.UI.Controls
             }
 
             if (items.Count == 0) return;
+
+            // Sort largest-first so the squarified layout places the biggest nodes
+            // in the top-left, producing the organised look of WizTree / similar tools.
+            items.Sort(static (a, b) => b.area.CompareTo(a.area));
 
             Squarify(items, 0, bounds);
         }
@@ -82,9 +113,6 @@ namespace ColorVision.UI.Controls
             Squarify(items, i, remaining);
         }
 
-        /// <summary>
-        /// Lays out a completed row and returns the remaining rectangle.
-        /// </summary>
         private Rect LayoutRow(List<(TreemapNode node, double area)> row, Rect bounds)
         {
             if (row.Count == 0) return bounds;
@@ -104,37 +132,32 @@ namespace ColorVision.UI.Controls
             {
                 double nodeLength = (area / rowArea) * length;
 
-                Rect nodeRect;
-                if (horizontal)
-                {
-                    nodeRect = new Rect(bounds.X, pos, rowThickness, nodeLength);
-                    pos += nodeLength;
-                }
-                else
-                {
-                    nodeRect = new Rect(pos, bounds.Y, nodeLength, rowThickness);
-                    pos += nodeLength;
-                }
+                Rect nodeRect = horizontal
+                    ? new Rect(bounds.X, pos, rowThickness, nodeLength)
+                    : new Rect(pos, bounds.Y, nodeLength, rowThickness);
+                pos += nodeLength;
 
-                // Store this node's rect
+                // Register — parent always added before children (correct render order).
                 LayoutResult[node] = nodeRect;
+                RenderOrder.Add((node, nodeRect));
 
-                // Recurse into children
                 if (!node.IsLeaf && nodeRect.Width >= MinNodeSide && nodeRect.Height >= MinNodeSide)
                 {
-                    // Add a small inset for visual nesting
-                    const double inset = 2.0;
-                    Rect childBounds = new Rect(
-                        nodeRect.X + inset,
-                        nodeRect.Y + inset,
-                        Math.Max(0, nodeRect.Width - inset * 2),
-                        Math.Max(0, nodeRect.Height - inset * 2));
+                    // Reserve a header band at the top when the node is tall enough.
+                    bool hasHeader = nodeRect.Height >= FolderHeaderHeight + Inset + MinNodeSide;
+                    double topInset = hasHeader ? FolderHeaderHeight : Inset;
 
-                    LayoutChildren(node.Children, node.Size, childBounds);
+                    Rect childBounds = new Rect(
+                        nodeRect.X + Inset,
+                        nodeRect.Y + topInset,
+                        Math.Max(0, nodeRect.Width - Inset * 2),
+                        Math.Max(0, nodeRect.Height - topInset - Inset));
+
+                    if (childBounds.Width >= MinNodeSide && childBounds.Height >= MinNodeSide)
+                        LayoutChildren(node.Children, node.Size, childBounds);
                 }
             }
 
-            // Return remaining bounds
             if (horizontal)
             {
                 return new Rect(
@@ -149,9 +172,6 @@ namespace ColorVision.UI.Controls
             }
         }
 
-        /// <summary>
-        /// Computes the worst aspect ratio for a row of items plus an optional extra item.
-        /// </summary>
         private static double WorstRatio(
             List<(TreemapNode node, double area)> row,
             double extra,

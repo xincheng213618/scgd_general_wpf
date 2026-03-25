@@ -54,7 +54,7 @@ namespace ColorVision.UI.Controls
             {
                 try
                 {
-                    if (drive.IsReady || drive.DriveType == DriveType.Fixed)
+                    if (drive.IsReady)
                         CmbDrives.Items.Add(drive);
                 }
                 catch { }
@@ -294,11 +294,23 @@ namespace ColorVision.UI.Controls
                 {
                     try
                     {
+                        var psi = new System.Diagnostics.ProcessStartInfo
+                        {
+                            UseShellExecute = true
+                        };
                         if (isDir)
-                            System.Diagnostics.Process.Start("explorer.exe", node.FullPath!);
+                        {
+                            // Open the directory itself
+                            psi.FileName = "explorer.exe";
+                            psi.Arguments = node.FullPath!;
+                        }
                         else
-                            System.Diagnostics.Process.Start("explorer.exe",
-                                $"/select,\"{node.FullPath}\"");
+                        {
+                            // Select the file in Explorer
+                            psi.FileName = "explorer.exe";
+                            psi.Arguments = $"/select,\"{node.FullPath}\"";
+                        }
+                        System.Diagnostics.Process.Start(psi);
                     }
                     catch { }
                 };
