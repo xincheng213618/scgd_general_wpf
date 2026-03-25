@@ -368,7 +368,7 @@ namespace ColorVision.UI.Controls
                 cm.Items.Add(new Separator());
                 var miDel = new MenuItem
                 {
-                    Header = $"删除文件"{node.Name}"",
+                    Header = $"删除文件{node.Name}",
                     Icon = new TextBlock { Text = "🗑", FontSize = 13 },
                     Foreground = System.Windows.Media.Brushes.OrangeRed
                 };
