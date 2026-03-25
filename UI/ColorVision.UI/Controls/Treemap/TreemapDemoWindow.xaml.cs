@@ -43,7 +43,7 @@ namespace ColorVision.UI.Controls
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             PopulateDrives();
-            TxtProgress.Text = "请选择目录并点击"扫描"，或点击"加载"读取已保存的扫描结果。";
+            TxtProgress.Text = "请选择目录并点击\"扫描\"，或点击\"加载\"读取已保存的扫描结果。";
         }
 
         // ─── Drive picker ─────────────────────────────────────────────────────
