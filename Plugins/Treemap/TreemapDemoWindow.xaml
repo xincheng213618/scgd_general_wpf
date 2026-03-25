@@ -1,0 +1,23 @@
+<Window x:Class="ColorVision.Treemap.TreemapDemoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ColorVision.Treemap"
+        Title="树图可视化 - Treemap Viewer"
+        Width="1000" Height="700"
+        MinWidth="400" MinHeight="300">
+    <DockPanel>
+        <ToolBar DockPanel.Dock="Top" Height="32">
+            <Button Content="模拟文件系统" Click="BtnMockData_Click" Padding="8,2"/>
+            <Separator/>
+            <CheckBox x:Name="ChkLabels" Content="显示标签" IsChecked="True"
+                      Checked="ChkLabels_Changed" Unchecked="ChkLabels_Changed"
+                      VerticalAlignment="Center" Margin="4,0"/>
+            <Separator/>
+            <TextBlock VerticalAlignment="Center" Text="节点数：" />
+            <TextBlock x:Name="TxtNodeCount" VerticalAlignment="Center" MinWidth="40"/>
+        </ToolBar>
+        <Border Background="#222" Padding="4">
+            <local:TreemapControl x:Name="TreemapCtrl" ShowLabels="True"/>
+        </Border>
+    </DockPanel>
+</Window>
