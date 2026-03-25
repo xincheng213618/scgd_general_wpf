@@ -14,9 +14,9 @@ namespace ColorVision.UI.Controls
 {
     public class MenuLogWindow : GlobalMenuBase
     {
-        public override string OwnerGuid => MenuItemConstants.Help;
+        public override string OwnerGuid => MenuItemConstants.View;
         public override int Order => 10005;
-        public override string Header => "TreemapDemoWindow";
+        public override string Header => "Treemap Viewer";
         public override void Execute() => new TreemapDemoWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
     }
 
