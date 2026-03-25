@@ -1,7 +1,19 @@
+using ColorVision.UI.HotKey;
+using ColorVision.UI.Menus;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.UI.Controls
 {
+    public class MenuLogWindow : GlobalMenuBase
+    {
+        public override string OwnerGuid => MenuItemConstants.Help;
+        public override int Order => 10005;
+        public override string Header => "TreemapDemoWindow";
+        public override void Execute() => new TreemapDemoWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+    }
+
+
     public partial class TreemapDemoWindow : Window
     {
         public TreemapDemoWindow()
