@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Windows.Media;
 
-namespace ColorVision.Treemap
+namespace ColorVision.UI.Controls
 {
     /// <summary>
     /// Represents a node in the treemap hierarchy (e.g. a file or folder).

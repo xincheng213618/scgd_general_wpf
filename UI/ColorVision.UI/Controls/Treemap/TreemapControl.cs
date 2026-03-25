@@ -6,7 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.Treemap
+namespace ColorVision.UI.Controls
 {
     /// <summary>
     /// High-performance WPF Treemap control.

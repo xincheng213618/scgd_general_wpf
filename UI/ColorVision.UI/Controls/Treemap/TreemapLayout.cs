@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Treemap
+namespace ColorVision.UI.Controls
 {
     /// <summary>
     /// Calculates squarified treemap layout.

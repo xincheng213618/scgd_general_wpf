@@ -1,15 +1,13 @@
-using System;
-using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Treemap
+namespace ColorVision.UI.Controls
 {
     public partial class TreemapDemoWindow : Window
     {
         public TreemapDemoWindow()
         {
             InitializeComponent();
-            Loaded += (_, __) => LoadMockData();
+            Loaded += (_, _) => LoadMockData();
         }
 
         private void BtnMockData_Click(object sender, RoutedEventArgs e) => LoadMockData();
@@ -25,10 +23,7 @@ namespace ColorVision.Treemap
             var root = BuildMockFileSystem();
             root.RecalculateSize();
             TreemapCtrl.RootNode = root;
-
-            // Count all nodes
-            int count = CountNodes(root);
-            TxtNodeCount.Text = count.ToString();
+            TxtNodeCount.Text = CountNodes(root).ToString();
         }
 
         private static int CountNodes(TreemapNode node)
@@ -38,10 +33,7 @@ namespace ColorVision.Treemap
             return n;
         }
 
-        /// <summary>
-        /// Builds a realistic-looking mock file system hierarchy.
-        /// Sizes are in bytes.
-        /// </summary>
+        /// <summary>Builds a realistic-looking mock file system hierarchy (sizes in bytes).</summary>
         private static TreemapNode BuildMockFileSystem()
         {
             var root = new TreemapNode { Name = "C:\\" };
