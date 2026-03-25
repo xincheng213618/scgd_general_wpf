@@ -8,6 +8,18 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Controls
 {
+    /// <summary>Event args carrying the node that was clicked plus the mouse position.</summary>
+    public class TreemapNodeEventArgs : EventArgs
+    {
+        public TreemapNode Node { get; }
+        public Point ScreenPosition { get; }
+        public TreemapNodeEventArgs(TreemapNode node, Point screenPosition)
+        {
+            Node = node;
+            ScreenPosition = screenPosition;
+        }
+    }
+
     /// <summary>
     /// High-performance WPF Treemap control.
     /// Uses <see cref="DrawingVisual"/> / <see cref="DrawingContext"/> for rendering
@@ -52,6 +64,18 @@ namespace ColorVision.UI.Controls
 
         private readonly DrawingVisual _drawingVisual = new DrawingVisual();
 
+        // ─── Events ───────────────────────────────────────────────────────────
+
+        /// <summary>Fired when the user right-clicks a node.</summary>
+        public event EventHandler<TreemapNodeEventArgs>? NodeRightClicked;
+
+        /// <summary>Fired when the user left-clicks a node.</summary>
+        public event EventHandler<TreemapNodeEventArgs>? NodeClicked;
+
+        // ─── Hover/selection state ────────────────────────────────────────────
+
+        private TreemapNode? _hoveredNode;
+
         public TreemapControl()
         {
             AddVisualChild(_drawingVisual);
@@ -62,6 +86,8 @@ namespace ColorVision.UI.Controls
             ToolTipService.SetInitialShowDelay(this, 200);
             MouseMove += OnMouseMove;
             MouseLeave += OnMouseLeave;
+            MouseRightButtonUp += OnMouseRightButtonUp;
+            MouseLeftButtonUp += OnMouseLeftButtonUp;
         }
 
         protected override int VisualChildrenCount => 1;
@@ -87,6 +113,12 @@ namespace ColorVision.UI.Controls
             Color.FromRgb(0xD3, 0x7C, 0x2D),
             Color.FromRgb(0x49, 0x9C, 0xD5),
         };
+
+        /// <summary>
+        /// Per-depth offset applied to the colour index so that adjacent depth levels
+        /// use visually distinct hues from the <see cref="Palette"/> array.
+        /// </summary>
+        private const int ColorDepthMultiplier = 3;
 
         // Mapping node→colour index (filled during render)
         private readonly Dictionary<TreemapNode, int> _colorIndex =
@@ -130,6 +162,8 @@ namespace ColorVision.UI.Controls
             // Render every laid-out node
             var borderPen = new Pen(new SolidColorBrush(Color.FromArgb(80, 0, 0, 0)), 0.5);
             borderPen.Freeze();
+            var hoverPen = new Pen(Brushes.White, 2.0);
+            hoverPen.Freeze();
 
             var typeface = new Typeface("Segoe UI");
 
@@ -139,10 +173,14 @@ namespace ColorVision.UI.Controls
 
                 // Fill colour
                 Color baseColor = node.Color ?? GetNodeColor(node);
+                // Lighten on hover
+                if (ReferenceEquals(node, _hoveredNode))
+                    baseColor = Lighten(baseColor, 0.25f);
                 var brush = new SolidColorBrush(baseColor);
                 brush.Freeze();
 
-                dc.DrawRectangle(brush, borderPen, rect);
+                var pen = ReferenceEquals(node, _hoveredNode) ? hoverPen : borderPen;
+                dc.DrawRectangle(brush, pen, rect);
 
                 // Label: only if rectangle is large enough
                 if (ShowLabels && rect.Width >= 32 && rect.Height >= 14)
@@ -176,7 +214,7 @@ namespace ColorVision.UI.Controls
             for (int i = 0; i < node.Children.Count; i++)
             {
                 var child = node.Children[i];
-                _colorIndex[child] = (depth * 3 + i) % Palette.Length;
+                _colorIndex[child] = (depth * ColorDepthMultiplier + i) % Palette.Length;
                 if (!child.IsLeaf)
                     AssignColors(child, depth + 1);
             }
@@ -203,18 +241,35 @@ namespace ColorVision.UI.Controls
                 (byte)Math.Max(0, c.B - (int)(c.B * amount)));
         }
 
+        private static Color Lighten(Color c, float amount)
+        {
+            return Color.FromRgb(
+                (byte)Math.Min(255, c.R + (int)((255 - c.R) * amount)),
+                (byte)Math.Min(255, c.G + (int)((255 - c.G) * amount)),
+                (byte)Math.Min(255, c.B + (int)((255 - c.B) * amount)));
+        }
+
         // ─── Hit-test & Tooltip ───────────────────────────────────────────────
 
         private void OnMouseMove(object sender, MouseEventArgs e)
         {
             Point pos = e.GetPosition(this);
             TreemapNode? hit = HitTest(pos);
+
+            // Update hover highlight only if it changed
+            if (!ReferenceEquals(hit, _hoveredNode))
+            {
+                _hoveredNode = hit;
+                Render();
+            }
+
             if (ToolTip is ToolTip tt)
             {
                 if (hit != null)
                 {
                     string sizeStr = FormatSize(hit.Size);
-                    tt.Content = $"{hit.Name}\n{sizeStr}";
+                    string pathInfo = hit.FullPath != null ? $"\n{hit.FullPath}" : string.Empty;
+                    tt.Content = $"{hit.Name}  {sizeStr}{pathInfo}";
                     tt.IsOpen = true;
                 }
                 else
@@ -228,6 +283,35 @@ namespace ColorVision.UI.Controls
         {
             if (ToolTip is ToolTip tt)
                 tt.IsOpen = false;
+            if (_hoveredNode != null)
+            {
+                _hoveredNode = null;
+                Render();
+            }
+        }
+
+        private void OnMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            Point pos = e.GetPosition(this);
+            TreemapNode? hit = HitTest(pos);
+            if (hit != null)
+            {
+                Point screen = PointToScreen(pos);
+                NodeRightClicked?.Invoke(this, new TreemapNodeEventArgs(hit, screen));
+                e.Handled = true;
+            }
+        }
+
+        private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            Point pos = e.GetPosition(this);
+            TreemapNode? hit = HitTest(pos);
+            if (hit != null)
+            {
+                Point screen = PointToScreen(pos);
+                NodeClicked?.Invoke(this, new TreemapNodeEventArgs(hit, screen));
+                e.Handled = true;
+            }
         }
 
         private TreemapNode? HitTest(Point p)

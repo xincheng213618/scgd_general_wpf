@@ -1,6 +1,13 @@
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
+using Microsoft.Win32;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.UI.Controls
@@ -13,16 +20,251 @@ namespace ColorVision.UI.Controls
         public override void Execute() => new TreemapDemoWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
     }
 
-
     public partial class TreemapDemoWindow : Window
     {
+        // ─── Navigation stack (for drill-down / go-up) ───────────────────────
+
+        private readonly Stack<TreemapNode> _navStack = new Stack<TreemapNode>();
+        private TreemapNode? _fullRoot;   // top-level scan result
+
+        // ─── Async scan cancellation ─────────────────────────────────────────
+
+        private CancellationTokenSource? _cts;
+
+        // ─── Construction / loading ──────────────────────────────────────────
+
         public TreemapDemoWindow()
         {
             InitializeComponent();
-            Loaded += (_, _) => LoadMockData();
+            Loaded += OnLoaded;
         }
 
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            PopulateDrives();
+            LoadMockData();
+        }
+
+        // ─── Drive picker ─────────────────────────────────────────────────────
+
+        private void PopulateDrives()
+        {
+            CmbDrives.Items.Clear();
+            foreach (var drive in DriveInfo.GetDrives())
+            {
+                try
+                {
+                    if (drive.IsReady || drive.DriveType == DriveType.Fixed)
+                        CmbDrives.Items.Add(drive);
+                }
+                catch { }
+            }
+        }
+
+        private void CmbDrives_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbDrives.SelectedItem is DriveInfo drive)
+            {
+                TxtPath.Text = drive.RootDirectory.FullName;
+                BtnScan.IsEnabled = true;
+            }
+        }
+
+        private void BtnBrowse_Click(object sender, RoutedEventArgs e)
+        {
+            // OpenFolderDialog is available in .NET 8+ WPF
+            var dlg = new OpenFolderDialog
+            {
+                Title = "选择要扫描的目录",
+                Multiselect = false
+            };
+            if (dlg.ShowDialog(this) == true)
+            {
+                TxtPath.Text = dlg.FolderName;
+                BtnScan.IsEnabled = true;
+                CmbDrives.SelectedIndex = -1;
+            }
+        }
+
+        // ─── Real file-system scan ────────────────────────────────────────────
+
+        private const int ProgressReportInterval = 200;
+
+        private async void BtnScan_Click(object sender, RoutedEventArgs e)
+        {
+            string path = TxtPath.Text;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            {
+                MessageBox.Show("请先选择有效的目录。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Cancel any running scan
+            _cts?.Cancel();
+            _cts = new CancellationTokenSource();
+            var ct = _cts.Token;
+
+            SetScanningState(true);
+            TxtProgress.Text = "扫描中…";
+            TxtNodeCount.Text = "—";
+
+            try
+            {
+                var progress = new Progress<int>(count =>
+                {
+                    TxtProgress.Text = $"已扫描 {count:N0} 个文件…";
+                });
+
+                var (root, fileCount) = await Task.Run(
+                    () => ScanDirectory(path, progress, ct), ct);
+
+                if (ct.IsCancellationRequested)
+                {
+                    TxtProgress.Text = "已取消。";
+                    return;
+                }
+
+                if (root != null)
+                {
+                    root.RecalculateSize();
+                    _fullRoot = root;
+                    _navStack.Clear();
+                    SetDisplayRoot(root);
+                    TxtProgress.Text = $"完成。共 {fileCount:N0} 个文件。";
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                TxtProgress.Text = "已取消。";
+            }
+            catch (Exception ex)
+            {
+                TxtProgress.Text = $"扫描出错：{ex.Message}";
+            }
+            finally
+            {
+                SetScanningState(false);
+            }
+        }
+
+        private void BtnCancel_Click(object sender, RoutedEventArgs e)
+        {
+            _cts?.Cancel();
+        }
+
+        /// <summary>Recursively scans a directory on a background thread.</summary>
+        private static (TreemapNode? Node, int FileCount) ScanDirectory(
+            string path, IProgress<int> progress, CancellationToken ct)
+        {
+            if (ct.IsCancellationRequested) return (null, 0);
+
+            string name = Path.GetFileName(path);
+            if (string.IsNullOrEmpty(name))
+                name = path; // drive root like "C:\"
+
+            var node = new TreemapNode { Name = name, FullPath = path };
+            var counter = new ScanCounter();
+            ScanRecursive(node, path, progress, ct, counter);
+            return (node, counter.Value);
+        }
+
+        /// <summary>Simple mutable counter used to share file count across recursive calls.</summary>
+        private sealed class ScanCounter
+        {
+            public int Value;
+        }
+
+        private static void ScanRecursive(
+            TreemapNode parent, string dirPath,
+            IProgress<int> progress, CancellationToken ct, ScanCounter counter)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            try
+            {
+                foreach (string file in Directory.EnumerateFiles(dirPath))
+                {
+                    ct.ThrowIfCancellationRequested();
+                    try
+                    {
+                        var fi = new FileInfo(file);
+                        parent.AddChild(new TreemapNode
+                        {
+                            Name = fi.Name,
+                            Size = fi.Length,
+                            FullPath = file
+                        });
+                        counter.Value++;
+                        if (counter.Value % ProgressReportInterval == 0)
+                            progress.Report(counter.Value);
+                    }
+                    catch { /* skip locked/inaccessible files */ }
+                }
+
+                foreach (string dir in Directory.EnumerateDirectories(dirPath))
+                {
+                    ct.ThrowIfCancellationRequested();
+                    try
+                    {
+                        var child = new TreemapNode
+                        {
+                            Name = Path.GetFileName(dir),
+                            FullPath = dir
+                        };
+                        parent.AddChild(child);
+                        ScanRecursive(child, dir, progress, ct, counter);
+                    }
+                    catch (UnauthorizedAccessException) { /* skip protected dirs */ }
+                    catch (OperationCanceledException) { throw; }
+                    catch { }
+                }
+            }
+            catch (UnauthorizedAccessException) { }
+            catch (OperationCanceledException) { throw; }
+            catch { }
+        }
+
+        // ─── UI state helpers ─────────────────────────────────────────────────
+
+        private void SetScanningState(bool scanning)
+        {
+            BtnScan.IsEnabled = !scanning;
+            BtnBrowse.IsEnabled = !scanning;
+            CmbDrives.IsEnabled = !scanning;
+            BtnCancel.IsEnabled = scanning;
+            ProgressBar.Visibility = scanning ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void SetDisplayRoot(TreemapNode root)
+        {
+            TreemapCtrl.RootNode = root;
+            TxtNodeCount.Text = CountNodes(root).ToString("N0");
+            BtnUp.IsEnabled = _navStack.Count > 0;
+        }
+
+        // ─── Navigation ───────────────────────────────────────────────────────
+
+        private void BtnUp_Click(object sender, RoutedEventArgs e)
+        {
+            if (_navStack.Count > 0)
+                SetDisplayRoot(_navStack.Pop());
+        }
+
+        // ─── Mock data ────────────────────────────────────────────────────────
+
         private void BtnMockData_Click(object sender, RoutedEventArgs e) => LoadMockData();
+
+        private void LoadMockData()
+        {
+            _navStack.Clear();
+            var root = BuildMockFileSystem();
+            root.RecalculateSize();
+            _fullRoot = root;
+            SetDisplayRoot(root);
+            TxtProgress.Text = "模拟数据已加载。";
+        }
+
+        // ─── Labels toggle ────────────────────────────────────────────────────
 
         private void ChkLabels_Changed(object sender, RoutedEventArgs e)
         {
@@ -30,12 +272,152 @@ namespace ColorVision.UI.Controls
                 TreemapCtrl.ShowLabels = ChkLabels.IsChecked == true;
         }
 
-        private void LoadMockData()
+        // ─── Right-click context menu ─────────────────────────────────────────
+
+        private void TreemapCtrl_NodeRightClicked(object sender, TreemapNodeEventArgs e)
         {
-            var root = BuildMockFileSystem();
-            root.RecalculateSize();
-            TreemapCtrl.RootNode = root;
-            TxtNodeCount.Text = CountNodes(root).ToString();
+            var cm = new ContextMenu();
+            var node = e.Node;
+            bool hasPath = !string.IsNullOrEmpty(node.FullPath);
+            bool isFile = hasPath && File.Exists(node.FullPath);
+            bool isDir = hasPath && Directory.Exists(node.FullPath);
+
+            // ── Open containing folder / directory in Explorer ──
+            if (hasPath)
+            {
+                var miOpen = new MenuItem
+                {
+                    Header = isDir ? "在资源管理器中打开" : "在资源管理器中显示",
+                    Icon = new TextBlock { Text = "📂", FontSize = 13 }
+                };
+                miOpen.Click += (_, _) =>
+                {
+                    try
+                    {
+                        if (isDir)
+                            System.Diagnostics.Process.Start("explorer.exe", node.FullPath!);
+                        else
+                            System.Diagnostics.Process.Start("explorer.exe",
+                                $"/select,\"{node.FullPath}\"");
+                    }
+                    catch { }
+                };
+                cm.Items.Add(miOpen);
+            }
+
+            // ── Copy path ──
+            if (hasPath)
+            {
+                var miCopy = new MenuItem
+                {
+                    Header = "复制路径",
+                    Icon = new TextBlock { Text = "📋", FontSize = 13 }
+                };
+                miCopy.Click += (_, _) =>
+                {
+                    try { Clipboard.SetText(node.FullPath!); } catch { }
+                };
+                cm.Items.Add(miCopy);
+                cm.Items.Add(new Separator());
+            }
+
+            // ── Drill down (make this node the visible root) ──
+            if (!node.IsLeaf)
+            {
+                var miDrill = new MenuItem
+                {
+                    Header = "向下钻取（以此为根）",
+                    Icon = new TextBlock { Text = "🔍", FontSize = 13 }
+                };
+                miDrill.Click += (_, _) =>
+                {
+                    if (TreemapCtrl.RootNode != null)
+                        _navStack.Push(TreemapCtrl.RootNode);
+                    SetDisplayRoot(node);
+                };
+                cm.Items.Add(miDrill);
+            }
+
+            // ── Go up ──
+            if (_navStack.Count > 0)
+            {
+                var miUp = new MenuItem
+                {
+                    Header = "返回上级",
+                    Icon = new TextBlock { Text = "⬆", FontSize = 13 }
+                };
+                miUp.Click += (_, _) => SetDisplayRoot(_navStack.Pop());
+                cm.Items.Add(miUp);
+            }
+
+            // ── Delete file ──
+            if (isFile)
+            {
+                cm.Items.Add(new Separator());
+                var miDel = new MenuItem
+                {
+                    Header = $"删除文件"{node.Name}"",
+                    Icon = new TextBlock { Text = "🗑", FontSize = 13 },
+                    Foreground = System.Windows.Media.Brushes.OrangeRed
+                };
+                miDel.Click += (_, _) =>
+                {
+                    var res = MessageBox.Show(
+                        $"确认删除文件：\n{node.FullPath}",
+                        "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    if (res == MessageBoxResult.Yes)
+                    {
+                        try
+                        {
+                            File.Delete(node.FullPath!);
+                            // Remove node from tree and refresh
+                            RemoveNodeFromParent(TreemapCtrl.RootNode, node);
+                            if (TreemapCtrl.RootNode != null)
+                            {
+                                TreemapCtrl.RootNode.RecalculateSize();
+                                SetDisplayRoot(TreemapCtrl.RootNode);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"删除失败：{ex.Message}", "错误",
+                                MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                    }
+                };
+                cm.Items.Add(miDel);
+            }
+
+            if (cm.Items.Count == 0) return;
+
+            cm.PlacementTarget = (UIElement)sender;
+            cm.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+            cm.IsOpen = true;
+        }
+
+        private void TreemapCtrl_NodeClicked(object sender, TreemapNodeEventArgs e)
+        {
+            // Left-click with Ctrl = drill-down shortcut
+            if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            {
+                if (!e.Node.IsLeaf)
+                {
+                    if (TreemapCtrl.RootNode != null)
+                        _navStack.Push(TreemapCtrl.RootNode);
+                    SetDisplayRoot(e.Node);
+                }
+            }
+        }
+
+        // ─── Helpers ─────────────────────────────────────────────────────────
+
+        private static bool RemoveNodeFromParent(TreemapNode? subtree, TreemapNode target)
+        {
+            if (subtree == null) return false;
+            if (subtree.Children.Remove(target)) return true;
+            foreach (var child in subtree.Children)
+                if (RemoveNodeFromParent(child, target)) return true;
+            return false;
         }
 
         private static int CountNodes(TreemapNode node)
@@ -45,7 +427,8 @@ namespace ColorVision.UI.Controls
             return n;
         }
 
-        /// <summary>Builds a realistic-looking mock file system hierarchy (sizes in bytes).</summary>
+        // ─── Mock file-system ─────────────────────────────────────────────────
+
         private static TreemapNode BuildMockFileSystem()
         {
             var root = new TreemapNode { Name = "C:\\" };
@@ -62,24 +445,18 @@ namespace ColorVision.UI.Controls
                         Leaf("ntfs.sys", 1_800_000),
                         Leaf("dxgkrnl.sys", 3_200_000),
                         Leaf("storport.sys", 860_000),
-                        Leaf("acpi.sys", 430_000)
-                    )
-                ),
+                        Leaf("acpi.sys", 430_000))),
                 BuildDir("SysWOW64",
                     Leaf("kernel32.dll", 950_000),
                     Leaf("user32.dll", 820_000),
-                    Leaf("ntdll.dll", 1_900_000)
-                ),
+                    Leaf("ntdll.dll", 1_900_000)),
                 BuildDir("WinSxS",
                     Leaf("manifest-files.bin", 45_000_000),
-                    Leaf("assemblies.bin", 120_000_000)
-                ),
+                    Leaf("assemblies.bin", 120_000_000)),
                 BuildDir("Temp",
                     Leaf("tmp001.tmp", 5_000_000),
                     Leaf("tmp002.tmp", 3_400_000),
-                    Leaf("setup.log", 1_200_000)
-                )
-            ));
+                    Leaf("setup.log", 1_200_000))));
 
             root.AddChild(BuildDir("Program Files",
                 BuildDir("Microsoft Office",
@@ -88,10 +465,7 @@ namespace ColorVision.UI.Controls
                             Leaf("WINWORD.EXE", 31_000_000),
                             Leaf("EXCEL.EXE", 34_000_000),
                             Leaf("POWERPNT.EXE", 28_000_000),
-                            Leaf("OUTLOOK.EXE", 29_000_000)
-                        )
-                    )
-                ),
+                            Leaf("OUTLOOK.EXE", 29_000_000)))),
                 BuildDir("Google",
                     BuildDir("Chrome",
                         BuildDir("Application",
@@ -99,67 +473,32 @@ namespace ColorVision.UI.Controls
                             BuildDir("126.0.6478.63",
                                 Leaf("chrome.dll", 185_000_000),
                                 Leaf("resources.pak", 8_200_000),
-                                Leaf("icudtl.dat", 10_500_000)
-                            )
-                        )
-                    )
-                ),
+                                Leaf("icudtl.dat", 10_500_000))))),
                 BuildDir("dotnet",
                     BuildDir("shared",
                         BuildDir("Microsoft.NETCore.App",
                             BuildDir("8.0.0",
                                 Leaf("coreclr.dll", 6_800_000),
                                 Leaf("clrjit.dll", 5_200_000),
-                                Leaf("System.Private.CoreLib.dll", 9_700_000)
-                            )
-                        )
-                    )
-                )
-            ));
+                                Leaf("System.Private.CoreLib.dll", 9_700_000)))))));
 
             root.AddChild(BuildDir("Users",
-                BuildDir("Public",
-                    BuildDir("Documents", Leaf("readme.txt", 12_000)),
-                    BuildDir("Downloads")
-                ),
                 BuildDir("Developer",
-                    BuildDir("Documents",
-                        BuildDir("projects",
-                            BuildDir("my-app",
-                                Leaf("README.md", 8_000),
-                                BuildDir("src",
-                                    Leaf("main.cs", 45_000),
-                                    Leaf("helpers.cs", 23_000),
-                                    Leaf("models.cs", 31_000)
-                                ),
-                                BuildDir("bin",
-                                    Leaf("my-app.exe", 2_400_000),
-                                    Leaf("my-app.dll", 1_800_000)
-                                )
-                            )
-                        )
-                    ),
                     BuildDir("Videos",
                         Leaf("holiday-2024.mp4", 4_200_000_000),
                         Leaf("project-demo.mkv", 1_800_000_000),
-                        Leaf("screencast.mov", 980_000_000)
-                    ),
+                        Leaf("screencast.mov", 980_000_000)),
                     BuildDir("Pictures",
                         Leaf("IMG_0001.jpg", 6_200_000),
                         Leaf("IMG_0002.jpg", 5_800_000),
                         Leaf("IMG_0003.jpg", 7_100_000),
-                        Leaf("wallpaper.png", 3_400_000)
-                    ),
+                        Leaf("wallpaper.png", 3_400_000)),
                     BuildDir("Downloads",
                         Leaf("vs_community.exe", 1_800_000_000),
                         Leaf("ubuntu-22.04.iso", 1_200_000_000),
-                        Leaf("node-v20.iso", 28_000_000)
-                    )
-                )
-            ));
+                        Leaf("node-v20.iso", 28_000_000)))));
 
             root.AddChild(new TreemapNode { Name = "pagefile.sys", Size = 8_589_934_592 });
-
             return root;
         }
 

@@ -19,6 +19,12 @@ namespace ColorVision.UI.Controls
         public double Size { get; set; }
 
         /// <summary>
+        /// Absolute file system path for this node, set when built from a real
+        /// directory scan.  Null for synthetic / mock nodes.
+        /// </summary>
+        public string? FullPath { get; set; }
+
+        /// <summary>
         /// Optional user-visible label that overrides <see cref="Name"/> in tooltips.
         /// </summary>
         public string? Label { get; set; }
