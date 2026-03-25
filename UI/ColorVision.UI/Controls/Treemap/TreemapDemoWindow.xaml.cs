@@ -4,6 +4,7 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -42,7 +43,7 @@ namespace ColorVision.UI.Controls
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             PopulateDrives();
-            LoadMockData();
+            TxtProgress.Text = "请选择目录并点击"扫描"，或点击"加载"读取已保存的扫描结果。";
         }
 
         // ─── Drive picker ─────────────────────────────────────────────────────
@@ -240,6 +241,7 @@ namespace ColorVision.UI.Controls
             TreemapCtrl.RootNode = root;
             TxtNodeCount.Text = CountNodes(root).ToString("N0");
             BtnUp.IsEnabled = _navStack.Count > 0;
+            BtnSave.IsEnabled = _fullRoot != null;
         }
 
         // ─── Navigation ───────────────────────────────────────────────────────
@@ -250,18 +252,66 @@ namespace ColorVision.UI.Controls
                 SetDisplayRoot(_navStack.Pop());
         }
 
-        // ─── Mock data ────────────────────────────────────────────────────────
+        // ─── Save / Load scan results ─────────────────────────────────────────
 
-        private void BtnMockData_Click(object sender, RoutedEventArgs e) => LoadMockData();
-
-        private void LoadMockData()
+        private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
-            _navStack.Clear();
-            var root = BuildMockFileSystem();
-            root.RecalculateSize();
-            _fullRoot = root;
-            SetDisplayRoot(root);
-            TxtProgress.Text = "模拟数据已加载。";
+            if (_fullRoot == null) return;
+
+            // Sanitise the root name to produce a safe default file name.
+            char[] invalid = Path.GetInvalidFileNameChars();
+            string safeName = string.Concat(
+                (_fullRoot.Name ?? "scan").Select(c => Array.IndexOf(invalid, c) >= 0 ? '_' : c));
+
+            var dlg = new SaveFileDialog
+            {
+                Title = "保存扫描结果",
+                Filter = "Treemap JSON (*.treemap.json)|*.treemap.json|所有文件|*.*",
+                DefaultExt = ".treemap.json",
+                FileName = $"{safeName}_scan"
+            };
+            if (dlg.ShowDialog(this) != true) return;
+            try
+            {
+                _fullRoot.SaveToJson(dlg.FileName);
+                TxtProgress.Text = $"已保存：{dlg.FileName}";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"保存失败：{ex.Message}", "错误",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void BtnLoad_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new OpenFileDialog
+            {
+                Title = "加载扫描结果",
+                Filter = "Treemap JSON (*.treemap.json)|*.treemap.json|所有文件|*.*",
+                DefaultExt = ".treemap.json"
+            };
+            if (dlg.ShowDialog(this) != true) return;
+            try
+            {
+                var root = TreemapNode.LoadFromJson(dlg.FileName);
+                if (root == null)
+                {
+                    MessageBox.Show("文件格式无效或为空。", "错误",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                _navStack.Clear();
+                _fullRoot = root;
+                SetDisplayRoot(root);
+                TxtPath.Text = root.FullPath ?? root.Name;
+                TxtProgress.Text = $"已加载：{dlg.FileName}";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"加载失败：{ex.Message}", "错误",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         // ─── Labels toggle ────────────────────────────────────────────────────
@@ -482,91 +532,5 @@ namespace ColorVision.UI.Controls
             foreach (var c in node.Children) n += CountNodes(c);
             return n;
         }
-
-        // ─── Mock file-system ─────────────────────────────────────────────────
-
-        private static TreemapNode BuildMockFileSystem()
-        {
-            var root = new TreemapNode { Name = "C:\\" };
-
-            root.AddChild(BuildDir("Windows",
-                BuildDir("System32",
-                    Leaf("ntoskrnl.exe", 12_000_000),
-                    Leaf("ntdll.dll", 2_100_000),
-                    Leaf("kernel32.dll", 1_200_000),
-                    Leaf("user32.dll", 980_000),
-                    Leaf("gdi32.dll", 650_000),
-                    BuildDir("drivers",
-                        Leaf("tcpip.sys", 2_400_000),
-                        Leaf("ntfs.sys", 1_800_000),
-                        Leaf("dxgkrnl.sys", 3_200_000),
-                        Leaf("storport.sys", 860_000),
-                        Leaf("acpi.sys", 430_000))),
-                BuildDir("SysWOW64",
-                    Leaf("kernel32.dll", 950_000),
-                    Leaf("user32.dll", 820_000),
-                    Leaf("ntdll.dll", 1_900_000)),
-                BuildDir("WinSxS",
-                    Leaf("manifest-files.bin", 45_000_000),
-                    Leaf("assemblies.bin", 120_000_000)),
-                BuildDir("Temp",
-                    Leaf("tmp001.tmp", 5_000_000),
-                    Leaf("tmp002.tmp", 3_400_000),
-                    Leaf("setup.log", 1_200_000))));
-
-            root.AddChild(BuildDir("Program Files",
-                BuildDir("Microsoft Office",
-                    BuildDir("root",
-                        BuildDir("Office16",
-                            Leaf("WINWORD.EXE", 31_000_000),
-                            Leaf("EXCEL.EXE", 34_000_000),
-                            Leaf("POWERPNT.EXE", 28_000_000),
-                            Leaf("OUTLOOK.EXE", 29_000_000)))),
-                BuildDir("Google",
-                    BuildDir("Chrome",
-                        BuildDir("Application",
-                            Leaf("chrome.exe", 3_200_000),
-                            BuildDir("126.0.6478.63",
-                                Leaf("chrome.dll", 185_000_000),
-                                Leaf("resources.pak", 8_200_000),
-                                Leaf("icudtl.dat", 10_500_000))))),
-                BuildDir("dotnet",
-                    BuildDir("shared",
-                        BuildDir("Microsoft.NETCore.App",
-                            BuildDir("8.0.0",
-                                Leaf("coreclr.dll", 6_800_000),
-                                Leaf("clrjit.dll", 5_200_000),
-                                Leaf("System.Private.CoreLib.dll", 9_700_000)))))));
-
-            root.AddChild(BuildDir("Users",
-                BuildDir("Developer",
-                    BuildDir("Videos",
-                        Leaf("holiday-2024.mp4", 4_200_000_000),
-                        Leaf("project-demo.mkv", 1_800_000_000),
-                        Leaf("screencast.mov", 980_000_000)),
-                    BuildDir("Pictures",
-                        Leaf("IMG_0001.jpg", 6_200_000),
-                        Leaf("IMG_0002.jpg", 5_800_000),
-                        Leaf("IMG_0003.jpg", 7_100_000),
-                        Leaf("wallpaper.png", 3_400_000)),
-                    BuildDir("Downloads",
-                        Leaf("vs_community.exe", 1_800_000_000),
-                        Leaf("ubuntu-22.04.iso", 1_200_000_000),
-                        Leaf("node-v20.iso", 28_000_000)))));
-
-            root.AddChild(new TreemapNode { Name = "pagefile.sys", Size = 8_589_934_592 });
-            return root;
-        }
-
-        private static TreemapNode BuildDir(string name, params TreemapNode[] children)
-        {
-            var dir = new TreemapNode { Name = name };
-            foreach (var c in children)
-                dir.AddChild(c);
-            return dir;
-        }
-
-        private static TreemapNode Leaf(string name, double size) =>
-            new TreemapNode { Name = name, Size = size };
     }
 }

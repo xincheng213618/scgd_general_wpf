@@ -6,6 +6,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:treemap="clr-namespace:ColorVision.UI.Controls;assembly=ColorVision.UI"
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.TemplateManagementWindow}" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
@@ -67,57 +68,73 @@
             </StackPanel>
         </Grid>
 
-        <!-- Main content area: Middle Template Grid + Right Editor Panel -->
-        <Grid Grid.Row="1" Margin="5,0,5,5">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="400" MinWidth="350"/>
-                <ColumnDefinition Width="5"/>
-                <ColumnDefinition Width="*" MinWidth="350"/>
-            </Grid.ColumnDefinitions>
+        <!-- Main content area: TabControl with Template Grid and Treemap views -->
+        <TabControl Grid.Row="1" Margin="5,0,5,5" x:Name="MainTabControl"
+                    SelectionChanged="MainTabControl_SelectionChanged">
 
-            <!-- Middle: Template Grid (ScrollViewer with dynamic content) -->
-            <Border Grid.Column="0" Style="{StaticResource BorderModuleArea}" Padding="5">
+            <!-- Tab 1: Template Grid + Editor -->
+            <TabItem Header="{x:Static properties:Resources.TemplateList}">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.TemplateList}" FontSize="14" FontWeight="Bold" Margin="5,0,0,5" Foreground="{DynamicResource PrimaryTextBrush}"/>
-                    <ScrollViewer x:Name="TemplateScrollViewer" Grid.Row="1" 
-                                 VerticalScrollBarVisibility="Auto" 
-                                 HorizontalScrollBarVisibility="Disabled"
-                                 Background="Transparent">
-                        <StackPanel x:Name="TemplateContainer" Margin="5"/>
-                    </ScrollViewer>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="400" MinWidth="350"/>
+                        <ColumnDefinition Width="5"/>
+                        <ColumnDefinition Width="*" MinWidth="350"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Middle: Template Grid (ScrollViewer with dynamic content) -->
+                    <Border Grid.Column="0" Style="{StaticResource BorderModuleArea}" Padding="5">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.TemplateList}" FontSize="14" FontWeight="Bold" Margin="5,0,0,5" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                            <ScrollViewer x:Name="TemplateScrollViewer" Grid.Row="1" 
+                                         VerticalScrollBarVisibility="Auto" 
+                                         HorizontalScrollBarVisibility="Disabled"
+                                         Background="Transparent">
+                                <StackPanel x:Name="TemplateContainer" Margin="5"/>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+
+                    <!-- Splitter -->
+                    <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}" 
+                                 ResizeBehavior="PreviousAndNext" ResizeDirection="Columns"/>
+
+                    <!-- Right: Embedded Template Editor Panel -->
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" x:Name="OpenFullEditorButton" Content="{x:Static properties:Resources.OpenFullEditor}" 
+                                Padding="10,5" Click="OpenFullEditor_Click"/>
+                            <TextBlock Grid.Row="0" x:Name="EditorTitle" Text="{x:Static properties:Resources.SelectTemplateToViewDetails}" 
+                                  FontSize="14" FontWeight="Bold" Margin="5,5,5,5" 
+                                  Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        </DockPanel>
+
+                        <Grid Grid.Row="1" x:Name="EditorContainer">
+                            <!-- Template editor content will be loaded here dynamically -->
+                            <TextBlock x:Name="PlaceholderText" Text="{x:Static properties:Resources.PleaseSelectTemplateToViewAndEdit}" 
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
+                        </Grid>
+                    </Grid>
                 </Grid>
-            </Border>
+            </TabItem>
 
-            <!-- Splitter -->
-            <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}" 
-                         ResizeBehavior="PreviousAndNext" ResizeDirection="Columns"/>
+            <!-- Tab 2: Treemap visualization of template counts -->
+            <TabItem Header="Treemap">
+                <Border Background="#1e1e1e" Padding="4">
+                    <treemap:TreemapControl x:Name="TemplateTreemapCtrl" ShowLabels="True"
+                                           NodeRightClicked="TemplateTreemap_NodeRightClicked"/>
+                </Border>
+            </TabItem>
 
-            <!-- Right: Embedded Template Editor Panel -->
-            <Grid Grid.Column="2">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" x:Name="OpenFullEditorButton" Content="{x:Static properties:Resources.OpenFullEditor}" 
-                        Padding="10,5" Click="OpenFullEditor_Click"/>
-                    <TextBlock Grid.Row="0" x:Name="EditorTitle" Text="{x:Static properties:Resources.SelectTemplateToViewDetails}" 
-                          FontSize="14" FontWeight="Bold" Margin="5,5,5,5" 
-                          Foreground="{DynamicResource PrimaryTextBrush}"/>
-                </DockPanel>
-
-                <Grid Grid.Row="1" x:Name="EditorContainer">
-                    <!-- Template editor content will be loaded here dynamically -->
-                    <TextBlock x:Name="PlaceholderText" Text="{x:Static properties:Resources.PleaseSelectTemplateToViewAndEdit}" 
-                              HorizontalAlignment="Center" VerticalAlignment="Center"
-                              Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
-                </Grid>
-            </Grid>
-        </Grid>
+        </TabControl>
 
         <!-- Bottom status bar -->
         <DockPanel Grid.Row="2" Margin="10,0,10,5">

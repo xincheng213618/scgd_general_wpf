@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Menus;
+using ColorVision.UI.Controls;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
@@ -500,6 +501,93 @@ namespace ColorVision.Engine.Templates
                 new TemplateEditorWindow(_selectedTemplate?.Template) { Owner =Application.Current.GetActiveWindow(),WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
 
             }
+        }
+
+        // ─── Treemap tab ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Build (or rebuild) the treemap when the Treemap tab is activated.
+        /// Each template group becomes a folder node; each template item inside
+        /// the group becomes a leaf node whose size equals the number of instances
+        /// (<see cref="ITemplate.Count"/>). Groups with no instances get size 1
+        /// so they are still visible in the treemap.
+        /// </summary>
+        private void BuildTemplateTreemap()
+        {
+            if (TemplateTreemapCtrl == null) return;
+
+            var root = new TreemapNode { Name = "Templates" };
+
+            foreach (var group in _templateGroups)
+            {
+                if (group.Templates.Count == 0) continue;
+
+                // Display name: last segment of namespace
+                string displayName = group.Namespace;
+                if (displayName.Contains('.'))
+                {
+                    var parts = displayName.Split('.');
+                    displayName = parts[parts.Length - 1];
+                }
+
+                var groupNode = new TreemapNode { Name = displayName };
+
+                foreach (var tmpl in group.Templates)
+                {
+                    // Use template instance count as size; minimum 1 so empty
+                    // templates still occupy visible space in the treemap (Count=0 case).
+                    double size = Math.Max(1, tmpl.Template?.Count ?? 0);
+                    groupNode.AddChild(new TreemapNode
+                    {
+                        Name = tmpl.Title,
+                        Size = size,
+                        Label = $"{tmpl.Title} ({(int)size})",
+                        Tag = tmpl        // store reference for right-click lookup
+                    });
+                }
+
+                groupNode.RecalculateSize();
+                // Give zero-content groups at least 1 unit of visual weight.
+                if (groupNode.Size < 1) groupNode.Size = 1;
+                root.AddChild(groupNode);
+            }
+
+            root.RecalculateSize();
+            TemplateTreemapCtrl.RootNode = root;
+        }
+
+        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Tab index 1 = Treemap tab
+            if (MainTabControl?.SelectedIndex == 1)
+                BuildTemplateTreemap();
+        }
+
+        private void TemplateTreemap_NodeRightClicked(object sender, TreemapNodeEventArgs e)
+        {
+            var node = e.Node;
+            // Leaf nodes have a TemplateItem stored in Tag (set in BuildTemplateTreemap).
+            if (node.Tag is not TemplateItem matchedItem) return;
+
+            var cm = new ContextMenu();
+            var mi = new MenuItem
+            {
+                Header = $"打开模板：{matchedItem.Title}",
+                Icon = new TextBlock { Text = "📋", FontSize = 13 }
+            };
+            mi.Click += (_, _) =>
+            {
+                if (matchedItem.Template != null)
+                    new TemplateEditorWindow(matchedItem.Template)
+                    {
+                        Owner = Application.Current.GetActiveWindow(),
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner
+                    }.ShowDialog();
+            };
+            cm.Items.Add(mi);
+            cm.PlacementTarget = (UIElement)sender;
+            cm.Placement = PlacementMode.MousePoint;
+            cm.IsOpen = true;
         }
     }
 }

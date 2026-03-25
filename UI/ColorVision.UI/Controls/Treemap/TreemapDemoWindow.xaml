@@ -37,9 +37,13 @@
 
             <Separator/>
 
-            <!-- Mock data shortcut -->
-            <Button Content="模拟数据" Padding="8,3"
-                    Click="BtnMockData_Click" ToolTip="加载内置模拟文件系统"/>
+            <!-- Save / Load scan results -->
+            <Button x:Name="BtnSave" Content="保 存" Padding="8,3"
+                    Click="BtnSave_Click" IsEnabled="False"
+                    ToolTip="将当前扫描结果保存为 JSON 文件"/>
+            <Button x:Name="BtnLoad" Content="加 载" Padding="8,3"
+                    Click="BtnLoad_Click"
+                    ToolTip="从已保存的 JSON 文件加载扫描结果"/>
 
             <Separator/>
 

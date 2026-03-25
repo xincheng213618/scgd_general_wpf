@@ -1,4 +1,6 @@
+using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows.Media;
 
 namespace ColorVision.UI.Controls
@@ -28,6 +30,12 @@ namespace ColorVision.UI.Controls
         /// Optional user-visible label that overrides <see cref="Name"/> in tooltips.
         /// </summary>
         public string? Label { get; set; }
+
+        /// <summary>
+        /// Arbitrary application-defined data associated with this node.
+        /// Not serialised by <see cref="SaveToJson"/>/<see cref="LoadFromJson"/>.
+        /// </summary>
+        public object? Tag { get; set; }
 
         /// <summary>
         /// Optional fill colour.  When null the control assigns a colour
@@ -63,5 +71,68 @@ namespace ColorVision.UI.Controls
 
         public override string ToString() =>
             Label != null ? Label : Name;
+
+        // ─── Serialisation ────────────────────────────────────────────────────
+
+        /// <summary>Serialises the entire tree to a JSON file.</summary>
+        public void SaveToJson(string filePath)
+        {
+            var dto = ToDto(this);
+            var json = JsonConvert.SerializeObject(dto, Formatting.Indented);
+            File.WriteAllText(filePath, json);
+        }
+
+        /// <summary>Deserialises a tree that was previously saved with <see cref="SaveToJson"/>.</summary>
+        public static TreemapNode? LoadFromJson(string filePath)
+        {
+            if (!File.Exists(filePath)) return null;
+            var json = File.ReadAllText(filePath);
+            var dto = JsonConvert.DeserializeObject<NodeDto>(json);
+            return dto != null ? FromDto(dto) : null;
+        }
+
+        // ─── Private DTO helpers (avoids serialising the Color struct via WPF) ─
+
+        private sealed class NodeDto
+        {
+            public string Name { get; set; } = string.Empty;
+            public double Size { get; set; }
+            public string? FullPath { get; set; }
+            public string? Label { get; set; }
+            public List<NodeDto>? Children { get; set; }
+        }
+
+        private static NodeDto ToDto(TreemapNode n)
+        {
+            var dto = new NodeDto
+            {
+                Name = n.Name,
+                Size = n.Size,
+                FullPath = n.FullPath,
+                Label = n.Label,
+            };
+            if (n.Children.Count > 0)
+            {
+                dto.Children = new List<NodeDto>(n.Children.Count);
+                foreach (var c in n.Children)
+                    dto.Children.Add(ToDto(c));
+            }
+            return dto;
+        }
+
+        private static TreemapNode FromDto(NodeDto dto)
+        {
+            var node = new TreemapNode
+            {
+                Name = dto.Name,
+                Size = dto.Size,
+                FullPath = dto.FullPath,
+                Label = dto.Label,
+            };
+            if (dto.Children != null)
+                foreach (var c in dto.Children)
+                    node.AddChild(FromDto(c));
+            return node;
+        }
     }
 }
