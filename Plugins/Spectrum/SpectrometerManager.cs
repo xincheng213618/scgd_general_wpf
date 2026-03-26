@@ -513,7 +513,53 @@ namespace Spectrum
             int bufferLength = 1024;
             StringBuilder stringBuilder = new StringBuilder(bufferLength);
             int ret = Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, i, stringBuilder, bufferLength);
-            MessageBox1.Show(Application.Current.GetActiveWindow(), stringBuilder.ToString(), "Sprectrum");
+
+            string raw = stringBuilder.ToString();
+            string display = FormatSerialNumberResult(raw);
+            MessageBox1.Show(Application.Current.GetActiveWindow(), display, "Sprectrum");
+        }
+
+        /// <summary>
+        /// 将CM_Emission_GetAllSN返回的JSON格式化为用户友好的显示文本
+        /// </summary>
+        internal static string FormatSerialNumberResult(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return "未检测到设备";
+
+            try
+            {
+                var token = Newtonsoft.Json.Linq.JToken.Parse(raw);
+                var snList = new List<string>();
+
+                if (token is Newtonsoft.Json.Linq.JArray arr)
+                {
+                    foreach (var item in arr)
+                        snList.Add(item.ToString());
+                }
+                else if (token is Newtonsoft.Json.Linq.JObject obj)
+                {
+                    foreach (var prop in obj.Properties())
+                        snList.Add(prop.Value.ToString());
+                }
+                else
+                {
+                    snList.Add(token.ToString());
+                }
+
+                if (snList.Count == 0)
+                    return "未检测到设备";
+
+                if (snList.Count == 1)
+                    return $"设备序列号: {snList[0]}";
+
+                return $"检测到 {snList.Count} 台设备:\n" + string.Join("\n", snList.Select((sn, idx) => $"  {idx + 1}. {sn}"));
+            }
+            catch
+            {
+                // JSON解析失败，直接显示原始内容
+                return raw;
+            }
         }
 
         public void SetMaguideOutputFile()
