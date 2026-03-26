@@ -44,14 +44,14 @@ namespace ProjectARVRPro
         public string NewLine { get; set; } = "\r\n";
 
         /// <summary>
-        /// 接收轮询间隔（毫秒），默认10ms
+        /// 接收轮询间隔（毫秒），默认2ms
         /// </summary>
-        public int PollIntervalMs { get; set; } = 10;
+        public int PollIntervalMs { get; set; } = 2;
 
         /// <summary>
-        /// 收到数据后额外等待时间（毫秒），确保完整帧接收，默认50ms
+        /// 收到数据后额外等待时间（毫秒），确保完整帧接收，默认20ms
         /// </summary>
-        public int ReceiveSettleMs { get; set; } = 50;
+        public int ReceiveSettleMs { get; set; } = 20;
 
         /// <summary>
         /// 打开串口
@@ -135,12 +135,14 @@ namespace ProjectARVRPro
                 // 轮询等待响应数据
                 var sb = new StringBuilder();
                 var sw = Stopwatch.StartNew();
+                long lastDataTimestamp = -1;
 
                 while (sw.ElapsedMilliseconds < timeout)
                 {
                     if (_serialPort.BytesToRead > 0)
                     {
                         sb.Append(_serialPort.ReadExisting());
+                        lastDataTimestamp = sw.ElapsedMilliseconds;
                         string current = sb.ToString();
 
                         // 收到至少一个完整行（含换行符）则认为响应完毕
@@ -152,6 +154,16 @@ namespace ProjectARVRPro
                                 sb.Append(_serialPort.ReadExisting());
 
                             string response = sb.ToString().Trim();
+                            log.Info($"[RX] {response}");
+                            return response;
+                        }
+                    }
+                    else if (lastDataTimestamp >= 0 && (sw.ElapsedMilliseconds - lastDataTimestamp) >= ReceiveSettleMs)
+                    {
+                        // 已收到数据但无换行符，且空闲时间超过 ReceiveSettleMs → 视为响应完毕
+                        string response = sb.ToString().Trim();
+                        if (!string.IsNullOrEmpty(response))
+                        {
                             log.Info($"[RX] {response}");
                             return response;
                         }
