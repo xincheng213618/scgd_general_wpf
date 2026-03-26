@@ -1307,6 +1307,8 @@ namespace Spectrum
 
         private void UpdateEqeColumnsVisibility(bool eqeEnabled)
         {
+            if (!IsInitialized) return;
+
             EqePanel.Visibility = eqeEnabled ? Visibility.Visible : Visibility.Collapsed;
             // double.NaN = auto-size (visible), 0 = hidden
             double width = eqeEnabled ? double.NaN : 0;
