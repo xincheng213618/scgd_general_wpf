@@ -1,8 +1,10 @@
 using ColorVision.Database;
 using ColorVision.Engine;
+using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
+using ProjectARVRPro.Fix;
 using System.Collections.ObjectModel;
 using System.Text;
 using System.Windows;
@@ -12,6 +14,10 @@ namespace ProjectARVRPro.Process.MTF
 {
     public class MTFProcess : ProcessBase<MTFProcessConfig>
     {
+        public override IFixConfig GetFixConfig()=> Config.FixConfig;
+        public override IRecipeConfig GetRecipeConfig() => Config.RecipeConfig;
+
+
         public override bool Execute(IProcessExecutionContext ctx)
         {
             if (ctx?.Batch == null || ctx.Result == null) return false;
@@ -31,37 +37,21 @@ namespace ProjectARVRPro.Process.MTF
                     if (details.Count == 1)
                     {
                         var mtfDetail = new MTFDetailViewReslut(details[0]);
-                        if (mtfDetail.MTFResult?.resultChild != null)
+                        if (mtfDetail.MTFResult?.result != null)
                         {
-                            foreach (var mtf in mtfDetail.MTFResult.resultChild)
+                            foreach (var mtf in mtfDetail.MTFResult.result)
                             {
-                                string displayName = Config.GetDisplayName(mtf.name);
-
-                                // Horizontal item
                                 var hItem = new ObjectiveTestItem()
                                 {
-                                    Name = displayName + "_H",
+                                    Name = mtf.name,
                                     Unit = "%",
-                                    Value = mtf.horizontalAverage * Config.FixH,
-                                    LowLimit = Config.UnifiedRecipe.Min,
-                                    UpLimit = Config.UnifiedRecipe.Max,
+                                    Value = (mtf.mtfValue ??0) * Config.FixConfig.UnifiedFix,
+                                    LowLimit = Config.RecipeConfig.UnifiedRecipe.Min,
+                                    UpLimit = Config.RecipeConfig.UnifiedRecipe.Max,
                                 };
                                 hItem.TestValue = hItem.Value.ToString();
                                 ctx.Result.Result &= hItem.TestResult;
                                 testResult.Items.Add(hItem);
-
-                                // Vertical item
-                                var vItem = new ObjectiveTestItem()
-                                {
-                                    Name = displayName + "_V",
-                                    Unit = "%",
-                                    Value = mtf.verticalAverage * Config.FixV,
-                                    LowLimit = Config.UnifiedRecipe.Min,
-                                    UpLimit = Config.UnifiedRecipe.Max,
-                                };
-                                vItem.TestValue = vItem.Value.ToString();
-                                ctx.Result.Result &= vItem.TestResult;
-                                testResult.Items.Add(vItem);
                             }
                         }
                         testResult.MTFDetailViewReslut = mtfDetail;
@@ -70,11 +60,12 @@ namespace ProjectARVRPro.Process.MTF
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
 
-                // Add to ObjectiveTestResult via dynamic dictionary
                 if (!ctx.ObjectiveTestResult.DynamicTestResults.ContainsKey(Config.Name))
                 {
                     ctx.ObjectiveTestResult.DynamicTestResults[Config.Name] = new ObservableCollection<ObjectiveTestItem>();
                 }
+                ctx.ObjectiveTestResult.DynamicTestResults[Config.Name].Clear();
+
                 foreach (var item in testResult.Items)
                 {
                     ctx.ObjectiveTestResult.DynamicTestResults[Config.Name].Add(item);
