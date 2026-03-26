@@ -2,6 +2,7 @@ using ColorVision.UI;
 using log4net;
 using SqlSugar;
 using System;
+using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -66,6 +67,51 @@ namespace ColorVision.Engine.Templates.Flow
             catch (Exception ex)
             {
                 log.Error("更新FlowNodeRecord失败", ex);
+            }
+        }
+
+        public static List<FlowNodeRecord> GetByBatchId(int batchId)
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateDb();
+                return db.Queryable<FlowNodeRecord>().Where(x => x.BatchId == batchId).OrderBy(x => x.StartTime).ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询FlowNodeRecord失败", ex);
+                return new List<FlowNodeRecord>();
+            }
+        }
+
+        public static List<FlowNodeRecord> GetByBatchIds(List<int> batchIds)
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateDb();
+                return db.Queryable<FlowNodeRecord>().Where(x => batchIds.Contains(x.BatchId)).OrderBy(x => x.StartTime).ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询FlowNodeRecord失败", ex);
+                return new List<FlowNodeRecord>();
+            }
+        }
+
+        public static List<int> GetDistinctBatchIds(int limit = 100)
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateDb();
+                return db.Queryable<FlowNodeRecord>().GroupBy(x => x.BatchId).OrderByDescending(x => x.BatchId).Select(x => x.BatchId).Take(limit).ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询BatchId列表失败", ex);
+                return new List<int>();
             }
         }
     }
