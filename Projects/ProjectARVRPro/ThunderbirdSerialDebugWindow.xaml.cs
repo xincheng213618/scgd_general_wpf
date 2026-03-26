@@ -25,7 +25,7 @@ namespace ProjectARVRPro
         }
 
         /// <summary>
-        /// 初始化亮度档位列表（0x20~0x30，共16档）
+        /// 初始化亮度档位列表（0x20~0x30）
         /// bit0~4 为亮度值，bit5 置 1
         /// 0x20 亮度最小，0x30 亮度最大
         /// </summary>
@@ -119,8 +119,8 @@ namespace ProjectARVRPro
 
                 _serialPort = new SerialPort(portName, baudRate, parity, dataBits, stopBits)
                 {
-                    ReadTimeout = 5000,
-                    WriteTimeout = 5000,
+                    ReadTimeout = 2000,
+                    WriteTimeout = 2000,
                     Encoding = Encoding.ASCII
                 };
 
@@ -190,14 +190,19 @@ namespace ProjectARVRPro
                     ReceiveTextBox.AppendText(data);
                     ReceiveTextBox.ScrollToEnd();
 
-                    // Check response for OK/error
-                    if (data.Contains("OK", StringComparison.OrdinalIgnoreCase))
+                    // Check accumulated buffer for complete line-terminated responses
+                    string buffered = _receiveBuffer.ToString();
+                    if (buffered.Contains("\r") || buffered.Contains("\n"))
                     {
-                        UpdateStatus("配置成功 (OK)");
-                    }
-                    else if (data.Contains("error", StringComparison.OrdinalIgnoreCase))
-                    {
-                        UpdateStatus("配置失败 (error)");
+                        if (buffered.Contains("OK", StringComparison.OrdinalIgnoreCase))
+                        {
+                            UpdateStatus("配置成功 (OK)");
+                        }
+                        else if (buffered.Contains("error", StringComparison.OrdinalIgnoreCase))
+                        {
+                            UpdateStatus("配置失败 (error)");
+                        }
+                        _receiveBuffer.Clear();
                     }
                 });
             }

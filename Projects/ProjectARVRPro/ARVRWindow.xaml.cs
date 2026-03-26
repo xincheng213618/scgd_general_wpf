@@ -1345,7 +1345,7 @@ namespace ProjectARVRPro
 
         private void OpenThunderbirdSerialDebug_Click(object sender, RoutedEventArgs e)
         {
-            if (_thunderbirdDebugWindow == null || !_thunderbirdDebugWindow.IsLoaded)
+            if (_thunderbirdDebugWindow == null)
             {
                 _thunderbirdDebugWindow = new ThunderbirdSerialDebugWindow
                 {
