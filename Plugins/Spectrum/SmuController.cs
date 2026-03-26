@@ -94,6 +94,8 @@ namespace Spectrum
 
         /// <summary>
         /// Measures V and I from the source meter using the configured parameters.
+        /// Uses MeasureVal as the source setpoint (V when IsSourceV=true, mA when false)
+        /// and LimitVal as the compliance limit (mA when IsSourceV=true, V when false).
         /// Returns true if successful.
         /// </summary>
         public bool MeasureData()
