@@ -44,9 +44,14 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="60"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock x:Name="ConnectionStatusText" Text="● 未连接" Foreground="Gray" VerticalAlignment="Center" FontWeight="Bold"/>
-                    <Button Grid.Column="1" x:Name="TogglePortButton" Content="连接" Click="TogglePort_Click"
+                    <TextBlock Grid.Column="1" Text="超时(ms):" VerticalAlignment="Center" Margin="5,0,3,0"/>
+                    <TextBox Grid.Column="2" x:Name="TimeoutTextBox" Text="1000" Width="55" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <Button Grid.Column="4" x:Name="TogglePortButton" Content="连接" Click="TogglePort_Click"
                             Width="100" Height="28" Background="#FF4CAF50" Foreground="White" FontWeight="Bold"/>
                 </Grid>
             </Grid>

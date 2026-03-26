@@ -1,6 +1,4 @@
 ﻿using log4net;
-using System.IO.Ports;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -12,13 +10,13 @@ namespace ProjectARVRPro
     /// 切图指令: AT+UPWARDS / AT+DOWN（直接发送）
     /// 亮度写入: AT+W 30 XX (XX = 0x20~0x30)
     /// 亮度读取: AT+R 30 → 返回当前寄存器值并回显
+    /// 通信模式: 1发1收同步模式（通过 SerialPortHelper 封装）
     /// </summary>
     public partial class ThunderbirdSerialDebugWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ThunderbirdSerialDebugWindow));
 
-        private SerialPort? _serialPort;
-        private readonly StringBuilder _receiveBuffer = new();
+        private SerialPortHelper? _serialHelper;
 
         /// <summary>
         /// 当前亮度档位 (0~16, 对应 0x20~0x30)，-1 表示未知
@@ -60,7 +58,7 @@ namespace ProjectARVRPro
         {
             string? previousSelection = ComPortComboBox.SelectedItem as string;
             ComPortComboBox.Items.Clear();
-            foreach (string portName in SerialPort.GetPortNames())
+            foreach (string portName in SerialPortHelper.GetPortNames())
             {
                 ComPortComboBox.Items.Add(portName);
             }
@@ -71,11 +69,21 @@ namespace ProjectARVRPro
                 ComPortComboBox.SelectedIndex = 0;
         }
 
+        /// <summary>
+        /// 从 UI 读取用户配置的超时时间
+        /// </summary>
+        private int GetConfiguredTimeout()
+        {
+            if (int.TryParse(TimeoutTextBox.Text, out int ms) && ms > 0)
+                return ms;
+            return 1000;
+        }
+
         private void RefreshPorts_Click(object sender, RoutedEventArgs e) => RefreshPortList();
 
         private void TogglePort_Click(object sender, RoutedEventArgs e)
         {
-            if (_serialPort != null && _serialPort.IsOpen)
+            if (_serialHelper != null && _serialHelper.IsOpen)
                 ClosePort();
             else
                 OpenPort();
@@ -93,16 +101,10 @@ namespace ProjectARVRPro
             {
                 string portName = ComPortComboBox.SelectedItem.ToString()!;
                 int baudRate = int.Parse(((ComboBoxItem)BaudRateComboBox.SelectedItem).Content.ToString()!);
+                int timeout = GetConfiguredTimeout();
 
-                _serialPort = new SerialPort(portName, baudRate, Parity.None, 8, StopBits.One)
-                {
-                    ReadTimeout = 2000,
-                    WriteTimeout = 2000,
-                    Encoding = Encoding.ASCII
-                };
-
-                _serialPort.DataReceived += SerialPort_DataReceived;
-                _serialPort.Open();
+                _serialHelper = new SerialPortHelper { TimeoutMs = timeout };
+                _serialHelper.Open(portName, baudRate);
 
                 TogglePortButton.Content = "断开";
                 TogglePortButton.Background = new SolidColorBrush(Color.FromRgb(0xF4, 0x43, 0x36));
@@ -112,11 +114,11 @@ namespace ProjectARVRPro
                 BaudRateComboBox.IsEnabled = false;
                 SetControlButtonsEnabled(true);
 
-                UpdateStatus($"已连接 {portName} (波特率:{baudRate})");
-                log.Info($"雷鸟调试串口已打开: {portName}, BaudRate={baudRate}");
+                UpdateStatus($"已连接 {portName} (波特率:{baudRate}, 超时:{timeout}ms)");
+                log.Info($"雷鸟调试串口已打开: {portName}, BaudRate={baudRate}, Timeout={timeout}ms");
 
                 // 连接后自动查询当前亮度状态
-                QueryBrightnessInternal();
+                _ = QueryBrightnessAsync();
             }
             catch (Exception ex)
             {
@@ -129,14 +131,8 @@ namespace ProjectARVRPro
         {
             try
             {
-                if (_serialPort != null)
-                {
-                    _serialPort.DataReceived -= SerialPort_DataReceived;
-                    if (_serialPort.IsOpen)
-                        _serialPort.Close();
-                    _serialPort.Dispose();
-                    _serialPort = null;
-                }
+                _serialHelper?.Dispose();
+                _serialHelper = null;
 
                 TogglePortButton.Content = "连接";
                 TogglePortButton.Background = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
@@ -174,34 +170,176 @@ namespace ProjectARVRPro
             QueryBrightnessButton.IsEnabled = enabled;
         }
 
-        // ─── Serial Port Data Handling ────────────────────────
+        // ─── Command Sending (1发1收) ─────────────────────────
 
-        private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        /// <summary>
+        /// 发送命令并等待响应（1发1收模式），自动处理超时提示
+        /// </summary>
+        /// <param name="command">AT 命令</param>
+        /// <returns>响应内容，超时返回 null</returns>
+        private async Task<string?> SendCommandAsync(string command)
         {
+            if (_serialHelper == null || !_serialHelper.IsOpen)
+            {
+                UpdateStatus("串口未打开");
+                return null;
+            }
+
+            // 同步用户配置的超时
+            _serialHelper.TimeoutMs = GetConfiguredTimeout();
+
+            AppendLog($"[TX] {command}");
             try
             {
-                if (_serialPort == null || !_serialPort.IsOpen)
-                    return;
-
-                string data = _serialPort.ReadExisting();
-                Dispatcher.Invoke(() =>
-                {
-                    _receiveBuffer.Append(data);
-                    ReceiveTextBox.AppendText(data);
-                    ReceiveTextBox.ScrollToEnd();
-
-                    // 检查是否收到完整的行终止响应
-                    string buffered = _receiveBuffer.ToString();
-                    if (buffered.Contains('\r') || buffered.Contains('\n'))
-                    {
-                        ProcessResponse(buffered.Trim());
-                        _receiveBuffer.Clear();
-                    }
-                });
+                string response = await _serialHelper.SendAndReceiveAsync(command);
+                AppendLog($"[RX] {response}");
+                return response;
+            }
+            catch (TimeoutException ex)
+            {
+                AppendLog($"[超时] {ex.Message}");
+                UpdateStatus($"⚠ 超时: 发送 \"{command}\" 后 {_serialHelper.TimeoutMs}ms 内未收到响应");
+                log.Warn(ex.Message);
+                return null;
             }
             catch (Exception ex)
             {
-                log.Error("串口接收数据异常", ex);
+                AppendLog($"[错误] {ex.Message}");
+                UpdateStatus($"发送失败: {ex.Message}");
+                log.Error($"串口发送失败: {command}", ex);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 发送串口命令（公共方法，供外部流程调用）
+        /// </summary>
+        public async Task<string?> SendCommandWithResponseAsync(string command)
+        {
+            return await SendCommandAsync(command);
+        }
+
+        private void AppendLog(string text)
+        {
+            ReceiveTextBox.AppendText($"[{DateTime.Now:HH:mm:ss.fff}] {text}\n");
+            ReceiveTextBox.ScrollToEnd();
+        }
+
+        // ─── Image Switching ──────────────────────────────────
+
+        private async void SwitchUp_Click(object sender, RoutedEventArgs e)
+        {
+            SwitchUpButton.IsEnabled = false;
+            try
+            {
+                string? response = await SendCommandAsync("AT+UPWARDS");
+                if (response != null)
+                {
+                    ProcessResponse(response);
+                    UpdateStatus("向上切图 完成");
+                }
+            }
+            finally
+            {
+                if (_serialHelper?.IsOpen == true)
+                    SwitchUpButton.IsEnabled = true;
+            }
+        }
+
+        private async void SwitchDown_Click(object sender, RoutedEventArgs e)
+        {
+            SwitchDownButton.IsEnabled = false;
+            try
+            {
+                string? response = await SendCommandAsync("AT+DOWN");
+                if (response != null)
+                {
+                    ProcessResponse(response);
+                    UpdateStatus("向下切图 完成");
+                }
+            }
+            finally
+            {
+                if (_serialHelper?.IsOpen == true)
+                    SwitchDownButton.IsEnabled = true;
+            }
+        }
+
+        // ─── Brightness Controls ──────────────────────────────
+
+        private async void QueryBrightness_Click(object sender, RoutedEventArgs e)
+        {
+            await QueryBrightnessAsync();
+        }
+
+        private async Task QueryBrightnessAsync()
+        {
+            UpdateStatus("正在查询亮度...");
+            string? response = await SendCommandAsync("AT+R 30");
+            if (response != null)
+                ProcessResponse(response);
+        }
+
+        /// <summary>
+        /// 亮度 - 按钮：降低一档
+        /// </summary>
+        private async void BrightnessDown_Click(object sender, RoutedEventArgs e)
+        {
+            int targetLevel = _currentBrightnessLevel <= 0 ? 0 : _currentBrightnessLevel - 1;
+            await SetBrightnessLevelAsync(targetLevel);
+        }
+
+        /// <summary>
+        /// 亮度 + 按钮：升高一档
+        /// </summary>
+        private async void BrightnessUp_Click(object sender, RoutedEventArgs e)
+        {
+            int targetLevel = _currentBrightnessLevel >= 16 ? 16 : _currentBrightnessLevel + 1;
+            await SetBrightnessLevelAsync(targetLevel);
+        }
+
+        /// <summary>
+        /// 滑块拖动更新显示（仅更新显示，不自动发送命令）
+        /// </summary>
+        private void BrightnessSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_suppressSliderEvent)
+                return;
+
+            int level = (int)BrightnessSlider.Value;
+            SliderValueText.Text = $"档位 {level} (0x{0x20 + level:X2})";
+
+            if (level >= 0 && level < BrightnessComboBox.Items.Count)
+                BrightnessComboBox.SelectedIndex = level;
+        }
+
+        /// <summary>
+        /// 从下拉框/滑块指定档位设置亮度
+        /// </summary>
+        private async void SetBrightness_Click(object sender, RoutedEventArgs e)
+        {
+            int level = (int)BrightnessSlider.Value;
+            await SetBrightnessLevelAsync(level);
+        }
+
+        /// <summary>
+        /// 设置亮度并发送 AT+W 30 XX 命令
+        /// </summary>
+        private async Task SetBrightnessLevelAsync(int level)
+        {
+            if (level < 0) level = 0;
+            if (level > 16) level = 16;
+
+            int registerValue = 0x20 + level;
+            string command = $"AT+W 30 {registerValue:X2}";
+
+            string? response = await SendCommandAsync(command);
+            if (response != null)
+            {
+                _currentBrightnessLevel = level;
+                UpdateBrightnessDisplay(level, registerValue);
+                ProcessResponse(response);
+                UpdateStatus($"已设置亮度: 档位 {level} (0x{registerValue:X2})");
             }
         }
 
@@ -213,12 +351,7 @@ namespace ProjectARVRPro
             if (string.IsNullOrWhiteSpace(response))
                 return;
 
-            // 尝试解析亮度读取结果
-            // 响应可能是纯十六进制数值，如 "20" ~ "30"
-            string trimmed = response.Trim();
-
-            // 去掉可能的 "OK" 前后文字，逐行检查
-            string[] lines = trimmed.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] lines = response.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (string line in lines)
             {
                 string l = line.Trim();
@@ -254,7 +387,6 @@ namespace ProjectARVRPro
         {
             value = 0;
             string cleaned = line.Trim();
-            // 移除可能的 "0x" 前缀
             if (cleaned.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
                 cleaned = cleaned[2..];
 
@@ -266,7 +398,6 @@ namespace ProjectARVRPro
                     return true;
                 }
             }
-            // 也尝试十进制解析（设备可能以十进制返回寄存器值 32~48）
             if (int.TryParse(cleaned, out int decParsed))
             {
                 if (decParsed >= 0x20 && decParsed <= 0x30)
@@ -276,132 +407,6 @@ namespace ProjectARVRPro
                 }
             }
             return false;
-        }
-
-        // ─── Command Sending ──────────────────────────────────
-
-        /// <summary>
-        /// 发送串口命令（公共方法，供外部流程调用）
-        /// </summary>
-        public bool SendCommand(string command)
-        {
-            if (_serialPort == null || !_serialPort.IsOpen)
-            {
-                UpdateStatus("串口未打开");
-                return false;
-            }
-            if (string.IsNullOrWhiteSpace(command))
-                return false;
-
-            try
-            {
-                _serialPort.Write(command + "\r\n");
-                AppendLog($"[TX] {command}");
-                log.Info($"雷鸟串口发送: {command}");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                UpdateStatus($"发送失败: {ex.Message}");
-                log.Error($"串口发送失败: {command}", ex);
-                return false;
-            }
-        }
-
-        private void AppendLog(string text)
-        {
-            ReceiveTextBox.AppendText(text + "\n");
-            ReceiveTextBox.ScrollToEnd();
-        }
-
-        // ─── Image Switching (直接发送) ───────────────────────
-
-        private void SwitchUp_Click(object sender, RoutedEventArgs e)
-        {
-            if (SendCommand("AT+UPWARDS"))
-                UpdateStatus("已发送: 向上切图");
-        }
-
-        private void SwitchDown_Click(object sender, RoutedEventArgs e)
-        {
-            if (SendCommand("AT+DOWN"))
-                UpdateStatus("已发送: 向下切图");
-        }
-
-        // ─── Brightness Controls ──────────────────────────────
-
-        private void QueryBrightness_Click(object sender, RoutedEventArgs e)
-        {
-            QueryBrightnessInternal();
-        }
-
-        private void QueryBrightnessInternal()
-        {
-            if (SendCommand("AT+R 30"))
-                UpdateStatus("正在查询亮度...");
-        }
-
-        /// <summary>
-        /// 亮度 - 按钮：降低一档
-        /// </summary>
-        private void BrightnessDown_Click(object sender, RoutedEventArgs e)
-        {
-            int targetLevel = _currentBrightnessLevel <= 0 ? 0 : _currentBrightnessLevel - 1;
-            SetBrightnessLevel(targetLevel);
-        }
-
-        /// <summary>
-        /// 亮度 + 按钮：升高一档
-        /// </summary>
-        private void BrightnessUp_Click(object sender, RoutedEventArgs e)
-        {
-            int targetLevel = _currentBrightnessLevel >= 16 ? 16 : _currentBrightnessLevel + 1;
-            SetBrightnessLevel(targetLevel);
-        }
-
-        /// <summary>
-        /// 滑块拖动更新显示（仅更新显示，不自动发送命令）
-        /// 用户可通过 +/- 按钮或"设置亮度"按钮发送
-        /// </summary>
-        private void BrightnessSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (_suppressSliderEvent)
-                return;
-
-            int level = (int)BrightnessSlider.Value;
-            SliderValueText.Text = $"档位 {level} (0x{0x20 + level:X2})";
-
-            // 同步下拉框选中项
-            if (level >= 0 && level < BrightnessComboBox.Items.Count)
-                BrightnessComboBox.SelectedIndex = level;
-        }
-
-        /// <summary>
-        /// 从下拉框/滑块指定档位设置亮度
-        /// </summary>
-        private void SetBrightness_Click(object sender, RoutedEventArgs e)
-        {
-            int level = (int)BrightnessSlider.Value;
-            SetBrightnessLevel(level);
-        }
-
-        /// <summary>
-        /// 设置亮度并发送 AT+W 30 XX 命令
-        /// </summary>
-        private void SetBrightnessLevel(int level)
-        {
-            if (level < 0) level = 0;
-            if (level > 16) level = 16;
-
-            int registerValue = 0x20 + level;
-            string command = $"AT+W 30 {registerValue:X2}";
-
-            if (SendCommand(command))
-            {
-                _currentBrightnessLevel = level;
-                UpdateBrightnessDisplay(level, registerValue);
-                UpdateStatus($"已设置亮度: 档位 {level} (0x{registerValue:X2})");
-            }
         }
 
         /// <summary>
@@ -425,7 +430,6 @@ namespace ProjectARVRPro
         private void ClearReceive_Click(object sender, RoutedEventArgs e)
         {
             ReceiveTextBox.Clear();
-            _receiveBuffer.Clear();
         }
 
         private void UpdateStatus(string message)
@@ -438,7 +442,8 @@ namespace ProjectARVRPro
 
         protected override void OnClosed(EventArgs e)
         {
-            ClosePort();
+            _serialHelper?.Dispose();
+            _serialHelper = null;
             base.OnClosed(e);
         }
     }
