@@ -195,14 +195,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             int ret = Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType,i, stringBuilder, bufferLength);
 
             string raw = stringBuilder.ToString();
-            string display = FormatSerialNumberResult(ret, raw);
+            string display = FormatSerialNumberResult(raw);
             MessageBox1.Show(Application.Current.GetActiveWindow(), display, "Sprectrum");
         }
 
         /// <summary>
         /// 将CM_Emission_GetAllSN返回的JSON格式化为用户友好的显示文本
         /// </summary>
-        internal static string FormatSerialNumberResult(int ret, string raw)
+        internal static string FormatSerialNumberResult(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw))
                 return "未检测到设备";

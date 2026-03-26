@@ -343,10 +343,18 @@ namespace Spectrum
         public void GenericQuery()
         {
             var db = CreateDb();
-            GenericQuery<SprectrumModel, ViewResultSpectrum> genericQuery = new GenericQuery<SprectrumModel, ViewResultSpectrum>(db, ViewResluts,a=>new ViewResultSpectrum(a));
-            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            genericQueryWindow.Closed += (s, e) => db.Dispose();
-            genericQueryWindow.ShowDialog();
+            try
+            {
+                GenericQuery<SprectrumModel, ViewResultSpectrum> genericQuery = new GenericQuery<SprectrumModel, ViewResultSpectrum>(db, ViewResluts, a => new ViewResultSpectrum(a));
+                GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                genericQueryWindow.Closed += (s, e) => db.Dispose();
+                genericQueryWindow.ShowDialog();
+            }
+            catch
+            {
+                db.Dispose();
+                throw;
+            }
         }
 
         /// <summary>
