@@ -47,7 +47,7 @@
                         <GridViewColumn>
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding }" Margin="4,2"/>
+                                    <TextBlock Text="{Binding}" Margin="4,2"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -59,16 +59,21 @@
             <Button Grid.Column="3" Content="对比" Click="CompareButton_Click" Margin="5,0,0,0" Width="60" Height="30"/>
         </Grid>
 
-        <!-- Main content: list + chart -->
+        <!-- Main content: chart (primary) + list (secondary) -->
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*" MinHeight="150"/>
-                <RowDefinition Height="5"/>
                 <RowDefinition Height="2*" MinHeight="200"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="*" MinHeight="120"/>
             </Grid.RowDefinitions>
 
-            <!-- Top: Node records list -->
-            <ListView x:Name="NodeRecordListView" Grid.Row="0"
+            <!-- Top: Gantt chart (primary) -->
+            <ScottPlot:WpfPlot x:Name="GanttPlot" Grid.Row="0"/>
+
+            <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+            <!-- Bottom: Node records list (secondary) -->
+            <ListView x:Name="NodeRecordListView" Grid.Row="2"
                       Background="Transparent" BorderThickness="0">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
@@ -134,11 +139,6 @@
                     </GridView>
                 </ListView.View>
             </ListView>
-
-            <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="Transparent"/>
-
-            <!-- Bottom: Gantt chart -->
-            <ScottPlot:WpfPlot x:Name="GanttPlot" Grid.Row="2"/>
         </Grid>
     </Grid>
 </Window>

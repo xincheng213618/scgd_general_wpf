@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Templates.Flow
 {
     public partial class FlowNodeAnalysisWindow : Window
     {
-        private readonly int? _initialBatchId;
+        private MeasureBatchModel _initialBatch;
         private const long TimeoutThresholdMs = 30000;
 
         public ObservableCollection<FlowNodeRecord> NodeRecords { get; set; } = new ObservableCollection<FlowNodeRecord>();
@@ -20,10 +20,14 @@ namespace ColorVision.Engine.Templates.Flow
             InitializeComponent();
         }
 
-        public FlowNodeAnalysisWindow(int batchId)
+        public FlowNodeAnalysisWindow(MeasureBatchModel batch) : this()
         {
-            _initialBatchId = batchId;
-            InitializeComponent();
+            _initialBatch = batch;
+        }
+
+        public FlowNodeAnalysisWindow(int batchId) : this()
+        {
+            _initialBatch = new MeasureBatchModel { Id = batchId };
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -33,14 +37,13 @@ namespace ColorVision.Engine.Templates.Flow
             var batchIds = FlowNodeRecordDataBaseHelper.GetDistinctBatchIds(100);
             BatchListView.ItemsSource = batchIds;
 
-            if (_initialBatchId.HasValue && batchIds.Contains(_initialBatchId.Value))
+            if (_initialBatch != null)
             {
-                BatchListView.SelectedItem = _initialBatchId.Value;
-                LoadBatchRecords(new List<int> { _initialBatchId.Value });
-            }
-            else if (_initialBatchId.HasValue)
-            {
-                LoadBatchRecords(new List<int> { _initialBatchId.Value });
+                if (batchIds.Contains(_initialBatch.Id))
+                {
+                    BatchListView.SelectedItem = _initialBatch.Id;
+                }
+                LoadBatchRecords(new List<int> { _initialBatch.Id });
             }
         }
 
@@ -76,6 +79,22 @@ namespace ColorVision.Engine.Templates.Flow
             DrawGanttChart(records, batchIds);
         }
 
+        private static string DetectChineseFont()
+        {
+            return ScottPlot.Fonts.Detect("中文");
+        }
+
+        private void SetupChineseFonts()
+        {
+            string chineseFont = DetectChineseFont();
+            GanttPlot.Plot.Axes.Title.Label.FontName = chineseFont;
+            GanttPlot.Plot.Axes.Left.Label.FontName = chineseFont;
+            GanttPlot.Plot.Axes.Bottom.Label.FontName = chineseFont;
+            GanttPlot.Plot.Axes.Left.TickLabelStyle.FontName = chineseFont;
+            GanttPlot.Plot.Axes.Bottom.TickLabelStyle.FontName = chineseFont;
+            GanttPlot.Plot.Legend.FontName = chineseFont;
+        }
+
         private void DrawGanttChart(List<FlowNodeRecord> records, List<int> batchIds)
         {
             GanttPlot.Plot.Clear();
@@ -86,11 +105,7 @@ namespace ColorVision.Engine.Templates.Flow
                 return;
             }
 
-            string fontSample = "流程节点时间分析";
-            string detectedFont = ScottPlot.Fonts.Detect(fontSample);
-            GanttPlot.Plot.Axes.Title.Label.FontName = detectedFont;
-            GanttPlot.Plot.Axes.Left.Label.FontName = detectedFont;
-            GanttPlot.Plot.Axes.Bottom.Label.FontName = detectedFont;
+            SetupChineseFonts();
 
             if (batchIds.Count == 1)
             {
@@ -108,11 +123,24 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (records.Count == 0) return;
 
-            DateTime baseTime = records.Min(r => r.StartTime);
+            // Determine base time: use Batch.CreateDate if available, otherwise earliest node start
+            DateTime baseTime;
+            if (_initialBatch?.CreateDate != null)
+            {
+                baseTime = _initialBatch.CreateDate.Value;
+            }
+            else
+            {
+                baseTime = records.Min(r => r.StartTime);
+            }
+
             var recordsWithEndTime = records.Where(r => r.EndTime.HasValue);
             long totalMs = recordsWithEndTime.Any()
                 ? recordsWithEndTime.Max(r => (long)(r.EndTime.Value - baseTime).TotalMilliseconds)
                 : 0;
+
+            // If batch has TotalTime, use that for the total bar
+            long batchTotalMs = _initialBatch?.TotalTime > 0 ? _initialBatch.TotalTime : totalMs;
 
             ScottPlot.Color[] palette = new ScottPlot.Color[]
             {
@@ -127,22 +155,40 @@ namespace ColorVision.Engine.Templates.Flow
             };
 
             ScottPlot.Color timeoutColor = ScottPlot.Color.FromHex("#F44336");
-            ScottPlot.Color noEndColor = ScottPlot.Color.FromHex("#9E9E9E");
+            ScottPlot.Color totalBarColor = ScottPlot.Color.FromHex("#37474F");
 
             List<ScottPlot.Bar> bars = new List<ScottPlot.Bar>();
             List<ScottPlot.Tick> ticks = new List<ScottPlot.Tick>();
 
+            // Total row count = 1 (total bar) + records.Count
+            int totalRows = records.Count + 1;
+
+            // First bar: Total time (at the top)
+            double totalYPos = totalRows - 1;
+            bars.Add(new ScottPlot.Bar
+            {
+                Position = totalYPos,
+                ValueBase = 0,
+                Value = batchTotalMs > 0 ? batchTotalMs : totalMs,
+                FillColor = totalBarColor,
+                IsVisible = true,
+                Orientation = ScottPlot.Orientation.Horizontal,
+                Size = 0.7,
+            });
+            ticks.Add(new ScottPlot.Tick(totalYPos, "总时间"));
+
+            // Node bars
             for (int i = 0; i < records.Count; i++)
             {
                 var rec = records[i];
                 double startOffset = (rec.StartTime - baseTime).TotalMilliseconds;
                 double endOffset = rec.EndTime.HasValue ? (rec.EndTime.Value - baseTime).TotalMilliseconds : totalMs;
-                double yPos = records.Count - 1 - i;
+                double yPos = totalRows - 2 - i;
 
                 bool isTimeout = !rec.EndTime.HasValue || rec.ElapsedMs > TimeoutThresholdMs;
-                ScottPlot.Color barColor = isTimeout ? timeoutColor : (!rec.EndTime.HasValue ? noEndColor : palette[i % palette.Length]);
+                ScottPlot.Color barColor = isTimeout ? timeoutColor : palette[i % palette.Length];
 
-                var bar = new ScottPlot.Bar
+                bars.Add(new ScottPlot.Bar
                 {
                     Position = yPos,
                     ValueBase = startOffset,
@@ -151,10 +197,9 @@ namespace ColorVision.Engine.Templates.Flow
                     IsVisible = true,
                     Orientation = ScottPlot.Orientation.Horizontal,
                     Size = 0.6,
-                };
-                bars.Add(bar);
+                });
 
-                string label = $"{rec.NodeName ?? "Unknown"}";
+                string label = rec.NodeName ?? "Unknown";
                 ticks.Add(new ScottPlot.Tick(yPos, label));
             }
 
@@ -162,11 +207,6 @@ namespace ColorVision.Engine.Templates.Flow
             barPlot.Horizontal = true;
 
             GanttPlot.Plot.Axes.Left.TickGenerator = new ScottPlot.TickGenerators.NumericManual(ticks.ToArray());
-            GanttPlot.Plot.Axes.Left.Label.FontName = ScottPlot.Fonts.Detect("节点");
-            foreach (var tick in ticks)
-            {
-                GanttPlot.Plot.Axes.Left.TickLabelStyle.FontName = ScottPlot.Fonts.Detect(tick.Label);
-            }
 
             GanttPlot.Plot.Title("流程节点甘特图");
             GanttPlot.Plot.XLabel("时间 (ms)");
@@ -218,7 +258,7 @@ namespace ColorVision.Engine.Templates.Flow
                     bool isTimeout = !batchRecord.EndTime.HasValue || batchRecord.ElapsedMs > TimeoutThresholdMs;
                     ScottPlot.Color barColor = isTimeout ? timeoutColor : batchColors[bIdx % batchColors.Length];
 
-                    var bar = new ScottPlot.Bar
+                    bars.Add(new ScottPlot.Bar
                     {
                         Position = yPos,
                         ValueBase = 0,
@@ -228,8 +268,7 @@ namespace ColorVision.Engine.Templates.Flow
                         Orientation = ScottPlot.Orientation.Horizontal,
                         Size = barHeight * 0.85,
                         Label = $"Batch {batchId}",
-                    };
-                    bars.Add(bar);
+                    });
                 }
                 nodeIndex++;
             }
@@ -238,11 +277,6 @@ namespace ColorVision.Engine.Templates.Flow
             barPlot.Horizontal = true;
 
             GanttPlot.Plot.Axes.Left.TickGenerator = new ScottPlot.TickGenerators.NumericManual(ticks.ToArray());
-            GanttPlot.Plot.Axes.Left.Label.FontName = ScottPlot.Fonts.Detect("节点");
-            foreach (var tick in ticks)
-            {
-                GanttPlot.Plot.Axes.Left.TickLabelStyle.FontName = ScottPlot.Fonts.Detect(tick.Label);
-            }
 
             GanttPlot.Plot.Title("流程节点对比 (多批次)");
             GanttPlot.Plot.XLabel("耗时 (ms)");
@@ -259,11 +293,10 @@ namespace ColorVision.Engine.Templates.Flow
             }
             GanttPlot.Plot.Legend.ManualItems.Add(new ScottPlot.LegendItem
             {
-                LabelText = "Timeout",
+                LabelText = "超时",
                 FillColor = timeoutColor,
             });
             GanttPlot.Plot.Legend.IsVisible = true;
-            GanttPlot.Plot.Legend.FontName = ScottPlot.Fonts.Detect("Timeout 超时");
 
             GanttPlot.Plot.Axes.AutoScale();
             GanttPlot.Plot.Axes.Margins(left: 0.05, bottom: 0.1);
