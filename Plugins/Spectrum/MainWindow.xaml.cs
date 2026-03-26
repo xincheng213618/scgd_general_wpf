@@ -183,7 +183,7 @@ namespace Spectrum
 
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ViewResultList.SelectedIndex > -1));
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => ViewResultList.SelectAll(), (s, e) => e.CanExecute = true));
-            ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+            ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, CopyVisibleColumns, (s, e) => e.CanExecute = ViewResultList.SelectedIndex > -1));
 
             this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1931; });
 
@@ -601,12 +601,28 @@ namespace Spectrum
                     ViewResultManager.Save(sprectrumModel);
                     if (MainWindowConfig.Instance.EqeEnabled && ViewResultSpectrums.Count > 0)
                     {
+                        // When SMU is connected, read V/I from it; otherwise use manual values
+                        float voltage = MainWindowConfig.Instance.EqeVoltage;
+                        float currentMA = MainWindowConfig.Instance.EqeCurrentMA;
+                        if (Manager.SmuController.IsOpen)
+                        {
+                            Manager.SmuController.ApplySettings();
+                            if (Manager.SmuController.MeasureData())
+                            {
+                                var (smuV, smuI) = Manager.SmuController.GetVI();
+                                voltage = smuV;
+                                currentMA = smuI;
+                                MainWindowConfig.Instance.EqeVoltage = voltage;
+                                MainWindowConfig.Instance.EqeCurrentMA = currentMA;
+                            }
+                        }
+
                         var latest = ViewResultManager.Config.OrderByType == SqlSugar.OrderByType.Desc
                             ? ViewResultSpectrums.FirstOrDefault()
                             : ViewResultSpectrums.LastOrDefault();
                         if (latest != null)
                         {
-                            latest.CalculateEqeParams(MainWindowConfig.Instance.EqeVoltage, MainWindowConfig.Instance.EqeCurrentMA);
+                            latest.CalculateEqeParams(voltage, currentMA);
                             ViewResultManager.UpdateEqeFields(latest, isRecalculated: false);
                         }
                     }
@@ -1000,6 +1016,90 @@ namespace Spectrum
                 var selectedItems = ViewResultList.SelectedItems.Cast<ViewResultSpectrum>().ToList();
                 ViewResultList.SelectedIndex = -1;
                 ViewResultManager.DeleteSelected(selectedItems);
+            }
+        }
+
+        /// <summary>
+        /// Column-aware copy: extracts text from visible GridView columns for each selected item.
+        /// Copies header + data rows (tab-separated) to clipboard.
+        /// </summary>
+        private void CopyVisibleColumns(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (ViewResultList.View is not GridView gridView) return;
+            var selectedItems = ViewResultList.SelectedItems.Cast<ViewResultSpectrum>().ToList();
+            if (selectedItems.Count == 0) return;
+
+            // Collect visible columns and their binding paths
+            var visibleColumns = new List<(string Header, string BindingPath)>();
+            foreach (var col in gridView.Columns)
+            {
+                if (col.Width == 0) continue; // hidden column
+                string header = col.Header?.ToString() ?? "";
+                string path = "";
+
+                if (col.DisplayMemberBinding is System.Windows.Data.Binding binding)
+                {
+                    path = binding.Path?.Path ?? "";
+                }
+                else if (col.CellTemplate is DataTemplate dt)
+                {
+                    // Extract binding path from the DataTemplate's TextBlock
+                    var textBlock = dt.LoadContent() as System.Windows.Controls.TextBlock;
+                    if (textBlock != null)
+                    {
+                        var tb = System.Windows.Data.BindingOperations.GetBinding(textBlock, System.Windows.Controls.TextBlock.TextProperty);
+                        if (tb != null)
+                            path = tb.Path?.Path ?? "";
+                    }
+                    // Also check for Border (e.g. DominantWavelengthColor) - use the Tag binding
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        var border = dt.LoadContent() as System.Windows.Controls.Border;
+                        if (border != null)
+                        {
+                            var tagBinding = System.Windows.Data.BindingOperations.GetBinding(border, FrameworkElement.TagProperty);
+                            if (tagBinding != null)
+                                path = tagBinding.Path?.Path ?? "";
+                        }
+                    }
+                }
+
+                visibleColumns.Add((header, path));
+            }
+
+            var sb = new StringBuilder();
+            // Header row
+            sb.AppendLine(string.Join("\t", visibleColumns.Select(c => c.Header)));
+
+            // Data rows
+            var type = typeof(ViewResultSpectrum);
+            foreach (var item in selectedItems)
+            {
+                var values = new List<string>();
+                foreach (var (_, bindingPath) in visibleColumns)
+                {
+                    string val = "";
+                    if (!string.IsNullOrEmpty(bindingPath))
+                    {
+                        var prop = type.GetProperty(bindingPath, BindingFlags.Public | BindingFlags.Instance);
+                        if (prop != null)
+                        {
+                            var v = prop.GetValue(item);
+                            val = v?.ToString() ?? "";
+                        }
+                    }
+                    values.Add(val);
+                }
+                sb.AppendLine(string.Join("\t", values));
+            }
+
+            try
+            {
+                Clipboard.SetText(sb.ToString().TrimEnd());
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Failed to copy to clipboard", ex);
             }
         }
 
@@ -1412,8 +1512,52 @@ namespace Spectrum
 
         public void Dispose()
         {
+            Manager.SmuController.Close();
             logOutput?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void SmuConnect_Click(object sender, RoutedEventArgs e)
+        {
+            if (Manager.SmuController.IsOpen)
+            {
+                Manager.SmuController.Close();
+                ButtonSmuConnect.Content = "连接源表";
+                ButtonSmuMeasure.IsEnabled = false;
+                log.Info("SMU disconnected");
+            }
+            else
+            {
+                bool ok = Manager.SmuController.Open();
+                if (ok)
+                {
+                    ButtonSmuConnect.Content = "断开源表";
+                    ButtonSmuMeasure.IsEnabled = true;
+                    log.Info($"SMU connected: {Manager.SmuController.Version}");
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "源表连接失败，请检查设备名称和连接方式", "连接失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+        }
+
+        private void SmuMeasure_Click(object sender, RoutedEventArgs e)
+        {
+            if (!Manager.SmuController.IsOpen) return;
+            Manager.SmuController.ApplySettings();
+            bool ok = Manager.SmuController.MeasureData();
+            if (ok)
+            {
+                var (voltage, currentMA) = Manager.SmuController.GetVI();
+                MainWindowConfig.Instance.EqeVoltage = voltage;
+                MainWindowConfig.Instance.EqeCurrentMA = currentMA;
+                log.Info($"SMU V={voltage}, I={currentMA} mA → synced to EQE config");
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "源表读取失败", "读取失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
 

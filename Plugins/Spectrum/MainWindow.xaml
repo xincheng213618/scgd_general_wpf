@@ -352,6 +352,39 @@
                                         <TextBox x:Name="TextBoxCurrentMA" Style="{StaticResource TextBox.Small}" Width="80" Text="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeCurrentMA, UpdateSourceTrigger=PropertyChanged}" />
                                     </StackPanel>
                                     <Button Content="EQE重新计算" Click="CalculateEqe_Click" Margin="0,4,0,0" HorizontalAlignment="Left" />
+
+                                    <!-- ═══ 源表(SMU)配置 ═══ -->
+                                    <Separator Margin="0,6,0,6"/>
+                                    <TextBlock Text="源表(SMU)" FontWeight="Bold" Margin="0,0,0,4"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="设备名称" Width="80"/>
+                                        <TextBox Style="{StaticResource TextBox.Small}" Width="140" Text="{Binding SmuController.Config.DevName, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <CheckBox Content="网络连接" IsChecked="{Binding SmuController.Config.IsNet}" Margin="0,0,8,0"/>
+                                        <CheckBox Content="电压源" IsChecked="{Binding SmuController.Config.IsSourceV}" Margin="0,0,8,0"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <CheckBox Content="通道A" IsChecked="{Binding SmuController.Config.IsChannelA}" Margin="0,0,8,0"/>
+                                        <CheckBox Content="四线制" IsChecked="{Binding SmuController.Config.Is4Wire}" Margin="0,0,8,0"/>
+                                        <CheckBox Content="前接口" IsChecked="{Binding SmuController.Config.IsFront}" Margin="0,0,8,0"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="测量值" Width="50"/>
+                                        <TextBox Style="{StaticResource TextBox.Small}" Width="60" Text="{Binding SmuController.Config.MeasureVal, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Text="限制值" Width="50" Margin="8,0,0,0"/>
+                                        <TextBox Style="{StaticResource TextBox.Small}" Width="60" Text="{Binding SmuController.Config.LimitVal, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
+                                        <Button x:Name="ButtonSmuConnect" Content="连接源表" Click="SmuConnect_Click" Width="80" Margin="0,0,4,0"/>
+                                        <Button x:Name="ButtonSmuMeasure" Content="读取V/I" Click="SmuMeasure_Click" Width="80" IsEnabled="False"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="V:" Width="20"/>
+                                        <TextBlock x:Name="SmuVDisplay" Text="{Binding SmuController.V, StringFormat='{}{0:F4}'}" Width="80" Foreground="DodgerBlue"/>
+                                        <TextBlock Text="I(mA):" Width="45" Margin="8,0,0,0"/>
+                                        <TextBlock x:Name="SmuIDisplay" Text="{Binding SmuController.I, StringFormat='{}{0:F4}'}" Width="80" Foreground="DodgerBlue"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>

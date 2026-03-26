@@ -140,6 +140,9 @@ namespace Spectrum
         [JsonIgnore]
         public FilterWheelController FilterWheelController { get; set; } = new FilterWheelController();
 
+        [JsonIgnore]
+        public SmuController SmuController { get; set; } = new SmuController();
+
         public static SetEmissionSP100Config SetEmissionSP100Config => SetEmissionSP100Config.Instance;
 
         [JsonIgnore]
