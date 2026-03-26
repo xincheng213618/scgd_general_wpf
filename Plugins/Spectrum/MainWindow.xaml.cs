@@ -609,7 +609,11 @@ namespace Spectrum
                         var latest = ViewResultManager.Config.OrderByType == SqlSugar.OrderByType.Desc
                             ? ViewResultSpectrums.FirstOrDefault()
                             : ViewResultSpectrums.LastOrDefault();
-                        latest?.CalculateEqeParams(MainWindowConfig.Instance.EqeVoltage, MainWindowConfig.Instance.EqeCurrentMA);
+                        if (latest != null)
+                        {
+                            latest.CalculateEqeParams(MainWindowConfig.Instance.EqeVoltage, MainWindowConfig.Instance.EqeCurrentMA);
+                            ViewResultManager.UpdateEqeFields(latest, isRecalculated: false);
+                        }
                     }
                 });
             }
@@ -993,12 +997,14 @@ namespace Spectrum
         private void Delete()
         {
             if (ViewResultList.SelectedItems.Count == ViewResultList.Items.Count)
-                ViewResultSpectrums.Clear();
+            {
+                ViewResultManager.DeleteAllRecords();
+            }
             else
             {
+                var selectedItems = ViewResultList.SelectedItems.Cast<ViewResultSpectrum>().ToList();
                 ViewResultList.SelectedIndex = -1;
-                foreach (var item in ViewResultList.SelectedItems.Cast<ViewResultSpectrum>().ToList())
-                    ViewResultSpectrums.Remove(item);
+                ViewResultManager.DeleteSelected(selectedItems);
             }
         }
 
@@ -1355,6 +1361,7 @@ namespace Spectrum
             ColLuminousEfficacy.Width = width;
             ColVoltage.Width = width;
             ColCurrent.Width = width;
+            ColRecalculated.Width = width;
             // Hide brightness column in 光通量模式
             ColBrightness.Width = eqeEnabled ? 0 : double.NaN;
         }
@@ -1374,6 +1381,8 @@ namespace Spectrum
             foreach (var item in selectedItems)
             {
                 item.CalculateEqeParams(voltage, currentMA);
+                item.IsRecalculated = true;
+                ViewResultManager.UpdateEqeFields(item, isRecalculated: true);
             }
         }
 

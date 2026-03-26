@@ -204,6 +204,18 @@ namespace Spectrum
             fSpect2 = colorParam.fSpect2;
             fInterval = colorParam.fInterval;
             fPL = colorParam.fPL;
+
+            // Restore persisted EQE fields
+            V = sprectrumModel.EqeVoltage ?? 0;
+            I = sprectrumModel.EqeCurrentMA ?? 0;
+            Eqe = sprectrumModel.Eqe;
+            LuminousFlux = sprectrumModel.LuminousFlux;
+            RadiantFlux = sprectrumModel.RadiantFlux;
+            LuminousEfficacy = sprectrumModel.LuminousEfficacy;
+            IsRecalculated = sprectrumModel.IsRecalculated ?? false;
+            if (sprectrumModel.ExcitationPurity.HasValue)
+                ExcitationPurity = sprectrumModel.ExcitationPurity.Value;
+
             Gen();
         }
 
@@ -312,6 +324,12 @@ namespace Spectrum
 
         public float V { get; set; }
         public float I { get; set; }
+
+        /// <summary>
+        /// 是否为重新计算的数据
+        /// </summary>
+        [DisplayName("重新计算")]
+        public bool IsRecalculated { get; set; }
         /// <summary>
         /// IP
         /// </summary>
