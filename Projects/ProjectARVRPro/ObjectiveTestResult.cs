@@ -14,6 +14,7 @@ using ProjectARVRPro.Process.W25;
 using ProjectARVRPro.Process.W255;
 using ProjectARVRPro.Process.W51;
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -103,6 +104,9 @@ namespace ProjectARVRPro
             var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
             foreach (var prop in results.GetType().GetProperties())
             {
+                // Skip DynamicTestResults - handled separately below
+                if (prop.Name == nameof(ObjectiveTestResult.DynamicTestResults))
+                    continue;
 
                 if (!prop.PropertyType.IsValueType && prop.PropertyType != typeof(string))
                 {
@@ -123,6 +127,22 @@ namespace ProjectARVRPro
                         {
                             // 非集合类型，保持原有逻辑
                             CollectRows(childObj, raw, rows);
+                        }
+                    }
+                }
+            }
+
+            // Export dynamic test results from dictionary
+            if (results.DynamicTestResults != null)
+            {
+                foreach (var kvp in results.DynamicTestResults)
+                {
+                    string testScreenName = kvp.Key;
+                    foreach (var testItem in kvp.Value)
+                    {
+                        if (testItem != null)
+                        {
+                            rows.Add(FormatCsvRow(testScreenName, testItem.Name, testItem));
                         }
                     }
                 }
@@ -202,6 +222,12 @@ namespace ProjectARVRPro
 
         [DisplayName("Optical_Center")]
         public OpticCenterTestResult OpticCenterTestResult { get; set; }
+
+        /// <summary>
+        /// 动态测试结果字典，Key为测试画面名称，Value为测试项集合。
+        /// 用于动态添加MTF等测试结果，无需静态声明属性。
+        /// </summary>
+        public Dictionary<string, ObservableCollection<ObjectiveTestItem>> DynamicTestResults { get; set; } = new Dictionary<string, ObservableCollection<ObjectiveTestItem>>();
 
         /// <summary>
         /// 总体测试结果（true表示通过，false表示不通过）
