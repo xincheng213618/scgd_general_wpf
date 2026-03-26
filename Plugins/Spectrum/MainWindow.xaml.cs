@@ -369,18 +369,27 @@ namespace Spectrum
                     log.Info($"CM_Emission_DarkStorage {ret}");
                     if (ret == 1)
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(),"校零成功");
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "校零成功");
+                        });
                     }
                     else
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "校零失败");
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "校零失败");
+                        });
                     }
                     IsRun = false;
                     SetOperationButtonsEnabled(true);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "校零异常" + ex.Message);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "校零异常" + ex.Message);
+                    });
                     IsRun = false;
                     SetOperationButtonsEnabled(true);
                 }
