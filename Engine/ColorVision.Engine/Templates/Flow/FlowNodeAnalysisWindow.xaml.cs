@@ -20,9 +20,10 @@ namespace ColorVision.Engine.Templates.Flow
             InitializeComponent();
         }
 
-        public FlowNodeAnalysisWindow(int batchId) : this()
+        public FlowNodeAnalysisWindow(int batchId)
         {
             _initialBatchId = batchId;
+            InitializeComponent();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -128,7 +129,7 @@ namespace ColorVision.Engine.Templates.Flow
             ScottPlot.Color timeoutColor = ScottPlot.Color.FromHex("#F44336");
             ScottPlot.Color noEndColor = ScottPlot.Color.FromHex("#9E9E9E");
 
-            List<ScottPlot.Plottables.Bar> bars = new List<ScottPlot.Plottables.Bar>();
+            List<ScottPlot.Bar> bars = new List<ScottPlot.Bar>();
             List<ScottPlot.Tick> ticks = new List<ScottPlot.Tick>();
 
             for (int i = 0; i < records.Count; i++)
@@ -141,7 +142,7 @@ namespace ColorVision.Engine.Templates.Flow
                 bool isTimeout = !rec.EndTime.HasValue || rec.ElapsedMs > TimeoutThresholdMs;
                 ScottPlot.Color barColor = isTimeout ? timeoutColor : (!rec.EndTime.HasValue ? noEndColor : palette[i % palette.Length]);
 
-                var bar = new ScottPlot.Plottables.Bar
+                var bar = new ScottPlot.Bar
                 {
                     Position = yPos,
                     ValueBase = startOffset,
@@ -194,7 +195,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             ScottPlot.Color timeoutColor = ScottPlot.Color.FromHex("#F44336");
 
-            List<ScottPlot.Plottables.Bar> bars = new List<ScottPlot.Plottables.Bar>();
+            List<ScottPlot.Bar> bars = new List<ScottPlot.Bar>();
             List<ScottPlot.Tick> ticks = new List<ScottPlot.Tick>();
 
             int nodeIndex = 0;
@@ -217,7 +218,7 @@ namespace ColorVision.Engine.Templates.Flow
                     bool isTimeout = !batchRecord.EndTime.HasValue || batchRecord.ElapsedMs > TimeoutThresholdMs;
                     ScottPlot.Color barColor = isTimeout ? timeoutColor : batchColors[bIdx % batchColors.Length];
 
-                    var bar = new ScottPlot.Plottables.Bar
+                    var bar = new ScottPlot.Bar
                     {
                         Position = yPos,
                         ValueBase = 0,

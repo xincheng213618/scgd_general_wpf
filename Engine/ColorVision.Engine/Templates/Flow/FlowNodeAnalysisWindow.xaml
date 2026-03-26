@@ -32,16 +32,28 @@
             <ListView x:Name="BatchListView" Grid.Column="1" Height="60"
                       SelectionMode="Extended"
                       Background="Transparent" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}">
-                <ListView.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel/>
-                    </ItemsPanelTemplate>
-                </ListView.ItemsPanel>
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding}" Margin="4,2"/>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn>
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Id}" Margin="4,2"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+
+                </ListView.View>
             </ListView>
             <Button Grid.Column="2" Content="加载" Click="LoadButton_Click" Margin="5,0,0,0" Width="60" Height="30"/>
             <Button Grid.Column="3" Content="对比" Click="CompareButton_Click" Margin="5,0,0,0" Width="60" Height="30"/>
