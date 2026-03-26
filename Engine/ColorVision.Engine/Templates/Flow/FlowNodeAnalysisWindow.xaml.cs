@@ -2,7 +2,9 @@ using ScottPlot;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -62,6 +64,47 @@ namespace ColorVision.Engine.Templates.Flow
                 return;
             }
             LoadBatchRecords(selectedBatchIds);
+        }
+
+        private void ExportButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (NodeRecords.Count == 0)
+            {
+                MessageBox.Show("没有数据可导出，请先加载批次数据", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            using var dialog = new System.Windows.Forms.SaveFileDialog();
+            dialog.Filter = "CSV files (*.csv)|*.csv";
+            dialog.FileName = "节点时间分析_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            dialog.RestoreDirectory = true;
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            var csvBuilder = new StringBuilder();
+            csvBuilder.AppendLine("BatchId,节点名称,节点类型,开始时间,结束时间,耗时(ms),SN");
+
+            foreach (var record in NodeRecords)
+            {
+                csvBuilder.Append(record.BatchId).Append(',');
+                csvBuilder.Append(CsvEscape(record.NodeName)).Append(',');
+                csvBuilder.Append(CsvEscape(record.NodeType)).Append(',');
+                csvBuilder.Append(record.StartTime.ToString("yyyy/MM/dd HH:mm:ss.fff")).Append(',');
+                csvBuilder.Append(record.EndTime?.ToString("yyyy/MM/dd HH:mm:ss.fff") ?? string.Empty).Append(',');
+                csvBuilder.Append(record.ElapsedMs).Append(',');
+                csvBuilder.Append(CsvEscape(record.SerialNumber));
+                csvBuilder.AppendLine();
+            }
+
+            File.WriteAllText(dialog.FileName, csvBuilder.ToString(), new UTF8Encoding(true));
+            MessageBox.Show("导出成功", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private static string CsvEscape(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return string.Empty;
+            if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+                return "\"" + value.Replace("\"", "\"\"") + "\"";
+            return value;
         }
 
         private void LoadBatchRecords(List<int> batchIds)
