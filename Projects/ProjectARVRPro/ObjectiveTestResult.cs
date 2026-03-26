@@ -225,7 +225,7 @@ namespace ProjectARVRPro
 
         /// <summary>
         /// 动态测试结果字典，Key为测试画面名称，Value为测试项集合。
-        /// 用于动态添加MTF等测试结果，无需静态声明属性。
+        /// 用于动态添加MTF等测试结果，无需静态声明属性，与现有静态属性导出兼容。
         /// </summary>
         public Dictionary<string, ObservableCollection<ObjectiveTestItem>> DynamicTestResults { get; set; } = new Dictionary<string, ObservableCollection<ObjectiveTestItem>>();
 

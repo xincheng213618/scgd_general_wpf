@@ -46,7 +46,7 @@ namespace ProjectARVRPro.Process.MTF
                                     LowLimit = Config.UnifiedRecipe.Min,
                                     UpLimit = Config.UnifiedRecipe.Max,
                                 };
-                                hItem.TestValue = hItem.Value.ToString();
+                                hItem.TestValue = hItem.Value.ToString(Config.ShowConfig);
                                 ctx.Result.Result &= hItem.TestResult;
                                 testResult.Items.Add(hItem);
 
@@ -59,7 +59,7 @@ namespace ProjectARVRPro.Process.MTF
                                     LowLimit = Config.UnifiedRecipe.Min,
                                     UpLimit = Config.UnifiedRecipe.Max,
                                 };
-                                vItem.TestValue = vItem.Value.ToString();
+                                vItem.TestValue = vItem.Value.ToString(Config.ShowConfig);
                                 ctx.Result.Result &= vItem.TestResult;
                                 testResult.Items.Add(vItem);
                             }
@@ -71,13 +71,14 @@ namespace ProjectARVRPro.Process.MTF
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
 
                 // Add to ObjectiveTestResult via dynamic dictionary
-                if (!ctx.ObjectiveTestResult.DynamicTestResults.ContainsKey(Config.Name))
+                if (!ctx.ObjectiveTestResult.DynamicTestResults.TryGetValue(Config.Name, out var dynamicItems))
                 {
-                    ctx.ObjectiveTestResult.DynamicTestResults[Config.Name] = new ObservableCollection<ObjectiveTestItem>();
+                    dynamicItems = new ObservableCollection<ObjectiveTestItem>();
+                    ctx.ObjectiveTestResult.DynamicTestResults[Config.Name] = dynamicItems;
                 }
                 foreach (var item in testResult.Items)
                 {
-                    ctx.ObjectiveTestResult.DynamicTestResults[Config.Name].Add(item);
+                    dynamicItems.Add(item);
                 }
 
                 return true;
