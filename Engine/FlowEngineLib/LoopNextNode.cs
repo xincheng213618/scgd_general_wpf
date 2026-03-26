@@ -29,7 +29,7 @@ public class LoopNextNode : CVCommonNode
 		Invalidate();
 	}
 
-	protected override string OnGetDrawTitle()
+	public override string OnGetDrawTitle()
 	{
 		return $"{base.Title}\r\n{base.NodeName}";
 	}

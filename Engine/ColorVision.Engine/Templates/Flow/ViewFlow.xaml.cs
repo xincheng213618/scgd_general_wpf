@@ -439,6 +439,20 @@ namespace ColorVision.Engine.Services.Flow
             FlowEngineManager.DisplayFlow.StopFlow();
 
         }
+
+        private void Button_Click_NodeAnalysis(object sender, RoutedEventArgs e)
+        {
+            if (FlowEngineManager.Batch != null)
+            {
+                var window = new FlowNodeAnalysisWindow(FlowEngineManager.Batch) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                window.Show();
+            }
+            else
+            {
+                var window = new FlowNodeAnalysisWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                window.Show();
+            }
+        }
     }
 
 

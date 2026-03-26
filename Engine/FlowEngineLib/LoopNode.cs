@@ -78,7 +78,7 @@ public class LoopNode : CVCommonNode
 		base.TitleHeight += 10;
 	}
 
-	protected override string OnGetDrawTitle()
+    public override string OnGetDrawTitle()
 	{
 		return $"{base.Title}\r\n{base.NodeName}";
 	}

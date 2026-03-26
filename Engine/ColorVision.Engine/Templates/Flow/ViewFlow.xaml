@@ -96,6 +96,9 @@
                             <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1" Margin="0,0,5,0"/>
                             <Button Content="{x:Static properties:Resources.PreprocessManager}" Click="Button_Click_PreProcess"/>
                         </StackPanel>
+                        <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                            <Button Content="节点时间分析" Click="Button_Click_NodeAnalysis"/>
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
                 <ListView x:Name="NodeListView" Grid.Column="2" Height="110" Padding="0" BorderThickness="0" Background="Transparent"  SelectionChanged="NodeListView_SelectionChanged" ItemsSource="{Binding FlowEngineManager.CVBaseServerNodes}">
