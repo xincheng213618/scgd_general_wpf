@@ -769,6 +769,27 @@ namespace Spectrum
             button3.IsEnabled = false;
             button5.IsEnabled = false;
             ButtonAutoInt.IsEnabled = false;
+
+            if (!Manager.ShutterController.IsConnected)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "未配备shutter，无法自动校零", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    button6.Visibility = Visibility.Visible;
+                    button7.Visibility = Visibility.Collapsed;
+                    ContinuousProgressBar.Value = 100;
+                    TimeEstimationPanel.Visibility = Visibility.Collapsed;
+                    Manager.LoopMeasureNum = 0;
+                    errornum = 0;
+                    // Re-enable operation buttons
+                    button3.IsEnabled = true;
+                    button5.IsEnabled = true;
+                    button6.IsEnabled = true;
+                    ButtonAutoInt.IsEnabled = true;
+                });
+                IsRun = false;
+                return;
+            }
             Task.Run(()=> LoopMeasure());
         }
         public async void LoopMeasure()

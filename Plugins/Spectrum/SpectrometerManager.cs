@@ -519,48 +519,55 @@ namespace Spectrum
             MessageBox1.Show(Application.Current.GetActiveWindow(), display, "Sprectrum");
         }
 
+
+        public class SpectrometerSnResult
+        {
+            [JsonProperty("number")]
+            public int Number { get; set; }
+
+            [JsonProperty("ID")]
+            public List<string> IDs { get; set; }
+        }
         /// <summary>
         /// 将CM_Emission_GetAllSN返回的JSON格式化为用户友好的显示文本
         /// </summary>
         internal static string FormatSerialNumberResult(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw))
-                return "未检测到设备";
+                return "未检测到设备 (返回为空)";
 
             try
             {
-                var token = Newtonsoft.Json.Linq.JToken.Parse(raw);
-                var snList = new List<string>();
+                // 使用强类型反序列化（内部基��反射），直接将 JSON 映射到对象
+                var result = JsonConvert.DeserializeObject<SpectrometerSnResult>(raw);
 
-                if (token is Newtonsoft.Json.Linq.JArray arr)
+                // 如果解析出来的对象为空，或者包含的ID列表为空
+                if (result == null || result.IDs == null || result.IDs.Count == 0)
                 {
-                    foreach (var item in arr)
-                        snList.Add(item.ToString());
-                }
-                else if (token is Newtonsoft.Json.Linq.JObject obj)
-                {
-                    foreach (var prop in obj.Properties())
-                        snList.Add(prop.Value.ToString());
-                }
-                else
-                {
-                    snList.Add(token.ToString());
-                }
-
-                if (snList.Count == 0)
                     return "未检测到设备";
+                }
 
-                if (snList.Count == 1)
-                    return $"设备序列号: {snList[0]}";
+                // 只有1台设备
+                if (result.IDs.Count == 1)
+                {
+                    return $"设备序列号: {result.IDs[0]}";
+                }
 
-                return $"检测到 {snList.Count} 台设备:\n" + string.Join("\n", snList.Select((sn, idx) => $"  {idx + 1}. {sn}"));
+                // 多台设备
+                var formattedList = result.IDs.Select((sn, idx) => $"  {idx + 1}. {sn}");
+                return $"检测到 {result.Number} 台设备:\n" + string.Join("\n", formattedList);
             }
-            catch
+            catch (JsonException)
             {
-                // JSON解析失败，直接显示原始内容
-                return raw;
+                // 如果 C++ 那边发生了异常或者返回了非标准 JSON（比如报错信息），直接显示原始内容
+                return $"解析失败，原始内容: {raw}";
+            }
+            catch (Exception ex)
+            {
+                return $"发生未知错误: {ex.Message}\n原始内容: {raw}";
             }
         }
+
 
         public void SetMaguideOutputFile()
         {

@@ -128,6 +128,7 @@ namespace Spectrum
         {
             return new SqlSugarClient(new ConnectionConfig
             {
+                
                 ConnectionString = $"Data Source={SqliteDbPath}",
                 DbType = DbType.Sqlite,
                 IsAutoCloseConnection = true
@@ -224,6 +225,12 @@ namespace Spectrum
         /// </summary>
         public void ResetDatabase()
         {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+
+            // 为了保险起见，强制回收一下垃圾
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             if (File.Exists(SqliteDbPath))
                 File.Delete(SqliteDbPath);
             using (var db = CreateDb())
