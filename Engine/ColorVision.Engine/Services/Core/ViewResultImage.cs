@@ -207,8 +207,6 @@ namespace ColorVision.Engine.Services
 
         private string _resultDesc;
 
-
-
         public string ResultDesc { get => _resultDesc; set { _resultDesc = value; OnPropertyChanged(); } }
     }
 

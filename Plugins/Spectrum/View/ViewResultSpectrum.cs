@@ -204,11 +204,30 @@ namespace Spectrum
             fSpect2 = colorParam.fSpect2;
             fInterval = colorParam.fInterval;
             fPL = colorParam.fPL;
+
+            // Restore persisted EQE fields
+            V = sprectrumModel.EqeVoltage ?? 0;
+            I = sprectrumModel.EqeCurrentMA ?? 0;
+            Eqe = sprectrumModel.Eqe;
+            LuminousFlux = sprectrumModel.LuminousFlux;
+            RadiantFlux = sprectrumModel.RadiantFlux;
+            LuminousEfficacy = sprectrumModel.LuminousEfficacy;
+            IsRecalculated = sprectrumModel.IsRecalculated ?? false;
+            if (sprectrumModel.ExcitationPurity.HasValue)
+                ExcitationPurity = sprectrumModel.ExcitationPurity.Value;
+
             Gen();
         }
 
         // EQE properties
         public double? Eqe { get; set; }
+
+        /// <summary>
+        /// EQE value ×100 for percentage display
+        /// </summary>
+        [JsonIgnore]
+        [Browsable(false)]
+        public double EqePercent => (Eqe ?? 0) * 100;
 
         [DisplayName("光通量(lm)")]
         public float? LuminousFlux { get; set; }
@@ -225,6 +244,7 @@ namespace Spectrum
             {
                 Eqe = 0;
                 OnPropertyChanged(nameof(Eqe));
+                OnPropertyChanged(nameof(EqePercent));
                 return;
             }
 
@@ -253,6 +273,7 @@ namespace Spectrum
 
             Eqe = (total_photons_per_sec / total_electrons_per_sec);
             OnPropertyChanged(nameof(Eqe));
+            OnPropertyChanged(nameof(EqePercent));
         }
 
         public void CalculateEqeParams(float voltage, float currentMA)
@@ -293,13 +314,23 @@ namespace Spectrum
             }
 
             OnPropertyChanged(nameof(Eqe));
+            OnPropertyChanged(nameof(EqePercent));
             OnPropertyChanged(nameof(LuminousFlux));
             OnPropertyChanged(nameof(RadiantFlux));
             OnPropertyChanged(nameof(LuminousEfficacy));
+            OnPropertyChanged(nameof(V));
+            OnPropertyChanged(nameof(I));
         }
 
         public float V { get; set; }
         public float I { get; set; }
+
+        /// <summary>
+        /// 是否为重新计算的数据
+        /// </summary>
+        [DisplayName("重新计算")]
+        public bool IsRecalculated { get => _IsRecalculated; set { _IsRecalculated = value; OnPropertyChanged(); } }
+        private bool _IsRecalculated;
         /// <summary>
         /// IP
         /// </summary>
@@ -455,6 +486,20 @@ namespace Spectrum
         /// </summary>
         [DisplayName("兴奋纯度")]
         public double ExcitationPurity { get; set; }
+
+        /// <summary>
+        /// 兴奋纯度 ×100 for percentage display
+        /// </summary>
+        [JsonIgnore]
+        [Browsable(false)]
+        public double ExcitationPurityPercent => ExcitationPurity * 100;
+
+        /// <summary>
+        /// 色纯度 ×100 for percentage display
+        /// </summary>
+        [JsonIgnore]
+        [Browsable(false)]
+        public double ColorPurityPercent => fPur * 100;
 
         /// <summary>
         /// Computes excitation purity from CIE 1931 chromaticity coordinates.

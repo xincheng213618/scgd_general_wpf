@@ -6,11 +6,13 @@ namespace Spectrum
 {
     /// <summary>
     /// CalibrationGroupWindow.xaml — manages calibration groups for a specific spectrometer SN.
+    /// Changes are staged and only saved when user clicks "保存".
     /// </summary>
     public partial class CalibrationGroupWindow : Window
     {
         private SpectrometerManager Manager { get; }
         private bool _suppressSelectionChanged;
+        private bool _hasUnsavedChanges;
 
         public CalibrationGroupWindow(SpectrometerManager manager)
         {
@@ -18,6 +20,19 @@ namespace Spectrum
             InitializeComponent();
             RefreshGroupList();
             UpdateConfigPathDisplay();
+            _hasUnsavedChanges = false;
+        }
+
+        private void MarkUnsaved()
+        {
+            _hasUnsavedChanges = true;
+            Title = "标定文件分组管理 *";
+        }
+
+        private void MarkSaved()
+        {
+            _hasUnsavedChanges = false;
+            Title = "标定文件分组管理";
         }
 
         private void RefreshGroupList()
@@ -95,6 +110,7 @@ namespace Spectrum
             // Select the newly added group (last one)
             if (ComboBoxGroups.Items.Count > 0)
                 ComboBoxGroups.SelectedIndex = ComboBoxGroups.Items.Count - 1;
+            MarkUnsaved();
         }
 
         private void BtnRemoveGroup_Click(object sender, RoutedEventArgs e)
@@ -106,6 +122,7 @@ namespace Spectrum
             }
             Manager.RemoveCalibrationGroupCommand.Execute(null);
             RefreshGroupList();
+            MarkUnsaved();
         }
 
         private void TextBoxGroupName_TextChanged(object sender, TextChangedEventArgs e)
@@ -121,9 +138,8 @@ namespace Spectrum
                     return;
 
                 group.GroupName = newName;
-                // Use the public setter which triggers OnPropertyChanged internally
                 Manager.ActiveCalibrationGroupName = newName;
-                Manager.SaveCalibrationConfig();
+                MarkUnsaved();
 
                 // Refresh ComboBox display
                 _suppressSelectionChanged = true;
@@ -144,7 +160,7 @@ namespace Spectrum
                 group.WavelengthFile = dialog.FileName;
                 Manager.WavelengthFile = dialog.FileName;
                 TextBoxWavelengthFile.Text = dialog.FileName;
-                Manager.SaveCalibrationConfig();
+                MarkUnsaved();
                 ValidateWavelength(dialog.FileName);
             }
         }
@@ -161,7 +177,7 @@ namespace Spectrum
                 group.MaguideFile = dialog.FileName;
                 Manager.MaguideFile = dialog.FileName;
                 TextBoxMaguideFile.Text = dialog.FileName;
-                Manager.SaveCalibrationConfig();
+                MarkUnsaved();
                 ValidateMaguide(dialog.FileName);
             }
         }
@@ -215,12 +231,38 @@ namespace Spectrum
             if (ComboBoxFilterWheelPosition.SelectedItem is ComboBoxItem item && item.Tag is string tagStr && int.TryParse(tagStr, out int pos))
             {
                 group.FilterWheelPosition = pos;
-                Manager.SaveCalibrationConfig();
+                MarkUnsaved();
             }
+        }
+
+        private void BtnSave_Click(object sender, RoutedEventArgs e)
+        {
+            Manager.SaveCalibrationConfig();
+            MarkSaved();
+            MessageBox.Show("标定配置已保存", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)
         {
+            if (_hasUnsavedChanges)
+            {
+                var result = MessageBox.Show("有未保存的更改，是否保存？", "提示", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                if (result == MessageBoxResult.Yes)
+                {
+                    Manager.SaveCalibrationConfig();
+                }
+                else if (result == MessageBoxResult.Cancel)
+                {
+                    return;
+                }
+                else
+                {
+                    // Discard changes: reload config from disk
+                    Manager.CalibrationGroupConfig.Reload(Manager.SerialNumber);
+                    RefreshGroupList();
+                    UpdateConfigPathDisplay();
+                }
+            }
             Close();
         }
     }

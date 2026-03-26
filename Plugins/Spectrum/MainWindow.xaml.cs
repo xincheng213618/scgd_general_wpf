@@ -18,6 +18,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -92,6 +93,9 @@ namespace Spectrum
 
             ViewResultManager.ListView = ViewResultList;
 
+            // Wire up adaptive auto dark execution for gear settings dialog
+            Manager.AutodarkParam.ExecuteAdaptiveAutoDark = () => Button4_Click_1(null, null);
+
             MenuManager.GetInstance().LoadMenuForWindow("Spectrum", menu);
 
             if (MainWindowConfig.Instance.LogControlVisibility)
@@ -102,7 +106,7 @@ namespace Spectrum
 
             image.Source = src1931?.ToBitmapSource();
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues(typeof(SpectrometerType)).Cast<SpectrometerType>()
-                                                   select new KeyValuePair<SpectrometerType, string>(e1, e1.ToString());
+                                                   select new KeyValuePair<SpectrometerType, string>(e1, e1.ToDescription());
 
             cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
 
@@ -120,8 +124,6 @@ namespace Spectrum
             List<int> BaudRates = new List<int>() { 9600,115200, 38400, 300, 600, 1200, 2400, 4800, 14400, 19200, 57600 };
             ComboBoxPort.ItemsSource = portNames;
             ComboBoxSerial.ItemsSource = BaudRates;
-            ComboBoxShutterPort.ItemsSource = portNames;
-            ComboBoxShutterSerial.ItemsSource = BaudRates;
 
             string title = "相对光谱曲线";
             wpfplot1.Plot.XLabel("波长[nm]");
@@ -181,7 +183,7 @@ namespace Spectrum
 
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ViewResultList.SelectedIndex > -1));
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => ViewResultList.SelectAll(), (s, e) => e.CanExecute = true));
-            ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+            ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, CopyVisibleColumns, (s, e) => e.CanExecute = ViewResultList.SelectedIndex > -1));
 
             this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1931; });
 
@@ -261,7 +263,6 @@ namespace Spectrum
                     State2.Text = Spectrum.Properties.Resources.连接成功;
                     State4.Text = "SP-100";
                     button3.IsEnabled = true;
-                    button4.IsEnabled = true;
                     button5.IsEnabled = true;
                     button6.IsEnabled = true;
                 }
@@ -492,17 +493,20 @@ namespace Spectrum
 
             if (Manager.EnableAutodark)
             {
-                if (Manager.ShutterController.IsConnected)
+                if (!Manager.ShutterController.IsConnected)
                 {
-                    log.Info("OpenShutter");
-                    await Manager.ShutterController.OpenShutter();
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "未配备shutter，无法自动校零", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    });
+                    IsRun = false;
+                    return;
                 }
+                log.Info("OpenShutter");
+                await Manager.ShutterController.OpenShutter();
                 int ret = Spectrometer.CM_Emission_DarkStorage(SpectrometerHandle, Manager.IntTime, Manager.Average, 0, Manager.fDarkData);
-                if (Manager.ShutterController.IsConnected)
-                {
-                    log.Info("CloseShutter");
-                    await Manager.ShutterController.CloseShutter();
-                }
+                log.Info("CloseShutter");
+                await Manager.ShutterController.CloseShutter();
                 log.Info($"CM_Emission_DarkStorage {ret}");
             }
 
@@ -600,10 +604,30 @@ namespace Spectrum
                     ViewResultManager.Save(sprectrumModel);
                     if (MainWindowConfig.Instance.EqeEnabled && ViewResultSpectrums.Count > 0)
                     {
+                        // When SMU is connected, read V/I from it; otherwise use manual values
+                        float voltage = MainWindowConfig.Instance.EqeVoltage;
+                        float currentMA = MainWindowConfig.Instance.EqeCurrentMA;
+                        if (Manager.SmuController.IsOpen)
+                        {
+                            Manager.SmuController.ApplySettings();
+                            if (Manager.SmuController.MeasureData())
+                            {
+                                var (smuV, smuI) = Manager.SmuController.GetVI();
+                                voltage = smuV;
+                                currentMA = smuI;
+                                MainWindowConfig.Instance.EqeVoltage = voltage;
+                                MainWindowConfig.Instance.EqeCurrentMA = currentMA;
+                            }
+                        }
+
                         var latest = ViewResultManager.Config.OrderByType == SqlSugar.OrderByType.Desc
                             ? ViewResultSpectrums.FirstOrDefault()
                             : ViewResultSpectrums.LastOrDefault();
-                        latest?.CalculateEqeParams(MainWindowConfig.Instance.EqeVoltage, MainWindowConfig.Instance.EqeCurrentMA);
+                        if (latest != null)
+                        {
+                            latest.CalculateEqeParams(voltage, currentMA);
+                            ViewResultManager.UpdateEqeFields(latest, isRecalculated: false);
+                        }
                     }
                 });
             }
@@ -689,7 +713,6 @@ namespace Spectrum
             Application.Current.Dispatcher.Invoke(() =>
             {
                 button3.IsEnabled = enabled;
-                button4.IsEnabled = enabled;
                 button5.IsEnabled = enabled;
                 button6.IsEnabled = enabled;
                 ButtonAutoInt.IsEnabled = enabled;
@@ -744,7 +767,6 @@ namespace Spectrum
             RemainingTimeText.Text = "--:--";
             // Disable other operation buttons during continuous testing
             button3.IsEnabled = false;
-            button4.IsEnabled = false;
             button5.IsEnabled = false;
             ButtonAutoInt.IsEnabled = false;
             Task.Run(()=> LoopMeasure());
@@ -771,7 +793,6 @@ namespace Spectrum
                             errornum = 0;
                             // Re-enable operation buttons
                             button3.IsEnabled = true;
-                            button4.IsEnabled = true;
                             button5.IsEnabled = true;
                             button6.IsEnabled = true;
                             ButtonAutoInt.IsEnabled = true;
@@ -822,7 +843,6 @@ namespace Spectrum
             Manager.LoopMeasureNum = 0;
             // Re-enable operation buttons
             button3.IsEnabled = true;
-            button4.IsEnabled = true;
             button5.IsEnabled = true;
             button6.IsEnabled = true;
             ButtonAutoInt.IsEnabled = true;
@@ -877,11 +897,23 @@ namespace Spectrum
                 properties.Add("相关色温(K)");
                 properties.Add("主波长Ld(nm)");
                 properties.Add("色纯度(%)");
-                properties.Add("峰值波长Lp(nm");
+                properties.Add("峰值波长Lp(nm)");
                 properties.Add("显色性指数Ra");
                 properties.Add("半波宽");
-                properties.Add("兴奋纯度");
+                properties.Add("兴奋纯度(%)");
                 properties.Add("主波长颜色");
+
+                bool isEqeMode = MainWindowConfig.Instance.EqeEnabled;
+                if (isEqeMode)
+                {
+                    properties.Add("U(V)");
+                    properties.Add("I(mA)");
+                    properties.Add("EQE(%)");
+                    properties.Add("光通量(lm)");
+                    properties.Add("辐射通量(W)");
+                    properties.Add("光效(lm/W)");
+                }
+
                 properties.Add("CIE2015X");
                 properties.Add("CIE2015Y");
                 properties.Add("CIE2015Z");
@@ -934,12 +966,23 @@ namespace Spectrum
                         csvBuilder.Append(result.fv + ",");
                         csvBuilder.Append(result.fCCT + ",");
                         csvBuilder.Append(result.fLd + ",");
-                        csvBuilder.Append(result.fPur + ",");
+                        csvBuilder.Append(result.ColorPurityPercent + ",");
                         csvBuilder.Append(result.fLp + ",");
                         csvBuilder.Append(result.fRa + ",");
                         csvBuilder.Append(result.fHW + ",");
-                        csvBuilder.Append(result.ExcitationPurity + ",");
+                        csvBuilder.Append(result.ExcitationPurityPercent + ",");
                         csvBuilder.Append(result.DominantWavelengthHex + ",");
+
+                        if (isEqeMode)
+                        {
+                            csvBuilder.Append(result.V + ",");
+                            csvBuilder.Append(result.I + ",");
+                            csvBuilder.Append(result.EqePercent + ",");
+                            csvBuilder.Append(result.LuminousFlux + ",");
+                            csvBuilder.Append(result.RadiantFlux + ",");
+                            csvBuilder.Append(result.LuminousEfficacy + ",");
+                        }
+
                         csvBuilder.Append(result.fCIEx2015 + ",");
                         csvBuilder.Append(result.fCIEy2015 + ",");
                         csvBuilder.Append(result.fCIEz2015 + ",");
@@ -971,12 +1014,98 @@ namespace Spectrum
         private void Delete()
         {
             if (ViewResultList.SelectedItems.Count == ViewResultList.Items.Count)
-                ViewResultSpectrums.Clear();
+            {
+                ViewResultManager.DeleteAllRecords();
+            }
             else
             {
+                var selectedItems = ViewResultList.SelectedItems.Cast<ViewResultSpectrum>().ToList();
                 ViewResultList.SelectedIndex = -1;
-                foreach (var item in ViewResultList.SelectedItems.Cast<ViewResultSpectrum>().ToList())
-                    ViewResultSpectrums.Remove(item);
+                ViewResultManager.DeleteSelected(selectedItems);
+            }
+        }
+
+        /// <summary>
+        /// Column-aware copy: extracts text from visible GridView columns for each selected item.
+        /// Copies header + data rows (tab-separated) to clipboard.
+        /// </summary>
+        private void CopyVisibleColumns(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (ViewResultList.View is not GridView gridView) return;
+            var selectedItems = ViewResultList.SelectedItems.Cast<ViewResultSpectrum>().ToList();
+            if (selectedItems.Count == 0) return;
+
+            // Collect visible columns and their binding paths
+            var visibleColumns = new List<(string Header, string BindingPath)>();
+            foreach (var col in gridView.Columns)
+            {
+                if (col.Width == 0) continue; // hidden column
+                string header = col.Header?.ToString() ?? "";
+                string path = "";
+
+                if (col.DisplayMemberBinding is System.Windows.Data.Binding binding)
+                {
+                    path = binding.Path?.Path ?? "";
+                }
+                else if (col.CellTemplate is DataTemplate dt)
+                {
+                    // Extract binding path from the DataTemplate's TextBlock
+                    var textBlock = dt.LoadContent() as System.Windows.Controls.TextBlock;
+                    if (textBlock != null)
+                    {
+                        var tb = System.Windows.Data.BindingOperations.GetBinding(textBlock, System.Windows.Controls.TextBlock.TextProperty);
+                        if (tb != null)
+                            path = tb.Path?.Path ?? "";
+                    }
+                    // Also check for Border (e.g. DominantWavelengthColor) - use the Tag binding
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        var border = dt.LoadContent() as System.Windows.Controls.Border;
+                        if (border != null)
+                        {
+                            var tagBinding = System.Windows.Data.BindingOperations.GetBinding(border, FrameworkElement.TagProperty);
+                            if (tagBinding != null)
+                                path = tagBinding.Path?.Path ?? "";
+                        }
+                    }
+                }
+
+                visibleColumns.Add((header, path));
+            }
+
+            var sb = new StringBuilder();
+            // Header row
+            sb.AppendLine(string.Join("\t", visibleColumns.Select(c => c.Header)));
+
+            // Data rows
+            var type = typeof(ViewResultSpectrum);
+            foreach (var item in selectedItems)
+            {
+                var values = new List<string>();
+                foreach (var (_, bindingPath) in visibleColumns)
+                {
+                    string val = "";
+                    if (!string.IsNullOrEmpty(bindingPath))
+                    {
+                        var prop = type.GetProperty(bindingPath, BindingFlags.Public | BindingFlags.Instance);
+                        if (prop != null)
+                        {
+                            var v = prop.GetValue(item);
+                            val = v?.ToString() ?? "";
+                        }
+                    }
+                    values.Add(val);
+                }
+                sb.AppendLine(string.Join("\t", values));
+            }
+
+            try
+            {
+                Clipboard.SetText(sb.ToString().TrimEnd());
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Failed to copy to clipboard", ex);
             }
         }
 
@@ -1333,6 +1462,9 @@ namespace Spectrum
             ColLuminousEfficacy.Width = width;
             ColVoltage.Width = width;
             ColCurrent.Width = width;
+            ColRecalculated.Width = width;
+            // Hide brightness column in 光通量模式
+            ColBrightness.Width = eqeEnabled ? 0 : double.NaN;
         }
 
         private void CalculateEqe_Click(object sender, RoutedEventArgs e)
@@ -1340,9 +1472,18 @@ namespace Spectrum
             float voltage = MainWindowConfig.Instance.EqeVoltage;
             float currentMA = MainWindowConfig.Instance.EqeCurrentMA;
 
-            foreach (var item in ViewResultSpectrums)
+            var selectedItems = ViewResultList.SelectedItems.Cast<ViewResultSpectrum>().ToList();
+            if (selectedItems.Count == 0)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "请先选择要重新计算的数据", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            foreach (var item in selectedItems)
             {
                 item.CalculateEqeParams(voltage, currentMA);
+                item.IsRecalculated = true;
+                ViewResultManager.UpdateEqeFields(item, isRecalculated: true);
             }
         }
 
@@ -1377,8 +1518,52 @@ namespace Spectrum
 
         public void Dispose()
         {
+            Manager.SmuController.Close();
             logOutput?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        private void SmuConnect_Click(object sender, RoutedEventArgs e)
+        {
+            if (Manager.SmuController.IsOpen)
+            {
+                Manager.SmuController.Close();
+                ButtonSmuConnect.Content = "连接源表";
+                ButtonSmuMeasure.IsEnabled = false;
+                log.Info("SMU disconnected");
+            }
+            else
+            {
+                bool ok = Manager.SmuController.Open();
+                if (ok)
+                {
+                    ButtonSmuConnect.Content = "断开源表";
+                    ButtonSmuMeasure.IsEnabled = true;
+                    log.Info($"SMU connected: {Manager.SmuController.Version}");
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "源表连接失败，请检查设备名称和连接方式", "连接失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+        }
+
+        private void SmuMeasure_Click(object sender, RoutedEventArgs e)
+        {
+            if (!Manager.SmuController.IsOpen) return;
+            Manager.SmuController.ApplySettings();
+            bool ok = Manager.SmuController.MeasureData();
+            if (ok)
+            {
+                var (voltage, currentMA) = Manager.SmuController.GetVI();
+                MainWindowConfig.Instance.EqeVoltage = voltage;
+                MainWindowConfig.Instance.EqeCurrentMA = currentMA;
+                log.Info($"SMU V={voltage}, I={currentMA} mA → synced to EQE config");
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "源表读取失败", "读取失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
 
