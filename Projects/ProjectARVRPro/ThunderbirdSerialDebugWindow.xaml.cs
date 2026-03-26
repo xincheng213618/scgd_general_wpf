@@ -118,7 +118,11 @@ namespace ProjectARVRPro
                 log.Info($"雷鸟调试串口已打开: {portName}, BaudRate={baudRate}, Timeout={timeout}ms");
 
                 // 连接后自动查询当前亮度状态
-                _ = QueryBrightnessAsync();
+                _ = QueryBrightnessAsync().ContinueWith(t =>
+                {
+                    if (t.IsFaulted && t.Exception != null)
+                        log.Error("自动查询亮度失败", t.Exception);
+                }, TaskScheduler.Default);
             }
             catch (Exception ex)
             {
@@ -185,20 +189,19 @@ namespace ProjectARVRPro
                 return null;
             }
 
-            // 同步用户配置的超时
-            _serialHelper.TimeoutMs = GetConfiguredTimeout();
+            int timeout = GetConfiguredTimeout();
 
             AppendLog($"[TX] {command}");
             try
             {
-                string response = await _serialHelper.SendAndReceiveAsync(command);
+                string response = await _serialHelper.SendAndReceiveAsync(command, timeout);
                 AppendLog($"[RX] {response}");
                 return response;
             }
             catch (TimeoutException ex)
             {
                 AppendLog($"[超时] {ex.Message}");
-                UpdateStatus($"⚠ 超时: 发送 \"{command}\" 后 {_serialHelper.TimeoutMs}ms 内未收到响应");
+                UpdateStatus($"⚠ 超时: 发送 \"{command}\" 后 {timeout}ms 内未收到响应");
                 log.Warn(ex.Message);
                 return null;
             }

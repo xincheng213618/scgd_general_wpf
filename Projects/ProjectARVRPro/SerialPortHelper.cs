@@ -163,14 +163,10 @@ namespace ProjectARVRPro
                 if (_serialPort.BytesToRead > 0)
                     sb.Append(_serialPort.ReadExisting());
 
-                if (sb.Length > 0)
-                {
-                    string partial = sb.ToString().Trim();
-                    log.Warn($"[RX 超时] 部分数据: {partial} ({timeout}ms)");
-                    return partial;
-                }
-
-                string msg = $"串口接收超时 ({timeout}ms), 指令: {command}";
+                string partial = sb.Length > 0 ? sb.ToString().Trim() : "";
+                string msg = string.IsNullOrEmpty(partial)
+                    ? $"串口接收超时 ({timeout}ms), 指令: {command}"
+                    : $"串口接收超时 ({timeout}ms), 指令: {command}, 部分数据: {partial}";
                 log.Warn(msg);
                 throw new TimeoutException(msg);
             }
