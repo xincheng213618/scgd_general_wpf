@@ -329,7 +329,8 @@ namespace Spectrum
         /// 是否为重新计算的数据
         /// </summary>
         [DisplayName("重新计算")]
-        public bool IsRecalculated { get; set; }
+        public bool IsRecalculated { get => _IsRecalculated; set { _IsRecalculated = value; OnPropertyChanged(); } }
+        private bool _IsRecalculated;
         /// <summary>
         /// IP
         /// </summary>

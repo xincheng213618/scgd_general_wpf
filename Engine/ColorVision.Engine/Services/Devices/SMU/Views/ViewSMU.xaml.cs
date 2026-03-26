@@ -244,8 +244,6 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             }
         }
 
-        List<PassSxSource> PassSxSources = new();
-
         public void AddViewResultSMU(ViewResultSMU viewResultSMU)
         {
             ViewResults.Add(viewResultSMU);
