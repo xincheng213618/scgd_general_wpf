@@ -22,9 +22,10 @@ namespace ColorVision.Engine.Templates.Flow
             InitializeComponent();
         }
 
-        public FlowNodeAnalysisWindow(MeasureBatchModel batch) : this()
+        public FlowNodeAnalysisWindow(MeasureBatchModel batch)
         {
             _initialBatch = batch;
+            InitializeComponent();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
