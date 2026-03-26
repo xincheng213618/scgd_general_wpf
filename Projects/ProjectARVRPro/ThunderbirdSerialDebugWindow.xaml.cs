@@ -266,7 +266,7 @@ namespace ProjectARVRPro
                     return true;
                 }
             }
-            // 也尝试十进制解析
+            // 也尝试十进制解析（设备可能以十进制返回寄存器值 32~48）
             if (int.TryParse(cleaned, out int decParsed))
             {
                 if (decParsed >= 0x20 && decParsed <= 0x30)
@@ -360,7 +360,8 @@ namespace ProjectARVRPro
         }
 
         /// <summary>
-        /// 滑块拖动设置亮度
+        /// 滑块拖动更新显示（仅更新显示，不自动发送命令）
+        /// 用户可通过 +/- 按钮或"设置亮度"按钮发送
         /// </summary>
         private void BrightnessSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -370,23 +371,18 @@ namespace ProjectARVRPro
             int level = (int)BrightnessSlider.Value;
             SliderValueText.Text = $"档位 {level} (0x{0x20 + level:X2})";
 
-            // 只在用户松开鼠标时才发送（通过 IsMouseCaptured 判断拖拽结束）
-            if (!BrightnessSlider.IsMouseCaptureWithin && _serialPort != null && _serialPort.IsOpen)
-            {
-                SetBrightnessLevel(level);
-            }
+            // 同步下拉框选中项
+            if (level >= 0 && level < BrightnessComboBox.Items.Count)
+                BrightnessComboBox.SelectedIndex = level;
         }
 
         /// <summary>
-        /// 从下拉框指定档位设置亮度
+        /// 从下拉框/滑块指定档位设置亮度
         /// </summary>
         private void SetBrightness_Click(object sender, RoutedEventArgs e)
         {
-            if (BrightnessComboBox.SelectedItem is ComboBoxItem item && item.Tag is int brightnessValue)
-            {
-                int level = brightnessValue - 0x20;
-                SetBrightnessLevel(level);
-            }
+            int level = (int)BrightnessSlider.Value;
+            SetBrightnessLevel(level);
         }
 
         /// <summary>
