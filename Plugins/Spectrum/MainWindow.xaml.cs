@@ -18,6 +18,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -92,6 +93,9 @@ namespace Spectrum
 
             ViewResultManager.ListView = ViewResultList;
 
+            // Wire up adaptive auto dark execution for gear settings dialog
+            Manager.AutodarkParam.ExecuteAdaptiveAutoDark = () => Button4_Click_1(null, null);
+
             MenuManager.GetInstance().LoadMenuForWindow("Spectrum", menu);
 
             if (MainWindowConfig.Instance.LogControlVisibility)
@@ -102,7 +106,7 @@ namespace Spectrum
 
             image.Source = src1931?.ToBitmapSource();
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues(typeof(SpectrometerType)).Cast<SpectrometerType>()
-                                                   select new KeyValuePair<SpectrometerType, string>(e1, e1.ToString());
+                                                   select new KeyValuePair<SpectrometerType, string>(e1, e1 == SpectrometerType.CMvSpectra ? "显示 SP100" : e1 == SpectrometerType.LightModule ? "显示 SP10" : e1.ToString());
 
             cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
 
@@ -120,8 +124,6 @@ namespace Spectrum
             List<int> BaudRates = new List<int>() { 9600,115200, 38400, 300, 600, 1200, 2400, 4800, 14400, 19200, 57600 };
             ComboBoxPort.ItemsSource = portNames;
             ComboBoxSerial.ItemsSource = BaudRates;
-            ComboBoxShutterPort.ItemsSource = portNames;
-            ComboBoxShutterSerial.ItemsSource = BaudRates;
 
             string title = "相对光谱曲线";
             wpfplot1.Plot.XLabel("波长[nm]");
@@ -261,7 +263,6 @@ namespace Spectrum
                     State2.Text = Spectrum.Properties.Resources.连接成功;
                     State4.Text = "SP-100";
                     button3.IsEnabled = true;
-                    button4.IsEnabled = true;
                     button5.IsEnabled = true;
                     button6.IsEnabled = true;
                 }
@@ -492,17 +493,20 @@ namespace Spectrum
 
             if (Manager.EnableAutodark)
             {
-                if (Manager.ShutterController.IsConnected)
+                if (!Manager.ShutterController.IsConnected)
                 {
-                    log.Info("OpenShutter");
-                    await Manager.ShutterController.OpenShutter();
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "未配备shutter，无法自动校零", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    });
+                    IsRun = false;
+                    return;
                 }
+                log.Info("OpenShutter");
+                await Manager.ShutterController.OpenShutter();
                 int ret = Spectrometer.CM_Emission_DarkStorage(SpectrometerHandle, Manager.IntTime, Manager.Average, 0, Manager.fDarkData);
-                if (Manager.ShutterController.IsConnected)
-                {
-                    log.Info("CloseShutter");
-                    await Manager.ShutterController.CloseShutter();
-                }
+                log.Info("CloseShutter");
+                await Manager.ShutterController.CloseShutter();
                 log.Info($"CM_Emission_DarkStorage {ret}");
             }
 
@@ -686,7 +690,6 @@ namespace Spectrum
             Application.Current.Dispatcher.Invoke(() =>
             {
                 button3.IsEnabled = enabled;
-                button4.IsEnabled = enabled;
                 button5.IsEnabled = enabled;
                 button6.IsEnabled = enabled;
                 ButtonAutoInt.IsEnabled = enabled;
@@ -735,7 +738,6 @@ namespace Spectrum
             RemainingTimeText.Text = "--:--";
             // Disable other operation buttons during continuous testing
             button3.IsEnabled = false;
-            button4.IsEnabled = false;
             button5.IsEnabled = false;
             ButtonAutoInt.IsEnabled = false;
             Task.Run(()=> LoopMeasure());
@@ -762,7 +764,6 @@ namespace Spectrum
                             errornum = 0;
                             // Re-enable operation buttons
                             button3.IsEnabled = true;
-                            button4.IsEnabled = true;
                             button5.IsEnabled = true;
                             button6.IsEnabled = true;
                             ButtonAutoInt.IsEnabled = true;
@@ -813,7 +814,6 @@ namespace Spectrum
             Manager.LoopMeasureNum = 0;
             // Re-enable operation buttons
             button3.IsEnabled = true;
-            button4.IsEnabled = true;
             button5.IsEnabled = true;
             button6.IsEnabled = true;
             ButtonAutoInt.IsEnabled = true;
@@ -868,11 +868,23 @@ namespace Spectrum
                 properties.Add("相关色温(K)");
                 properties.Add("主波长Ld(nm)");
                 properties.Add("色纯度(%)");
-                properties.Add("峰值波长Lp(nm");
+                properties.Add("峰值波长Lp(nm)");
                 properties.Add("显色性指数Ra");
                 properties.Add("半波宽");
-                properties.Add("兴奋纯度");
+                properties.Add("兴奋纯度(%)");
                 properties.Add("主波长颜色");
+
+                bool isEqeMode = MainWindowConfig.Instance.EqeEnabled;
+                if (isEqeMode)
+                {
+                    properties.Add("U(V)");
+                    properties.Add("I(mA)");
+                    properties.Add("EQE(%)");
+                    properties.Add("光通量(lm)");
+                    properties.Add("辐射通量(W)");
+                    properties.Add("光效(lm/W)");
+                }
+
                 properties.Add("CIE2015X");
                 properties.Add("CIE2015Y");
                 properties.Add("CIE2015Z");
@@ -925,12 +937,23 @@ namespace Spectrum
                         csvBuilder.Append(result.fv + ",");
                         csvBuilder.Append(result.fCCT + ",");
                         csvBuilder.Append(result.fLd + ",");
-                        csvBuilder.Append(result.fPur + ",");
+                        csvBuilder.Append(result.ColorPurityPercent + ",");
                         csvBuilder.Append(result.fLp + ",");
                         csvBuilder.Append(result.fRa + ",");
                         csvBuilder.Append(result.fHW + ",");
-                        csvBuilder.Append(result.ExcitationPurity + ",");
+                        csvBuilder.Append(result.ExcitationPurityPercent + ",");
                         csvBuilder.Append(result.DominantWavelengthHex + ",");
+
+                        if (isEqeMode)
+                        {
+                            csvBuilder.Append(result.V + ",");
+                            csvBuilder.Append(result.I + ",");
+                            csvBuilder.Append(result.EqePercent + ",");
+                            csvBuilder.Append(result.LuminousFlux + ",");
+                            csvBuilder.Append(result.RadiantFlux + ",");
+                            csvBuilder.Append(result.LuminousEfficacy + ",");
+                        }
+
                         csvBuilder.Append(result.fCIEx2015 + ",");
                         csvBuilder.Append(result.fCIEy2015 + ",");
                         csvBuilder.Append(result.fCIEz2015 + ",");
@@ -1327,6 +1350,8 @@ namespace Spectrum
             ColLuminousEfficacy.Width = width;
             ColVoltage.Width = width;
             ColCurrent.Width = width;
+            // Hide brightness column in 光通量模式
+            ColBrightness.Width = eqeEnabled ? 0 : double.NaN;
         }
 
         private void CalculateEqe_Click(object sender, RoutedEventArgs e)
@@ -1334,7 +1359,14 @@ namespace Spectrum
             float voltage = MainWindowConfig.Instance.EqeVoltage;
             float currentMA = MainWindowConfig.Instance.EqeCurrentMA;
 
-            foreach (var item in ViewResultSpectrums)
+            var selectedItems = ViewResultList.SelectedItems.Cast<ViewResultSpectrum>().ToList();
+            if (selectedItems.Count == 0)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "请先选择要重新计算的数据", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            foreach (var item in selectedItems)
             {
                 item.CalculateEqeParams(voltage, currentMA);
             }

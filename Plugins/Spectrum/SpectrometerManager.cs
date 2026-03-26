@@ -114,6 +114,13 @@ namespace Spectrum
                 nStepCount = 0;
             }
         }
+
+        /// <summary>
+        /// Action delegate set by MainWindow to execute adaptive auto dark calibration
+        /// </summary>
+        [JsonIgnore]
+        [Browsable(false)]
+        public Action ExecuteAdaptiveAutoDark { get; set; }
     }
 
 
@@ -386,6 +393,8 @@ namespace Spectrum
 
             EditFilterWheelConfigCommand = new RelayCommand(a => new PropertyEditorWindow(FilterWheelConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
 
+            EditShutterConfigCommand = new RelayCommand(a => new PropertyEditorWindow(ShutterController.Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+
             // Subscribe to filter wheel position changes for auto-switching calibration groups
             FilterWheelController.PositionChanged += OnFilterWheelPositionChanged;
         }
@@ -395,6 +404,9 @@ namespace Spectrum
         public RelayCommand EditNDConfigCommand { get; set; }
         [JsonIgnore]
         public RelayCommand EditFilterWheelConfigCommand { get; set; }
+
+        [JsonIgnore]
+        public RelayCommand EditShutterConfigCommand { get; set; }
 
         public RelayCommand ConnectNDCommand { get; set; }
 
@@ -703,7 +715,32 @@ namespace Spectrum
         private AutodarkParam _AutodarkParam = new AutodarkParam();
         public void EditAutodarkParam()
         {
-            new PropertyEditorWindow(AutodarkParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            var win = new PropertyEditorWindow(AutodarkParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            // Add adaptive auto dark execution button to the property editor window
+            if (AutodarkParam.ExecuteAdaptiveAutoDark != null)
+            {
+                var btn = new System.Windows.Controls.Button
+                {
+                    Content = "执行自适应校零",
+                    Margin = new Thickness(10, 10, 10, 0),
+                    Padding = new Thickness(10, 4, 10, 4),
+                    Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E67E22")),
+                    Foreground = System.Windows.Media.Brushes.White
+                };
+                btn.Click += (s, e) => AutodarkParam.ExecuteAdaptiveAutoDark?.Invoke();
+                if (win.Content is System.Windows.Controls.Panel panel)
+                {
+                    panel.Children.Add(btn);
+                }
+                else if (win.Content is System.Windows.UIElement existingContent)
+                {
+                    var sp = new System.Windows.Controls.StackPanel();
+                    sp.Children.Add(existingContent);
+                    sp.Children.Add(btn);
+                    win.Content = sp;
+                }
+            }
+            win.ShowDialog();
         }
 
         /// <summary>

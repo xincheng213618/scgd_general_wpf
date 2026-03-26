@@ -144,5 +144,26 @@ namespace Spectrum.Configs
                 name = name.Replace(c, '_');
             return name;
         }
+
+        /// <summary>
+        /// Reloads config from disk, discarding any unsaved in-memory changes.
+        /// </summary>
+        public void Reload(string sn)
+        {
+            if (string.IsNullOrEmpty(sn)) return;
+            try
+            {
+                var reloaded = Load(sn);
+                Groups.Clear();
+                foreach (var g in reloaded.Groups)
+                    Groups.Add(g);
+                ActiveGroupName = reloaded.ActiveGroupName;
+                log.Info($"Reloaded calibration config for SN={sn}");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"Failed to reload calibration config for SN={sn}", ex);
+            }
+        }
     }
 }

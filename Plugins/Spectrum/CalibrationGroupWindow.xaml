@@ -109,6 +109,7 @@
 
         <!-- Bottom buttons -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="保存" x:Name="BtnSave" Click="BtnSave_Click" Padding="20,6" Margin="0,0,10,0" Background="#2196F3" Foreground="White" FontWeight="SemiBold"/>
             <Button Content="关闭" Click="BtnClose_Click" Padding="20,6" />
         </StackPanel>
     </Grid>

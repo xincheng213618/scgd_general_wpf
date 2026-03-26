@@ -210,6 +210,13 @@ namespace Spectrum
         // EQE properties
         public double? Eqe { get; set; }
 
+        /// <summary>
+        /// EQE value ×100 for percentage display
+        /// </summary>
+        [JsonIgnore]
+        [Browsable(false)]
+        public double? EqePercent => Eqe.HasValue ? Eqe.Value * 100 : null;
+
         [DisplayName("光通量(lm)")]
         public float? LuminousFlux { get; set; }
 
@@ -225,6 +232,7 @@ namespace Spectrum
             {
                 Eqe = 0;
                 OnPropertyChanged(nameof(Eqe));
+                OnPropertyChanged(nameof(EqePercent));
                 return;
             }
 
@@ -253,6 +261,7 @@ namespace Spectrum
 
             Eqe = (total_photons_per_sec / total_electrons_per_sec);
             OnPropertyChanged(nameof(Eqe));
+            OnPropertyChanged(nameof(EqePercent));
         }
 
         public void CalculateEqeParams(float voltage, float currentMA)
@@ -293,9 +302,12 @@ namespace Spectrum
             }
 
             OnPropertyChanged(nameof(Eqe));
+            OnPropertyChanged(nameof(EqePercent));
             OnPropertyChanged(nameof(LuminousFlux));
             OnPropertyChanged(nameof(RadiantFlux));
             OnPropertyChanged(nameof(LuminousEfficacy));
+            OnPropertyChanged(nameof(V));
+            OnPropertyChanged(nameof(I));
         }
 
         public float V { get; set; }
@@ -455,6 +467,20 @@ namespace Spectrum
         /// </summary>
         [DisplayName("兴奋纯度")]
         public double ExcitationPurity { get; set; }
+
+        /// <summary>
+        /// 兴奋纯度 ×100 for percentage display
+        /// </summary>
+        [JsonIgnore]
+        [Browsable(false)]
+        public double ExcitationPurityPercent => ExcitationPurity * 100;
+
+        /// <summary>
+        /// 色纯度 ×100 for percentage display
+        /// </summary>
+        [JsonIgnore]
+        [Browsable(false)]
+        public double ColorPurityPercent => fPur * 100;
 
         /// <summary>
         /// Computes excitation purity from CIE 1931 chromaticity coordinates.
