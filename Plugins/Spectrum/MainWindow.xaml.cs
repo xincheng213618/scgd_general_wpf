@@ -556,7 +556,10 @@ namespace Spectrum
                 if (ret == 0)
                 {
                     isstartAuto = false;
-                    MessageBox.Show("请先做一次自适应校零");
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show("请先做一次自适应校零");
+                    });
                     IsRun = false;
                     return;
                 }
@@ -734,11 +737,17 @@ namespace Spectrum
                 SetOperationButtonsEnabled(true);
                 if (ret == 1)
                 {
-                    MessageBox.Show("自适应校零成功");
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show("自适应校零成功");
+                    });
                 }
                 else
                 {
-                    MessageBox.Show("自适应校零失败");
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show("自适应校零失败");
+                    });
                 }
             });
         }
@@ -999,9 +1008,6 @@ namespace Spectrum
                 File.WriteAllText(dialog.FileName, csvBuilder.ToString(), Encoding.UTF8);
 
             };
-
-
-
         }
 
         bool isstartAuto;
