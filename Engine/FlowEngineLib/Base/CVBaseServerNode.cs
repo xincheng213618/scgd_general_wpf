@@ -148,7 +148,7 @@ public class CVBaseServerNode : CVCommonNode
 
 
 
-    protected override string OnGetDrawTitle()
+    public override string OnGetDrawTitle()
 	{
 		if (!string.IsNullOrWhiteSpace(Subtitle))
 		{

@@ -431,7 +431,7 @@ namespace ColorVision.Engine.Templates.Flow
                     BatchId = batchId,
                     SerialNumber = FlowControl.SerialNumber,
                     NodeId = algorithmNode.NodeID,
-                    NodeName = algorithmNode.Title,
+                    NodeName = algorithmNode.OnGetDrawTitle(),
                     NodeType = algorithmNode.NodeType,
                     StartTime = DateTime.Now,
                 };
