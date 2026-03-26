@@ -1340,5 +1340,24 @@ namespace ProjectARVRPro
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(ObjectiveTestResult, false) { Owner = Application.Current.GetActiveWindow() };
             propertyEditorWindow.ShowDialog();
         }
+
+        private ThunderbirdSerialDebugWindow? _thunderbirdDebugWindow;
+
+        private void OpenThunderbirdSerialDebug_Click(object sender, RoutedEventArgs e)
+        {
+            if (_thunderbirdDebugWindow == null || !_thunderbirdDebugWindow.IsLoaded)
+            {
+                _thunderbirdDebugWindow = new ThunderbirdSerialDebugWindow
+                {
+                    Owner = this
+                };
+                _thunderbirdDebugWindow.Closed += (s, args) => _thunderbirdDebugWindow = null;
+                _thunderbirdDebugWindow.Show();
+            }
+            else
+            {
+                _thunderbirdDebugWindow.Activate();
+            }
+        }
     }
 }
