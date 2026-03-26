@@ -105,8 +105,13 @@ namespace Spectrum
             }
 
             image.Source = src1931?.ToBitmapSource();
+            var spectrometerTypeNames = new Dictionary<SpectrometerType, string>
+            {
+                { SpectrometerType.CMvSpectra, "显示 SP100" },
+                { SpectrometerType.LightModule, "显示 SP10" }
+            };
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues(typeof(SpectrometerType)).Cast<SpectrometerType>()
-                                                   select new KeyValuePair<SpectrometerType, string>(e1, e1 == SpectrometerType.CMvSpectra ? "显示 SP100" : e1 == SpectrometerType.LightModule ? "显示 SP10" : e1.ToString());
+                                                   select new KeyValuePair<SpectrometerType, string>(e1, spectrometerTypeNames.TryGetValue(e1, out var name) ? name : e1.ToString());
 
             cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
 

@@ -215,7 +215,7 @@ namespace Spectrum
         /// </summary>
         [JsonIgnore]
         [Browsable(false)]
-        public double? EqePercent => Eqe.HasValue ? Eqe.Value * 100 : null;
+        public double EqePercent => (Eqe ?? 0) * 100;
 
         [DisplayName("光通量(lm)")]
         public float? LuminousFlux { get; set; }

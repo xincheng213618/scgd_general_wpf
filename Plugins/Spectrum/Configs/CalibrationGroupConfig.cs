@@ -163,6 +163,12 @@ namespace Spectrum.Configs
             catch (Exception ex)
             {
                 log.Error($"Failed to reload calibration config for SN={sn}", ex);
+                // Restore default if reload failed and groups were cleared
+                if (Groups.Count == 0)
+                {
+                    Groups.Add(new CalibrationGroup { GroupName = "Default" });
+                    ActiveGroupName = "Default";
+                }
             }
         }
     }

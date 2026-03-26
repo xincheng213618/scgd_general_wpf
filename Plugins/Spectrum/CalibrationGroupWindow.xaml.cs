@@ -259,6 +259,8 @@ namespace Spectrum
                 {
                     // Discard changes: reload config from disk
                     Manager.CalibrationGroupConfig.Reload(Manager.SerialNumber);
+                    RefreshGroupList();
+                    UpdateConfigPathDisplay();
                 }
             }
             Close();
