@@ -49,7 +49,7 @@ namespace ProjectARVRPro.Process.MTF
                                     LowLimit = Config.RecipeConfig.UnifiedRecipe.Min,
                                     UpLimit = Config.RecipeConfig.UnifiedRecipe.Max,
                                 };
-                                hItem.TestValue = hItem.Value.ToString();
+                                hItem.TestValue = hItem.Value.ToString(Config.ShowConfig);
                                 ctx.Result.Result &= hItem.TestResult;
                                 testResult.Items.Add(hItem);
                             }
@@ -60,15 +60,17 @@ namespace ProjectARVRPro.Process.MTF
 
                 ctx.Result.ViewResultJson = JsonConvert.SerializeObject(testResult);
 
-                if (!ctx.ObjectiveTestResult.DynamicTestResults.ContainsKey(Config.Name))
+                // Add to ObjectiveTestResult via dynamic dictionary
+                if (!ctx.ObjectiveTestResult.DynamicTestResults.TryGetValue(Config.Name, out var dynamicItems))
                 {
-                    ctx.ObjectiveTestResult.DynamicTestResults[Config.Name] = new ObservableCollection<ObjectiveTestItem>();
+                    dynamicItems = new ObservableCollection<ObjectiveTestItem>();
+                    ctx.ObjectiveTestResult.DynamicTestResults[Config.Name] = dynamicItems;
                 }
                 ctx.ObjectiveTestResult.DynamicTestResults[Config.Name].Clear();
 
                 foreach (var item in testResult.Items)
                 {
-                    ctx.ObjectiveTestResult.DynamicTestResults[Config.Name].Add(item);
+                    dynamicItems.Add(item);
                 }
 
                 return true;
