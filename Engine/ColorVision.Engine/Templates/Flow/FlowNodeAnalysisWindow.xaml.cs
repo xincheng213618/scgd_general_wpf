@@ -25,11 +25,6 @@ namespace ColorVision.Engine.Templates.Flow
             _initialBatch = batch;
         }
 
-        public FlowNodeAnalysisWindow(int batchId) : this()
-        {
-            _initialBatch = new MeasureBatchModel { Id = batchId };
-        }
-
         private void Window_Initialized(object sender, EventArgs e)
         {
             NodeRecordListView.ItemsSource = NodeRecords;
