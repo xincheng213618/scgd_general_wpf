@@ -44,7 +44,7 @@ namespace ColorVision.Engine
             var nodeAnalysisMenuItem = new MenuItem { Header = "节点时间分析" };
             nodeAnalysisMenuItem.Click += (s, e) =>
             {
-                var window = new FlowNodeAnalysisWindow(MeasureBatchModel.Id) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                var window = new FlowNodeAnalysisWindow(MeasureBatchModel) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Show();
             };
             ContextMenu.Items.Add(nodeAnalysisMenuItem);
