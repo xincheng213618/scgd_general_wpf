@@ -877,9 +877,9 @@ namespace ProjectARVRPro
                                 }
                             }
 
-                            log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
                             if (IsSaveImageReuslt)
                             {
+                                log.Info($"IsSaveImageReuslt:{IsSaveImageReuslt}");
                                 IsSaveImageReuslt = false;
                                 Task.Run(async () =>
                                 {
