@@ -11,6 +11,7 @@ namespace ColorVision.Engine.Templates.Flow
     public partial class FlowNodeAnalysisWindow : Window
     {
         private readonly int? _initialBatchId;
+        private const long TimeoutThresholdMs = 30000;
 
         public ObservableCollection<FlowNodeRecord> NodeRecords { get; set; } = new ObservableCollection<FlowNodeRecord>();
 
@@ -40,10 +41,6 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 LoadBatchRecords(new List<int> { _initialBatchId.Value });
             }
-        }
-
-        private void BatchListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
         }
 
         private void LoadButton_Click(object sender, RoutedEventArgs e)
@@ -111,7 +108,10 @@ namespace ColorVision.Engine.Templates.Flow
             if (records.Count == 0) return;
 
             DateTime baseTime = records.Min(r => r.StartTime);
-            long totalMs = records.Where(r => r.EndTime.HasValue).Select(r => (long)(r.EndTime.Value - baseTime).TotalMilliseconds).DefaultIfEmpty(0).Max();
+            var recordsWithEndTime = records.Where(r => r.EndTime.HasValue);
+            long totalMs = recordsWithEndTime.Any()
+                ? recordsWithEndTime.Max(r => (long)(r.EndTime.Value - baseTime).TotalMilliseconds)
+                : 0;
 
             ScottPlot.Color[] palette = new ScottPlot.Color[]
             {
@@ -138,7 +138,7 @@ namespace ColorVision.Engine.Templates.Flow
                 double endOffset = rec.EndTime.HasValue ? (rec.EndTime.Value - baseTime).TotalMilliseconds : totalMs;
                 double yPos = records.Count - 1 - i;
 
-                bool isTimeout = !rec.EndTime.HasValue || rec.ElapsedMs > 30000;
+                bool isTimeout = !rec.EndTime.HasValue || rec.ElapsedMs > TimeoutThresholdMs;
                 ScottPlot.Color barColor = isTimeout ? timeoutColor : (!rec.EndTime.HasValue ? noEndColor : palette[i % palette.Length]);
 
                 var bar = new ScottPlot.Plottables.Bar
@@ -214,7 +214,7 @@ namespace ColorVision.Engine.Templates.Flow
                     double elapsed = batchRecord.ElapsedMs;
                     double yPos = yBase + (bIdx - (batchIds.Count - 1) / 2.0) * barHeight;
 
-                    bool isTimeout = !batchRecord.EndTime.HasValue || batchRecord.ElapsedMs > 30000;
+                    bool isTimeout = !batchRecord.EndTime.HasValue || batchRecord.ElapsedMs > TimeoutThresholdMs;
                     ScottPlot.Color barColor = isTimeout ? timeoutColor : batchColors[bIdx % batchColors.Length];
 
                     var bar = new ScottPlot.Plottables.Bar
