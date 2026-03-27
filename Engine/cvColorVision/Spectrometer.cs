@@ -113,6 +113,10 @@ namespace cvColorVision
     {
         private const string LIBRARY_CVCAMERA = "cvCamera.dll";
 
+        // EXPORTC MYDLL BOOL STDCALL CM_GetErrorMessage(int nErr, char* szMsg, int& strLen);
+        [DllImport(LIBRARY_CVCAMERA, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        public static extern int CM_GetErrorMessage( int nErr, StringBuilder szMsg, ref int strLen);
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         public delegate int Emission_CallBack(IntPtr strText, int nLen);
 
@@ -143,7 +147,7 @@ namespace cvColorVision
         public static extern int CM_Emission_LoadMagiudeFileWithND(IntPtr handle, int nIndex, string szFileName);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetSrcData", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern bool CM_Emission_GetSrcData(IntPtr handle, float fIntTime, int iAveNum, double[] pdSpectumData, ref int pSpectumNumber);
+        public static extern int CM_Emission_GetSrcData(IntPtr handle, float fIntTime, int iAveNum, double[] pdSpectumData, ref int pSpectumNumber);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetSerialNumber", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_GetSpectrSerialNumber(IntPtr handle, StringBuilder szSerialNum);
@@ -197,6 +201,6 @@ namespace cvColorVision
         public static extern int CM_Emission_Init_Auto_DarkEx(IntPtr handle, int nPort, float fTimeStart, int nStepTime, int nStepCount, int iAveNum);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_CreateMagiude", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern bool CM_Emission_CreateMagiude(float fIntTime, float[] fDarkData, float[] fLightData, string szCSFile, string szWavaLengthFile, string szMagiude);
+        public static extern int CM_Emission_CreateMagiude(float fIntTime, float[] fDarkData, float[] fLightData, string szCSFile, string szWavaLengthFile, string szMagiude);
     }
 }
