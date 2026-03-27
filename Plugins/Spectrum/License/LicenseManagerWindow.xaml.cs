@@ -1,10 +1,11 @@
 ﻿using ColorVision.UI.Menus;
 using Microsoft.Win32;
+using Spectrum.License;
 using Spectrum.Menus;
 using System.IO;
 using System.Windows;
 
-namespace Spectrum
+namespace Spectrum.License
 {
 
     public class MenuLicenseManager : SpectrumMenuIBase

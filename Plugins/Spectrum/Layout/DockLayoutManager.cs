@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 
-namespace Spectrum
+namespace Spectrum.Layout
 {
     /// <summary>
     /// Manages AvalonDock layout persistence, reset, and panel visibility for the Spectrum MainWindow.

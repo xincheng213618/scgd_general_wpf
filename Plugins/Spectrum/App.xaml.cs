@@ -4,6 +4,7 @@ using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
 using log4net;
 using log4net.Config;
+using Spectrum.License;
 using System.Reflection;
 using System.Windows;
 

@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 using Spectrum.Configs;
 using System.Text;
 
-namespace Spectrum
+namespace Spectrum.Configs
 {
     /// <summary>
     /// Local SMU (source meter) controller wrapping PassSx C++ calls.
