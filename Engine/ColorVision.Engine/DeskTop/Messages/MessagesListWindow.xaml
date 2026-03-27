@@ -18,12 +18,34 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Margin="5,5,5,5">
             <ToolBarTray  Grid.Row="0" IsLocked="True">
                 <ToolBar Padding="3,2">
-                    <Button Content="{x:Static properties:Resources.Inquire}" Command="{Binding QueryCommand}" Margin="2,0,0,0"/>
-                    <Button  Content="{x:Static properties:Resources.AdvanceSearch}" Command="{Binding GenericQueryCommand}" Margin="2,0,0,0"/>
+                    <TextBlock Text="ServiceName:" VerticalAlignment="Center" Margin="2,0,2,0"/>
+                    <TextBox Width="100" VerticalAlignment="Center" Text="{Binding FilterServiceName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0"/>
+                    <TextBlock Text="EventName:" VerticalAlignment="Center" Margin="2,0,2,0"/>
+                    <TextBox Width="100" VerticalAlignment="Center" Text="{Binding FilterEventName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0"/>
+                    <TextBlock Text="State:" VerticalAlignment="Center" Margin="2,0,2,0"/>
+                    <ComboBox x:Name="StateFilterComboBox" Width="90" VerticalAlignment="Center" Margin="0,0,4,0" SelectionChanged="StateFilterComboBox_SelectionChanged">
+                        <ComboBoxItem Content="全部" Tag=""/>
+                        <ComboBoxItem Content="Initial" Tag="Initial"/>
+                        <ComboBoxItem Content="Sended" Tag="Sended"/>
+                        <ComboBoxItem Content="Success" Tag="Success"/>
+                        <ComboBoxItem Content="Failure" Tag="Fail"/>
+                        <ComboBoxItem Content="Timeout" Tag="Timeout"/>
+                    </ComboBox>
+                    <Separator/>
+                    <Button Content="{x:Static properties:Resources.Inquire}" Command="{Binding QueryCommand}" Margin="2,0,0,0" ToolTip="根据过滤条件查询"/>
+                    <Button Content="{x:Static properties:Resources.AdvanceSearch}" Command="{Binding GenericQueryCommand}" Margin="2,0,0,0"/>
+                    <Button Content="刷新" Command="{Binding ReloadCommand}" Margin="2,0,0,0" ToolTip="从数据库重新加载数据"/>
+                    <Separator/>
+                    <Button Content="清空记录" Command="{Binding DeleteAllCommand}" Margin="2,0,0,0" ToolTip="删除数据库中所有记录" Foreground="#E53935"/>
+                    <Button Content="重置数据库" Command="{Binding ResetDatabaseCommand}" Margin="2,0,0,0" ToolTip="删除数据库文件并重新创建" Foreground="#E53935"/>
+                    <Separator/>
+                    <TextBlock Text="加载条数:" VerticalAlignment="Center" Margin="4,0,2,0"/>
+                    <TextBox Width="50" VerticalAlignment="Center" Text="{Binding Config.Count, UpdateSourceTrigger=PropertyChanged}" ToolTip="默认加载数据条数 (-1为全部)"/>
                 </ToolBar>
             </ToolBarTray>
             <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
@@ -153,6 +175,16 @@
 
             </Grid>
         </Grid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Height="28" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
+                <TextBlock Text="总条数:" Margin="0,0,5,0"/>
+                <TextBlock Text="{Binding TotalCount}" FontWeight="Bold" Margin="0,0,20,0"/>
+                <TextBlock Text="当前显示:" Margin="0,0,5,0"/>
+                <TextBlock Text="{Binding MsgRecords.Count}" FontWeight="Bold"/>
+            </StackPanel>
+        </Border>
 
     </Grid>
 </Window>
