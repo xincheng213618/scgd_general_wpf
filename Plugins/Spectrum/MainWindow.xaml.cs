@@ -893,7 +893,7 @@ namespace Spectrum
         private void Export_Click(object sender, RoutedEventArgs e)
         {
             var selectedItemsCopy = new List<object>();
-            foreach (var item in ViewResultSpectrums)
+            foreach (var item in ViewResultList.SelectedItems)
             {
                 selectedItemsCopy.Add(item);
             }
