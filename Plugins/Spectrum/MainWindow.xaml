@@ -393,7 +393,7 @@
                 </ScrollViewer>
                 
             </Grid>
-            <Grid Grid.Column="1" Background="{DynamicResource BorderBrush}">
+            <Grid Grid.Column="1">
                 <Grid Grid.Column="0" >
                     <Grid.RowDefinitions>
                         <RowDefinition x:Name="ListRow1" Height="*"/>
@@ -775,7 +775,7 @@
                         </ListView>
 
                     </Grid>
-                    <GridSplitter  Grid.Row="1" Background="#01FFFFFF"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
+                    <GridSplitter  Grid.Row="1" Background="#FFFFFF"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
                     <Grid Grid.Row="2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>

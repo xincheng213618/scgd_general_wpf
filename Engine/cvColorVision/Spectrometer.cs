@@ -132,7 +132,7 @@ namespace cvColorVision
                 int len = bufferSize;
                 CM_GetErrorMessage(errorCode, sb, ref len);
                 string msg = sb.ToString();
-                return string.IsNullOrEmpty(msg) ? $"未知错误 (错误码: {errorCode})" : msg;
+                return string.IsNullOrEmpty(msg) ? $"未知错误 (错误码: {errorCode})" : $"{errorCode} ErrorMessage:{msg}" ;
             }
             catch
             {
