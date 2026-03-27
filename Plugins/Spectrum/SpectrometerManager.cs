@@ -544,7 +544,7 @@ namespace Spectrum
 
             try
             {
-                // 使用强类型反序列化（内部基��反射），直接将 JSON 映射到对象
+                // 使用强类型反序列化（内部基于反射），直接将 JSON 映射到对象
                 var result = JsonConvert.DeserializeObject<SpectrometerSnResult>(raw);
 
                 // 如果解析出来的对象为空，或者包含的ID列表为空
