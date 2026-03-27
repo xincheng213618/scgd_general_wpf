@@ -13,7 +13,7 @@ using System.Windows.Input;
 
 namespace ColorVision.UI.Controls
 {
-    public class MenuLogWindow : GlobalMenuBase
+    public class MenuLogWindow : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
         public override int Order => 10005;
