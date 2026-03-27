@@ -117,6 +117,29 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         public static extern int CM_GetErrorMessage( int nErr, StringBuilder szMsg, ref int strLen);
 
+        /// <summary>
+        /// 根据错误码获取对应的错误描述信息
+        /// </summary>
+        /// <param name="errorCode">CM_ 系列函数返回的错误码</param>
+        /// <returns>可读的错误信息；成功(1)时返回空字符串</returns>
+        public static string GetErrorMessage(int errorCode)
+        {
+            if (errorCode == 1) return string.Empty;
+            try
+            {
+                const int bufferSize = 1024;
+                StringBuilder sb = new StringBuilder(bufferSize);
+                int len = bufferSize;
+                CM_GetErrorMessage(errorCode, sb, ref len);
+                string msg = sb.ToString();
+                return string.IsNullOrEmpty(msg) ? $"未知错误 (错误码: {errorCode})" : msg;
+            }
+            catch
+            {
+                return $"未知错误 (错误码: {errorCode})";
+            }
+        }
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         public delegate int Emission_CallBack(IntPtr strText, int nLen);
 

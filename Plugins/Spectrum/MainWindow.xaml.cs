@@ -88,7 +88,7 @@ namespace Spectrum
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            log.Info("初始化cvCamera日志");
+            log.Info("初始化 cvCamera 资源");
             cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
 
             ViewResultManager.ListView = ViewResultList;
@@ -114,9 +114,12 @@ namespace Spectrum
             {
                 if (SpectrometerHandle != IntPtr.Zero)
                 {
-                    log.Info($"CM_SetEmissionSP100:IsEnabled{SetEmissionSP100Config.Instance.IsEnabled},nStartPos{SetEmissionSP100Config.Instance.nStartPos},nEndPos{SetEmissionSP100Config.Instance.nEndPos},dMeanThreshold{SetEmissionSP100Config.Instance.dMeanThreshold}");
+                    log.Debug($"设置 SP100 参数: IsEnabled={SetEmissionSP100Config.Instance.IsEnabled}, nStartPos={SetEmissionSP100Config.Instance.nStartPos}, nEndPos={SetEmissionSP100Config.Instance.nEndPos}, dMeanThreshold={SetEmissionSP100Config.Instance.dMeanThreshold}");
                     int ret = Spectrometer.CM_SetEmissionSP100(SpectrometerHandle, SetEmissionSP100Config.Instance.IsEnabled, SetEmissionSP100Config.Instance.nStartPos, SetEmissionSP100Config.Instance.nEndPos, SetEmissionSP100Config.Instance.dMeanThreshold);
-                    log.Info($"CM_SetEmissionSP100 ret:{ret}");
+                    if (ret == 1)
+                        log.Info("SP100 参数设置成功");
+                    else
+                        log.Warn($"SP100 参数设置失败: {Spectrometer.GetErrorMessage(ret)}");
                 }
 
             };
@@ -196,7 +199,7 @@ namespace Spectrum
         public static int MyCallback(IntPtr strText, int nLen)
         {
             string text = Marshal.PtrToStringAnsi(strText, nLen);
-            log.Info("Callback: " + text);
+            log.Debug("光谱仪回调: " + text);
             return 0;
         }
         public IntPtr SpectrometerHandle => Manager.Handle;
@@ -215,9 +218,9 @@ namespace Spectrum
                 }
 
                 int iR = Spectrometer.CM_Emission_Init(SpectrometerHandle, com, Manager.Config.BaudRate);
-                log.Info($"CM_Emission_Init:{iR}");
                 if (iR == 1)
                 {
+                    log.Info("光谱仪连接成功");
                     Manager.IsConnected = true;
 
                     try
@@ -231,7 +234,7 @@ namespace Spectrum
                             if (!string.IsNullOrEmpty(sn))
                             {
                                 Manager.SerialNumber = sn;
-                                log.Info($"Spectrometer SN: {sn}");
+                                log.Info($"光谱仪序列号: {sn}");
                             }
                             else
                             {
@@ -240,25 +243,33 @@ namespace Spectrum
                         }
                         else
                         {
-                            log.Warn($"CM_Emission_GetAllSN returned {snRet}");
+                            log.Warn($"获取序列号失败: {Spectrometer.GetErrorMessage(snRet)}");
                             Manager.SerialNumber = "Unknown";
                         }
                     }
                     catch (Exception snEx)
                     {
-                        log.Warn("Failed to read SN", snEx);
+                        log.Warn("读取序列号异常", snEx);
                         Manager.SerialNumber = "Unknown";
                     }
                     Manager.LoadCalibrationConfig();
 
                     iR = Spectrometer.CM_Emission_LoadWavaLengthFile(SpectrometerHandle, Manager.WavelengthFile);
-                    log.Info($"CM_Emission_LoadWavaLengthFile{Manager.WavelengthFile},ret{iR}");
-                    iR = Spectrometer.CM_Emission_LoadMagiudeFile(SpectrometerHandle, Manager.MaguideFile);
-                    log.Info($"CM_Emission_LoadMagiudeFile{Manager.MaguideFile},ret{iR}");
+                    if (iR == 1)
+                        log.Info($"加载波长文件成功: {Manager.WavelengthFile}");
+                    else
+                        log.Warn($"加载波长文件失败: {Manager.WavelengthFile}, {Spectrometer.GetErrorMessage(iR)}");
 
-                    log.Info($"CM_SetEmissionSP100:IsEnabled{SetEmissionSP100Config.Instance.IsEnabled},nStartPos{SetEmissionSP100Config.Instance.nStartPos},nEndPos{SetEmissionSP100Config.Instance.nEndPos},dMeanThreshold{SetEmissionSP100Config.Instance.dMeanThreshold}");
+                    iR = Spectrometer.CM_Emission_LoadMagiudeFile(SpectrometerHandle, Manager.MaguideFile);
+                    if (iR == 1)
+                        log.Info($"加载幅值文件成功: {Manager.MaguideFile}");
+                    else
+                        log.Warn($"加载幅值文件失败: {Manager.MaguideFile}, {Spectrometer.GetErrorMessage(iR)}");
+
+                    log.Debug($"设置 SP100 参数: IsEnabled={SetEmissionSP100Config.Instance.IsEnabled}, nStartPos={SetEmissionSP100Config.Instance.nStartPos}, nEndPos={SetEmissionSP100Config.Instance.nEndPos}, dMeanThreshold={SetEmissionSP100Config.Instance.dMeanThreshold}");
                     int ret = Spectrometer.CM_SetEmissionSP100(SpectrometerHandle, SetEmissionSP100Config.Instance.IsEnabled, SetEmissionSP100Config.Instance.nStartPos, SetEmissionSP100Config.Instance.nEndPos, SetEmissionSP100Config.Instance.dMeanThreshold);
-                    log.Info($"CM_SetEmissionSP100 ret:{ret}");
+                    if (ret != 1)
+                        log.Warn($"SP100 参数设置失败: {Spectrometer.GetErrorMessage(ret)}");
 
                     State2.Text = Spectrum.Properties.Resources.连接成功;
                     State4.Text = "SP-100";
@@ -269,49 +280,14 @@ namespace Spectrum
                 else
                 {
                     Manager.IsConnected = false;
-                    string logDir = "log";
-                    string logPrefix = "Spectrum_Main";
-                    string logSuffix = ".log";
-
-                    // 获取目录下所有符合条件的log文件
-                    var files = Directory.GetFiles(logDir, $"{logPrefix}*{logSuffix}");
-                    if (files.Length == 0)
-                    {
-                        log.Info("未找到任何日志文件");
-                        return;
-                    }
-
-                    // 按最后修改时间降序排序，取最新的文件
-                    var latestFile = files.Select(f => new FileInfo(f))
-                                          .OrderByDescending(f => f.LastWriteTime)
-                                          .First().FullName;
-
-                    string keyword = "序列号验证失败！请联系厂商";
-                    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-                    using (var fs = new FileStream(latestFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                    using (var sr = new StreamReader(fs,Encoding.GetEncoding("GB2312")))
-                    {
-                        string line;   
-                        bool containsKeyword = false;
-                        while ((line = sr.ReadLine()) != null)
-                        {
-                            if (line.Contains(keyword))
-                            {
-                                containsKeyword = true;
-                                log.Info(line.Trim());
-                                MessageBox.Show(Application.Current.GetActiveWindow(), line.Trim());
-                                break;
-                            }
-                        }
-                        if (!containsKeyword)
-                            MessageBox.Show(Spectrum.Properties.Resources.连接失败);
-                    }
+                    string errorMsg = Spectrometer.GetErrorMessage(iR);
+                    log.Error($"光谱仪连接失败: {errorMsg}");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"连接失败: {errorMsg}");
                 }
             }
             catch(Exception ex)
             {
-                log.Error(ex);
+                log.Error("光谱仪连接异常", ex);
                 MessageBox.Show(ex.Message);
             }
 
@@ -358,18 +334,18 @@ namespace Spectrum
                 {
                     if (Manager.ShutterController.IsConnected)
                     {
-                        log.Info("OpenShutter");
+                        log.Debug("开启快门");
                        await  Manager.ShutterController.OpenShutter();
                     }
                     int ret = Spectrometer.CM_Emission_DarkStorage(SpectrometerHandle, Manager.IntTime, Manager.Average, 0, Manager.fDarkData);
                     if (Manager.ShutterController.IsConnected)
                     {
-                        log.Info("CloseShutter");
+                        log.Debug("关闭快门");
                         await Manager.ShutterController.CloseShutter();
                     }
-                    log.Info($"CM_Emission_DarkStorage {ret}");
                     if (ret == 1)
                     {
+                        log.Info("校零成功");
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             MessageBox.Show(Application.Current.GetActiveWindow(), "校零成功");
@@ -377,9 +353,11 @@ namespace Spectrum
                     }
                     else
                     {
+                        string errorMsg = Spectrometer.GetErrorMessage(ret);
+                        log.Error($"校零失败: {errorMsg}");
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "校零失败");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"校零失败: {errorMsg}");
                         });
                     }
                     IsRun = false;
@@ -387,9 +365,10 @@ namespace Spectrum
                 }
                 catch (Exception ex)
                 {
+                    log.Error("校零异常", ex);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "校零异常" + ex.Message);
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "校零异常: " + ex.Message);
                     });
                     IsRun = false;
                     SetOperationButtonsEnabled(true);
@@ -431,7 +410,7 @@ namespace Spectrum
 
         public int MyAutoTimeCallback(int time, double spectum)
         {
-            log.Info($"当前自动积分时间: {time},光谱强度:{spectum}");
+            log.Debug($"自动积分时间回调: 积分时间={time}, 光谱强度={spectum}");
             return 0;
         }
 
@@ -450,30 +429,27 @@ namespace Spectrum
                 if (Manager.IntTimeConfig.IsOldVersion)
                 {
                     ret = Spectrometer.CM_Emission_GetAutoTime(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, (int)Manager.MaxPercent);
-                    log.Info($"CM_Emission_GetAutoTime: {ret}");
                     if (ret == 1)
                     {
-                        log.Info($"自动积分：{fIntTime}");
+                        log.Info($"自动积分时间获取成功: {fIntTime}ms");
                         Manager.IntTime = fIntTime;
                     }
                     else
                     {
-                        log.Info("自动积分获取失败：" + ret);
+                        log.Warn($"自动积分时间获取失败: {Spectrometer.GetErrorMessage(ret)}");
                     }
                 }
                 else
                 {
                     ret = Spectrometer.CM_Emission_GetAutoTimeEx(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, Manager.Max, MyAutoTimeCallback);
-                    log.Info($"CM_Emission_GetAutoTimeEx: {ret}");
-
                     if (ret == 1)
                     {
-                        log.Info($"自动积分：{fIntTime}");
+                        log.Info($"自动积分时间获取成功: {fIntTime}ms");
                         Manager.IntTime = fIntTime;
                     }
                     else
                     {
-                        log.Info("自动积分获取失败：" + ret);
+                        log.Warn($"自动积分时间获取失败: {Spectrometer.GetErrorMessage(ret)}");
                     }
                 }
                 IsRun = false;
@@ -502,12 +478,15 @@ namespace Spectrum
                     IsRun = false;
                     return;
                 }
-                log.Info("OpenShutter");
+                log.Debug("开启快门");
                 await Manager.ShutterController.OpenShutter();
                 int ret = Spectrometer.CM_Emission_DarkStorage(SpectrometerHandle, Manager.IntTime, Manager.Average, 0, Manager.fDarkData);
-                log.Info("CloseShutter");
+                log.Debug("关闭快门");
                 await Manager.ShutterController.CloseShutter();
-                log.Info($"CM_Emission_DarkStorage {ret}");
+                if (ret == 1)
+                    log.Debug("测量前自动校零成功");
+                else
+                    log.Warn($"测量前自动校零失败: {Spectrometer.GetErrorMessage(ret)}");
             }
 
             if (Manager.EnableAutoIntegration)
@@ -516,15 +495,14 @@ namespace Spectrum
                 if (Manager.IntTimeConfig.IsOldVersion)
                 {
                     ret = Spectrometer.CM_Emission_GetAutoTime(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, (int)Manager.MaxPercent);
-                    log.Info($"CM_Emission_GetAutoTime: {ret}");
                     if (ret == 1)
                     {
-                        log.Info($"自动积分：{fIntTime}");
+                        log.Debug($"自动积分时间: {fIntTime}ms");
                         Manager.IntTime = fIntTime;
                     }
                     else
                     {
-                        log.Info("自动积分获取失败：" + ret);
+                        log.Warn($"自动积分时间获取失败: {Spectrometer.GetErrorMessage(ret)}");
                         IsRun = false;
                         return;
                     }
@@ -532,16 +510,14 @@ namespace Spectrum
                 else
                 {
                     ret = Spectrometer.CM_Emission_GetAutoTimeEx(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, Manager.Max, MyAutoTimeCallback);
-                    log.Info($"CM_Emission_GetAutoTimeEx: {ret}");
-
                     if (ret == 1)
                     {
-                        log.Info($"自动积分：{fIntTime}");
+                        log.Debug($"自动积分时间: {fIntTime}ms");
                         Manager.IntTime = fIntTime;
                     }
                     else
                     {
-                        log.Info("自动积分获取失败：" + ret);
+                        log.Warn($"自动积分时间获取失败: {Spectrometer.GetErrorMessage(ret)}");
                         IsRun = false;
                         return;
                     }
@@ -552,9 +528,13 @@ namespace Spectrum
             if (Manager.EnableAdaptiveAutoDark)
             {
                 ret = Spectrometer.CM_Emission_AutoDarkStorage(SpectrometerHandle, Manager.IntTime, Manager.Average, 0, Manager.fDarkData);
-                log.Info($"CM_Emission_AutoDarkStorage: {ret}");
-                if (ret == 0)
+                if (ret == 1)
                 {
+                    log.Debug("自适应校零数据获取成功");
+                }
+                else if (ret == 0)
+                {
+                    log.Warn("自适应校零未初始化，请先执行一次自适应校零");
                     isstartAuto = false;
                     Application.Current.Dispatcher.Invoke(() =>
                     {
@@ -562,6 +542,10 @@ namespace Spectrum
                     });
                     IsRun = false;
                     return;
+                }
+                else
+                {
+                    log.Warn($"自适应校零数据获取失败: {Spectrometer.GetErrorMessage(ret)}");
                 }
             }
 
@@ -573,7 +557,8 @@ namespace Spectrum
             {
                 float fIntTime = Manager.IntTime;
                 ret = Spectrometer.CM_Emission_GetDataSyncfreq(SpectrometerHandle, 0, Manager.GetDataConfig.Syncfreq, Manager.GetDataConfig.SyncfreqFactor, ref fIntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
-                log.Info($"CM_Emission_GetDataSyncfreq: {ret}");
+                if (ret != 1)
+                    log.Warn($"同步频率采集数据失败: {Spectrometer.GetErrorMessage(ret)}");
 
                 if (Manager.EnableAutoIntegration)
                     Manager.IntTime = fIntTime;
@@ -581,12 +566,13 @@ namespace Spectrum
             else
             {
                 ret = Spectrometer.CM_Emission_GetData(SpectrometerHandle, 0, Manager.IntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
-                log.Info($"CM_Emission_GetData: {ret}");
                 if (ret == -13007)
                 {
+                    log.Warn($"采集数据超时，正在重试: {Spectrometer.GetErrorMessage(ret)}");
                     ret = Spectrometer.CM_Emission_GetData(SpectrometerHandle, 0, Manager.IntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
-                    log.Info($"CM_Emission_ReGetData: {ret}");
                 }
+                if (ret != 1)
+                    log.Warn($"采集光谱数据失败: {Spectrometer.GetErrorMessage(ret)}");
             }
             if (ret == 1)
             {
@@ -634,7 +620,7 @@ namespace Spectrum
             else
             {
                 errornum++;
-                log.Info($"{ret} SA_GetSpectum 失败!");
+                log.Error($"光谱数据采集失败: {Spectrometer.GetErrorMessage(ret)}");
             }
             IsRun = false;
         }
@@ -645,11 +631,11 @@ namespace Spectrum
         {
             for (int i = 0; i < 6; i++)
             {
-                log.Info($"Try ReConnet {i}");
+                log.Warn($"尝试重连光谱仪 ({i + 1}/6)");
                 int ret = Spectrometer.CM_Emission_Close(Manager.Handle);
-                log.Debug($"CM_Emission_Close {ret}");
+                log.Debug($"CM_Emission_Close: {ret}");
                 ret = Spectrometer.CM_ReleaseEmission(Manager.Handle);
-                log.Debug($"CM_ReleaseEmission {ret}");
+                log.Debug($"CM_ReleaseEmission: {ret}");
                 await Task.Delay(200);
                 Manager.Handle = Spectrometer.CM_CreateEmission(0, MyCallback);
                 int ncom = 0;
@@ -658,21 +644,24 @@ namespace Spectrum
                      ncom = int.Parse(Manager.Config.SzComName.Replace("COM", ""));
                 }
                 int iR = Spectrometer.CM_Emission_Init(SpectrometerHandle, ncom, Manager.Config.BaudRate);
-                log.Debug($"CM_Emission_Init:{iR}");
                 if (iR == 1)
                 {
                     Manager.IsConnected = true;
                     iR = Spectrometer.CM_Emission_LoadWavaLengthFile(SpectrometerHandle, Manager.WavelengthFile);
-                    log.Debug($"CM_Emission_LoadWavaLengthFile{Manager.WavelengthFile},ret{iR}");
+                    if (iR != 1) log.Warn($"重连后加载波长文件失败: {Spectrometer.GetErrorMessage(iR)}");
                     iR = Spectrometer.CM_Emission_LoadMagiudeFile(SpectrometerHandle, Manager.MaguideFile);
-                    log.Debug($"CM_Emission_LoadMagiudeFile{Manager.MaguideFile},ret{iR}");
+                    if (iR != 1) log.Warn($"重连后加载幅值文件失败: {Spectrometer.GetErrorMessage(iR)}");
 
-                    log.Debug($"CM_SetEmissionSP100:IsEnabled{SetEmissionSP100Config.Instance.IsEnabled},nStartPos{SetEmissionSP100Config.Instance.nStartPos},nEndPos{SetEmissionSP100Config.Instance.nEndPos},dMeanThreshold{SetEmissionSP100Config.Instance.dMeanThreshold}");
+                    log.Debug($"重连后设置 SP100: IsEnabled={SetEmissionSP100Config.Instance.IsEnabled}, nStartPos={SetEmissionSP100Config.Instance.nStartPos}, nEndPos={SetEmissionSP100Config.Instance.nEndPos}");
                     ret = Spectrometer.CM_SetEmissionSP100(SpectrometerHandle, SetEmissionSP100Config.Instance.IsEnabled, SetEmissionSP100Config.Instance.nStartPos, SetEmissionSP100Config.Instance.nEndPos, SetEmissionSP100Config.Instance.dMeanThreshold);
-                    log.Debug($"CM_SetEmissionSP100 ret:{ret}");
+                    if (ret != 1) log.Warn($"重连后 SP100 设置失败: {Spectrometer.GetErrorMessage(ret)}");
 
-                    log.Info($"ReConnet Sucess");
+                    log.Info("光谱仪重连成功");
                     break;
+                }
+                else
+                {
+                    log.Debug($"重连尝试 {i + 1} 失败: {Spectrometer.GetErrorMessage(iR)}");
                 }
                 await Task.Delay(200);
             }
@@ -726,17 +715,17 @@ namespace Spectrum
                 MessageBox.Show("正在执行任务请稍后");
                 return;
             }
-            log.Info($"CM_Emission_Init_Auto_Dark Start");
+            log.Debug("开始自适应校零");
             SetOperationButtonsEnabled(false);
             Task.Run(() =>
             {
                 IsRun = true;
                 int ret = Spectrometer.CM_Emission_Init_Auto_Dark(SpectrometerHandle, Manager.AutodarkParam.fTimeStart, Manager.AutodarkParam.nStepTime, Manager.AutodarkParam.nStepCount, Manager.Average);
-                log.Info($"CM_Emission_Init_Auto_Dark {ret}");
                 IsRun = false;
                 SetOperationButtonsEnabled(true);
                 if (ret == 1)
                 {
+                    log.Info("自适应校零成功");
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MessageBox.Show("自适应校零成功");
@@ -744,9 +733,11 @@ namespace Spectrum
                 }
                 else
                 {
+                    string errorMsg = Spectrometer.GetErrorMessage(ret);
+                    log.Error($"自适应校零失败: {errorMsg}");
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show("自适应校零失败");
+                        MessageBox.Show($"自适应校零失败: {errorMsg}");
                     });
                 }
             });
@@ -1493,11 +1484,19 @@ namespace Spectrum
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            log.Info($"CM_SetEmissionSP100:IsEnabled{SetEmissionSP100Config.Instance.IsEnabled},nStartPos{SetEmissionSP100Config.Instance.nStartPos},nEndPos{SetEmissionSP100Config.Instance.nEndPos},dMeanThreshold{SetEmissionSP100Config.Instance.dMeanThreshold}");
+            log.Debug($"设置 SP100 参数: IsEnabled={SetEmissionSP100Config.Instance.IsEnabled}, nStartPos={SetEmissionSP100Config.Instance.nStartPos}, nEndPos={SetEmissionSP100Config.Instance.nEndPos}, dMeanThreshold={SetEmissionSP100Config.Instance.dMeanThreshold}");
             int ret = Spectrometer.CM_SetEmissionSP100(SpectrometerHandle, SetEmissionSP100Config.Instance.IsEnabled, SetEmissionSP100Config.Instance.nStartPos, SetEmissionSP100Config.Instance.nEndPos, SetEmissionSP100Config.Instance.dMeanThreshold);
-            log.Info($"CM_SetEmissionSP100 ret:{ret}");
-            string a = ret != 1 ? "失败" : "成功";
-            MessageBox.Show("CM_SetEmissionSP100："  + a );
+            if (ret == 1)
+            {
+                log.Info("SP100 参数设置成功");
+                MessageBox.Show("SP100 设置成功");
+            }
+            else
+            {
+                string errorMsg = Spectrometer.GetErrorMessage(ret);
+                log.Error($"SP100 参数设置失败: {errorMsg}");
+                MessageBox.Show($"SP100 设置失败: {errorMsg}");
+            }
         }
 
         private void GridViewColumnSort1(object sender, RoutedEventArgs e)
@@ -1593,7 +1592,7 @@ namespace Spectrum
                 try
                 {
                     Clipboard.SetText(Manager.SerialNumber);
-                    log.Info($"SN copied to clipboard: {Manager.SerialNumber}");
+                    log.Debug($"序列号已复制到剪贴板: {Manager.SerialNumber}");
                 }
                 catch (Exception ex)
                 {
@@ -1616,7 +1615,7 @@ namespace Spectrum
                 Manager.SmuController.Close();
                 ButtonSmuConnect.Content = "连接源表";
                 ButtonSmuMeasure.IsEnabled = false;
-                log.Info("SMU disconnected");
+                log.Info("SMU 已断开");
             }
             else
             {
@@ -1625,7 +1624,7 @@ namespace Spectrum
                 {
                     ButtonSmuConnect.Content = "断开源表";
                     ButtonSmuMeasure.IsEnabled = true;
-                    log.Info($"SMU connected: {Manager.SmuController.Version}");
+                    log.Info($"SMU 连接成功: {Manager.SmuController.Version}");
                 }
                 else
                 {
@@ -1644,7 +1643,7 @@ namespace Spectrum
                 var (voltage, currentMA) = Manager.SmuController.GetVI();
                 MainWindowConfig.Instance.EqeVoltage = voltage;
                 MainWindowConfig.Instance.EqeCurrentMA = currentMA;
-                log.Info($"SMU V={voltage}, I={currentMA} mA → synced to EQE config");
+                log.Debug($"SMU 测量结果: V={voltage}, I={currentMA}mA");
             }
             else
             {
