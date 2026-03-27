@@ -1,4 +1,6 @@
-﻿using ColorVision.Common.MVVM;
+﻿using AvalonDock.Layout;
+using AvalonDock.Layout.Serialization;
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
@@ -54,6 +56,10 @@ namespace Spectrum
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
         public static SpectrometerManager Manager => SpectrometerManager.Instance;
 
+        /// <summary>
+        /// Static reference to current MainWindow instance for menu items access.
+        /// </summary>
+        internal static MainWindow? Instance { get; private set; }
 
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
 
@@ -65,6 +71,9 @@ namespace Spectrum
         Mat src1931;
         Mat src1976;
 
+        private static string LayoutFilePath => Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory, "DockLayout.xml");
+
         public MainWindow()
         {
             string path1931 = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Assets\Image\CIE-1931.jpg");
@@ -74,6 +83,7 @@ namespace Spectrum
             if (File.Exists(path1976))
                 src1976 = new Mat(path1976, ImreadModes.Color);
             InitializeComponent();
+            Instance = this;
             Config.SetWindow(this);
             this.SizeChanged += (s, e) => Config.SetConfig(this);
             this.ApplyCaption();
@@ -81,6 +91,7 @@ namespace Spectrum
             this.Closed += (s, e) =>
             {
                 Manager.Disconnect();
+                Instance = null;
             };
             this.Title += " - " + Assembly.GetAssembly(typeof(MainWindow))?.GetName().Version?.ToString() ?? "";
         }
@@ -90,6 +101,20 @@ namespace Spectrum
         {
             log.Info("初始化 cvCamera 资源");
             cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
+
+            // AvalonDock theme integration
+            void ThemeChange(Theme theme)
+            {
+                if (theme == Theme.Dark)
+                    DockingManager.Theme = new AvalonDock.Themes.Vs2013DarkTheme();
+                else
+                    DockingManager.Theme = new AvalonDock.Themes.Vs2013LightTheme();
+            }
+            ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
+            ThemeChange(ThemeManager.Current.CurrentUITheme);
+
+            // Load saved layout if exists
+            LoadLayout();
 
             ViewResultManager.ListView = ViewResultList;
 
@@ -1610,6 +1635,169 @@ namespace Spectrum
             logOutput?.Dispose();
             GC.SuppressFinalize(this);
         }
+
+        #region Layout Management
+
+        /// <summary>
+        /// Save the current AvalonDock layout to file.
+        /// </summary>
+        internal void SaveLayout()
+        {
+            try
+            {
+                var serializer = new XmlLayoutSerializer(DockingManager);
+                using var stream = new StreamWriter(LayoutFilePath);
+                serializer.Serialize(stream);
+                log.Info("窗口布局已保存");
+            }
+            catch (Exception ex)
+            {
+                log.Warn("保存窗口布局失败", ex);
+            }
+        }
+
+        /// <summary>
+        /// Load a saved AvalonDock layout from file.
+        /// </summary>
+        internal void LoadLayout()
+        {
+            if (!File.Exists(LayoutFilePath)) return;
+            try
+            {
+                // Collect existing content by ContentId before deserializing
+                var contentMap = new Dictionary<string, object>();
+                foreach (var anchorable in _layoutRoot.Descendents().OfType<LayoutAnchorable>())
+                {
+                    if (anchorable.Content != null && !string.IsNullOrEmpty(anchorable.ContentId))
+                        contentMap[anchorable.ContentId] = anchorable.Content;
+                }
+                foreach (var document in _layoutRoot.Descendents().OfType<LayoutDocument>())
+                {
+                    if (document.Content != null && !string.IsNullOrEmpty(document.ContentId))
+                        contentMap[document.ContentId] = document.Content;
+                }
+
+                var serializer = new XmlLayoutSerializer(DockingManager);
+                serializer.LayoutSerializationCallback += (s, args) =>
+                {
+                    if (args.Model.ContentId != null && contentMap.TryGetValue(args.Model.ContentId, out var content))
+                        args.Content = content;
+                };
+                using var stream = new StreamReader(LayoutFilePath);
+                serializer.Deserialize(stream);
+                log.Info("窗口布局已加载");
+            }
+            catch (Exception ex)
+            {
+                log.Warn("加载窗口布局失败", ex);
+            }
+        }
+
+        /// <summary>
+        /// Reset the AvalonDock layout to its default state.
+        /// </summary>
+        internal void ResetLayout()
+        {
+            try
+            {
+                if (File.Exists(LayoutFilePath))
+                    File.Delete(LayoutFilePath);
+
+                // Collect current content
+                var contentMap = new Dictionary<string, object>();
+                foreach (var anchorable in _layoutRoot.Descendents().OfType<LayoutAnchorable>())
+                {
+                    if (anchorable.Content != null && !string.IsNullOrEmpty(anchorable.ContentId))
+                        contentMap[anchorable.ContentId] = anchorable.Content;
+                }
+                foreach (var document in _layoutRoot.Descendents().OfType<LayoutDocument>())
+                {
+                    if (document.Content != null && !string.IsNullOrEmpty(document.ContentId))
+                        contentMap[document.ContentId] = document.Content;
+                }
+
+                // Load default layout from embedded XAML by re-reading the default
+                var defaultLayout = new LayoutRoot();
+                var mainPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
+
+                var leftGroup = new LayoutAnchorablePaneGroup { DockWidth = new GridLength(330) };
+                var leftPane = new LayoutAnchorablePane();
+                var controlPanel = new LayoutAnchorable { Title = "控制面板", ContentId = "ControlPanel", CanClose = false, CanAutoHide = true, CanFloat = true };
+                if (contentMap.TryGetValue("ControlPanel", out var cpContent))
+                    controlPanel.Content = cpContent;
+                leftPane.Children.Add(controlPanel);
+                leftGroup.Children.Add(leftPane);
+                mainPanel.Children.Add(leftGroup);
+
+                var centerPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Vertical };
+                var docGroup = new LayoutDocumentPaneGroup();
+                var docPane = new LayoutDocumentPane();
+                var chartDoc = new LayoutDocument { Title = "光谱图表", ContentId = "SpectrumChart", CanClose = false };
+                if (contentMap.TryGetValue("SpectrumChart", out var chartContent))
+                    chartDoc.Content = chartContent;
+                docPane.Children.Add(chartDoc);
+                docGroup.Children.Add(docPane);
+                centerPanel.Children.Add(docGroup);
+
+                var bottomGroup = new LayoutAnchorablePaneGroup { DockHeight = new GridLength(250) };
+                var bottomPane = new LayoutAnchorablePane();
+                var logAnchorable = new LayoutAnchorable { Title = "日志", ContentId = "LogPanel", CanClose = true, CanAutoHide = true, CanFloat = true };
+                if (contentMap.TryGetValue("LogPanel", out var logContent))
+                    logAnchorable.Content = logContent;
+                bottomPane.Children.Add(logAnchorable);
+                var cieAnchorable = new LayoutAnchorable { Title = "CIE色度图", ContentId = "CIEDiagram", CanClose = true, CanAutoHide = true, CanFloat = true };
+                if (contentMap.TryGetValue("CIEDiagram", out var cieContent))
+                    cieAnchorable.Content = cieContent;
+                bottomPane.Children.Add(cieAnchorable);
+                bottomGroup.Children.Add(bottomPane);
+                centerPanel.Children.Add(bottomGroup);
+
+                mainPanel.Children.Add(centerPanel);
+                defaultLayout.RootPanel = mainPanel;
+
+                DockingManager.Layout = defaultLayout;
+                log.Info("窗口布局已重置");
+            }
+            catch (Exception ex)
+            {
+                log.Warn("重置窗口布局失败", ex);
+            }
+        }
+
+        /// <summary>
+        /// Show or toggle the log panel visibility.
+        /// </summary>
+        internal void ShowLogPanel()
+        {
+            // Find the LogPanel anchorable in the layout
+            var logAnchorable = _layoutRoot.Descendents().OfType<LayoutAnchorable>()
+                .FirstOrDefault(a => a.ContentId == "LogPanel");
+            if (logAnchorable != null)
+            {
+                if (logAnchorable.IsHidden)
+                    logAnchorable.Show();
+                else if (logAnchorable.IsVisible)
+                    logAnchorable.Hide();
+            }
+        }
+
+        /// <summary>
+        /// Show or toggle the CIE diagram panel visibility.
+        /// </summary>
+        internal void ShowCiePanel()
+        {
+            var cieAnchorable = _layoutRoot.Descendents().OfType<LayoutAnchorable>()
+                .FirstOrDefault(a => a.ContentId == "CIEDiagram");
+            if (cieAnchorable != null)
+            {
+                if (cieAnchorable.IsHidden)
+                    cieAnchorable.Show();
+                else if (cieAnchorable.IsVisible)
+                    cieAnchorable.Hide();
+            }
+        }
+
+        #endregion
 
         private void SmuConnect_Click(object sender, RoutedEventArgs e)
         {

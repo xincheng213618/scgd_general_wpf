@@ -10,6 +10,7 @@
         xmlns:properties ="clr-namespace:Spectrum.Properties"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SpectrometerManager}"
         Title="光谱仪软件" Height="1080" Width="1920" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -56,16 +57,16 @@
         </Grid>
         
 
-        <Grid Grid.Row="1" >
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="330"/>
-                <ColumnDefinition Width="*"/>
+        <xcad:DockingManager x:Name="DockingManager" Grid.Row="1" BorderThickness="0" Background="Transparent">
+            <xcad:LayoutRoot x:Name="_layoutRoot">
+                <xcad:LayoutPanel Orientation="Horizontal">
 
-            </Grid.ColumnDefinitions>
-
-            <Grid Grid.Column="0">
-                <ScrollViewer Margin="3,0,3,5">
-                    <StackPanel x:Name="MainStackPanel">
+                    <!-- ═══ Left: Control Panel ═══ -->
+                    <xcad:LayoutAnchorablePaneGroup DockWidth="330">
+                        <xcad:LayoutAnchorablePane>
+                            <xcad:LayoutAnchorable x:Name="ControlPanelPane" Title="控制面板" ContentId="ControlPanel" CanClose="False" CanAutoHide="True" CanFloat="True">
+                                <ScrollViewer Margin="3,0,3,5">
+                                    <StackPanel x:Name="MainStackPanel">
 
                         <!-- ═══ 光谱仪连接 (Spectrometer Connection) ═══ -->
                         <GroupBox Header="光谱仪连接">
@@ -391,22 +392,29 @@
 
                     </StackPanel>
                 </ScrollViewer>
-                
-            </Grid>
-            <Grid Grid.Column="1">
-                <Grid Grid.Column="0" >
-                    <Grid.RowDefinitions>
-                        <RowDefinition x:Name="ListRow1" Height="*"/>
-                        <RowDefinition x:Name="ListRow2" Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
+                            </xcad:LayoutAnchorable>
+                        </xcad:LayoutAnchorablePane>
+                    </xcad:LayoutAnchorablePaneGroup>
 
-                    </Grid.RowDefinitions>
-                    <Grid Grid.Column="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <ScottPlot:WpfPlot  x:Name="wpfplot1" Panel.ZIndex="9" />
+                    <!-- ═══ Center + Bottom Layout ═══ -->
+                    <xcad:LayoutPanel Orientation="Vertical">
+
+                        <!-- ═══ Center: Spectrum Charts + Data ═══ -->
+                        <xcad:LayoutDocumentPaneGroup>
+                            <xcad:LayoutDocumentPane>
+                                <xcad:LayoutDocument Title="光谱图表" ContentId="SpectrumChart" CanClose="False">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition x:Name="ListRow1" Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition x:Name="ListRow2" Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ScottPlot:WpfPlot  x:Name="wpfplot1" Panel.ZIndex="9" />
                         <ScottPlot:WpfPlot  x:Name="wpfplot2" Panel.ZIndex="9" Visibility="Collapsed" />
                         <ListView x:Name="listView2"  Grid.Column="1"  Padding="2,0,2,2"  Style="{StaticResource ListView.Small}" BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
                             <ListView.Resources>
@@ -448,8 +456,9 @@
                             </ListView.View>
                         </ListView>
 
-                    </Grid>
-                    <Grid x:Name="Grid1" Grid.Row="1" >
+                                        </Grid>
+                                        <GridSplitter Grid.Row="1" Background="#FFFFFF" Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" DragCompleted="GridSplitter_DragCompleted"/>
+                                        <Grid x:Name="Grid1" Grid.Row="2" >
                         <Grid.RowDefinitions>
                             <RowDefinition Height="32"/>
                             <RowDefinition Height="Auto"/>
@@ -774,38 +783,37 @@
                             </ListView.View>
                         </ListView>
 
-                    </Grid>
-                    <GridSplitter  Grid.Row="1" Background="#FFFFFF"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
-                    <Grid Grid.Row="2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid  x:Name="LogGrid" Height="250">
-                        </Grid>
-                        <Grid  Grid.Column="1"  >
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid Grid.Row="1">
-                                <Image x:Name="image" HorizontalAlignment="Left" Height="250"  Width="230" Margin="0" Source="Assets\Image\CIE-1931.jpg" Grid.Column="1" />
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Panel.ZIndex="999">
-                                    <Button x:Name="button1" Content="CIE1931" Click="Button1_Click"/>
-                                    <Button x:Name="button2" Content="CIE1976" Click="Button2_Click"/>
-                                    <CheckBox x:Name="CiePointCheckBox" Content="标注" IsChecked="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=CiePointEnabled}" Margin="5,0,0,0" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Grid>
+                                        </Grid>
+                                    </Grid>
+                                </xcad:LayoutDocument>
+                            </xcad:LayoutDocumentPane>
+                        </xcad:LayoutDocumentPaneGroup>
 
-                        </Grid>
-                    </Grid>
+                        <!-- ═══ Bottom: Log + CIE Diagram ═══ -->
+                        <xcad:LayoutAnchorablePaneGroup DockHeight="250">
+                            <xcad:LayoutAnchorablePane>
+                                <xcad:LayoutAnchorable x:Name="LogPane" Title="日志" ContentId="LogPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
+                                    <Grid x:Name="LogGrid">
+                                    </Grid>
+                                </xcad:LayoutAnchorable>
+                                <xcad:LayoutAnchorable x:Name="CiePane" Title="CIE色度图" ContentId="CIEDiagram" CanClose="True" CanAutoHide="True" CanFloat="True">
+                                    <Grid>
+                                        <Image x:Name="image" HorizontalAlignment="Left" Height="250" Width="230" Margin="0" Source="Assets\Image\CIE-1931.jpg"/>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Panel.ZIndex="999">
+                                            <Button x:Name="button1" Content="CIE1931" Click="Button1_Click"/>
+                                            <Button x:Name="button2" Content="CIE1976" Click="Button2_Click"/>
+                                            <CheckBox x:Name="CiePointCheckBox" Content="标注" IsChecked="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=CiePointEnabled}" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </xcad:LayoutAnchorable>
+                            </xcad:LayoutAnchorablePane>
+                        </xcad:LayoutAnchorablePaneGroup>
 
-                </Grid>
+                    </xcad:LayoutPanel>
 
-            </Grid>
-
-
-        </Grid>
+                </xcad:LayoutPanel>
+            </xcad:LayoutRoot>
+        </xcad:DockingManager>
 
         <StatusBar Grid.Row="2">
             <StatusBarItem>

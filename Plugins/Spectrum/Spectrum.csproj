@@ -16,6 +16,7 @@
 
 	
 	<ItemGroup>
+		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.72.1" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260222" />
 		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260222" />
