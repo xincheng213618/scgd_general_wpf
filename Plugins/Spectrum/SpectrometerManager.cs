@@ -257,9 +257,15 @@ namespace Spectrum
             if (IsConnected && Handle != IntPtr.Zero)
             {
                 int r1 = Spectrometer.CM_Emission_LoadWavaLengthFile(Handle, WavelengthFile);
-                log.Info($"Group switch: CM_Emission_LoadWavaLengthFile {WavelengthFile}, ret={r1}");
+                if (r1 == 1)
+                    log.Info($"校准组切换: 加载波长文件成功 {WavelengthFile}");
+                else
+                    log.Warn($"校准组切换: 加载波长文件失败 {WavelengthFile}, {Spectrometer.GetErrorMessage(r1)}");
                 int r2 = Spectrometer.CM_Emission_LoadMagiudeFile(Handle, MaguideFile);
-                log.Info($"Group switch: CM_Emission_LoadMagiudeFile {MaguideFile}, ret={r2}");
+                if (r2 == 1)
+                    log.Info($"校准组切换: 加载幅值文件成功 {MaguideFile}");
+                else
+                    log.Warn($"校准组切换: 加载幅值文件失败 {MaguideFile}, {Spectrometer.GetErrorMessage(r2)}");
             }
         }
 
@@ -272,12 +278,12 @@ namespace Spectrum
             var group = CalibrationGroupConfig.FindGroupForNDPosition(ndPositionName);
             if (group != null)
             {
-                log.Info($"ND position changed to '{ndPositionName}', auto-switching to calibration group '{group.GroupName}'");
+                log.Debug($"ND 位置切换至 '{ndPositionName}'，自动切换校准组 '{group.GroupName}'");
                 ActiveCalibrationGroupName = group.GroupName;
             }
             else
             {
-                log.Info($"ND position changed to '{ndPositionName}', no matching calibration group found");
+                log.Debug($"ND 位置切换至 '{ndPositionName}'，无匹配校准组");
             }
         }
 
@@ -291,7 +297,7 @@ namespace Spectrum
             var group = CalibrationGroupConfig.FindGroupForFilterWheelPosition(position);
             if (group != null)
             {
-                log.Info($"FilterWheel position changed to {position}, auto-switching to calibration group '{group.GroupName}'");
+                log.Debug($"滤光轮位置切换至 {position}，自动切换校准组 '{group.GroupName}'");
                 Application.Current.Dispatcher.Invoke(() => ActiveCalibrationGroupName = group.GroupName);
                 return;
             }
@@ -304,7 +310,7 @@ namespace Spectrum
             }
             else
             {
-                log.Info($"FilterWheel position changed to {position}, no matching calibration group found");
+                log.Debug($"滤光轮位置切换至 {position}，无匹配校准组");
             }
         }
 
@@ -420,12 +426,12 @@ namespace Spectrum
             NDHandle = NdCFWPortAPI.CM_CreatNdCFWPort(NDConfig.SzComName, (uint)NDConfig.BaudRate, false);
             if (NDHandle == IntPtr.Zero)
             {
-                log.Info("NDConnnet failed");
+                log.Warn("ND 滤光轮连接失败");
                 IsNDConnected = false;
             }
             else
             {
-                log.Info("NDConnnet");
+                log.Info("ND 滤光轮连接成功");
                 IsNDConnected = true;
             }
         }
@@ -455,7 +461,7 @@ namespace Spectrum
         {
             if (CalibrationGroupConfig.Groups.Count <= 1)
             {
-                log.Info("Cannot remove the last calibration group");
+                log.Debug("不能删除最后一个校准组");
                 return;
             }
             var group = CalibrationGroupConfig.ActiveGroup;
@@ -621,7 +627,7 @@ namespace Spectrum
         public static int MyCallback(IntPtr strText, int nLen)
         {
             string text = Marshal.PtrToStringAnsi(strText, nLen);
-            log.Info("Callback: " + text);
+            log.Debug("光谱仪回调: " + text);
             return 0;
         }
 
@@ -637,11 +643,14 @@ namespace Spectrum
             int iR = Spectrometer.CM_Emission_Init(Handle, ncom, Config.BaudRate);
             if (iR == 1)
             {
+                log.Info("光谱仪连接成功");
                 MessageBox.Show("连接成功");
             }
             else
             {
-                MessageBox.Show("连接失败");
+                string errorMsg = Spectrometer.GetErrorMessage(iR);
+                log.Error($"光谱仪连接失败: {errorMsg}");
+                MessageBox.Show($"连接失败: {errorMsg}");
             }
         }
         public int Disconnect()
@@ -658,23 +667,25 @@ namespace Spectrum
         public void GenerateAmplitude()  
         {
             int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fLightData);
-            if (ret == 1)
+            if (ret != 1)
             {
-            }
-            else
-            {
-                MessageBox.Show("获取LightData失败");
+                string errorMsg = Spectrometer.GetErrorMessage(ret);
+                log.Error($"获取 LightData 失败: {errorMsg}");
+                MessageBox.Show($"获取 LightData 失败: {errorMsg}");
                 return;
             }
-            log.Info($"IntTime{IntTime}CSFile: {CSFile},WavelengthFile{WavelengthFile},MaguideFileOutput{MaguideFileOutput}");
-            bool ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, MaguideFileOutput);
-            if (ret1)
+            log.Debug($"生成幅值文件参数: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={MaguideFileOutput}");
+            int ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, MaguideFileOutput);
+            if (ret1 == 1)
             {
+                log.Info("幅值文件生成成功");
                 MessageBox.Show("生成成功");
             }
             else
             {
-                MessageBox.Show("生成失败");
+                string errorMsg = Spectrometer.GetErrorMessage(ret1);
+                log.Error($"幅值文件生成失败: {errorMsg}");
+                MessageBox.Show($"生成失败: {errorMsg}");
             }
         }
 
@@ -683,11 +694,14 @@ namespace Spectrum
             int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fLightData);
             if (ret == 1)
             {
+                log.Info("LightData 获取成功");
                 MessageBox.Show("获取成功");
             }
             else
             {
-                MessageBox.Show("获取失败");
+                string errorMsg = Spectrometer.GetErrorMessage(ret);
+                log.Error($"LightData 获取失败: {errorMsg}");
+                MessageBox.Show($"获取失败: {errorMsg}");
             }
         }
 
@@ -696,11 +710,14 @@ namespace Spectrum
             int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fDarkData);
             if (ret == 1)
             {
+                log.Info("校零成功");
                 MessageBox.Show("校零成功");
             }
             else
             {
-                MessageBox.Show("校零失败");
+                string errorMsg = Spectrometer.GetErrorMessage(ret);
+                log.Error($"校零失败: {errorMsg}");
+                MessageBox.Show($"校零失败: {errorMsg}");
             }
         }
 
@@ -708,7 +725,7 @@ namespace Spectrum
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                log.Info($"当前自动积分时间: {time},spectum:{spectum}");
+                log.Debug($"自动积分时间回调: 积分时间={time}, 光谱强度={spectum}");
             });
             return 0;
         }
@@ -720,11 +737,14 @@ namespace Spectrum
             if (ret == 1)
             {
                 IntTime = fIntTime;
+                log.Info($"自动积分时间获取成功: {fIntTime}ms");
                 MessageBox.Show("获取成功");
             }
             else
             {
-                MessageBox.Show("自动积分获取失败");
+                string errorMsg = Spectrometer.GetErrorMessage(ret);
+                log.Warn($"自动积分时间获取失败: {errorMsg}");
+                MessageBox.Show($"自动积分获取失败: {errorMsg}");
             }
         }
 
@@ -823,27 +843,31 @@ namespace Spectrum
         private void LoadMaguideFile()
         {
             int ret = Spectrometer.CM_Emission_LoadMagiudeFile(Handle, MaguideFile);
-            log.Info($"CM_Emission_LoadMagiudeFile 配置幅值文{MaguideFile}:{ret}");
             if (ret == 1)
             {
+                log.Info($"加载幅值文件成功: {MaguideFile}");
                 MessageBox.Show("配置幅值文件成功");
             }
             else
             {
-                MessageBox.Show("配置幅值文件失败");
+                string errorMsg = Spectrometer.GetErrorMessage(ret);
+                log.Error($"加载幅值文件失败: {MaguideFile}, {errorMsg}");
+                MessageBox.Show($"配置幅值文件失败: {errorMsg}");
             }
         }
         private void LoadWavelengthFile()
         {
             int ret = Spectrometer.CM_Emission_LoadWavaLengthFile(Handle, WavelengthFile);
-            log.Info($"CM_Emission_LoadWavaLengthFile 配置波长文{WavelengthFile}:{ret}");
             if (ret == 1)
             {
+                log.Info($"加载波长文件成功: {WavelengthFile}");
                 MessageBox.Show("配置波长文件成功");
             }
             else
             {
-                MessageBox.Show("配置波长文件失败");
+                string errorMsg = Spectrometer.GetErrorMessage(ret);
+                log.Error($"加载波长文件失败: {WavelengthFile}, {errorMsg}");
+                MessageBox.Show($"配置波长文件失败: {errorMsg}");
             }
         }
 
