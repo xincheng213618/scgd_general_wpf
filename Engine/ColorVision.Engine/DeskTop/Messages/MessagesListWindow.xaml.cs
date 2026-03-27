@@ -54,7 +54,7 @@ namespace ColorVision.Engine.DeskTop.Messages
         private void Window_Initialized(object sender, EventArgs e)
         {
             MsgRecordManager = MessagesListManager.GetInstance();
-            MsgRecordManager.LoadAll();
+            MsgRecordManager.LoadAll(MsgRecordManager.Config.Count);
             MsgRecordManager.StartListening();
 
             this.DataContext = MsgRecordManager;
@@ -201,14 +201,18 @@ namespace ColorVision.Engine.DeskTop.Messages
             Common.NativeMethods.Clipboard.SetText(text);
         }
 
-        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
+        private void StateFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
-        }
-
-        private void Inquire_Click(object sender, RoutedEventArgs e)
-        {
-
+            if (MsgRecordManager == null) return;
+            if (StateFilterComboBox.SelectedIndex == 0)
+            {
+                MsgRecordManager.FilterMsgRecordState = null;
+            }
+            else if (StateFilterComboBox.SelectedItem is ComboBoxItem item && item.Content is string content)
+            {
+                if (Enum.TryParse<MsgRecordState>(content == "Failure" ? "Fail" : content, out var state))
+                    MsgRecordManager.FilterMsgRecordState = state;
+            }
         }
 
 
