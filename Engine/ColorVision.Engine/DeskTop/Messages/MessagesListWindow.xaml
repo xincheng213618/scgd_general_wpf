@@ -29,12 +29,12 @@
                     <TextBox Width="100" VerticalAlignment="Center" Text="{Binding FilterEventName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0"/>
                     <TextBlock Text="State:" VerticalAlignment="Center" Margin="2,0,2,0"/>
                     <ComboBox x:Name="StateFilterComboBox" Width="90" VerticalAlignment="Center" Margin="0,0,4,0" SelectionChanged="StateFilterComboBox_SelectionChanged">
-                        <ComboBoxItem Content="全部" IsSelected="True"/>
-                        <ComboBoxItem Content="Initial"/>
-                        <ComboBoxItem Content="Sended"/>
-                        <ComboBoxItem Content="Success"/>
-                        <ComboBoxItem Content="Failure"/>
-                        <ComboBoxItem Content="Timeout"/>
+                        <ComboBoxItem Content="全部" Tag=""/>
+                        <ComboBoxItem Content="Initial" Tag="Initial"/>
+                        <ComboBoxItem Content="Sended" Tag="Sended"/>
+                        <ComboBoxItem Content="Success" Tag="Success"/>
+                        <ComboBoxItem Content="Failure" Tag="Fail"/>
+                        <ComboBoxItem Content="Timeout" Tag="Timeout"/>
                     </ComboBox>
                     <Separator/>
                     <Button Content="{x:Static properties:Resources.Inquire}" Command="{Binding QueryCommand}" Margin="2,0,0,0" ToolTip="根据过滤条件查询"/>

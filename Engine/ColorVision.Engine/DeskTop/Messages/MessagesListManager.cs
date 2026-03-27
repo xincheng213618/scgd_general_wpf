@@ -193,6 +193,7 @@ namespace ColorVision.Engine.DeskTop.Messages
         {
             Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
 
+            // Force GC to release file handles held by disposed SQLite connections
             GC.Collect();
             GC.WaitForPendingFinalizers();
 

@@ -204,13 +204,11 @@ namespace ColorVision.Engine.DeskTop.Messages
         private void StateFilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (MsgRecordManager == null) return;
-            if (StateFilterComboBox.SelectedIndex == 0)
+            if (StateFilterComboBox.SelectedItem is ComboBoxItem item && item.Tag is string tag)
             {
-                MsgRecordManager.FilterMsgRecordState = null;
-            }
-            else if (StateFilterComboBox.SelectedItem is ComboBoxItem item && item.Content is string content)
-            {
-                if (Enum.TryParse<MsgRecordState>(content == "Failure" ? "Fail" : content, out var state))
+                if (string.IsNullOrEmpty(tag))
+                    MsgRecordManager.FilterMsgRecordState = null;
+                else if (Enum.TryParse<MsgRecordState>(tag, out var state))
                     MsgRecordManager.FilterMsgRecordState = state;
             }
         }
