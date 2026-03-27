@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿using AvalonDock.Layout;
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
@@ -54,6 +55,15 @@ namespace Spectrum
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
         public static SpectrometerManager Manager => SpectrometerManager.Instance;
 
+        /// <summary>
+        /// Static reference to current MainWindow instance for menu items access.
+        /// </summary>
+        internal static MainWindow? Instance { get; private set; }
+
+        /// <summary>
+        /// Layout manager for AvalonDock persistence, reset, and panel visibility.
+        /// </summary>
+        internal DockLayoutManager? LayoutManager { get; private set; }
 
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
 
@@ -74,13 +84,20 @@ namespace Spectrum
             if (File.Exists(path1976))
                 src1976 = new Mat(path1976, ImreadModes.Color);
             InitializeComponent();
+            Instance = this;
             Config.SetWindow(this);
             this.SizeChanged += (s, e) => Config.SetConfig(this);
             this.ApplyCaption();
             this.SetWindowFull(Config);
+            this.Closing += (s, e) =>
+            {
+                // Auto-save layout when the window is closing
+                LayoutManager?.SaveLayout();
+            };
             this.Closed += (s, e) =>
             {
                 Manager.Disconnect();
+                Instance = null;
             };
             this.Title += " - " + Assembly.GetAssembly(typeof(MainWindow))?.GetName().Version?.ToString() ?? "";
         }
@@ -91,18 +108,41 @@ namespace Spectrum
             log.Info("初始化 cvCamera 资源");
             cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
 
-            ViewResultManager.ListView = ViewResultList;
+            // AvalonDock theme integration
+            void ThemeChange(Theme theme)
+            {
+                if (theme == Theme.Dark)
+                    DockingManager.Theme = new AvalonDock.Themes.Vs2013DarkTheme();
+                else
+                    DockingManager.Theme = new AvalonDock.Themes.Vs2013LightTheme();
+            }
+            ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
+            ThemeChange(ThemeManager.Current.CurrentUITheme);
 
-            // Wire up adaptive auto dark execution for gear settings dialog
-            Manager.AutodarkParam.ExecuteAdaptiveAutoDark = () => Button4_Click_1(null, null);
-
-            MenuManager.GetInstance().LoadMenuForWindow("Spectrum", menu);
+            // Initialize layout manager and register all panel content
+            LayoutManager = new DockLayoutManager(DockingManager);
+            LayoutManager.RegisterContent("ControlPanel", ControlPanelPane.Content);
+            LayoutManager.RegisterContent("SpectrumChart",
+                _layoutRoot.Descendents().OfType<LayoutDocument>()
+                    .First(d => d.ContentId == "SpectrumChart").Content);
 
             if (MainWindowConfig.Instance.LogControlVisibility)
             {
                 logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
                 LogGrid.Children.Add(logOutput);
             }
+            LayoutManager.RegisterContent("LogPanel", LogGrid);
+            LayoutManager.RegisterContent("CIEDiagram", CiePane.Content);
+
+            // Load saved layout if exists
+            LayoutManager.LoadLayout();
+
+            ViewResultManager.ListView = ViewResultList;
+
+            // Wire up adaptive auto dark execution for gear settings dialog
+            Manager.AutodarkParam.ExecuteAdaptiveAutoDark = () => Button4_Click_1(null, null);
+
+            MenuManager.GetInstance().LoadMenuForWindow("Spectrum", menu);
 
             image.Source = src1931?.ToBitmapSource();
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues(typeof(SpectrometerType)).Cast<SpectrometerType>()
