@@ -89,6 +89,27 @@ namespace ColorVision.Database
         public virtual void AddAllPropertyInfos() { }
         public virtual void QueryDB() => OnPreQuery();
 
+        /// <summary>
+        /// Reset a property on the query value object to its default value.
+        /// Failures are logged at Debug level since reflection-based resets may fail
+        /// for readonly backing fields or type-mismatch edge cases.
+        /// </summary>
+        protected static void ResetPropertyValue(PropertyInfo property, object target)
+        {
+            if (!property.CanWrite) return;
+            try
+            {
+                var defaultVal = property.PropertyType.IsValueType
+                    ? Activator.CreateInstance(property.PropertyType)
+                    : null;
+                property.SetValue(target, defaultVal);
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Failed to reset property {property.Name}: {ex.Message}");
+            }
+        }
+
         public virtual void DeleteAll() { }
         public virtual void TruncateTable() { }
     }
@@ -229,18 +250,7 @@ namespace ColorVision.Database
             if (!PropertyInfos.Any(a => a.Value == condition.Property))
                 PropertyInfos.Add(new KeyValuePair<string, PropertyInfo>(propName, condition.Property));
 
-            // Reset the value on the query object
-            if (condition.Property.CanWrite)
-            {
-                try
-                {
-                    var defaultVal = condition.Property.PropertyType.IsValueType
-                        ? Activator.CreateInstance(condition.Property.PropertyType)
-                        : null;
-                    condition.Property.SetValue(QueryValue, defaultVal);
-                }
-                catch { }
-            }
+            ResetPropertyValue(condition.Property, QueryValue);
         }
 
         public override void ResetConditions()
@@ -250,18 +260,7 @@ namespace ColorVision.Database
                 if (cond.UiRow != null)
                     QueryStackPanel.Children.Remove(cond.UiRow);
 
-                // Reset value
-                if (cond.Property.CanWrite)
-                {
-                    try
-                    {
-                        var defaultVal = cond.Property.PropertyType.IsValueType
-                            ? Activator.CreateInstance(cond.Property.PropertyType)
-                            : null;
-                        cond.Property.SetValue(QueryValue, defaultVal);
-                    }
-                    catch { }
-                }
+                ResetPropertyValue(cond.Property, QueryValue);
             }
             QueryConditions.Clear();
 
@@ -545,18 +544,7 @@ namespace ColorVision.Database
             if (!PropertyInfos.Any(a => a.Value == condition.Property))
                 PropertyInfos.Add(new KeyValuePair<string, PropertyInfo>(propName, condition.Property));
 
-            // Reset the value on the query object
-            if (condition.Property.CanWrite)
-            {
-                try
-                {
-                    var defaultVal = condition.Property.PropertyType.IsValueType
-                        ? Activator.CreateInstance(condition.Property.PropertyType)
-                        : null;
-                    condition.Property.SetValue(QueryValue, defaultVal);
-                }
-                catch { }
-            }
+            ResetPropertyValue(condition.Property, QueryValue);
         }
 
         public override void ResetConditions()
@@ -566,18 +554,7 @@ namespace ColorVision.Database
                 if (cond.UiRow != null)
                     QueryStackPanel.Children.Remove(cond.UiRow);
 
-                // Reset value
-                if (cond.Property.CanWrite)
-                {
-                    try
-                    {
-                        var defaultVal = cond.Property.PropertyType.IsValueType
-                            ? Activator.CreateInstance(cond.Property.PropertyType)
-                            : null;
-                        cond.Property.SetValue(QueryValue, defaultVal);
-                    }
-                    catch { }
-                }
+                ResetPropertyValue(cond.Property, QueryValue);
             }
             QueryConditions.Clear();
 

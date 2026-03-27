@@ -218,17 +218,15 @@ namespace ColorVision.Engine.DeskTop.Messages
         public void GenericQuery()
         {
             var db = CreateDb();
+            GenericQuery<MsgRecord> genericQuery = new GenericQuery<MsgRecord>(db, MsgRecords);
+            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             try
             {
-                GenericQuery<MsgRecord> genericQuery = new GenericQuery<MsgRecord>(db, MsgRecords);
-                GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                genericQueryWindow.Closed += (s, e) => db.Dispose();
                 genericQueryWindow.ShowDialog();
             }
-            catch
+            finally
             {
                 db.Dispose();
-                throw;
             }
         }
 
