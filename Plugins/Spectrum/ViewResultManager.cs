@@ -93,7 +93,7 @@ namespace Spectrum
         public bool? IsRecalculated { get; set; }
     }
 
-    public class ViewResultManager : ViewModelBase,IDisposable
+    public class ViewResultManager : ViewModelBase
     {
         private static ViewResultManager _instance;
         private static readonly object _locker = new();
@@ -121,7 +121,19 @@ namespace Spectrum
         public RelayCommand ResetDatabaseCommand { get; set; }
         public RelayCommand ReloadCommand { get; set; }
 
-        private SqlSugarClient _db;
+        /// <summary>
+        /// 创建短生命周期的数据库连接，避免长期持有导致数据库占用
+        /// </summary>
+        private static SqlSugarClient CreateDb()
+        {
+            return new SqlSugarClient(new ConnectionConfig
+            {
+                
+                ConnectionString = $"Data Source={SqliteDbPath}",
+                DbType = DbType.Sqlite,
+                IsAutoCloseConnection = true
+            });
+        }
 
         public ViewResultManager()
         {
@@ -142,14 +154,11 @@ namespace Spectrum
                     ResetDatabase();
             });
             ReloadCommand = new RelayCommand(a => ReloadData());
-            _db = new SqlSugarClient(new ConnectionConfig
-            {
-                ConnectionString = $"Data Source={SqliteDbPath}",
-                DbType = DbType.Sqlite,
-                IsAutoCloseConnection = true
-            });
             // 确保表存在
-            _db.CodeFirst.InitTables<SprectrumModel>();
+            using (var db = CreateDb())
+            {
+                db.CodeFirst.InitTables<SprectrumModel>();
+            }
             LoadAll(Config.Count);
         }
 
@@ -176,7 +185,10 @@ namespace Spectrum
             if (index >= 0 && index < ViewResluts.Count)
             {
                 var item = ViewResluts[index];
-                _db.Deleteable<SprectrumModel>().Where(x => x.Id == item.Id).ExecuteCommand();
+                using (var db = CreateDb())
+                {
+                    db.Deleteable<SprectrumModel>().Where(x => x.Id == item.Id).ExecuteCommand();
+                }
                 ViewResluts.RemoveAt(index);
             }
         }
@@ -186,10 +198,13 @@ namespace Spectrum
         /// </summary>
         public void DeleteSelected(IList<ViewResultSpectrum> items)
         {
-            foreach (var item in items.ToList())
+            using (var db = CreateDb())
             {
-                _db.Deleteable<SprectrumModel>().Where(x => x.Id == item.Id).ExecuteCommand();
-                ViewResluts.Remove(item);
+                foreach (var item in items.ToList())
+                {
+                    db.Deleteable<SprectrumModel>().Where(x => x.Id == item.Id).ExecuteCommand();
+                    ViewResluts.Remove(item);
+                }
             }
         }
 
@@ -198,7 +213,10 @@ namespace Spectrum
         /// </summary>
         public void DeleteAllRecords()
         {
-            _db.Deleteable<SprectrumModel>().ExecuteCommand();
+            using (var db = CreateDb())
+            {
+                db.Deleteable<SprectrumModel>().ExecuteCommand();
+            }
             ViewReslutsClear();
         }
 
@@ -207,16 +225,18 @@ namespace Spectrum
         /// </summary>
         public void ResetDatabase()
         {
-            _db.Dispose();
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+
+            // 为了保险起见，强制回收一下垃圾
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             if (File.Exists(SqliteDbPath))
                 File.Delete(SqliteDbPath);
-            _db = new SqlSugarClient(new ConnectionConfig
+            using (var db = CreateDb())
             {
-                ConnectionString = $"Data Source={SqliteDbPath}",
-                DbType = DbType.Sqlite,
-                IsAutoCloseConnection = true
-            });
-            _db.CodeFirst.InitTables<SprectrumModel>();
+                db.CodeFirst.InitTables<SprectrumModel>();
+            }
             ViewReslutsClear();
         }
 
@@ -235,7 +255,8 @@ namespace Spectrum
         /// </summary>
         public void UpdateEqeFields(ViewResultSpectrum viewResult, bool isRecalculated = false)
         {
-            _db.Updateable<SprectrumModel>()
+            using var db = CreateDb();
+            db.Updateable<SprectrumModel>()
                 .SetColumns(x => x.EqeVoltage == viewResult.V)
                 .SetColumns(x => x.EqeCurrentMA == viewResult.I)
                 .SetColumns(x => x.Eqe == viewResult.Eqe)
@@ -275,7 +296,8 @@ namespace Spectrum
         public void LoadAll(int count = 100)
         {
             ViewResluts.Clear();
-            var query = _db.Queryable<SprectrumModel>().OrderBy(x => x.Id, Config.OrderByType);
+            using var db = CreateDb();
+            var query = db.Queryable<SprectrumModel>().OrderBy(x => x.Id, Config.OrderByType);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
             foreach (var dbItem in dbList)
             {
@@ -289,12 +311,13 @@ namespace Spectrum
         public void Save(SprectrumModel item)
         {
             if (item == null) return;
-            int id = _db.Insertable(item).ExecuteReturnIdentity();
+            using var db = CreateDb();
+            int id = db.Insertable(item).ExecuteReturnIdentity();
             item.Id = id; // 更新ID
             ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(item);
 
             // Persist ExcitationPurity computed in Gen()
-            _db.Updateable<SprectrumModel>()
+            db.Updateable<SprectrumModel>()
                 .SetColumns(x => x.ExcitationPurity == (double?)viewResultSpectrum.ExcitationPurity)
                 .Where(x => x.Id == id)
                 .ExecuteCommand();
@@ -326,9 +349,19 @@ namespace Spectrum
 
         public void GenericQuery()
         {
-            GenericQuery<SprectrumModel, ViewResultSpectrum> genericQuery = new GenericQuery<SprectrumModel, ViewResultSpectrum>(_db, ViewResluts,a=>new ViewResultSpectrum(a));
-            GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }; ;
-            genericQueryWindow.ShowDialog();
+            var db = CreateDb();
+            try
+            {
+                GenericQuery<SprectrumModel, ViewResultSpectrum> genericQuery = new GenericQuery<SprectrumModel, ViewResultSpectrum>(db, ViewResluts, a => new ViewResultSpectrum(a));
+                GenericQueryWindow genericQueryWindow = new GenericQueryWindow(genericQuery) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                genericQueryWindow.Closed += (s, e) => db.Dispose();
+                genericQueryWindow.ShowDialog();
+            }
+            catch
+            {
+                db.Dispose();
+                throw;
+            }
         }
 
         /// <summary>
@@ -338,7 +371,8 @@ namespace Spectrum
         {
             ViewResluts.Clear();
 
-            var query = _db.Queryable<SprectrumModel>();
+            using var db = CreateDb();
+            var query = db.Queryable<SprectrumModel>();
             query = query.OrderBy(x => x.Id, Config.OrderByType);
             var dbList = count > 0 ? query.Take(count).ToList() : query.ToList();
 
@@ -351,10 +385,5 @@ namespace Spectrum
             }
         }
 
-        public void Dispose()
-        {
-            _db?.Dispose();
-            GC.SuppressFinalize(this);
-        }
     }
 }
