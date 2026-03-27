@@ -39,6 +39,7 @@ namespace ColorVision.Database
         public PropertyInfo Property { get; set; }
         public QueryOperator Operator { get; set; } // "=", ">", "<", ">=", "<=", "LIKE"
         public object Value { get; set; }
+        public DockPanel UiRow { get; set; }
     }
 
     public class GenericQueryBaseConfig:ViewModelBase
@@ -83,6 +84,9 @@ namespace ColorVision.Database
 
         public virtual FrameworkElement GetControl() => throw new NotImplementedException();
         public virtual void AddPropertyInfo(PropertyInfo propertyInfo) => throw new NotImplementedException();
+        public virtual void RemoveCondition(QueryCondition condition) { }
+        public virtual void ResetConditions() { }
+        public virtual void AddAllPropertyInfos() { }
         public virtual void QueryDB() => OnPreQuery();
 
         public virtual void DeleteAll() { }
@@ -98,6 +102,9 @@ namespace ColorVision.Database
 
         T QueryValue { get; set; }
         ObservableCollection<QueryCondition> QueryConditions { get; set; }
+
+        // Keep a copy of ALL property infos for AddAll/Reset
+        private readonly List<KeyValuePair<string, PropertyInfo>> _allPropertyInfos = new();
 
         public GenericQuery(SqlSugarClient db, IList<T> viewResluts) : base(db)
         {
@@ -118,7 +125,9 @@ namespace ColorVision.Database
                 }
                 var Browsable = prop.GetCustomAttribute<BrowsableAttribute>();
                 if (Browsable != null && Browsable.Browsable == false) continue;
-                PropertyInfos.Add(new KeyValuePair<string, PropertyInfo>(propName, prop));
+                var kvp = new KeyValuePair<string, PropertyInfo>(propName, prop);
+                PropertyInfos.Add(kvp);
+                _allPropertyInfos.Add(kvp);
             }
         }
         public StackPanel QueryStackPanel { get; set; } = new StackPanel();
@@ -142,8 +151,16 @@ namespace ColorVision.Database
         }
         public override void AddPropertyInfo(PropertyInfo property)
         {
-            PropertyInfos.Remove(PropertyInfos.First(a => a.Value == property));
-            QueryCondition queryCondition = new QueryCondition() { Property =property };
+            var match = PropertyInfos.FirstOrDefault(a => a.Value == property);
+            if (match.Value != null)
+                PropertyInfos.Remove(match);
+
+            // Determine smart default operator
+            QueryOperator defaultOp = QueryOperator.Equal;
+            if (property.PropertyType == typeof(string))
+                defaultOp = QueryOperator.Like;
+
+            QueryCondition queryCondition = new QueryCondition() { Property = property, Operator = defaultOp };
             DockPanel dockPanel = new DockPanel();
             if (property.PropertyType.IsEnum)
             {
@@ -153,18 +170,146 @@ namespace ColorVision.Database
             {
                 dockPanel = PropertyEditorHelper.GetOrCreateEditor<BoolPropertiesEditor>().GenProperties(property, QueryValue);
             }
+            else if (property.PropertyType == typeof(DateTime) || property.PropertyType == typeof(DateTime?))
+            {
+                dockPanel = CreateDateTimeEditor(property, QueryValue);
+            }
             else
             {
                 dockPanel = PropertyEditorHelper.GetOrCreateEditor<TextboxPropertiesEditor>().GenProperties(property, QueryValue);
             }
+
+            // Add operator ComboBox
             PropertyInfo propertyInfo = typeof(QueryCondition).GetProperty("Operator");
             var com = PropertyEditorHelper.GenEnumPropertiesComboBox(propertyInfo, queryCondition);
             com.Margin = new Thickness(5, 0, 5, 0);
+            com.Width = 65;
             dockPanel.Children.Insert(0, com);
+
+            // Add remove button
+            var removeBtn = new Button
+            {
+                Content = "✕",
+                Width = 22,
+                Height = 22,
+                Padding = new Thickness(0),
+                Margin = new Thickness(5, 0, 0, 0),
+                ToolTip = "移除此条件",
+                Tag = queryCondition
+            };
+            removeBtn.Click += RemoveCondition_Click;
+            DockPanel.SetDock(removeBtn, Dock.Right);
+            dockPanel.Children.Insert(0, removeBtn);
+
             dockPanel.Margin = new Thickness(0, 0, 0, 5);
+            queryCondition.UiRow = dockPanel;
             QueryStackPanel.Children.Add(dockPanel);
             QueryConditions.Add(queryCondition);
         }
+
+        private void RemoveCondition_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is QueryCondition condition)
+            {
+                RemoveCondition(condition);
+            }
+        }
+
+        public override void RemoveCondition(QueryCondition condition)
+        {
+            if (condition.UiRow != null)
+                QueryStackPanel.Children.Remove(condition.UiRow);
+            QueryConditions.Remove(condition);
+
+            // Restore property to ComboBox
+            string propName = condition.Property.Name;
+            var sugarCol = condition.Property.GetCustomAttribute<SugarColumn>();
+            if (sugarCol?.ColumnName != null) propName = sugarCol.ColumnName;
+
+            if (!PropertyInfos.Any(a => a.Value == condition.Property))
+                PropertyInfos.Add(new KeyValuePair<string, PropertyInfo>(propName, condition.Property));
+
+            // Reset the value on the query object
+            if (condition.Property.CanWrite)
+            {
+                try
+                {
+                    var defaultVal = condition.Property.PropertyType.IsValueType
+                        ? Activator.CreateInstance(condition.Property.PropertyType)
+                        : null;
+                    condition.Property.SetValue(QueryValue, defaultVal);
+                }
+                catch { }
+            }
+        }
+
+        public override void ResetConditions()
+        {
+            foreach (var cond in QueryConditions.ToList())
+            {
+                if (cond.UiRow != null)
+                    QueryStackPanel.Children.Remove(cond.UiRow);
+
+                // Reset value
+                if (cond.Property.CanWrite)
+                {
+                    try
+                    {
+                        var defaultVal = cond.Property.PropertyType.IsValueType
+                            ? Activator.CreateInstance(cond.Property.PropertyType)
+                            : null;
+                        cond.Property.SetValue(QueryValue, defaultVal);
+                    }
+                    catch { }
+                }
+            }
+            QueryConditions.Clear();
+
+            // Restore all properties
+            PropertyInfos.Clear();
+            foreach (var kvp in _allPropertyInfos)
+                PropertyInfos.Add(kvp);
+        }
+
+        public override void AddAllPropertyInfos()
+        {
+            var remaining = PropertyInfos.ToList();
+            foreach (var kvp in remaining)
+            {
+                AddPropertyInfo(kvp.Value);
+            }
+        }
+
+        private static DockPanel CreateDateTimeEditor(PropertyInfo property, object obj)
+        {
+            var rm = PropertyEditorHelper.GetResourceManager(obj);
+            var dockPanel = new DockPanel();
+            var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
+            dockPanel.Children.Add(textBlock);
+
+            var datePicker = new DatePicker
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            // Bind date value
+            var currentValue = property.GetValue(obj);
+            if (currentValue is DateTime dt && dt != default)
+                datePicker.SelectedDate = dt;
+
+            datePicker.SelectedDateChanged += (s, e) =>
+            {
+                if (datePicker.SelectedDate.HasValue)
+                    property.SetValue(obj, datePicker.SelectedDate.Value);
+                else if (Nullable.GetUnderlyingType(property.PropertyType) != null)
+                    property.SetValue(obj, null);
+            };
+
+            dockPanel.Children.Add(datePicker);
+            return dockPanel;
+        }
+
         public override void QueryDB()
         {
             base.QueryDB();
@@ -199,13 +344,25 @@ namespace ColorVision.Database
                     param[propName] = value;
                     query = query.Where($"{propName} {prop.Operator.ToDescription()} @{propName}", param);
                 }
+                else if (prop.Property.PropertyType == typeof(DateTime) || prop.Property.PropertyType == typeof(DateTime?))
+                {
+                    if (value is DateTime dtVal && dtVal != default)
+                    {
+                        var param = new Dictionary<string, object>();
+                        param[propName] = dtVal;
+                        query = query.Where($"{propName} {prop.Operator.ToDescription()} @{propName}", param);
+                    }
+                }
                 else if (prop.Property.PropertyType == typeof(string))
                 {
                     string strValue = (string)value;
                     if (!string.IsNullOrWhiteSpace(strValue))
                     {
                         var param = new Dictionary<string, object>();
-                        param[propName] = $"%{strValue}%";
+                        if (prop.Operator == QueryOperator.Like)
+                            param[propName] = $"%{strValue}%";
+                        else
+                            param[propName] = strValue;
                         query = query.Where($"{propName} {prop.Operator.ToDescription()} @{propName}", param);
                     }
                 }
@@ -261,6 +418,9 @@ namespace ColorVision.Database
         ObservableCollection<QueryCondition> QueryConditions { get; set; }
         Func<T, T1> Converter { get; set; }
 
+        // Keep a copy of ALL property infos for AddAll/Reset
+        private readonly List<KeyValuePair<string, PropertyInfo>> _allPropertyInfos = new();
+
         public GenericQuery(SqlSugarClient db, IList<T1> viewResluts,Func<T, T1> converter) :base (db)
         {
             ViewResluts = viewResluts;
@@ -281,7 +441,9 @@ namespace ColorVision.Database
                 }
                 var Browsable = prop.GetCustomAttribute<BrowsableAttribute>();
                 if (Browsable != null && Browsable.Browsable == false) continue;
-                PropertyInfos.Add(new KeyValuePair<string, PropertyInfo>(propName, prop));
+                var kvp = new KeyValuePair<string, PropertyInfo>(propName, prop);
+                PropertyInfos.Add(kvp);
+                _allPropertyInfos.Add(kvp);
             }
         }
         public StackPanel QueryStackPanel { get; set; } = new StackPanel();
@@ -305,8 +467,16 @@ namespace ColorVision.Database
         }
         public override void AddPropertyInfo(PropertyInfo property)
         {
-            PropertyInfos.Remove(PropertyInfos.First(a => a.Value == property));
-            QueryCondition queryCondition = new QueryCondition() { Property = property };
+            var match = PropertyInfos.FirstOrDefault(a => a.Value == property);
+            if (match.Value != null)
+                PropertyInfos.Remove(match);
+
+            // Determine smart default operator
+            QueryOperator defaultOp = QueryOperator.Equal;
+            if (property.PropertyType == typeof(string))
+                defaultOp = QueryOperator.Like;
+
+            QueryCondition queryCondition = new QueryCondition() { Property = property, Operator = defaultOp };
             DockPanel dockPanel = new DockPanel();
             if (property.PropertyType.IsEnum)
             {
@@ -316,18 +486,146 @@ namespace ColorVision.Database
             {
                 dockPanel = PropertyEditorHelper.GetOrCreateEditor<BoolPropertiesEditor>().GenProperties(property, QueryValue);
             }
+            else if (property.PropertyType == typeof(DateTime) || property.PropertyType == typeof(DateTime?))
+            {
+                dockPanel = CreateDateTimeEditor(property, QueryValue);
+            }
             else
             {
                 dockPanel = PropertyEditorHelper.GetOrCreateEditor<TextboxPropertiesEditor>().GenProperties(property, QueryValue);
             }
+
+            // Add operator ComboBox
             PropertyInfo propertyInfo = typeof(QueryCondition).GetProperty("Operator");
             var com = PropertyEditorHelper.GenEnumPropertiesComboBox(propertyInfo, queryCondition);
             com.Margin = new Thickness(5, 0, 5, 0);
+            com.Width = 65;
             dockPanel.Children.Insert(0, com);
+
+            // Add remove button
+            var removeBtn = new Button
+            {
+                Content = "✕",
+                Width = 22,
+                Height = 22,
+                Padding = new Thickness(0),
+                Margin = new Thickness(5, 0, 0, 0),
+                ToolTip = "移除此条件",
+                Tag = queryCondition
+            };
+            removeBtn.Click += RemoveCondition_Click;
+            DockPanel.SetDock(removeBtn, Dock.Right);
+            dockPanel.Children.Insert(0, removeBtn);
+
             dockPanel.Margin = new Thickness(0, 0, 0, 5);
+            queryCondition.UiRow = dockPanel;
             QueryStackPanel.Children.Add(dockPanel);
             QueryConditions.Add(queryCondition);
         }
+
+        private void RemoveCondition_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is QueryCondition condition)
+            {
+                RemoveCondition(condition);
+            }
+        }
+
+        public override void RemoveCondition(QueryCondition condition)
+        {
+            if (condition.UiRow != null)
+                QueryStackPanel.Children.Remove(condition.UiRow);
+            QueryConditions.Remove(condition);
+
+            // Restore property to ComboBox
+            string propName = condition.Property.Name;
+            var sugarCol = condition.Property.GetCustomAttribute<SugarColumn>();
+            if (sugarCol?.ColumnName != null) propName = sugarCol.ColumnName;
+
+            if (!PropertyInfos.Any(a => a.Value == condition.Property))
+                PropertyInfos.Add(new KeyValuePair<string, PropertyInfo>(propName, condition.Property));
+
+            // Reset the value on the query object
+            if (condition.Property.CanWrite)
+            {
+                try
+                {
+                    var defaultVal = condition.Property.PropertyType.IsValueType
+                        ? Activator.CreateInstance(condition.Property.PropertyType)
+                        : null;
+                    condition.Property.SetValue(QueryValue, defaultVal);
+                }
+                catch { }
+            }
+        }
+
+        public override void ResetConditions()
+        {
+            foreach (var cond in QueryConditions.ToList())
+            {
+                if (cond.UiRow != null)
+                    QueryStackPanel.Children.Remove(cond.UiRow);
+
+                // Reset value
+                if (cond.Property.CanWrite)
+                {
+                    try
+                    {
+                        var defaultVal = cond.Property.PropertyType.IsValueType
+                            ? Activator.CreateInstance(cond.Property.PropertyType)
+                            : null;
+                        cond.Property.SetValue(QueryValue, defaultVal);
+                    }
+                    catch { }
+                }
+            }
+            QueryConditions.Clear();
+
+            // Restore all properties
+            PropertyInfos.Clear();
+            foreach (var kvp in _allPropertyInfos)
+                PropertyInfos.Add(kvp);
+        }
+
+        public override void AddAllPropertyInfos()
+        {
+            var remaining = PropertyInfos.ToList();
+            foreach (var kvp in remaining)
+            {
+                AddPropertyInfo(kvp.Value);
+            }
+        }
+
+        private static DockPanel CreateDateTimeEditor(PropertyInfo property, object obj)
+        {
+            var rm = PropertyEditorHelper.GetResourceManager(obj);
+            var dockPanel = new DockPanel();
+            var textBlock = PropertyEditorHelper.CreateLabel(property, rm);
+            dockPanel.Children.Add(textBlock);
+
+            var datePicker = new DatePicker
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            // Bind date value
+            var currentValue = property.GetValue(obj);
+            if (currentValue is DateTime dt && dt != default)
+                datePicker.SelectedDate = dt;
+
+            datePicker.SelectedDateChanged += (s, e) =>
+            {
+                if (datePicker.SelectedDate.HasValue)
+                    property.SetValue(obj, datePicker.SelectedDate.Value);
+                else if (Nullable.GetUnderlyingType(property.PropertyType) != null)
+                    property.SetValue(obj, null);
+            };
+
+            dockPanel.Children.Add(datePicker);
+            return dockPanel;
+        }
+
         public override void QueryDB()
         {
             base.QueryDB();
@@ -364,13 +662,25 @@ namespace ColorVision.Database
                     param[propName] = value;
                     query = query.Where($"{propName} {prop.Operator.ToDescription()} @{propName}", param);
                 }
+                else if (prop.Property.PropertyType == typeof(DateTime) || prop.Property.PropertyType == typeof(DateTime?))
+                {
+                    if (value is DateTime dtVal && dtVal != default)
+                    {
+                        var param = new Dictionary<string, object>();
+                        param[propName] = dtVal;
+                        query = query.Where($"{propName} {prop.Operator.ToDescription()} @{propName}", param);
+                    }
+                }
                 else if (prop.Property.PropertyType == typeof(string))
                 {
                     string strValue = (string)value;
                     if (!string.IsNullOrWhiteSpace(strValue))
                     {
                         var param = new Dictionary<string, object>();
-                        param[propName] = $"%{strValue}%";
+                        if (prop.Operator == QueryOperator.Like)
+                            param[propName] = $"%{strValue}%";
+                        else
+                            param[propName] = strValue;
                         query = query.Where($"{propName} {prop.Operator.ToDescription()} @{propName}", param);
                     }
                 }
@@ -433,11 +743,24 @@ namespace ColorVision.Database
             this.DataContext = GenericQueryBase;
             PropertyInfoCB.ItemsSource = GenericQueryBase.PropertyInfos;
             QueryGrid.Children.Add(GenericQueryBase.GetControl());
+
+            GenericQueryBase.QueryCompleted += (s, args) =>
+            {
+                StatusText.Text = $"查询完成: {args.ResultCount} 条记录, 耗时 {args.Elapsed.TotalMilliseconds:F0}ms";
+            };
         }
 
         private void Query_Click(object sender, RoutedEventArgs e)
         {
-            GenericQueryBase.QueryDB();
+            StatusText.Text = "查询中...";
+            try
+            {
+                GenericQueryBase.QueryDB();
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = $"查询失败: {ex.Message}";
+            }
         }
 
         private void AddPropertyInfo_Click(object sender, RoutedEventArgs e)
@@ -446,6 +769,17 @@ namespace ColorVision.Database
             {
                 GenericQueryBase.AddPropertyInfo(property);
             }
+        }
+
+        private void AddAllPropertyInfo_Click(object sender, RoutedEventArgs e)
+        {
+            GenericQueryBase.AddAllPropertyInfos();
+        }
+
+        private void ResetConditions_Click(object sender, RoutedEventArgs e)
+        {
+            GenericQueryBase.ResetConditions();
+            StatusText.Text = "已重置所有查询条件";
         }
     }
 }

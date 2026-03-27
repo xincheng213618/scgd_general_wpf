@@ -6,35 +6,61 @@
         xmlns:local="clr-namespace:ColorVision.Database"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:GenericQueryBase}"
-        Title="GenericQueryWindow" Height="450" Width="600" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="高级查询" Height="550" Width="680" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="100"/>
-            <RowDefinition Height="auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid Margin="5">
+
+        <!-- Toolbar -->
+        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="5">
             <DockPanel>
-                <Button DockPanel.Dock="Right" Content="清空表" Command="{Binding DeleteAllCommand}" Margin="5,0,0,0"/>
-                <Button DockPanel.Dock="Right" Content="截断表" Command="{Binding TruncateTableCommand}" Margin="5,0,0,0"/>
-                <Button DockPanel.Dock="Right" Content="添加查询" Click="AddPropertyInfo_Click" Margin="5,0,0,0"/>
-                <ComboBox  x:Name="PropertyInfoCB" DisplayMemberPath="Key" SelectedValuePath="Value"/>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="清空表" Command="{Binding DeleteAllCommand}" Margin="5,0,0,0" Foreground="#E53935"/>
+                    <Button Content="截断表" Command="{Binding TruncateTableCommand}" Margin="5,0,0,0" Foreground="#E53935"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal">
+                    <ComboBox x:Name="PropertyInfoCB" DisplayMemberPath="Key" SelectedValuePath="Value" Width="180" VerticalAlignment="Center"/>
+                    <Button Content="+ 添加" Click="AddPropertyInfo_Click" Margin="5,0,0,0" Padding="8,3" ToolTip="添加选中字段到查询条件"/>
+                    <Button Content="全部添加" Click="AddAllPropertyInfo_Click" Margin="5,0,0,0" Padding="8,3" ToolTip="一次添加所有可用字段"/>
+                    <Button Content="重置" Click="ResetConditions_Click" Margin="5,0,0,0" Padding="8,3" ToolTip="清除所有查询条件"/>
+                </StackPanel>
             </DockPanel>
-        </Grid>
-        <ScrollViewer Grid.Row="1" Margin="5,0,5,5">
+        </Border>
+
+        <!-- Query conditions area -->
+        <ScrollViewer Grid.Row="1" Margin="5,5,5,0" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-
-                <Grid x:Name="QueryGrid" >
-
-                </Grid>
+                <Grid x:Name="QueryGrid"/>
             </StackPanel>
         </ScrollViewer>
 
-        <TextBox x:Name="SqlTextBox" TextWrapping="WrapWithOverflow" Text="{Binding Sql}" Grid.Row="2" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+        <!-- SQL preview (collapsible) -->
+        <Expander Grid.Row="2" Header="SQL 预览" Margin="5,5,5,0" IsExpanded="False">
+            <TextBox TextWrapping="WrapWithOverflow" Text="{Binding Sql}" MaxHeight="80"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     BorderThickness="1" VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True"
+                     Foreground="{DynamicResource GlobalTextBrush}" Background="Transparent"/>
+        </Expander>
 
-        <Border  Grid.Row="3" Margin="5" >
-            <Button  Height="40"  Content="查询" Background="{DynamicResource PrimaryBrush}" Foreground="White"  FontSize="18"  Click="Query_Click"/>
+        <!-- Status bar -->
+        <Border Grid.Row="3" Margin="5,5,5,0" Padding="5,3">
+            <TextBlock x:Name="StatusText" Text="就绪" Foreground="{DynamicResource GlobalTextBrush}" FontSize="12"/>
+        </Border>
+
+        <!-- Query button -->
+        <Border Grid.Row="4" Margin="5">
+            <Button Height="38" Content="查询" Background="{DynamicResource PrimaryBrush}" Foreground="White" FontSize="16" Click="Query_Click"/>
         </Border>
     </Grid>
 </Window>
