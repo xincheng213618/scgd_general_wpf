@@ -135,7 +135,6 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0"  Margin="0,0,0,5">
                     <TextBox Text="{Binding MsgSend,Mode=OneWay}"  IsReadOnly="True" BorderThickness="1"  ScrollViewer.VerticalScrollBarVisibility="Auto"/>
@@ -151,14 +150,6 @@
                         <Button Content="{x:Static properties:Resources.Compress}"  Click="Button_Click_4"/>
                     </StackPanel>
                 </Grid>
-                <Grid Grid.Row="2">
-                    <TextBox Text="{Binding ErrorMsg,Mode=OneWay}" IsReadOnly="True" BorderThickness="1" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-                    <StackPanel HorizontalAlignment="Right" Margin="5">
-                        <Button Content="{x:Static properties:Resources.Copy}" Click="Button_Click_3" Margin="0,0,0,5"/>
-                        <Button Content="{x:Static properties:Resources.Compress}"  Click="Button_Click_4"/>
-                    </StackPanel>
-                </Grid>
-
 
             </Grid>
         </Grid>
