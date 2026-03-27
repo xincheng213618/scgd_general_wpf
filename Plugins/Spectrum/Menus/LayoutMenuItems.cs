@@ -10,7 +10,7 @@ namespace Spectrum.Menus
 
         public override void Execute()
         {
-            MainWindow.Instance?.SaveLayout();
+            MainWindow.Instance?.LayoutManager?.SaveLayout();
         }
     }
 
@@ -22,7 +22,7 @@ namespace Spectrum.Menus
 
         public override void Execute()
         {
-            MainWindow.Instance?.LoadLayout();
+            MainWindow.Instance?.LayoutManager?.LoadLayout();
         }
     }
 
@@ -34,7 +34,7 @@ namespace Spectrum.Menus
 
         public override void Execute()
         {
-            MainWindow.Instance?.ResetLayout();
+            MainWindow.Instance?.LayoutManager?.ResetLayout();
         }
     }
 
@@ -46,7 +46,7 @@ namespace Spectrum.Menus
 
         public override void Execute()
         {
-            MainWindow.Instance?.ToggleLogPanel();
+            MainWindow.Instance?.LayoutManager?.TogglePanel("LogPanel");
         }
     }
 
@@ -58,7 +58,7 @@ namespace Spectrum.Menus
 
         public override void Execute()
         {
-            MainWindow.Instance?.ToggleCiePanel();
+            MainWindow.Instance?.LayoutManager?.TogglePanel("CIEDiagram");
         }
     }
 }

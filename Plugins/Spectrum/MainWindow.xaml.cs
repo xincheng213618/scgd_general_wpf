@@ -1,5 +1,4 @@
 ﻿using AvalonDock.Layout;
-using AvalonDock.Layout.Serialization;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
@@ -61,6 +60,11 @@ namespace Spectrum
         /// </summary>
         internal static MainWindow? Instance { get; private set; }
 
+        /// <summary>
+        /// Layout manager for AvalonDock persistence, reset, and panel visibility.
+        /// </summary>
+        internal DockLayoutManager? LayoutManager { get; private set; }
+
         public static ViewResultManager ViewResultManager => ViewResultManager.GetInstance();
 
         public static ObservableCollection<ViewResultSpectrum> ViewResultSpectrums => ViewResultManager.ViewResluts;
@@ -70,9 +74,6 @@ namespace Spectrum
         BitmapSource pic1976;
         Mat src1931;
         Mat src1976;
-
-        private static string LayoutFilePath => Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory, "DockLayout.xml");
 
         public MainWindow()
         {
@@ -88,6 +89,11 @@ namespace Spectrum
             this.SizeChanged += (s, e) => Config.SetConfig(this);
             this.ApplyCaption();
             this.SetWindowFull(Config);
+            this.Closing += (s, e) =>
+            {
+                // Auto-save layout when the window is closing
+                LayoutManager?.SaveLayout();
+            };
             this.Closed += (s, e) =>
             {
                 Manager.Disconnect();
@@ -113,8 +119,23 @@ namespace Spectrum
             ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
             ThemeChange(ThemeManager.Current.CurrentUITheme);
 
+            // Initialize layout manager and register all panel content
+            LayoutManager = new DockLayoutManager(DockingManager);
+            LayoutManager.RegisterContent("ControlPanel", ControlPanelPane.Content);
+            LayoutManager.RegisterContent("SpectrumChart",
+                _layoutRoot.Descendents().OfType<LayoutDocument>()
+                    .First(d => d.ContentId == "SpectrumChart").Content);
+
+            if (MainWindowConfig.Instance.LogControlVisibility)
+            {
+                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+                LogGrid.Children.Add(logOutput);
+            }
+            LayoutManager.RegisterContent("LogPanel", LogGrid);
+            LayoutManager.RegisterContent("CIEDiagram", CiePane.Content);
+
             // Load saved layout if exists
-            LoadLayout();
+            LayoutManager.LoadLayout();
 
             ViewResultManager.ListView = ViewResultList;
 
@@ -122,12 +143,6 @@ namespace Spectrum
             Manager.AutodarkParam.ExecuteAdaptiveAutoDark = () => Button4_Click_1(null, null);
 
             MenuManager.GetInstance().LoadMenuForWindow("Spectrum", menu);
-
-            if (MainWindowConfig.Instance.LogControlVisibility)
-            {
-                logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
-                LogGrid.Children.Add(logOutput);
-            }
 
             image.Source = src1931?.ToBitmapSource();
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues(typeof(SpectrometerType)).Cast<SpectrometerType>()
@@ -1635,165 +1650,6 @@ namespace Spectrum
             logOutput?.Dispose();
             GC.SuppressFinalize(this);
         }
-
-        #region Layout Management
-
-        private const int DefaultControlPanelWidth = 330;
-
-        /// <summary>
-        /// Collects all content from the current layout by ContentId for preservation during layout changes.
-        /// </summary>
-        private Dictionary<string, object> CollectLayoutContent()
-        {
-            var contentMap = new Dictionary<string, object>();
-            foreach (var anchorable in DockingManager.Layout.Descendents().OfType<LayoutAnchorable>())
-            {
-                if (anchorable.Content != null && !string.IsNullOrEmpty(anchorable.ContentId))
-                    contentMap[anchorable.ContentId] = anchorable.Content;
-            }
-            foreach (var document in DockingManager.Layout.Descendents().OfType<LayoutDocument>())
-            {
-                if (document.Content != null && !string.IsNullOrEmpty(document.ContentId))
-                    contentMap[document.ContentId] = document.Content;
-            }
-            return contentMap;
-        }
-
-        /// <summary>
-        /// Save the current AvalonDock layout to file.
-        /// </summary>
-        internal void SaveLayout()
-        {
-            try
-            {
-                var serializer = new XmlLayoutSerializer(DockingManager);
-                using var stream = new StreamWriter(LayoutFilePath);
-                serializer.Serialize(stream);
-                stream.Flush();
-                log.Info("窗口布局已保存");
-            }
-            catch (Exception ex)
-            {
-                log.Warn("保存窗口布局失败", ex);
-            }
-        }
-
-        /// <summary>
-        /// Load a saved AvalonDock layout from file.
-        /// </summary>
-        internal void LoadLayout()
-        {
-            if (!File.Exists(LayoutFilePath)) return;
-            try
-            {
-                var contentMap = CollectLayoutContent();
-
-                var serializer = new XmlLayoutSerializer(DockingManager);
-                serializer.LayoutSerializationCallback += (s, args) =>
-                {
-                    if (args.Model.ContentId != null && contentMap.TryGetValue(args.Model.ContentId, out var content))
-                        args.Content = content;
-                };
-                using var stream = new StreamReader(LayoutFilePath);
-                serializer.Deserialize(stream);
-                log.Info("窗口布局已加载");
-            }
-            catch (Exception ex)
-            {
-                log.Warn("加载窗口布局失败", ex);
-            }
-        }
-
-        /// <summary>
-        /// Reset the AvalonDock layout to its default state.
-        /// </summary>
-        internal void ResetLayout()
-        {
-            try
-            {
-                if (File.Exists(LayoutFilePath))
-                    File.Delete(LayoutFilePath);
-
-                var contentMap = CollectLayoutContent();
-
-                var defaultLayout = new LayoutRoot();
-                var mainPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
-
-                var leftGroup = new LayoutAnchorablePaneGroup { DockWidth = new GridLength(DefaultControlPanelWidth) };
-                var leftPane = new LayoutAnchorablePane();
-                var controlPanel = new LayoutAnchorable { Title = "控制面板", ContentId = "ControlPanel", CanClose = false, CanAutoHide = true, CanFloat = true };
-                if (contentMap.TryGetValue("ControlPanel", out var cpContent))
-                    controlPanel.Content = cpContent;
-                leftPane.Children.Add(controlPanel);
-                leftGroup.Children.Add(leftPane);
-                mainPanel.Children.Add(leftGroup);
-
-                var centerPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Vertical };
-                var docGroup = new LayoutDocumentPaneGroup();
-                var docPane = new LayoutDocumentPane();
-                var chartDoc = new LayoutDocument { Title = "光谱图表", ContentId = "SpectrumChart", CanClose = false };
-                if (contentMap.TryGetValue("SpectrumChart", out var chartContent))
-                    chartDoc.Content = chartContent;
-                docPane.Children.Add(chartDoc);
-                docGroup.Children.Add(docPane);
-                centerPanel.Children.Add(docGroup);
-
-                var bottomGroup = new LayoutAnchorablePaneGroup { DockHeight = new GridLength(250) };
-                var bottomPane = new LayoutAnchorablePane();
-                var logAnchorable = new LayoutAnchorable { Title = "日志", ContentId = "LogPanel", CanClose = true, CanAutoHide = true, CanFloat = true };
-                if (contentMap.TryGetValue("LogPanel", out var logContent))
-                    logAnchorable.Content = logContent;
-                bottomPane.Children.Add(logAnchorable);
-                var cieAnchorable = new LayoutAnchorable { Title = "CIE色度图", ContentId = "CIEDiagram", CanClose = true, CanAutoHide = true, CanFloat = true };
-                if (contentMap.TryGetValue("CIEDiagram", out var cieContent))
-                    cieAnchorable.Content = cieContent;
-                bottomPane.Children.Add(cieAnchorable);
-                bottomGroup.Children.Add(bottomPane);
-                centerPanel.Children.Add(bottomGroup);
-
-                mainPanel.Children.Add(centerPanel);
-                defaultLayout.RootPanel = mainPanel;
-
-                DockingManager.Layout = defaultLayout;
-                log.Info("窗口布局已重置");
-            }
-            catch (Exception ex)
-            {
-                log.Warn("重置窗口布局失败", ex);
-            }
-        }
-
-        /// <summary>
-        /// Toggle the log panel visibility.
-        /// </summary>
-        internal void ToggleLogPanel()
-        {
-            var logAnchorable = DockingManager.Layout.Descendents().OfType<LayoutAnchorable>()
-                .FirstOrDefault(a => a.ContentId == "LogPanel");
-            if (logAnchorable == null) return;
-
-            if (logAnchorable.IsHidden)
-                logAnchorable.Show();
-            else
-                logAnchorable.Hide();
-        }
-
-        /// <summary>
-        /// Toggle the CIE diagram panel visibility.
-        /// </summary>
-        internal void ToggleCiePanel()
-        {
-            var cieAnchorable = DockingManager.Layout.Descendents().OfType<LayoutAnchorable>()
-                .FirstOrDefault(a => a.ContentId == "CIEDiagram");
-            if (cieAnchorable == null) return;
-
-            if (cieAnchorable.IsHidden)
-                cieAnchorable.Show();
-            else
-                cieAnchorable.Hide();
-        }
-
-        #endregion
 
         private void SmuConnect_Click(object sender, RoutedEventArgs e)
         {
