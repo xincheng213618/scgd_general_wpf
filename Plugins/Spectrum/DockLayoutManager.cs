@@ -55,7 +55,6 @@ namespace Spectrum
                 var serializer = new XmlLayoutSerializer(_dockingManager);
                 using var stream = new StreamWriter(LayoutFilePath);
                 serializer.Serialize(stream);
-                stream.Flush();
                 log.Info("窗口布局已保存");
             }
             catch (Exception ex)
@@ -224,9 +223,9 @@ namespace Spectrum
                 {
                     existingPane.Children.Add(newAnchorable);
                 }
-                else
+                else if (_dockingManager.Layout.RootPanel != null)
                 {
-                    // Create a new bottom pane
+                    // Create a new bottom pane and add to root panel
                     var pane = new LayoutAnchorablePane();
                     pane.Children.Add(newAnchorable);
                     var group = new LayoutAnchorablePaneGroup { DockHeight = new GridLength(DefaultBottomPaneHeight) };
