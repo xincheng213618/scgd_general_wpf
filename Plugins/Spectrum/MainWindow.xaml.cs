@@ -1638,6 +1638,27 @@ namespace Spectrum
 
         #region Layout Management
 
+        private const int DefaultControlPanelWidth = 330;
+
+        /// <summary>
+        /// Collects all content from the current layout by ContentId for preservation during layout changes.
+        /// </summary>
+        private Dictionary<string, object> CollectLayoutContent()
+        {
+            var contentMap = new Dictionary<string, object>();
+            foreach (var anchorable in DockingManager.Layout.Descendents().OfType<LayoutAnchorable>())
+            {
+                if (anchorable.Content != null && !string.IsNullOrEmpty(anchorable.ContentId))
+                    contentMap[anchorable.ContentId] = anchorable.Content;
+            }
+            foreach (var document in DockingManager.Layout.Descendents().OfType<LayoutDocument>())
+            {
+                if (document.Content != null && !string.IsNullOrEmpty(document.ContentId))
+                    contentMap[document.ContentId] = document.Content;
+            }
+            return contentMap;
+        }
+
         /// <summary>
         /// Save the current AvalonDock layout to file.
         /// </summary>
@@ -1648,6 +1669,7 @@ namespace Spectrum
                 var serializer = new XmlLayoutSerializer(DockingManager);
                 using var stream = new StreamWriter(LayoutFilePath);
                 serializer.Serialize(stream);
+                stream.Flush();
                 log.Info("窗口布局已保存");
             }
             catch (Exception ex)
@@ -1664,18 +1686,7 @@ namespace Spectrum
             if (!File.Exists(LayoutFilePath)) return;
             try
             {
-                // Collect existing content by ContentId before deserializing
-                var contentMap = new Dictionary<string, object>();
-                foreach (var anchorable in _layoutRoot.Descendents().OfType<LayoutAnchorable>())
-                {
-                    if (anchorable.Content != null && !string.IsNullOrEmpty(anchorable.ContentId))
-                        contentMap[anchorable.ContentId] = anchorable.Content;
-                }
-                foreach (var document in _layoutRoot.Descendents().OfType<LayoutDocument>())
-                {
-                    if (document.Content != null && !string.IsNullOrEmpty(document.ContentId))
-                        contentMap[document.ContentId] = document.Content;
-                }
+                var contentMap = CollectLayoutContent();
 
                 var serializer = new XmlLayoutSerializer(DockingManager);
                 serializer.LayoutSerializationCallback += (s, args) =>
@@ -1703,24 +1714,12 @@ namespace Spectrum
                 if (File.Exists(LayoutFilePath))
                     File.Delete(LayoutFilePath);
 
-                // Collect current content
-                var contentMap = new Dictionary<string, object>();
-                foreach (var anchorable in _layoutRoot.Descendents().OfType<LayoutAnchorable>())
-                {
-                    if (anchorable.Content != null && !string.IsNullOrEmpty(anchorable.ContentId))
-                        contentMap[anchorable.ContentId] = anchorable.Content;
-                }
-                foreach (var document in _layoutRoot.Descendents().OfType<LayoutDocument>())
-                {
-                    if (document.Content != null && !string.IsNullOrEmpty(document.ContentId))
-                        contentMap[document.ContentId] = document.Content;
-                }
+                var contentMap = CollectLayoutContent();
 
-                // Load default layout from embedded XAML by re-reading the default
                 var defaultLayout = new LayoutRoot();
                 var mainPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
 
-                var leftGroup = new LayoutAnchorablePaneGroup { DockWidth = new GridLength(330) };
+                var leftGroup = new LayoutAnchorablePaneGroup { DockWidth = new GridLength(DefaultControlPanelWidth) };
                 var leftPane = new LayoutAnchorablePane();
                 var controlPanel = new LayoutAnchorable { Title = "控制面板", ContentId = "ControlPanel", CanClose = false, CanAutoHide = true, CanFloat = true };
                 if (contentMap.TryGetValue("ControlPanel", out var cpContent))
@@ -1765,36 +1764,33 @@ namespace Spectrum
         }
 
         /// <summary>
-        /// Show or toggle the log panel visibility.
+        /// Toggle the log panel visibility.
         /// </summary>
-        internal void ShowLogPanel()
+        internal void ToggleLogPanel()
         {
-            // Find the LogPanel anchorable in the layout
-            var logAnchorable = _layoutRoot.Descendents().OfType<LayoutAnchorable>()
+            var logAnchorable = DockingManager.Layout.Descendents().OfType<LayoutAnchorable>()
                 .FirstOrDefault(a => a.ContentId == "LogPanel");
-            if (logAnchorable != null)
-            {
-                if (logAnchorable.IsHidden)
-                    logAnchorable.Show();
-                else if (logAnchorable.IsVisible)
-                    logAnchorable.Hide();
-            }
+            if (logAnchorable == null) return;
+
+            if (logAnchorable.IsHidden)
+                logAnchorable.Show();
+            else
+                logAnchorable.Hide();
         }
 
         /// <summary>
-        /// Show or toggle the CIE diagram panel visibility.
+        /// Toggle the CIE diagram panel visibility.
         /// </summary>
-        internal void ShowCiePanel()
+        internal void ToggleCiePanel()
         {
-            var cieAnchorable = _layoutRoot.Descendents().OfType<LayoutAnchorable>()
+            var cieAnchorable = DockingManager.Layout.Descendents().OfType<LayoutAnchorable>()
                 .FirstOrDefault(a => a.ContentId == "CIEDiagram");
-            if (cieAnchorable != null)
-            {
-                if (cieAnchorable.IsHidden)
-                    cieAnchorable.Show();
-                else if (cieAnchorable.IsVisible)
-                    cieAnchorable.Hide();
-            }
+            if (cieAnchorable == null) return;
+
+            if (cieAnchorable.IsHidden)
+                cieAnchorable.Show();
+            else
+                cieAnchorable.Hide();
         }
 
         #endregion

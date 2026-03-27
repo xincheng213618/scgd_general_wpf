@@ -41,24 +41,24 @@ namespace Spectrum.Menus
     public class MenuToggleLog : SpectrumMenuIBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "显示/隐藏日志";
+        public override string Header => "切换日志面板";
         public override int Order => 110;
 
         public override void Execute()
         {
-            MainWindow.Instance?.ShowLogPanel();
+            MainWindow.Instance?.ToggleLogPanel();
         }
     }
 
     public class MenuToggleCie : SpectrumMenuIBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "显示/隐藏CIE色度图";
+        public override string Header => "切换CIE色度图";
         public override int Order => 111;
 
         public override void Execute()
         {
-            MainWindow.Instance?.ShowCiePanel();
+            MainWindow.Instance?.ToggleCiePanel();
         }
     }
 }
