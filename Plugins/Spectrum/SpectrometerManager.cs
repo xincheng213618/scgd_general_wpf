@@ -667,8 +667,8 @@ namespace Spectrum
                 return;
             }
             log.Info($"IntTime{IntTime}CSFile: {CSFile},WavelengthFile{WavelengthFile},MaguideFileOutput{MaguideFileOutput}");
-            bool ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, MaguideFileOutput);
-            if (ret1)
+            int ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, MaguideFileOutput);
+            if (ret1 ==1)
             {
                 MessageBox.Show("生成成功");
             }
