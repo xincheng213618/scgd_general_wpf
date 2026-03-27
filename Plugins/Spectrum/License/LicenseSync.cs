@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Reflection;
 
-namespace Spectrum
+namespace Spectrum.License
 {
     public static class LicenseSync
     {

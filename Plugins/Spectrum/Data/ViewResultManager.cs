@@ -4,6 +4,7 @@ using ColorVision.UI;
 using cvColorVision;
 using Newtonsoft.Json;
 using ScottPlot.Plottables;
+using Spectrum.Models;
 using SqlSugar;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -12,7 +13,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace Spectrum
+namespace Spectrum.Data
 {
     public class ViewResultManagerConfig : ViewModelBase, IConfig
     {

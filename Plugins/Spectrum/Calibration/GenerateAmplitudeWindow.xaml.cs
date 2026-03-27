@@ -2,7 +2,7 @@
 using Spectrum.Menus;
 using System.Windows;
 
-namespace Spectrum
+namespace Spectrum.Calibration
 {
     public class MenuGenerateAmplitudeWindow : SpectrumMenuIBase
     {

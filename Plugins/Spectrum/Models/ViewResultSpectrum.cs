@@ -4,13 +4,14 @@ using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.DataSources;
 using ScottPlot.Plottables;
+using Spectrum.Data;
 using Spectrum.View;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using WpfBrush = System.Windows.Media.SolidColorBrush;
 using WpfColor = System.Windows.Media.Color;
 
-namespace Spectrum
+namespace Spectrum.Models
 {
 
     public class ViewResultSpectrum : ViewModelBase

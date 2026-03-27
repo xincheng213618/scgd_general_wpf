@@ -2,7 +2,7 @@ using Spectrum.Configs;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace Spectrum
+namespace Spectrum.Calibration
 {
     /// <summary>
     /// CalibrationGroupWindow.xaml — manages calibration groups for a specific spectrometer SN.

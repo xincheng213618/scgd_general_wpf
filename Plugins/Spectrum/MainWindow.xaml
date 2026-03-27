@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Spectrum"
+        xmlns:models="clr-namespace:Spectrum.Models"
         xmlns:wpf="http://schemas.microsoft.com/netfx/2007/xaml/presentation"
         xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:wfi ="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
@@ -433,21 +434,21 @@
                                     </GridView.ColumnHeaderContainerStyle>
                                     <GridViewColumn  Header="波长" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:SpectralData}">
+                                            <DataTemplate  DataType="{x:Type models:SpectralData}">
                                                 <TextBlock Text="{ Binding  Wavelength}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="相对光谱">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:SpectralData}">
+                                            <DataTemplate  DataType="{x:Type models:SpectralData}">
                                                 <TextBlock Text="{Binding  RelativeSpectrum, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="绝对光谱" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:SpectralData}">
+                                            <DataTemplate  DataType="{x:Type models:SpectralData}">
                                                 <TextBlock Text="{ Binding   AbsoluteSpectrum, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
@@ -541,70 +542,70 @@
                                     </GridView.ColumnHeaderContainerStyle>
                                     <GridViewColumn  Header="序号" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding Id}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="测量时间">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding CreateTime,StringFormat='yyyy/MM/dd HH:mm:ssss' }"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="IP" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding IP}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn x:Name="ColEqe" Header="EQE(%)" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding EqePercent, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn x:Name="ColLuminousFlux" Header="光通量(lm)" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding LuminousFlux, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn x:Name="ColRadiantFlux" Header="辐射通量(W)" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding RadiantFlux, StringFormat={}{0:F6}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn x:Name="ColLuminousEfficacy" Header="光效(lm/W)" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding LuminousEfficacy, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn x:Name="ColVoltage" Header="U(V)" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding V}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn x:Name="ColCurrent" Header="I(mA)" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding I}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn x:Name="ColRecalculated" Header="数据来源" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock>
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
@@ -623,84 +624,84 @@
                                     </GridViewColumn>
                                     <GridViewColumn x:Name="ColBrightness" Header="亮度Lv(cd/m2)" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding Lv}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="蓝光" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding Blue}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIEx" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEx}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIEy" > 
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEy}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIEz" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEz}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="色度x" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fx}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="色度y" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fy}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="色度u" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fu}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="色度v" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fv}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="相关色温(K)" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCCT}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="主波长Ld(nm)" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fLd}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="主波长颜色" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <Border Background="{Binding DominantWavelengthColor}" Width="40" Height="16" CornerRadius="2" Cursor="Hand" ToolTip="{Binding DominantWavelengthHex}" MouseLeftButtonDown="DominantColor_Click">
                                                     <Border.Tag>
                                                         <Binding Path="DominantWavelengthHex"/>
@@ -711,70 +712,70 @@
                                     </GridViewColumn>
                                     <GridViewColumn  Header="兴奋纯度(%)" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding ExcitationPurityPercent, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="色纯度(%)" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding ColorPurityPercent, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="峰值波长Lp(nm)" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fLp}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="显色性指数Ra" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fRa}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="半波宽" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fHW}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIE2015X" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEx2015}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIE2015Y" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEy2015}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIE2015Z" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEz2015}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIE2015x" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fx2015}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIE2015y" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fy2015}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
