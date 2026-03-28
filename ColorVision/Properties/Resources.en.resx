@@ -153,6 +153,15 @@
   <data name="Acquire" xml:space="preserve">
     <value>Acquire</value>
   </data>
+  <data name="SolutionExplorer" xml:space="preserve">
+    <value>Solution Explorer</value>
+  </data>
+  <data name="DeviceControl" xml:space="preserve">
+    <value>Device Control</value>
+  </data>
+  <data name="DataView" xml:space="preserve">
+    <value>Data View</value>
+  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Started successfully</value>
   </data>

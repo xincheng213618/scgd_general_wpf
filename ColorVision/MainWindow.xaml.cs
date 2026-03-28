@@ -122,7 +122,7 @@ namespace ColorVision
             var viewGrid = new Grid { Background = (Brush)FindResource("TransparentGridBrush") };
             var viewDoc = new LayoutDocument
             {
-                Title = Properties.Resources.Acquire,
+                Title = Properties.Resources.DataView,
                 ContentId = "ViewGridDoc",
                 CanClose = false
             };
@@ -153,10 +153,10 @@ namespace ColorVision
 
             // 初始化停靠布局管理器
             var layoutManager = new DockLayoutManager(DockingManager1);
-            layoutManager.RegisterPanel("ProjectPanel", ProjectPanelGrid, Properties.Resources.Project, PanelPosition.Left);
-            layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.Acquire, PanelPosition.Left);
+            layoutManager.RegisterPanel("ProjectPanel", ProjectPanelGrid, Properties.Resources.SolutionExplorer, PanelPosition.Left);
+            layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.DeviceControl, PanelPosition.Left);
             layoutManager.RegisterPanel("LogPanel", LogPanelGrid, "日志", PanelPosition.Bottom);
-            layoutManager.RegisterDocument("ViewGridDoc", viewGrid, Properties.Resources.Acquire, false);
+            layoutManager.RegisterDocument("ViewGridDoc", viewGrid, Properties.Resources.DataView, false);
             WorkspaceManager.LayoutManager = layoutManager;
 
             // 尝试加载已保存的布局

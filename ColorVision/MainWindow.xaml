@@ -99,10 +99,10 @@
                 <xcad:LayoutPanel Orientation="Horizontal">
                     <xcad:LayoutAnchorablePaneGroup DockWidth="303" x:Name="LeftPaneGroup">
                         <xcad:LayoutAnchorablePane x:Name="LeftPane">
-                            <xcad:LayoutAnchorable Title="{x:Static properties:Resources.Project}" ContentId="ProjectPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
+                            <xcad:LayoutAnchorable Title="{x:Static properties:Resources.SolutionExplorer}" ContentId="ProjectPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
                                 <Grid x:Name="ProjectPanelGrid"/>
                             </xcad:LayoutAnchorable>
-                            <xcad:LayoutAnchorable Title="{x:Static properties:Resources.Acquire}" ContentId="AcquirePanel" CanClose="True" CanAutoHide="True" CanFloat="True">
+                            <xcad:LayoutAnchorable Title="{x:Static properties:Resources.DeviceControl}" ContentId="AcquirePanel" CanClose="True" CanAutoHide="True" CanFloat="True">
                                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"  Background="{DynamicResource GlobalBorderBrush1}">
                                     <StackPanel x:Name="StackPanelSPD" Margin="-2,5,0,0"/>
                                 </ScrollViewer>
