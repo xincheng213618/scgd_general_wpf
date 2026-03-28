@@ -211,7 +211,8 @@ namespace ColorVision.Engine.Services.Flow
 
 
             View = new View();
-            ViewGridManager.GetInstance().AddView(0, this);
+            IViewManager viewManager = ViewGridManager.GetInstance();
+            viewManager.AddView(0, this);
             View.ViewIndexChangedEvent += (s, e) =>
             {
                 if (e == -2)
@@ -220,7 +221,7 @@ namespace ColorVision.Engine.Services.Flow
                     STNodeEditorMain.ContextMenuStrip.Items.Add("还原到主窗口中", null, (s, e1) =>
                     {
 
-                        if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
+                        if (viewManager.IsGridEmpty(View.PreViewIndex))
                         {
                             View.ViewIndex = View.PreViewIndex;
                         }

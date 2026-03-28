@@ -22,14 +22,16 @@ namespace ColorVision.Engine
             this.ApplyCaption();
         }
         public ViewGridManager ViewGridManager { get; set; }
+        public IViewManager ViewManager => ViewGridManager;
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget, Menu1);
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
-            ViewGridManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) => ViewConfig.Instance.ViewMaxCount = e;
+            IViewManager viewManager = ViewGridManager;
+            viewManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
+            viewManager.ViewMaxChangedEvent += (e) => ViewConfig.Instance.ViewMaxCount = e;
 
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 

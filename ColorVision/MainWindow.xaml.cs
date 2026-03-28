@@ -81,6 +81,7 @@ namespace ColorVision
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ViewGridManager ViewGridManager { get; set; }
+        public IViewManager ViewManager => ViewGridManager;
         public static MainWindowConfig Config => MainWindowConfig.Instance;
 
         public MainWindow()
@@ -132,8 +133,9 @@ namespace ColorVision
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = viewGrid;
 
-            ViewGridManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += (maxCount) => ViewConfig.Instance.ViewMaxCount = maxCount;
+            IViewManager viewManager = ViewGridManager;
+            viewManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
+            viewManager.ViewMaxChangedEvent += (maxCount) => ViewConfig.Instance.ViewMaxCount = maxCount;
 
             // 初始化左侧项目面板
             ProjectPanelGrid.Children.Add(new TreeViewControl());

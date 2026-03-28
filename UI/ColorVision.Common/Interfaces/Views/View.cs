@@ -18,7 +18,7 @@ namespace ColorVision.UI.Views
         public event ViewIndexChangedHandler? ViewIndexChangedEvent;
         public void ClearViewIndexChangedSubscribers() => ViewIndexChangedEvent = null;
 
-        public ViewGridManager ViewGridManager { get; set; }
+        public IViewManager ViewGridManager { get; set; }
 
         public int ViewIndex { get =>   _ViewIndex; set {
                 if (_ViewIndex == value)

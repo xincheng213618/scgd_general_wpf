@@ -19,7 +19,8 @@ namespace ColorVision.UI
         {
             if (view is not Control control) throw new NotImplementedException();
 
-            ViewGridManager.GetInstance().AddView(control);
+            IViewManager viewManager = ViewGridManager.GetInstance();
+            viewManager.AddView(control);
 
 
             void ViewMaxChangedEvent(int max)
@@ -42,8 +43,8 @@ namespace ColorVision.UI
                 comboBox.SelectedValue = view.View.ViewIndex;
             }
 
-            ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
+            ViewMaxChangedEvent(viewManager.ViewMax);
+            viewManager.ViewMaxChangedEvent += ViewMaxChangedEvent;
 
             //移除掉所有的订阅者
             view.View.ClearViewIndexChangedSubscribers();
@@ -57,7 +58,7 @@ namespace ColorVision.UI
                 if (s is ComboBox combo && combo.SelectedItem is KeyValuePair<string, int> KeyValue)
                 {
                     view.View.ViewIndex = KeyValue.Value;
-                    ViewGridManager.GetInstance().SetViewIndex(control, KeyValue.Value);
+                    viewManager.SetViewIndex(control, KeyValue.Value);
                 }
             };
             view.View.ViewIndex = -1;
@@ -68,10 +69,10 @@ namespace ColorVision.UI
                 {
                     if (ViewConfig.Instance.IsAutoSelect)
                     {
-                        if (ViewGridManager.GetInstance().ViewMax == 1)
+                        if (viewManager.ViewMax == 1)
                         {
                             view.View.ViewIndex = 0;
-                            ViewGridManager.GetInstance().SetViewIndex(control, 0);
+                            viewManager.SetViewIndex(control, 0);
                         }
                     }
                 };
