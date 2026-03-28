@@ -116,7 +116,7 @@
                         </xcad:LayoutDocumentPaneGroup>
                         <xcad:LayoutAnchorablePaneGroup DockHeight="200" x:Name="BottomPaneGroup">
                             <xcad:LayoutAnchorablePane x:Name="BottomPane">
-                                <xcad:LayoutAnchorable Title="日志" ContentId="LogPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
+                                <xcad:LayoutAnchorable Title="{x:Static properties:Resources.Log}" ContentId="LogPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
                                     <Grid x:Name="LogPanelGrid"/>
                                 </xcad:LayoutAnchorable>
                             </xcad:LayoutAnchorablePane>

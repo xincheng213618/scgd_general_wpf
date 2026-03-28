@@ -109,6 +109,10 @@ namespace ColorVision.Solution.Workspace
                 using var stream = new StreamReader(LayoutFilePath);
                 serializer.Deserialize(stream);
 
+                // 使用注册表中的本地化标题刷新面板/文档标题，
+                // 因为序列化的 XML 可能包含旧语言环境的标题。
+                RefreshTitlesFromRegistry();
+
                 // 更新 WorkspaceManager 的引用
                 WorkspaceManager.layoutRoot = _dockingManager.Layout;
                 var docPane = _dockingManager.Layout.Descendents()
@@ -349,6 +353,31 @@ namespace ColorVision.Solution.Workspace
         public PanelInfo? GetPanelInfo(string contentId)
         {
             return _panelInfoRegistry.TryGetValue(contentId, out var info) ? info : null;
+        }
+
+        /// <summary>
+        /// 使用注册表中的本地化标题刷新所有面板和文档的标题。
+        /// 在反序列化布局后调用，确保面板标题使用当前语言环境。
+        /// </summary>
+        private void RefreshTitlesFromRegistry()
+        {
+            foreach (var anchorable in _dockingManager.Layout.Descendents().OfType<LayoutAnchorable>())
+            {
+                if (anchorable.ContentId != null && _panelInfoRegistry.TryGetValue(anchorable.ContentId, out var info))
+                    anchorable.Title = info.Title;
+            }
+
+            foreach (var hidden in _dockingManager.Layout.Hidden)
+            {
+                if (hidden.ContentId != null && _panelInfoRegistry.TryGetValue(hidden.ContentId, out var info))
+                    hidden.Title = info.Title;
+            }
+
+            foreach (var doc in _dockingManager.Layout.Descendents().OfType<LayoutDocument>())
+            {
+                if (doc.ContentId != null && _documentRegistry.TryGetValue(doc.ContentId, out var docInfo))
+                    doc.Title = docInfo.Title;
+            }
         }
 
         /// <summary>

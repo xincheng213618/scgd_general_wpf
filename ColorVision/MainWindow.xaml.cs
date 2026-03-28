@@ -155,7 +155,7 @@ namespace ColorVision
             var layoutManager = new DockLayoutManager(DockingManager1);
             layoutManager.RegisterPanel("ProjectPanel", ProjectPanelGrid, Properties.Resources.SolutionExplorer, PanelPosition.Left);
             layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.DeviceControl, PanelPosition.Left);
-            layoutManager.RegisterPanel("LogPanel", LogPanelGrid, "日志", PanelPosition.Bottom);
+            layoutManager.RegisterPanel("LogPanel", LogPanelGrid, Properties.Resources.Log, PanelPosition.Bottom);
             layoutManager.RegisterDocument("ViewGridDoc", viewGrid, Properties.Resources.DataView, false);
             WorkspaceManager.LayoutManager = layoutManager;
 

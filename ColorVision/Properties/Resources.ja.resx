@@ -159,6 +159,9 @@
   <data name="DataView" xml:space="preserve">
     <value>データビュー</value>
   </data>
+  <data name="Log" xml:space="preserve">
+    <value>ログ</value>
+  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>正常に開始されました</value>
   </data>
