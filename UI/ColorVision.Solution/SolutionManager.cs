@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.MVVM;
-using ColorVision.Solution.Editor;
 using ColorVision.Solution.RecentFile;
 using ColorVision.Solution.Workspace;
 using ColorVision.Solution.V;
@@ -79,14 +78,6 @@ namespace ColorVision.Solution
                         Directory.CreateDirectory(DefaultSolution);
                     var SolutionPath = CreateSolution(DefaultSolution);
                 }
-                //WorkspaceManager.DealyLoad.Add(()=> SolutionExplorers[0].Open());
-                WorkspaceManager.DealyLoad.Add(() =>
-                {
-                    WebView2Editor webView2Editor = new WebView2Editor();
-                    //webView2Editor.Open(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "README.md"));
-                    webView2Editor.Open(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CHANGELOG.md"));
-                }
-                );
             });
 
             SettingCommand = SolutionSetting.Instance.EditCommand;

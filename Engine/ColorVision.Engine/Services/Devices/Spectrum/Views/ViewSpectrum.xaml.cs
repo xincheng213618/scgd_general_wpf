@@ -47,12 +47,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewSpectrum : UserControl,IView
+    public partial class ViewSpectrum : UserControl
     {
 
         public ObservableCollection<ViewResultSpectrum> ViewResults { get; set; } = new ObservableCollection<ViewResultSpectrum>();
-        public View View { get; set; }
-
         public static ViewSpectrumConfig Config => ViewSpectrumConfig.Instance;
 
         public DisplaySpectrumConfig DisplayConfig => Device.DisplayConfig;
@@ -75,8 +73,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             {
                 TextBox1.Focus();
             };
-            View = new View();
-
 
             listView1.ItemsSource = ViewResults;
 

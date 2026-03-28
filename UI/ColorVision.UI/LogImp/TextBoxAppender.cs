@@ -104,16 +104,8 @@ namespace ColorVision.UI
                 reverse = _reverseLastState;
             }
 
-            // 始终从后台线程调用 FlushBuffer（Timer），使用 Dispatcher 异步回到 UI线程执行最小量更新
-            if (_textBox.Dispatcher.CheckAccess())
-            {
-                // 如果在 UI线程上被调用（极少数情形），确保使用 BeginInvoke 来避免阻塞调用者上下文
-                _textBox.Dispatcher.BeginInvoke(new Action(() => UpdateTextBox(logs, reverse)), DispatcherPriority.Normal);
-            }
-            else
-            {
-                _textBox.Dispatcher.BeginInvoke(new Action(() => UpdateTextBox(logs, reverse)), DispatcherPriority.Normal);
-            }
+            // 始终通过 Dispatcher.BeginInvoke 回到 UI 线程更新（无论调用方线程如何）
+            _textBox.Dispatcher.BeginInvoke(new Action(() => UpdateTextBox(logs, reverse)), DispatcherPriority.Normal);
         }
 
         /// <summary>
@@ -271,6 +263,7 @@ namespace ColorVision.UI
             {
                 _flushTimer?.Stop();
                 _flushTimer?.Dispose();
+                resumeScrollTimer?.Stop();
             }
             catch { }
             // 在关闭前最后刷新一次（在 UI线程）

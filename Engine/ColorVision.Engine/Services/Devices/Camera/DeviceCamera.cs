@@ -52,7 +52,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DService = new MQTTCamera(this);
 
             View = new ViewCamera(this);
-            View.View.Title = ColorVision.Engine.Properties.Resources.CameraView +$" - {Config.Code}";
             this.SetIconResource("DrawingImageCamera");
 
             EditCommand = new RelayCommand(a => EditCameraAction() ,b => AccessControl.Check(EditCameraAction));

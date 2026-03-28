@@ -36,7 +36,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             DService = new MQTTThirdPartyAlgorithms(this, Config);
 
             View = new ThirdPartyAlgorithmsView();
-            View.View.Title = ColorVision.Engine.Properties.Resources.ThirdPartAlgView+$" - {Config.Code}";
             this.SetIconResource("DrawingImageAlgorithm");
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayThirdPartyAlgorithms>(() => { DisplayAlgorithmControl ??= new DisplayThirdPartyAlgorithms(this); return DisplayAlgorithmControl; });

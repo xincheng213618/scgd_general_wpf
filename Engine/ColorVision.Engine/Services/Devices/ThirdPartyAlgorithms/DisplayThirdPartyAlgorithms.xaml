@@ -106,7 +106,7 @@
                         </TabItem>
 
                     </TabControl>
-                    
+
 
 
                     <DockPanel Margin="0,2">
@@ -118,10 +118,6 @@
                         </Grid>
                     </DockPanel>
                 </StackPanel>
-                <DockPanel Margin="0,2" >
-                    <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0" Tag="{Binding DService.DeviceStatus}"/>
-                    <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
-                </DockPanel>
             </StackPanel>
         </Border>
     </StackPanel>

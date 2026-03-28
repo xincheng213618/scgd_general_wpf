@@ -17,20 +17,21 @@ namespace ColorVision.UI
     /// </summary>
     public static class TypeLevelCacheHelper
     {
-        // 类型全局缓存
-        private static readonly Dictionary<Type, List<object>> _typeLevelCache = new();
+        // 使用 (sourceType, levelType) 复合键直接缓存强类型只读列表，避免缓存命中时重复分配
+        private static readonly Dictionary<(Type, Type), object> _typedLevelCache = new();
 
         /// <summary>
         /// 获取指定类型的所有静态属性和字段（类型为 TLevel），并缓存结果
         /// </summary>
         /// <typeparam name="TLevel">目标级别类型</typeparam>
         /// <param name="type">要扫描的类型</param>
-        /// <returns>类型为 TLevel 的所有静态成员列表</returns>
+        /// <returns>类型为 TLevel 的所有静态成员只读列表</returns>
         public static IReadOnlyList<TLevel> GetAllLevels<TLevel>(Type type)
         {
-            if (_typeLevelCache.TryGetValue(type, out var cached))
+            var key = (type, typeof(TLevel));
+            if (_typedLevelCache.TryGetValue(key, out var cached))
             {
-                return cached.Cast<TLevel>().ToList();
+                return (IReadOnlyList<TLevel>)cached;
             }
 
             var levels = new List<TLevel>();
@@ -61,10 +62,11 @@ namespace ColorVision.UI
                 }
             }
 
-            // 缓存结果
-            _typeLevelCache[type] = levels.Cast<object>().ToList();
+            // 缓存为只读列表，后续命中直接返回，无需额外分配
+            var result = levels.AsReadOnly();
+            _typedLevelCache[key] = result;
 
-            return levels;
+            return result;
         }
     }
 

@@ -140,7 +140,8 @@ namespace Spectrum
 
             MenuManager.GetInstance().LoadMenuForWindow("Spectrum", menu);
 
-            image.Source = src1931?.ToBitmapSource();
+            image1931.Source = src1931?.ToBitmapSource();
+            image1976.Source = src1976?.ToBitmapSource();
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues(typeof(SpectrometerType)).Cast<SpectrometerType>()
                                                    select new KeyValuePair<SpectrometerType, string>(e1, e1.ToDescription());
 
@@ -224,7 +225,11 @@ namespace Spectrum
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => ViewResultList.SelectAll(), (s, e) => e.CanExecute = true));
             ViewResultList.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, CopyVisibleColumns, (s, e) => e.CanExecute = ViewResultList.SelectedIndex > -1));
 
-            this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1931; });
+            this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
+            {
+                image1931.Source = pic1931;
+                image1976.Source = pic1976;
+            });
 
             UpdateEqeColumnsVisibility(MainWindowConfig.Instance.EqeEnabled);
         }

@@ -32,11 +32,9 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class ThirdPartyAlgorithmsView : UserControl,IView
+    public partial class ThirdPartyAlgorithmsView : UserControl
     {
         private static readonly ILog logg = LogManager.GetLogger(typeof(AlgorithmView));
-        public View View { get; set; }
-
         public ThirdPartyAlgorithmsView()
         {
             InitializeComponent();
@@ -47,8 +45,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-
-            View = new View();
             if (listView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);

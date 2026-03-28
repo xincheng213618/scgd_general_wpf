@@ -89,8 +89,9 @@ namespace ColorVision.Engine.Templates.Flow
             this.DataContext = FlowEngineManager;
             this.SetIconResource("DrawingImageFlow");
 
-            this.AddViewConfig(View, ComboxView);
+            this.AddViewConfig(View, ColorVision.Engine.Properties.Resources.Workflow);
             View.DisplayFlow = this;
+
             Unselected += (s, e) =>
             {
                 View.STNodeEditorHelper.PropertyEditorWindow?.Hide();

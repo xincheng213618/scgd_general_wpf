@@ -150,8 +150,17 @@
   <data name="Project" xml:space="preserve">
     <value>Project</value>
   </data>
-  <data name="Acquire" xml:space="preserve">
-    <value>Acquire</value>
+  <data name="SolutionExplorer" xml:space="preserve">
+    <value>Solution Explorer</value>
+  </data>
+  <data name="DeviceControl" xml:space="preserve">
+    <value>Device Control</value>
+  </data>
+  <data name="DataView" xml:space="preserve">
+    <value>Data View</value>
+  </data>
+  <data name="Log" xml:space="preserve">
+    <value>Log</value>
   </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Started successfully</value>

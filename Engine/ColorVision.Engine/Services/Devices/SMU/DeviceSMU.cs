@@ -136,9 +136,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             DService = new MQTTSMU(this);
             View = new ViewSMU();
-            View.View.Title = ColorVision.Engine.Properties.Resources.SMUView+$" - {Config.Code}";
             this.SetIconResource("SMUDrawingImage");
-
 
             EditCommand = new RelayCommand(a =>
             {
