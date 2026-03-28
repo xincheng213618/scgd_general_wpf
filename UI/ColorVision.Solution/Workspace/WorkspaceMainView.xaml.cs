@@ -1,4 +1,5 @@
 ﻿using ColorVision.Themes;
+using ColorVision.UI.LogImp;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -9,6 +10,8 @@ namespace ColorVision.Solution.Workspace
     /// </summary>
     public partial class WorkspaceMainView : UserControl
     {
+        private LogOutput? _logOutput;
+
         public WorkspaceMainView()
         {
             InitializeComponent();
@@ -48,7 +51,17 @@ namespace ColorVision.Solution.Workspace
             ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
             ThemeChange(ThemeManager.Current.CurrentUITheme);
 
+            // 初始化日志面板
+            _logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+            LogPanelGrid.Children.Add(_logOutput);
 
+            // 初始化停靠布局管理器
+            var layoutManager = new DockLayoutManager(DockingManager1);
+            layoutManager.RegisterPanel("LogPanel", LogPanelGrid, "日志", PanelPosition.Bottom);
+            WorkspaceManager.LayoutManager = layoutManager;
+
+            // 尝试加载已保存的布局
+            layoutManager.LoadLayout();
         }  
     }
 }

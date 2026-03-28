@@ -5,6 +5,11 @@ namespace ColorVision.Solution.Workspace
 {
     public static class WorkspaceManager
     {
+        /// <summary>
+        /// 工作区停靠布局管理器
+        /// </summary>
+        public static DockLayoutManager? LayoutManager { get; set; }
+
         public static LayoutDocument? FindDocumentById(object parent, string contentId)
         {
             if (parent is ILayoutContainer container)
