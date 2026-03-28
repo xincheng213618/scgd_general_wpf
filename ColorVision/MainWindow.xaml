@@ -93,7 +93,7 @@
             </DockPanel>
         </Border>
 
-        <xcad:DockingManager Grid.Row="1" x:Name="DockingManager1" Margin="-5,-6" BorderThickness="0" Background="Transparent" Padding="0"
+        <xcad:DockingManager Grid.Row="1" x:Name="DockingManager1" Margin="-6,-6" BorderThickness="0" Background="Transparent" Padding="0"
                             DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
