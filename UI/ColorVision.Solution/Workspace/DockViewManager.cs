@@ -259,16 +259,24 @@ namespace ColorVision.Solution.Workspace
             window.Closed += (s, e) =>
             {
                 view.View.ViewIndexChangedEvent -= eventHandler;
-                // 窗口关闭后重新添加为文档
+                // 窗口关闭后重新添加为文档（防止重复添加）
                 if (grid.Children.Contains(control))
                     grid.Children.Remove(control);
-                Views.Add(control);
-                CreateDocumentForView(control);
+                if (!Views.Contains(control))
+                {
+                    Views.Add(control);
+                    CreateDocumentForView(control);
+                }
                 view.View.ViewIndex = IsGridEmpty(view.View.PreViewIndex) ? view.View.PreViewIndex : -1;
             };
 
             window.Show();
         }
+
+        /// <summary>
+        /// 递增计数器，用于生成唯一的默认视图标题
+        /// </summary>
+        private int _viewCounter;
 
         /// <summary>
         /// 为视图控件创建 LayoutDocument 并添加到文档窗格。
@@ -279,11 +287,13 @@ namespace ColorVision.Solution.Workspace
             if (control.Parent is System.Windows.Controls.Panel panel)
                 panel.Children.Remove(control);
 
-            string title = "View";
+            _viewCounter++;
+            string title = $"View {_viewCounter}";
             if (control is IView view)
             {
                 view.View.ViewGridManager = this;
-                title = !string.IsNullOrEmpty(view.View.Title) ? view.View.Title : $"View {Views.IndexOf(control) + 1}";
+                if (!string.IsNullOrEmpty(view.View.Title))
+                    title = view.View.Title;
             }
 
             string contentId = $"DockView_{control.GetHashCode()}";
@@ -297,17 +307,11 @@ namespace ColorVision.Solution.Workspace
                 CanFloat = true
             };
 
-            // 标题绑定（如果有 IView）
+            // 标题绑定（如果有 IView，标题跟随 View.Title 变化）
             if (control is IView viewForBinding)
             {
                 var binding = new Binding("Title") { Source = viewForBinding.View };
                 BindingOperations.SetBinding(doc, LayoutDocument.TitleProperty, binding);
-            }
-
-            // 隐藏状态：初始 ViewIndex == -1 时不显示
-            if (control is IView viewCheck && viewCheck.View.ViewIndex < 0)
-            {
-                // 添加但不激活
             }
 
             if (insertFirst && _documentPane.ChildrenCount > 0)
