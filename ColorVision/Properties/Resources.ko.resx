@@ -159,6 +159,9 @@
   <data name="DataView" xml:space="preserve">
     <value>데이터 뷰</value>
   </data>
+  <data name="Log" xml:space="preserve">
+    <value>로그</value>
+  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>성공적으로 시작되었습니다</value>
   </data>

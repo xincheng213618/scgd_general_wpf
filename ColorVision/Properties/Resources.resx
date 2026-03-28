@@ -159,6 +159,9 @@
   <data name="DataView" xml:space="preserve">
     <value>数据视图</value>
   </data>
+  <data name="Log" xml:space="preserve">
+    <value>日志</value>
+  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>启动成功</value>
   </data>

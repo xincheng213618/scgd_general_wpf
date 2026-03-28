@@ -358,6 +358,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 日志 的本地化字符串。
+        /// </summary>
+        public static string Log {
+            get {
+                return ResourceManager.GetString("Log", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 关于(_A) 的本地化字符串。
         /// </summary>
         public static string MenuAbout {

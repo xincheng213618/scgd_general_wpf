@@ -159,6 +159,9 @@
   <data name="DataView" xml:space="preserve">
     <value>Data View</value>
   </data>
+  <data name="Log" xml:space="preserve">
+    <value>Log</value>
+  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Started successfully</value>
   </data>
