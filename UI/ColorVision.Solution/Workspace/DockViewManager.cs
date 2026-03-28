@@ -11,21 +11,21 @@ namespace ColorVision.Solution.Workspace
     /// 基于 AvalonDock 的 IViewManager 实现。
     /// 每个 IView 对应一个独立的 LayoutDocument，支持停靠/浮动/标签切换。
     /// 替代 ViewGridManager 的 N 宫格模式，使视图布局完全由 AvalonDock 管理。
+    /// 视图文档按需创建（懒加载）：AddView 仅注册，SetViewIndex >= 0 时才创建标签。
     /// </summary>
     public class DockViewManager : IViewManager
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DockViewManager));
 
         private readonly LayoutDocumentPane _documentPane;
-        private readonly DockLayoutManager _layoutManager;
 
         /// <summary>
-        /// 已注册的视图控件列表（与 ViewGridManager.Views 对应）
+        /// 已注册的视图控件列表
         /// </summary>
         public List<Control> Views { get; } = new();
 
         /// <summary>
-        /// 控件 → LayoutDocument 的映射
+        /// 控件 → LayoutDocument 的映射（仅当文档已创建时存在）
         /// </summary>
         private readonly Dictionary<Control, LayoutDocument> _viewDocuments = new();
 
@@ -44,14 +44,17 @@ namespace ColorVision.Solution.Workspace
         private int _viewMax;
 
         /// <summary>
+        /// 上一次激活的视图控件，用于 DeviceControl 切换时恢复
+        /// </summary>
+        public Control? LastActiveView { get; private set; }
+
+        /// <summary>
         /// 创建 DockViewManager。
         /// </summary>
         /// <param name="documentPane">主文档窗格，视图将作为 LayoutDocument 添加到此处</param>
-        /// <param name="layoutManager">布局管理器，用于注册文档以支持布局持久化</param>
-        public DockViewManager(LayoutDocumentPane documentPane, DockLayoutManager layoutManager)
+        public DockViewManager(LayoutDocumentPane documentPane)
         {
             _documentPane = documentPane;
-            _layoutManager = layoutManager;
         }
 
         public Control? CurrentView
@@ -75,7 +78,8 @@ namespace ColorVision.Solution.Workspace
             if (Views.Contains(control)) return Views.IndexOf(control);
 
             Views.Add(control);
-            CreateDocumentForView(control);
+            if (control is IView view)
+                view.View.ViewGridManager = this;
             ViewMax = Views.Count;
             return Views.IndexOf(control);
         }
@@ -86,7 +90,8 @@ namespace ColorVision.Solution.Workspace
             if (Views.Contains(control)) return Views.IndexOf(control);
 
             Views.Insert(Math.Clamp(index, 0, Views.Count), control);
-            CreateDocumentForView(control, insertFirst: index == 0);
+            if (control is IView view)
+                view.View.ViewGridManager = this;
             ViewMax = Views.Count;
             return Views.IndexOf(control);
         }
@@ -110,17 +115,20 @@ namespace ColorVision.Solution.Workspace
 
         public void SetViewIndex(Control control, int viewIndex)
         {
-            if (!_viewDocuments.TryGetValue(control, out var doc)) return;
+            if (!Views.Contains(control)) return;
 
             if (viewIndex >= 0)
             {
-                // 显示并激活文档
+                // 按需创建文档，然后显示并激活
+                var doc = EnsureDocument(control);
                 ShowDocument(doc);
+                LastActiveView = control;
             }
             else if (viewIndex == -1)
             {
-                // 隐藏文档
-                HideDocument(doc);
+                // 隐藏文档（如果存在）
+                if (_viewDocuments.TryGetValue(control, out var doc))
+                    HideDocument(doc);
             }
             else if (viewIndex == -2)
             {
@@ -131,7 +139,6 @@ namespace ColorVision.Solution.Workspace
 
         public bool IsGridEmpty(int index)
         {
-            // Dock 模式下，每个位置都是独立的，概念上始终"空"
             if (index < 0 || index >= Views.Count) return true;
             var control = Views[index];
             if (_viewDocuments.TryGetValue(control, out var doc))
@@ -146,22 +153,20 @@ namespace ColorVision.Solution.Workspace
 
         public void SetViewGrid(int nums)
         {
-            // Dock 模式：显示前 nums 个视图的文档标签，隐藏其余
             ViewMax = nums;
             for (int i = 0; i < Views.Count; i++)
             {
-                if (_viewDocuments.TryGetValue(Views[i], out var doc))
+                if (i < nums)
                 {
-                    if (i < nums)
-                    {
-                        ShowDocument(doc);
-                        if (Views[i] is IView view && view.View.ViewIndex < 0)
-                            view.View.ViewIndex = i;
-                    }
-                    else
-                    {
+                    var doc = EnsureDocument(Views[i]);
+                    ShowDocument(doc);
+                    if (Views[i] is IView view && view.View.ViewIndex < 0)
+                        view.View.ViewIndex = i;
+                }
+                else
+                {
+                    if (_viewDocuments.TryGetValue(Views[i], out var doc))
                         HideDocument(doc);
-                    }
                 }
             }
         }
@@ -174,7 +179,6 @@ namespace ColorVision.Solution.Workspace
 
         public void SetOneView(Control control)
         {
-            // 隐藏所有，只显示指定控件
             foreach (var kvp in _viewDocuments)
             {
                 if (kvp.Key == control)
@@ -191,22 +195,28 @@ namespace ColorVision.Solution.Workspace
                         otherView.View.ViewIndex = -1;
                 }
             }
+            // 如果控件没有文档，先创建
+            if (!_viewDocuments.ContainsKey(control))
+            {
+                var doc = EnsureDocument(control);
+                ShowDocument(doc);
+                if (control is IView view)
+                    view.View.ViewIndex = 0;
+            }
             ViewMax = 1;
+            LastActiveView = control;
         }
 
         public void SetViewNum(int num)
         {
             if (num == -1)
             {
-                // 显示所有
                 for (int i = 0; i < Views.Count; i++)
                 {
-                    if (_viewDocuments.TryGetValue(Views[i], out var doc))
-                    {
-                        ShowDocument(doc);
-                        if (Views[i] is IView view)
-                            view.View.ViewIndex = i;
-                    }
+                    var doc = EnsureDocument(Views[i]);
+                    ShowDocument(doc);
+                    if (Views[i] is IView view)
+                        view.View.ViewIndex = i;
                 }
                 ViewMax = Views.Count;
                 return;
@@ -217,28 +227,31 @@ namespace ColorVision.Solution.Workspace
             int count = Math.Min(num, Views.Count);
             for (int i = 0; i < count; i++)
             {
-                if (_viewDocuments.TryGetValue(Views[i], out var doc))
-                    ShowDocument(doc);
+                var doc = EnsureDocument(Views[i]);
+                ShowDocument(doc);
             }
             ViewMax = count;
         }
 
         public void SetSingleWindowView(Control control)
         {
-            if (!_viewDocuments.TryGetValue(control, out var doc)) return;
             if (control is not IView view) return;
 
-            // 先从文档窗格中移除
-            HideDocument(doc);
+            // 如果有文档，先隐藏
+            if (_viewDocuments.TryGetValue(control, out var existingDoc))
+            {
+                HideDocument(existingDoc);
+                _viewDocuments.Remove(control);
+            }
             Views.Remove(control);
-            _viewDocuments.Remove(control);
+
+            // 从当前父控件移除
+            DetachFromParent(control);
 
             // 创建独立窗口
             var window = new Window { Owner = Application.Current.MainWindow };
-            var titleBinding = new Binding("Title") { Source = view.View };
-            window.SetBinding(Window.TitleProperty, titleBinding);
-            var iconBinding = new Binding("Icon") { Source = view.View };
-            window.SetBinding(Window.IconProperty, iconBinding);
+            window.SetBinding(Window.TitleProperty, new Binding("Title") { Source = view.View });
+            window.SetBinding(Window.IconProperty, new Binding("Icon") { Source = view.View });
 
             ViewIndexChangedHandler? eventHandler = null;
             eventHandler = (oldIdx, newIdx) =>
@@ -248,10 +261,6 @@ namespace ColorVision.Solution.Workspace
             };
             view.View.ViewIndexChangedEvent += eventHandler;
 
-            // 从当前父控件移除（安全起见）
-            if (control.Parent is System.Windows.Controls.Panel panel)
-                panel.Children.Remove(control);
-
             var grid = new Grid();
             grid.Children.Add(control);
             window.Content = grid;
@@ -259,13 +268,12 @@ namespace ColorVision.Solution.Workspace
             window.Closed += (s, e) =>
             {
                 view.View.ViewIndexChangedEvent -= eventHandler;
-                // 窗口关闭后重新添加为文档（防止重复添加）
                 if (grid.Children.Contains(control))
                     grid.Children.Remove(control);
                 if (!Views.Contains(control))
                 {
                     Views.Add(control);
-                    CreateDocumentForView(control);
+                    view.View.ViewGridManager = this;
                 }
                 view.View.ViewIndex = IsGridEmpty(view.View.PreViewIndex) ? view.View.PreViewIndex : -1;
             };
@@ -274,29 +282,46 @@ namespace ColorVision.Solution.Workspace
         }
 
         /// <summary>
-        /// 递增计数器，用于生成唯一的默认视图标题
+        /// 激活上一次显示的视图文档。
+        /// 用于 DeviceControl 面板切换时恢复上次查看的视图。
+        /// </summary>
+        public void ActivateLastView()
+        {
+            if (LastActiveView != null && _viewDocuments.TryGetValue(LastActiveView, out var doc))
+            {
+                ShowDocument(doc);
+            }
+        }
+
+        /// <summary>
+        /// 递增计数器，用于生成唯一的默认视图 ContentId
         /// </summary>
         private int _viewCounter;
 
         /// <summary>
+        /// 确保视图控件有对应的 LayoutDocument。如果没有则创建。
+        /// </summary>
+        private LayoutDocument EnsureDocument(Control control)
+        {
+            if (_viewDocuments.TryGetValue(control, out var existing))
+                return existing;
+
+            return CreateDocumentForView(control);
+        }
+
+        /// <summary>
         /// 为视图控件创建 LayoutDocument 并添加到文档窗格。
         /// </summary>
-        private void CreateDocumentForView(Control control, bool insertFirst = false)
+        private LayoutDocument CreateDocumentForView(Control control)
         {
-            // 从当前父控件移除（可能来自 ViewGridManager 或其他容器）
-            if (control.Parent is System.Windows.Controls.Panel panel)
-                panel.Children.Remove(control);
+            DetachFromParent(control);
 
             _viewCounter++;
             string title = $"View {_viewCounter}";
-            if (control is IView view)
-            {
-                view.View.ViewGridManager = this;
-                if (!string.IsNullOrEmpty(view.View.Title))
-                    title = view.View.Title;
-            }
+            if (control is IView view && !string.IsNullOrEmpty(view.View.Title))
+                title = view.View.Title;
 
-            string contentId = $"DockView_{control.GetHashCode()}";
+            string contentId = $"DockView_{_viewCounter}";
 
             var doc = new LayoutDocument
             {
@@ -307,45 +332,42 @@ namespace ColorVision.Solution.Workspace
                 CanFloat = true
             };
 
-            // 标题绑定（如果有 IView，标题跟随 View.Title 变化）
+            // 标题绑定：标题跟随 View.Title 变化
             if (control is IView viewForBinding)
-            {
-                var binding = new Binding("Title") { Source = viewForBinding.View };
-                BindingOperations.SetBinding(doc, LayoutDocument.TitleProperty, binding);
-            }
+                BindingOperations.SetBinding(doc, LayoutDocument.TitleProperty, new Binding("Title") { Source = viewForBinding.View });
 
-            if (insertFirst && _documentPane.ChildrenCount > 0)
-                _documentPane.Children.Insert(0, doc);
-            else
-                _documentPane.Children.Add(doc);
-
+            _documentPane.Children.Add(doc);
             _viewDocuments[control] = doc;
 
-            // 注册到 DockLayoutManager 以支持持久化
-            _layoutManager.RegisterDocument(contentId, control, title, true);
-
-            log.Debug($"DockViewManager: 添加视图文档 '{title}' (ContentId={contentId})");
+            log.Debug($"DockViewManager: 创建视图文档 '{title}' (ContentId={contentId})");
+            return doc;
         }
 
         /// <summary>
-        /// 显示 LayoutDocument（如果已隐藏/关闭，重新添加到窗格）
+        /// 显示 LayoutDocument（如果已关闭，重新添加到窗格）
         /// </summary>
         private void ShowDocument(LayoutDocument doc)
         {
             if (doc.Parent == null)
-            {
-                // 文档已被关闭，重新添加
                 _documentPane.Children.Add(doc);
-            }
             doc.IsActive = true;
         }
 
         /// <summary>
-        /// 隐藏 LayoutDocument
+        /// 隐藏/关闭 LayoutDocument
         /// </summary>
         private static void HideDocument(LayoutDocument doc)
         {
             doc.Close();
+        }
+
+        /// <summary>
+        /// 从父容器中安全移除控件
+        /// </summary>
+        private static void DetachFromParent(Control control)
+        {
+            if (control.Parent is System.Windows.Controls.Panel panel)
+                panel.Children.Remove(control);
         }
     }
 }

@@ -80,8 +80,8 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
-        public ViewGridManager ViewGridManager { get; set; }
-        public IViewManager ViewManager => ViewGridManager;
+        public DockViewManager DockViewManager { get; set; }
+        public IViewManager ViewManager => DockViewManager;
         public static MainWindowConfig Config => MainWindowConfig.Instance;
 
         public MainWindow()
@@ -134,25 +134,9 @@ namespace ColorVision
             layoutManager.RegisterPanel("LogPanel", LogPanelGrid, Properties.Resources.Log, PanelPosition.Bottom);
             WorkspaceManager.LayoutManager = layoutManager;
 
-            // ViewGrid 作为整体控件放入 LayoutDocument（ViewGridManager 的 N 宫格容器）
-            var viewGrid = new Grid { Background = (Brush)FindResource("TransparentGridBrush") };
-            var viewDoc = new LayoutDocument
-            {
-                Title = Properties.Resources.DataView,
-                ContentId = "ViewGridDoc",
-                CanClose = false
-            };
-            viewDoc.Content = viewGrid;
-            LayoutDocumentPane.Children.Add(viewDoc);
-            layoutManager.RegisterDocument("ViewGridDoc", viewGrid, Properties.Resources.DataView, false);
-
-            // 初始化视图管理器 — 使用 ViewGridManager（N 宫格布局）
-            ViewGridManager = ViewGridManager.GetInstance();
-            ViewGridManager.MainView = viewGrid;
-            ViewManagerProvider.Current = ViewGridManager;
-
-            ViewGridManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
-            ViewGridManager.ViewMaxChangedEvent += (maxCount) => ViewConfig.Instance.ViewMaxCount = maxCount;
+            // 初始化视图管理器 — 使用 DockViewManager（每个 IView 成为独立 LayoutDocument）
+            DockViewManager = new DockViewManager(LayoutDocumentPane);
+            ViewManagerProvider.Current = DockViewManager;
 
             // 初始化左侧项目面板
             ProjectPanelGrid.Children.Add(new TreeViewControl());
@@ -167,6 +151,9 @@ namespace ColorVision
 
             // 布局加载后（重新）应用 AvalonDock 主题，确保反序列化的元素使用正确主题
             ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
+
+            // 切换到 DeviceControl 面板时，跳转到上次显示的视图
+            HookAcquirePanelActivation(DockViewManager);
 
             // 执行延迟加载的操作
             foreach (var action in WorkspaceManager.DealyLoad)
@@ -224,6 +211,25 @@ namespace ColorVision
             {
                 WorkspaceManager.LayoutManager?.SaveLayout();
             };
+        }
+
+        /// <summary>
+        /// 当 AcquirePanel (DeviceControl) 变为活动状态时，
+        /// 激活上次显示的视图文档，实现面板切换时恢复。
+        /// </summary>
+        private void HookAcquirePanelActivation(DockViewManager dockViewManager)
+        {
+            var acquirePanel = _layoutRoot.Descendents()
+                .OfType<AvalonDock.Layout.LayoutAnchorable>()
+                .FirstOrDefault(a => a.ContentId == "AcquirePanel");
+            if (acquirePanel != null)
+            {
+                acquirePanel.IsActiveChanged += (s, e) =>
+                {
+                    if (acquirePanel.IsActive)
+                        dockViewManager.ActivateLastView();
+                };
+            }
         }
 
         /// <summary>

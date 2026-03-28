@@ -69,11 +69,8 @@ namespace ColorVision.UI
                 {
                     if (ViewConfig.Instance.IsAutoSelect)
                     {
-                        if (viewManager.ViewMax == 1)
-                        {
-                            view.View.ViewIndex = 0;
-                            viewManager.SetViewIndex(control, 0);
-                        }
+                        view.View.ViewIndex = 0;
+                        viewManager.SetViewIndex(control, 0);
                     }
                 };
 
