@@ -799,12 +799,34 @@
                                 </xcad:LayoutAnchorable>
                                 <xcad:LayoutAnchorable x:Name="CiePane" Title="CIE色度图" ContentId="CIEDiagram" CanClose="True" CanAutoHide="True" CanFloat="True">
                                     <Grid>
-                                        <Image x:Name="image" HorizontalAlignment="Left" Height="250" Width="230" Margin="0" Source="Assets\Image\CIE-1931.jpg"/>
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Panel.ZIndex="999">
-                                            <Button x:Name="button1" Content="CIE1931" Click="Button1_Click"/>
-                                            <Button x:Name="button2" Content="CIE1976" Click="Button2_Click"/>
-                                            <CheckBox x:Name="CiePointCheckBox" Content="标注" IsChecked="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=CiePointEnabled}" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <!-- CIE 1931 Diagram -->
+                                        <StackPanel Grid.Column="0" Margin="2">
+                                            <TextBlock Text="CIE 1931" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,2"/>
+                                            <Image x:Name="image1931" Height="220" Width="210" Stretch="Uniform" Source="Assets\Image\CIE-1931.jpg"/>
                                         </StackPanel>
+                                        <!-- CIE 1976 Diagram -->
+                                        <StackPanel Grid.Column="1" Margin="2">
+                                            <TextBlock Text="CIE 1976" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,2"/>
+                                            <Image x:Name="image1976" Height="220" Width="210" Stretch="Uniform" Source="Assets\Image\CIE-1976.jpg"/>
+                                        </StackPanel>
+                                        <!-- Spectral Parameters & Calculation Details -->
+                                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Margin="4,2">
+                                            <StackPanel x:Name="CieParamsPanel">
+                                                <TextBlock Text="光谱参数及计算过程" FontWeight="Bold" Margin="0,2,0,4"/>
+
+                                                <TextBlock x:Name="TextDominantWavelength" TextWrapping="Wrap" Margin="0,1"/>
+                                                <TextBlock x:Name="TextFWHM" TextWrapping="Wrap" Margin="0,1"/>
+                                                <TextBlock x:Name="TextCCT" TextWrapping="Wrap" Margin="0,1"/>
+                                                <TextBlock x:Name="TextExcitationPurity" TextWrapping="Wrap" Margin="0,1"/>
+                                                <TextBlock x:Name="TextColorRendering" TextWrapping="Wrap" Margin="0,1"/>
+                                                <TextBlock x:Name="TextChromaticity" TextWrapping="Wrap" Margin="0,1"/>
+                                            </StackPanel>
+                                        </ScrollViewer>
                                     </Grid>
                                 </xcad:LayoutAnchorable>
                             </xcad:LayoutAnchorablePane>
