@@ -17,7 +17,11 @@ namespace ColorVision.Solution.Workspace
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DockViewManager));
 
-        private readonly LayoutDocumentPane _documentPane;
+        /// <summary>
+        /// 动态获取当前文档窗格。
+        /// LoadLayout 可能替换整个布局树，因此不能缓存旧的引用。
+        /// </summary>
+        private LayoutDocumentPane DocumentPane => WorkspaceManager.LayoutDocumentPane;
 
         /// <summary>
         /// 已注册的视图控件列表
@@ -50,11 +54,10 @@ namespace ColorVision.Solution.Workspace
 
         /// <summary>
         /// 创建 DockViewManager。
+        /// 使用 WorkspaceManager.LayoutDocumentPane 作为文档容器。
         /// </summary>
-        /// <param name="documentPane">主文档窗格，视图将作为 LayoutDocument 添加到此处</param>
-        public DockViewManager(LayoutDocumentPane documentPane)
+        public DockViewManager()
         {
-            _documentPane = documentPane;
         }
 
         public Control? CurrentView
@@ -62,7 +65,7 @@ namespace ColorVision.Solution.Workspace
             get
             {
                 // 返回当前活动文档的内容
-                foreach (var doc in _documentPane.Children.OfType<LayoutDocument>())
+                foreach (var doc in DocumentPane.Children.OfType<LayoutDocument>())
                 {
                     if (doc.IsActive && doc.Content is Control control && Views.Contains(control))
                         return control;
@@ -332,11 +335,19 @@ namespace ColorVision.Solution.Workspace
                 CanFloat = true
             };
 
+            // 用户关闭文档标签时，同步清理内部映射
+            doc.Closing += (s, e) =>
+            {
+                _viewDocuments.Remove(control);
+                if (control is IView closingView)
+                    closingView.View.ViewIndex = -1;
+            };
+
             // 标题绑定：标题跟随 View.Title 变化
             if (control is IView viewForBinding)
                 BindingOperations.SetBinding(doc, LayoutDocument.TitleProperty, new Binding("Title") { Source = viewForBinding.View });
 
-            _documentPane.Children.Add(doc);
+            DocumentPane.Children.Add(doc);
             _viewDocuments[control] = doc;
 
             log.Debug($"DockViewManager: 创建视图文档 '{title}' (ContentId={contentId})");
@@ -349,7 +360,7 @@ namespace ColorVision.Solution.Workspace
         private void ShowDocument(LayoutDocument doc)
         {
             if (doc.Parent == null)
-                _documentPane.Children.Add(doc);
+                DocumentPane.Children.Add(doc);
             doc.IsActive = true;
         }
 
@@ -366,7 +377,7 @@ namespace ColorVision.Solution.Workspace
         /// </summary>
         private static void DetachFromParent(Control control)
         {
-            if (control.Parent is System.Windows.Controls.Panel panel)
+            if (control.Parent is Panel panel)
                 panel.Children.Remove(control);
         }
     }

@@ -135,7 +135,7 @@ namespace ColorVision
             WorkspaceManager.LayoutManager = layoutManager;
 
             // 初始化视图管理器 — 使用 DockViewManager（每个 IView 成为独立 LayoutDocument）
-            DockViewManager = new DockViewManager(LayoutDocumentPane);
+            DockViewManager = new DockViewManager();
             ViewManagerProvider.Current = DockViewManager;
 
             // 初始化左侧项目面板
@@ -219,7 +219,7 @@ namespace ColorVision
         /// </summary>
         private void HookAcquirePanelActivation(DockViewManager dockViewManager)
         {
-            var acquirePanel = _layoutRoot.Descendents()
+            var acquirePanel = DockingManager1.Layout.Descendents()
                 .OfType<AvalonDock.Layout.LayoutAnchorable>()
                 .FirstOrDefault(a => a.ContentId == "AcquirePanel");
             if (acquirePanel != null)
