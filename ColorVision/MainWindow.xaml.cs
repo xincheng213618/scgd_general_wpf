@@ -107,15 +107,16 @@ namespace ColorVision
             this.DataContext = Config;
 
             // 初始化 AvalonDock 主题
-            void ThemeChange(Theme theme)
+            void ApplyAvalonDockTheme(Theme theme)
             {
+                // 先重置为 null 以强制 AvalonDock 重新加载主题资源
+                DockingManager1.Theme = null;
                 if (theme == Theme.Dark)
                     DockingManager1.Theme = new AvalonDock.Themes.Vs2013DarkTheme();
                 else
                     DockingManager1.Theme = new AvalonDock.Themes.Vs2013LightTheme();
             }
-            ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
-            ThemeChange(ThemeManager.Current.CurrentUITheme);
+            ThemeManager.Current.CurrentUIThemeChanged += ApplyAvalonDockTheme;
 
             // ViewGrid 作为整体控件放入 LayoutDocument
             var viewGrid = new Grid { Background = (Brush)FindResource("TransparentGridBrush") };
@@ -160,6 +161,9 @@ namespace ColorVision
 
             // 尝试加载已保存的布局
             layoutManager.LoadLayout();
+
+            // 布局加载后（重新）应用 AvalonDock 主题，确保反序列化的元素使用正确主题
+            ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
 
             // 执行延迟加载的操作
             foreach (var action in WorkspaceManager.DealyLoad)

@@ -13,6 +13,13 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
         Title="" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <Window.Resources>
+        <DataTemplate x:Key="DocumentHeaderTemplate">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding Title}" Foreground="{DynamicResource GlobalTextBrush}" />
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -86,7 +93,8 @@
             </DockPanel>
         </Border>
 
-        <xcad:DockingManager Grid.Row="1" x:Name="DockingManager1" Margin="-5,-6" BorderThickness="0" Background="Transparent" Padding="0">
+        <xcad:DockingManager Grid.Row="1" x:Name="DockingManager1" Margin="-5,-6" BorderThickness="0" Background="Transparent" Padding="0"
+                            DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
                     <xcad:LayoutAnchorablePaneGroup DockWidth="303" x:Name="LeftPaneGroup">
