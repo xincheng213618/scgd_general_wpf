@@ -105,6 +105,8 @@ namespace ColorVision.Solution.Workspace
                 {
                     if (args.Model.ContentId != null && _contentRegistry.TryGetValue(args.Model.ContentId, out var content))
                         args.Content = content;
+                    else
+                        args.Cancel = true; // 取消未注册的项（如动态编辑器标签页），防止出现空内容
                 };
                 using var stream = new StreamReader(LayoutFilePath);
                 serializer.Deserialize(stream);
