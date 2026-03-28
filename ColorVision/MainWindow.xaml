@@ -86,7 +86,7 @@
             </DockPanel>
         </Border>
 
-        <xcad:DockingManager Grid.Row="1" x:Name="DockingManager1" BorderThickness="0" Background="Transparent" Padding="0" Margin="0">
+        <xcad:DockingManager Grid.Row="1" x:Name="DockingManager1" Margin="-5,-6" BorderThickness="0" Background="Transparent" Padding="0">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
                     <xcad:LayoutAnchorablePaneGroup DockWidth="303" x:Name="LeftPaneGroup">
