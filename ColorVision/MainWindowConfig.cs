@@ -20,10 +20,6 @@ namespace ColorVision
         private bool _IsOpenStatusBar = true;
 
         [JsonIgnore]
-        public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; OnPropertyChanged(); } }
-        private bool _IsOpenSidebar = true;
-
-        [JsonIgnore]
         public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
         private bool _IsFull;
 
@@ -52,9 +48,6 @@ namespace ColorVision
 
         public const string AutoRunRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         public const string AutoRunName = "ColorVisionAutoRun";
-
-        public int LeftTabControlSelectedIndex { get => _LeftTabControlSelectedIndex; set { _LeftTabControlSelectedIndex = value; OnPropertyChanged(); } }
-        private int _LeftTabControlSelectedIndex = 1;
 
         [JsonIgnore]
         [DisplayName("TbSettingsStartBoot")]
@@ -137,20 +130,6 @@ namespace ColorVision
 
         }
         public override bool? IsChecked => MainWindowConfig.Instance.IsOpenStatusBar ? true : null;
-
-    }
-    public class ExportMenuViewSidebar : MenuItemBase, IHotKey
-    {
-        public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => Properties.Resources.MenuViewSidebar;
-        public HotKeys HotKeys => new(Properties.Resources.MenuViewSidebar, new Hotkey(Key.S, ModifierKeys.Control | ModifierKeys.Shift), Execute);
-
-        public override void Execute()
-        {
-            MainWindowConfig.Instance.IsOpenSidebar = !MainWindowConfig.Instance.IsOpenSidebar;
-            MenuManager.GetInstance().RefreshMenuItemsByGuid(OwnerGuid);
-        }
-        public override bool? IsChecked => MainWindowConfig.Instance.IsOpenSidebar ? true : null;
 
     }
 

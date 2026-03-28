@@ -17,6 +17,7 @@ namespace ColorVision.Solution.Workspace
         private static readonly ILog log = LogManager.GetLogger(typeof(DockLayoutManager));
 
         private const int DefaultBottomPaneHeight = 200;
+    private const int DefaultSidePaneWidth = 303;
 
         private static string LayoutFilePath => Path.Combine(
             AppDomain.CurrentDomain.BaseDirectory, "MainWindowDockLayout.xml");
@@ -139,7 +140,39 @@ namespace ColorVision.Solution.Workspace
                     File.Delete(LayoutFilePath);
 
                 var defaultLayout = new LayoutRoot();
-                var mainPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Vertical };
+                var rootPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
+
+                // 左侧面板
+                var leftPanels = _panelInfoRegistry
+                    .Where(kvp => kvp.Value.Position == PanelPosition.Left)
+                    .ToList();
+
+                if (leftPanels.Count > 0)
+                {
+                    var leftGroup = new LayoutAnchorablePaneGroup { DockWidth = new GridLength(DefaultSidePaneWidth) };
+                    var leftPane = new LayoutAnchorablePane();
+
+                    foreach (var panel in leftPanels)
+                    {
+                        var anchorable = new LayoutAnchorable
+                        {
+                            Title = panel.Value.Title,
+                            ContentId = panel.Key,
+                            CanClose = true,
+                            CanAutoHide = true,
+                            CanFloat = true
+                        };
+                        if (_contentRegistry.TryGetValue(panel.Key, out var content))
+                            anchorable.Content = content;
+                        leftPane.Children.Add(anchorable);
+                    }
+
+                    leftGroup.Children.Add(leftPane);
+                    rootPanel.Children.Add(leftGroup);
+                }
+
+                // 中央 + 底部面板 (Vertical 布局)
+                var centerPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Vertical };
 
                 // 中央文档区域
                 var docGroup = new LayoutDocumentPaneGroup();
@@ -160,9 +193,9 @@ namespace ColorVision.Solution.Workspace
                 }
 
                 docGroup.Children.Add(docPane);
-                mainPanel.Children.Add(docGroup);
+                centerPanel.Children.Add(docGroup);
 
-                // 按位置分组注册的面板
+                // 底部面板
                 var bottomPanels = _panelInfoRegistry
                     .Where(kvp => kvp.Value.Position == PanelPosition.Bottom)
                     .ToList();
@@ -188,10 +221,41 @@ namespace ColorVision.Solution.Workspace
                     }
 
                     bottomGroup.Children.Add(bottomPane);
-                    mainPanel.Children.Add(bottomGroup);
+                    centerPanel.Children.Add(bottomGroup);
                 }
 
-                defaultLayout.RootPanel = mainPanel;
+                rootPanel.Children.Add(centerPanel);
+
+                // 右侧面板
+                var rightPanels = _panelInfoRegistry
+                    .Where(kvp => kvp.Value.Position == PanelPosition.Right)
+                    .ToList();
+
+                if (rightPanels.Count > 0)
+                {
+                    var rightGroup = new LayoutAnchorablePaneGroup { DockWidth = new GridLength(DefaultSidePaneWidth) };
+                    var rightPane = new LayoutAnchorablePane();
+
+                    foreach (var panel in rightPanels)
+                    {
+                        var anchorable = new LayoutAnchorable
+                        {
+                            Title = panel.Value.Title,
+                            ContentId = panel.Key,
+                            CanClose = true,
+                            CanAutoHide = true,
+                            CanFloat = true
+                        };
+                        if (_contentRegistry.TryGetValue(panel.Key, out var content))
+                            anchorable.Content = content;
+                        rightPane.Children.Add(anchorable);
+                    }
+
+                    rightGroup.Children.Add(rightPane);
+                    rootPanel.Children.Add(rightGroup);
+                }
+
+                defaultLayout.RootPanel = rootPanel;
                 _dockingManager.Layout = defaultLayout;
 
                 // 更新 WorkspaceManager 的引用

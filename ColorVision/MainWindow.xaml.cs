@@ -132,11 +132,13 @@ namespace ColorVision
             ViewGridManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (maxCount) => ViewConfig.Instance.ViewMaxCount = maxCount;
 
+            // 初始化左侧项目面板
+            ProjectPanelGrid.Children.Add(new TreeViewControl());
+
+            // 初始化左侧采集面板
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
-            
-            SolutionTab1.Content = new TreeViewControl();
 
             // 设置 WorkspaceManager 指向主窗口的 DockingManager
             WorkspaceManager.layoutRoot = _layoutRoot;
@@ -148,6 +150,8 @@ namespace ColorVision
 
             // 初始化停靠布局管理器
             var layoutManager = new DockLayoutManager(DockingManager1);
+            layoutManager.RegisterPanel("ProjectPanel", ProjectPanelGrid, Properties.Resources.Project, PanelPosition.Left);
+            layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.Acquire, PanelPosition.Left);
             layoutManager.RegisterPanel("LogPanel", LogPanelGrid, "日志", PanelPosition.Bottom);
             layoutManager.RegisterDocument("ViewGridDoc", viewGrid, Properties.Resources.Acquire, false);
             WorkspaceManager.LayoutManager = layoutManager;
