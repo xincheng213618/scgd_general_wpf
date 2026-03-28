@@ -15,53 +15,16 @@ namespace ColorVision.UI
     public static class DisPlayManagerExtension
     {
 
-        public static void AddViewConfig(this UserControl userControl, IView view, ComboBox comboBox)
+        /// <summary>
+        /// 注册视图控件到 DockViewManager 并配置 ComboBox 选择。
+        /// 控件只需是 UserControl（如果实现了 IView 则自动绑定标题）。
+        /// 当 IDisPlayControl 选中时，自动切换到对应视图标签。
+        /// </summary>
+        public static void AddViewConfig(this UserControl userControl, UserControl viewControl, ComboBox comboBox)
         {
-            if (view is not Control control) throw new NotImplementedException();
+            DockViewManager.GetInstance().AddView(viewControl);
 
-            IViewManager viewManager = ViewManagerProvider.Current;
-            viewManager.AddView(control);
-
-
-            void ViewMaxChangedEvent(int max)
-            {
-                List<KeyValuePair<string, int>> KeyValues = new()
-                {
-                    new KeyValuePair<string, int>(UI.Properties.Resources.WindowSingle, -2),
-                    new KeyValuePair<string, int>(UI.Properties.Resources.WindowHidden, -1)
-                };
-                for (int i = 0; i < max; i++)
-                {
-                    KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
-                }
-                comboBox.ItemsSource = KeyValues;
-
-                if (view.View.ViewIndex >= max)
-                {
-                    view.View.ViewIndex = -1;
-                }
-                comboBox.SelectedValue = view.View.ViewIndex;
-            }
-
-            ViewMaxChangedEvent(viewManager.ViewMax);
-            viewManager.ViewMaxChangedEvent += ViewMaxChangedEvent;
-
-            //移除掉所有的订阅者
-            view.View.ClearViewIndexChangedSubscribers();
-
-            view.View.ViewIndexChangedEvent += (e1, e2) =>
-            {
-                comboBox.SelectedIndex = e2 + 2;
-            };
-            comboBox.SelectionChanged += (s, e) =>
-            {
-                if (s is ComboBox combo && combo.SelectedItem is KeyValuePair<string, int> KeyValue)
-                {
-                    view.View.ViewIndex = KeyValue.Value;
-                    viewManager.SetViewIndex(control, KeyValue.Value);
-                }
-            };
-            view.View.ViewIndex = -1;
+            comboBox.Visibility = Visibility.Collapsed;
 
             if (userControl is IDisPlayControl disPlayControl)
             {
@@ -69,13 +32,10 @@ namespace ColorVision.UI
                 {
                     if (ViewConfig.Instance.IsAutoSelect)
                     {
-                        view.View.ViewIndex = 0;
-                        viewManager.SetViewIndex(control, 0);
+                        DockViewManager.GetInstance().ActiveView(viewControl);
                     }
                 };
-
             }
-
         }
 
 

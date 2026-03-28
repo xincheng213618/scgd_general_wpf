@@ -9,7 +9,7 @@ namespace ColorVision.UI.Views
 
         public static void Execute()
         {
-            ViewManagerProvider.Current.SetViewGrid(1);
+            DockViewManager.GetInstance().ShowAllViews();
         }
     }
 
@@ -19,7 +19,7 @@ namespace ColorVision.UI.Views
 
         public static void Execute()
         {
-            ViewManagerProvider.Current.SetViewGrid(2);
+            DockViewManager.GetInstance().ShowAllViews();
         }
     }
 
@@ -30,7 +30,7 @@ namespace ColorVision.UI.Views
 
         public static void Execute()
         {
-            ViewManagerProvider.Current.SetViewGrid(4);
+            DockViewManager.GetInstance().ShowAllViews();
         }
     }
 
@@ -40,7 +40,7 @@ namespace ColorVision.UI.Views
 
         public static void Execute()
         {
-            ViewManagerProvider.Current.SetViewGrid(9);
+            DockViewManager.GetInstance().ShowAllViews();
         }
     }
 }
