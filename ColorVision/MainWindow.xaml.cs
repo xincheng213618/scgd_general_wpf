@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Solution;
+using ColorVision.Solution.Editor;
 using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -19,6 +20,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -166,6 +168,17 @@ namespace ColorVision
             }
             WorkspaceManager.DealyLoad.Clear();
 
+            // 更新后首次启动时显示变更日志
+            ShowChangelogIfUpdated();
+
+            // Ctrl+W 关闭当前活动文档
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) =>
+            {
+                var doc = WorkspaceManager.FindDocumentActive(WorkspaceManager.LayoutDocumentPane);
+                doc?.Close();
+            }));
+            InputBindings.Add(new KeyBinding(ApplicationCommands.Close, new KeyGesture(Key.W, ModifierKeys.Control)));
+
             MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget,Menu1);
             this.LoadHotKeyFromAssembly();
             StatusBarManager.GetInstance().Init(StatusBarGrid, StatusBarTextDocker);
@@ -204,6 +217,35 @@ namespace ColorVision
             {
                 WorkspaceManager.LayoutManager?.SaveLayout();
             };
+        }
+
+        /// <summary>
+        /// 更新后首次启动时显示变更日志。
+        /// 对比当前版本与上次记录的版本，仅在版本变更时打开 CHANGELOG.md。
+        /// </summary>
+        private void ShowChangelogIfUpdated()
+        {
+            try
+            {
+                string currentVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
+                if (string.IsNullOrEmpty(currentVersion)) return;
+
+                if (Config.LastOpenedVersion != currentVersion)
+                {
+                    string changelogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CHANGELOG.md");
+                    if (File.Exists(changelogPath))
+                    {
+                        var editor = new WebView2Editor();
+                        editor.Open(changelogPath);
+                    }
+
+                    Config.LastOpenedVersion = currentVersion;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("显示变更日志失败", ex);
+            }
         }
 
         private void MainWindow_Drop(object sender, DragEventArgs e)

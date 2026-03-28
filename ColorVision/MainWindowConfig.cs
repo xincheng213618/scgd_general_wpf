@@ -19,6 +19,12 @@ namespace ColorVision
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; OnPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;
 
+        /// <summary>
+        /// 记录上次打开时的应用版本，用于在更新后首次启动时显示变更日志。
+        /// </summary>
+        public string LastOpenedVersion { get => _LastOpenedVersion; set { _LastOpenedVersion = value; OnPropertyChanged(); } }
+        private string _LastOpenedVersion;
+
         [JsonIgnore]
         public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
         private bool _IsFull;
