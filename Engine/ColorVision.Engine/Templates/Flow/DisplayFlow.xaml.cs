@@ -89,7 +89,7 @@ namespace ColorVision.Engine.Templates.Flow
             this.DataContext = FlowEngineManager;
             this.SetIconResource("DrawingImageFlow");
 
-            this.AddViewConfig(View, ComboxView);
+            this.AddViewConfig(View);
             View.DisplayFlow = this;
             Unselected += (s, e) =>
             {

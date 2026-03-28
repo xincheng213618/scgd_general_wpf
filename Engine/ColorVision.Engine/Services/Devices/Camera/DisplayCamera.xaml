@@ -361,7 +361,7 @@
                         </DockPanel>
                     </StackPanel>
                 </StackPanel>
-                
+
                 <StackPanel x:Name="LocalVideo" Margin="0,0,0,3">
                     <DockPanel  Margin="0,0,0,3" >
                         <Button DockPanel.Dock="Right" Margin="5,0,0,0" HorizontalAlignment="Left" Command="{Binding CameraVideoControl.EditConfigCommand}" Padding="2" Height="21" Width="21">
@@ -400,11 +400,6 @@
                         </DockPanel>
                     </StackPanel>
                 </StackPanel>
-
-                <DockPanel Margin="0,0,0,0" >
-                    <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0" ToolTip="{Binding DService.DeviceStatus}"/>
-                    <ComboBox x:Name="ComboxView" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"/>
-                </DockPanel>
             </StackPanel>
         </Border>
     </StackPanel>

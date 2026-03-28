@@ -145,7 +145,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-            this.AddViewConfig(View, ComboxView);
+            this.AddViewConfig(View);
             ButtonProgressBarGetData = new ButtonProgressBar(ProgressBar, TakePhotoButton);
             ButtonProgressBarOpen = new ButtonProgressBar(ProgressBarOpen, OpenButton);
             ButtonProgressBarClose = new ButtonProgressBar(ProgressBarClose, CloseButton);

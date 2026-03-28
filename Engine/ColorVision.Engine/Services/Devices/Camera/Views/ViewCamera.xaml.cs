@@ -29,11 +29,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewCamera : UserControl, IView
+    public partial class ViewCamera : UserControl
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
-
-        public View View { get; set; }
 
         public DeviceCamera Device { get; set; }
 
@@ -50,8 +48,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-            View = new View();
-
             if (ImageView.EditorContext.IEditorToolFactory.GetIEditorTool<ToolReferenceLine>() is ToolReferenceLine toolReferenceLine)
             {
                 toolReferenceLine.ReferenceLine = new ReferenceLine(Device.DisplayConfig.ReferenceLineParam);

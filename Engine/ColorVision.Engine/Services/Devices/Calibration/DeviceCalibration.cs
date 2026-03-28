@@ -32,7 +32,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             DService = new MQTTCalibration(Config);
             View = new ViewCalibration(this);
-            View.View.Title = $"{Config.Code}";
             this.SetIconResource("DICalibrationIcon");;
 
             EditCommand = new RelayCommand(a =>

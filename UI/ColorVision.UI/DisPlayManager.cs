@@ -20,11 +20,9 @@ namespace ColorVision.UI
         /// 控件只需是 UserControl（如果实现了 IView 则自动绑定标题）。
         /// 当 IDisPlayControl 选中时，自动切换到对应视图标签。
         /// </summary>
-        public static void AddViewConfig(this UserControl userControl, UserControl viewControl, ComboBox comboBox)
+        public static void AddViewConfig(this UserControl userControl, UserControl viewControl)
         {
             DockViewManager.GetInstance().AddView(viewControl);
-
-            comboBox.Visibility = Visibility.Collapsed;
 
             if (userControl is IDisPlayControl disPlayControl)
             {

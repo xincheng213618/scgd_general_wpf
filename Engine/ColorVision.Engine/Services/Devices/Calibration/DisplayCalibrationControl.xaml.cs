@@ -75,7 +75,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
             UpdateCB_SourceImageFiles();
 
-            this.AddViewConfig(View, ComboxView);
+            this.AddViewConfig(View);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
             ImageFile.TextChanged += ImageFile_TextChanged;

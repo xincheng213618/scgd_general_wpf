@@ -155,7 +155,6 @@ namespace ColorVision.Engine.Templates.Flow
 
             FlowControl = new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
-            View.View.Title = ColorVision.Engine.Properties.Resources.Flow;
             ServiceConfig = ServiceConfig.Instance;
             OpenServiceCommand = new RelayCommand(a => ColorVision.Common.Utilities.PlatformHelper.OpenFolderAndSelectFile(ServiceConfig.RegistrationCenterService),a=>File.Exists(ServiceConfig.RegistrationCenterService));
             ContextMenu.Items.Add(new MenuItem() { Header = "OpenService", Command = OpenServiceCommand });
