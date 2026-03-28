@@ -91,6 +91,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             this.AddViewConfig(View, ColorVision.Engine.Properties.Resources.Workflow);
             View.DisplayFlow = this;
+
             Unselected += (s, e) =>
             {
                 View.STNodeEditorHelper.PropertyEditorWindow?.Hide();

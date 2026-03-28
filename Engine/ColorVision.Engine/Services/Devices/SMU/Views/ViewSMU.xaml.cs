@@ -41,7 +41,6 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             Grid.SetRow(TextBox1, 0);
             MainGrid.Children.Insert(0, TextBox1);
             MouseDown += (s, e) =>  {TextBox1.Focus();};
-            DockViewManager.GetInstance().AddView(this);
 
             listView1.ItemsSource = ViewResults;
 
