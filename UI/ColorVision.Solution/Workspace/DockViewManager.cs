@@ -337,7 +337,7 @@ namespace ColorVision.Solution.Workspace
                 // 文档已被关闭，重新添加
                 _documentPane.Children.Add(doc);
             }
-            doc.IsVisible = true;
+            doc.IsActive = true;
         }
 
         /// <summary>
