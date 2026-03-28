@@ -19,7 +19,7 @@ namespace ColorVision.Solution.Workspace
         private const int DefaultBottomPaneHeight = 200;
 
         private static string LayoutFilePath => Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory, "WorkspaceDockLayout.xml");
+            AppDomain.CurrentDomain.BaseDirectory, "MainWindowDockLayout.xml");
 
         private readonly DockingManager _dockingManager;
 
@@ -33,6 +33,11 @@ namespace ColorVision.Solution.Workspace
         /// 面板元数据注册表，存储每个面板的标题和默认位置信息。
         /// </summary>
         private readonly Dictionary<string, PanelInfo> _panelInfoRegistry = new();
+
+        /// <summary>
+        /// 文档注册表，存储 LayoutDocument 的内容信息。
+        /// </summary>
+        private readonly Dictionary<string, DocumentInfo> _documentRegistry = new();
 
         public DockLayoutManager(DockingManager dockingManager)
         {
@@ -54,6 +59,19 @@ namespace ColorVision.Solution.Workspace
         }
 
         /// <summary>
+        /// 注册文档内容，以便在关闭/重置/加载操作后恢复。
+        /// </summary>
+        /// <param name="contentId">文档唯一标识</param>
+        /// <param name="content">文档内容（UI 元素）</param>
+        /// <param name="title">文档标题</param>
+        /// <param name="canClose">是否允许关闭</param>
+        public void RegisterDocument(string contentId, object content, string title, bool canClose = true)
+        {
+            _contentRegistry[contentId] = content;
+            _documentRegistry[contentId] = new DocumentInfo(title, canClose);
+        }
+
+        /// <summary>
         /// 保存当前 AvalonDock 布局到文件。
         /// </summary>
         public void SaveLayout()
@@ -63,11 +81,11 @@ namespace ColorVision.Solution.Workspace
                 var serializer = new XmlLayoutSerializer(_dockingManager);
                 using var stream = new StreamWriter(LayoutFilePath);
                 serializer.Serialize(stream);
-                log.Info("工作区布局已保存");
+                log.Info("主窗口布局已保存");
             }
             catch (Exception ex)
             {
-                log.Warn("保存工作区布局失败", ex);
+                log.Warn("保存主窗口布局失败", ex);
             }
         }
 
@@ -89,12 +107,18 @@ namespace ColorVision.Solution.Workspace
                 };
                 using var stream = new StreamReader(LayoutFilePath);
                 serializer.Deserialize(stream);
-                log.Info("工作区布局已加载");
+
+                // 更新 WorkspaceManager 的引用
+                WorkspaceManager.layoutRoot = _dockingManager.Layout;
+                WorkspaceManager.LayoutDocumentPane = _dockingManager.Layout.Descendents()
+                    .OfType<LayoutDocumentPane>().FirstOrDefault();
+
+                log.Info("主窗口布局已加载");
                 return true;
             }
             catch (Exception ex)
             {
-                log.Warn("加载工作区布局失败, 将使用默认布局", ex);
+                log.Warn("加载主窗口布局失败, 将使用默认布局", ex);
                 return false;
             }
         }
@@ -116,6 +140,21 @@ namespace ColorVision.Solution.Workspace
                 // 中央文档区域
                 var docGroup = new LayoutDocumentPaneGroup();
                 var docPane = new LayoutDocumentPane();
+
+                // 恢复已注册的文档
+                foreach (var doc in _documentRegistry)
+                {
+                    var layoutDoc = new LayoutDocument
+                    {
+                        Title = doc.Value.Title,
+                        ContentId = doc.Key,
+                        CanClose = doc.Value.CanClose
+                    };
+                    if (_contentRegistry.TryGetValue(doc.Key, out var content))
+                        layoutDoc.Content = content;
+                    docPane.Children.Add(layoutDoc);
+                }
+
                 docGroup.Children.Add(docPane);
                 mainPanel.Children.Add(docGroup);
 
@@ -156,11 +195,11 @@ namespace ColorVision.Solution.Workspace
                 WorkspaceManager.LayoutDocumentPane = defaultLayout.Descendents()
                     .OfType<LayoutDocumentPane>().FirstOrDefault();
 
-                log.Info("工作区布局已重置");
+                log.Info("主窗口布局已重置");
             }
             catch (Exception ex)
             {
-                log.Warn("重置工作区布局失败", ex);
+                log.Warn("重置主窗口布局失败", ex);
             }
         }
 
@@ -276,4 +315,9 @@ namespace ColorVision.Solution.Workspace
     /// 面板元数据
     /// </summary>
     public record PanelInfo(string Title, PanelPosition Position);
+
+    /// <summary>
+    /// 文档元数据
+    /// </summary>
+    public record DocumentInfo(string Title, bool CanClose);
 }

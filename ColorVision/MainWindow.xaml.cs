@@ -4,10 +4,12 @@ using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
+using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Serach;
 using ColorVision.UI.Shell;
 using ColorVision.UI.Views;
+using AvalonDock.Layout;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
@@ -102,20 +104,63 @@ namespace ColorVision
 
             this.DataContext = Config;
 
-            WorkspaceMainView solutionView = new WorkspaceMainView();
-            SolutionGrid.Children.Add(solutionView);
+            // 初始化 AvalonDock 主题
+            void ThemeChange(Theme theme)
+            {
+                if (theme == Theme.Dark)
+                    DockingManager1.Theme = new AvalonDock.Themes.Vs2013DarkTheme();
+                else
+                    DockingManager1.Theme = new AvalonDock.Themes.Vs2013LightTheme();
+            }
+            ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
+            ThemeChange(ThemeManager.Current.CurrentUITheme);
+
+            // ViewGrid 作为整体控件放入 LayoutDocument
+            var viewGrid = new Grid { Background = (Brush)FindResource("TransparentGridBrush") };
+            var viewDoc = new LayoutDocument
+            {
+                Title = Properties.Resources.Acquire,
+                ContentId = "ViewGridDoc",
+                CanClose = false
+            };
+            viewDoc.Content = viewGrid;
+            LayoutDocumentPane.Children.Add(viewDoc);
 
             ViewGridManager = ViewGridManager.GetInstance();
-            ViewGridManager.MainView = ViewGrid;
+            ViewGridManager.MainView = viewGrid;
 
             ViewGridManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) => ViewConfig.Instance.ViewMaxCount = e;
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e1) => ViewConfig.Instance.ViewMaxCount = e1;
 
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
             
             SolutionTab1.Content = new TreeViewControl();
+
+            // 设置 WorkspaceManager 指向主窗口的 DockingManager
+            WorkspaceManager.layoutRoot = _layoutRoot;
+            WorkspaceManager.LayoutDocumentPane = LayoutDocumentPane;
+
+            // 初始化日志面板
+            var logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+            LogPanelGrid.Children.Add(logOutput);
+
+            // 初始化停靠布局管理器
+            var layoutManager = new DockLayoutManager(DockingManager1);
+            layoutManager.RegisterPanel("LogPanel", LogPanelGrid, "日志", PanelPosition.Bottom);
+            layoutManager.RegisterDocument("ViewGridDoc", viewGrid, Properties.Resources.Acquire, false);
+            WorkspaceManager.LayoutManager = layoutManager;
+
+            // 尝试加载已保存的布局
+            layoutManager.LoadLayout();
+
+            // 执行延迟加载的操作
+            foreach (var action in WorkspaceManager.DealyLoad)
+            {
+                action();
+            }
+            WorkspaceManager.DealyLoad.Clear();
 
             MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget,Menu1);
             this.LoadHotKeyFromAssembly();
@@ -150,6 +195,11 @@ namespace ColorVision
             this.AllowDrop = true;
             this.Drop += MainWindow_Drop;
 
+            // 窗口关闭时自动保存布局
+            this.Closing += (s, e1) =>
+            {
+                WorkspaceManager.LayoutManager?.SaveLayout();
+            };
         }
 
         private void MainWindow_Drop(object sender, DragEventArgs e)

@@ -3,47 +3,11 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Solution.Workspace"
-             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" 
-             xmlns:hc ="https://handyorg.github.io/handycontrol"
              x:Class="ColorVision.Solution.Workspace.WorkspaceMainView"
-             xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}" Initialized="UserControl_Initialized" >
-    <UserControl.Resources>
-        <!--<Style TargetType="TextBlock" >
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
-        </Style>-->
-        <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#FFFFA500"/>
-        <SolidColorBrush x:Key="{x:Static SystemColors.ControlDarkBrushKey}" Color="#FF008000"/>
-        <DataTemplate x:Key="DocumentHeaderTemplate">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding Title}" Foreground="{DynamicResource GlobalTextBrush}" />
-            </StackPanel>
-        </DataTemplate>
-        <Style x:Key="DocumentContextMenu" TargetType="ContextMenu"  BasedOn="{StaticResource ContextMenu.Small}"/>
-        <Style x:Key="ToolBar.ButtonStyleKey" TargetType="Button"  BasedOn="{StaticResource  ButtonDefault}" >
-            <Style.Setters >
-                <Setter Property="Background" Value="Red"/>
-            </Style.Setters>
-        </Style>
-    </UserControl.Resources>
-    <Grid>
-        <xcad:DockingManager x:Name="DockingManager1" BorderThickness="0" Background="Transparent" Padding="0" Margin="0">
-            <xcad:LayoutRoot x:Name="_layoutRoot" >
-                <xcad:LayoutPanel Orientation="Vertical" >
-                    <xcad:LayoutDocumentPaneGroup>
-                        <xcad:LayoutDocumentPane x:Name="LayoutDocumentPane"  >
-                        </xcad:LayoutDocumentPane>
-                    </xcad:LayoutDocumentPaneGroup>
-                    <xcad:LayoutAnchorablePaneGroup DockHeight="200" x:Name="BottomPaneGroup">
-                        <xcad:LayoutAnchorablePane x:Name="BottomPane">
-                            <xcad:LayoutAnchorable Title="日志" ContentId="LogPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
-                                <Grid x:Name="LogPanelGrid"/>
-                            </xcad:LayoutAnchorable>
-                        </xcad:LayoutAnchorablePane>
-                    </xcad:LayoutAnchorablePaneGroup>
-                </xcad:LayoutPanel>
-            </xcad:LayoutRoot>
-        </xcad:DockingManager>
-    </Grid>
+             d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}" >
+    <!-- WorkspaceMainView 不再包含自己的 DockingManager。
+         AvalonDock 布局管理已提升到 MainWindow 级别。
+         此控件保留用于兼容性，内部逻辑已简化。 -->
+    <Grid/>
 </UserControl>

@@ -9,6 +9,7 @@
         xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:input ="clr-namespace:System.Windows.Input;assembly=netstandard"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
         Title="" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -103,10 +104,23 @@
                     </TabControl>
                 </Grid>
             </Border>
-            <Grid Grid.Column="1" x:Name="MainContent">
-                <Grid x:Name="ViewGrid" Background="{StaticResource TransparentGridBrush}"  Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}"/>
-                <Grid x:Name="SolutionGrid" Background="{StaticResource TransparentGridBrush}" Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}"/>
-            </Grid>
+            <xcad:DockingManager Grid.Column="1" x:Name="DockingManager1" BorderThickness="0" Background="Transparent" Padding="0" Margin="0">
+                <xcad:LayoutRoot x:Name="_layoutRoot">
+                    <xcad:LayoutPanel Orientation="Vertical">
+                        <xcad:LayoutDocumentPaneGroup>
+                            <xcad:LayoutDocumentPane x:Name="LayoutDocumentPane">
+                            </xcad:LayoutDocumentPane>
+                        </xcad:LayoutDocumentPaneGroup>
+                        <xcad:LayoutAnchorablePaneGroup DockHeight="200" x:Name="BottomPaneGroup">
+                            <xcad:LayoutAnchorablePane x:Name="BottomPane">
+                                <xcad:LayoutAnchorable Title="日志" ContentId="LogPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
+                                    <Grid x:Name="LogPanelGrid"/>
+                                </xcad:LayoutAnchorable>
+                            </xcad:LayoutAnchorablePane>
+                        </xcad:LayoutAnchorablePaneGroup>
+                    </xcad:LayoutPanel>
+                </xcad:LayoutRoot>
+            </xcad:DockingManager>
         </Grid>
         <Border Grid.Row="2" Height="30"  Background="{DynamicResource GlobalBackground}" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderBrush}" Visibility="{Binding IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}">
             <Grid>
