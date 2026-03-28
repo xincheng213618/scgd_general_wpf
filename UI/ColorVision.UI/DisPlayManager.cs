@@ -16,22 +16,22 @@ namespace ColorVision.UI
     {
 
         /// <summary>
-        /// 注册视图控件到 DockViewManager 并配置 ComboBox 选择。
-        /// 控件只需是 UserControl（如果实现了 IView 则自动绑定标题）。
+        /// 注册视图控件到 DockViewManager。
+        /// 控件只需是 UserControl，标题通过 title 参数传入。
         /// 当 IDisPlayControl 选中时，自动切换到对应视图标签。
         /// </summary>
-        public static void AddViewConfig(this UserControl userControl, UserControl viewControl)
+        public static void AddViewConfig(this UserControl userControl, UserControl viewControl, string title)
         {
-            DockViewManager.GetInstance().AddView(viewControl);
+            var manager = DockViewManager.GetInstance();
+            manager.AddView(viewControl);
+            if (!string.IsNullOrEmpty(title))
+                manager.ViewTitles[viewControl] = title;
 
             if (userControl is IDisPlayControl disPlayControl)
             {
                 disPlayControl.Selected += (s, e) =>
                 {
-                    if (ViewConfig.Instance.IsAutoSelect)
-                    {
-                        DockViewManager.GetInstance().ActiveView(viewControl);
-                    }
+                    DockViewManager.GetInstance().ActiveView(viewControl);
                 };
             }
         }

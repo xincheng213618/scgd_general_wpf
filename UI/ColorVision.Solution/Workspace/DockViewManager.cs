@@ -2,7 +2,6 @@ using AvalonDock.Layout;
 using ColorVision.UI.Views;
 using log4net;
 using System.Windows.Controls;
-using System.Windows.Data;
 
 namespace ColorVision.Solution.Workspace
 {
@@ -73,8 +72,9 @@ namespace ColorVision.Solution.Workspace
 
             _viewCounter++;
             string title = $"View {_viewCounter}";
-            if (control is IView view && !string.IsNullOrEmpty(view.View.Title))
-                title = view.View.Title;
+            var manager = DockViewManager.GetInstance();
+            if (manager.ViewTitles.TryGetValue(control, out var registeredTitle) && !string.IsNullOrEmpty(registeredTitle))
+                title = registeredTitle;
 
             string contentId = $"DockView_{_viewCounter}";
 
@@ -92,10 +92,6 @@ namespace ColorVision.Solution.Workspace
             {
                 _viewDocuments.Remove(control);
             };
-
-            // 标题绑定：标题跟随 View.Title 变化（如果控件实现了 IView）
-            if (control is IView viewForBinding)
-                BindingOperations.SetBinding(doc, LayoutDocument.TitleProperty, new Binding("Title") { Source = viewForBinding.View });
 
             DocumentPane.Children.Add(doc);
             _viewDocuments[control] = doc;

@@ -20,6 +20,11 @@ namespace ColorVision.UI.Views
         public List<Control> Views { get; } = new();
 
         /// <summary>
+        /// 视图控件 → 标题的映射（由 AddViewConfig 设置）
+        /// </summary>
+        public Dictionary<Control, string> ViewTitles { get; } = new();
+
+        /// <summary>
         /// 上一次激活的视图控件
         /// </summary>
         public Control? LastActiveView { get; set; }

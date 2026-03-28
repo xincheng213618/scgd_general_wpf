@@ -208,7 +208,9 @@ namespace ColorVision.Engine.Services.Flow
             FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
 
 
-            DockViewManager.GetInstance().AddView(0, this);
+            var manager = DockViewManager.GetInstance();
+            manager.AddView(0, this);
+            manager.ViewTitles[this] = ColorVision.Engine.Properties.Resources.Workflow;
 
             STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
         }

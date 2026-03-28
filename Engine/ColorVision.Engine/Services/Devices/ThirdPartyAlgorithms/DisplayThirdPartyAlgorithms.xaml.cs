@@ -69,7 +69,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             CB_ThirdPartyAlgorithms.SelectionChanged += (s, e) => ThirdPartyAlgorithmsChanged();
             ThirdPartyAlgorithmsChanged();
 
-            this.AddViewConfig(View);
+            this.AddViewConfig(View, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
             void UpdateCB_SourceImageFiles()
