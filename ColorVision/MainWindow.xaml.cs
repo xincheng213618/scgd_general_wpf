@@ -80,7 +80,8 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
-        public IViewManager ViewManager { get; set; }
+        public ViewGridManager ViewGridManager { get; set; }
+        public IViewManager ViewManager => ViewGridManager;
         public static MainWindowConfig Config => MainWindowConfig.Instance;
 
         public MainWindow()
@@ -133,12 +134,25 @@ namespace ColorVision
             layoutManager.RegisterPanel("LogPanel", LogPanelGrid, Properties.Resources.Log, PanelPosition.Bottom);
             WorkspaceManager.LayoutManager = layoutManager;
 
-            // 初始化视图管理器 — 使用 DockViewManager（每个 IView 成为独立 LayoutDocument）
-            var dockViewManager = new DockViewManager(LayoutDocumentPane, layoutManager);
-            ViewManager = dockViewManager;
-            ViewManagerProvider.Current = dockViewManager;
+            // ViewGrid 作为整体控件放入 LayoutDocument（ViewGridManager 的 N 宫格容器）
+            var viewGrid = new Grid { Background = (Brush)FindResource("TransparentGridBrush") };
+            var viewDoc = new LayoutDocument
+            {
+                Title = Properties.Resources.DataView,
+                ContentId = "ViewGridDoc",
+                CanClose = false
+            };
+            viewDoc.Content = viewGrid;
+            LayoutDocumentPane.Children.Add(viewDoc);
+            layoutManager.RegisterDocument("ViewGridDoc", viewGrid, Properties.Resources.DataView, false);
 
-            dockViewManager.ViewMaxChangedEvent += (maxCount) => ViewConfig.Instance.ViewMaxCount = maxCount;
+            // 初始化视图管理器 — 使用 ViewGridManager（N 宫格布局）
+            ViewGridManager = ViewGridManager.GetInstance();
+            ViewGridManager.MainView = viewGrid;
+            ViewManagerProvider.Current = ViewGridManager;
+
+            ViewGridManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
+            ViewGridManager.ViewMaxChangedEvent += (maxCount) => ViewConfig.Instance.ViewMaxCount = maxCount;
 
             // 初始化左侧项目面板
             ProjectPanelGrid.Children.Add(new TreeViewControl());
