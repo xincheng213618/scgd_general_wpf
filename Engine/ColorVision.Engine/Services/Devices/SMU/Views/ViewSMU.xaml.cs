@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             MainGrid.Children.Insert(0, TextBox1);
             MouseDown += (s, e) =>  {TextBox1.Focus();};
             View = new View();
-            IViewManager viewManager = ViewGridManager.GetInstance();
+            IViewManager viewManager = ViewManagerProvider.Current;
             viewManager.AddView(this);
 
             listView1.ItemsSource = ViewResults;

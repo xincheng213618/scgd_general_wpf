@@ -10,10 +10,7 @@ namespace ColorVision
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
-            // Grid-specific layout variants use ViewGridManager directly;
-            // standard operations go through the IViewManager abstraction.
-            ViewGridManager gridManager = ViewGridManager.GetInstance();
-            IViewManager viewManager = gridManager;
+            IViewManager viewManager = ViewManagerProvider.Current;
 
             MenuItemMetadata menuItemMetadata1 = new MenuItemMetadata();
             menuItemMetadata1.Command = new RelayCommand(a => viewManager.SetViewGrid(1));
@@ -23,7 +20,13 @@ namespace ColorVision
             menuItemMetadata1.Order = 0;
 
             MenuItemMetadata menuItemMetadata20 = new MenuItemMetadata();
-            menuItemMetadata20.Command = new RelayCommand(a => gridManager.SetViewGridTwo());
+            menuItemMetadata20.Command = new RelayCommand(a =>
+            {
+                if (viewManager is ViewGridManager gridMgr)
+                    gridMgr.SetViewGridTwo();
+                else
+                    viewManager.SetViewGrid(2);
+            });
             var Image20 = new System.Windows.Controls.Image();
             Image20.SetResourceReference(Image.SourceProperty, "DrawingImageTwoWindow1");
             menuItemMetadata20.Icon = Image20;
@@ -37,14 +40,26 @@ namespace ColorVision
             menuItemMetadata21.Order = 0;
 
             MenuItemMetadata menuItemMetadata30= new MenuItemMetadata();
-            menuItemMetadata30.Command = new RelayCommand(a => gridManager.SetViewGridThree());
+            menuItemMetadata30.Command = new RelayCommand(a =>
+            {
+                if (viewManager is ViewGridManager gridMgr)
+                    gridMgr.SetViewGridThree();
+                else
+                    viewManager.SetViewGrid(3);
+            });
             var Image30 = new System.Windows.Controls.Image();
             Image30.SetResourceReference(Image.SourceProperty, "DrawingImageLeft1Right2");
             menuItemMetadata30.Icon = Image30;
             menuItemMetadata30.Order = 0;
 
             MenuItemMetadata menuItemMetadata31 = new MenuItemMetadata();
-            menuItemMetadata31.Command = new RelayCommand(a => gridManager.SetViewGridThree(false));
+            menuItemMetadata31.Command = new RelayCommand(a =>
+            {
+                if (viewManager is ViewGridManager gridMgr)
+                    gridMgr.SetViewGridThree(false);
+                else
+                    viewManager.SetViewGrid(3);
+            });
             var Image31 = new System.Windows.Controls.Image();
             Image31.SetResourceReference(Image.SourceProperty, "DrawingImageLeft2Right1");
             menuItemMetadata31.Icon = Image31;

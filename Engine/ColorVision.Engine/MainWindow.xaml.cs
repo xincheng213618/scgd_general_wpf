@@ -21,17 +21,19 @@ namespace ColorVision.Engine
             InitializeComponent();
             this.ApplyCaption();
         }
-        public ViewGridManager ViewGridManager { get; set; }
-        public IViewManager ViewManager => ViewGridManager;
+        public IViewManager ViewManager { get; set; }
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget, Menu1);
-            ViewGridManager = ViewGridManager.GetInstance();
-            ViewGridManager.MainView = ViewGrid;
 
-            IViewManager viewManager = ViewGridManager;
-            viewManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
-            viewManager.ViewMaxChangedEvent += (e) => ViewConfig.Instance.ViewMaxCount = e;
+            // Engine MainWindow 使用 ViewGridManager（无 AvalonDock）
+            var gridManager = ViewGridManager.GetInstance();
+            gridManager.MainView = ViewGrid;
+            ViewManager = gridManager;
+            ViewManagerProvider.Current = gridManager;
+
+            ViewManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
+            ViewManager.ViewMaxChangedEvent += (e) => ViewConfig.Instance.ViewMaxCount = e;
 
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 

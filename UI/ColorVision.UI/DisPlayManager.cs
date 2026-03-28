@@ -19,7 +19,7 @@ namespace ColorVision.UI
         {
             if (view is not Control control) throw new NotImplementedException();
 
-            IViewManager viewManager = ViewGridManager.GetInstance();
+            IViewManager viewManager = ViewManagerProvider.Current;
             viewManager.AddView(control);
 
 

@@ -80,8 +80,7 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
-        public ViewGridManager ViewGridManager { get; set; }
-        public IViewManager ViewManager => ViewGridManager;
+        public IViewManager ViewManager { get; set; }
         public static MainWindowConfig Config => MainWindowConfig.Instance;
 
         public MainWindow()
@@ -119,32 +118,6 @@ namespace ColorVision
             }
             ThemeManager.Current.CurrentUIThemeChanged += ApplyAvalonDockTheme;
 
-            // ViewGrid 作为整体控件放入 LayoutDocument
-            var viewGrid = new Grid { Background = (Brush)FindResource("TransparentGridBrush") };
-            var viewDoc = new LayoutDocument
-            {
-                Title = Properties.Resources.DataView,
-                ContentId = "ViewGridDoc",
-                CanClose = false
-            };
-            viewDoc.Content = viewGrid;
-            LayoutDocumentPane.Children.Add(viewDoc);
-
-            ViewGridManager = ViewGridManager.GetInstance();
-            ViewGridManager.MainView = viewGrid;
-
-            IViewManager viewManager = ViewGridManager;
-            viewManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
-            viewManager.ViewMaxChangedEvent += (maxCount) => ViewConfig.Instance.ViewMaxCount = maxCount;
-
-            // 初始化左侧项目面板
-            ProjectPanelGrid.Children.Add(new TreeViewControl());
-
-            // 初始化左侧采集面板
-            DisPlayManager.GetInstance().Init(this, StackPanelSPD);
-
-            Debug.WriteLine(Properties.Resources.LaunchSuccess);
-
             // 设置 WorkspaceManager 指向主窗口的 DockingManager
             WorkspaceManager.layoutRoot = _layoutRoot;
             WorkspaceManager.LayoutDocumentPane = LayoutDocumentPane;
@@ -158,8 +131,22 @@ namespace ColorVision
             layoutManager.RegisterPanel("ProjectPanel", ProjectPanelGrid, Properties.Resources.SolutionExplorer, PanelPosition.Left);
             layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.DeviceControl, PanelPosition.Left);
             layoutManager.RegisterPanel("LogPanel", LogPanelGrid, Properties.Resources.Log, PanelPosition.Bottom);
-            layoutManager.RegisterDocument("ViewGridDoc", viewGrid, Properties.Resources.DataView, false);
             WorkspaceManager.LayoutManager = layoutManager;
+
+            // 初始化视图管理器 — 使用 DockViewManager（每个 IView 成为独立 LayoutDocument）
+            var dockViewManager = new DockViewManager(LayoutDocumentPane, layoutManager);
+            ViewManager = dockViewManager;
+            ViewManagerProvider.Current = dockViewManager;
+
+            dockViewManager.ViewMaxChangedEvent += (maxCount) => ViewConfig.Instance.ViewMaxCount = maxCount;
+
+            // 初始化左侧项目面板
+            ProjectPanelGrid.Children.Add(new TreeViewControl());
+
+            // 初始化左侧采集面板
+            DisPlayManager.GetInstance().Init(this, StackPanelSPD);
+
+            Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
             // 尝试加载已保存的布局
             layoutManager.LoadLayout();

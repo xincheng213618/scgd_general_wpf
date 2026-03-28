@@ -211,7 +211,7 @@ namespace ColorVision.Engine.Services.Flow
 
 
             View = new View();
-            IViewManager viewManager = ViewGridManager.GetInstance();
+            IViewManager viewManager = ViewManagerProvider.Current;
             viewManager.AddView(0, this);
             View.ViewIndexChangedEvent += (s, e) =>
             {

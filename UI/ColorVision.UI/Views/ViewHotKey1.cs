@@ -9,8 +9,7 @@ namespace ColorVision.UI.Views
 
         public static void Execute()
         {
-            IViewManager viewManager = ViewGridManager.GetInstance();
-            viewManager.SetViewGrid(1);
+            ViewManagerProvider.Current.SetViewGrid(1);
         }
     }
 
@@ -20,8 +19,7 @@ namespace ColorVision.UI.Views
 
         public static void Execute()
         {
-            IViewManager viewManager = ViewGridManager.GetInstance();
-            viewManager.SetViewGrid(2);
+            ViewManagerProvider.Current.SetViewGrid(2);
         }
     }
 
@@ -32,8 +30,7 @@ namespace ColorVision.UI.Views
 
         public static void Execute()
         {
-            IViewManager viewManager = ViewGridManager.GetInstance();
-            viewManager.SetViewGrid(4);
+            ViewManagerProvider.Current.SetViewGrid(4);
         }
     }
 
@@ -43,8 +40,7 @@ namespace ColorVision.UI.Views
 
         public static void Execute()
         {
-            IViewManager viewManager = ViewGridManager.GetInstance();
-            viewManager.SetViewGrid(9);
+            ViewManagerProvider.Current.SetViewGrid(9);
         }
     }
 }
