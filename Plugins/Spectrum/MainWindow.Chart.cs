@@ -12,17 +12,6 @@ namespace Spectrum
 {
     public partial class MainWindow
     {
-        //按钮显示1976图
-        private void Button2_Click(object sender, RoutedEventArgs e)
-        {
-            this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1976; });
-        }
-        //按钮显示1931图
-        private void Button1_Click(object sender, RoutedEventArgs e)
-        {
-            this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1931; });
-        }
-
         public void DrawCIEPoinr(double fx, double fy ,double fu,double fv)
         {
             try
@@ -45,12 +34,58 @@ namespace Spectrum
                     Cv2.Circle(cir1976, p2.X, p2.Y, 10, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
                     pic1976 = cir1976.ToWriteableBitmap();
                 }
+                // Update both CIE diagram images simultaneously
+                this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
+                {
+                    image1931.Source = pic1931;
+                    image1976.Source = pic1976;
+                });
             }
             catch (Exception ex)
             {
 
             }
 
+        }
+
+        /// <summary>
+        /// Updates the spectral parameter display panel with calculation details.
+        /// Shows formulas and computed values to increase user credibility.
+        /// </summary>
+        private void UpdateCieParameterDisplay(ViewResultSpectrum result)
+        {
+            this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate ()
+            {
+                // Dominant Wavelength
+                TextDominantWavelength.Text = $"◆ 主波长 (Dominant Wavelength): {result.fLd:F2} nm\n"
+                    + $"  从D65白点(0.3127, 0.3290)向样本色度点(x={result.fx:F4}, y={result.fy:F4})延伸，\n"
+                    + $"  与CIE 1931光谱轨迹的交点对应波长即为主波长";
+
+                // FWHM (Half-width)
+                TextFWHM.Text = $"◆ 半波宽 FWHM: {result.fHW:F2} nm\n"
+                    + $"  峰值波长 λp={result.fLp:F2} nm，在峰值强度50%处的两侧波长差 Δλ=λ₂−λ₁";
+
+                // CCT (Correlated Color Temperature)
+                TextCCT.Text = $"◆ 相关色温 CCT: {result.fCCT:F0} K\n"
+                    + $"  McCamy近似: n=(x−0.3320)/(0.1858−y)，CCT=449n³+3525n²+6823.3n+5520.33";
+
+                // Excitation Purity
+                TextExcitationPurity.Text = $"◆ 激发纯度 (Excitation Purity): {result.ExcitationPurity:F4} ({result.ExcitationPurity * 100:F2}%)\n"
+                    + $"  pe = √((x−xn)²+(y−yn)²) / √((xd−xn)²+(yd−yn)²)\n"
+                    + $"  白点(xn,yn)=(0.3127,0.3290)，主波长点(xd,yd)由光谱轨迹查表获得\n"
+                    + $"  色纯度: {result.fPur:F2}%";
+
+                // Color Rendering Index
+                TextColorRendering.Text = $"◆ 显色指数 Ra: {result.fRa:F1}\n"
+                    + $"  基于CIE 1931 2°观察者标准，使用8组TCS测试色样，\n"
+                    + $"  Ri=100−4.6×ΔEi，Ra=ΣRi/8";
+
+                // Chromaticity coordinates
+                TextChromaticity.Text = $"◆ 色度坐标:\n"
+                    + $"  CIE 1931: x={result.fx:F4}, y={result.fy:F4}\n"
+                    + $"  CIE 1976: u'={result.fu:F4}, v'={result.fv:F4}\n"
+                    + $"  三刺激值: X={result.fCIEx:F4}, Y={result.fCIEy:F4}, Z={result.fCIEz:F4}";
+            });
         }
 
         public List<Scatter> ScatterPlots => ViewResultManager.ScatterPlots;

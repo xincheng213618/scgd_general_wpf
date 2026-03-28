@@ -24,10 +24,12 @@ namespace Spectrum
             if (sender is ListView listview && listview.SelectedIndex > -1)
             {
                 DrawPlot();
-                listView2.ItemsSource = ViewResultSpectrums[listview.SelectedIndex].SpectralDatas;
-                // Always draw CIE point on selection
-                DrawCIEPoinr(ViewResultSpectrums[listview.SelectedIndex].fx, ViewResultSpectrums[listview.SelectedIndex].fy, ViewResultSpectrums[listview.SelectedIndex].fu, ViewResultSpectrums[listview.SelectedIndex].fv);
-                this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1931; });
+                var selected = ViewResultSpectrums[listview.SelectedIndex];
+                listView2.ItemsSource = selected.SpectralDatas;
+                // Draw CIE points on both diagrams simultaneously
+                DrawCIEPoinr(selected.fx, selected.fy, selected.fu, selected.fv);
+                // Update spectral parameter display with calculation details
+                UpdateCieParameterDisplay(selected);
             }
         }
 
