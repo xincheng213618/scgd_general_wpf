@@ -1,4 +1,5 @@
 using ColorVision.UI.Menus;
+using System.Windows;
 
 namespace ColorVision.Solution.Workspace
 {
@@ -28,7 +29,11 @@ namespace ColorVision.Solution.Workspace
 
         public override void Execute()
         {
-            WorkspaceManager.LayoutManager?.LoadLayout();
+            if (WorkspaceManager.LayoutManager == null) return;
+            if (!WorkspaceManager.LayoutManager.LoadLayout())
+            {
+                MessageBox.Show("未找到已保存的窗口布局。", "应用窗口布局", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
     }
 

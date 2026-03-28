@@ -20,6 +20,7 @@ namespace ColorVision.Solution.Workspace
 
         public void Closed()
         {
+            if (WorkspaceManager.LayoutDocumentPane == null) return;
             var pannel = WorkspaceManager.FindDocumentActive(WorkspaceManager.LayoutDocumentPane);
             pannel?.Close();
         }

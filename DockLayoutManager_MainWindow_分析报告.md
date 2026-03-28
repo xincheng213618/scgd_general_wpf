@@ -2,7 +2,69 @@
 
 > 生成日期: 2026-03-28 (更新)  
 > 分析范围: ColorVision MainWindow 结构、ViewGridManager、DisPlayManager、WorkspaceMainView、接口抽象方案  
-> 本文档包含两个方案对比: **方案 A (完全重构)** vs **方案 B (轻量外嵌, ★推荐)**
+> 本文档包含两个方案对比: **方案 A (完全重构)** vs **方案 B (轻量外嵌, ★推荐 — 已实施)**
+
+---
+
+## 0. 方案 B 实施状态
+
+> ✅ **方案 B 已实施完成**。以下是实际变更概要。
+
+### 0.1 实际修改文件
+
+| 文件 | 改动类型 | 说明 |
+|------|----------|------|
+| `ColorVision/MainWindow.xaml` | 中改 | 右侧 MainContent 替换为 `DockingManager`，含 `LayoutDocumentPane` + 底部日志面板 |
+| `ColorVision/MainWindow.xaml.cs` | 中改 | ViewGrid 作为 LayoutDocument 注册；AvalonDock 主题初始化；日志面板初始化；DockLayoutManager 初始化；布局自动保存 |
+| `ColorVision/ColorVision.csproj` | 小改 | 添加 `Dirkster.AvalonDock.Themes.VS2013 v4.72.1` 包引用 |
+| `UI/ColorVision.Solution/Workspace/DockLayoutManager.cs` | 中改 | 新增 `RegisterDocument()` 方法和 `DocumentInfo` 记录；布局文件改为 `MainWindowDockLayout.xml`；ResetLayout 恢复文档 |
+| `UI/ColorVision.Solution/Workspace/WorkspaceMainView.xaml` | 简化 | 移除内部 DockingManager（AvalonDock 布局已提升到 MainWindow 级别） |
+| `UI/ColorVision.Solution/Workspace/WorkspaceMainView.xaml.cs` | 简化 | 移除 DockingManager/LogOutput/Theme 初始化；保留 Close 命令绑定 |
+| `UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs` | **新增** | 视图菜单: 保存窗口布局、应用窗口布局、重置窗口布局 |
+
+### 0.2 未修改的文件 (方案 B 零改动验证)
+
+| 组件 | 状态 |
+|------|------|
+| `ViewGridManager.cs` | ✅ 零改动 — 整体作为 LayoutDocument 内容 |
+| `DisPlayManager.cs` | ✅ 零改动 — 侧边栏 StackPanel 不变 |
+| 7 个编辑器 (TextEditor, ImageEditor, HexEditor, ProjectEditor, WebEditor, SoloutionEditorControl, MultiImageViewer) | ✅ 零改动 — 通过 `WorkspaceManager.LayoutDocumentPane` 间接使用 |
+| 12 个 IDisPlayControl 设备控件 | ✅ 零改动 |
+| Engine 层代码 | ✅ 零改动 |
+
+### 0.3 架构变更概览
+
+**之前:**
+```
+MainWindow
+├── LeftTabControl ("项目"/"采集")
+└── MainContent
+    ├── ViewGrid (Visibility 绑定 !SolutionTab1.IsSelected)
+    │   └── ViewGridManager 管理 N 宫格
+    └── SolutionGrid (Visibility 绑定 SolutionTab1.IsSelected)
+        └── WorkspaceMainView (内含自己的 DockingManager)
+            ├── LayoutDocumentPane (编辑器)
+            └── LogPanel
+```
+
+**之后:**
+```
+MainWindow
+├── LeftTabControl ("项目"/"采集") [不变]
+└── DockingManager (AvalonDock)
+    ├── LayoutDocumentPane
+    │   ├── LayoutDocument "采集视图" → ViewGrid [ViewGridManager 管理的 N 宫格]
+    │   └── (编辑器文档 — 由 WorkspaceManager.LayoutDocumentPane 动态添加)
+    └── BottomPaneGroup
+        └── LayoutAnchorable "日志" → LogOutput
+```
+
+### 0.4 菜单项
+
+视图菜单下新增三项 (位于 `UI/ColorVision.Solution/Workspace/LayoutMenuItems.cs`):
+- **保存窗口布局** (Order: 100) — 序列化当前 AvalonDock 布局到 `MainWindowDockLayout.xml`
+- **应用窗口布局** (Order: 101) — 从 `MainWindowDockLayout.xml` 反序列化布局
+- **重置窗口布局** (Order: 102) — 删除布局文件并重建默认布局
 
 ---
 

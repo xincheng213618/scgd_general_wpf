@@ -110,8 +110,12 @@ namespace ColorVision.Solution.Workspace
 
                 // 更新 WorkspaceManager 的引用
                 WorkspaceManager.layoutRoot = _dockingManager.Layout;
-                WorkspaceManager.LayoutDocumentPane = _dockingManager.Layout.Descendents()
+                var docPane = _dockingManager.Layout.Descendents()
                     .OfType<LayoutDocumentPane>().FirstOrDefault();
+                if (docPane != null)
+                    WorkspaceManager.LayoutDocumentPane = docPane;
+                else
+                    log.Warn("加载的布局中未找到 LayoutDocumentPane，保持现有引用");
 
                 log.Info("主窗口布局已加载");
                 return true;
@@ -192,8 +196,12 @@ namespace ColorVision.Solution.Workspace
 
                 // 更新 WorkspaceManager 的引用
                 WorkspaceManager.layoutRoot = defaultLayout;
-                WorkspaceManager.LayoutDocumentPane = defaultLayout.Descendents()
+                var resetDocPane = defaultLayout.Descendents()
                     .OfType<LayoutDocumentPane>().FirstOrDefault();
+                if (resetDocPane != null)
+                    WorkspaceManager.LayoutDocumentPane = resetDocPane;
+                else
+                    log.Warn("重置后的布局中未找到 LayoutDocumentPane");
 
                 log.Info("主窗口布局已重置");
             }

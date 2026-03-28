@@ -130,7 +130,7 @@ namespace ColorVision
             ViewGridManager.MainView = viewGrid;
 
             ViewGridManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e1) => ViewConfig.Instance.ViewMaxCount = e1;
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += (maxCount) => ViewConfig.Instance.ViewMaxCount = maxCount;
 
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
@@ -196,7 +196,7 @@ namespace ColorVision
             this.Drop += MainWindow_Drop;
 
             // 窗口关闭时自动保存布局
-            this.Closing += (s, e1) =>
+            this.Closing += (s, e) =>
             {
                 WorkspaceManager.LayoutManager?.SaveLayout();
             };
