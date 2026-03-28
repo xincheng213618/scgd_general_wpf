@@ -150,9 +150,6 @@
   <data name="Project" xml:space="preserve">
     <value>工程</value>
   </data>
-  <data name="Acquire" xml:space="preserve">
-    <value>採集</value>
-  </data>
   <data name="SolutionExplorer" xml:space="preserve">
     <value>方案總管</value>
   </data>

@@ -241,20 +241,20 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 设备控制 的本地化字符串。
-        /// </summary>
-        public static string DeviceControl {
-            get {
-                return ResourceManager.GetString("DeviceControl", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 删除 的本地化字符串。
         /// </summary>
         public static string Delete {
             get {
                 return ResourceManager.GetString("Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 设备控制 的本地化字符串。
+        /// </summary>
+        public static string DeviceControl {
+            get {
+                return ResourceManager.GetString("DeviceControl", resourceCulture);
             }
         }
         

@@ -150,9 +150,6 @@
   <data name="Project" xml:space="preserve">
     <value>프로젝트</value>
   </data>
-  <data name="Acquire" xml:space="preserve">
-    <value>수집</value>
-  </data>
   <data name="SolutionExplorer" xml:space="preserve">
     <value>솔루션 탐색기</value>
   </data>

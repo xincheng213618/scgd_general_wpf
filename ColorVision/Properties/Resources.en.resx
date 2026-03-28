@@ -150,9 +150,6 @@
   <data name="Project" xml:space="preserve">
     <value>Project</value>
   </data>
-  <data name="Acquire" xml:space="preserve">
-    <value>Acquire</value>
-  </data>
   <data name="SolutionExplorer" xml:space="preserve">
     <value>Solution Explorer</value>
   </data>

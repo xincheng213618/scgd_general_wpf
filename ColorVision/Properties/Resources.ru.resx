@@ -150,9 +150,6 @@
   <data name="Project" xml:space="preserve">
     <value>проект</value>
   </data>
-  <data name="Acquire" xml:space="preserve">
-    <value>коллекция</value>
-  </data>
   <data name="SolutionExplorer" xml:space="preserve">
     <value>Обозреватель решений</value>
   </data>
