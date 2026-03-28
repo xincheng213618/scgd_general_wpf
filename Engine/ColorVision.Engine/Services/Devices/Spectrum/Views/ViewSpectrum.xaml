@@ -258,6 +258,23 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="ExcitationPurity" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding ExcitationPurity, StringFormat={}{0:F4}}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="DominantWavelengthColor" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Width="14" Height="14" Background="{Binding DominantWavelengthColor}" CornerRadius="2" Margin="0,0,4,0"/>
+                                            <TextBlock Text="{ Binding DominantWavelengthHex}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                             <GridViewColumn  Header="{x:Static properties:Resources.V}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">

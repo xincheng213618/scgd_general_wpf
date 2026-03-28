@@ -2,7 +2,7 @@
 
 namespace ColorVision.UI.Desktop.Settings.ExportAndImport
 {
-    public class MenuConfigExport : MenuItemBase
+    public class MenuConfigExport : GlobalMenuBase
     {
         public override string OwnerGuid =>nameof(MenuConfigExportAndImport);
 

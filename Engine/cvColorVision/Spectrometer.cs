@@ -113,6 +113,33 @@ namespace cvColorVision
     {
         private const string LIBRARY_CVCAMERA = "cvCamera.dll";
 
+        // EXPORTC MYDLL BOOL STDCALL CM_GetErrorMessage(int nErr, char* szMsg, int& strLen);
+        [DllImport(LIBRARY_CVCAMERA, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        public static extern int CM_GetErrorMessage( int nErr, StringBuilder szMsg, ref int strLen);
+
+        /// <summary>
+        /// 根据错误码获取对应的错误描述信息
+        /// </summary>
+        /// <param name="errorCode">CM_ 系列函数返回的错误码</param>
+        /// <returns>可读的错误信息；成功(1)时返回空字符串</returns>
+        public static string GetErrorMessage(int errorCode)
+        {
+            if (errorCode == 1) return string.Empty;
+            try
+            {
+                const int bufferSize = 1024;
+                StringBuilder sb = new StringBuilder(bufferSize);
+                int len = bufferSize;
+                CM_GetErrorMessage(errorCode, sb, ref len);
+                string msg = sb.ToString();
+                return string.IsNullOrEmpty(msg) ? $"未知错误 (错误码: {errorCode})" : $"{errorCode} ErrorMessage:{msg}" ;
+            }
+            catch
+            {
+                return $"未知错误 (错误码: {errorCode})";
+            }
+        }
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         public delegate int Emission_CallBack(IntPtr strText, int nLen);
 
@@ -143,10 +170,10 @@ namespace cvColorVision
         public static extern int CM_Emission_LoadMagiudeFileWithND(IntPtr handle, int nIndex, string szFileName);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetSrcData", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern bool CM_Emission_GetSrcData(IntPtr handle, float fIntTime, int iAveNum, double[] pdSpectumData, ref int pSpectumNumber);
+        public static extern int CM_Emission_GetSrcData(IntPtr handle, float fIntTime, int iAveNum, double[] pdSpectumData, ref int pSpectumNumber);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetSerialNumber", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern bool CM_GetSpectrSerialNumber(IntPtr handle, StringBuilder szSerialNum);
+        public static extern int CM_GetSpectrSerialNumber(IntPtr handle, StringBuilder szSerialNum);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_GetAllSN", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern int CM_Emission_GetAllSN(int nType, int nComPort, StringBuilder sn, int len);
@@ -197,6 +224,6 @@ namespace cvColorVision
         public static extern int CM_Emission_Init_Auto_DarkEx(IntPtr handle, int nPort, float fTimeStart, int nStepTime, int nStepCount, int iAveNum);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_Emission_CreateMagiude", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public static extern bool CM_Emission_CreateMagiude(float fIntTime, float[] fDarkData, float[] fLightData, string szCSFile, string szWavaLengthFile, string szMagiude);
+        public static extern int CM_Emission_CreateMagiude(float fIntTime, float[] fDarkData, float[] fLightData, string szCSFile, string szWavaLengthFile, string szMagiude);
     }
 }

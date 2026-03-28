@@ -376,7 +376,7 @@ del ""%~f0"" & exit
                     WindowStyle = ProcessWindowStyle.Hidden // 隐藏命令行窗口
                 };
 
-                if (Tool.HasWritePermission(AppDomain.CurrentDomain.BaseDirectory))
+                if (!Tool.HasWritePermission(AppDomain.CurrentDomain.BaseDirectory))
                 {
                     startInfo.Verb = "runas"; // 请求管理员权限
                     startInfo.WindowStyle = ProcessWindowStyle.Normal;
@@ -404,7 +404,7 @@ del ""%~f0"" & exit
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
             startInfo.FileName = downloadPath;
 
-            if (Tool.HasWritePermission(AppDomain.CurrentDomain.BaseDirectory))
+            if (!Tool.HasWritePermission(AppDomain.CurrentDomain.BaseDirectory))
             {
                 startInfo.Verb = "runas"; // 请求管理员权限
                 startInfo.WindowStyle = ProcessWindowStyle.Normal;

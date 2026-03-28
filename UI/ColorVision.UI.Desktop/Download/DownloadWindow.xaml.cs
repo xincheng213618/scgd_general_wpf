@@ -12,7 +12,7 @@ using System.Windows.Threading;
 
 namespace ColorVision.UI.Desktop.Download
 {
-    public class ExportDownloadWindow : MenuItemBase
+    public class ExportDownloadWindow : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override string GuidId => "DownloadManager";

@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace ColorVision.UI.Desktop.Settings.ExportAndImport
 {
-    public class MenuConfigImport : MenuItemBase
+    public class MenuConfigImport : GlobalMenuBase
     {
         public override string OwnerGuid => nameof(MenuConfigExportAndImport);
         public override int Order => 2;

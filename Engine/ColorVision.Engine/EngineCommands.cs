@@ -3,7 +3,7 @@
 namespace ColorVision.Engine
 {
 
-    //public class MenuEngine : MenuItemMenuBase
+    //public class MenuEngine : GlobalMenuBase
     //{
     //    public override string GuidId => EngineCommands.EngineGuidId;
     //    public override string Header => ColorVision.Engine.Properties.Resources.MenuEngine;

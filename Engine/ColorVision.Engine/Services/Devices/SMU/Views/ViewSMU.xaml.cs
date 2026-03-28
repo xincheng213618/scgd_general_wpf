@@ -26,11 +26,9 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewSMU : UserControl, IView
+    public partial class ViewSMU : UserControl
     {
         public ObservableCollection<ViewResultSMU> ViewResults { get; set; } = new ObservableCollection<ViewResultSMU>();
-        public View View { get; set; }
-
         public ViewSMU()
         {
             InitializeComponent();
@@ -43,8 +41,6 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             Grid.SetRow(TextBox1, 0);
             MainGrid.Children.Insert(0, TextBox1);
             MouseDown += (s, e) =>  {TextBox1.Focus();};
-            View = new View();
-            ViewGridManager.GetInstance().AddView(this);
 
             listView1.ItemsSource = ViewResults;
 
@@ -243,8 +239,6 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
             }
         }
-
-        List<PassSxSource> PassSxSources = new();
 
         public void AddViewResultSMU(ViewResultSMU viewResultSMU)
         {

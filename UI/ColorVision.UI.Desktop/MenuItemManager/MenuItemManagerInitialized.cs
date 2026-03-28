@@ -17,7 +17,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             service.ApplySettings();
 
             // Rebuild menu to apply the saved settings
-            MenuManager.GetInstance().LoadMenuItemFromAssembly();
+            MenuManager.GetInstance().RebuildAllMenus();
 
             // Apply hotkeys to main window
             var mainWindow = Application.Current.MainWindow;

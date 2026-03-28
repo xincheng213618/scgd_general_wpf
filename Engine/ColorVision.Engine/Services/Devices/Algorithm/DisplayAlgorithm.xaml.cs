@@ -145,7 +145,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             CB_AlgorithmTypesChanged();
 
-            this.AddViewConfig(Device.View, ComboxView);
+            this.AddViewConfig(Device.View, DisPlayName);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
 

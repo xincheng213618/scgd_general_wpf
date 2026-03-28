@@ -1,13 +1,16 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Solution;
+using ColorVision.Solution.Editor;
 using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
+using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Serach;
 using ColorVision.UI.Shell;
 using ColorVision.UI.Views;
+using AvalonDock.Layout;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
@@ -17,11 +20,10 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -78,7 +80,7 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
-        public ViewGridManager ViewGridManager { get; set; }
+        public DockViewManager DockViewManager => DockViewManager.GetInstance();
         public static MainWindowConfig Config => MainWindowConfig.Instance;
 
         public MainWindow()
@@ -96,7 +98,6 @@ namespace ColorVision
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MenuManager.GetInstance().Menu = Menu1;
             this.SizeChanged += (s, e) =>
             {
                 SearchGrid.Visibility = this.ActualWidth < 700 ? Visibility.Collapsed : Visibility.Visible;
@@ -105,22 +106,80 @@ namespace ColorVision
 
             this.DataContext = Config;
 
-            WorkspaceMainView solutionView = new WorkspaceMainView();
-            SolutionGrid.Children.Add(solutionView);
+            // 初始化 AvalonDock 主题
+            void ApplyAvalonDockTheme(Theme theme)
+            {
+                // 先重置为 null 以强制 AvalonDock 重新加载主题资源
+                DockingManager1.Theme = null;
+                if (theme == Theme.Dark)
+                    DockingManager1.Theme = new AvalonDock.Themes.Vs2013DarkTheme();
+                else
+                    DockingManager1.Theme = new AvalonDock.Themes.Vs2013LightTheme();
+            }
+            ThemeManager.Current.CurrentUIThemeChanged += ApplyAvalonDockTheme;
 
-            ViewGridManager = ViewGridManager.GetInstance();
-            ViewGridManager.MainView = ViewGrid;
+            // 设置 WorkspaceManager 指向主窗口的 DockingManager
+            WorkspaceManager.layoutRoot = _layoutRoot;
+            WorkspaceManager.LayoutDocumentPane = LayoutDocumentPane;
 
-            ViewGridManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) => ViewConfig.Instance.ViewMaxCount = e;
+            // 初始化日志面板
+            var logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+            LogPanelGrid.Children.Add(logOutput);
 
+            // 初始化停靠布局管理器
+            var layoutManager = new DockLayoutManager(DockingManager1);
+            layoutManager.RegisterPanel("ProjectPanel", ProjectPanelGrid, Properties.Resources.SolutionExplorer, PanelPosition.Left);
+            layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.DeviceControl, PanelPosition.Left);
+            layoutManager.RegisterPanel("LogPanel", LogPanelGrid, Properties.Resources.Log, PanelPosition.Bottom);
+            WorkspaceManager.LayoutManager = layoutManager;
+
+            // 初始化 DockViewManagerHost（设置 AvalonDock 回调）
+            DockViewManagerHost.Initialize();
+
+            // 初始化左侧项目面板
+            ProjectPanelGrid.Children.Add(new TreeViewControl());
+
+            // 初始化左侧采集面板
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
-            
-            SolutionTab1.Content = new TreeViewControl();
 
-            MenuManager.GetInstance().LoadMenuItemFromAssembly();
+            // 尝试加载已保存的布局
+            layoutManager.LoadLayout();
+
+            // 布局加载后（重新）应用 AvalonDock 主题，确保反序列化的元素使用正确主题
+            ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
+
+            // 将所有已注册的视图创建为文档标签页
+            DockViewManager.ShowAllViews();
+
+            // 激活第一个 Flow 视图（如果有的话）
+            var firstFlowView = DockViewManager.Views.OfType<ColorVision.Engine.Services.Flow.ViewFlow>().FirstOrDefault();
+            if (firstFlowView != null)
+                DockViewManager.ActiveView(firstFlowView);
+
+            // 切换到 DeviceControl 面板时，跳转到上次显示的视图
+            HookAcquirePanelActivation();
+
+            // 执行延迟加载的操作
+            foreach (var action in WorkspaceManager.DealyLoad)
+            {
+                action();
+            }
+            WorkspaceManager.DealyLoad.Clear();
+
+            // 更新后首次启动时显示变更日志
+            ShowChangelogIfUpdated();
+
+            // Ctrl+W 关闭当前活动文档
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) =>
+            {
+                var doc = WorkspaceManager.FindDocumentActive(WorkspaceManager.LayoutDocumentPane);
+                doc?.Close();
+            }));
+            InputBindings.Add(new KeyBinding(ApplicationCommands.Close, new KeyGesture(Key.W, ModifierKeys.Control)));
+
+            MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget,Menu1);
             this.LoadHotKeyFromAssembly();
             StatusBarManager.GetInstance().Init(StatusBarGrid, StatusBarTextDocker);
 
@@ -153,6 +212,59 @@ namespace ColorVision
             this.AllowDrop = true;
             this.Drop += MainWindow_Drop;
 
+            // 窗口关闭时自动保存布局
+            this.Closing += (s, e) =>
+            {
+                WorkspaceManager.LayoutManager?.SaveLayout();
+            };
+        }
+
+        /// <summary>
+        /// 当 AcquirePanel (DeviceControl) 变为活动状态时，
+        /// 激活上次显示的视图文档，实现面板切换时恢复。
+        /// </summary>
+        private void HookAcquirePanelActivation()
+        {
+            var acquirePanel = DockingManager1.Layout.Descendents()
+                .OfType<AvalonDock.Layout.LayoutAnchorable>()
+                .FirstOrDefault(a => a.ContentId == "AcquirePanel");
+            if (acquirePanel != null)
+            {
+                acquirePanel.IsActiveChanged += (s, e) =>
+                {
+                    if (acquirePanel.IsActive)
+                        DockViewManager.ActivateLastView();
+                };
+            }
+        }
+
+        /// <summary>
+        /// 更新后首次启动时显示变更日志。
+        /// 对比当前版本与上次记录的版本，仅在版本变更时打开 CHANGELOG.md。
+        /// </summary>
+        private void ShowChangelogIfUpdated()
+        {
+            try
+            {
+                string currentVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
+                if (string.IsNullOrEmpty(currentVersion)) return;
+
+                if (Config.LastOpenedVersion != currentVersion)
+                {
+                    string changelogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CHANGELOG.md");
+                    if (File.Exists(changelogPath))
+                    {
+                        var editor = new WebView2Editor();
+                        editor.Open(changelogPath);
+                    }
+
+                    Config.LastOpenedVersion = currentVersion;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("显示变更日志失败", ex);
+            }
         }
 
         private void MainWindow_Drop(object sender, DragEventArgs e)

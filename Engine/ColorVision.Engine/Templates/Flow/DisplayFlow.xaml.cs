@@ -12,6 +12,7 @@ using log4net;
 using SqlSugar;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
@@ -88,8 +89,9 @@ namespace ColorVision.Engine.Templates.Flow
             this.DataContext = FlowEngineManager;
             this.SetIconResource("DrawingImageFlow");
 
-            this.AddViewConfig(View, ComboxView);
+            this.AddViewConfig(View, ColorVision.Engine.Properties.Resources.Workflow);
             View.DisplayFlow = this;
+
             Unselected += (s, e) =>
             {
                 View.STNodeEditorHelper.PropertyEditorWindow?.Hide();
@@ -391,6 +393,8 @@ namespace ColorVision.Engine.Templates.Flow
 
         public CVCommonNode LastNode { get; set; }
 
+        private readonly ConcurrentDictionary<string, FlowNodeRecord> _nodeRecords = new ConcurrentDictionary<string, FlowNodeRecord>();
+
         PropertyInfo MarkColorProperty { get; set; }
         private void nodeEndEvent(object sender, FlowEngineNodeEndEventArgs e)
         {
@@ -400,6 +404,14 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     algorithmNode.IsSelected = false;
                     MarkColorProperty.SetValue(algorithmNode, System.Drawing.Color.Green);
+                }
+
+                string nodeKey = algorithmNode.NodeID;
+                if (_nodeRecords.TryRemove(nodeKey, out FlowNodeRecord record))
+                {
+                    record.EndTime = DateTime.Now;
+                    record.ElapsedMs = (long)(record.EndTime.Value - record.StartTime).TotalMilliseconds;
+                    FlowNodeRecordDataBaseHelper.Update(record);
                 }
             }
         }
@@ -413,6 +425,20 @@ namespace ColorVision.Engine.Templates.Flow
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
                 UpdateMsg(sender);
+
+                int batchId = FlowEngineManager.Batch?.Id ?? 0;
+                var record = new FlowNodeRecord
+                {
+                    BatchId = batchId,
+                    SerialNumber = FlowControl.SerialNumber,
+                    NodeId = algorithmNode.NodeID,
+                    NodeName = algorithmNode.OnGetDrawTitle(),
+                    NodeType = algorithmNode.NodeType,
+                    StartTime = DateTime.Now,
+                };
+                int insertId = FlowNodeRecordDataBaseHelper.Insert(record);
+                if (insertId > 0)
+                    _nodeRecords[algorithmNode.NodeID] = record;
             }
         }
 
@@ -488,6 +514,7 @@ namespace ColorVision.Engine.Templates.Flow
             View.logTextBox.Text = "Run " + ComboBoxFlow.Text;
             FlowEngineManager.BatchProgress = 0;
 
+            _nodeRecords.Clear();
             FlowControl.FlowCompleted += FlowControl_FlowCompleted;
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
 

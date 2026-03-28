@@ -4,12 +4,14 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Spectrum"
+        xmlns:models="clr-namespace:Spectrum.Models"
         xmlns:wpf="http://schemas.microsoft.com/netfx/2007/xaml/presentation"
         xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:wfi ="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
         xmlns:properties ="clr-namespace:Spectrum.Properties"
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SpectrometerManager}"
         Title="光谱仪软件" Height="1080" Width="1920" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -34,6 +36,9 @@
         <Grid>
             <Menu x:Name="menu" Grid.Row="0" Padding="2" >
             </Menu>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,30,0">
+                <CheckBox x:Name="EqeCheckBox" Content="光通量模式" IsChecked="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeEnabled}" Checked="EqeCheckBox_Changed" Unchecked="EqeCheckBox_Changed" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            </StackPanel>
             <Button HorizontalAlignment="Right" Margin="5,0,5,0"  Command="{Binding SetEmissionSP100Config.EditCommand}" Padding="2" Height="18" Width="18" >
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
@@ -53,38 +58,41 @@
         </Grid>
         
 
-        <Grid Grid.Row="1" >
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="330"/>
-                <ColumnDefinition Width="*"/>
+        <xcad:DockingManager x:Name="DockingManager" Grid.Row="1" BorderThickness="0" Background="Transparent">
+            <xcad:LayoutRoot x:Name="_layoutRoot">
+                <xcad:LayoutPanel Orientation="Horizontal">
 
-            </Grid.ColumnDefinitions>
-
-            <Grid Grid.Column="0">
-                <ScrollViewer Margin="3,0,3,5">
-                    <StackPanel x:Name="MainStackPanel">
+                    <!-- ═══ Left: Control Panel ═══ -->
+                    <xcad:LayoutAnchorablePaneGroup DockWidth="330">
+                        <xcad:LayoutAnchorablePane>
+                            <xcad:LayoutAnchorable x:Name="ControlPanelPane" Title="控制面板" ContentId="ControlPanel" CanClose="False" CanAutoHide="True" CanFloat="True">
+                                <ScrollViewer Margin="3,0,3,5">
+                                    <StackPanel x:Name="MainStackPanel">
 
                         <!-- ═══ 光谱仪连接 (Spectrometer Connection) ═══ -->
                         <GroupBox Header="光谱仪连接">
                             <StackPanel>
-                                <Button Command="{Binding GetSpectrSerialNumberCommand}" Content="GetAllSN" Margin="0,0,0,4" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter1}}"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                    <ComboBox x:Name="ComboBoxSpectrometerType" Width="140" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Config.SpectrometerType}" SelectedValuePath="Key" DisplayMemberPath="Value"/>
-                                    <CheckBox Content="IsCom" IsChecked="{Binding Config.IsComPort}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                <StackPanel Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter1}}">
+                                    <Button Command="{Binding GetSpectrSerialNumberCommand}" Content="获取设备列表" Margin="0,0,0,4"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4" >
+                                        <ComboBox x:Name="ComboBoxSpectrometerType" Width="140" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Config.SpectrometerType}" SelectedValuePath="Key" DisplayMemberPath="Value"/>
+                                        <CheckBox Content="串口连接" IsChecked="{Binding Config.IsComPort}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,4" Orientation="Horizontal" Visibility="{Binding Config.IsComPort,Converter={StaticResource bool2VisibilityConverter}}">
+                                        <DockPanel>
+                                            <TextBlock Text="串口" VerticalAlignment="Center" Width="40" />
+                                            <ComboBox x:Name="ComboBoxPort" Style="{StaticResource ComboBox.Small}" IsEditable="True" Text="{Binding Config.SzComName}" Width="80" />
+                                        </DockPanel>
+                                        <DockPanel Margin="8,0,0,0">
+                                            <TextBlock Text="波特率" VerticalAlignment="Center" Width="45" />
+                                            <ComboBox x:Name="ComboBoxSerial" Style="{StaticResource ComboBox.Small}" Width="70" IsEditable="True" Text="{Binding Config.BaudRate}" />
+                                        </DockPanel>
+                                    </StackPanel>
                                 </StackPanel>
-                                <StackPanel Margin="0,0,0,4" Orientation="Horizontal" Visibility="{Binding Config.IsComPort,Converter={StaticResource bool2VisibilityConverter}}">
-                                    <DockPanel>
-                                        <TextBlock Text="串口" VerticalAlignment="Center" Width="40" />
-                                        <ComboBox x:Name="ComboBoxPort" Style="{StaticResource ComboBox.Small}" IsEditable="True" Text="{Binding Config.SzComName}" Width="80" />
-                                    </DockPanel>
-                                    <DockPanel Margin="8,0,0,0">
-                                        <TextBlock Text="波特率" VerticalAlignment="Center" Width="45" />
-                                        <ComboBox x:Name="ComboBoxSerial" Style="{StaticResource ComboBox.Small}" Width="70" IsEditable="True" Text="{Binding Config.BaudRate}" />
-                                    </DockPanel>
-                                </StackPanel>
+
                                 <Grid Margin="0,4,0,0">
-                                    <Button Content="{x:Static properties:Resources.连接光谱仪}" Click="Button_Click" HorizontalAlignment="Right" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter1}}" Padding="12,4" Background="#2196F3" Foreground="White" />
-                                    <Button x:Name="ButtonClose" Content="{x:Static properties:Resources.断开光谱仪}" Background="#E53935" Foreground="White" Click="ButtonClose_Click" HorizontalAlignment="Right" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}" Padding="12,4" />
+                                    <Button Content="{x:Static properties:Resources.连接光谱仪}" Click="Button_Click"  Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter1}}" Padding="12,4" Background="#2196F3" Foreground="White" />
+                                    <Button x:Name="ButtonClose" Content="{x:Static properties:Resources.断开光谱仪}" Background="#E53935" Foreground="White" Click="ButtonClose_Click" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}" Padding="12,4" />
                                 </Grid>
                             </StackPanel>
                         </GroupBox>
@@ -94,6 +102,7 @@
                             <StackPanel>
                                 <DockPanel Margin="0,0,0,6">
                                     <Button DockPanel.Dock="Right" Content="管理..." Command="{Binding OpenCalibrationGroupWindowCommand}" Margin="4,0,0,0" Padding="8,2" ToolTip="打开标定分组管理窗口"/>
+                                    <Button DockPanel.Dock="Right" Content="加载分组" Command="{Binding ApplyActiveGroupCommand}" Margin="4,0,0,0" Padding="8,2" ToolTip="加载当前选择分组的标定文件" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}"/>
                                     <TextBlock Text="当前分组: " Width="60"/>
                                     <ComboBox Style="{StaticResource ComboBox.Small}" ItemsSource="{Binding CalibrationGroupNames}" SelectedItem="{Binding ActiveCalibrationGroupName, Mode=TwoWay}" />
                                 </DockPanel>
@@ -136,7 +145,7 @@
                                             </TextBlock.RenderTransform>
                                         </TextBlock>
                                     </Button>
-                                    <Button Content="自动积分" Click="AutoIntTime_Click"/>
+                                    <Button x:Name="ButtonAutoInt" Content="自动积分" Click="AutoIntTime_Click" Padding="10,4" Background="#E67E22" Foreground="White"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="平均次数" Width="110" />
@@ -145,12 +154,12 @@
                             </StackPanel>
                         </GroupBox>
 
-                        <!-- ═══ 校准操作 (Calibration) ═══ -->
-                        <GroupBox Header="校准" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}">
+                        <!-- ═══ 测试 (Test & Calibration) ═══ -->
+                        <GroupBox Header="测试" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}">
                             <StackPanel>
+                                <TextBlock Text="校零" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                     <Button x:Name="button3" Content="{x:Static properties:Resources.单次校零}" Click="Button3_Click" Margin="0,0,4,0" Padding="10,4" Background="#E67E22" Foreground="White"/>
-                                    <Button x:Name="button4" Content="{x:Static properties:Resources.自适应校零}" Click="Button4_Click_1" Margin="0,0,4,0" Padding="10,4" Background="#E67E22" Foreground="White"/>
                                     <Button Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditAutodarkParamCommand}" Padding="0" Height="20" Width="20" >
                                         <Button.Triggers>
                                             <EventTrigger RoutedEvent="Button.Click">
@@ -168,7 +177,7 @@
                                         </TextBlock>
                                     </Button>
                                 </StackPanel>
-                                <DockPanel>
+                                <DockPanel Margin="0,0,0,6">
                                     <Button DockPanel.Dock="Right" Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditGetDataConfigCommand}" Padding="0" Height="20" Width="20" >
                                         <Button.Triggers>
                                             <EventTrigger RoutedEvent="Button.Click">
@@ -191,12 +200,10 @@
                                         <CheckBox Content="自动校零" IsChecked="{Binding EnableAutodark}" Margin="0,0,8,0"/>
                                     </StackPanel>
                                 </DockPanel>
-                            </StackPanel>
-                        </GroupBox>
 
-                        <!-- ═══ 测试执行 (Test Execution) ═══ -->
-                        <GroupBox Header="测试" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}">
-                            <StackPanel>
+                                <Separator Margin="0,2,0,6"/>
+
+                                <TextBlock Text="单次测试" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                 <Button x:Name="button5" Content="{x:Static properties:Resources.单次测试}" Click="Button5_Click" Margin="0,0,0,8" Padding="10,6" Background="#3498DB" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Stretch"/>
 
                                 <TextBlock Text="连续测试" FontWeight="SemiBold" Margin="0,0,0,4"/>
@@ -222,6 +229,13 @@
                                         <TextBlock Text="{Binding MeasurementNum}"/>
                                     </StackPanel>
                                 </Grid>
+                                <ProgressBar x:Name="ContinuousProgressBar" Height="15" Margin="0,4,0,4" Minimum="0" Maximum="100" Value="0" Foreground="#3498DB"/>
+                                <StackPanel x:Name="TimeEstimationPanel" Orientation="Horizontal" Margin="0,0,0,4" Visibility="Collapsed">
+                                    <TextBlock Text="已用: " FontSize="11"/>
+                                    <TextBlock x:Name="ElapsedTimeText" Text="--:--" FontSize="11" FontWeight="SemiBold" Foreground="#2196F3"/>
+                                    <TextBlock Text="  预计剩余: " FontSize="11"/>
+                                    <TextBlock x:Name="RemainingTimeText" Text="--:--" FontSize="11" FontWeight="SemiBold" Foreground="#E67E22"/>
+                                </StackPanel>
 
                                 <Grid Margin="0,2,0,0" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}">
                                     <Button x:Name="button6" Content="{x:Static properties:Resources.连续测试}" Click="Button6_Click" Padding="10,6" Background="#27AE60" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Stretch"/>
@@ -233,76 +247,103 @@
                         <!-- ═══ 快门控制 (Shutter) ═══ -->
                         <GroupBox Header="快门 (Shutter)">
                             <StackPanel>
-                                <StackPanel Margin="0,0,0,4" Orientation="Horizontal" Visibility="{Binding ShutterController.IsConnected,Converter={StaticResource bool2VisibilityConverter1}}">
-                                    <DockPanel>
-                                        <TextBlock Text="串口" VerticalAlignment="Center" Width="40" />
-                                        <ComboBox x:Name="ComboBoxShutterPort" Style="{StaticResource ComboBox.Small}" IsEditable="True" Text="{Binding ShutterController.Config.SzComName}" Width="80" />
-                                    </DockPanel>
-                                    <DockPanel Margin="8,0,0,0">
-                                        <TextBlock Text="波特率" VerticalAlignment="Center" Width="40" />
-                                        <ComboBox x:Name="ComboBoxShutterSerial" Style="{StaticResource ComboBox.Small}" Width="70" IsEditable="True" Text="{Binding ShutterController.Config.BaudRate}" />
-                                    </DockPanel>
-                                    <Button Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditNDConfigCommand}" Padding="0" Height="20" Width="20" >
-                                        <Button.Triggers>
-                                            <EventTrigger RoutedEvent="Button.Click">
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="rotateTransform26" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Button.Triggers>
-                                        <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
-                                            <TextBlock.RenderTransform>
-                                                <RotateTransform x:Name="rotateTransform26"/>
-                                            </TextBlock.RenderTransform>
-                                        </TextBlock>
-                                    </Button>
+                                <!-- Not connected: show connect button + gear -->
+                                <StackPanel Visibility="{Binding ShutterController.IsConnected,Converter={StaticResource bool2VisibilityConverter1}}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <Button Content="连接" Command="{Binding ShutterController.ConnectCommand}" Padding="10,4" Background="#2196F3" Foreground="White"/>
+                                        <Button Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditShutterConfigCommand}" Padding="0" Height="20" Width="20" >
+                                            <Button.Triggers>
+                                                <EventTrigger RoutedEvent="Button.Click">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="rotateTransform26" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Button.Triggers>
+                                            <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
+                                                <TextBlock.RenderTransform>
+                                                    <RotateTransform x:Name="rotateTransform26"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                        </Button>
+                                    </StackPanel>
                                 </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Content="Shutter连接" Command="{Binding ShutterController.ConnectCommand}" Margin="0,0,4,0" Visibility="{Binding ShutterController.IsConnected,Converter={StaticResource bool2VisibilityConverter1}}" />
-                                    <Button Content="断开Shutter" Command="{Binding ShutterController.DisconnectCommand}" Margin="0,0,4,0" Visibility="{Binding ShutterController.IsConnected,Converter={StaticResource bool2VisibilityConverter}}" />
-                                    <Button Content="Open Shutter" Command="{Binding ShutterController.OpenShutterCommand}" Margin="0,0,4,0" Visibility="{Binding ShutterController.IsConnected,Converter={StaticResource bool2VisibilityConverter}}" />
-                                    <Button Content="Close Shutter" Command="{Binding ShutterController.CloseShutterCommand}" Margin="0,0,4,0" Visibility="{Binding ShutterController.IsConnected,Converter={StaticResource bool2VisibilityConverter}}"/>
+
+                                <!-- Connected: show status + disconnect + open/close -->
+                                <StackPanel Visibility="{Binding ShutterController.IsConnected,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="断开" Command="{Binding ShutterController.DisconnectCommand}" Margin="0,0,4,0" Padding="8,2" Background="#E53935" Foreground="White"/>
+                                        <Button Content="Open Shutter" Command="{Binding ShutterController.OpenShutterCommand}" Margin="0,0,4,0" Padding="8,2"/>
+                                        <Button Content="Close Shutter" Command="{Binding ShutterController.CloseShutterCommand}" Margin="0,0,4,0" Padding="8,2"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>
 
-                        <!-- ═══ 滤光轮 (CFW) ═══ -->
-                        <GroupBox Header="滤光轮 (CFW)">
-                            <StackPanel Orientation="Horizontal">
-                                <DockPanel>
-                                    <TextBlock Text="串口" VerticalAlignment="Center" Width="40" />
-                                    <ComboBox x:Name="ComboBoxNdPort" Style="{StaticResource ComboBox.Small}" IsEditable="True" Text="{Binding NDConfig.SzComName}" Width="80" />
-                                </DockPanel>
-                                <DockPanel Margin="8,0,0,0">
-                                    <TextBlock Text="波特率" VerticalAlignment="Center" Width="45" />
-                                    <ComboBox x:Name="ComboBoxNdSerial" Style="{StaticResource ComboBox.Small}" Width="70" IsEditable="True" Text="{Binding NDConfig.BaudRate}" />
-                                </DockPanel>
-                                <Button Margin="4,0,0,0" Content="CFW连接" Command="{Binding ConnectNDCommand}"/>
-                                <Button Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditNDConfigCommand}" Padding="0" Height="20" Width="20" >
-                                    <Button.Triggers>
-                                        <EventTrigger RoutedEvent="Button.Click">
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform25" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-                                    </Button.Triggers>
-                                    <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
-                                        <TextBlock.RenderTransform>
-                                            <RotateTransform x:Name="rotateTransform25"/>
-                                        </TextBlock.RenderTransform>
-                                    </TextBlock>
-                                </Button>
-                            </StackPanel>
-                        </GroupBox>
-
-                        <!-- ═══ EQE模式 ═══ -->
-                        <GroupBox Header="EQE模式">
+                        <!-- ═══ 滤色轮 (Filter Wheel) ═══ -->
+                        <GroupBox Header="滤色轮 (Filter Wheel)">
                             <StackPanel>
-                                <CheckBox x:Name="EqeCheckBox" Content="EQE模式" IsChecked="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeEnabled}" Checked="EqeCheckBox_Changed" Unchecked="EqeCheckBox_Changed" Margin="0,0,0,4"/>
+                                <!-- Connection controls (visible when NOT connected) -->
+                                <StackPanel Visibility="{Binding FilterWheelController.IsConnected,Converter={StaticResource bool2VisibilityConverter1}}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <Button Content="连接" Command="{Binding FilterWheelController.ConnectCommand}" Padding="10,4" Background="#2196F3" Foreground="White"/>
+                                        <Button Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditFilterWheelConfigCommand}" Padding="0" Height="20" Width="20" >
+                                            <Button.Triggers>
+                                                <EventTrigger RoutedEvent="Button.Click">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="rotateTransformFW" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Button.Triggers>
+                                            <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
+                                                <TextBlock.RenderTransform>
+                                                    <RotateTransform x:Name="rotateTransformFW"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Connected state controls -->
+                                <StackPanel Visibility="{Binding FilterWheelController.IsConnected,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="当前位置: " VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding FilterWheelController.CurrentPositionName}" FontWeight="SemiBold" Foreground="#2196F3" VerticalAlignment="Center" Margin="4,0,8,0"/>
+                                        <Button Content="查询" Command="{Binding FilterWheelController.QueryPositionCommand}" Padding="8,2" Margin="0,0,4,0"/>
+                                        <Button Content="断开" Command="{Binding FilterWheelController.DisconnectCommand}" Padding="8,2" Background="#E53935" Foreground="White"/>
+                                    </StackPanel>
+
+                                    <!-- Position buttons -->
+                                    <TextBlock Text="切换位置:" Margin="0,2,0,2"/>
+                                    <ItemsControl ItemsSource="{Binding FilterWheelConfig.HoleMapping}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Margin="0,0,4,4" Padding="10,4"
+                                                        Command="{Binding DataContext.FilterWheelController.SetPositionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding HoleIndex}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding HoleIndex, StringFormat='{}{0}: '}"/>
+                                                        <TextBlock Text="{Binding HoleName}"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <!-- ═══ EQE参数配置 ═══ -->
+                        <GroupBox Header="EQE参数配置">
+                            <StackPanel>
                                 <StackPanel x:Name="EqePanel" Visibility="Collapsed">
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                                         <TextBlock Text="电压 (V)" Width="80"/>
@@ -312,29 +353,69 @@
                                         <TextBlock Text="电流 (mA)" Width="80"/>
                                         <TextBox x:Name="TextBoxCurrentMA" Style="{StaticResource TextBox.Small}" Width="80" Text="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeCurrentMA, UpdateSourceTrigger=PropertyChanged}" />
                                     </StackPanel>
-                                    <Button Content="计算EQE" Click="CalculateEqe_Click" Margin="0,4,0,0" HorizontalAlignment="Left" />
+                                    <Button Content="EQE重新计算" Click="CalculateEqe_Click" Margin="0,4,0,0" HorizontalAlignment="Left" />
+
+                                    <!-- ═══ 源表(SMU)配置 ═══ -->
+                                    <Separator Margin="0,6,0,6"/>
+                                    <TextBlock Text="源表(SMU)" FontWeight="Bold" Margin="0,0,0,4"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="设备名称" Width="80"/>
+                                        <TextBox Style="{StaticResource TextBox.Small}" Width="140" Text="{Binding SmuController.Config.DevName, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <CheckBox Content="网络连接" IsChecked="{Binding SmuController.Config.IsNet}" Margin="0,0,8,0"/>
+                                        <CheckBox Content="电压源" IsChecked="{Binding SmuController.Config.IsSourceV}" Margin="0,0,8,0"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <CheckBox Content="通道A" IsChecked="{Binding SmuController.Config.IsChannelA}" Margin="0,0,8,0"/>
+                                        <CheckBox Content="四线制" IsChecked="{Binding SmuController.Config.Is4Wire}" Margin="0,0,8,0"/>
+                                        <CheckBox Content="前接口" IsChecked="{Binding SmuController.Config.IsFront}" Margin="0,0,8,0"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="测量值" Width="50"/>
+                                        <TextBox Style="{StaticResource TextBox.Small}" Width="60" Text="{Binding SmuController.Config.MeasureVal, UpdateSourceTrigger=PropertyChanged}" />
+                                        <TextBlock Text="限制值" Width="50" Margin="8,0,0,0"/>
+                                        <TextBox Style="{StaticResource TextBox.Small}" Width="60" Text="{Binding SmuController.Config.LimitVal, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
+                                        <Button x:Name="ButtonSmuConnect" Content="连接源表" Click="SmuConnect_Click" Width="80" Margin="0,0,4,0"/>
+                                        <Button x:Name="ButtonSmuMeasure" Content="读取V/I" Click="SmuMeasure_Click" Width="80" IsEnabled="False"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="V:" Width="20"/>
+                                        <TextBlock x:Name="SmuVDisplay" Text="{Binding SmuController.V, StringFormat='{}{0:F4}'}" Width="80" Foreground="DodgerBlue"/>
+                                        <TextBlock Text="I(mA):" Width="45" Margin="8,0,0,0"/>
+                                        <TextBlock x:Name="SmuIDisplay" Text="{Binding SmuController.I, StringFormat='{}{0:F4}'}" Width="80" Foreground="DodgerBlue"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </StackPanel>
                         </GroupBox>
 
                     </StackPanel>
                 </ScrollViewer>
-                
-            </Grid>
-            <Grid Grid.Column="1" Background="{DynamicResource BorderBrush}">
-                <Grid Grid.Column="0" >
-                    <Grid.RowDefinitions>
-                        <RowDefinition x:Name="ListRow1" Height="*"/>
-                        <RowDefinition x:Name="ListRow2" Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
+                            </xcad:LayoutAnchorable>
+                        </xcad:LayoutAnchorablePane>
+                    </xcad:LayoutAnchorablePaneGroup>
 
-                    </Grid.RowDefinitions>
-                    <Grid Grid.Column="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <ScottPlot:WpfPlot  x:Name="wpfplot1" Panel.ZIndex="9" />
+                    <!-- ═══ Center + Bottom Layout ═══ -->
+                    <xcad:LayoutPanel Orientation="Vertical">
+
+                        <!-- ═══ Center: Spectrum Charts + Data ═══ -->
+                        <xcad:LayoutDocumentPaneGroup>
+                            <xcad:LayoutDocumentPane>
+                                <xcad:LayoutDocument Title="光谱图表" ContentId="SpectrumChart" CanClose="False">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition x:Name="ListRow1" Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition x:Name="ListRow2" Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <ScottPlot:WpfPlot  x:Name="wpfplot1" Panel.ZIndex="9" />
                         <ScottPlot:WpfPlot  x:Name="wpfplot2" Panel.ZIndex="9" Visibility="Collapsed" />
                         <ListView x:Name="listView2"  Grid.Column="1"  Padding="2,0,2,2"  Style="{StaticResource ListView.Small}" BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
                             <ListView.Resources>
@@ -353,21 +434,21 @@
                                     </GridView.ColumnHeaderContainerStyle>
                                     <GridViewColumn  Header="波长" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:SpectralData}">
+                                            <DataTemplate  DataType="{x:Type models:SpectralData}">
                                                 <TextBlock Text="{ Binding  Wavelength}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="相对光谱">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:SpectralData}">
+                                            <DataTemplate  DataType="{x:Type models:SpectralData}">
                                                 <TextBlock Text="{Binding  RelativeSpectrum, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="绝对光谱" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:SpectralData}">
+                                            <DataTemplate  DataType="{x:Type models:SpectralData}">
                                                 <TextBlock Text="{ Binding   AbsoluteSpectrum, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
@@ -376,8 +457,9 @@
                             </ListView.View>
                         </ListView>
 
-                    </Grid>
-                    <Grid x:Name="Grid1" Grid.Row="1" >
+                                        </Grid>
+                                        <GridSplitter Grid.Row="1" Background="#FFFFFF" Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" DragCompleted="GridSplitter_DragCompleted"/>
+                                        <Grid x:Name="Grid1" Grid.Row="2" >
                         <Grid.RowDefinitions>
                             <RowDefinition Height="32"/>
                             <RowDefinition Height="Auto"/>
@@ -390,8 +472,16 @@
                                 <ToggleButton x:Name="ToggleSpectrumType" Click="ToggleSpectrumType_Click" Margin="2,0,0,0" ToolTip="切换相对/绝对光谱">
                                     <TextBlock Text="相对光谱" x:Name="SpectrumTypeText"/>
                                 </ToggleButton>
-                                <Button  Content="查询" Command="{Binding ViewResultManager.QueryCommand}" Margin="2,0,0,0"/>
+                                <Separator/>
+                                <Button  Content="查询" Command="{Binding ViewResultManager.QueryCommand}" Margin="2,0,0,0" ToolTip="查询数据"/>
                                 <Button  Content="通用查询" Command="{Binding ViewResultManager.GenericQueryCommand}" Margin="2,0,0,0"/>
+                                <Button  Content="刷新" Command="{Binding ViewResultManager.ReloadCommand}" Margin="2,0,0,0" ToolTip="从数据库重新加载数据"/>
+                                <Separator/>
+                                <Button  Content="清空记录" Command="{Binding ViewResultManager.DeleteAllCommand}" Margin="2,0,0,0" ToolTip="删除数据库中所有记录" Foreground="#E53935"/>
+                                <Button  Content="重置数据库" Command="{Binding ViewResultManager.ResetDatabaseCommand}" Margin="2,0,0,0" ToolTip="删除数据库文件并重新创建" Foreground="#E53935"/>
+                                <Separator/>
+                                <TextBlock Text="加载条数:" VerticalAlignment="Center" Margin="4,0,2,0"/>
+                                <TextBox Width="50" VerticalAlignment="Center" Text="{Binding ViewResultManager.Config.Count, UpdateSourceTrigger=PropertyChanged}" ToolTip="默认加载数据条数 (-1为全部)"/>
                             </ToolBar>
                         </ToolBarTray>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -452,147 +542,166 @@
                                     </GridView.ColumnHeaderContainerStyle>
                                     <GridViewColumn  Header="序号" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding Id}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="测量时间">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding CreateTime,StringFormat='yyyy/MM/dd HH:mm:ssss' }"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="IP" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding IP}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn x:Name="ColEqe" Header="EQE" Width="0">
+                                    <GridViewColumn x:Name="ColEqe" Header="EQE(%)" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
-                                                <TextBlock Text="{Binding Eqe, StringFormat={}{0:F4}}"/>
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
+                                                <TextBlock Text="{Binding EqePercent, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn x:Name="ColLuminousFlux" Header="光通量(lm)" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding LuminousFlux, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn x:Name="ColRadiantFlux" Header="辐射通量(W)" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding RadiantFlux, StringFormat={}{0:F6}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn x:Name="ColLuminousEfficacy" Header="光效(lm/W)" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding LuminousEfficacy, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn x:Name="ColVoltage" Header="V" Width="0">
+                                    <GridViewColumn x:Name="ColVoltage" Header="U(V)" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding V}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn x:Name="ColCurrent" Header="I(mA)" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{Binding I}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn  Header="亮度Lv(cd/m2)" >
+                                    <GridViewColumn x:Name="ColRecalculated" Header="数据来源" Width="0">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate DataType="{x:Type models:ViewResultSpectrum}">
+                                                <TextBlock>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="原始"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsRecalculated}" Value="True">
+                                                                    <Setter Property="Text" Value="重新计算"/>
+                                                                    <Setter Property="Foreground" Value="#E67E22"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn x:Name="ColBrightness" Header="亮度Lv(cd/m2)" >
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding Lv}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="蓝光" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding Blue}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIEx" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEx}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIEy" > 
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEy}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIEz" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEz}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="色度x" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fx}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="色度y" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fy}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="色度u" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fu}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="色度v" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fv}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="相关色温(K)" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCCT}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="主波长Ld(nm)" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fLd}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="主波长颜色" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <Border Background="{Binding DominantWavelengthColor}" Width="40" Height="16" CornerRadius="2" Cursor="Hand" ToolTip="{Binding DominantWavelengthHex}" MouseLeftButtonDown="DominantColor_Click">
                                                     <Border.Tag>
                                                         <Binding Path="DominantWavelengthHex"/>
@@ -601,72 +710,72 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn  Header="兴奋纯度" >
+                                    <GridViewColumn  Header="兴奋纯度(%)" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
-                                                <TextBlock Text="{ Binding ExcitationPurity, StringFormat={}{0:F4}}"/>
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
+                                                <TextBlock Text="{ Binding ExcitationPurityPercent, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="色纯度(%)" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
-                                                <TextBlock Text="{ Binding fPur}"/>
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
+                                                <TextBlock Text="{ Binding ColorPurityPercent, StringFormat={}{0:F4}}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="峰值波长Lp(nm)" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fLp}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="显色性指数Ra" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fRa}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="半波宽" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fHW}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIE2015X" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEx2015}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIE2015Y" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEy2015}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIE2015Z" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEz2015}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIE2015x" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fx2015}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn  Header="CIE2015y" >
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fy2015}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
@@ -675,38 +784,59 @@
                             </ListView.View>
                         </ListView>
 
-                    </Grid>
-                    <GridSplitter  Grid.Row="1" Background="#01FFFFFF"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
-                    <Grid Grid.Row="2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid  x:Name="LogGrid" Height="250">
-                        </Grid>
-                        <Grid  Grid.Column="1"  >
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid Grid.Row="1">
-                                <Image x:Name="image" HorizontalAlignment="Left" Height="250"  Width="230" Margin="0" Source="Assets\Image\CIE-1931.jpg" Grid.Column="1" />
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Panel.ZIndex="999">
-                                    <Button x:Name="button1" Content="CIE1931" Click="Button1_Click"/>
-                                    <Button x:Name="button2" Content="CIE1976" Click="Button2_Click"/>
-                                    <CheckBox x:Name="CiePointCheckBox" Content="标注" IsChecked="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=CiePointEnabled}" Margin="5,0,0,0" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Grid>
+                                        </Grid>
+                                    </Grid>
+                                </xcad:LayoutDocument>
+                            </xcad:LayoutDocumentPane>
+                        </xcad:LayoutDocumentPaneGroup>
 
-                        </Grid>
-                    </Grid>
+                        <!-- ═══ Bottom: Log + CIE Diagram ═══ -->
+                        <xcad:LayoutAnchorablePaneGroup DockHeight="250">
+                            <xcad:LayoutAnchorablePane>
+                                <xcad:LayoutAnchorable x:Name="LogPane" Title="日志" ContentId="LogPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
+                                    <Grid x:Name="LogGrid">
+                                    </Grid>
+                                </xcad:LayoutAnchorable>
+                                <xcad:LayoutAnchorable x:Name="CiePane" Title="CIE色度图" ContentId="CIEDiagram" CanClose="True" CanAutoHide="True" CanFloat="True">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <!-- CIE 1931 Diagram -->
+                                        <StackPanel Grid.Column="0" Margin="2">
+                                            <TextBlock Text="CIE 1931" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,2"/>
+                                            <Image x:Name="image1931" Height="220" Width="210" Stretch="Uniform" Source="Assets\Image\CIE-1931.jpg"/>
+                                        </StackPanel>
+                                        <!-- CIE 1976 Diagram -->
+                                        <StackPanel Grid.Column="1" Margin="2">
+                                            <TextBlock Text="CIE 1976" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,2"/>
+                                            <Image x:Name="image1976" Height="220" Width="210" Stretch="Uniform" Source="Assets\Image\CIE-1976.jpg"/>
+                                        </StackPanel>
+                                        <!-- Spectral Parameters & Calculation Details -->
+                                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Margin="4,2">
+                                            <StackPanel x:Name="CieParamsPanel">
+                                                <TextBlock Text="光谱参数及计算过程" FontWeight="Bold" Margin="0,2,0,4"/>
 
-                </Grid>
+                                                <TextBlock x:Name="TextDominantWavelength" TextWrapping="Wrap" Margin="0,1"/>
+                                                <TextBlock x:Name="TextFWHM" TextWrapping="Wrap" Margin="0,1"/>
+                                                <TextBlock x:Name="TextCCT" TextWrapping="Wrap" Margin="0,1"/>
+                                                <TextBlock x:Name="TextExcitationPurity" TextWrapping="Wrap" Margin="0,1"/>
+                                                <TextBlock x:Name="TextColorRendering" TextWrapping="Wrap" Margin="0,1"/>
+                                                <TextBlock x:Name="TextChromaticity" TextWrapping="Wrap" Margin="0,1"/>
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </xcad:LayoutAnchorable>
+                            </xcad:LayoutAnchorablePane>
+                        </xcad:LayoutAnchorablePaneGroup>
 
-            </Grid>
+                    </xcad:LayoutPanel>
 
-
-        </Grid>
+                </xcad:LayoutPanel>
+            </xcad:LayoutRoot>
+        </xcad:DockingManager>
 
         <StatusBar Grid.Row="2">
             <StatusBarItem>

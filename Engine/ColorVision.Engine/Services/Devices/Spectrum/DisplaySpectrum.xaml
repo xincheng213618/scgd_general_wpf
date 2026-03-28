@@ -152,17 +152,12 @@
                         </StackPanel>
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal" Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
                             <Button Content="Open Shutter" Click="Button_Click_Shutter_Doopen" />
-                            <Button Content="Close Shutter" Click="Button_Click_Shutter_Doclose" Margin="5,0,0,0"/> 
+                            <Button Content="Close Shutter" Click="Button_Click_Shutter_Doclose" Margin="5,0,0,0"/>
                         </StackPanel>
 
                     </StackPanel>
 
                 </StackPanel>
-
-                <DockPanel Margin="0,2,0,0" >
-                    <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0" ToolTip="{Binding DService.DeviceStatus}"/>
-                    <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
-                </DockPanel>
             </StackPanel>
         </Border>
     </StackPanel>

@@ -662,7 +662,7 @@ public abstract class STNode
 		OnDrawBody(dt);
 	}
 
-	protected virtual string OnGetDrawTitle()
+	public virtual string OnGetDrawTitle()
 	{
 		return _Title;
 	}

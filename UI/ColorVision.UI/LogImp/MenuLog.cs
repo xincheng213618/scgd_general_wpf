@@ -1,22 +1,34 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using log4net;
 using log4net.Appender;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.UI.LogImp
 {
-    public class MenuLog : MenuItemBase
+    public class MenuLog : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 3;
         public override string Header => Properties.Resources.Log;
     }
+    public class MenuLogWindow : GlobalMenuBase, IHotKey
+    {
+        public override string OwnerGuid => MenuItemConstants.Help;
+        public override int Order => 10005;
+        public override string Header => Properties.Resources.Log;
+        public override string InputGestureText => Hotkey.ToString();
 
+        public static Hotkey Hotkey { get; set; } = new Hotkey(Key.L, ModifierKeys.Control);
+        public HotKeys HotKeys => new HotKeys(Properties.Resources.Log, Hotkey, Execute);
+        public override void Execute() => new WindowLog() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+    }
 
-    public class MenuOpenConfigFile : MenuItemBase
+    public class MenuOpenConfigFile : GlobalMenuBase
     {
         public override string OwnerGuid => nameof(MenuLog);
         public override int Order => 1;
@@ -32,7 +44,7 @@ namespace ColorVision.UI.LogImp
     }
 
 
-    public class MenuOpenConfigFolder : MenuItemBase
+    public class MenuOpenConfigFolder : GlobalMenuBase
     {
         public override string OwnerGuid => nameof(MenuLog);
         public override int Order => 2;
@@ -43,7 +55,7 @@ namespace ColorVision.UI.LogImp
         }
     }
 
-    public class MenuOpenLogFolder : MenuItemBase
+    public class MenuOpenLogFolder : GlobalMenuBase
     {
         public FileAppender? fileAppender { get; set; } = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
         public override string OwnerGuid => nameof(MenuLog);

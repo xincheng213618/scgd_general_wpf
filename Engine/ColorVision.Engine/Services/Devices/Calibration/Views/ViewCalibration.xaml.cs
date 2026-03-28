@@ -31,11 +31,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewCalibration : UserControl, IView
+    public partial class ViewCalibration : UserControl
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewCalibration));
-
-        public View View { get; set; }
 
         public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
@@ -51,7 +49,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-            View = new View();
             listView1.ItemsSource = ViewResults;
 
             if (listView1.View is GridView gridView)

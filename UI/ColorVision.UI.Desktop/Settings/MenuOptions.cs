@@ -8,7 +8,7 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Desktop.Settings
 {
-    public class MenuOptions : MenuItemBase, IHotKey
+    public class MenuOptions : GlobalMenuBase, IHotKey
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override string Header => Resources.MenuOptions;

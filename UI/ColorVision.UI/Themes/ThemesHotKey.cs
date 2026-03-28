@@ -10,7 +10,7 @@ using System.Windows.Input;
 namespace ColorVision.UI.Desktop.Themes
 {
 
-    public class MenuTheme:MenuItemBase
+    public class MenuTheme:GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override int Order => 1000;
@@ -38,6 +38,7 @@ namespace ColorVision.UI.Desktop.Themes
 
                 MenuItemMetadata menuItemMeta = new MenuItemMetadata
                 {
+                    TargetName = MenuItemConstants.GlobalTarget,
                     OwnerGuid =nameof(MenuTheme),
                     GuidId = item.ToString(),
                     Header = ColorVision.Themes.Properties.Resources.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "",

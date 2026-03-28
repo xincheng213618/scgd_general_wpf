@@ -2,7 +2,7 @@
 
 namespace ColorVision.UI.Menus.Base
 {
-    public class MenuView : MenuItemMenuBase
+    public class MenuView : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.Menu;
         public override string GuidId => "View";

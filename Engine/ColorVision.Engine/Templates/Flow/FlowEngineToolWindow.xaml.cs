@@ -27,9 +27,32 @@ namespace ColorVision.Engine.Templates.Flow
         public bool Process(string filePath)
         {
             FlowEngineToolWindow flowEngineToolWindow = new FlowEngineToolWindow();
-            flowEngineToolWindow.OpenFlow(filePath);
-            flowEngineToolWindow.Show();
 
+            if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var (stnData, _) = FlowPackageHelper.ImportFlowPackage(filePath);
+                    if (stnData != null && stnData.Length > 0)
+                    {
+                        var tempParam = new FlowParam();
+                        tempParam.DataBase64 = Convert.ToBase64String(stnData);
+                        tempParam.Name = System.IO.Path.GetFileNameWithoutExtension(filePath);
+                        flowEngineToolWindow.OpenFlowBase64(tempParam);
+                    }
+                }
+                catch (Exception)
+                {
+                    // 兼容旧格式 (.cvflow 可能是直接的 STN 文件)
+                    flowEngineToolWindow.OpenFlow(filePath);
+                }
+            }
+            else
+            {
+                flowEngineToolWindow.OpenFlow(filePath);
+            }
+
+            flowEngineToolWindow.Show();
             return true;
         }
     }

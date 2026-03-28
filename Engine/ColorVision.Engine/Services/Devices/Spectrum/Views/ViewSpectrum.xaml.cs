@@ -47,12 +47,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewSpectrum : UserControl,IView
+    public partial class ViewSpectrum : UserControl
     {
 
         public ObservableCollection<ViewResultSpectrum> ViewResults { get; set; } = new ObservableCollection<ViewResultSpectrum>();
-        public View View { get; set; }
-
         public static ViewSpectrumConfig Config => ViewSpectrumConfig.Instance;
 
         public DisplaySpectrumConfig DisplayConfig => Device.DisplayConfig;
@@ -75,8 +73,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             {
                 TextBox1.Focus();
             };
-            View = new View();
-
 
             listView1.ItemsSource = ViewResults;
 
@@ -90,11 +86,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             wpfplot1.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(title);
 
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot1.Plot.Axes.SetLimitsY(0, 1);
+            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
             wpfplot1.Plot.Axes.Bottom.Min = 370;
             wpfplot1.Plot.Axes.Bottom.Max = 1000;
-            wpfplot1.Plot.Axes.Left.Min = 0;
+            wpfplot1.Plot.Axes.Left.Min = -0.05;
             wpfplot1.Plot.Axes.Left.Max = 1;
+            AddSpectrumColorBar(wpfplot1);
             string titleAbsolute = ColorVision.Engine.Properties.Resources.AbsoluteSpectrumCurve;
             wpfplot2.Plot.XLabel(ColorVision.Engine.Properties.Resources.WavelengthNm);
             wpfplot2.Plot.YLabel(ColorVision.Engine.Properties.Resources.AbsoluteSpectrum + "W/nm");
@@ -254,6 +251,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 properties.Add("Peak Wavelength(λp)(nm)");
                 properties.Add("Color Rendering (Ra)");
                 properties.Add("FWHM");
+                properties.Add("Excitation Purity");
+                properties.Add("Dominant Wavelength Color");
                 properties.Add("Voltgage(V) (V)");
                 properties.Add("Current(I) (mA)");
 
@@ -298,6 +297,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                         csvBuilder.Append(result.fLp + ",");
                         csvBuilder.Append(result.fRa + ",");
                         csvBuilder.Append(result.fHW + ",");
+                        csvBuilder.Append(result.ExcitationPurity + ",");
+                        csvBuilder.Append(result.DominantWavelengthHex + ",");
                         csvBuilder.Append(result.V + ",");
                         csvBuilder.Append(result.I + ",");
 
@@ -339,6 +340,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 properties.Add("Cy");
                 properties.Add("Correlated Color Temperature(CCT)（K）");
                 properties.Add("Peak Wavelength(λp)(nm)");
+                properties.Add("Excitation Purity");
+                properties.Add("Dominant Wavelength Color");
                 properties.Add("Voltgage(V) (V)");
                 properties.Add("Current(I) (mA)");
 
@@ -375,6 +378,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                         csvBuilder.Append(result.fy + ",");
                         csvBuilder.Append(result.fCCT + ",");
                         csvBuilder.Append(result.fLp + ",");
+                        csvBuilder.Append(result.ExcitationPurity + ",");
+                        csvBuilder.Append(result.DominantWavelengthHex + ",");
                         csvBuilder.Append(result.V + ",");
                         csvBuilder.Append(result.I + ",");
 
@@ -423,10 +428,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             }
             
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
-            wpfplot1.Plot.Axes.SetLimitsY(0, 1);
+            wpfplot1.Plot.Axes.SetLimitsY(-0.05, 1);
             wpfplot1.Plot.Axes.Bottom.Min = ViewResults[listView1.SelectedIndex].fSpect1;
             wpfplot1.Plot.Axes.Bottom.Max = ViewResults[listView1.SelectedIndex].fSpect2;
-            wpfplot1.Plot.Axes.Left.Min = 0;
+            wpfplot1.Plot.Axes.Left.Min = -0.05;
             wpfplot1.Plot.Axes.Left.Max = 1;
 
             if (ScatterPlots.Count > 0)
@@ -572,6 +577,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             else
             {
                 wpfplot1.Plot.Clear();
+                AddSpectrumColorBar(wpfplot1);
                 LastMulSelectComparsion = null;
                 if (MulComparison)
                 {
@@ -599,6 +605,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             AbsoluteScatterPlots.Clear();
 
             wpfplot1.Plot.Clear();
+            AddSpectrumColorBar(wpfplot1);
             wpfplot1.Refresh();
             wpfplot2.Plot.Clear();
             wpfplot2.Refresh();
@@ -633,6 +640,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 else
                 {
                     wpfplot1.Plot.Clear();
+                    AddSpectrumColorBar(wpfplot1);
                     wpfplot1.Refresh();
                     wpfplot2.Plot.Clear();
                     wpfplot2.Refresh();
@@ -692,6 +700,23 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             listView.Width = ListCol2.ActualWidth;
             ListCol1.Width = new GridLength(1, GridUnitType.Star);
             ListCol2.Width = GridLength.Auto;
+        }
+
+        /// <summary>
+        /// Adds a visible spectrum rainbow color bar to the bottom of the chart.
+        /// </summary>
+        private static void AddSpectrumColorBar(ScottPlot.WPF.WpfPlot plotControl)
+        {
+            for (int wl = 380; wl < 780; wl += 2)
+            {
+                var color = WavelengthToColor.Convert(wl);
+                var scottColor = new ScottPlot.Color(color.R, color.G, color.B);
+
+                var rect = plotControl.Plot.Add.Rectangle(wl, wl + 2, -0.01, -0.06);
+                rect.FillColor = scottColor;
+                rect.LineColor = scottColor;
+                rect.LineWidth = 0;
+            }
         }
 
         public void Clear()
