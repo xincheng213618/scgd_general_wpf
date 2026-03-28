@@ -50,6 +50,16 @@ namespace ColorVision.Solution.Workspace
         }
 
         /// <summary>
+        /// 清除所有缓存的视图文档映射。
+        /// 在布局重置或重新加载后调用，确保旧的 LayoutDocument 引用不会阻止重建。
+        /// </summary>
+        public static void ClearViewDocuments()
+        {
+            _viewDocuments.Clear();
+            _viewCounter = 0;
+        }
+
+        /// <summary>
         /// 确保视图控件有对应的 LayoutDocument。如果没有则创建。
         /// </summary>
         private static LayoutDocument EnsureDocument(Control control)

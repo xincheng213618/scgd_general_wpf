@@ -1,6 +1,7 @@
 using AvalonDock;
 using AvalonDock.Layout;
 using AvalonDock.Layout.Serialization;
+using ColorVision.UI.Views;
 using log4net;
 using System.IO;
 using System.Windows;
@@ -120,9 +121,19 @@ namespace ColorVision.Solution.Workspace
                 var docPane = _dockingManager.Layout.Descendents()
                     .OfType<LayoutDocumentPane>().FirstOrDefault();
                 if (docPane != null)
+                {
                     WorkspaceManager.LayoutDocumentPane = docPane;
+                }
                 else
-                    log.Warn("加载的布局中未找到 LayoutDocumentPane，保持现有引用");
+                {
+                    // 当所有动态文档被取消后，LayoutDocumentPane 可能被移除。
+                    // 创建一个新的 LayoutDocumentPane 以确保视图标签页有地方添加。
+                    log.Warn("加载的布局中未找到 LayoutDocumentPane，正在创建新的文档窗格");
+                    EnsureDocumentPane();
+                }
+
+                // 清除旧的视图文档缓存，以便 ShowAllViews 能重新创建
+                DockViewManagerHost.ClearViewDocuments();
 
                 log.Info("主窗口布局已加载");
                 return true;
@@ -273,6 +284,10 @@ namespace ColorVision.Solution.Workspace
                 else
                     log.Warn("重置后的布局中未找到 LayoutDocumentPane");
 
+                // 清除旧的视图文档缓存并重新创建所有视图标签页
+                DockViewManagerHost.ClearViewDocuments();
+                UI.Views.DockViewManager.GetInstance().ShowAllViews();
+
                 log.Info("主窗口布局已重置");
             }
             catch (Exception ex)
@@ -401,6 +416,50 @@ namespace ColorVision.Solution.Workspace
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// 确保布局树中存在 LayoutDocumentPane。
+        /// 当加载的布局中所有动态文档被取消后，AvalonDock 可能移除空的 LayoutDocumentPane。
+        /// 此方法会在布局树中找到合适的位置创建一个新的 LayoutDocumentPane。
+        /// </summary>
+        private void EnsureDocumentPane()
+        {
+            var layout = _dockingManager.Layout;
+            var existingPane = layout.Descendents()
+                .OfType<LayoutDocumentPane>().FirstOrDefault();
+            if (existingPane != null)
+            {
+                WorkspaceManager.LayoutDocumentPane = existingPane;
+                return;
+            }
+
+            // 创建新的文档窗格
+            var docPane = new LayoutDocumentPane();
+            var docGroup = new LayoutDocumentPaneGroup();
+            docGroup.Children.Add(docPane);
+
+            // 添加到根面板的合适位置
+            if (layout.RootPanel != null)
+            {
+                // 在 Vertical 子面板中查找合适位置（在面板之间）
+                var verticalPanel = layout.RootPanel.Descendents()
+                    .OfType<LayoutPanel>()
+                    .FirstOrDefault(p => p.Orientation == System.Windows.Controls.Orientation.Vertical);
+
+                if (verticalPanel != null)
+                    verticalPanel.Children.Insert(0, docGroup);
+                else
+                    layout.RootPanel.Children.Insert(0, docGroup);
+            }
+            else
+            {
+                var rootPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
+                rootPanel.Children.Add(docGroup);
+                layout.RootPanel = rootPanel;
+            }
+
+            WorkspaceManager.LayoutDocumentPane = docPane;
         }
     }
 
