@@ -80,7 +80,7 @@ namespace ColorVision
     public partial class MainWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
-        public ViewGridManager ViewGridManager { get; set; }
+        public DockViewManager DockViewManager => DockViewManager.GetInstance();
         public static MainWindowConfig Config => MainWindowConfig.Instance;
 
         public MainWindow()
@@ -118,31 +118,6 @@ namespace ColorVision
             }
             ThemeManager.Current.CurrentUIThemeChanged += ApplyAvalonDockTheme;
 
-            // ViewGrid 作为整体控件放入 LayoutDocument
-            var viewGrid = new Grid { Background = (Brush)FindResource("TransparentGridBrush") };
-            var viewDoc = new LayoutDocument
-            {
-                Title = Properties.Resources.DataView,
-                ContentId = "ViewGridDoc",
-                CanClose = false
-            };
-            viewDoc.Content = viewGrid;
-            LayoutDocumentPane.Children.Add(viewDoc);
-
-            ViewGridManager = ViewGridManager.GetInstance();
-            ViewGridManager.MainView = viewGrid;
-
-            ViewGridManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += (maxCount) => ViewConfig.Instance.ViewMaxCount = maxCount;
-
-            // 初始化左侧项目面板
-            ProjectPanelGrid.Children.Add(new TreeViewControl());
-
-            // 初始化左侧采集面板
-            DisPlayManager.GetInstance().Init(this, StackPanelSPD);
-
-            Debug.WriteLine(Properties.Resources.LaunchSuccess);
-
             // 设置 WorkspaceManager 指向主窗口的 DockingManager
             WorkspaceManager.layoutRoot = _layoutRoot;
             WorkspaceManager.LayoutDocumentPane = LayoutDocumentPane;
@@ -156,14 +131,35 @@ namespace ColorVision
             layoutManager.RegisterPanel("ProjectPanel", ProjectPanelGrid, Properties.Resources.SolutionExplorer, PanelPosition.Left);
             layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.DeviceControl, PanelPosition.Left);
             layoutManager.RegisterPanel("LogPanel", LogPanelGrid, Properties.Resources.Log, PanelPosition.Bottom);
-            layoutManager.RegisterDocument("ViewGridDoc", viewGrid, Properties.Resources.DataView, false);
             WorkspaceManager.LayoutManager = layoutManager;
+
+            // 初始化 DockViewManagerHost（设置 AvalonDock 回调）
+            DockViewManagerHost.Initialize();
+
+            // 初始化左侧项目面板
+            ProjectPanelGrid.Children.Add(new TreeViewControl());
+
+            // 初始化左侧采集面板
+            DisPlayManager.GetInstance().Init(this, StackPanelSPD);
+
+            Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
             // 尝试加载已保存的布局
             layoutManager.LoadLayout();
 
             // 布局加载后（重新）应用 AvalonDock 主题，确保反序列化的元素使用正确主题
             ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
+
+            // 将所有已注册的视图创建为文档标签页
+            DockViewManager.ShowAllViews();
+
+            // 激活第一个 Flow 视图（如果有的话）
+            var firstFlowView = DockViewManager.Views.OfType<ColorVision.Engine.Services.Flow.ViewFlow>().FirstOrDefault();
+            if (firstFlowView != null)
+                DockViewManager.ActiveView(firstFlowView);
+
+            // 切换到 DeviceControl 面板时，跳转到上次显示的视图
+            HookAcquirePanelActivation();
 
             // 执行延迟加载的操作
             foreach (var action in WorkspaceManager.DealyLoad)
@@ -221,6 +217,25 @@ namespace ColorVision
             {
                 WorkspaceManager.LayoutManager?.SaveLayout();
             };
+        }
+
+        /// <summary>
+        /// 当 AcquirePanel (DeviceControl) 变为活动状态时，
+        /// 激活上次显示的视图文档，实现面板切换时恢复。
+        /// </summary>
+        private void HookAcquirePanelActivation()
+        {
+            var acquirePanel = DockingManager1.Layout.Descendents()
+                .OfType<AvalonDock.Layout.LayoutAnchorable>()
+                .FirstOrDefault(a => a.ContentId == "AcquirePanel");
+            if (acquirePanel != null)
+            {
+                acquirePanel.IsActiveChanged += (s, e) =>
+                {
+                    if (acquirePanel.IsActive)
+                        DockViewManager.ActivateLastView();
+                };
+            }
         }
 
         /// <summary>

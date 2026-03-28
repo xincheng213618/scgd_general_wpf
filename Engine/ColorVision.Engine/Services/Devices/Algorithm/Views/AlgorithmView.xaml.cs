@@ -25,10 +25,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class AlgorithmView : UserControl,IView,IDisposable
+    public partial class AlgorithmView : UserControl,IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmView));
-        public View View { get; set; }
+
         public ImageView ImageView { get; set; }
 
         public ListView ListView { get; set; }
@@ -51,7 +51,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ListView = listViewSide;
             SideTextBox = TextBoxside;
             Grid1.Children.Add(ImageView);
-            View = new View();
             if (listView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);

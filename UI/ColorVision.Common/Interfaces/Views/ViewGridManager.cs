@@ -8,7 +8,7 @@ using System.Windows.Media;
 namespace ColorVision.UI.Views
 {
 
-    public class ViewGridManager
+    public class ViewGridManager : IViewManager
     {
         private static readonly int[] defaultViewIndexMap = new int[100]{
                0, 1, 4, 9, 16, 25, 36, 49, 64, 81,
@@ -331,20 +331,20 @@ namespace ColorVision.UI.Views
             }
         }
 
-        public void SetOneView(int Main)
+        public void SetOneView(int main)
         {
             if (GetViewNums()!=1)
                 GenViewGrid(1);
 
-            if (Views[Main].Parent is Grid grid)
-                grid.Children.Remove(Views[Main]);
+            if (Views[main].Parent is Grid grid)
+                grid.Children.Remove(Views[main]);
 
 
-            if (Views[Main] is IView view)
+            if (Views[main] is IView view)
                 view.View.ViewIndex = 0;
 
             Grids[0].Children.Clear();
-            Grids[0].Children.Add(Views[Main]);
+            Grids[0].Children.Add(Views[main]);
 
         }
 

@@ -26,14 +26,12 @@ namespace ColorVision.Engine.Services.Flow
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewFlow : System.Windows.Controls.UserControl, IView, IDisposable
+    public partial class ViewFlow : System.Windows.Controls.UserControl, IDisposable
     {
         public FlowEngineManager FlowEngineManager { get; set; }
         public FlowEngineControl FlowEngineControl { get; set; }
         public FlowEngineConfig Config { get; set; }
 
-
-        public View View { get; set; }
         public RelayCommand AutoSizeCommand { get; set; }
 
         public event EventHandler RefreshFlow;
@@ -210,28 +208,10 @@ namespace ColorVision.Engine.Services.Flow
             FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
 
 
-            View = new View();
-            ViewGridManager.GetInstance().AddView(0, this);
-            View.ViewIndexChangedEvent += (s, e) =>
-            {
-                if (e == -2)
-                {
-                    STNodeEditorMain.ContextMenuStrip = new WinForms.ContextMenuStrip();
-                    STNodeEditorMain.ContextMenuStrip.Items.Add("还原到主窗口中", null, (s, e1) =>
-                    {
+            var manager = DockViewManager.GetInstance();
+            manager.AddView(0, this);
+            manager.ViewTitles[this] = ColorVision.Engine.Properties.Resources.Workflow;
 
-                        if (ViewGridManager.GetInstance().IsGridEmpty(View.PreViewIndex))
-                        {
-                            View.ViewIndex = View.PreViewIndex;
-                        }
-                        else
-                        {
-                            View.ViewIndex = -1;
-                        }
-                    }
-                    );
-                }
-            };
             STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
         }
 
