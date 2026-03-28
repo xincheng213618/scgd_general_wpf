@@ -154,7 +154,7 @@ namespace ColorVision
             DockViewManager.ShowAllViews();
 
             // 激活第一个 Flow 视图（如果有的话）
-            var firstFlowView = DockViewManager.Views.FirstOrDefault(v => v.GetType().Name.Contains("Flow"));
+            var firstFlowView = DockViewManager.Views.OfType<ColorVision.Engine.Services.Flow.ViewFlow>().FirstOrDefault();
             if (firstFlowView != null)
                 DockViewManager.ActiveView(firstFlowView);
 
