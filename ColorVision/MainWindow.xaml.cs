@@ -134,9 +134,9 @@ namespace ColorVision
             layoutManager.RegisterPanel("LogPanel", LogPanelGrid, Properties.Resources.Log, PanelPosition.Bottom);
             WorkspaceManager.LayoutManager = layoutManager;
 
-            // 初始化视图管理器 — 使用 DockViewManager（每个 IView 成为独立 LayoutDocument）
-            DockViewManager = new DockViewManager();
-            ViewManagerProvider.Current = DockViewManager;
+            // 获取由 DockViewManagerInitializer (Order 0) 提前创建的 DockViewManager
+            DockViewManager = ViewManagerProvider.Current as DockViewManager
+                ?? throw new InvalidOperationException("DockViewManager not found. Ensure DockViewManagerInitializer ran before MainWindow.");
 
             // 初始化左侧项目面板
             ProjectPanelGrid.Children.Add(new TreeViewControl());
