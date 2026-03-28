@@ -29,8 +29,7 @@ namespace ColorVision.Engine
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
-            ViewGridManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
-            ViewGridManager.ViewMaxChangedEvent += (e) => ViewConfig.Instance.ViewMaxCount = e;
+            ViewGridManager.SetViewGrid(1);
 
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
