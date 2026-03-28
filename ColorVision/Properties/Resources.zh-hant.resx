@@ -150,8 +150,14 @@
   <data name="Project" xml:space="preserve">
     <value>工程</value>
   </data>
-  <data name="Acquire" xml:space="preserve">
-    <value>採集</value>
+  <data name="SolutionExplorer" xml:space="preserve">
+    <value>方案總管</value>
+  </data>
+  <data name="DeviceControl" xml:space="preserve">
+    <value>裝置控制</value>
+  </data>
+  <data name="DataView" xml:space="preserve">
+    <value>資料檢視</value>
   </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>啟動成功</value>

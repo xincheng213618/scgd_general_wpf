@@ -150,8 +150,14 @@
   <data name="Project" xml:space="preserve">
     <value>プロジェクト</value>
   </data>
-  <data name="Acquire" xml:space="preserve">
-    <value>コレクション</value>
+  <data name="SolutionExplorer" xml:space="preserve">
+    <value>ソリューション エクスプローラー</value>
+  </data>
+  <data name="DeviceControl" xml:space="preserve">
+    <value>デバイス制御</value>
+  </data>
+  <data name="DataView" xml:space="preserve">
+    <value>データビュー</value>
   </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>正常に開始されました</value>

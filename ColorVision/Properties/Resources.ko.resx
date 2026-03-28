@@ -150,8 +150,14 @@
   <data name="Project" xml:space="preserve">
     <value>프로젝트</value>
   </data>
-  <data name="Acquire" xml:space="preserve">
-    <value>수집</value>
+  <data name="SolutionExplorer" xml:space="preserve">
+    <value>솔루션 탐색기</value>
+  </data>
+  <data name="DeviceControl" xml:space="preserve">
+    <value>장치 제어</value>
+  </data>
+  <data name="DataView" xml:space="preserve">
+    <value>데이터 뷰</value>
   </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>성공적으로 시작되었습니다</value>

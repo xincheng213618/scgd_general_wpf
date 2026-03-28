@@ -2,7 +2,6 @@ using ColorVision.Themes;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -318,27 +317,10 @@ namespace ColorVision.UI.LogImp
             var searchText = SearchBar1.Text.ToLower(CultureInfo.CurrentCulture);
             if (string.IsNullOrEmpty(searchText)) return;
 
-            var containsRegexSpecialChars = RegexSpecialChars.Any(searchText.Contains);
             var newLines = newContent.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-            string[] filteredLines;
 
-            if (containsRegexSpecialChars)
-            {
-                try
-                {
-                    var regex = new Regex(searchText, RegexOptions.IgnoreCase);
-                    filteredLines = newLines.Where(line => regex.IsMatch(line)).ToArray();
-                }
-                catch (RegexParseException)
-                {
-                    return;
-                }
-            }
-            else
-            {
-                var keywords = searchText.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
-                filteredLines = newLines.Where(line => keywords.All(keyword => line.Contains(keyword, StringComparison.OrdinalIgnoreCase))).ToArray();
-            }
+            if (!LogSearchHelper.FilterLines(searchText, newLines, out var filteredLines))
+                return;
 
             if (filteredLines.Length > 0)
             {
@@ -378,8 +360,6 @@ namespace ColorVision.UI.LogImp
             logTextBoxSerch.Text = string.Empty;
         }
 
-        private readonly char[] Chars = new[] { ' ' };
-        private static readonly string[] RegexSpecialChars = { ".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "{", "}", "|", "\\" };
         private Brush? SearchBar1Brush;
 
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
@@ -395,32 +375,16 @@ namespace ColorVision.UI.LogImp
             var searchText = SearchBar1.Text.ToLower(CultureInfo.CurrentCulture);
             if (!string.IsNullOrEmpty(searchText))
             {
-                var containsRegexSpecialChars = RegexSpecialChars.Any(searchText.Contains);
-                var keywords = searchText.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
-
                 logTextBox.Visibility = Visibility.Collapsed;
                 logTextBoxSerch.Visibility = Visibility.Visible;
                 var logLines = logTextBox.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
 
-                if (containsRegexSpecialChars)
+                if (!LogSearchHelper.FilterLines(searchText, logLines, out var filteredLines))
                 {
-                    try
-                    {
-                        var regex = new Regex(searchText, RegexOptions.IgnoreCase);
-                        var filteredLines = logLines.Where(line => regex.IsMatch(line)).ToArray();
-                        logTextBoxSerch.Text = string.Join(Environment.NewLine, filteredLines);
-                    }
-                    catch (RegexParseException)
-                    {
-                        SearchBar1.BorderBrush = Brushes.Red;
-                        return;
-                    }
+                    SearchBar1.BorderBrush = Brushes.Red;
+                    return;
                 }
-                else
-                {
-                    var filteredLines = logLines.Where(line => keywords.All(keyword => line.Contains(keyword, StringComparison.OrdinalIgnoreCase))).ToArray();
-                    logTextBoxSerch.Text = string.Join(Environment.NewLine, filteredLines);
-                }
+                logTextBoxSerch.Text = string.Join(Environment.NewLine, filteredLines);
                 SearchBar1.BorderBrush = SearchBar1Brush;
             }
             else

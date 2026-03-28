@@ -5,6 +5,11 @@ namespace ColorVision.Solution.Workspace
 {
     public static class WorkspaceManager
     {
+        /// <summary>
+        /// 工作区停靠布局管理器
+        /// </summary>
+        public static DockLayoutManager? LayoutManager { get; set; }
+
         public static LayoutDocument? FindDocumentById(object parent, string contentId)
         {
             if (parent is ILayoutContainer container)
@@ -77,8 +82,6 @@ namespace ColorVision.Solution.Workspace
             return null;
         }
 
-        public static WorkspaceMainView SolutionView { get; set; }
-
         public static LayoutRoot layoutRoot { get; set; }
 
         public static LayoutDocumentPane LayoutDocumentPane { get; set; }
@@ -108,7 +111,7 @@ namespace ColorVision.Solution.Workspace
 
         public static void OnContentIdSelected(string contentId)
         {
-            ContentIdSelected?.Invoke(SolutionView, contentId);
+            ContentIdSelected?.Invoke(null, contentId);
         }
 
         public static List <Action> DealyLoad { get; set; } = new List<Action>();

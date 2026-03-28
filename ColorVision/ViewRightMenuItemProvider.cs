@@ -6,7 +6,7 @@ using System.Windows.Controls;
 
 namespace ColorVision
 {
-    public class ViewRightMenuItemProvider : IRightMenuItemProvider
+    public class ViewRightMenuItemProvider 
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {

@@ -11,7 +11,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -132,7 +131,6 @@ namespace ColorVision.UI
             {
                 Hierarchy.Root.RemoveAppender(TextBoxAppender);
                 log4net.Config.BasicConfigurator.Configure(Hierarchy);
-                LogConfig.Instance.AutoRefresh = true;
             };
 
             this.DataContext = LogConfig.Instance;
@@ -265,8 +263,6 @@ namespace ColorVision.UI
         }
 
 
-        private readonly char[] Chars = new[] { ' ' };
-        private static readonly string[] RegexSpecialChars = { ".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "{", "}", "|", "\\" };
         private Brush SearchBar1Brush;
         private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -274,33 +270,16 @@ namespace ColorVision.UI
             TextBoxAppender.SearchText = searchText;
             if (!string.IsNullOrEmpty(searchText))
             {
-                var containsRegexSpecialChars = RegexSpecialChars.Any(searchText.Contains);
-
-                var keywords = searchText.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
-
                 logTextBox.Visibility = Visibility.Collapsed;
                 logTextBoxSerch.Visibility = Visibility.Visible;
                 var logLines = logTextBox.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-                if (containsRegexSpecialChars)
+
+                if (!LogSearchHelper.FilterLines(searchText, logLines, out var filteredLines))
                 {
-                    // 使用正则表达式搜索
-                    try
-                    {
-                        var regex = new Regex(searchText, RegexOptions.IgnoreCase);
-                        var filteredLines = logLines.Where(line => regex.IsMatch(line)).ToArray();
-                        logTextBoxSerch.Text = string.Join(Environment.NewLine, filteredLines);
-                    }
-                    catch (RegexParseException)
-                    {
-                        SearchBar1.BorderBrush = Brushes.Red;
-                        return;
-                    }
+                    SearchBar1.BorderBrush = Brushes.Red;
+                    return;
                 }
-                else
-                {
-                    var filteredLines = logLines.Where(line => keywords.All(keyword => line.Contains(keyword, StringComparison.OrdinalIgnoreCase))).ToArray();
-                    logTextBoxSerch.Text = string.Join(Environment.NewLine, filteredLines);
-                }
+                logTextBoxSerch.Text = string.Join(Environment.NewLine, filteredLines);
                 SearchBar1.BorderBrush = SearchBar1Brush;
             }
             else

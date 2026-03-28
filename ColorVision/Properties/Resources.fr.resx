@@ -150,8 +150,14 @@
   <data name="Project" xml:space="preserve">
     <value>projet</value>
   </data>
-  <data name="Acquire" xml:space="preserve">
-    <value>collection</value>
+  <data name="SolutionExplorer" xml:space="preserve">
+    <value>Explorateur de solutions</value>
+  </data>
+  <data name="DeviceControl" xml:space="preserve">
+    <value>Contrôle des appareils</value>
+  </data>
+  <data name="DataView" xml:space="preserve">
+    <value>Vue des données</value>
   </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Démarré avec succès</value>

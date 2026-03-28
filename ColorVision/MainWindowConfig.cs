@@ -19,9 +19,11 @@ namespace ColorVision
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; OnPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;
 
-        [JsonIgnore]
-        public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; OnPropertyChanged(); } }
-        private bool _IsOpenSidebar = true;
+        /// <summary>
+        /// 记录上次打开时的应用版本，用于在更新后首次启动时显示变更日志。
+        /// </summary>
+        public string LastOpenedVersion { get => _LastOpenedVersion; set { _LastOpenedVersion = value; OnPropertyChanged(); } }
+        private string _LastOpenedVersion;
 
         [JsonIgnore]
         public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
@@ -52,9 +54,6 @@ namespace ColorVision
 
         public const string AutoRunRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         public const string AutoRunName = "ColorVisionAutoRun";
-
-        public int LeftTabControlSelectedIndex { get => _LeftTabControlSelectedIndex; set { _LeftTabControlSelectedIndex = value; OnPropertyChanged(); } }
-        private int _LeftTabControlSelectedIndex = 1;
 
         [JsonIgnore]
         [DisplayName("TbSettingsStartBoot")]
@@ -137,20 +136,6 @@ namespace ColorVision
 
         }
         public override bool? IsChecked => MainWindowConfig.Instance.IsOpenStatusBar ? true : null;
-
-    }
-    public class ExportMenuViewSidebar : MenuItemBase, IHotKey
-    {
-        public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => Properties.Resources.MenuViewSidebar;
-        public HotKeys HotKeys => new(Properties.Resources.MenuViewSidebar, new Hotkey(Key.S, ModifierKeys.Control | ModifierKeys.Shift), Execute);
-
-        public override void Execute()
-        {
-            MainWindowConfig.Instance.IsOpenSidebar = !MainWindowConfig.Instance.IsOpenSidebar;
-            MenuManager.GetInstance().RefreshMenuItemsByGuid(OwnerGuid);
-        }
-        public override bool? IsChecked => MainWindowConfig.Instance.IsOpenSidebar ? true : null;
 
     }
 

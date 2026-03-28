@@ -223,6 +223,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 数据视图 的本地化字符串。
+        /// </summary>
+        public static string DataView {
+            get {
+                return ResourceManager.GetString("DataView", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 调试中 的本地化字符串。
         /// </summary>
         public static string Debugging {
@@ -237,6 +246,15 @@ namespace ColorVision.Properties {
         public static string Delete {
             get {
                 return ResourceManager.GetString("Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 设备控制 的本地化字符串。
+        /// </summary>
+        public static string DeviceControl {
+            get {
+                return ResourceManager.GetString("DeviceControl", resourceCulture);
             }
         }
         
@@ -498,6 +516,15 @@ namespace ColorVision.Properties {
         public static string SoftwareVersionIdentical {
             get {
                 return ResourceManager.GetString("SoftwareVersionIdentical", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 解决方案资源管理器 的本地化字符串。
+        /// </summary>
+        public static string SolutionExplorer {
+            get {
+                return ResourceManager.GetString("SolutionExplorer", resourceCulture);
             }
         }
         
