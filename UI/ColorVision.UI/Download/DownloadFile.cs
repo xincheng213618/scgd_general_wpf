@@ -16,21 +16,9 @@ namespace ColorVision.UI
         public string Authorization { get; set; } = "1:1";
     }
 
-    public class DownloadFile:ViewModelBase, IUpdate
+    public class DownloadFile:ViewModelBase
     {
-
         private static ILog log = log4net.LogManager.GetLogger(nameof(DownloadFile));
-
-        public string DownloadTile { get; set; }
-
-        public int ProgressValue { get => _ProgressValue; set { _ProgressValue = value; OnPropertyChanged(); } }
-        private int _ProgressValue;
-
-        public string SpeedValue { get => _SpeedValue; set { _SpeedValue = value; OnPropertyChanged(); } }
-        private string _SpeedValue;
-
-        public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; OnPropertyChanged(); } }
-        private string _RemainingTimeValue;
 
         public async Task<Version> GetLatestVersionNumber(string url)
         {
@@ -38,14 +26,10 @@ namespace ColorVision.UI
             string versionString = null;
             try
             {
-
-                // If the request is unauthorized, add the authentication header and try again
                 var byteArray = Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization);
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
-                // You should also consider handling other potential issues here, such as network errors
                 versionString = await _httpClient.GetStringAsync(url);
-
             }
             catch(Exception ex)
             {
@@ -53,7 +37,6 @@ namespace ColorVision.UI
                 return new Version();
             }
 
-            // If versionString is still null, it means there was an issue with getting the version number
             if (versionString == null)
             {
                 throw new InvalidOperationException("Unable to retrieve version number.");
@@ -61,114 +44,6 @@ namespace ColorVision.UI
 
             return new Version(versionString.Trim());
         }
-
-        public async Task Download(string downloadUrl, string DownloadPath, CancellationToken cancellationToken)
-        {
-            try
-            {
-                using (var client = new HttpClient())
-                {
-                    var byteArray = Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization);
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-
-                    Stopwatch stopwatch = new();
-                    var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(),$"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}","ColorVision");
-                        // Delete partial file on HTTP error
-                        if (File.Exists(DownloadPath))
-                        {
-                            File.Delete(DownloadPath);
-                        }
-                        return;
-                    }
-
-                    double totalBytes = response.Content.Headers.ContentLength ?? -1L;
-                    double totalReadBytes = 0L;
-                    var readBytes = 0;
-                    var buffer = new byte[8192];
-                    var isMoreToRead = true;
-
-                    stopwatch.Start();
-
-                    bool downloadCancelled = false;
-                    using (var fileStream = new FileStream(DownloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                    using (var stream = await response.Content.ReadAsStreamAsync(cancellationToken))
-                    {
-                        do
-                        {
-                            readBytes = await stream.ReadAsync(buffer, cancellationToken);
-                            if (readBytes == 0)
-                            {
-                                isMoreToRead = false;
-                            }
-                            else
-                            {
-                                await fileStream.WriteAsync(buffer.AsMemory(0, readBytes), cancellationToken);
-
-                                totalReadBytes += readBytes;
-                                int progressPercentage = totalBytes != -1L
-                                    ? (int)((totalReadBytes * 100) / totalBytes)
-                                    : -1;
-
-                                ProgressValue = progressPercentage;
-
-                                if (cancellationToken.IsCancellationRequested)
-                                {
-                                    downloadCancelled = true;
-                                    break;
-                                }
-
-                                if (stopwatch.ElapsedMilliseconds > 200) // Update speed at least once per second
-                                {
-                                    double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
-                                    SpeedValue = $"{Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s   {totalReadBytes / 1024 / 1024:F2} MB/{totalBytes / 1024 / 1024:F2} MB";
-
-                                    if (totalBytes != -1L)
-                                    {
-                                        double remainingBytes = totalBytes - totalReadBytes;
-                                        double remainingTime = remainingBytes / speed; // in seconds
-                                        RemainingTimeValue = $"{Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
-                                    }
-                                }
-                            }
-                        }
-                        while (isMoreToRead);
-                    }
-                    stopwatch.Stop();
-
-                    // Delete partial file after streams are closed
-                    if (downloadCancelled)
-                    {
-                        if (File.Exists(DownloadPath))
-                        {
-                            File.Delete(DownloadPath);
-                        }
-                        return;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error($"Download failed: {ex.Message}", ex);
-                // Delete partial file on any exception
-                if (File.Exists(DownloadPath))
-                {
-                    try
-                    {
-                        File.Delete(DownloadPath);
-                    }
-                    catch (Exception deleteEx)
-                    {
-                        log.Error($"Failed to delete partial file: {deleteEx.Message}", deleteEx);
-                    }
-                }
-                throw;
-            }
-        }
-
 
 
     }
