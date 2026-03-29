@@ -30,6 +30,7 @@ ColorVision/
 ├── Plugins/                  # 扩展插件层
 │   ├── EventVWR/            # 事件查看器插件
 │   ├── Pattern/             # 图案检测插件
+│   ├── Spectrum/            # 光谱仪测试插件
 │   ├── SystemMonitor/       # 系统监控插件
 │   ├── ScreenRecorder/      # 屏幕录制插件
 │   └── WindowsServicePlugin/ # Windows服务插件
@@ -202,6 +203,7 @@ ColorVision/
 |---------|---------|------|
 | EventVWR | Windows事件查看器集成 | - |
 | Pattern | 图案检测和分析工具 | [Pattern插件](../plugins/using-standard-plugins/pattern.md) |
+| Spectrum | 光谱仪测试与色彩分析 | [Spectrum插件](/04-api-reference/plugins/standard-plugins/spectrum.md) |
 | SystemMonitor | 系统性能监控面板 | [系统监控插件](../plugins/system-monitor.md) |
 | ScreenRecorder | 屏幕录制功能 | - |
 | WindowsServicePlugin | Windows服务集成 | - |

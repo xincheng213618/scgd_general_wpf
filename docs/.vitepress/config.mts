@@ -286,6 +286,7 @@ export default withMermaid(
               collapsed: true,
               items: [
                 { text: 'Pattern 插件', link: '/04-api-reference/plugins/standard-plugins/pattern' },
+                { text: 'Spectrum 插件', link: '/04-api-reference/plugins/standard-plugins/spectrum' },
                 { text: 'SystemMonitor 插件', link: '/04-api-reference/plugins/standard-plugins/system-monitor' }
               ]
             },

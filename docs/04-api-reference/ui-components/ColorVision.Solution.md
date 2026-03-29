@@ -127,7 +127,7 @@ mdWindow.Show();
 
 ### 工作区管理 (WorkspaceManager)
 
-多工作区切换管理。
+多工作区切换管理，提供 AvalonDock 停靠面板布局管理。
 
 ```csharp
 // 切换工作区
@@ -135,7 +135,57 @@ WorkspaceManager.Instance.SwitchWorkspace(workspacePath);
 
 // 获取当前工作区
 var current = WorkspaceManager.Instance.CurrentWorkspace;
+
+// 访问布局管理器
+var layoutManager = WorkspaceManager.LayoutManager;
 ```
+
+### 停靠布局管理 (DockLayoutManager)
+
+基于 AvalonDock 的面板布局管理器，支持面板位置持久化、重置和动态管理。
+
+```csharp
+// 注册面板
+DockLayoutManager.RegisterPanel("ProjectPanel", projectControl, "解决方案", DockSide.Left);
+DockLayoutManager.RegisterPanel("LogPanel", logControl, "日志", DockSide.Bottom);
+
+// 注册文档
+DockLayoutManager.RegisterDocument("ViewGridDoc", viewGrid, "数据视图", false);
+
+// 保存和加载布局
+DockLayoutManager.SaveLayout();   // 保存到 XML
+DockLayoutManager.LoadLayout();   // 从 XML 加载
+DockLayoutManager.ResetLayout();  // 重置为默认布局
+```
+
+**默认布局参数**：
+- 侧边面板宽度：303px
+- 底部面板高度：200px
+- 布局文件：`MainWindowDockLayout.xml`
+
+**布局序列化**：
+- 基于 AvalonDock `XmlLayoutSerializer` 实现
+- 加载时取消未注册 ContentId 的反序列化（防止空标签页）
+- 加载后自动刷新面板标题为当前语言环境
+
+### 文档视图宿主 (DockViewManagerHost)
+
+AvalonDock 文档宿主，管理 LayoutDocument 标签页的创建、切换和标题维护。
+
+```csharp
+// 初始化文档视图宿主
+DockViewManagerHost.Initialize(dockingManager);
+
+// 显示所有注册的视图
+DockViewManagerHost.ShowAllViews();
+
+// 激活指定视图
+DockViewManagerHost.ActiveView(viewControl);
+```
+
+### 布局菜单项 (LayoutMenuItems)
+
+提供"保存窗口布局"和"应用窗口布局"菜单命令。
 
 ## 架构设计
 
@@ -148,6 +198,7 @@ graph TD
     A --> D[编辑器层]
     A --> E[权限控制层]
     A --> F[多图像查看器]
+    A --> G[工作区停靠管理]
     
     B --> B1[SolutionManager]
     B --> B2[WorkspaceManager]
@@ -169,6 +220,10 @@ graph TD
     
     F --> F1[MultiImageViewer]
     F --> F2[ThumbnailCacheManager]
+    
+    G --> G1[DockLayoutManager]
+    G --> G2[DockViewManagerHost]
+    G --> G3[LayoutMenuItems]
 ```
 
 ## 主要组件
@@ -615,19 +670,25 @@ if (!RbacManager.Instance.HasPermission("FILE_DELETE"))
 
 ## 更新日志
 
-### v1.5.1.1 (2025-02)
+### v1.5.1.1 (2026-02)
 - ✅ 新增多图像查看器 (`MultiImageViewer`)
 - ✅ 新增缩略图缓存管理 (`ThumbnailCacheManager`)
 - ✅ 新增 Markdown 查看器 (`MarkdownViewWindow`)
 - ✅ 新增工作区管理 (`WorkspaceManager`)
+- ✅ 新增停靠布局管理 (`DockLayoutManager`) - AvalonDock 面板布局持久化
+- ✅ 新增文档视图宿主 (`DockViewManagerHost`) - LayoutDocument 标签页管理
+- ✅ 新增布局菜单项 (`LayoutMenuItems`) - 保存/应用窗口布局
 - ✅ 新增可编辑文本块 (`EditableTextBlock`)
 - ✅ 支持 .NET 10.0
 - ✅ 优化文件系统监控性能
 - ✅ 改进 RBAC 权限系统
 
-### v1.4.1.1 (2025-02)
-- 新增图像文件夹预览
-- 优化解决方案加载速度
+### v1.4.4.1 (2026-03)
+- ✅ 界面布局调整，日志可以显示在界面上
+
+### v1.4.1.1 (2026-02)
+- ✅ 新增图像文件夹预览
+- ✅ 优化解决方案加载速度
 
 ### v1.3.18.1 (2025-02)
 - 增加 RBAC 权限系统
