@@ -25,6 +25,7 @@ import argparse
 import hashlib
 import hmac
 import json
+import os
 import re
 import shutil
 import sqlite3
@@ -339,6 +340,90 @@ def _validate_runtime_config(config: dict[str, Any]) -> list[str]:
     if not username or not password:
         issues.append("upload_auth.username and upload_auth.password must be configured")
     return issues
+
+
+def _probe_database() -> tuple[bool, str | None]:
+    try:
+        db = get_db()
+        db.execute("SELECT 1").fetchone()
+        db.close()
+        return True, None
+    except Exception as exc:
+        return False, str(exc)
+
+
+def _directory_check(path: Path, *, ensure: bool = False) -> dict[str, Any]:
+    error = ""
+    if ensure:
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            error = str(exc)
+
+    exists = path.exists()
+    is_dir = path.is_dir()
+    probe_path = path if exists else path.parent
+    writable = probe_path.exists() and os.access(probe_path, os.W_OK)
+    ok = exists and is_dir and writable and not error
+    return {
+        "path": str(path),
+        "exists": exists,
+        "isDir": is_dir,
+        "writable": writable,
+        "ok": ok,
+        "error": error,
+    }
+
+
+def _build_health_payload() -> dict[str, Any]:
+    return {
+        "status": "ok",
+        "service": "ColorVision Marketplace",
+        "time": datetime.now(timezone.utc).isoformat(),
+        "storagePath": str(STORAGE),
+        "dbPath": str(DB_PATH),
+        "debug": bool(CONFIG.get("debug")),
+    }
+
+
+def _build_ready_payload() -> dict[str, Any]:
+    storage_check = _directory_check(STORAGE, ensure=True)
+    plugins_check = _directory_check(STORAGE / "Plugins", ensure=True)
+    db_ok, db_error = _probe_database()
+    username, password = _get_upload_auth()
+    auth_ok = bool(username and password)
+
+    issues: list[str] = []
+    if not storage_check["ok"]:
+        issues.append("storage path is not ready for uploads")
+    if not plugins_check["ok"]:
+        issues.append("Plugins directory is not ready for uploads")
+    if not db_ok:
+        issues.append("database is not ready")
+    if not auth_ok:
+        issues.append("upload authentication is not configured")
+
+    ready = not issues
+    return {
+        "status": "ready" if ready else "degraded",
+        "ready": ready,
+        "time": datetime.now(timezone.utc).isoformat(),
+        "checks": {
+            "storage": storage_check,
+            "plugins": plugins_check,
+            "database": {
+                "path": str(DB_PATH),
+                "ok": db_ok,
+                "error": db_error or "",
+            },
+            "uploadAuth": {
+                "ok": auth_ok,
+                "usernameConfigured": bool(username),
+                "passwordConfigured": bool(password),
+            },
+        },
+        "issues": issues,
+    }
 
 
 def _parse_int_arg(
@@ -1346,6 +1431,19 @@ def browse_page(subpath=""):
 # ===================================================================
 # REST API ENDPOINTS (for WPF desktop client)
 # ===================================================================
+
+
+@app.route("/api/health", methods=["GET"])
+def api_health():
+    """Lightweight liveness check for deployment and script preflight."""
+    return jsonify(_build_health_payload())
+
+
+@app.route("/api/ready", methods=["GET"])
+def api_ready():
+    """Upload-critical readiness check for deployment and script preflight."""
+    payload = _build_ready_payload()
+    return jsonify(payload), (200 if payload["ready"] else 503)
 
 
 @app.route("/api/plugins", methods=["GET"])

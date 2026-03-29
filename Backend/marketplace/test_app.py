@@ -4,9 +4,6 @@ import io
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any, cast
-
-from werkzeug.datastructures import MultiDict
 
 import app as marketplace_app
 
@@ -76,6 +73,30 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertEqual(payload["status"], 400)
         self.assertIn("Invalid integer parameter", payload["error"])
 
+    def test_api_health_reports_service_liveness(self):
+        response = self.client.get("/api/health")
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["status"], "ok")
+        self.assertEqual(payload["service"], "ColorVision Marketplace")
+
+    def test_api_ready_reports_ready_when_dependencies_are_available(self):
+        response = self.client.get("/api/ready")
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ready"])
+        self.assertEqual(payload["status"], "ready")
+        self.assertTrue(payload["checks"]["database"]["ok"])
+        self.assertTrue(payload["checks"]["uploadAuth"]["ok"])
+
+    def test_api_ready_reports_degraded_without_upload_auth(self):
+        marketplace_app.CONFIG["upload_auth"] = {"username": "", "password": ""}
+        response = self.client.get("/api/ready")
+        self.assertEqual(response.status_code, 503)
+        payload = response.get_json()
+        self.assertFalse(payload["ready"])
+        self.assertIn("upload authentication", " ".join(payload["issues"]))
+
     def test_api_plugin_detail_rejects_invalid_plugin_id(self):
         response = self.client.get("/api/plugins/bad!")
         self.assertEqual(response.status_code, 400)
@@ -136,9 +157,14 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertEqual(response.get_json()["error"], "PluginIds must be an array")
 
     def test_api_feedback_rejects_too_many_files(self):
-        data = cast(Any, MultiDict([("message", "hello")]))
+        attachments = []
         for index in range(marketplace_app.MAX_FEEDBACK_FILES + 1):
-            data.add("attachments", (io.BytesIO(b"x"), f"file-{index}.txt"))
+            attachments.append((io.BytesIO(b"x"), f"file-{index}.txt"))
+
+        data = {
+            "message": "hello",
+            "attachments": attachments,
+        }
 
         response = self.client.post(
             "/api/feedback",

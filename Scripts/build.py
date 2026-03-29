@@ -277,6 +277,72 @@ def upload_file(
     return False
 
 
+def _response_json_or_none(response) -> dict[str, Any] | None:
+    try:
+        payload = response.json()
+    except ValueError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def preflight_remote_upload(
+    settings: RemoteUploadSettings,
+    *,
+    session: Any | None = None,
+) -> bool:
+    if not settings.enabled:
+        return True
+
+    try:
+        import requests
+    except ImportError:
+        print("Remote upload preflight requires the requests package. Please install it first.")
+        return False
+
+    http_client = session or requests.Session()
+    timeout = (settings.connect_timeout, min(settings.read_timeout, 15))
+    health_url = f"{settings.base_url.rstrip('/')}/api/health"
+    ready_url = f"{settings.base_url.rstrip('/')}/api/ready"
+
+    try:
+        health_response = http_client.get(health_url, timeout=timeout)
+    except requests.RequestException as exc:
+        print(f"Backend health check failed: {exc}")
+        return False
+
+    if health_response.status_code != 200:
+        print(
+            f"Backend health check failed: HTTP {health_response.status_code} {health_response.text.strip()}"
+        )
+        return False
+
+    health_payload = _response_json_or_none(health_response)
+    if not health_payload or health_payload.get("status") != "ok":
+        print("Backend health check failed: invalid health response payload.")
+        return False
+
+    try:
+        ready_response = http_client.get(ready_url, timeout=timeout)
+    except requests.RequestException as exc:
+        print(f"Backend readiness check failed: {exc}")
+        return False
+
+    ready_payload = _response_json_or_none(ready_response)
+    if not ready_payload:
+        print("Backend readiness check failed: invalid readiness response payload.")
+        return False
+    if ready_response.status_code != 200 or not ready_payload.get("ready"):
+        issues = ready_payload.get("issues") or []
+        issue_text = "; ".join(str(item) for item in issues) if issues else ready_response.text.strip()
+        print(
+            f"Backend readiness check failed: HTTP {ready_response.status_code} {issue_text}"
+        )
+        return False
+
+    print("Backend preflight passed.")
+    return True
+
+
 def publish_primary_release(
     latest_version: str,
     latest_release_path: str | Path,
@@ -475,6 +541,10 @@ def main() -> int:
             "Set COLORVISION_UPLOAD_USERNAME and COLORVISION_UPLOAD_PASSWORD, "
             "or pass --skip-remote-upload to fall back to local copy."
         )
+        return 2
+
+    if remote_upload_enabled and not preflight_remote_upload(remote_settings):
+        print("Remote upload preflight failed; aborting before build/upload.")
         return 2
 
     if not args.skip_build:

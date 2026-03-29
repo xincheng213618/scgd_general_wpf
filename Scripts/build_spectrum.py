@@ -317,13 +317,15 @@ def main() -> None:
     # Step 4: cvxp 插件包
     cvxp_path = None
     if not args.no_cvxp:
-        ref_dir = os.path.join(
+        ref_dir = str(os.path.join(
             REPO_ROOT, "ColorVision", "bin", "x64",
             args.configuration, args.framework,
-        )
-        cvxp_path = os.path.join(BUILD_DIR, f"{PROJECT_NAME}-{version}.cvxp")
-        if not build_cvxp(output_dir, ref_dir, cvxp_path):
+        ))
+        cvxp_output_path = str(os.path.join(BUILD_DIR, f"{PROJECT_NAME}-{version}.cvxp"))
+        if not build_cvxp(output_dir, ref_dir, cvxp_output_path):
             cvxp_path = None
+        else:
+            cvxp_path = cvxp_output_path
 
     # Step 5: 清理编译产物目录（文件已打入 zip/cvxp，不再需要）
     if os.path.isdir(output_dir):

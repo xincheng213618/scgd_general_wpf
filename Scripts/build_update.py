@@ -171,25 +171,37 @@ def find_latest_zip(directory, version):
     # 返回匹配的文件中最新的一个
     latest_zip = min(matching_files, key=os.path.getmtime)
     return latest_zip
-version = get_file_version(exe_path)
-print("打包版本: " + version)
 
-# 创建目录
-create_directory_if_not_exists(history_dir)
-create_directory_if_not_exists(update_dir)
 
-# 查找最新的全量包
-old_zip = find_latest_zip(history_dir,version)
-print(f"baseline Version{old_zip}")
-incremental_zip = os.path.join(update_dir, f'ColorVision-Update-[{version}].cvx')
+def main() -> int:
+    version = get_file_version(exe_path)
+    if not version:
+        print(f"无法从 {exe_path} 读取版本号，终止。")
+        return 1
 
-if old_zip:
-    print(f"创建增量包: {incremental_zip}")
-    make_incremental_zip(old_zip, new_version_dir, incremental_zip)
-    upload_file(incremental_zip, r"ColorVision\Update")
-    # copy_with_progress(incremental_zip,"H:\\ColorVision\\Update");
+    print("打包版本: " + version)
 
-print("创建全量包")
-old_zip = os.path.join(history_dir, f'ColorVision-[{version}].zip')
-create_full_zip(new_version_dir, old_zip)
+    # 创建目录
+    create_directory_if_not_exists(history_dir)
+    create_directory_if_not_exists(update_dir)
+
+    # 查找最新的全量包
+    old_zip = find_latest_zip(history_dir, version)
+    print(f"baseline Version{old_zip}")
+    incremental_zip = os.path.join(update_dir, f'ColorVision-Update-[{version}].cvx')
+
+    if old_zip:
+        print(f"创建增量包: {incremental_zip}")
+        make_incremental_zip(old_zip, new_version_dir, incremental_zip)
+        upload_file(incremental_zip, r"ColorVision\Update")
+        # copy_with_progress(incremental_zip,"H:\\ColorVision\\Update")
+
+    print("创建全量包")
+    full_zip = os.path.join(history_dir, f'ColorVision-[{version}].zip')
+    create_full_zip(new_version_dir, full_zip)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 

@@ -28,19 +28,40 @@ and download statistics.
 import argparse
 import os
 import sys
-import requests
 
 
 DEFAULT_API_URL = "http://localhost:9999"
+DEFAULT_CONNECT_TIMEOUT = 10
+DEFAULT_READ_TIMEOUT = 120
 
 
 def publish_plugin(args):
+    try:
+        import requests
+    except ImportError:
+        print("Error: publish_plugin.py requires the requests package. Please install it first.")
+        sys.exit(1)
+
     api_url = args.api_url.rstrip("/")
     publish_url = f"{api_url}/api/packages/publish"
+    auth = None
+
+    username = (args.username or os.environ.get("COLORVISION_UPLOAD_USERNAME", "")).strip()
+    password = args.password or os.environ.get("COLORVISION_UPLOAD_PASSWORD", "")
+    if username or password:
+        auth = (username, password)
 
     if not os.path.isfile(args.file):
         print(f"Error: Package file not found: {args.file}")
         sys.exit(1)
+
+    if auth is None:
+        print(
+            "Error: /api/packages/publish now requires Basic Auth. "
+            "Set COLORVISION_UPLOAD_USERNAME and COLORVISION_UPLOAD_PASSWORD, "
+            "or pass --username/--password."
+        )
+        sys.exit(2)
 
     # Build form data
     form_data = {
@@ -84,11 +105,24 @@ def publish_plugin(args):
         print(f"Publishing {args.plugin_id} v{args.version} to {publish_url}")
         print(f"Package: {args.file} ({file_size / 1024:.1f} KB)")
 
-        response = requests.post(publish_url, data=form_data, files=files, timeout=120)
+        response = requests.post(
+            publish_url,
+            data=form_data,
+            files=files,
+            auth=auth,
+            timeout=(DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT),
+        )
 
         if response.status_code == 201:
             print(f"✓ Successfully published {args.plugin_id} v{args.version}")
-            print(f"  Response: {response.json()}")
+            try:
+                print(f"  Response: {response.json()}")
+            except ValueError:
+                print(f"  Response: {response.text}")
+        elif response.status_code == 401:
+            print("✗ Publish failed (HTTP 401 Unauthorized)")
+            print("  Check the backend upload credentials in config.json and your environment variables.")
+            sys.exit(1)
         else:
             print(f"✗ Publish failed (HTTP {response.status_code})")
             print(f"  Response: {response.text}")
@@ -117,6 +151,8 @@ def main():
     parser.add_argument("--changelog", help="Path to changelog file or inline changelog text")
     parser.add_argument("--icon", help="Path to plugin icon file")
     parser.add_argument("--api-url", default=DEFAULT_API_URL, help=f"Marketplace API base URL (default: {DEFAULT_API_URL})")
+    parser.add_argument("--username", help="Basic Auth username for the publish API (defaults to COLORVISION_UPLOAD_USERNAME)")
+    parser.add_argument("--password", help="Basic Auth password for the publish API (defaults to COLORVISION_UPLOAD_PASSWORD)")
 
     args = parser.parse_args()
     publish_plugin(args)
