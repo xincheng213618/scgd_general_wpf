@@ -1,8 +1,6 @@
 using ColorVision.Themes;
 using ColorVision.UI.Marketplace;
 using log4net;
-using log4net.Appender;
-using log4net.Repository.Hierarchy;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -108,32 +106,63 @@ namespace ColorVision.UI.Desktop.Feedback
         {
             try
             {
-                string? logDir = GetLogDirectory();
-                if (string.IsNullOrEmpty(logDir) || !Directory.Exists(logDir))
+                // Discover all IFeedbackLogCollector implementations from all loaded assemblies
+                var collectors = AssemblyHandler.GetInstance().LoadImplementations<IFeedbackLogCollector>();
+
+                if (collectors.Count == 0)
                 {
                     StatusText.Text = Properties.Resources.NoLocalLog4Output;
                     return;
                 }
 
-                string zipPath = Path.Combine(Path.GetTempPath(), $"ColorVision_Logs_{DateTime.Now:yyyyMMdd_HHmmss}.zip");
+                // Sort by order
+                collectors.Sort((a, b) => a.Order.CompareTo(b.Order));
+
+                string zipPath = Path.Combine(Path.GetTempPath(), $"ColorVision_Diagnostics_{DateTime.Now:yyyyMMdd_HHmmss}.zip");
+                var tempFiles = new List<string>();
+                int totalFiles = 0;
 
                 using (var zipArchive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
                 {
-                    foreach (var file in Directory.GetFiles(logDir, "*", SearchOption.TopDirectoryOnly).Take(20))
+                    foreach (var collector in collectors)
                     {
                         try
                         {
-                            // Copy to temp first to avoid lock issues with active log files
-                            string tempCopy = Path.Combine(Path.GetTempPath(), $"logcopy_{Path.GetFileName(file)}");
-                            File.Copy(file, tempCopy, true);
-                            zipArchive.CreateEntryFromFile(tempCopy, Path.GetFileName(file));
-                            File.Delete(tempCopy);
+                            foreach (var (entryPath, filePath) in collector.CollectFiles())
+                            {
+                                try
+                                {
+                                    if (File.Exists(filePath))
+                                    {
+                                        zipArchive.CreateEntryFromFile(filePath, entryPath);
+                                        tempFiles.Add(filePath);
+                                        totalFiles++;
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    log.Debug($"Could not add {entryPath} from {collector.Name}: {ex.Message}");
+                                }
+                            }
                         }
                         catch (Exception ex)
                         {
-                            log.Debug($"Could not pack log file {file}: {ex.Message}");
+                            log.Debug($"Collector '{collector.Name}' failed: {ex.Message}");
                         }
                     }
+                }
+
+                // Clean up temp files
+                foreach (var tempFile in tempFiles)
+                {
+                    try { File.Delete(tempFile); } catch { }
+                }
+
+                if (totalFiles == 0)
+                {
+                    StatusText.Text = Properties.Resources.NoLocalLog4Output;
+                    try { File.Delete(zipPath); } catch { }
+                    return;
                 }
 
                 _attachments.Add(new AttachmentItem { FilePath = zipPath });
@@ -144,15 +173,6 @@ namespace ColorVision.UI.Desktop.Feedback
                 log.Error($"PackLogs failed: {ex.Message}");
                 StatusText.Text = $"打包日志失败: {ex.Message}";
             }
-        }
-
-        private static string? GetLogDirectory()
-        {
-            var hierarchy = (Hierarchy)LogManager.GetRepository();
-            var fileAppender = hierarchy.Root.Appenders.OfType<FileAppender>().FirstOrDefault();
-            if (fileAppender?.File != null)
-                return Path.GetDirectoryName(fileAppender.File);
-            return null;
         }
 
         private void RemoveAttachment_Click(object sender, RoutedEventArgs e)
