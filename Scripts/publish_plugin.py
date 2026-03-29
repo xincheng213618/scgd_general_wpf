@@ -66,19 +66,24 @@ def publish_plugin(args):
         else:
             form_data["ChangeLog"] = args.changelog
 
-    # Build files dict
+    # Build files dict — open file handles inside try block for guaranteed cleanup
     file_size = os.path.getsize(args.file)
-    files = {
-        "package": (os.path.basename(args.file), open(args.file, "rb"), "application/octet-stream"),
-    }
-
-    if args.icon and os.path.isfile(args.icon):
-        files["icon"] = (os.path.basename(args.icon), open(args.icon, "rb"), "image/png")
-
-    print(f"Publishing {args.plugin_id} v{args.version} to {publish_url}")
-    print(f"Package: {args.file} ({file_size / 1024:.1f} KB)")
-
+    file_handles = []
     try:
+        pkg_fh = open(args.file, "rb")
+        file_handles.append(pkg_fh)
+        files = {
+            "package": (os.path.basename(args.file), pkg_fh, "application/octet-stream"),
+        }
+
+        if args.icon and os.path.isfile(args.icon):
+            icon_fh = open(args.icon, "rb")
+            file_handles.append(icon_fh)
+            files["icon"] = (os.path.basename(args.icon), icon_fh, "image/png")
+
+        print(f"Publishing {args.plugin_id} v{args.version} to {publish_url}")
+        print(f"Package: {args.file} ({file_size / 1024:.1f} KB)")
+
         response = requests.post(publish_url, data=form_data, files=files, timeout=120)
 
         if response.status_code == 201:
@@ -93,10 +98,8 @@ def publish_plugin(args):
         print("  Make sure the backend is running.")
         sys.exit(1)
     finally:
-        # Close file handles
-        for _, file_tuple in files.items():
-            if hasattr(file_tuple[1], "close"):
-                file_tuple[1].close()
+        for fh in file_handles:
+            fh.close()
 
 
 def main():

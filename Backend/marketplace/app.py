@@ -71,6 +71,7 @@ STORAGE = Path(CONFIG["storage_path"])
 
 app = Flask(__name__)
 app.secret_key = CONFIG["secret_key"]
+app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB upload limit
 
 # ---------------------------------------------------------------------------
 # Database helpers (SQLite for download statistics)
@@ -105,6 +106,33 @@ def init_db():
 
 
 init_db()
+
+# ---------------------------------------------------------------------------
+# Security helpers
+# ---------------------------------------------------------------------------
+
+_SAFE_ID_RE = re.compile(r"^[A-Za-z0-9_\-]+$")
+_SAFE_VERSION_RE = re.compile(r"^[0-9]+(\.[0-9]+)*$")
+
+
+def _is_safe_id(value: str) -> bool:
+    """Validate that a plugin ID contains only safe characters."""
+    return bool(value) and _SAFE_ID_RE.match(value) is not None
+
+
+def _is_safe_version(value: str) -> bool:
+    """Validate that a version string contains only digits and dots."""
+    return bool(value) and _SAFE_VERSION_RE.match(value) is not None
+
+
+def _sanitize_filename(filename: str) -> str:
+    """Remove path separators and other dangerous characters from a filename."""
+    # Use only the basename, strip any directory components
+    name = Path(filename).name
+    # Remove any remaining path separator characters
+    name = re.sub(r'[/\\:*?"<>|]', "_", name)
+    return name
+
 
 # ---------------------------------------------------------------------------
 # Helpers — read data from the file system
@@ -401,16 +429,25 @@ def upload_page():
                 "upload.html", message=None, error="请填写插件 ID 或使用标准文件名格式"
             )
 
+    if not _is_safe_id(plugin_id):
+        return render_template(
+            "upload.html", message=None, error="插件 ID 只能包含字母、数字、下划线和连字符"
+        )
+
+    safe_filename = _sanitize_filename(file.filename)
+    if not safe_filename:
+        return render_template("upload.html", message=None, error="无效的文件名")
+
     # Ensure plugin directory exists
     plugin_dir = STORAGE / "Plugins" / plugin_id
     plugin_dir.mkdir(parents=True, exist_ok=True)
 
     # Save file
-    save_path = plugin_dir / file.filename
+    save_path = plugin_dir / safe_filename
     file.save(str(save_path))
 
     # Update LATEST_RELEASE if we can extract version
-    m = re.match(rf"^{re.escape(plugin_id)}-(.+)\.cvxp$", file.filename)
+    m = re.match(rf"^{re.escape(plugin_id)}-(.+)\.cvxp$", safe_filename)
     if m:
         version = m.group(1)
         latest_path = plugin_dir / "LATEST_RELEASE"
@@ -423,7 +460,7 @@ def upload_page():
 
     return render_template(
         "upload.html",
-        message=f"上传成功: {file.filename} → Plugins/{plugin_id}/",
+        message=f"上传成功: {safe_filename} → Plugins/{plugin_id}/",
         error=None,
     )
 
@@ -629,6 +666,9 @@ def api_latest_version(plugin_id):
 @app.route("/api/packages/<plugin_id>/<version>", methods=["GET"])
 def api_download_package(plugin_id, version):
     """Download a specific plugin version .cvxp file."""
+    if not _is_safe_id(plugin_id) or not _is_safe_version(version):
+        return jsonify({"error": "Invalid plugin_id or version"}), 400
+
     plugin_dir = STORAGE / "Plugins" / plugin_id
     filename = f"{plugin_id}-{version}.cvxp"
     filepath = plugin_dir / filename
@@ -657,6 +697,10 @@ def api_publish_package():
         return jsonify({"error": "PluginId is required"}), 400
     if not version:
         return jsonify({"error": "Version is required"}), 400
+    if not _is_safe_id(plugin_id):
+        return jsonify({"error": "PluginId contains invalid characters"}), 400
+    if not _is_safe_version(version):
+        return jsonify({"error": "Version must be digits separated by dots"}), 400
 
     # Ensure directory
     plugin_dir = STORAGE / "Plugins" / plugin_id
@@ -790,12 +834,23 @@ def legacy_upload(filepath):
     except ValueError:
         abort(403)
 
+    # Sanitize: ensure the final component has no path traversal
+    if ".." in str(target):
+        abort(403)
+
     target.parent.mkdir(parents=True, exist_ok=True)
+    max_size = 500 * 1024 * 1024  # 500 MB limit
+    total = 0
     with open(target, "wb") as f:
         while True:
             chunk = request.stream.read(8192)
             if not chunk:
                 break
+            total += len(chunk)
+            if total > max_size:
+                f.close()
+                target.unlink(missing_ok=True)
+                return "File too large", 413
             f.write(chunk)
     return "File uploaded successfully", 201
 
