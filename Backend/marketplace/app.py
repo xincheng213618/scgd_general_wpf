@@ -23,13 +23,15 @@ Run:
 
 import argparse
 import hashlib
+import hmac
 import json
 import re
 import shutil
 import sqlite3
 from datetime import datetime, timezone
+from functools import wraps
 from markupsafe import Markup
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 try:
@@ -45,6 +47,7 @@ from flask import (
     send_from_directory,
     url_for,
 )
+from werkzeug.exceptions import HTTPException
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -61,14 +64,26 @@ DEFAULT_CONFIG = {
     "plugin_package_keep_count": 3,
     "upload_auth": {"username": "admin", "password": "admin"},
 }
+DEFAULT_SECRET_KEY = DEFAULT_CONFIG["secret_key"]
+DEFAULT_UPLOAD_AUTH = dict(DEFAULT_CONFIG["upload_auth"])
+MAX_UPLOAD_SIZE_BYTES = 500 * 1024 * 1024
+MAX_FEEDBACK_FILES = 10
+MAX_FEEDBACK_FIELD_LENGTH = 4000
 
 
 def load_config():
     config = dict(DEFAULT_CONFIG)
+    config["upload_auth"] = dict(DEFAULT_UPLOAD_AUTH)
     config_file = BASE_DIR / "config.json"
     if config_file.exists():
         with open(config_file, encoding="utf-8") as f:
-            config.update(json.load(f))
+            loaded = json.load(f)
+        if isinstance(loaded.get("upload_auth"), dict):
+            config["upload_auth"].update(loaded["upload_auth"])
+        for key, value in loaded.items():
+            if key == "upload_auth":
+                continue
+            config[key] = value
     return config
 
 
@@ -81,7 +96,7 @@ app = Flask(
     template_folder=str(BASE_DIR / "templates"),
 )
 app.secret_key = CONFIG["secret_key"]
-app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB upload limit
+app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_SIZE_BYTES
 
 # ---------------------------------------------------------------------------
 # Database helpers (SQLite for download statistics and cache)
@@ -238,6 +253,205 @@ def _sanitize_filename(filename: str) -> str:
     # Remove any remaining path separator characters
     name = re.sub(r'[/\\:*?"<>|]', "_", name)
     return name
+
+
+def _normalize_relative_path(relative_path: str) -> str:
+    normalized_input = (relative_path or "").replace("\\", "/").strip()
+    if not normalized_input:
+        return ""
+    pure_path = PurePosixPath(normalized_input)
+    if pure_path.is_absolute() or ":" in normalized_input:
+        abort(403)
+
+    parts: list[str] = []
+    for part in pure_path.parts:
+        if part in ("", "."):
+            continue
+        if part == "..":
+            abort(403)
+        parts.append(part)
+    return "/".join(parts)
+
+
+def _get_upload_auth() -> tuple[str, str]:
+    auth_config = CONFIG.get("upload_auth") or {}
+    if not isinstance(auth_config, dict):
+        auth_config = {}
+    username = str(auth_config.get("username", "")).strip()
+    password = str(auth_config.get("password", ""))
+    return username, password
+
+
+def _is_api_request() -> bool:
+    return request.path.startswith("/api/")
+
+
+def _json_error(message: str, status_code: int, **details):
+    payload = {"error": message, "status": status_code}
+    if details:
+        payload["details"] = details
+    response = jsonify(payload)
+    response.status_code = status_code
+    return response
+
+
+def _unauthorized_response():
+    if _is_api_request():
+        response = _json_error("Authentication required", 401)
+    else:
+        response = app.response_class("Authentication required", status=401)
+    response.headers["WWW-Authenticate"] = 'Basic realm="ColorVision Marketplace"'
+    return response
+
+
+def require_upload_auth(view_func):
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        expected_username, expected_password = _get_upload_auth()
+        auth = request.authorization
+        if (
+            not auth
+            or (auth.type or "").lower() != "basic"
+            or not hmac.compare_digest(auth.username or "", expected_username)
+            or not hmac.compare_digest(auth.password or "", expected_password)
+        ):
+            return _unauthorized_response()
+        return view_func(*args, **kwargs)
+
+    return wrapper
+
+
+def _validate_runtime_config(config: dict[str, Any]) -> list[str]:
+    issues: list[str] = []
+    if str(config.get("secret_key", "")).strip() == DEFAULT_SECRET_KEY:
+        issues.append("secret_key must be changed from the default value")
+
+    auth_config = config.get("upload_auth") or {}
+    if not isinstance(auth_config, dict):
+        auth_config = {}
+    username = str(auth_config.get("username", "")).strip()
+    password = str(auth_config.get("password", ""))
+    if (
+        username == str(DEFAULT_UPLOAD_AUTH.get("username", "")).strip()
+        and password == str(DEFAULT_UPLOAD_AUTH.get("password", ""))
+    ):
+        issues.append("upload_auth.username/password must be changed from the default values")
+    if not username or not password:
+        issues.append("upload_auth.username and upload_auth.password must be configured")
+    return issues
+
+
+def _parse_int_arg(
+    *names: str,
+    default: int,
+    minimum: int | None = None,
+    maximum: int | None = None,
+) -> int:
+    raw_value = None
+    for name in names:
+        if name in request.args:
+            raw_value = request.args.get(name)
+            break
+
+    if raw_value is None or str(raw_value).strip() == "":
+        value = default
+    else:
+        try:
+            value = int(str(raw_value).strip())
+        except (TypeError, ValueError):
+            abort(400, description=f"Invalid integer parameter: {names[0]}")
+
+    if minimum is not None and value < minimum:
+        abort(400, description=f"{names[0]} must be >= {minimum}")
+    if maximum is not None and value > maximum:
+        abort(400, description=f"{names[0]} must be <= {maximum}")
+    return value
+
+
+def _extract_package_version(filename: str, plugin_id: str) -> str | None:
+    safe_filename = _sanitize_filename(filename)
+    if safe_filename != filename or safe_filename.lower().endswith(".cvxp") is False:
+        return None
+    match = re.match(
+        rf"^{re.escape(plugin_id)}-([0-9]+(?:\.[0-9]+)*)\.cvxp$",
+        safe_filename,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    version = match.group(1)
+    return version if _is_safe_version(version) else None
+
+
+def _ensure_plugin_dir(plugin_id: str) -> Path:
+    if not _is_safe_id(plugin_id):
+        raise ValueError("PluginId contains invalid characters")
+    plugin_dir = STORAGE / "Plugins" / plugin_id
+    plugin_dir.mkdir(parents=True, exist_ok=True)
+    return plugin_dir
+
+
+def _update_latest_release_file(plugin_dir: Path, version: str):
+    latest_path = plugin_dir / "LATEST_RELEASE"
+    existing = read_text_file(latest_path) or "0.0.0.0"
+    try:
+        if _version_tuple(version) >= _version_tuple(existing):
+            latest_path.write_text(version, encoding="utf-8")
+    except ValueError:
+        latest_path.write_text(version, encoding="utf-8")
+
+
+def _load_manifest(manifest_path: Path) -> dict[str, Any]:
+    if not manifest_path.exists():
+        return {}
+    try:
+        with open(manifest_path, encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_plugin_package(
+    package_file,
+    plugin_id: str,
+    version: str,
+    *,
+    filename: str | None = None,
+) -> tuple[Path, list[dict[str, str]]]:
+    plugin_dir = _ensure_plugin_dir(plugin_id)
+    save_filename = filename or f"{plugin_id}-{version}.cvxp"
+    safe_filename = _sanitize_filename(save_filename)
+    if safe_filename != save_filename or safe_filename.lower().endswith(".cvxp") is False:
+        raise ValueError("Package filename must be a .cvxp file")
+
+    save_path = plugin_dir / safe_filename
+    package_file.save(str(save_path))
+    _update_latest_release_file(plugin_dir, version)
+    moved_packages = reconcile_plugin_package_history(plugin_id)
+    _refresh_related_caches(plugin_id=plugin_id, relative_path=f"Plugins/{plugin_id}")
+    return save_path, moved_packages
+
+
+def _unique_output_path(directory: Path, filename: str) -> Path:
+    candidate = directory / filename
+    if not candidate.exists():
+        return candidate
+
+    stem = Path(filename).stem
+    suffix = Path(filename).suffix
+    index = 1
+    while True:
+        candidate = directory / f"{stem}-{index}{suffix}"
+        if not candidate.exists():
+            return candidate
+        index += 1
+
+
+def _read_limited_form_value(field_name: str, *, default: str = "") -> str:
+    value = request.form.get(field_name, default)
+    if len(value) > MAX_FEEDBACK_FIELD_LENGTH:
+        abort(400, description=f"{field_name} exceeds the maximum length")
+    return value.strip()
 
 
 # ---------------------------------------------------------------------------
@@ -444,7 +658,8 @@ def reconcile_app_release_history(keep_latest: int | None = None) -> list[dict[s
 
 
 def resolve_storage_file(relative_path: str) -> Path:
-    target = STORAGE / relative_path
+    normalized = _normalize_relative_path(relative_path)
+    target = STORAGE / Path(*PurePosixPath(normalized).parts)
     try:
         target.resolve().relative_to(STORAGE.resolve())
     except ValueError:
@@ -668,6 +883,9 @@ def get_plugin_info(
     plugin_id: str, download_counts: dict[str, int] | None = None
 ) -> dict | None:
     """Read metadata for a single plugin from its directory."""
+    if not _is_safe_id(plugin_id):
+        return None
+
     plugin_dir = STORAGE / "Plugins" / plugin_id
     if not plugin_dir.is_dir():
         return None
@@ -805,6 +1023,13 @@ def human_size(size_bytes: int) -> str:
 app.jinja_env.globals["human_size"] = human_size
 app.jinja_env.globals["render_markdown"] = render_markdown
 
+
+@app.errorhandler(HTTPException)
+def handle_http_exception(exc: HTTPException):
+    if _is_api_request():
+        return _json_error(exc.description or exc.name, exc.code or 500)
+    return exc
+
 # ---------------------------------------------------------------------------
 # Scan top-level storage directories for the overview page
 # ---------------------------------------------------------------------------
@@ -869,7 +1094,7 @@ def build_storage_summary(overview: list[dict[str, Any]]) -> dict:
     directory_count = sum(1 for item in overview if item["type"] == "dir")
     top_level_file_count = sum(1 for item in overview if item["type"] == "file")
     nested_file_count = sum(item.get("file_count", 0) for item in overview if item["type"] == "dir")
-    top_level_size = sum(item.get("size", 0) for item in overview if item["type"] == "file")
+    top_level_size = sum(int(item.get("size", 0) or 0) for item in overview if item["type"] == "file")
     return {
         "item_count": len(overview),
         "directory_count": directory_count,
@@ -987,6 +1212,8 @@ def plugins_page():
 @app.route("/plugins/<plugin_id>")
 def plugin_detail_page(plugin_id):
     """Plugin detail page."""
+    if not _is_safe_id(plugin_id):
+        abort(404)
     info = get_plugin_info(plugin_id, download_counts=_get_download_counts())
     if not info:
         abort(404)
@@ -996,6 +1223,8 @@ def plugin_detail_page(plugin_id):
 @app.route("/plugins/<plugin_id>/icon")
 def plugin_icon(plugin_id):
     """Serve plugin icon image."""
+    if not _is_safe_id(plugin_id):
+        abort(404)
     plugin_dir = STORAGE / "Plugins" / plugin_id
     icon_path = plugin_dir / "PackageIcon.png"
     if icon_path.exists():
@@ -1004,6 +1233,7 @@ def plugin_icon(plugin_id):
 
 
 @app.route("/upload", methods=["GET", "POST"])
+@require_upload_auth
 def upload_page():
     """Upload page — upload a .cvxp plugin package."""
     if request.method == "GET":
@@ -1032,32 +1262,23 @@ def upload_page():
         )
 
     safe_filename = _sanitize_filename(file.filename)
-    if not safe_filename:
-        return render_template("upload.html", message=None, error="无效的文件名")
+    version = _extract_package_version(safe_filename, plugin_id)
+    if not safe_filename or not version:
+        return render_template(
+            "upload.html",
+            message=None,
+            error="文件名必须为 {PluginId}-{version}.cvxp，且版本只能包含数字和点",
+        )
 
-    # Ensure plugin directory exists
-    plugin_dir = STORAGE / "Plugins" / plugin_id
-    plugin_dir.mkdir(parents=True, exist_ok=True)
-
-    # Save file
-    save_path = plugin_dir / safe_filename
-    file.save(str(save_path))
-
-    # Update LATEST_RELEASE if we can extract version
-    m = re.match(rf"^{re.escape(plugin_id)}-(.+)\.cvxp$", safe_filename)
-    if m:
-        version = m.group(1)
-        latest_path = plugin_dir / "LATEST_RELEASE"
-        existing = read_text_file(latest_path) or "0.0.0.0"
-        try:
-            if _version_tuple(version) >= _version_tuple(existing):
-                latest_path.write_text(version, encoding="utf-8")
-        except ValueError:
-            latest_path.write_text(version, encoding="utf-8")
-
-    moved_packages = reconcile_plugin_package_history(plugin_id)
-
-    _refresh_related_caches(plugin_id=plugin_id, relative_path=f"Plugins/{plugin_id}")
+    try:
+        _, moved_packages = _save_plugin_package(
+            file,
+            plugin_id,
+            version,
+            filename=safe_filename,
+        )
+    except ValueError as exc:
+        return render_template("upload.html", message=None, error=str(exc))
 
     return render_template(
         "upload.html",
@@ -1081,7 +1302,8 @@ def _version_tuple(v: str) -> tuple:
 @app.route("/browse/<path:subpath>")
 def browse_page(subpath=""):
     """Generic file browser for the storage directory."""
-    target = STORAGE / subpath
+    normalized = _normalize_relative_path(subpath)
+    target = STORAGE / Path(*PurePosixPath(normalized).parts)
     if not target.exists():
         abort(404)
     # Security: prevent path traversal
@@ -1131,11 +1353,19 @@ def api_search_plugins():
     """Search and list plugins. Compatible with IMarketplaceService.SearchPluginsAsync."""
     keyword = request.args.get("Keyword", request.args.get("keyword", "")).strip()
     category = request.args.get("Category", request.args.get("category", "")).strip()
-    sort_by = request.args.get("SortBy", request.args.get("sort", "updated")).strip()
-    sort_order = request.args.get("SortOrder", "desc").strip()
-    page = int(request.args.get("Page", request.args.get("page", 1)))
-    page_size = int(request.args.get("PageSize", request.args.get("pageSize", 20)))
-    page_size = min(max(page_size, 1), 100)
+    sort_by = request.args.get("SortBy", request.args.get("sort", "updated")).strip().lower()
+    sort_order = request.args.get("SortOrder", request.args.get("sortOrder", "desc")).strip().lower()
+    page = _parse_int_arg("Page", "page", default=1, minimum=1)
+    page_size = _parse_int_arg("PageSize", "pageSize", default=20, minimum=1, maximum=100)
+    sort_by = {
+        "updatedat": "updated",
+        "modified": "updated",
+        "modifiedat": "updated",
+    }.get(sort_by, sort_by)
+    if sort_by not in {"updated", "name", "downloads"}:
+        abort(400, description="Invalid SortBy parameter")
+    if sort_order not in {"asc", "desc"}:
+        abort(400, description="Invalid SortOrder parameter")
 
     plugins = scan_plugins(download_counts=_get_download_counts())
 
@@ -1207,9 +1437,13 @@ def api_batch_version_check():
     """Batch check latest versions for multiple plugins at once."""
     data = request.get_json(silent=True) or {}
     plugin_ids = data.get("PluginIds", data.get("pluginIds", []))
+    if not isinstance(plugin_ids, list):
+        abort(400, description="PluginIds must be an array")
 
     results = []
     for pid in plugin_ids:
+        if not isinstance(pid, str) or not _is_safe_id(pid):
+            continue
         latest = read_text_file(STORAGE / "Plugins" / pid / "LATEST_RELEASE")
         if latest:
             results.append({"pluginId": pid, "latestVersion": latest})
@@ -1219,6 +1453,8 @@ def api_batch_version_check():
 @app.route("/api/plugins/<plugin_id>", methods=["GET"])
 def api_plugin_detail(plugin_id):
     """Get detailed plugin information."""
+    if not _is_safe_id(plugin_id):
+        abort(400, description="Invalid plugin_id")
     info = get_plugin_info(plugin_id, download_counts=_get_download_counts())
     if not info:
         return jsonify({"error": "Plugin not found"}), 404
@@ -1270,6 +1506,8 @@ def api_latest_version(plugin_id):
     Return latest version as plain text — backward compatible with LATEST_RELEASE.
     This endpoint is used by older clients that check version via a simple GET.
     """
+    if not _is_safe_id(plugin_id):
+        abort(400, description="Invalid plugin_id")
     version = read_text_file(STORAGE / "Plugins" / plugin_id / "LATEST_RELEASE")
     if not version:
         return "Plugin not found", 404
@@ -1303,6 +1541,7 @@ def api_download_package(plugin_id, version):
 
 
 @app.route("/api/packages/publish", methods=["POST"])
+@require_upload_auth
 def api_publish_package():
     """
     Publish a new plugin version.
@@ -1323,47 +1562,31 @@ def api_publish_package():
         return jsonify({"error": "PluginId contains invalid characters"}), 400
     if not _is_safe_version(version):
         return jsonify({"error": "Version must be digits separated by dots"}), 400
+    if _sanitize_filename(package.filename).lower().endswith(".cvxp") is False:
+        return jsonify({"error": "Package file must have a .cvxp extension"}), 400
 
-    # Ensure directory
-    plugin_dir = STORAGE / "Plugins" / plugin_id
-    plugin_dir.mkdir(parents=True, exist_ok=True)
-
-    # Save the package file
-    save_filename = f"{plugin_id}-{version}.cvxp"
-    save_path = plugin_dir / save_filename
-    package.save(str(save_path))
-
-    # Update LATEST_RELEASE
-    latest_path = plugin_dir / "LATEST_RELEASE"
-    existing = read_text_file(latest_path) or "0.0.0.0"
     try:
-        if _version_tuple(version) >= _version_tuple(existing):
-            latest_path.write_text(version, encoding="utf-8")
-    except ValueError:
-        latest_path.write_text(version, encoding="utf-8")
+        plugin_dir = _ensure_plugin_dir(plugin_id)
+        _save_plugin_package(package, plugin_id, version)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
     # Save optional metadata
-    name = request.form.get("Name", request.form.get("name", plugin_id))
-    description = request.form.get("Description", request.form.get("description", ""))
-    author = request.form.get("Author", request.form.get("author", ""))
-    category = request.form.get("Category", request.form.get("category", ""))
+    name = request.form.get("Name", request.form.get("name", plugin_id)).strip()
+    description = request.form.get("Description", request.form.get("description", "")).strip()
+    author = request.form.get("Author", request.form.get("author", "")).strip()
+    category = request.form.get("Category", request.form.get("category", "")).strip()
     requires_ver = request.form.get(
         "RequiresVersion", request.form.get("requires_version", "")
-    )
-    changelog_text = request.form.get("ChangeLog", request.form.get("changelog", ""))
+    ).strip()
+    changelog_text = request.form.get("ChangeLog", request.form.get("changelog", "")).strip()
 
     # Update manifest.json
     manifest_path = plugin_dir / "manifest.json"
-    manifest = {}
-    if manifest_path.exists():
-        try:
-            with open(manifest_path, encoding="utf-8") as f:
-                manifest = json.load(f)
-        except (json.JSONDecodeError, OSError):
-            pass
+    manifest = _load_manifest(manifest_path)
 
     manifest["id"] = plugin_id
-    manifest["name"] = name
+    manifest["name"] = name or plugin_id
     if description:
         manifest["description"] = description
     if author:
@@ -1385,10 +1608,6 @@ def api_publish_package():
     icon = request.files.get("icon")
     if icon and icon.filename:
         icon.save(str(plugin_dir / "PackageIcon.png"))
-
-    reconcile_plugin_package_history(plugin_id)
-
-    _refresh_related_caches(plugin_id=plugin_id, relative_path=f"Plugins/{plugin_id}")
 
     return (
         jsonify({"pluginId": plugin_id, "version": version}),
@@ -1449,12 +1668,16 @@ def legacy_files(filepath):
 
 
 @app.route("/upload/<path:filepath>", methods=["PUT"])
+@require_upload_auth
 def legacy_upload(filepath):
     """
     Backward-compatible upload endpoint matching old file_manager.py pattern:
     PUT http://host:9998/upload/ColorVision/Plugins/{PluginId}/{filename}
     """
-    target = STORAGE / filepath.replace("ColorVision/", "", 1)
+    normalized = _normalize_relative_path(filepath.replace("ColorVision/", "", 1))
+    if not normalized:
+        abort(400, description="Upload path is required")
+    target = STORAGE / Path(*PurePosixPath(normalized).parts)
     try:
         target.resolve().relative_to(STORAGE.resolve())
     except ValueError:
@@ -1464,8 +1687,17 @@ def legacy_upload(filepath):
     if ".." in str(target):
         abort(403)
 
+    parts = PurePosixPath(normalized).parts
+    plugin_id = parts[1] if len(parts) >= 2 and parts[0] == "Plugins" else None
+    if plugin_id and not _is_safe_id(plugin_id):
+        abort(400, description="Invalid plugin_id in upload path")
+    if plugin_id and target.suffix.lower() == ".cvxp":
+        version = _extract_package_version(target.name, plugin_id)
+        if not version:
+            abort(400, description="Invalid plugin package filename")
+
     target.parent.mkdir(parents=True, exist_ok=True)
-    max_size = 500 * 1024 * 1024  # 500 MB limit
+    max_size = MAX_UPLOAD_SIZE_BYTES
     total = 0
     with open(target, "wb") as f:
         while True:
@@ -1479,15 +1711,13 @@ def legacy_upload(filepath):
                 return "File too large", 413
             f.write(chunk)
 
-    parts = Path(filepath.replace("ColorVision/", "", 1)).parts
-    plugin_id = parts[1] if len(parts) >= 2 and parts[0] == "Plugins" else None
     if _is_root_release_file(target):
         reconcile_app_release_history()
     if plugin_id and target.suffix.lower() == ".cvxp":
         reconcile_plugin_package_history(plugin_id)
     _refresh_related_caches(
         plugin_id=plugin_id,
-        relative_path=Path(filepath.replace("ColorVision/", "", 1)).as_posix(),
+        relative_path=normalized,
     )
 
     return "File uploaded successfully", 201
@@ -1555,17 +1785,27 @@ def api_feedback():
     Receive user feedback with optional log files, screenshots, and attachments.
     The feedback is stored in storage/Feedback/{timestamp}_{hash}/.
     """
-    message = request.form.get("message", "").strip()
-    user_name = request.form.get("userName", "").strip()
-    app_version = request.form.get("appVersion", "").strip()
-    machine_info = request.form.get("machineInfo", "").strip()
+    message = _read_limited_form_value("message")
+    user_name = _read_limited_form_value("userName")
+    app_version = _read_limited_form_value("appVersion")
+    machine_info = _read_limited_form_value("machineInfo")
 
-    if not message and not request.files:
+    uploaded_files = [
+        file_item
+        for key in request.files
+        for file_item in request.files.getlist(key)
+        if file_item and file_item.filename
+    ]
+    if len(uploaded_files) > MAX_FEEDBACK_FILES:
+        return jsonify({"error": f"A maximum of {MAX_FEEDBACK_FILES} files is allowed"}), 400
+
+    if not message and not uploaded_files:
         return jsonify({"error": "Message or at least one file is required"}), 400
 
     # Create feedback directory
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    feedback_id = f"{timestamp}_{hashlib.md5((message + str(datetime.now())).encode()).hexdigest()[:8]}"
+    feedback_seed = f"{message}|{user_name}|{datetime.now(timezone.utc).isoformat()}"
+    feedback_id = f"{timestamp}_{hashlib.sha256(feedback_seed.encode()).hexdigest()[:12]}"
     feedback_dir = STORAGE / "Feedback" / feedback_id
     feedback_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1582,13 +1822,12 @@ def api_feedback():
     }
 
     # Save uploaded files
-    for key in request.files:
-        for f in request.files.getlist(key):
-            if f and f.filename:
-                safe_name = _sanitize_filename(f.filename)
-                if safe_name:
-                    f.save(str(feedback_dir / safe_name))
-                    metadata["files"].append(safe_name)
+    for f in uploaded_files:
+        safe_name = _sanitize_filename(f.filename)
+        if safe_name:
+            output_path = _unique_output_path(feedback_dir, safe_name)
+            f.save(str(output_path))
+            metadata["files"].append(output_path.name)
 
     # Write metadata JSON
     with open(feedback_dir / "feedback.json", "w", encoding="utf-8") as mf:
@@ -1624,6 +1863,14 @@ if __name__ == "__main__":
         CONFIG["port"] = args.port
     if args.debug:
         CONFIG["debug"] = True
+
+    if not CONFIG.get("debug"):
+        issues = _validate_runtime_config(CONFIG)
+        if issues:
+            print("Refusing to start with insecure production configuration:")
+            for issue in issues:
+                print(f"  - {issue}")
+            raise SystemExit(2)
 
     if args.reconcile_history:
         moved = reconcile_app_release_history()

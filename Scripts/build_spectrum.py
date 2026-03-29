@@ -19,7 +19,7 @@ import sys
 import time
 import zipfile
 
-import pefile
+from file_manager import FileManager
 
 # ── 路径常量（基于脚本位置自动推导） ──────────────────────────────
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -32,8 +32,7 @@ BUILD_DIR = os.path.join(REPO_ROOT, "Release", PROJECT_NAME)
 
 # 插件服务器目录 (本地映射盘)
 PLUGIN_SERVER_DIR = os.path.join("H:\\", "ColorVision", "Plugins")
-# HTTP 上传地址
-UPLOAD_BASE_URL = "http://xc213618.ddns.me:9998/upload"
+FILE_MANAGER = FileManager()
 
 # cvxp 需要额外打入的文件名
 _CVXP_EXTRA_FILES = ["README.md", "CHANGELOG.md", "manifest.json", "PackageIcon.png"]
@@ -59,6 +58,8 @@ _FILE_EXCLUDE = {
 def get_version_from_pe(pe_path: str) -> str | None:
     """从 PE 文件的 FileVersion 字段读取版本号（去掉 +hash 后缀）。"""
     try:
+        import pefile
+
         pe = pefile.PE(pe_path)
         try:
             for fileinfo in pe.FileInfo:
@@ -248,36 +249,7 @@ def copy_with_progress(src: str, dst: str) -> None:
 
 def upload_file_http(file_path: str, folder: str) -> bool:
     """通过 HTTP PUT 上传文件到服务器。"""
-    try:
-        import requests
-        from tqdm import tqdm
-    except ImportError:
-        print("上传需要 requests 和 tqdm 库，请 pip install requests tqdm")
-        return False
-
-    name = os.path.basename(file_path)
-    url = f"{UPLOAD_BASE_URL}/{folder}/{name}"
-    size = os.path.getsize(file_path)
-
-    with open(file_path, "rb") as f:
-        with tqdm(total=size, unit="B", unit_scale=True, desc=name, ascii=True) as bar:
-
-            def chunks(fobj, chunk_size=1024):
-                while True:
-                    data = fobj.read(chunk_size)
-                    if not data:
-                        break
-                    yield data
-                    bar.update(len(data))
-
-            resp = requests.put(url, data=chunks(f))
-
-    if resp.status_code == 201:
-        print(f"上传成功: {url}")
-        return True
-    else:
-        print(f"上传失败 ({resp.status_code}): {resp.text}")
-        return False
+    return FILE_MANAGER.upload_file(file_path, folder)
 
 
 def upload_cvxp_to_server(cvxp_path: str, version: str) -> None:
