@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}{{ plugin.name }} — ColorVision 插件{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/plugins">插件市场</a></li>
+        <li class="breadcrumb-item active">{{ plugin.name }}</li>
+    </ol>
+</nav>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-start mb-3">
+                    {% if plugin.has_icon %}
+                    <img src="/plugins/{{ plugin.id }}/icon" class="me-3" style="width: 64px; height: 64px; object-fit: contain; border-radius: 12px;" alt="{{ plugin.name }}">
+                    {% else %}
+                    <div class="me-3 d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; border-radius: 12px; background: #e9ecef; color: #adb5bd; font-size: 2rem;">
+                        <i class="bi bi-puzzle"></i>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <h2 class="mb-1">{{ plugin.name }}</h2>
+                        <p class="text-muted mb-0">{{ plugin.id }}</p>
+                    </div>
+                </div>
+
+                {% if plugin.description %}
+                <p class="lead">{{ plugin.description }}</p>
+                {% endif %}
+
+                <div class="row text-muted small mb-3">
+                    {% if plugin.author %}
+                    <div class="col-auto"><i class="bi bi-person"></i> {{ plugin.author }}</div>
+                    {% endif %}
+                    {% if plugin.version %}
+                    <div class="col-auto"><i class="bi bi-tag"></i> v{{ plugin.version }}</div>
+                    {% endif %}
+                    {% if plugin.requires %}
+                    <div class="col-auto"><i class="bi bi-gear"></i> 需要 ColorVision ≥ {{ plugin.requires }}</div>
+                    {% endif %}
+                    {% if plugin.category %}
+                    <div class="col-auto"><span class="badge bg-secondary">{{ plugin.category }}</span></div>
+                    {% endif %}
+                    {% if plugin.total_downloads > 0 %}
+                    <div class="col-auto"><i class="bi bi-download"></i> {{ plugin.total_downloads }} 次下载</div>
+                    {% endif %}
+                </div>
+
+                {% if plugin.url %}
+                <p><a href="{{ plugin.url }}" target="_blank"><i class="bi bi-link-45deg"></i> {{ plugin.url }}</a></p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- README -->
+        {% if plugin.readme %}
+        <div class="card mt-3">
+            <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-book"></i> README</h5></div>
+            <div class="card-body">
+                <pre style="white-space: pre-wrap; font-family: inherit;">{{ plugin.readme }}</pre>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Changelog -->
+        {% if plugin.changelog %}
+        <div class="card mt-3">
+            <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-clock-history"></i> 更新日志</h5></div>
+            <div class="card-body">
+                <pre style="white-space: pre-wrap; font-family: inherit;">{{ plugin.changelog }}</pre>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar: Downloads -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-download"></i> 下载</h5></div>
+            <div class="card-body p-0">
+                {% if plugin.packages %}
+                <div class="list-group list-group-flush">
+                    {% for pkg in plugin.packages %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>v{{ pkg.version }}</strong>
+                            <br><small class="text-muted">{{ human_size(pkg.size) }} · {{ pkg.modified[:10] }}</small>
+                        </div>
+                        <a href="/api/packages/{{ plugin.id }}/{{ pkg.version }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">暂无可用版本</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Files on disk -->
+        <div class="card mt-3">
+            <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-folder"></i> 目录文件</h5></div>
+            <div class="card-body">
+                <a href="/browse/Plugins/{{ plugin.id }}" class="btn btn-outline-secondary btn-sm w-100">
+                    <i class="bi bi-folder2-open"></i> 浏览 Plugins/{{ plugin.id }}/
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

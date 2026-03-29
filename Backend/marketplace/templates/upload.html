@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}上传插件 — ColorVision{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+        <h2><i class="bi bi-cloud-upload"></i> 上传插件</h2>
+        <p class="text-muted">上传 .cvxp 插件包到市场</p>
+
+        {% if message %}
+        <div class="alert alert-success"><i class="bi bi-check-circle"></i> {{ message }}</div>
+        {% endif %}
+        {% if error %}
+        <div class="alert alert-danger"><i class="bi bi-exclamation-circle"></i> {{ error }}</div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="plugin_id" class="form-label">插件 ID</label>
+                        <input type="text" class="form-control" id="plugin_id" name="plugin_id"
+                               placeholder="例如: Spectrum (留空则从文件名推断)">
+                        <div class="form-text">插件的唯一标识符，对应 Plugins 目录下的文件夹名</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="package" class="form-label">选择文件 <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" id="package" name="package"
+                               accept=".cvxp,.zip" required>
+                        <div class="form-text">支持 .cvxp 格式，文件名格式: PluginName-1.2.3.4.cvxp</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> 上传
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- API Usage -->
+        <div class="card mt-4">
+            <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-braces"></i> API 上传</h5></div>
+            <div class="card-body">
+                <p class="text-muted">也可以通过 API 接口上传插件:</p>
+                <pre class="bg-light p-3 rounded"><code>curl -X POST {{ request.host_url }}api/packages/publish \
+  -F "PluginId=Spectrum" \
+  -F "Name=Spectrum Plugin" \
+  -F "Version=1.0.0.1" \
+  -F "Description=光谱分析插件" \
+  -F "Author=xincheng" \
+  -F "Category=Analysis" \
+  -F "package=@Spectrum-1.0.0.1.cvxp"</code></pre>
+
+                <p class="text-muted mt-3">或使用 publish_plugin.py 脚本:</p>
+                <pre class="bg-light p-3 rounded"><code>python Scripts/publish_plugin.py \
+  -p Spectrum -v 1.0.0.1 \
+  -f Spectrum-1.0.0.1.cvxp \
+  --api-url {{ request.host_url.rstrip('/') }}</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

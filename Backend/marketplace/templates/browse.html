@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}浏览文件 — ColorVision{% endblock %}
+
+{% block content %}
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        {% for label, href in breadcrumbs %}
+        {% if loop.last %}
+        <li class="breadcrumb-item active">{{ label }}</li>
+        {% else %}
+        <li class="breadcrumb-item"><a href="{{ href }}">{{ label }}</a></li>
+        {% endif %}
+        {% endfor %}
+    </ol>
+</nav>
+
+<div class="card">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-folder2-open"></i> {{ subpath or 'Storage Root' }}</h5>
+        <span class="text-muted">{{ items|length }} 个项目</span>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 50%;">名称</th>
+                    <th>大小</th>
+                    <th>修改时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if subpath %}
+                <tr>
+                    <td>
+                        <a href="/browse/{{ '/'.join(subpath.split('/')[:-1]) }}" class="text-decoration-none">
+                            <i class="bi bi-arrow-90deg-up text-muted"></i> ..
+                        </a>
+                    </td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                {% endif %}
+                {% for item in items %}
+                <tr>
+                    <td>
+                        <a href="/browse/{{ item.path }}" class="text-decoration-none">
+                            {% if item.is_dir %}
+                            <i class="bi bi-folder-fill text-warning"></i>
+                            {% elif item.name.endswith('.cvxp') or item.name.endswith('.zip') %}
+                            <i class="bi bi-file-earmark-zip text-success"></i>
+                            {% elif item.name.endswith('.exe') %}
+                            <i class="bi bi-file-earmark-binary text-danger"></i>
+                            {% elif item.name.endswith('.md') %}
+                            <i class="bi bi-file-earmark-text text-info"></i>
+                            {% elif item.name.endswith('.json') %}
+                            <i class="bi bi-file-earmark-code text-primary"></i>
+                            {% elif item.name.endswith('.png') or item.name.endswith('.ico') %}
+                            <i class="bi bi-file-earmark-image text-success"></i>
+                            {% else %}
+                            <i class="bi bi-file-earmark text-secondary"></i>
+                            {% endif %}
+                            {{ item.name }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if not item.is_dir and item.size is defined %}
+                        <small class="text-muted">{{ human_size(item.size) }}</small>
+                        {% endif %}
+                    </td>
+                    <td><small class="text-muted">{{ item.modified }}</small></td>
+                </tr>
+                {% endfor %}
+                {% if not items and not subpath %}
+                <tr><td colspan="3" class="text-center text-muted py-4">目录为空</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

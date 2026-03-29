@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}插件市场 — ColorVision{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="bi bi-puzzle"></i> 插件市场</h2>
+        <p class="text-muted">浏览、搜索和下载 ColorVision 插件</p>
+    </div>
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="row mb-4">
+    <div class="col-12">
+        <form method="get" action="/plugins" class="d-flex gap-2 flex-wrap">
+            <div class="input-group" style="max-width: 400px;">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" name="q" placeholder="搜索插件名称或 ID..." value="{{ keyword }}">
+            </div>
+            {% if categories %}
+            <select name="category" class="form-select" style="max-width: 200px;">
+                <option value="">所有分类</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {{ 'selected' if cat == category else '' }}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+            <select name="sort" class="form-select" style="max-width: 160px;">
+                <option value="modified" {{ 'selected' if sort_by == 'modified' else '' }}>最近更新</option>
+                <option value="name" {{ 'selected' if sort_by == 'name' else '' }}>名称</option>
+                <option value="downloads" {{ 'selected' if sort_by == 'downloads' else '' }}>下载量</option>
+            </select>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> 搜索</button>
+            {% if keyword or category %}
+            <a href="/plugins" class="btn btn-outline-secondary">清除</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Results count -->
+<div class="row mb-3">
+    <div class="col">
+        <span class="text-muted">共找到 {{ plugins|length }} 个插件</span>
+    </div>
+</div>
+
+<!-- Plugin List -->
+<div class="row">
+    {% for p in plugins %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-start mb-3">
+                    {% if p.has_icon %}
+                    <img src="/plugins/{{ p.id }}/icon" class="plugin-icon me-3" alt="{{ p.name }}">
+                    {% else %}
+                    <div class="plugin-icon-placeholder me-3"><i class="bi bi-puzzle"></i></div>
+                    {% endif %}
+                    <div class="flex-grow-1">
+                        <h5 class="card-title mb-1">
+                            <a href="/plugins/{{ p.id }}" class="text-decoration-none">{{ p.name }}</a>
+                        </h5>
+                        <small class="text-muted">{{ p.id }}</small>
+                    </div>
+                </div>
+                <p class="card-text text-muted small mb-2" style="min-height: 2.5em;">{{ p.description[:120] }}{{ '...' if p.description|length > 120 else '' }}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        {% if p.version %}
+                        <span class="badge bg-primary badge-version">v{{ p.version }}</span>
+                        {% endif %}
+                        {% if p.category %}
+                        <span class="badge bg-secondary badge-version">{{ p.category }}</span>
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">
+                        {% if p.total_downloads > 0 %}
+                        <i class="bi bi-download"></i> {{ p.total_downloads }}
+                        {% endif %}
+                        {% if p.author %}
+                        &middot; {{ p.author }}
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">{{ p.modified[:10] }}</small>
+                    <a href="/plugins/{{ p.id }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-info-circle"></i> 详情
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not plugins %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-puzzle" style="font-size: 3rem;"></i>
+    <p class="mt-3">
+        {% if keyword %}没有找到匹配 "{{ keyword }}" 的插件{% else %}暂无插件{% endif %}
+    </p>
+</div>
+{% endif %}
+{% endblock %}

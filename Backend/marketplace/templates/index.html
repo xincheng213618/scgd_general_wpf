@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}ColorVision Marketplace — 首页{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-palette"></i> ColorVision Marketplace</h2>
+        <p class="text-muted">插件市场 · 文件管理 · 版本发布</p>
+    </div>
+</div>
+
+<!-- App Info -->
+{% if app_info.latest_version %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-app-indicator text-primary"></i> ColorVision 应用</h5>
+                <p class="mb-1">最新版本: <span class="badge bg-primary badge-version">{{ app_info.latest_version }}</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Links -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <a href="/plugins" class="text-decoration-none">
+            <div class="card stat-card">
+                <div class="stat-number"><i class="bi bi-puzzle"></i></div>
+                <div class="stat-label">插件市场</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="/upload" class="text-decoration-none">
+            <div class="card stat-card">
+                <div class="stat-number"><i class="bi bi-cloud-upload"></i></div>
+                <div class="stat-label">上传插件</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="/browse" class="text-decoration-none">
+            <div class="card stat-card">
+                <div class="stat-number"><i class="bi bi-folder2-open"></i></div>
+                <div class="stat-label">文件浏览</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="/api/plugins" class="text-decoration-none">
+            <div class="card stat-card">
+                <div class="stat-number"><i class="bi bi-braces"></i></div>
+                <div class="stat-label">API 接口</div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Storage Overview -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-hdd"></i> 存储目录概览</h5></div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr><th>名称</th><th>类型</th><th>详情</th><th>修改时间</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for item in overview %}
+                        <tr>
+                            <td>
+                                {% if item.type == 'dir' %}
+                                <a href="/browse/{{ item.name }}" class="text-decoration-none">
+                                    <i class="bi bi-folder-fill text-warning"></i> {{ item.name }}
+                                </a>
+                                {% else %}
+                                <a href="/browse/{{ item.name }}" class="text-decoration-none">
+                                    <i class="bi bi-file-earmark text-secondary"></i> {{ item.name }}
+                                </a>
+                                {% endif %}
+                            </td>
+                            <td>{{ '文件夹' if item.type == 'dir' else '文件' }}</td>
+                            <td>
+                                {% if item.type == 'dir' %}
+                                {{ item.file_count }} 个文件
+                                {% else %}
+                                {{ human_size(item.size) }}
+                                {% endif %}
+                            </td>
+                            <td><small>{{ item.modified[:10] }}</small></td>
+                        </tr>
+                        {% endfor %}
+                        {% if not overview %}
+                        <tr><td colspan="4" class="text-center text-muted py-4">存储目录为空或未配置</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

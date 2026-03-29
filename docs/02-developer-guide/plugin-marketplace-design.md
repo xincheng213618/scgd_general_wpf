@@ -15,297 +15,196 @@
 | 认证 | 硬编码 Basic Auth `1:1` | 无安全性 |
 | 插件元数据 | 分散在 manifest.json + 文件系统 | 无集中管理 |
 
-### 1.2 关键文件
+### 1.2 现有文件结构
 
 ```
-客户端:
-├── UI/ColorVision.UI/Plugins/PluginLoader.cs          # 插件加载
-├── UI/ColorVision.UI/Plugins/PluginLoaderrConfig.cs   # 更新地址配置
-├── UI/ColorVision.UI/Plugins/PluginManifest.cs        # manifest 结构
-├── UI/ColorVision.UI.Desktop/Plugins/PluginManager.cs # 插件管理 UI
-├── UI/ColorVision.UI.Desktop/Plugins/PluginInfoVM.cs  # 版本检查逻辑
-├── ColorVision/Update/AutoUpdater.cs                  # 应用更新
-
-构建脚本:
-├── Scripts/build_plugin.py       # 通用插件打包
-├── Scripts/build_spectrum.py     # Spectrum 插件打包
-├── Scripts/build_update.py       # 应用更新包
-├── Scripts/file_manager.py       # HTTP 文件上传工具
+H:\ColorVision\
+├── LATEST_RELEASE              # 应用最新版本号
+├── CHANGELOG.md                # 应用更新日志
+├── History/                    # 历史完整安装包
+├── Update/                     # 增量更新包
+├── Plugins/                    # 插件目录
+│   ├── Spectrum/
+│   │   ├── LATEST_RELEASE
+│   │   ├── manifest.json
+│   │   ├── PackageIcon.png
+│   │   ├── README.md
+│   │   ├── CHANGELOG.md
+│   │   └── Spectrum-1.0.0.1.cvxp
+│   ├── EventVWR/
+│   ├── ProjectBlackMura/
+│   └── ...
+└── Tool/                       # 工具下载
+    ├── BeyondCompare/
+    ├── ImageJ/
+    └── ...
 ```
 
-### 1.3 核心痛点
+## 2. 新方案：Python Flask 后端
 
-1. **N+1 版本检查**: 每个插件独立发 HTTP 请求检查 `LATEST_RELEASE`
-2. **无插件发现**: 用户必须知道插件 ID 才能下载，无法浏览/搜索
-3. **无下载统计**: 不知道哪些插件被使用，无法做数据驱动决策
-4. **无完整性校验**: 下载的 `.cvxp` 没有 hash 验证
-5. **无集中元数据**: 插件信息分散在文件系统各处
-6. **无安全性**: 硬编码认证，任何人可上传
-7. **无兼容性检查**: 客户端需自行验证 `requires` 版本
-
----
-
-## 2. 目标架构
-
-### 2.1 从"插件管理"到"插件市场"
-
-```
-┌─────────────────────────────────────────────────┐
-│                  WPF 客户端                       │
-│  ┌─────────────┐  ┌───────────────────────────┐ │
-│  │ 插件管理器   │  │    插件市场 (新)            │ │
-│  │ (已安装插件) │  │  搜索/浏览/分类/下载        │ │
-│  └──────┬──────┘  └────────────┬──────────────┘ │
-│         │                      │                 │
-│         ▼                      ▼                 │
-│    IMarketplaceService (统一接口)                 │
-│         │                                        │
-│    ┌────┴────────────┐                          │
-│    │ MarketplaceConfig│ (API URL / 降级到旧模式)  │
-│    └─────────────────┘                          │
-└──────────────┬──────────────────────────────────┘
-               │ HTTP/HTTPS
-               ▼
-┌─────────────────────────────────────────────────┐
-│        Plugin Marketplace Backend (新)            │
-│                                                  │
-│  ┌──────────┐  ┌──────────┐  ┌───────────────┐ │
-│  │ Plugins  │  │ Packages │  │   Versions    │ │
-│  │ API      │  │ API      │  │   API         │ │
-│  └────┬─────┘  └────┬─────┘  └──────┬────────┘ │
-│       │              │               │           │
-│       ▼              ▼               ▼           │
-│  ┌─────────────────────────────────────────┐    │
-│  │         PluginService                    │    │
-│  │  (搜索/版本检查/发布/下载统计)            │    │
-│  └─────────────┬───────────────────────────┘    │
-│                │                                 │
-│  ┌─────────────┴──────┐  ┌──────────────────┐  │
-│  │  SQLite / PostgreSQL│  │  File Storage    │  │
-│  │  (元数据 + 统计)    │  │  (.cvxp 包文件)   │  │
-│  └────────────────────┘  └──────────────────┘  │
-└─────────────────────────────────────────────────┘
-               ▲
-               │ HTTP PUT / POST
-┌──────────────┴──────────────────────────────────┐
-│        构建脚本 (CI/CD)                          │
-│  build_plugin.py → POST /api/packages/publish    │
-│  build_spectrum.py → POST /api/packages/publish  │
-│  build_update.py → (应用更新, 暂保留旧模式)        │
-└─────────────────────────────────────────────────┘
-```
-
-### 2.2 API 设计
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/plugins` | 搜索/列出插件（支持 keyword, category, sort, pagination） |
-| GET | `/api/plugins/{pluginId}` | 获取插件详情（含所有版本） |
-| GET | `/api/plugins/{pluginId}/latest-version` | 获取最新版本（纯文本，兼容旧客户端） |
-| POST | `/api/plugins/batch-version-check` | 批量版本检查（一次请求检查所有插件） |
-| GET | `/api/plugins/categories` | 获取所有分类 |
-| GET | `/api/packages/{pluginId}/{version}` | 下载插件包 |
-| POST | `/api/packages/publish` | 发布插件新版本（multipart: 元数据 + .cvxp） |
-
----
-
-## 3. 技术选型
-
-### 3.1 后端技术栈
+### 2.1 技术选型
 
 | 层次 | 选型 | 理由 |
 |------|------|------|
-| **框架** | ASP.NET Core 8.0 Web API | 与 ColorVision 生态一致（C#/.NET），团队熟悉 |
-| **ORM** | Entity Framework Core | .NET 标准 ORM，支持 Migration |
-| **数据库** | SQLite（初期）→ PostgreSQL（生产） | SQLite 零配置快速启动，后期无缝切换 |
-| **文件存储** | 本地文件系统（初期）→ S3/Azure Blob（生产） | StorageService 抽象层，可替换实现 |
-| **API 文档** | Swagger / OpenAPI | 自动生成文档，方便调试 |
-| **认证** | API Key（初期）→ JWT（生产） | 发布端需认证，下载端可匿名 |
-| **容器化** | Docker（可选） | 简化部署 |
+| **语言** | Python 3 | 与已有 build 脚本统一、开发效率高 |
+| **框架** | Flask | 轻量、简单、同时支持 Web UI 和 API |
+| **模板** | Jinja2 + Bootstrap 5 | Flask 内置，响应式 UI |
+| **数据库** | SQLite (python sqlite3) | 零配置，仅用于下载统计 |
+| **文件存储** | 直接使用现有目录结构 | 无需迁移，兼容旧客户端 |
+| **依赖** | 仅 `flask` | 极简依赖 |
 
-### 3.2 为什么选 ASP.NET Core
+### 2.2 为什么选 Python Flask 而不是 C# ASP.NET Core
 
-1. **技术栈统一**: 整个 ColorVision 项目都是 C#/.NET，后端使用同技术栈减少学习成本
-2. **DTO 共享**: 后端 DTO 类型可直接被客户端引用（通过 NuGet 包或项目引用）
-3. **高性能**: ASP.NET Core 在 TechEmpower 基准测试中性能优异
-4. **跨平台**: 可部署在 Windows/Linux
-5. **EF Core**: 成熟的 ORM，支持多种数据库
+1. **与构建脚本一致**: `build_plugin.py`、`build_spectrum.py`、`build_update.py` 都是 Python
+2. **直接使用现有文件结构**: 无需数据迁移、不引入 ORM/EF Core
+3. **Web UI 更简单**: Jinja2 模板 vs WPF 无法做 Web UI
+4. **依赖更少**: 只需 `pip install flask`（vs EF Core + Swagger + 多个 NuGet 包）
+5. **开发效率**: 修改后热重载，无需编译
+6. **部署简单**: `python app.py` 即可运行
 
-### 3.3 客户端集成
+### 2.3 架构图
 
-| 组件 | 说明 |
+```
+┌─────────────────────────────────────────────────────┐
+│                    浏览器 / 用户                      │
+│    ┌───────────┐  ┌──────────┐  ┌────────────────┐ │
+│    │ 插件市场   │  │ 文件浏览  │  │ 上传管理        │ │
+│    │ /plugins  │  │ /browse   │  │ /upload        │ │
+│    └─────┬─────┘  └────┬─────┘  └───────┬────────┘ │
+└──────────┼──────────────┼────────────────┼──────────┘
+           │              │                │
+           ▼              ▼                ▼
+┌─────────────────────────────────────────────────────┐
+│              Flask 后端 (app.py)                      │
+│                                                      │
+│  Web UI 路由              REST API 路由               │
+│  ├── /               ├── /api/plugins                │
+│  ├── /plugins        ├── /api/plugins/{id}           │
+│  ├── /plugins/{id}   ├── /api/plugins/{id}/latest    │
+│  ├── /upload         ├── /api/plugins/batch-check    │
+│  └── /browse         ├── /api/packages/{id}/{ver}    │
+│                      ├── /api/packages/publish       │
+│  旧版兼容路由          └── /api/stats                 │
+│  ├── /D%3A/ColorVision/Plugins/...                   │
+│  └── /upload/ColorVision/...  (PUT)                  │
+│                                                      │
+│  ┌────────────────┐  ┌───────────────────────────┐  │
+│  │ SQLite          │  │ 文件系统 (H:\ColorVision)  │  │
+│  │ (下载统计)       │  │ (插件包 + 元数据)          │  │
+│  └────────────────┘  └───────────────────────────┘  │
+└─────────────────────────────────────────────────────┘
+           ▲              ▲                ▲
+           │              │                │
+┌──────────┼──────────────┼────────────────┼──────────┐
+│  WPF 客户端              构建脚本                     │
+│  (IMarketplaceService)   (publish_plugin.py)         │
+└─────────────────────────────────────────────────────┘
+```
+
+## 3. API 设计
+
+### 3.1 Web UI 页面
+
+| 路由 | 功能 |
 |------|------|
-| `IMarketplaceService` | 市场服务接口（在 ColorVision.UI 中） |
-| `MarketplaceConfig` | 配置（API URL、是否启用） |
-| `MarketplaceClient` | HTTP 客户端实现（在 ColorVision.UI.Desktop 中） |
+| `GET /` | 首页 — 存储概览、快速链接 |
+| `GET /plugins` | 插件市场 — 搜索、分类、排序 |
+| `GET /plugins/{id}` | 插件详情 — 版本列表、README、下载 |
+| `GET /upload` | 上传页面 |
+| `POST /upload` | 处理上传 |
+| `GET /browse[/path]` | 文件浏览器 |
 
----
+### 3.2 REST API（给 WPF 客户端用）
 
-## 4. 数据模型
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/plugins` | 搜索插件（keyword, category, sort, pagination） |
+| GET | `/api/plugins/{id}` | 插件详情 + 所有版本 |
+| GET | `/api/plugins/{id}/latest-version` | 纯文本最新版本（兼容 LATEST_RELEASE） |
+| POST | `/api/plugins/batch-version-check` | 批量版本检查 |
+| GET | `/api/plugins/categories` | 获取所有分类 |
+| GET | `/api/packages/{id}/{version}` | 下载插件包（记录统计） |
+| POST | `/api/packages/publish` | 发布新版本（multipart） |
+| GET | `/api/stats` | 下载统计 |
 
-### 4.1 核心实体
+### 3.3 旧版兼容路由
 
-```
-Plugin (插件)
-├── Id (PK)
-├── PluginId (unique, e.g., "Spectrum")
-├── Name, Description, Author, Url
-├── Category
-├── IconPath
-├── Readme (markdown)
-├── TotalDownloads
-├── IsPublished
-├── CreatedAt, UpdatedAt
-└── Versions[] ──┐
-                  │
-PluginVersion     │
-├── Id (PK)       │
-├── PluginId (FK) ┘
-├── Version (e.g., "1.3.15.8")
-├── RequiresVersion (min engine version)
-├── ChangeLog (markdown)
-├── PackagePath (.cvxp file)
-├── FileSize, FileHash (SHA256)
-├── DownloadCount
-└── CreatedAt
+| 路由模式 | 说明 |
+|----------|------|
+| `/D%3A/ColorVision/Plugins/{path}` | 兼容旧客户端版本检查和下载 |
+| `/D%3A/ColorVision/{path}` | 兼容旧客户端应用更新 |
+| `PUT /upload/{path}` | 兼容旧构建脚本上传 |
 
-DownloadRecord (下载记录)
-├── Id (PK)
-├── PluginVersionId (FK)
-├── ClientIpHash (隐私保护)
-├── ClientVersion
-└── DownloadedAt
+## 4. 快速启动
+
+```bash
+cd Backend/marketplace
+pip install -r requirements.txt
+python app.py --storage H:\ColorVision --port 9999
 ```
 
----
+访问：
+- Web UI: http://localhost:9999
+- 插件市场: http://localhost:9999/plugins
+- API: http://localhost:9999/api/plugins
+- 文件浏览: http://localhost:9999/browse
 
-## 5. 逐步实施路线
-
-### Phase 1: 后端核心 API ✅ (当前)
-
-- [x] 创建 ASP.NET Core Web API 项目
-- [x] 定义数据模型（Plugin, PluginVersion, DownloadRecord）
-- [x] 实现 EF Core DbContext + SQLite
-- [x] 实现核心服务（PluginService, StorageService）
-- [x] 实现 API 控制器（PluginsController, PackagesController）
-- [x] 添加 Swagger 文档
-- [x] 创建客户端接口（IMarketplaceService）和配置（MarketplaceConfig）
-
-### Phase 2: 构建脚本集成
-
-- [ ] 修改 `build_plugin.py` 支持 POST 到新 API
-- [ ] 修改 `build_spectrum.py` 支持 POST 到新 API  
-- [ ] 创建 `Scripts/publish_plugin.py` 新发布脚本
-- [ ] 添加数据迁移工具（从旧文件服务器导入已有插件元数据）
-
-### Phase 3: 客户端集成
-
-- [ ] 实现 `MarketplaceClient`（IMarketplaceService 的 HTTP 实现）
-- [ ] 修改 `PluginInfoVM.CheckVersion()` 使用批量版本检查 API
-- [ ] 修改 `PluginManager.DownloadPackage()` 使用新 API
-- [ ] 添加插件市场浏览 UI（搜索、分类、列表）
-- [ ] 保持向后兼容：当 API 不可用时降级到旧文件服务器模式
-
-### Phase 4: 增强功能
-
-- [ ] 插件分类管理和标签系统
-- [ ] 下载统计仪表板
-- [ ] 插件评分和评论系统
-- [ ] 插件依赖关系自动解析
-- [ ] 兼容性矩阵（哪个插件版本兼容哪个 ColorVision 版本）
-- [ ] 增量更新支持（只传输变更部分）
-
-### Phase 5: 生产部署
-
-- [ ] 切换到 PostgreSQL
-- [ ] 添加 JWT 认证
-- [ ] 添加 API 速率限制
-- [ ] Docker 容器化
-- [ ] CI/CD 自动构建和发布
-- [ ] CDN 加速插件下载
-- [ ] HTTPS 强制
-
----
-
-## 6. 向后兼容策略
-
-新系统必须与现有客户端共存：
-
-1. **`/api/plugins/{pluginId}/latest-version`** 返回纯文本版本字符串，与 `LATEST_RELEASE` 格式完全一致
-2. **`MarketplaceConfig.UseMarketplaceApi`** 控制是否使用新 API
-3. **旧客户端** 继续通过文件服务器获取更新（不受影响）
-4. **新客户端** 优先使用 API，失败时自动降级到旧模式
-5. **构建脚本** 可同时上传到旧文件服务器和新 API
-
----
-
-## 7. 项目结构
+## 5. 项目结构
 
 ```
-Backend/
-└── ColorVision.PluginMarketplace/
-    ├── Controllers/
-    │   ├── PluginsController.cs      # 插件搜索/详情/版本检查
-    │   └── PackagesController.cs     # 包下载/发布
-    ├── Models/
-    │   ├── Plugin.cs                 # 插件实体
-    │   ├── PluginVersion.cs          # 版本实体
-    │   └── DownloadRecord.cs         # 下载记录
-    ├── Data/
-    │   └── MarketplaceDbContext.cs    # EF Core 上下文
-    ├── DTOs/
-    │   └── PluginDtos.cs             # 数据传输对象
-    ├── Services/
-    │   ├── PluginService.cs          # 核心业务逻辑
-    │   └── StorageService.cs         # 文件存储服务
-    ├── Program.cs                    # 应用入口
-    └── appsettings.json              # 配置
-
-UI/ColorVision.UI/Marketplace/
-├── IMarketplaceService.cs            # 市场服务接口
-└── MarketplaceConfig.cs              # 配置
+Backend/marketplace/
+├── app.py              # Flask 应用（Web UI + API + 旧版兼容）
+├── config.json         # 配置文件（storage_path, port 等）
+├── requirements.txt    # Python 依赖（仅 flask）
+├── marketplace.db      # SQLite 下载统计（自动创建，gitignored）
+└── templates/
+    ├── base.html       # 布局模板（导航栏 + Bootstrap 5）
+    ├── index.html      # 首页
+    ├── plugins.html    # 插件市场列表
+    ├── plugin_detail.html  # 插件详情
+    ├── upload.html     # 上传页面
+    └── browse.html     # 文件浏览器
 
 Scripts/
-├── publish_plugin.py                 # 新的发布脚本 (Phase 2)
-└── ...existing scripts...
+├── publish_plugin.py   # 发布脚本（POST /api/packages/publish）
+├── build_plugin.py     # 通用插件打包
+├── build_spectrum.py   # Spectrum 插件打包
+└── build_update.py     # 应用更新包
 ```
 
----
+## 6. 实施路线
 
-## 8. 快速启动
+### Phase 1: 后端核心 ✅ (当前)
 
-### 运行后端
+- [x] Flask 应用 + Web UI + REST API
+- [x] 直接读取现有 Plugins 目录结构
+- [x] 插件市场页面（搜索、分类、排序）
+- [x] 插件详情页面（版本列表、下载）
+- [x] 文件浏览器
+- [x] 上传页面（Web + API）
+- [x] 旧版兼容路由
+- [x] 下载统计（SQLite）
+- [x] publish_plugin.py 发布脚本
 
-```bash
-cd Backend/ColorVision.PluginMarketplace
-dotnet run
-# API 可在 http://localhost:5000 访问
-# Swagger UI: http://localhost:5000/swagger
-```
+### Phase 2: 客户端集成
 
-### 发布插件（使用 curl）
+- [ ] 实现 `MarketplaceClient`（IMarketplaceService 的 HTTP 实现）
+- [ ] 修改 `PluginInfoVM.CheckVersion()` 使用批量版本检查
+- [ ] 修改 `PluginManager.DownloadPackage()` 使用新 API
+- [ ] 添加插件市场浏览 UI（WPF WebView 或原生控件）
+- [ ] 降级逻辑：API 不可用时回退到旧文件服务器
 
-```bash
-curl -X POST http://localhost:5000/api/packages/publish \
-  -F "PluginId=Spectrum" \
-  -F "Name=Spectrum" \
-  -F "Version=1.0.0.1" \
-  -F "Description=Spectrum analysis plugin" \
-  -F "Author=xincheng" \
-  -F "Category=Analysis" \
-  -F "package=@Spectrum-1.0.0.1.cvxp"
-```
+### Phase 3: 增强功能
 
-### 搜索插件
+- [ ] 用户认证（API Key / Token）
+- [ ] 插件评分和评论
+- [ ] 插件依赖自动解析
+- [ ] 兼容性矩阵
+- [ ] CDN / 镜像加速
 
-```bash
-curl "http://localhost:5000/api/plugins?Keyword=spectrum&Category=Analysis"
-```
+### Phase 4: 生产部署
 
-### 批量版本检查
-
-```bash
-curl -X POST http://localhost:5000/api/plugins/batch-version-check \
-  -H "Content-Type: application/json" \
-  -d '{"PluginIds": ["Spectrum", "EventVWR", "ProjectBlackMura"]}'
-```
+- [ ] Gunicorn / uWSGI 部署
+- [ ] Nginx 反向代理
+- [ ] HTTPS
+- [ ] 日志和监控

@@ -31,7 +31,7 @@ import sys
 import requests
 
 
-DEFAULT_API_URL = "http://localhost:5000"
+DEFAULT_API_URL = "http://localhost:9999"
 
 
 def publish_plugin(args):
