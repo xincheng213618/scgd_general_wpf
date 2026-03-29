@@ -3,24 +3,36 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.UI.Desktop.Properties"
         mc:Ignorable="d"
-        Title="Third-Party Apps" Height="700" Width="900"
+        Title="{x:Static properties:Resources.ThirdPartyApps}" Height="700" Width="900"
+        WindowStartupLocation="CenterOwner"
         Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
-    <Grid Margin="10">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Top bar: Search + Refresh -->
-        <DockPanel Grid.Row="0" Margin="0,0,0,10">
-            <Button DockPanel.Dock="Right" Padding="6,4" Margin="5,0,0,0" Click="BtnRefresh_Click" ToolTip="Refresh">
-                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}"/>
+        <!-- Top bar: Search + App count + Refresh -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,12">
+            <Button DockPanel.Dock="Right" Padding="8,6" Margin="8,0,0,0" Click="BtnRefresh_Click"
+                    ToolTip="Refresh" Background="Transparent" BorderThickness="0" Cursor="Hand">
+                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                           Foreground="{DynamicResource GlobalTextBrush}"/>
             </Button>
-            <Border BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="4" Padding="4,2">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+                <TextBlock x:Name="AppCountText" Text="0" FontSize="13" FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryBrush}" VerticalAlignment="Center"/>
+                <TextBlock Text=" apps" FontSize="13" Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.6"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+            <Border BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="6" Padding="6,4"
+                    Background="{DynamicResource RegionBrush}">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Left" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="16"
-                               Foreground="{DynamicResource GlobalTextBrush}" VerticalAlignment="Center" Margin="4,0"/>
+                    <TextBlock DockPanel.Dock="Left" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                               Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.5"
+                               VerticalAlignment="Center" Margin="2,0,6,0"/>
                     <TextBox x:Name="SearchBox" BorderThickness="0" Background="Transparent"
                              Foreground="{DynamicResource GlobalTextBrush}" VerticalContentAlignment="Center"
                              FontSize="14" TextChanged="SearchBox_TextChanged"/>
@@ -31,51 +43,56 @@
         <!-- Split layout: Left navigation + Right content -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="170"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Left: Group navigation -->
-            <ListBox x:Name="GroupListBox" Grid.Column="0" Background="Transparent" BorderThickness="0,0,1,0"
-                     BorderBrush="{DynamicResource BorderBrush}" Margin="0,0,8,0"
-                     SelectionChanged="GroupListBox_SelectionChanged">
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem">
-                        <Setter Property="Padding" Value="10,8"/>
-                        <Setter Property="Margin" Value="0,2"/>
-                        <Setter Property="Cursor" Value="Hand"/>
-                        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="ListBoxItem">
-                                    <Border x:Name="NavBorder" Padding="10,8" Margin="0,1" CornerRadius="4"
-                                            Background="Transparent">
-                                        <TextBlock Text="{Binding}" FontSize="13" Foreground="{DynamicResource GlobalTextBrush}"
-                                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding}"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="NavBorder" Property="Background" Value="{DynamicResource BorderBrush}"/>
-                                        </Trigger>
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="NavBorder" Property="Background" Value="{DynamicResource RegionBrush}"/>
-                                            <Setter TargetName="NavBorder" Property="BorderThickness" Value="2,0,0,0"/>
-                                            <Setter TargetName="NavBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </ListBox.ItemContainerStyle>
-            </ListBox>
+            <Border Grid.Column="0" BorderThickness="0,0,1,0" BorderBrush="{DynamicResource BorderBrush}"
+                    Margin="0,0,8,0">
+                <ListBox x:Name="GroupListBox" Background="Transparent" BorderThickness="0"
+                         SelectionChanged="GroupListBox_SelectionChanged">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Margin" Value="0,1"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="NavBorder" Padding="12,10" CornerRadius="6"
+                                                Background="Transparent">
+                                            <TextBlock Text="{Binding}" FontSize="13"
+                                                       Foreground="{DynamicResource GlobalTextBrush}"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding}"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="NavBorder" Property="Background"
+                                                        Value="{DynamicResource BorderBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="NavBorder" Property="Background"
+                                                        Value="{DynamicResource RegionBrush}"/>
+                                                <Setter TargetName="NavBorder" Property="BorderThickness" Value="3,0,0,0"/>
+                                                <Setter TargetName="NavBorder" Property="BorderBrush"
+                                                        Value="{DynamicResource PrimaryBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
+            </Border>
 
             <!-- Right: App grid -->
             <ListBox x:Name="AppsListBox" Grid.Column="1" Background="Transparent" BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                      MouseDoubleClick="AppsListBox_MouseDoubleClick"
-                     PreviewMouseLeftButtonDown="AppsListBox_PreviewMouseLeftButtonDown"
                      PreviewMouseRightButtonUp="AppsListBox_PreviewMouseRightButtonUp">
                 <ListBox.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -90,34 +107,48 @@
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="ListBoxItem">
-                                    <Border x:Name="ItemBorder" Width="120" Height="120" Margin="8" CornerRadius="6"
+                                    <Border x:Name="ItemBorder" Width="130" Height="130" Margin="6" CornerRadius="8"
                                             BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
                                             Background="{DynamicResource RegionBrush}" Cursor="Hand"
                                             Opacity="{Binding DisplayOpacity}">
+                                        <Border.Effect>
+                                            <DropShadowEffect ShadowDepth="1" BlurRadius="4" Opacity="0.10"
+                                                              Color="Black"/>
+                                        </Border.Effect>
                                         <Grid ToolTip="{Binding Name}">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="*"/>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
-                                            <Image Grid.Row="0" Source="{Binding IconSource}" Width="48" Height="48"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10,0,0"/>
+                                            <Image Grid.Row="0" Source="{Binding IconSource}" Width="44" Height="44"
+                                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Margin="0,14,0,0"/>
                                             <TextBlock Grid.Row="1" Text="{Binding Name}" FontSize="12"
+                                                       FontWeight="Medium"
                                                        Foreground="{DynamicResource GlobalTextBrush}"
-                                                       HorizontalAlignment="Center" Margin="4,2,4,0"
-                                                       TextTrimming="CharacterEllipsis"/>
+                                                       HorizontalAlignment="Center" Margin="6,4,6,0"
+                                                       TextTrimming="CharacterEllipsis" TextAlignment="Center"/>
                                             <TextBlock Grid.Row="2" Text="{Binding StatusText}" FontSize="10"
-                                                       Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.5"
-                                                       HorizontalAlignment="Center" Margin="4,0,4,6"/>
+                                                       Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.45"
+                                                       HorizontalAlignment="Center" Margin="6,0,6,8"/>
                                         </Grid>
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource BorderBrush}"/>
-                                            <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                            <Setter TargetName="ItemBorder" Property="BorderBrush"
+                                                    Value="{DynamicResource PrimaryBrush}"/>
+                                            <Setter TargetName="ItemBorder" Property="Effect">
+                                                <Setter.Value>
+                                                    <DropShadowEffect ShadowDepth="2" BlurRadius="10" Opacity="0.18"
+                                                                      Color="Black"/>
+                                                </Setter.Value>
+                                            </Setter>
                                         </Trigger>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                                            <Setter TargetName="ItemBorder" Property="BorderBrush"
+                                                    Value="{DynamicResource PrimaryBrush}"/>
                                             <Setter TargetName="ItemBorder" Property="BorderThickness" Value="2"/>
                                         </Trigger>
                                     </ControlTemplate.Triggers>

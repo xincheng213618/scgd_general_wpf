@@ -12,6 +12,24 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 {
     public partial class ThirdPartyAppsWindow : Window
     {
+        private static ThirdPartyAppsWindow? _instance;
+
+        public static void ShowInstance()
+        {
+            if (_instance == null || !_instance.IsLoaded)
+            {
+                _instance = new ThirdPartyAppsWindow();
+                _instance.Owner = Application.Current.GetActiveWindow();
+                _instance.Show();
+            }
+            else
+            {
+                if (_instance.WindowState == WindowState.Minimized)
+                    _instance.WindowState = WindowState.Normal;
+                _instance.Activate();
+            }
+        }
+
         private ObservableCollection<ThirdPartyAppInfo> _allApps = new();
         private List<string> _groups = new();
         private const string AllGroupsKey = "All";
@@ -24,12 +42,6 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            Init();
-        }
-
-        public async Task Init()
-        {
-            await Task.Delay(30);
             var manager = ThirdPartyAppManager.GetInstance();
             _allApps = manager.Apps;
             RefreshGroups();
@@ -80,7 +92,9 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                 filtered = filtered.Where(a => a.Name != null && a.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase));
             }
 
-            AppsListBox.ItemsSource = filtered.OrderBy(a => a.Order).ThenBy(a => a.Name).ToList();
+            var result = filtered.OrderBy(a => a.Order).ThenBy(a => a.Name).ToList();
+            AppsListBox.ItemsSource = result;
+            AppCountText.Text = result.Count.ToString();
         }
 
         private void AppsListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -115,14 +129,6 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
         {
             ThirdPartyAppManager.GetInstance().Refresh();
             RefreshGroups();
-        }
-
-        private void AppsListBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            //if (AppsListBox.SelectedItem is ThirdPartyAppInfo app)
-            //{
-            //    app.DoubleClickCommand.Execute(null);
-            //}
         }
     }
 }
