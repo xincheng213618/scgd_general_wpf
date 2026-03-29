@@ -928,4 +928,10 @@ if __name__ == "__main__":
     print(f"Listening on: http://{CONFIG['host']}:{CONFIG['port']}")
     print(f"Plugins dir:  {STORAGE / 'Plugins'}")
 
-    app.run(host=CONFIG["host"], port=CONFIG["port"], debug=CONFIG["debug"])
+    # Note: debug=True should only be used during development (--debug flag).
+    # In production, use a WSGI server like gunicorn instead of app.run().
+    if CONFIG["debug"]:
+        print("WARNING: Running in debug mode. Do not use in production.")
+        app.run(host=CONFIG["host"], port=CONFIG["port"], debug=True)
+    else:
+        app.run(host=CONFIG["host"], port=CONFIG["port"])
