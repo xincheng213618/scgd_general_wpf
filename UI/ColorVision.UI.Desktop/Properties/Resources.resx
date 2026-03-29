@@ -670,4 +670,16 @@
   <data name="FeedbackSent" xml:space="preserve">
     <value>反馈已发送成功，感谢您的反馈！</value>
   </data>
+  <data name="DiagnosticItems" xml:space="preserve">
+    <value>诊断项目</value>
+  </data>
+  <data name="CollectingLogs" xml:space="preserve">
+    <value>正在收集: {0}...</value>
+  </data>
+  <data name="Uploading" xml:space="preserve">
+    <value>上传中 {0}%</value>
+  </data>
+  <data name="SendFailed" xml:space="preserve">
+    <value>发送失败: {0}</value>
+  </data>
 </root>

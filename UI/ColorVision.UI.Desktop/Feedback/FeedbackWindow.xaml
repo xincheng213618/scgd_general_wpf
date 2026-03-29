@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.SendFeedback}" 
         Background="{DynamicResource GlobalBackground}" 
-        Height="560" Width="520" 
+        Height="640" Width="520" 
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
         Initialized="Window_Initialized">
@@ -15,6 +15,8 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -27,25 +29,47 @@
         <!-- Message area -->
         <TextBox x:Name="MessageTextBox" Grid.Row="1" 
                  AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                 Margin="0,0,0,10" MinHeight="100"
+                 Margin="0,0,0,10" MinHeight="80"
                  Text="{x:Static properties:Resources.FeedbackPlaceholder}"
                  GotFocus="MessageTextBox_GotFocus"/>
 
-        <!-- Attached files list -->
+        <!-- Diagnostic items list with checkboxes -->
         <Grid Grid.Row="2" Margin="0,0,0,5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{x:Static properties:Resources.DiagnosticItems}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+            <Button x:Name="PackLogsButton" Grid.Column="1" Content="{x:Static properties:Resources.PackLogs}" Click="PackLogs_Click" Padding="8,3"/>
+        </Grid>
+
+        <ListBox x:Name="CollectorsList" Grid.Row="3" MaxHeight="130" Margin="0,0,0,10"
+                 BorderThickness="1" BorderBrush="{DynamicResource GlobalBorder}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <CheckBox IsChecked="{Binding IsChecked}" Margin="2">
+                        <TextBlock>
+                            <Run Text="{Binding Name, Mode=OneWay}"/>
+                            <Run Text="{Binding Description, Mode=OneWay}" Foreground="Gray"/>
+                        </TextBlock>
+                    </CheckBox>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Attached files list -->
+        <Grid Grid.Row="4" Margin="0,0,0,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock Text="{x:Static properties:Resources.Attachments}" VerticalAlignment="Center" FontWeight="SemiBold"/>
             <Button x:Name="AddFileButton" Grid.Column="1" Content="{x:Static properties:Resources.AddFile}" Click="AddFile_Click" Margin="5,0" Padding="8,3"/>
-            <Button x:Name="AddScreenshotButton" Grid.Column="2" Content="{x:Static properties:Resources.CaptureScreenshot}" Click="CaptureScreenshot_Click" Margin="0,0,5,0" Padding="8,3"/>
-            <Button x:Name="PackLogsButton" Grid.Column="3" Content="{x:Static properties:Resources.PackLogs}" Click="PackLogs_Click" Padding="8,3"/>
+            <Button x:Name="AddScreenshotButton" Grid.Column="2" Content="{x:Static properties:Resources.CaptureScreenshot}" Click="CaptureScreenshot_Click" Padding="8,3"/>
         </Grid>
 
-        <ListBox x:Name="AttachmentsList" Grid.Row="3" MaxHeight="120" Margin="0,0,0,10">
+        <ListBox x:Name="AttachmentsList" Grid.Row="5" MaxHeight="100" Margin="0,0,0,10">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">
@@ -57,11 +81,19 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <!-- Status -->
-        <TextBlock x:Name="StatusText" Grid.Row="4" Foreground="Gray" Margin="0,0,0,10"/>
+        <!-- Progress bar and Status -->
+        <Grid Grid.Row="6" Margin="0,0,0,10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <ProgressBar x:Name="UploadProgressBar" Height="18" Minimum="0" Maximum="100" Value="0"
+                         Visibility="Collapsed"/>
+            <TextBlock x:Name="StatusText" Grid.Row="1" Foreground="Gray" Margin="0,5,0,0"/>
+        </Grid>
 
         <!-- Buttons -->
-        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+        <StackPanel Grid.Row="7" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Content="{x:Static properties:Resources.SendFeedback}" x:Name="SendButton" Click="Send_Click" Padding="15,5" Margin="0,0,10,0" IsDefault="True"/>
             <Button Content="{x:Static properties:Resources.Cancel}" Click="Cancel_Click" Padding="15,5" IsCancel="True"/>
         </StackPanel>
