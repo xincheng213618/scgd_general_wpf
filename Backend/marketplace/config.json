@@ -1,0 +1,13 @@
+{
+    "storage_path": "H:\\ColorVision",
+    "host": "0.0.0.0",
+    "port": 9998,
+    "debug": false,
+    "secret_key": "xincheng",
+    "app_release_keep_count": 5,
+    "plugin_package_keep_count": 3,
+    "upload_auth": {
+        "username": "xincheng",
+        "password": "xincheng"
+    }
+}

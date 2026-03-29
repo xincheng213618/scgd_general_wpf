@@ -1,0 +1,74 @@
+<div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th style="width: 50%;">名称</th>
+                <th>大小</th>
+                <th>修改时间</th>
+                <th class="text-end">操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if show_parent_link and subpath %}
+            <tr>
+                <td>
+                    <a href="/browse/{{ parent_subpath }}" class="text-decoration-none">
+                        <i class="bi bi-arrow-90deg-up text-muted"></i> ..
+                    </a>
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            {% endif %}
+            {% for item in items %}
+            <tr>
+                <td>
+                    {% if item.is_dir %}
+                    <a href="/browse/{{ item.path }}" class="text-decoration-none">
+                    {% else %}
+                    <a href="/download/{{ item.path }}" class="text-decoration-none">
+                    {% endif %}
+                        {% if item.is_dir %}
+                        <i class="bi bi-folder-fill text-warning"></i>
+                        {% elif item.name.endswith('.cvxp') or item.name.endswith('.zip') or item.name.endswith('.cvx') %}
+                        <i class="bi bi-file-earmark-zip text-success"></i>
+                        {% elif item.name.endswith('.exe') %}
+                        <i class="bi bi-file-earmark-binary text-danger"></i>
+                        {% elif item.name.endswith('.md') %}
+                        <i class="bi bi-file-earmark-text text-info"></i>
+                        {% elif item.name.endswith('.json') %}
+                        <i class="bi bi-file-earmark-code text-primary"></i>
+                        {% elif item.name.endswith('.png') or item.name.endswith('.ico') %}
+                        <i class="bi bi-file-earmark-image text-success"></i>
+                        {% else %}
+                        <i class="bi bi-file-earmark text-secondary"></i>
+                        {% endif %}
+                        {{ item.name }}
+                    </a>
+                </td>
+                <td>
+                    {% if not item.is_dir and item.size is defined %}
+                    <small class="text-muted">{{ human_size(item.size) }}</small>
+                    {% endif %}
+                </td>
+                <td><small class="text-muted">{{ item.modified }}</small></td>
+                <td class="text-end">
+                    {% if item.is_dir %}
+                    <a href="/browse/{{ item.path }}" class="btn btn-sm btn-outline-secondary">浏览</a>
+                    {% else %}
+                    <a href="/download/{{ item.path }}" class="btn btn-sm btn-outline-primary">下载</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not items %}
+            <tr>
+                <td colspan="4" class="text-center text-muted py-4">{{ empty_message }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+

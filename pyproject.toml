@@ -1,0 +1,12 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.14"
+dependencies = [
+    "flask>=3.1.3",
+    "markdown>=3.8",
+    "pefile>=2024.8.26",
+    "requests>=2.32.0",
+    "tqdm>=4.67.0",
+]

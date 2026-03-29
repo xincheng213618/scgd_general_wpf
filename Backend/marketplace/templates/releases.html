@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}版本档案 — ColorVision{% endblock %}
+
+{% block content %}
+<section class="hero-panel mb-4">
+    <div class="row g-4 align-items-center position-relative">
+        <div class="col-lg-8">
+            <span class="eyebrow mb-3"><i class="bi bi-archive"></i> 应用版本档案</span>
+            <h1 class="display-5 fw-semibold mb-3">当前版本与历史安装包，都应该是产品的一部分。</h1>
+            <p class="page-lead mb-4">
+                这里聚合根目录保留版本和 `History` 中的归档文件。建议通过“上传即归档 + 定期补偿整理”来维护结构，而不是继续手工搬文件。
+            </p>
+            <div class="hero-actions">
+                <a href="{{ '/download/' ~ app_info.latest_release.relative_path if app_info.latest_release else '#' }}" class="btn btn-light btn-lg {% if not app_info.latest_release %}disabled{% endif %}">
+                    <i class="bi bi-download me-2"></i>下载最新安装包
+                </a>
+                <a href="/browse/History" class="btn btn-outline-light btn-lg"><i class="bi bi-folder2-open me-2"></i>浏览完整 History</a>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="hero-aside">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="metric-card">
+                            <span class="metric-label">根目录版本</span>
+                            <div class="metric-value">{{ app_info.current_count }}</div>
+                            <div class="metric-note">保留在 H:\ColorVision 根目录</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-card">
+                            <span class="metric-label">归档文件</span>
+                            <div class="metric-value">{{ app_info.archive_count }}</div>
+                            <div class="metric-note">History 中可回溯下载</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="metric-card">
+                            <span class="metric-label">版本分支</span>
+                            <div class="metric-value">{{ app_info.release_branch_count }}</div>
+                            <div class="metric-note">按主版本/分支进行归档组织</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="row g-4">
+    <div class="col-xl-5">
+        <section class="panel-card p-4 h-100">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title"><i class="bi bi-lightning-charge"></i>根目录保留版本</h2>
+                    <div class="section-subtitle mt-2">建议只保留最近 {{ app_info.current_count }} 个用于快速下载，其余交给 History。</div>
+                </div>
+            </div>
+
+            <div class="release-list">
+                {% for release in app_info.current_releases %}
+                <div class="release-row">
+                    <div class="release-row-main">
+                        <div class="release-icon"><i class="bi bi-download"></i></div>
+                        <div>
+                            <div class="release-title">ColorVision {{ release.version }}</div>
+                            <div class="release-meta">{{ release.filename }} · {{ release.kind }} · {{ human_size(release.size) }}</div>
+                            <div class="release-meta">{{ release.modified[:19] }}</div>
+                        </div>
+                    </div>
+                    <div class="release-actions">
+                        <span class="surface-tag"><i class="bi bi-lightning-charge"></i>当前</span>
+                        <a href="/download/{{ release.relative_path }}" class="btn btn-sm btn-primary"><i class="bi bi-download me-1"></i>下载</a>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not app_info.current_releases %}
+                <div class="text-center text-muted py-5">未检测到根目录版本文件。</div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-7">
+        <section class="panel-card p-4 h-100">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title"><i class="bi bi-clock-history"></i>归档历史（最近 120 项）</h2>
+                    <div class="section-subtitle mt-2">完整历史仍可通过文件浏览器进入 `History/` 查看。</div>
+                </div>
+                <a href="/browse/History" class="btn btn-sm btn-outline-primary">打开 History</a>
+            </div>
+
+            <div class="release-list">
+                {% for release in app_info.archive_recent %}
+                <div class="release-row">
+                    <div class="release-row-main">
+                        <div class="release-icon"><i class="bi bi-archive"></i></div>
+                        <div>
+                            <div class="release-title">ColorVision {{ release.version }}</div>
+                            <div class="release-meta">{{ release.relative_path }}</div>
+                            <div class="release-meta">{{ human_size(release.size) }} · {{ release.modified[:19] }}</div>
+                        </div>
+                    </div>
+                    <div class="release-actions">
+                        <span class="surface-tag"><i class="bi bi-diagram-3"></i>{{ release.branch }}</span>
+                        <a href="/download/{{ release.relative_path }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download me-1"></i>下载</a>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not app_info.archive_recent %}
+                <div class="text-center text-muted py-5">当前还没有归档历史文件。</div>
+                {% endif %}
+            </div>
+
+            {% if app_info.archive_more_count > 0 %}
+            <div class="mt-4 text-soft small text-center">还有 {{ app_info.archive_more_count }} 项未在此页展示，可通过文件浏览器进入 `History/` 查看完整内容。</div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}
+

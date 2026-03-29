@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Desktop.Download;
+using ColorVision.UI.Desktop.Marketplace;
 using ColorVision.UI.Plugins;
 using log4net;
 using Microsoft.Win32;
@@ -73,7 +74,8 @@ namespace ColorVision.UI.Desktop.Plugins
             {
                 if (item.Value.Manifest != null)
                 {
-                    PluginInfoVM info = new PluginInfoVM(item.Value);
+                    // skipIndividualCheck=true: batch check will provide versions
+                    PluginInfoVM info = new PluginInfoVM(item.Value, skipIndividualCheck: true);
                     info.PropertyChanged += (s, e) =>
                     {
                         if (e.PropertyName == nameof(PluginInfoVM.HasUpdate))
@@ -84,6 +86,40 @@ namespace ColorVision.UI.Desktop.Plugins
                     Plugins.Add(info);
                 }
             }
+
+            // Use batch version check via marketplace API for efficiency
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var client = MarketplaceClient.GetInstance();
+                    var pluginIds = Plugins.Where(p => p.PluginInfo.Enabled && p.PackageName != null)
+                                          .Select(p => p.PackageName!).ToList();
+                    if (pluginIds.Count > 0)
+                    {
+                        var versions = await client.BatchVersionCheckAsync(pluginIds);
+                        foreach (var plugin in Plugins)
+                        {
+                            if (plugin.PackageName != null && versions.TryGetValue(plugin.PackageName, out string? ver) && !string.IsNullOrEmpty(ver))
+                            {
+                                plugin.SetVersionFromBatchCheck(ver);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log.Warn($"Batch version check failed, falling back to individual checks: {ex.Message}");
+                    // Batch check failed — fall back to individual checks for enabled plugins
+                    foreach (var plugin in Plugins)
+                    {
+                        if (plugin.PluginInfo.Enabled)
+                        {
+                            _ = Task.Run(() => plugin.CheckVersion());
+                        }
+                    }
+                }
+            });
  
             OpenStoreCommand = new RelayCommand(a => OpenStore());
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
@@ -115,6 +151,7 @@ namespace ColorVision.UI.Desktop.Plugins
             string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
             var manager = Aria2cDownloadManager.GetInstance();
             string auth = DownloadFileConfig.Instance.Authorization;
+            var client = MarketplaceClient.GetInstance();
 
             // Track all download tasks and their completed file paths
             int totalCount = pluginsToUpdate.Count;
@@ -122,11 +159,42 @@ namespace ColorVision.UI.Desktop.Plugins
             var completedPaths = new System.Collections.Concurrent.ConcurrentBag<string>();
             object lockObj = new();
 
-            DownloadWindow.ShowInstance();
-
+            // First, check which files already exist (skip redundant downloads)
+            var pluginsNeedingDownload = new List<PluginInfoVM>();
             foreach (var plugin in pluginsToUpdate)
             {
-                string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{plugin.PackageName}/{plugin.PackageName}-{plugin.LastVersion}.cvxp";
+                string? existingFile = MarketplaceClient.GetExistingFileIfValid(downloadDir, plugin.PackageName, plugin.LastVersion.ToString(), null);
+                if (existingFile != null)
+                {
+                    log.Info($"Plugin {plugin.PackageName} v{plugin.LastVersion} already exists at {existingFile}, skipping download.");
+                    completedPaths.Add(existingFile);
+                    lock (lockObj) { completedCount++; }
+                }
+                else
+                {
+                    pluginsNeedingDownload.Add(plugin);
+                }
+            }
+
+            if (pluginsNeedingDownload.Count == 0)
+            {
+                // All files already exist, apply updates directly
+                var paths = completedPaths.ToArray();
+                if (paths.Length > 0)
+                {
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        PluginUpdater.UpdatePlugin(paths);
+                    });
+                }
+                return;
+            }
+
+            DownloadWindow.ShowInstance();
+
+            foreach (var plugin in pluginsNeedingDownload)
+            {
+                string url = client.GetDownloadUrl(plugin.PackageName, plugin.LastVersion.ToString());
 
                 manager.AddDownload(url, downloadDir, auth, task =>
                 {
@@ -184,20 +252,36 @@ namespace ColorVision.UI.Desktop.Plugins
         private string _SearchName;
         public async void DownloadPackage()
         {
-            string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath + SearchName + "/LATEST_RELEASE";
-
             Version version;
+            var client = MarketplaceClient.GetInstance();
+
+            // Try marketplace API first
             try
             {
-                using var httpClient = new System.Net.Http.HttpClient();
-                var byteArray = System.Text.Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization);
-                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-                string versionString = await httpClient.GetStringAsync(LatestReleaseUrl);
-                version = new Version(versionString.Trim());
+                string? versionString = await client.GetLatestVersionAsync(SearchName);
+                version = !string.IsNullOrWhiteSpace(versionString) ? new Version(versionString.Trim()) : new Version();
             }
             catch
             {
                 version = new Version();
+            }
+
+            // Fallback to legacy LATEST_RELEASE if API failed
+            if (version == new Version())
+            {
+                string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath + SearchName + "/LATEST_RELEASE";
+                try
+                {
+                    using var httpClient = new System.Net.Http.HttpClient();
+                    var byteArray = System.Text.Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization);
+                    httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                    string versionString = await httpClient.GetStringAsync(LatestReleaseUrl);
+                    version = new Version(versionString.Trim());
+                }
+                catch
+                {
+                    version = new Version();
+                }
             }
 
             if (version == new Version())
@@ -211,7 +295,17 @@ namespace ColorVision.UI.Desktop.Plugins
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), string.Format(UI.Properties.Resources.FoundProjectDownloadConfirm, SearchName, $"{ColorVision.UI.Properties.Resources.Version}{version}"), "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
-                    string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{SearchName}/{SearchName}-{version}.cvxp";
+
+                    // Check if file already exists, skip redundant download
+                    string? existingFile = MarketplaceClient.GetExistingFileIfValid(downloadDir, SearchName, version.ToString(), null);
+                    if (existingFile != null)
+                    {
+                        log.Info($"Plugin {SearchName} v{version} already downloaded at {existingFile}, applying directly.");
+                        PluginUpdater.UpdatePlugin(existingFile);
+                        return;
+                    }
+
+                    string url = client.GetDownloadUrl(SearchName, version.ToString());
 
                     DownloadWindow.ShowInstance();
                     Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>

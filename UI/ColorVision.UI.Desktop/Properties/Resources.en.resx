@@ -645,4 +645,64 @@
   <data name="ConfirmDeleteFile" xml:space="preserve">
     <value>The file exists on disk. Do you also want to delete the file?</value>
   </data>
+  <data name="Installed" xml:space="preserve">
+    <value>Installed</value>
+  </data>
+  <data name="Marketplace" xml:space="preserve">
+    <value>Marketplace</value>
+  </data>
+  <data name="MarketplacePluginCount" xml:space="preserve">
+    <value>{0} plugins available</value>
+  </data>
+  <data name="MarketplaceLoadFailed" xml:space="preserve">
+    <value>Failed to load marketplace</value>
+  </data>
+  <data name="SendFeedback" xml:space="preserve">
+    <value>Send Feedback</value>
+  </data>
+  <data name="FeedbackPlaceholder" xml:space="preserve">
+    <value>Describe the issue or suggestion...</value>
+  </data>
+  <data name="Attachments" xml:space="preserve">
+    <value>Attachments</value>
+  </data>
+  <data name="AddFile" xml:space="preserve">
+    <value>Add File</value>
+  </data>
+  <data name="CaptureScreenshot" xml:space="preserve">
+    <value>Screenshot</value>
+  </data>
+  <data name="PackLogs" xml:space="preserve">
+    <value>Pack Logs</value>
+  </data>
+  <data name="ScreenshotCaptured" xml:space="preserve">
+    <value>Screenshot captured</value>
+  </data>
+  <data name="LogsPackaged" xml:space="preserve">
+    <value>Logs packaged: {0}</value>
+  </data>
+  <data name="FeedbackEmptyWarning" xml:space="preserve">
+    <value>Please enter a message or add attachments</value>
+  </data>
+  <data name="Sending" xml:space="preserve">
+    <value>Sending</value>
+  </data>
+  <data name="FeedbackSent" xml:space="preserve">
+    <value>Feedback sent successfully. Thank you!</value>
+  </data>
+  <data name="DiagnosticItems" xml:space="preserve">
+    <value>Diagnostic Items</value>
+  </data>
+  <data name="CollectingLogs" xml:space="preserve">
+    <value>Collecting: {0}...</value>
+  </data>
+  <data name="Uploading" xml:space="preserve">
+    <value>Uploading {0}%</value>
+  </data>
+  <data name="SendFailed" xml:space="preserve">
+    <value>Send failed: {0}</value>
+  </data>
+  <data name="ServerAddressNotConfigured" xml:space="preserve">
+    <value>Server address not configured</value>
+  </data>
 </root>

@@ -13,7 +13,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
 
         public override void Execute()
         {
-            new ThirdPartyAppsWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            ThirdPartyAppsWindow.ShowInstance();
         }
     }
 
@@ -29,7 +29,7 @@ namespace ColorVision.UI.Desktop.ThirdPartyApps
                     Order = 200,
                     Command = new RelayCommand(a =>
                     {
-                        new ThirdPartyAppsWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+                        ThirdPartyAppsWindow.ShowInstance();
                     }),
                     Icon = new System.Windows.Controls.TextBlock
                     {
