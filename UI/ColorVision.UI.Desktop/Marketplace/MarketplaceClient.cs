@@ -23,11 +23,10 @@ namespace ColorVision.UI.Desktop.Marketplace
             lock (_locker) { return _instance ??= new MarketplaceClient(); }
         }
 
-        private readonly HttpClient _httpClient;
+        private static readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(15) };
 
         public MarketplaceClient()
         {
-            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
         }
 
         /// <summary>

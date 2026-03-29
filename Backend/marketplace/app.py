@@ -336,13 +336,16 @@ def get_plugin_info(
             # Extract version from filename: PluginName-1.2.3.4.cvxp
             m = re.match(rf"^{re.escape(plugin_id)}-(.+)\.cvxp$", f.name)
             ver = m.group(1) if m else f.stem
-            file_hash = hashlib.sha256(f.read_bytes()).hexdigest()
+            file_hash = hashlib.sha256()
+            with open(f, "rb") as fh:
+                for chunk in iter(lambda: fh.read(8192), b""):
+                    file_hash.update(chunk)
             packages.append(
                 {
                     "version": ver,
                     "filename": f.name,
                     "size": f.stat().st_size,
-                    "fileHash": file_hash,
+                    "fileHash": file_hash.hexdigest(),
                     "modified": datetime.fromtimestamp(
                         f.stat().st_mtime, tz=timezone.utc
                     ).isoformat(),

@@ -2,6 +2,7 @@
 using ColorVision.Themes;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
+using log4net;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,6 +18,7 @@ namespace ColorVision.UI.Desktop.Plugins
     /// </summary>
     public partial class PluginManagerWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(PluginManagerWindow));
 
         public PluginManagerWindow()
         {
@@ -48,7 +50,7 @@ namespace ColorVision.UI.Desktop.Plugins
                         });
                     }
                 }
-                catch { /* Keep default list on failure */ }
+                catch (Exception ex) { log.Debug($"Failed to populate search ComboBox from marketplace: {ex.Message}"); }
             });
         }
 

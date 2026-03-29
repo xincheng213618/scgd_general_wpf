@@ -92,7 +92,7 @@ namespace ColorVision.UI.Desktop.Plugins
                 try
                 {
                     var client = MarketplaceClient.GetInstance();
-                    var pluginIds = Plugins.Where(p => p.PluginInfo.Enabled && !string.IsNullOrEmpty(p.PackageName))
+                    var pluginIds = Plugins.Where(p => p.PluginInfo.Enabled && p.PackageName != null)
                                           .Select(p => p.PackageName!).ToList();
                     if (pluginIds.Count > 0)
                     {
