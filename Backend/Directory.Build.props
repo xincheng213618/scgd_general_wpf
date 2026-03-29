@@ -1,0 +1,8 @@
+<Project>
+  <!-- Override root Directory.Build.props for backend projects (cross-platform, non-WPF) -->
+  <PropertyGroup>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <Platforms>AnyCPU</Platforms>
+    <EnableWindowsTargeting>false</EnableWindowsTargeting>
+  </PropertyGroup>
+</Project>
