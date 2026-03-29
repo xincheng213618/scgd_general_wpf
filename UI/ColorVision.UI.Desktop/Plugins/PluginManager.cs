@@ -62,6 +62,7 @@ namespace ColorVision.UI.Desktop.Plugins
 
         // 在 PluginLoader 类中添加
         public RelayCommand UpdateAllCommand { get; set; }
+        public RelayCommand SendFeedbackCommand { get; set; }
 
         public int UpdateAvailableCount { get => _UpdateAvailableCount; set { _UpdateAvailableCount = value; OnPropertyChanged(); } }
         private int _UpdateAvailableCount;
@@ -119,6 +120,7 @@ namespace ColorVision.UI.Desktop.Plugins
             OpenViewDllViersionCommand = new RelayCommand(a => OpenViewDllViersion());
             RestartCommand = new RelayCommand(a => Restart());
             UpdateAllCommand = new RelayCommand(a => UpdateAll());
+            SendFeedbackCommand = new RelayCommand(a => new Feedback.FeedbackWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
         public void UpdateAll()
         {

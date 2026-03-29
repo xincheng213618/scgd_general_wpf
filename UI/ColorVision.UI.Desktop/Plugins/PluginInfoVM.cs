@@ -195,8 +195,21 @@ namespace ColorVision.UI.Desktop.Plugins
 
             string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
 
+            // Try to get expected hash from marketplace API for verification
+            string? expectedHash = null;
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var client = MarketplaceClient.GetInstance();
+                    var detail = await client.GetPluginDetailAsync(PackageName);
+                    expectedHash = detail?.Versions?.FirstOrDefault(v => v.Version == LastVersion.ToString())?.FileHash;
+                }
+                catch { }
+            }).Wait(TimeSpan.FromSeconds(5));
+
             // Check if the file already exists with matching hash (skip redundant download)
-            string? existingFile = MarketplaceClient.GetExistingFileIfValid(downloadDir, PackageName, LastVersion.ToString(), null);
+            string? existingFile = MarketplaceClient.GetExistingFileIfValid(downloadDir, PackageName, LastVersion.ToString(), expectedHash);
             if (existingFile != null)
             {
                 log.Info($"Plugin {PackageName} v{LastVersion} already downloaded at {existingFile}, applying directly.");
@@ -215,6 +228,17 @@ namespace ColorVision.UI.Desktop.Plugins
             {
                 if (task.Status == DownloadStatus.Completed)
                 {
+                    // Verify hash if available
+                    if (!string.IsNullOrEmpty(expectedHash) && !MarketplaceClient.VerifyFileHash(task.SavePath, expectedHash))
+                    {
+                        log.Error($"Hash mismatch for {PackageName} v{LastVersion}! Expected: {expectedHash}, Actual: {MarketplaceClient.ComputeFileHash(task.SavePath)}");
+                        Application.Current?.Dispatcher.Invoke(() =>
+                            MessageBox.Show(Application.Current.GetActiveWindow(),
+                                $"下载的文件哈希校验失败，文件可能已损坏。\nExpected: {expectedHash}",
+                                "Hash Verification Failed", MessageBoxButton.OK, MessageBoxImage.Error));
+                        return;
+                    }
+
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
                         PluginUpdater.UpdatePlugin(task.SavePath);

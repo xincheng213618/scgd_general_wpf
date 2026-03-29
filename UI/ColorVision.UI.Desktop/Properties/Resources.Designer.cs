@@ -1641,5 +1641,140 @@ namespace ColorVision.UI.Desktop.Properties {
                 return ResourceManager.GetString("zh-Hant", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 已安装 的本地化字符串。
+        /// </summary>
+        public static string Installed {
+            get {
+                return ResourceManager.GetString("Installed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 浏览商店 的本地化字符串。
+        /// </summary>
+        public static string Marketplace {
+            get {
+                return ResourceManager.GetString("Marketplace", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 共 {0} 个插件 的本地化字符串。
+        /// </summary>
+        public static string MarketplacePluginCount {
+            get {
+                return ResourceManager.GetString("MarketplacePluginCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 加载商店失败 的本地化字符串。
+        /// </summary>
+        public static string MarketplaceLoadFailed {
+            get {
+                return ResourceManager.GetString("MarketplaceLoadFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发送反馈 的本地化字符串。
+        /// </summary>
+        public static string SendFeedback {
+            get {
+                return ResourceManager.GetString("SendFeedback", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请描述您遇到的问题或建议... 的本地化字符串。
+        /// </summary>
+        public static string FeedbackPlaceholder {
+            get {
+                return ResourceManager.GetString("FeedbackPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 附件 的本地化字符串。
+        /// </summary>
+        public static string Attachments {
+            get {
+                return ResourceManager.GetString("Attachments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 添加文件 的本地化字符串。
+        /// </summary>
+        public static string AddFile {
+            get {
+                return ResourceManager.GetString("AddFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 截图 的本地化字符串。
+        /// </summary>
+        public static string CaptureScreenshot {
+            get {
+                return ResourceManager.GetString("CaptureScreenshot", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打包日志 的本地化字符串。
+        /// </summary>
+        public static string PackLogs {
+            get {
+                return ResourceManager.GetString("PackLogs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 截图已添加 的本地化字符串。
+        /// </summary>
+        public static string ScreenshotCaptured {
+            get {
+                return ResourceManager.GetString("ScreenshotCaptured", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 日志已打包: {0} 的本地化字符串。
+        /// </summary>
+        public static string LogsPackaged {
+            get {
+                return ResourceManager.GetString("LogsPackaged", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 请输入反馈信息或添加附件 的本地化字符串。
+        /// </summary>
+        public static string FeedbackEmptyWarning {
+            get {
+                return ResourceManager.GetString("FeedbackEmptyWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发送中 的本地化字符串。
+        /// </summary>
+        public static string Sending {
+            get {
+                return ResourceManager.GetString("Sending", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 反馈已发送成功 的本地化字符串。
+        /// </summary>
+        public static string FeedbackSent {
+            get {
+                return ResourceManager.GetString("FeedbackSent", resourceCulture);
+            }
+        }
     }
 }

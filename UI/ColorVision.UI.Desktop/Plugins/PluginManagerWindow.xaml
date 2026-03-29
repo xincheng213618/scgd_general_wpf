@@ -41,7 +41,7 @@
                                 </Border>
                             </StackPanel>
                         </Button>
-                       
+                        <Button Content="{x:Static properties:Resources.SendFeedback}" Command="{Binding SendFeedbackCommand}" Margin="0,0,5,0"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                         <Grid>
@@ -99,60 +99,107 @@
 
             </Grid>
 
-            <ListView x:Name="ListViewPlugins" Background="Transparent"  ItemsSource="{Binding Plugins}" Margin="5,0,5,5"  SelectionChanged="ListViewPlugins_SelectionChanged" Grid.Row="1" Padding="2">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding HasUpdate}" Value="True">
-                                <!--<Setter Property="Background" Value="#FFF3E0"/>-->
-                                <Setter Property="BorderBrush" Value="#FFA726"/>
-                                <!--<Setter Property="Foreground" Value="Black"/>-->
-                                <Setter Property="BorderThickness" Value="1"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView>
-                        <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
+            <!-- Tabbed panel: Installed / Marketplace -->
+            <TabControl x:Name="MainTabControl" Grid.Row="1" Margin="5,0,5,5" SelectionChanged="MainTabControl_SelectionChanged">
+                <TabItem Header="{x:Static properties:Resources.Installed}">
+                    <ListView x:Name="ListViewPlugins" Background="Transparent"  ItemsSource="{Binding Plugins}" SelectionChanged="ListViewPlugins_SelectionChanged" Padding="2">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
+                                <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasUpdate}" Value="True">
+                                        <Setter Property="BorderBrush" Value="#FFA726"/>
+                                        <Setter Property="BorderThickness" Value="1"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
                             </Style>
-                        </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn Header="{x:Static properties:Resources.PluginName}" >
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:ToggleSwitch  IsChecked="{Binding PluginInfo.Enabled}"  Margin="0,0,10,0" />
-                                        <Image Source="{Binding Icon}" Width="20" Margin="0,0,10,0"/>
-                                        <TextBlock  Text="{Binding Name,Mode=OneWay}"/>
-                                    </StackPanel>
-
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Header="{x:Static properties:Resources.Loading}" Width="190">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
-                                    <StackPanel Orientation="Horizontal">
-                  
-                                        <TextBlock Width="50" Text="{Binding AssemblyVersion}" Margin="0,0,5,0"/>
-                                        <TextBlock  Width="50"  Text="{Binding LastVersion}"  Margin="0,0,5,0"/>
-                                        <Border Background="#FFA726" CornerRadius="10" Width="20" Height="20" Margin="0,0,5,0" ToolTip="有可用更新" Visibility="{Binding HasUpdate, Converter={StaticResource bool2VisibilityConverter}}">
-                                            <TextBlock Text="⬆" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
-                                        </Border>
-                                        <Button Content="{x:Static properties:Resources.Update}" Command="{Binding UpdateCommand}" Visibility="{Binding HasUpdate,Converter={StaticResource bool2VisibilityConverter}}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-       
+                        </ListView.ItemContainerStyle>
+                        <ListView.View>
+                            <GridView>
+                                <GridView.ColumnHeaderContainerStyle>
+                                    <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                    </Style>
+                                </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn Header="{x:Static properties:Resources.PluginName}" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <ui:ToggleSwitch  IsChecked="{Binding PluginInfo.Enabled}"  Margin="0,0,10,0" />
+                                                <Image Source="{Binding Icon}" Width="20" Margin="0,0,10,0"/>
+                                                <TextBlock  Text="{Binding Name,Mode=OneWay}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="{x:Static properties:Resources.Loading}" Width="190">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Width="50" Text="{Binding AssemblyVersion}" Margin="0,0,5,0"/>
+                                                <TextBlock  Width="50"  Text="{Binding LastVersion}"  Margin="0,0,5,0"/>
+                                                <Border Background="#FFA726" CornerRadius="10" Width="20" Height="20" Margin="0,0,5,0" ToolTip="有可用更新" Visibility="{Binding HasUpdate, Converter={StaticResource bool2VisibilityConverter}}">
+                                                    <TextBlock Text="⬆" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
+                                                </Border>
+                                                <Button Content="{x:Static properties:Resources.Update}" Command="{Binding UpdateCommand}" Visibility="{Binding HasUpdate,Converter={StaticResource bool2VisibilityConverter}}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </TabItem>
+                <TabItem Header="{x:Static properties:Resources.Marketplace}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="MarketplaceStatus" Text="" Margin="5,2" FontStyle="Italic" Foreground="Gray"/>
+                        <ListView x:Name="ListViewMarketplace" Background="Transparent" Grid.Row="1" SelectionChanged="ListViewMarketplace_SelectionChanged" Padding="2">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" />
+                            </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView>
+                                    <GridView.ColumnHeaderContainerStyle>
+                                        <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                        </Style>
+                                    </GridView.ColumnHeaderContainerStyle>
+                                    <GridViewColumn Width="400">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Margin="2">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="{Binding LatestVersion}" Foreground="Gray" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Description}" TextTrimming="CharacterEllipsis" Foreground="Gray" FontSize="11" MaxWidth="380" HorizontalAlignment="Left"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                        <TextBlock Text="{Binding Author}" FontSize="10" Foreground="#888" Margin="0,0,10,0"/>
+                                                        <TextBlock Text="{Binding Category}" FontSize="10" Foreground="#888" Margin="0,0,10,0"/>
+                                                        <TextBlock FontSize="10" Foreground="#888">
+                                                            <TextBlock.Text>
+                                                                <Binding Path="TotalDownloads" StringFormat="⬇ {0}"/>
+                                                            </TextBlock.Text>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Grid>
+                </TabItem>
+            </TabControl>
         </Grid>
 
         <Border x:Name="BorderContent" CornerRadius="5" Margin="0,0,5,5" d:DataContext="{d:DesignInstance local:PluginInfoVM}" Grid.Column="1">

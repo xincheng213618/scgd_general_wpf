@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI.Extension;
+using ColorVision.UI.Marketplace;
 using ColorVision.UI.Menus;
 using log4net;
 using System.Reflection;
@@ -19,6 +20,9 @@ namespace ColorVision.UI.Desktop.Plugins
     public partial class PluginManagerWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginManagerWindow));
+
+        private List<MarketplacePluginSummary> _marketplacePlugins = new();
+        private bool _marketplaceLoaded;
 
         public PluginManagerWindow()
         {
@@ -40,7 +44,7 @@ namespace ColorVision.UI.Desktop.Plugins
                 try
                 {
                     var client = Marketplace.MarketplaceClient.GetInstance();
-                    var result = await client.SearchPluginsAsync(new ColorVision.UI.Marketplace.MarketplaceSearchRequest { PageSize = 100 });
+                    var result = await client.SearchPluginsAsync(new MarketplaceSearchRequest { PageSize = 100 });
                     if (result.Items.Count > 0)
                     {
                         var pluginNames = result.Items.Select(p => p.PluginId).ToList();
@@ -57,6 +61,79 @@ namespace ColorVision.UI.Desktop.Plugins
         private bool IsRefreshChangedX;
         private bool IsRefreshChangedY;
 
+        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.Source != MainTabControl) return;
+            if (MainTabControl.SelectedIndex == 1 && !_marketplaceLoaded)
+            {
+                LoadMarketplacePlugins();
+            }
+        }
+
+        private async void LoadMarketplacePlugins()
+        {
+            _marketplaceLoaded = true;
+            MarketplaceStatus.Text = Properties.Resources.Loading + "...";
+            try
+            {
+                var client = Marketplace.MarketplaceClient.GetInstance();
+                var result = await client.SearchPluginsAsync(new MarketplaceSearchRequest { PageSize = 100 });
+                _marketplacePlugins = result.Items;
+                ListViewMarketplace.ItemsSource = _marketplacePlugins;
+                MarketplaceStatus.Text = string.Format(Properties.Resources.MarketplacePluginCount, _marketplacePlugins.Count);
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"LoadMarketplacePlugins failed: {ex.Message}");
+                MarketplaceStatus.Text = Properties.Resources.MarketplaceLoadFailed;
+            }
+        }
+
+        private void ListViewMarketplace_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ListViewMarketplace.SelectedIndex > -1 && ListViewMarketplace.SelectedItem is MarketplacePluginSummary summary)
+            {
+                IsRefreshChangedX = false;
+                IsRefreshChangedY = false;
+                // Show marketplace detail in the right panel using a temporary PluginInfoVM-like data context
+                ShowMarketplaceDetail(summary);
+            }
+        }
+
+        private async void ShowMarketplaceDetail(MarketplacePluginSummary summary)
+        {
+            try
+            {
+                var client = Marketplace.MarketplaceClient.GetInstance();
+                var detail = await client.GetPluginDetailAsync(summary.PluginId);
+                if (detail == null) return;
+
+                // Check if this plugin is installed locally
+                var installed = PluginManager.GetInstance().Plugins.FirstOrDefault(p => p.PackageName == summary.PluginId);
+                if (installed != null)
+                {
+                    // Show the installed plugin's detail
+                    BorderContent.DataContext = installed;
+                    return;
+                }
+
+                // Show marketplace detail using a MarketplaceDetailContext
+                var ctx = new MarketplaceDetailContext(detail);
+                BorderContent.DataContext = ctx;
+
+                // Render README
+                if (!string.IsNullOrEmpty(detail.Readme))
+                {
+                    string html = Markdig.Markdown.ToHtml(detail.Readme);
+                    await WebViewService.EnsureWebViewInitializedAsync(webViewReadMe);
+                    WebViewService.RenderMarkdown(webViewReadMe, html);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"ShowMarketplaceDetail failed: {ex.Message}");
+            }
+        }
 
         private void ListViewPlugins_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
