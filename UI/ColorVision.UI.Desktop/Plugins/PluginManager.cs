@@ -109,7 +109,7 @@ namespace ColorVision.UI.Desktop.Plugins
                 }
                 catch (Exception ex)
                 {
-                    log.Debug($"Batch version check failed, falling back to individual checks: {ex.Message}");
+                    log.Warn($"Batch version check failed, falling back to individual checks: {ex.Message}");
                     // Batch check failed — fall back to individual checks for enabled plugins
                     foreach (var plugin in Plugins)
                     {
