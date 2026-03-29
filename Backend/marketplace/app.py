@@ -31,8 +31,22 @@ import shutil
 import sqlite3
 from datetime import datetime, timezone
 from functools import wraps
+from download_stats import (
+    build_stats_payload,
+    get_download_count,
+    get_download_counts,
+    hash_ip,
+    record_download,
+)
 from markupsafe import Markup
 from pathlib import Path, PurePosixPath
+from plugin_queries import (
+    build_plugin_search_result,
+    collect_plugin_categories,
+    filter_plugin_summaries,
+    normalize_catalog_sort,
+    sort_plugin_summaries,
+)
 from typing import Any
 from page_contexts import (
     build_browse_page_context,
@@ -799,15 +813,7 @@ def _storage_relative(path: Path) -> str:
 
 
 def _get_download_counts() -> dict[str, int]:
-    try:
-        db = get_db()
-        rows = db.execute(
-            "SELECT plugin_id, COUNT(*) AS cnt FROM download_log GROUP BY plugin_id"
-        ).fetchall()
-        db.close()
-        return {row["plugin_id"]: row["cnt"] for row in rows}
-    except Exception:
-        return {}
+    return get_download_counts(get_db)
 
 
 def scan_plugins(download_counts: dict[str, int] | None = None) -> list[dict]:
@@ -866,40 +872,25 @@ def reconcile_all_plugin_package_histories() -> dict[str, list[dict[str, str]]]:
 
 
 def _get_download_count(plugin_id: str) -> int:
-    try:
-        db = get_db()
-        row = db.execute(
-            "SELECT COUNT(*) AS cnt FROM download_log WHERE plugin_id = ?",
-            (plugin_id,),
-        ).fetchone()
-        db.close()
-        return row["cnt"] if row else 0
-    except Exception:
-        return 0
+    return get_download_count(get_db, plugin_id)
 
 
 def _record_download(plugin_id: str, version: str):
-    try:
-        db = get_db()
-        db.execute(
-            "INSERT INTO download_log (plugin_id, version, client_ip, client_ver) VALUES (?, ?, ?, ?)",
-            (
-                plugin_id,
-                version,
-                _hash_ip(request.remote_addr),
-                request.headers.get("X-Client-Version", ""),
-            ),
-        )
-        db.commit()
-        db.close()
-    except Exception:
-        pass
+    record_download(
+        get_db,
+        plugin_id=plugin_id,
+        version=version,
+        client_ip=request.remote_addr,
+        client_version=request.headers.get("X-Client-Version", ""),
+    )
 
 
 def _hash_ip(ip: str | None) -> str:
-    if not ip:
-        return ""
-    return hashlib.sha256(ip.encode()).hexdigest()[:16]
+    return hash_ip(ip)
+
+
+def _build_plugin_icon_url(plugin_id: str) -> str:
+    return url_for("plugin_icon", plugin_id=plugin_id, _external=True)
 
 
 def get_app_info() -> dict:
@@ -1024,35 +1015,16 @@ def plugins_page():
     """Plugin marketplace page — browse and search plugins."""
     keyword = request.args.get("q", "").strip()
     category = request.args.get("category", "").strip()
-    sort_by = request.args.get("sort", "modified")
+    sort_by = normalize_catalog_sort(request.args.get("sort", "modified"))
 
     download_counts = _get_download_counts()
     all_plugins = scan_plugins(download_counts=download_counts)
-    plugins = list(all_plugins)
-
-    # Filter
-    if keyword:
-        kw = keyword.lower()
-        plugins = [
-            p
-            for p in plugins
-            if kw in p["name"].lower()
-            or kw in p["id"].lower()
-            or kw in p["description"].lower()
-        ]
-    if category:
-        plugins = [p for p in plugins if p["category"].lower() == category.lower()]
-
-    # Sort
-    if sort_by == "name":
-        plugins.sort(key=lambda p: p["name"].lower())
-    elif sort_by == "downloads":
-        plugins.sort(key=lambda p: p["total_downloads"], reverse=True)
-    else:
-        plugins.sort(key=lambda p: p["modified"], reverse=True)
-
-    # Collect categories
-    all_categories = sorted({p["category"] for p in all_plugins if p["category"]})
+    plugins = sort_plugin_summaries(
+        filter_plugin_summaries(all_plugins, keyword=keyword, category=category),
+        sort_by=sort_by,
+        descending=sort_by != "name",
+    )
+    all_categories = collect_plugin_categories(all_plugins)
 
     return render_template(
         "plugins.html",
@@ -1196,83 +1168,38 @@ def api_search_plugins():
     """Search and list plugins. Compatible with IMarketplaceService.SearchPluginsAsync."""
     keyword = request.args.get("Keyword", request.args.get("keyword", "")).strip()
     category = request.args.get("Category", request.args.get("category", "")).strip()
-    sort_by = request.args.get("SortBy", request.args.get("sort", "updated")).strip().lower()
+    sort_by = normalize_catalog_sort(request.args.get("SortBy", request.args.get("sort", "updated")))
     sort_order = request.args.get("SortOrder", request.args.get("sortOrder", "desc")).strip().lower()
     page = _parse_int_arg("Page", "page", default=1, minimum=1)
     page_size = _parse_int_arg("PageSize", "pageSize", default=20, minimum=1, maximum=100)
-    sort_by = {
-        "updatedat": "updated",
-        "modified": "updated",
-        "modifiedat": "updated",
-    }.get(sort_by, sort_by)
     if sort_by not in {"updated", "name", "downloads"}:
         abort(400, description="Invalid SortBy parameter")
     if sort_order not in {"asc", "desc"}:
         abort(400, description="Invalid SortOrder parameter")
 
-    plugins = scan_plugins(download_counts=_get_download_counts())
-
-    # Filter
-    if keyword:
-        kw = keyword.lower()
-        plugins = [
-            p
-            for p in plugins
-            if kw in p["name"].lower()
-            or kw in p["id"].lower()
-            or kw in p["description"].lower()
-        ]
-    if category:
-        plugins = [p for p in plugins if p["category"].lower() == category.lower()]
-
-    total_count = len(plugins)
-
-    # Sort
-    reverse = sort_order.lower() != "asc"
-    if sort_by in ("name",):
-        plugins.sort(key=lambda p: p["name"].lower(), reverse=reverse)
-    elif sort_by in ("downloads",):
-        plugins.sort(key=lambda p: p["total_downloads"], reverse=reverse)
-    else:
-        plugins.sort(key=lambda p: p["modified"], reverse=reverse)
-
-    # Paginate
-    start = (page - 1) * page_size
-    items = plugins[start : start + page_size]
+    plugins = sort_plugin_summaries(
+        filter_plugin_summaries(
+            scan_plugins(download_counts=_get_download_counts()),
+            keyword=keyword,
+            category=category,
+        ),
+        sort_by=sort_by,
+        descending=sort_order != "asc",
+    )
 
     return jsonify(
-        {
-            "items": [
-                {
-                    "pluginId": p["id"],
-                    "name": p["name"],
-                    "description": p["description"],
-                    "author": p["author"],
-                    "category": p["category"],
-                    "iconUrl": (
-                        url_for("plugin_icon", plugin_id=p["id"], _external=True)
-                        if p["has_icon"]
-                        else None
-                    ),
-                    "latestVersion": p["version"],
-                    "totalDownloads": p["total_downloads"],
-                    "updatedAt": p["modified"],
-                }
-                for p in items
-            ],
-            "totalCount": total_count,
-            "page": page,
-            "pageSize": page_size,
-            "totalPages": (total_count + page_size - 1) // page_size if page_size else 0,
-        }
+        build_plugin_search_result(
+            plugins,
+            page=page,
+            page_size=page_size,
+            icon_url_builder=_build_plugin_icon_url,
+        )
     )
 
 @app.route("/api/plugins/categories", methods=["GET"])
 def api_categories():
     """Get all plugin categories."""
-    plugins = scan_plugins(download_counts=_get_download_counts())
-    categories = sorted({p["category"] for p in plugins if p["category"]})
-    return jsonify(categories)
+    return jsonify(collect_plugin_categories(scan_plugins(download_counts=_get_download_counts())))
 
 
 @app.route("/api/plugins/batch-version-check", methods=["POST"])
@@ -1586,47 +1513,7 @@ def legacy_upload(filepath):
 @app.route("/api/stats", methods=["GET"])
 def api_stats():
     """Download statistics overview."""
-    db = get_db()
-
-    total = db.execute("SELECT COUNT(*) AS cnt FROM download_log").fetchone()["cnt"]
-
-    per_plugin = db.execute(
-        """
-        SELECT plugin_id, COUNT(*) AS cnt
-        FROM download_log
-        GROUP BY plugin_id
-        ORDER BY cnt DESC
-        LIMIT 20
-    """
-    ).fetchall()
-
-    recent = db.execute(
-        """
-        SELECT plugin_id, version, downloaded_at
-        FROM download_log
-        ORDER BY downloaded_at DESC
-        LIMIT 20
-    """
-    ).fetchall()
-
-    db.close()
-
-    return jsonify(
-        {
-            "totalDownloads": total,
-            "perPlugin": [
-                {"pluginId": r["plugin_id"], "count": r["cnt"]} for r in per_plugin
-            ],
-            "recent": [
-                {
-                    "pluginId": r["plugin_id"],
-                    "version": r["version"],
-                    "downloadedAt": r["downloaded_at"],
-                }
-                for r in recent
-            ],
-        }
-    )
+    return jsonify(build_stats_payload(get_db))
 
 
 # ===================================================================

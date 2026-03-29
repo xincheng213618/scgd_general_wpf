@@ -259,6 +259,89 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertEqual(payload["versions"][0]["source"], "current")
         self.assertEqual(payload["archivedVersions"][0]["source"], "archive")
 
+    def test_plugin_query_filter_and_sort_are_consistent_between_html_and_api(self):
+        alpha_dir = self._create_plugin("AlphaPlugin", "1.0.0")
+        (alpha_dir / "manifest.json").write_text(
+            '{"id":"AlphaPlugin","name":"Alpha Plugin","description":"alpha tools","category":"Tools"}',
+            encoding="utf-8",
+        )
+
+        beta_dir = self._create_plugin("BetaPlugin", "1.0.0")
+        (beta_dir / "manifest.json").write_text(
+            '{"id":"BetaPlugin","name":"Beta Plugin","description":"beta tools","category":"Tools"}',
+            encoding="utf-8",
+        )
+
+        gamma_dir = self._create_plugin("GammaExtension", "1.0.0")
+        (gamma_dir / "manifest.json").write_text(
+            '{"id":"GammaExtension","name":"Gamma Extension","description":"gamma other","category":"Other"}',
+            encoding="utf-8",
+        )
+
+        page_response = self.client.get("/plugins?q=plugin&category=Tools&sort=name")
+        api_response = self.client.get(
+            "/api/plugins?Keyword=plugin&Category=Tools&SortBy=name&SortOrder=asc"
+        )
+
+        self.assertEqual(page_response.status_code, 200)
+        html = page_response.get_data(as_text=True)
+        self.assertIn("Alpha Plugin", html)
+        self.assertIn("Beta Plugin", html)
+        self.assertNotIn("Gamma Extension", html)
+        self.assertLess(html.index("Alpha Plugin"), html.index("Beta Plugin"))
+
+        self.assertEqual(api_response.status_code, 200)
+        payload = api_response.get_json()
+        self.assertEqual([item["pluginId"] for item in payload["items"]], ["AlphaPlugin", "BetaPlugin"])
+
+    def test_api_categories_returns_sorted_unique_values(self):
+        first_dir = self._create_plugin("ToolsPlugin", "1.0.0")
+        (first_dir / "manifest.json").write_text(
+            '{"id":"ToolsPlugin","name":"Tools Plugin","category":"Tools"}',
+            encoding="utf-8",
+        )
+
+        second_dir = self._create_plugin("ZooPlugin", "1.0.0")
+        (second_dir / "manifest.json").write_text(
+            '{"id":"ZooPlugin","name":"Zoo Plugin","category":"Zoo"}',
+            encoding="utf-8",
+        )
+
+        duplicate_dir = self._create_plugin("MoreToolsPlugin", "1.0.0")
+        (duplicate_dir / "manifest.json").write_text(
+            '{"id":"MoreToolsPlugin","name":"More Tools Plugin","category":"Tools"}',
+            encoding="utf-8",
+        )
+
+        response = self.client.get("/api/plugins/categories")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), ["Tools", "Zoo"])
+
+    def test_api_download_package_updates_stats_and_plugin_totals(self):
+        plugin_dir = self._create_plugin("StatPlugin", "1.0.0")
+        (plugin_dir / "manifest.json").write_text(
+            '{"id":"StatPlugin","name":"Stat Plugin","description":"track downloads"}',
+            encoding="utf-8",
+        )
+
+        download_response = self.client.get("/api/packages/StatPlugin/1.0.0")
+        self.assertEqual(download_response.status_code, 200)
+        download_response.close()
+
+        stats_response = self.client.get("/api/stats")
+        self.assertEqual(stats_response.status_code, 200)
+        stats_payload = stats_response.get_json()
+        self.assertEqual(stats_payload["totalDownloads"], 1)
+        self.assertEqual(stats_payload["perPlugin"][0], {"pluginId": "StatPlugin", "count": 1})
+        self.assertEqual(stats_payload["recent"][0]["pluginId"], "StatPlugin")
+
+        list_response = self.client.get("/api/plugins")
+        self.assertEqual(list_response.status_code, 200)
+        items = list_response.get_json()["items"]
+        plugin = next(item for item in items if item["pluginId"] == "StatPlugin")
+        self.assertEqual(plugin["totalDownloads"], 1)
+
     def test_archive_metadata_is_cached_across_detail_requests(self):
         self._create_plugin_archive_with_metadata(
             "CachedArchivePlugin",

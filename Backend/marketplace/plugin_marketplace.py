@@ -212,10 +212,26 @@ def plugin_catalog_signature(storage: Path) -> str:
     return "|".join(parts)
 
 
+def _iter_package_files(directory: Path) -> list[Path]:
+    if not directory.is_dir():
+        return []
+
+    files: list[Path] = []
+    try:
+        for file_path in directory.iterdir():
+            if file_path.suffix.lower() != ".cvxp":
+                continue
+            if file_path.is_file():
+                files.append(file_path)
+    except OSError:
+        return []
+    return files
+
+
 def _latest_current_package(storage: Path, plugin_id: str) -> dict[str, Any] | None:
     plugin_dir = storage / "Plugins" / plugin_id
     latest: dict[str, Any] | None = None
-    for file_path in plugin_dir.glob("*.cvxp"):
+    for file_path in _iter_package_files(plugin_dir):
         package = plugin_package_from_file(storage, file_path, plugin_id, "current", include_hash=False)
         if not package:
             continue
@@ -225,9 +241,22 @@ def _latest_current_package(storage: Path, plugin_id: str) -> dict[str, Any] | N
 
 
 def _count_plugin_packages(directory: Path) -> int:
-    if not directory.is_dir():
-        return 0
-    return sum(1 for file_path in directory.glob("*.cvxp") if file_path.is_file())
+    return len(_iter_package_files(directory))
+
+
+def _latest_package_path(directory: Path) -> Path | None:
+    latest_path: Path | None = None
+    latest_key: tuple[int, str] | None = None
+    for file_path in _iter_package_files(directory):
+        try:
+            stat = file_path.stat()
+        except OSError:
+            continue
+        candidate_key = (stat.st_mtime_ns, file_path.name.lower())
+        if latest_key is None or candidate_key > latest_key:
+            latest_key = candidate_key
+            latest_path = file_path
+    return latest_path
 
 
 def _load_manifest(manifest_path: Path) -> dict[str, Any]:
@@ -289,14 +318,11 @@ def _select_preferred_package_path(storage: Path, plugin_id: str, latest_version
     if preferred_name and (plugin_dir / preferred_name).is_file():
         return plugin_dir / preferred_name
 
-    current_candidates = [path for path in plugin_dir.glob("*.cvxp") if path.is_file()]
-    current_candidates.sort(key=lambda item: item.stat().st_mtime, reverse=True)
-    if current_candidates:
-        return current_candidates[0]
+    current_latest = _latest_package_path(plugin_dir)
+    if current_latest:
+        return current_latest
 
-    history_candidates = [path for path in history_dir.glob("*.cvxp") if path.is_file()]
-    history_candidates.sort(key=lambda item: item.stat().st_mtime, reverse=True)
-    return history_candidates[0] if history_candidates else None
+    return _latest_package_path(history_dir)
 
 
 def _read_archive_metadata(
@@ -404,9 +430,14 @@ def get_plugin_summary(
             set_cache_entry=set_cache_entry,
         )
         manifest = dict(archive_metadata.get("manifest") or {})
-    latest_package = _latest_current_package(storage, plugin_id)
-    current_package_count = _count_plugin_packages(plugin_dir)
-    historical_package_count = _count_plugin_packages(plugin_history_dir(storage, plugin_id))
+    current_packages, historical_packages = scan_plugin_package_sets(
+        storage,
+        plugin_id,
+        include_hash=False,
+    )
+    latest_package = current_packages[0] if current_packages else None
+    current_package_count = len(current_packages)
+    historical_package_count = len(historical_packages)
     modified = (
         latest_package["modified"]
         if latest_package
@@ -637,6 +668,7 @@ def reconcile_all_plugin_package_histories(
         if moved:
             results[entry.name] = moved
     return results
+
 
 
 
