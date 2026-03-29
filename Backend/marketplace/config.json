@@ -1,7 +1,7 @@
 {
     "storage_path": "H:\\ColorVision",
     "host": "0.0.0.0",
-    "port": 9999,
+    "port": 9998,
     "debug": false,
     "secret_key": "change-this-in-production",
     "upload_auth": {

@@ -50,7 +50,7 @@ BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_CONFIG = {
     "storage_path": str(BASE_DIR / "storage"),
     "host": "0.0.0.0",
-    "port": 9999,
+    "port": 9998,
     "debug": False,
     "secret_key": "change-this-in-production",
     "upload_auth": {"username": "admin", "password": "admin"},
