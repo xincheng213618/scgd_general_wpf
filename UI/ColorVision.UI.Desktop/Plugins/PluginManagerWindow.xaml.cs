@@ -31,6 +31,25 @@ namespace ColorVision.UI.Desktop.Plugins
             DefalutSearchComboBox.ItemsSource = new List<string>() { "ImageProjector", "Pattern", "EventVWR", "ScreenRecorder", "SystemMonitor", "WindowsServicePlugin", "Spectrum" };
             ListViewPlugins.SelectedIndex = 0;
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex].Delete(), (s, e) => e.CanExecute = ListViewPlugins.SelectedIndex > -1));
+
+            // Populate search ComboBox from marketplace API dynamically
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var client = Marketplace.MarketplaceClient.GetInstance();
+                    var result = await client.SearchPluginsAsync(new ColorVision.UI.Marketplace.MarketplaceSearchRequest { PageSize = 100 });
+                    if (result.Items.Count > 0)
+                    {
+                        var pluginNames = result.Items.Select(p => p.PluginId).ToList();
+                        Application.Current?.Dispatcher.Invoke(() =>
+                        {
+                            DefalutSearchComboBox.ItemsSource = pluginNames;
+                        });
+                    }
+                }
+                catch { /* Keep default list on failure */ }
+            });
         }
 
         private bool IsRefreshChangedX;

@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.Desktop.Download;
+using ColorVision.UI.Desktop.Marketplace;
 using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Plugins;
 using log4net;
@@ -80,6 +81,22 @@ namespace ColorVision.UI.Desktop.Plugins
 
         }
 
+        /// <summary>
+        /// Set version from an external batch check result (avoids redundant individual API calls).
+        /// </summary>
+        public void SetVersionFromBatchCheck(string versionString)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(versionString))
+                    LastVersion = new Version(versionString.Trim());
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"SetVersionFromBatchCheck failed for {PackageName}: {ex.Message}");
+            }
+        }
+
 
         public void OpenLocalPath()
         {
@@ -135,6 +152,23 @@ namespace ColorVision.UI.Desktop.Plugins
 
         public async void CheckVersion()
         {
+            // Try marketplace API first
+            try
+            {
+                var client = MarketplaceClient.GetInstance();
+                string? version = await client.GetLatestVersionAsync(PackageName);
+                if (!string.IsNullOrWhiteSpace(version))
+                {
+                    LastVersion = new Version(version.Trim());
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Marketplace API check failed for {PackageName}, falling back to legacy: {ex.Message}");
+            }
+
+            // Fallback to legacy LATEST_RELEASE file
             string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath  + PackageName + "/LATEST_RELEASE";
             try
             {
@@ -160,7 +194,21 @@ namespace ColorVision.UI.Desktop.Plugins
                 return;
 
             string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
-            string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{PackageName}/{PackageName}-{LastVersion}.cvxp";
+
+            // Check if the file already exists with matching hash (skip redundant download)
+            string? existingFile = MarketplaceClient.GetExistingFileIfValid(downloadDir, PackageName, LastVersion.ToString(), null);
+            if (existingFile != null)
+            {
+                log.Info($"Plugin {PackageName} v{LastVersion} already downloaded at {existingFile}, applying directly.");
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    PluginUpdater.UpdatePlugin(existingFile);
+                });
+                return;
+            }
+
+            // Use marketplace API URL with fallback to legacy URL
+            string url = MarketplaceClient.GetInstance().GetDownloadUrl(PackageName, LastVersion.ToString());
 
             DownloadWindow.ShowInstance();
             Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>

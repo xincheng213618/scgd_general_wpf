@@ -336,11 +336,13 @@ def get_plugin_info(
             # Extract version from filename: PluginName-1.2.3.4.cvxp
             m = re.match(rf"^{re.escape(plugin_id)}-(.+)\.cvxp$", f.name)
             ver = m.group(1) if m else f.stem
+            file_hash = hashlib.sha256(f.read_bytes()).hexdigest()
             packages.append(
                 {
                     "version": ver,
                     "filename": f.name,
                     "size": f.stat().st_size,
+                    "fileHash": file_hash,
                     "modified": datetime.fromtimestamp(
                         f.stat().st_mtime, tz=timezone.utc
                     ).isoformat(),
@@ -855,6 +857,7 @@ def api_plugin_detail(plugin_id):
                     "version": pkg["version"],
                     "requiresVersion": info["requires"],
                     "fileSize": pkg["size"],
+                    "fileHash": pkg.get("fileHash"),
                     "downloadCount": 0,
                     "createdAt": pkg["modified"],
                 }
