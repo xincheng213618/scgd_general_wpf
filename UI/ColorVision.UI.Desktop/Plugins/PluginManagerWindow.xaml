@@ -41,11 +41,10 @@
                                 </Border>
                             </StackPanel>
                         </Button>
-                       
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                         <Grid>
-                            <hc:ComboBox x:Name="DefalutSearchComboBox" Width="250" Padding="25,1,2,1"   IsEditable="True" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" hc:InfoElement.ShowClearButton="True" BorderBrush="#CCCEDB"   VerticalContentAlignment="Center"  />
+                            <hc:ComboBox x:Name="DefalutSearchComboBox" Width="250" Padding="25,1,2,1"   IsEditable="True" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" hc:InfoElement.ShowClearButton="True" BorderBrush="#CCCEDB"   VerticalContentAlignment="Center" TextBoxBase.TextChanged="SearchComboBox_TextChanged" />
                             <Viewbox Width="20 " Height="20" HorizontalAlignment="Left" Margin="4,0,0,0">
                                 <Rectangle Width="25 " Height="25" >
                                     <Rectangle.Resources>
@@ -99,60 +98,107 @@
 
             </Grid>
 
-            <ListView x:Name="ListViewPlugins" Background="Transparent"  ItemsSource="{Binding Plugins}" Margin="5,0,5,5"  SelectionChanged="ListViewPlugins_SelectionChanged" Grid.Row="1" Padding="2">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding HasUpdate}" Value="True">
-                                <!--<Setter Property="Background" Value="#FFF3E0"/>-->
-                                <Setter Property="BorderBrush" Value="#FFA726"/>
-                                <!--<Setter Property="Foreground" Value="Black"/>-->
-                                <Setter Property="BorderThickness" Value="1"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.View>
-                    <GridView>
-                        <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
+            <!-- Tabbed panel: Installed / Marketplace -->
+            <TabControl x:Name="MainTabControl" Grid.Row="1" Margin="5,0,5,5" SelectionChanged="MainTabControl_SelectionChanged">
+                <TabItem Header="{x:Static properties:Resources.Installed}">
+                    <ListView x:Name="ListViewPlugins" Background="Transparent"  ItemsSource="{Binding Plugins}" SelectionChanged="ListViewPlugins_SelectionChanged" Padding="2">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
+                                <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasUpdate}" Value="True">
+                                        <Setter Property="BorderBrush" Value="#FFA726"/>
+                                        <Setter Property="BorderThickness" Value="1"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
                             </Style>
-                        </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn Header="{x:Static properties:Resources.PluginName}" >
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:ToggleSwitch  IsChecked="{Binding PluginInfo.Enabled}"  Margin="0,0,10,0" />
-                                        <Image Source="{Binding Icon}" Width="20" Margin="0,0,10,0"/>
-                                        <TextBlock  Text="{Binding Name,Mode=OneWay}"/>
-                                    </StackPanel>
-
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn Header="{x:Static properties:Resources.Loading}" Width="190">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
-                                    <StackPanel Orientation="Horizontal">
-                  
-                                        <TextBlock Width="50" Text="{Binding AssemblyVersion}" Margin="0,0,5,0"/>
-                                        <TextBlock  Width="50"  Text="{Binding LastVersion}"  Margin="0,0,5,0"/>
-                                        <Border Background="#FFA726" CornerRadius="10" Width="20" Height="20" Margin="0,0,5,0" ToolTip="有可用更新" Visibility="{Binding HasUpdate, Converter={StaticResource bool2VisibilityConverter}}">
-                                            <TextBlock Text="⬆" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
-                                        </Border>
-                                        <Button Content="{x:Static properties:Resources.Update}" Command="{Binding UpdateCommand}" Visibility="{Binding HasUpdate,Converter={StaticResource bool2VisibilityConverter}}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-       
+                        </ListView.ItemContainerStyle>
+                        <ListView.View>
+                            <GridView>
+                                <GridView.ColumnHeaderContainerStyle>
+                                    <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                    </Style>
+                                </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn Header="{x:Static properties:Resources.PluginName}" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <ui:ToggleSwitch  IsChecked="{Binding PluginInfo.Enabled}"  Margin="0,0,10,0" />
+                                                <Image Source="{Binding Icon}" Width="20" Margin="0,0,10,0"/>
+                                                <TextBlock  Text="{Binding Name,Mode=OneWay}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="{x:Static properties:Resources.Loading}" Width="190">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Width="50" Text="{Binding AssemblyVersion}" Margin="0,0,5,0"/>
+                                                <TextBlock  Width="50"  Text="{Binding LastVersion}"  Margin="0,0,5,0"/>
+                                                <Border Background="#FFA726" CornerRadius="10" Width="20" Height="20" Margin="0,0,5,0" ToolTip="有可用更新" Visibility="{Binding HasUpdate, Converter={StaticResource bool2VisibilityConverter}}">
+                                                    <TextBlock Text="⬆" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
+                                                </Border>
+                                                <Button Content="{x:Static properties:Resources.Update}" Command="{Binding UpdateCommand}" Visibility="{Binding HasUpdate,Converter={StaticResource bool2VisibilityConverter}}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </TabItem>
+                <TabItem Header="{x:Static properties:Resources.Marketplace}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="MarketplaceStatus" Text="" Margin="5,2" FontStyle="Italic" Foreground="Gray"/>
+                        <ListView x:Name="ListViewMarketplace" Background="Transparent" Grid.Row="1" SelectionChanged="ListViewMarketplace_SelectionChanged" Padding="2">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" />
+                            </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView>
+                                    <GridView.ColumnHeaderContainerStyle>
+                                        <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                        </Style>
+                                    </GridView.ColumnHeaderContainerStyle>
+                                    <GridViewColumn Width="400">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Margin="2">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="{Binding LatestVersion}" Foreground="Gray" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Description}" TextTrimming="CharacterEllipsis" Foreground="Gray" FontSize="11" MaxWidth="380" HorizontalAlignment="Left"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                        <TextBlock Text="{Binding Author}" FontSize="10" Foreground="#888" Margin="0,0,10,0"/>
+                                                        <TextBlock Text="{Binding Category}" FontSize="10" Foreground="#888" Margin="0,0,10,0"/>
+                                                        <TextBlock FontSize="10" Foreground="#888">
+                                                            <TextBlock.Text>
+                                                                <Binding Path="TotalDownloads" StringFormat="⬇ {0}"/>
+                                                            </TextBlock.Text>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Grid>
+                </TabItem>
+            </TabControl>
         </Grid>
 
         <Border x:Name="BorderContent" CornerRadius="5" Margin="0,0,5,5" d:DataContext="{d:DesignInstance local:PluginInfoVM}" Grid.Column="1">
@@ -164,24 +210,36 @@
                 <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1 " Margin="0,0,0,2">
                     <Grid>
                         <DockPanel>
-                            <Image Source="{Binding Icon}" Width="50" Margin="10"/>
+                            <Border Width="68" Height="68" Margin="10" CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Background="#0D000000">
+                                <Image Source="{Binding Icon}" Width="50" Height="50" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
                             <StackPanel HorizontalAlignment="Left">
                                 <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding Name}" FontWeight="Bold" FontSize="20"  />
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PackageName}" />
-                                    <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding AssemblyVersion}" />
-                                    <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding AssemblyBuildDate,StringFormat=yyyy/MM/dd hh:mm:ss}" />
+                                    <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding HeaderMetaText,Mode=OneWay}" />
                                 </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <Border Background="#2E7D32" CornerRadius="10" Padding="8,2" Margin="0,0,6,0" Visibility="{Binding InstalledBadgeVisibility,Mode=OneWay}">
+                                        <TextBlock Text="{Binding InstalledBadgeText,Mode=OneWay}" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                    </Border>
+                                    <Border Background="#F57C00" CornerRadius="10" Padding="8,2" Margin="0,0,6,0" Visibility="{Binding UpdateBadgeVisibility ,Mode=OneWay}">
+                                        <TextBlock Text="{Binding UpdateBadgeText,Mode=OneWay}" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Foreground="Gray" MaxWidth="620" Margin="2,2,0,0" />
                             </StackPanel>
                         </DockPanel>
                         <StackPanel  HorizontalAlignment="Right" VerticalAlignment="Top">
-                            <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PluginInfo.Manifest.DllName}" HorizontalAlignment="Right" Padding="3"/>
+                            <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding HeaderRightPrimary,Mode=OneWay}" HorizontalAlignment="Right" Padding="3"/>
                             <StackPanel Orientation="Horizontal"  HorizontalAlignment="Right">
-                                <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PluginInfo.Manifest.Requires, StringFormat=Build By {0}}"/>
+                                <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding HeaderRightSecondary,Mode=OneWay}"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                <Button Content="OpenLocalPath" Background="Transparent" BorderThickness="0" Command="{Binding OpenLocalPathCommand}" Margin="0,0,5,0"/>
-                                <Button Content="{x:Static properties:Resources.ExtractPlugin}" Background="Transparent" BorderThickness="0" Command="{Binding ExtractPluginCommand}"/>
+                                <Button Content="OpenLocalPath" Background="Transparent" BorderThickness="0" Command="{Binding OpenLocalPathCommand}" Margin="0,0,5,0" Visibility="{Binding OpenLocalPathVisibility, FallbackValue=Visible}"/>
+                                <Button Content="{x:Static properties:Resources.ExtractPlugin}" Background="Transparent" BorderThickness="0" Command="{Binding ExtractPluginCommand}" Margin="0,0,5,0" Visibility="{Binding ExtractPluginVisibility, FallbackValue=Visible}"/>
+                                <Button Content="{Binding PrimaryActionText, FallbackValue={x:Static properties:Resources.Install}}" Background="Transparent" BorderThickness="0" Command="{Binding InstallCommand}" Margin="0,0,5,0" Visibility="{Binding PrimaryActionVisibility, FallbackValue=Collapsed}"/>
+                                <Button Content="{x:Static properties:Resources.Download}" Background="Transparent" BorderThickness="0" Command="{Binding DownloadCommand}" Margin="0,0,5,0" Visibility="{Binding DownloadLatestVisibility, FallbackValue=Collapsed}"/>
+                                <Button Content="OpenUrl" Background="Transparent" BorderThickness="0" Command="{Binding OpenProjectUrlCommand}" Visibility="{Binding OpenProjectUrlVisibility, FallbackValue=Collapsed}"/>
                             </StackPanel>
 
                         </StackPanel>

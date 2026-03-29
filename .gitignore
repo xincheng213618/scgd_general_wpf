@@ -381,3 +381,10 @@ docs/.vitepress/dist
 x64/
 README.old.md
 README.old.backup
+
+# Backend marketplace artifacts
+Backend/**/marketplace.db
+Backend/**/marketplace.db-shm
+Backend/**/marketplace.db-wal
+Backend/**/storage/
+Backend/**/__pycache__/

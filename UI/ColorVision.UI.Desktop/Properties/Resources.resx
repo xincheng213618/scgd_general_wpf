@@ -625,4 +625,64 @@
   <data name="ConfirmDeleteFile" xml:space="preserve">
     <value>文件已存在于磁盘，是否同时删除文件？</value>
   </data>
+  <data name="Installed" xml:space="preserve">
+    <value>已安装</value>
+  </data>
+  <data name="Marketplace" xml:space="preserve">
+    <value>浏览商店</value>
+  </data>
+  <data name="MarketplacePluginCount" xml:space="preserve">
+    <value>共 {0} 个插件</value>
+  </data>
+  <data name="MarketplaceLoadFailed" xml:space="preserve">
+    <value>加载商店失败</value>
+  </data>
+  <data name="SendFeedback" xml:space="preserve">
+    <value>发送反馈</value>
+  </data>
+  <data name="FeedbackPlaceholder" xml:space="preserve">
+    <value>请描述您遇到的问题或建议...</value>
+  </data>
+  <data name="Attachments" xml:space="preserve">
+    <value>附件</value>
+  </data>
+  <data name="AddFile" xml:space="preserve">
+    <value>添加文件</value>
+  </data>
+  <data name="CaptureScreenshot" xml:space="preserve">
+    <value>截图</value>
+  </data>
+  <data name="PackLogs" xml:space="preserve">
+    <value>打包日志</value>
+  </data>
+  <data name="ScreenshotCaptured" xml:space="preserve">
+    <value>截图已添加</value>
+  </data>
+  <data name="LogsPackaged" xml:space="preserve">
+    <value>日志已打包: {0}</value>
+  </data>
+  <data name="FeedbackEmptyWarning" xml:space="preserve">
+    <value>请输入反馈信息或添加附件</value>
+  </data>
+  <data name="Sending" xml:space="preserve">
+    <value>发送中</value>
+  </data>
+  <data name="FeedbackSent" xml:space="preserve">
+    <value>反馈已发送成功，感谢您的反馈！</value>
+  </data>
+  <data name="DiagnosticItems" xml:space="preserve">
+    <value>诊断项目</value>
+  </data>
+  <data name="CollectingLogs" xml:space="preserve">
+    <value>正在收集: {0}...</value>
+  </data>
+  <data name="Uploading" xml:space="preserve">
+    <value>上传中 {0}%</value>
+  </data>
+  <data name="SendFailed" xml:space="preserve">
+    <value>发送失败: {0}</value>
+  </data>
+  <data name="ServerAddressNotConfigured" xml:space="preserve">
+    <value>无法确定服务器地址</value>
+  </data>
 </root>

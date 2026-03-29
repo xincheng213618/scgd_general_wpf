@@ -42,19 +42,23 @@ graph TD
 #### 1. [ColorVision.Common](./ColorVision.Common.md)
 - **功能**: 通用框架基础封装
 - **职责**: 提供 MVVM 模式支持、命令封装和接口定义
-- **版本**: 1.3.8.1
+- **版本**: 1.5.1.2
+- **目标框架**: .NET 8.0 / .NET 10.0
 - **关键特性**:
   - MVVM 架构支持
   - ActionCommand/RelayCommand 命令封装
   - 通用接口定义（IConfig, IMenuItem, IWizardStep 等）
 
-#### 2. ColorVision.Core
+#### 2. [ColorVision.Core](./ColorVision.Core.md)
 - **功能**: 核心功能接口封装
-- **职责**: 提供一些C++接口
+- **职责**: 提供 C++ 接口封装和 OpenCV 原生集成
+- **版本**: 1.5.2.1
+- **目标框架**: .NET 8.0 / .NET 10.0
 - **关键特性**:
   - 底层 C++ 接口封装
+  - OpenCV 原生库集成（4.13）
+  - 高性能视频解码支持
   - 核心算法接口
-  - 性能关键操作
 
 ### 功能层组件
 
@@ -68,12 +72,16 @@ graph TD
 
 #### 4. [ColorVision.ImageEditor](./ColorVision.ImageEditor.md)
 - **功能**: 图像编辑控件库
-- **职责**: 专业级图像显示、编辑、标注和分析
-- **版本**: 1.3.8.1
+- **职责**: 专业级图像显示、编辑、标注、分析和视频播放
+- **版本**: 1.5.1.1
+- **目标框架**: .NET 8.0 / .NET 10.0
 - **关键特性**:
   - RGB48 高精度图像支持
   - 丰富的绘图工具（矩形、圆形、贝塞尔曲线等）
+  - 图像翻转（水平/垂直）和旋转
   - 色彩调整和图像处理算法
+  - 伪彩色映射（21 种色彩方案，LUT 优化，上下限模式）
+  - 视频播放（MP4/AVI/MKV/MOV/WMV/FLV/WebM）
   - 3D 可视化和直方图分析
 
 #### 5. [ColorVision.Scheduler](./ColorVision.Scheduler.md)
@@ -95,15 +103,20 @@ graph TD
 
 ### 业务层组件
 
-#### 7. ColorVision.Solution
+#### 7. [ColorVision.Solution](./ColorVision.Solution.md)
 - **功能**: 解决方案管理
 - **职责**: 项目和解决方案的创建、打开和管理
+- **版本**: 1.5.1.1
+- **目标框架**: .NET 8.0 / .NET 10.0
 - **关键特性**:
   - 解决方案创建和打开
   - 项目管理界面
   - 文件树导航
   - 最近文件管理
-  - 权限管理集成
+  - 权限管理集成（RBAC）
+  - 停靠面板布局管理（DockLayoutManager）
+  - 多图像查看器和缩略图缓存
+  - 工作区管理
 
 #### 8. [ColorVision.UI](./ColorVision.UI.md)
 - **功能**: 底层UI控件库和系统服务
@@ -166,9 +179,9 @@ graph LR
 
 ```xml
 <!-- 在项目中引入核心组件 -->
-<PackageReference Include="ColorVision.Common" Version="1.3.8.1" />
-<PackageReference Include="ColorVision.UI" Version="1.3.8.1" />
-<PackageReference Include="ColorVision.Themes" Version="1.3.8.1" />
+<PackageReference Include="ColorVision.Common" Version="1.5.1.2" />
+<PackageReference Include="ColorVision.UI" Version="1.5.1.1" />
+<PackageReference Include="ColorVision.Themes" Version="1.5.1.1" />
 ```
 
 ### 2. 基础应用设置
@@ -286,9 +299,10 @@ public class CustomTheme : ITheme
 ## 版本兼容性
 
 ### 当前版本
-- **稳定版本**: 1.3.8.1
-- **目标框架**: .NET 8.0 / .NET 6.0 Windows
-- **最低系统要求**: Windows 10
+- **稳定版本**: 1.5.x
+- **目标框架**: .NET 8.0 / .NET 10.0 Windows
+- **最低系统要求**: Windows 10 1903+
+- **多语言支持**: 简体中文、English、Français、日本語、한국어、Русский、繁體中文
 
 ### 升级指南
 1. 检查依赖项版本

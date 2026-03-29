@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.Desktop.Download;
+using ColorVision.UI.Desktop.Marketplace;
 using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Plugins;
 using log4net;
@@ -34,10 +35,51 @@ namespace ColorVision.UI.Desktop.Plugins
         public string? AssemblyCulture { get; set; }
         public string? AssemblyPublicKeyToken { get; set; }
 
+        public string HeaderMetaText => string.Join("  ·  ", new[]
+        {
+            PackageName,
+            AssemblyVersion?.ToString(),
+            AssemblyBuildDate?.ToString("yyyy/MM/dd HH:mm:ss"),
+        }.Where(item => !string.IsNullOrWhiteSpace(item))!);
+
+        public string? HeaderRightPrimary => PluginInfo?.Manifest?.DllName;
+        public string? HeaderRightSecondary => string.IsNullOrWhiteSpace(PluginInfo.Manifest.Requires.ToString())
+            ? null
+            : $"Build By {PluginInfo?.Manifest?.Requires}";
+
+        public string InstalledBadgeText => string.IsNullOrWhiteSpace(AssemblyVersion?.ToString())
+            ? "Installed"
+            : $"Installed v{AssemblyVersion}";
+        public Visibility InstalledBadgeVisibility => Visibility.Visible;
+        public Visibility UpdateBadgeVisibility => HasUpdate ? Visibility.Visible : Visibility.Collapsed;
+        public string UpdateBadgeText => HasUpdate && LastVersion != null
+            ? $"Update v{LastVersion}"
+            : string.Empty;
+
+        public Visibility OpenLocalPathVisibility => Visibility.Visible;
+        public Visibility ExtractPluginVisibility => Visibility.Visible;
+        public Visibility InstallVisibility => Visibility.Collapsed;
+        public Visibility PrimaryActionVisibility => HasUpdate ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility DownloadLatestVisibility => Visibility.Collapsed;
+        public Visibility OpenProjectUrlVisibility => Visibility.Collapsed;
+        public string PrimaryActionText => Resources.Update;
+
         public PluginInfo PluginInfo { get; set; }
 
 
-        public Version LastVersion { get => _LastVersion; set { _LastVersion = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasUpdate)); } }
+        public Version LastVersion
+        {
+            get => _LastVersion;
+            set
+            {
+                _LastVersion = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasUpdate));
+                OnPropertyChanged(nameof(UpdateBadgeVisibility));
+                OnPropertyChanged(nameof(UpdateBadgeText));
+                OnPropertyChanged(nameof(PrimaryActionVisibility));
+            }
+        }
         private Version _LastVersion;
 
         public bool HasUpdate => LastVersion != null && AssemblyVersion != null && LastVersion > AssemblyVersion;
@@ -46,8 +88,11 @@ namespace ColorVision.UI.Desktop.Plugins
         public RelayCommand UpdateCommand { get; set; }
         public RelayCommand OpenLocalPathCommand { get; set; }
         public RelayCommand ExtractPluginCommand { get; set; }
+        public ICommand? DownloadCommand => null;
+        public ICommand? InstallCommand => null;
+        public ICommand? OpenProjectUrlCommand => null;
 
-        public PluginInfoVM(PluginInfo pluginInfo)
+        public PluginInfoVM(PluginInfo pluginInfo, bool skipIndividualCheck = false)
         {
             PluginInfo = pluginInfo;
             Name = pluginInfo.Name;
@@ -65,7 +110,7 @@ namespace ColorVision.UI.Desktop.Plugins
             ExtractPluginCommand = new RelayCommand(a => ExtractPlugin());
             ContextMenu = new ContextMenu();
 
-            if (PluginInfo.Enabled)
+            if (PluginInfo.Enabled && !skipIndividualCheck)
             {
                 Task.Run(() => CheckVersion());
             }
@@ -78,6 +123,22 @@ namespace ColorVision.UI.Desktop.Plugins
 
 
 
+        }
+
+        /// <summary>
+        /// Set version from an external batch check result (avoids redundant individual API calls).
+        /// </summary>
+        public void SetVersionFromBatchCheck(string versionString)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(versionString))
+                    LastVersion = new Version(versionString.Trim());
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"SetVersionFromBatchCheck failed for {PackageName}: {ex.Message}");
+            }
         }
 
 
@@ -135,6 +196,23 @@ namespace ColorVision.UI.Desktop.Plugins
 
         public async void CheckVersion()
         {
+            // Try marketplace API first
+            try
+            {
+                var client = MarketplaceClient.GetInstance();
+                string? version = await client.GetLatestVersionAsync(PackageName);
+                if (!string.IsNullOrWhiteSpace(version))
+                {
+                    LastVersion = new Version(version.Trim());
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Marketplace API check failed for {PackageName}, falling back to legacy: {ex.Message}");
+            }
+
+            // Fallback to legacy LATEST_RELEASE file
             string LatestReleaseUrl = PluginLoaderrConfig.Instance.PluginUpdatePath  + PackageName + "/LATEST_RELEASE";
             try
             {
@@ -152,7 +230,7 @@ namespace ColorVision.UI.Desktop.Plugins
         }
 
 
-        public void Update()
+        public async void Update()
         {
             if (!HasUpdate || LastVersion == null) return;
 
@@ -160,13 +238,51 @@ namespace ColorVision.UI.Desktop.Plugins
                 return;
 
             string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
-            string url = $"{PluginLoaderrConfig.Instance.PluginUpdatePath}{PackageName}/{PackageName}-{LastVersion}.cvxp";
+
+            // Try to get expected hash from marketplace API for verification
+            string? expectedHash = null;
+            try
+            {
+                var client = MarketplaceClient.GetInstance();
+                var detail = await client.GetPluginDetailAsync(PackageName);
+                expectedHash = detail?.Versions?.FirstOrDefault(v => v.Version == LastVersion.ToString())?.FileHash;
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Could not fetch hash for {PackageName}: {ex.Message}");
+            }
+
+            // Check if the file already exists with matching hash (skip redundant download)
+            string? existingFile = MarketplaceClient.GetExistingFileIfValid(downloadDir, PackageName, LastVersion.ToString(), expectedHash);
+            if (existingFile != null)
+            {
+                log.Info($"Plugin {PackageName} v{LastVersion} already downloaded at {existingFile}, applying directly.");
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    PluginUpdater.UpdatePlugin(existingFile);
+                });
+                return;
+            }
+
+            // Use marketplace API URL with fallback to legacy URL
+            string url = MarketplaceClient.GetInstance().GetDownloadUrl(PackageName, LastVersion.ToString());
 
             DownloadWindow.ShowInstance();
             Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>
             {
                 if (task.Status == DownloadStatus.Completed)
                 {
+                    // Verify hash if available
+                    if (!string.IsNullOrEmpty(expectedHash) && !MarketplaceClient.VerifyFileHash(task.SavePath, expectedHash))
+                    {
+                        log.Error($"Hash mismatch for {PackageName} v{LastVersion}! Expected: {expectedHash}, Actual: {MarketplaceClient.ComputeFileHash(task.SavePath)}");
+                        Application.Current?.Dispatcher.Invoke(() =>
+                            MessageBox.Show(Application.Current.GetActiveWindow(),
+                                $"下载的文件哈希校验失败，文件可能已损坏。\nExpected: {expectedHash}",
+                                "Hash Verification Failed", MessageBoxButton.OK, MessageBoxImage.Error));
+                        return;
+                    }
+
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
                         PluginUpdater.UpdatePlugin(task.SavePath);

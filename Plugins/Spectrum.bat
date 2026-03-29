@@ -1,2 +1,4 @@
-"C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\MSBuild.exe"  ..\scgd_general_wpf.sln /t:Plugins\Spectrum /p:Configuration=Release /p:Platform=x64 /p:BuildProjectReferences=false
-python ..\Scripts\build_plugin.py -t Plugins -p Spectrum
+@echo off
+cd /d "%~dp0..\Scripts"
+python build_spectrum.py --upload %*
+pause

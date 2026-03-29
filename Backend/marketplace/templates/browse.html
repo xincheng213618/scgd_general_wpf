@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}浏览文件 — ColorVision{% endblock %}
+
+{% block content %}
+<!-- Breadcrumbs -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        {% for label, href in breadcrumbs %}
+        {% if loop.last %}
+        <li class="breadcrumb-item active">{{ label }}</li>
+        {% else %}
+        <li class="breadcrumb-item"><a href="{{ href }}">{{ label }}</a></li>
+        {% endif %}
+        {% endfor %}
+    </ol>
+</nav>
+
+<section class="panel-card p-4 table-shell">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title"><i class="bi bi-folder2-open"></i> {{ subpath or 'Storage Root' }}</h2>
+            <div class="section-subtitle mt-2">保留文件系统视角，适合排障、审计和核对归档路径。</div>
+        </div>
+        <div class="surface-tag"><i class="bi bi-grid"></i> {{ items|length }} 个项目</div>
+    </div>
+
+    {% set show_parent_link = true %}
+    {% set empty_message = '目录为空' %}
+    {% include '_storage_listing.html' %}
+</section>
+{% endblock %}

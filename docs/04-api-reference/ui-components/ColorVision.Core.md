@@ -14,10 +14,22 @@
 
 ### 基本信息
 
+- **版本**: 1.5.2.1
+- **目标框架**: .NET 8.0 / .NET 10.0 Windows
 - **主要功能**: C++ 接口封装、核心算法实现
-- **技术栈**: C++/CLI, .NET Interop
-- **特色功能**: 高性能计算、系统级操作
-- **应用场景**: 图像处理、数值计算、硬件接口
+- **技术栈**: C++/CLI, .NET Interop, OpenCV
+- **特色功能**: 高性能计算、系统级操作、OpenCV 原生集成
+- **应用场景**: 图像处理、数值计算、硬件接口、视频解码
+- **允许不安全代码**: 是（AllowUnsafeBlocks）
+
+### 原生依赖
+
+ColorVision.Core 集成了以下 OpenCV 原生库（win-x64）：
+- `opencv_core` - 核心功能
+- `opencv_imgproc` - 图像处理
+- `opencv_videoio` - 视频输入输出
+- `opencv_imgcodecs` - 图像编解码
+- 其他 OpenCV 模块
 
 ## 核心功能
 
@@ -333,6 +345,20 @@ public class ResultCache\<TKey, TValue\>
 - 验证输入参数
 - 正确处理指针操作
 - 实现类型安全的包装
+
+## 更新日志
+
+### v1.5.2.1（2026-02）
+- ✅ 升级目标框架至 .NET 8.0 / .NET 10.0
+- ✅ 更新 OpenCV 原生库至 4.13
+- ✅ 新增视频解码支持（VideoCapture）
+- ✅ 新增 HImage 内存共享机制
+- ✅ 优化 C++/C# 跨语言数据传输
+
+### v1.4.x 及更早
+- 基础 C++ 接口封装
+- 图像处理算法
+- 硬件接口抽象
 
 ## 相关资源
 
