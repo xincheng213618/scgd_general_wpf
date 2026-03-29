@@ -193,7 +193,7 @@ def main() -> int:
     if old_zip:
         print(f"创建增量包: {incremental_zip}")
         make_incremental_zip(old_zip, new_version_dir, incremental_zip)
-        upload_file(incremental_zip, r"ColorVision\Update")
+        upload_file(incremental_zip, "ColorVision/Update")
         # copy_with_progress(incremental_zip,"H:\\ColorVision\\Update")
 
     print("创建全量包")

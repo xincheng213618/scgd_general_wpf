@@ -44,7 +44,62 @@ def parse_update_package(path: Path, storage: Path | None = None) -> dict[str, A
     }
 
 
+def repair_update_storage_layout(storage: Path) -> list[dict[str, str]]:
+    legacy_update_dir = storage / "ColorVision" / "Update"
+    canonical_update_dir = storage / "Update"
+    moved: list[dict[str, str]] = []
+    if not legacy_update_dir.is_dir():
+        return moved
+
+    canonical_update_dir.mkdir(parents=True, exist_ok=True)
+    for entry in sorted(legacy_update_dir.iterdir(), key=lambda item: item.name.lower()):
+        if not entry.is_file():
+            continue
+
+        target = canonical_update_dir / entry.name
+        if target.exists():
+            try:
+                if target.stat().st_size == entry.stat().st_size:
+                    entry.unlink(missing_ok=True)
+                    moved.append(
+                        {
+                            "from": entry.relative_to(storage).as_posix(),
+                            "to": target.relative_to(storage).as_posix(),
+                        }
+                    )
+                    continue
+            except OSError:
+                continue
+
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+            target = canonical_update_dir / f"{entry.stem}-{stamp}{entry.suffix}"
+
+        entry.replace(target)
+        moved.append(
+            {
+                "from": entry.relative_to(storage).as_posix(),
+                "to": target.relative_to(storage).as_posix(),
+            }
+        )
+
+    try:
+        if legacy_update_dir.exists() and not any(legacy_update_dir.iterdir()):
+            legacy_update_dir.rmdir()
+    except OSError:
+        pass
+
+    legacy_root = storage / "ColorVision"
+    try:
+        if legacy_root.exists() and not any(legacy_root.iterdir()):
+            legacy_root.rmdir()
+    except OSError:
+        pass
+
+    return moved
+
+
 def scan_update_packages(storage: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    repair_update_storage_layout(storage)
     update_dir = storage / "Update"
     canonical: list[dict[str, Any]] = []
     others: list[dict[str, Any]] = []

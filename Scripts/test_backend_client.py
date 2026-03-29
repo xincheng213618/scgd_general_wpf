@@ -79,6 +79,18 @@ class BackendClientTests(unittest.TestCase):
         os.environ["COLORVISION_UPLOAD_URL"] = "http://example.com:9998/"
         self.assertEqual(backend_client.resolve_upload_base_url(), "http://example.com:9998")
 
+    def test_build_upload_url_normalizes_windows_separators(self):
+        url = backend_client.build_upload_url(
+            "http://example.com:9998",
+            r"ColorVision\Update",
+            "ColorVision-Update-[1.2.3.4].cvx",
+        )
+
+        self.assertEqual(
+            url,
+            "http://example.com:9998/upload/ColorVision/Update/ColorVision-Update-%5B1.2.3.4%5D.cvx",
+        )
+
     def test_upload_file_uses_tuple_auth(self):
         session = DummySession(SimpleNamespace(status_code=201, text=""))
         settings = backend_client.RemoteUploadSettings(

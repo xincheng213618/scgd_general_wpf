@@ -60,7 +60,8 @@ def resolve_upload_base_url(base_url: str | None = None) -> str:
 
 
 def build_upload_url(base_url: str, folder_name: str, file_name: str) -> str:
-    encoded_parts = [quote(part, safe="") for part in folder_name.strip("/").split("/") if part]
+    normalized_folder = folder_name.replace("\\", "/").strip("/")
+    encoded_parts = [quote(part, safe="") for part in normalized_folder.split("/") if part]
     encoded_parts.append(quote(file_name, safe=""))
     return f"{base_url.rstrip('/')}/upload/{'/'.join(encoded_parts)}"
 

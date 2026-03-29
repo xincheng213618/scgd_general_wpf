@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import app as marketplace_app
-from update_retention import prune_update_packages
+from update_retention import prune_update_packages, repair_update_storage_layout
 
 
 class MarketplaceAppTests(unittest.TestCase):
@@ -149,6 +149,47 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertIn(dropped.name, result["deleted"])
         self.assertTrue(keep_latest.exists())
         self.assertFalse(dropped.exists())
+
+    def test_repair_update_storage_layout_moves_misplaced_files(self):
+        legacy_dir = self.storage / "ColorVision" / "Update"
+        legacy_dir.mkdir(parents=True, exist_ok=True)
+        misplaced = legacy_dir / "ColorVision-Update-[1.2.3.4].cvx"
+        misplaced.write_bytes(b"update")
+
+        result = repair_update_storage_layout(self.storage)
+
+        repaired = self.storage / "Update" / misplaced.name
+        self.assertTrue(repaired.exists())
+        self.assertFalse(misplaced.exists())
+        self.assertEqual(result[0]["to"], f"Update/{misplaced.name}")
+
+    def test_legacy_update_download_repairs_misplaced_update_file(self):
+        legacy_dir = self.storage / "ColorVision" / "Update"
+        legacy_dir.mkdir(parents=True, exist_ok=True)
+        misplaced = legacy_dir / "ColorVision-Update-[1.2.3.4].cvx"
+        misplaced.write_bytes(b"update")
+
+        response = self.client.get(f"/D:/ColorVision/Update/{misplaced.name}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_data(), b"update")
+        response.close()
+        self.assertTrue((self.storage / "Update" / misplaced.name).exists())
+        self.assertFalse(misplaced.exists())
+
+    def test_download_route_repairs_misplaced_update_file(self):
+        legacy_dir = self.storage / "ColorVision" / "Update"
+        legacy_dir.mkdir(parents=True, exist_ok=True)
+        misplaced = legacy_dir / "ColorVision-Update-[2.3.4.5].cvx"
+        misplaced.write_bytes(b"update-download")
+
+        response = self.client.get(f"/download/Update/{misplaced.name}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_data(), b"update-download")
+        response.close()
+        self.assertTrue((self.storage / "Update" / misplaced.name).exists())
+        self.assertFalse(misplaced.exists())
 
     def test_plugin_list_endpoints_do_not_compute_package_hashes(self):
         self._create_plugin("FastPlugin", "1.0.0")

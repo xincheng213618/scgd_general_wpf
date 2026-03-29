@@ -33,13 +33,22 @@ from datetime import datetime, timezone
 from functools import wraps
 from download_stats import (
     build_stats_payload,
-    get_download_count,
     get_download_counts,
     hash_ip,
     record_download,
 )
 from markupsafe import Markup
 from pathlib import Path, PurePosixPath
+from package_publish import (
+    PackageValidationError,
+    extract_package_version,
+    finalize_plugin_publish,
+    load_manifest,
+    persist_plugin_metadata,
+    save_package_file,
+    validate_api_publish_request,
+    validate_html_upload_request,
+)
 from plugin_queries import (
     build_plugin_search_result,
     collect_plugin_categories,
@@ -47,6 +56,7 @@ from plugin_queries import (
     normalize_catalog_sort,
     sort_plugin_summaries,
 )
+from storage_uploads import UploadTooLargeError, UploadWorkflowError, store_legacy_upload
 from typing import Any
 from page_contexts import (
     build_browse_page_context,
@@ -56,7 +66,6 @@ from page_contexts import (
 )
 from plugin_marketplace import (
     get_plugin_detail as get_plugin_detail_impl,
-    is_safe_plugin_id,
     prewarm_plugin_metadata,
     reconcile_all_plugin_package_histories as reconcile_all_plugin_package_histories_impl,
     reconcile_plugin_package_history as reconcile_plugin_package_history_impl,
@@ -69,6 +78,7 @@ from storage_browser import (
 )
 from update_retention import (
     prune_update_packages,
+    repair_update_storage_layout,
 )
 
 try:
@@ -491,76 +501,16 @@ def _parse_int_arg(
 
 
 def _extract_package_version(filename: str, plugin_id: str) -> str | None:
-    safe_filename = _sanitize_filename(filename)
-    if safe_filename != filename or safe_filename.lower().endswith(".cvxp") is False:
-        return None
-    match = re.match(
-        rf"^{re.escape(plugin_id)}-([0-9]+(?:\.[0-9]+)*)\.cvxp$",
-        safe_filename,
-        re.IGNORECASE,
+    return extract_package_version(
+        filename,
+        plugin_id,
+        sanitize_filename=_sanitize_filename,
+        validate_version=_is_safe_version,
     )
-    if not match:
-        return None
-    version = match.group(1)
-    return version if _is_safe_version(version) else None
-
-
-def _ensure_plugin_dir(plugin_id: str) -> Path:
-    if not is_safe_plugin_id(plugin_id):
-        raise ValueError("PluginId contains invalid characters")
-    plugin_dir = STORAGE / "Plugins" / plugin_id
-    plugin_dir.mkdir(parents=True, exist_ok=True)
-    return plugin_dir
-
-
-def _update_latest_release_file(plugin_dir: Path, version: str):
-    latest_path = plugin_dir / "LATEST_RELEASE"
-    existing = read_text_file(latest_path) or "0.0.0.0"
-    try:
-        if _version_tuple(version) >= _version_tuple(existing):
-            latest_path.write_text(version, encoding="utf-8")
-    except ValueError:
-        latest_path.write_text(version, encoding="utf-8")
 
 
 def _load_manifest(manifest_path: Path) -> dict[str, Any]:
-    if not manifest_path.exists():
-        return {}
-    try:
-        with open(manifest_path, encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        return {}
-
-
-def _save_plugin_package(
-    package_file,
-    plugin_id: str,
-    version: str,
-    *,
-    filename: str | None = None,
-) -> tuple[Path, list[dict[str, str]]]:
-    plugin_dir = _ensure_plugin_dir(plugin_id)
-    save_filename = filename or f"{plugin_id}-{version}.cvxp"
-    safe_filename = _sanitize_filename(save_filename)
-    if safe_filename != save_filename or safe_filename.lower().endswith(".cvxp") is False:
-        raise ValueError("Package filename must be a .cvxp file")
-
-    save_path = plugin_dir / safe_filename
-    package_file.save(str(save_path))
-    _update_latest_release_file(plugin_dir, version)
-    moved_packages = reconcile_plugin_package_history(plugin_id)
-    _refresh_related_caches(plugin_id=plugin_id, relative_path=f"Plugins/{plugin_id}")
-    prewarm_plugin_metadata(
-        STORAGE,
-        plugin_id,
-        version,
-        download_counts=_get_download_counts(),
-        get_cache_entry=_get_cache_entry,
-        set_cache_entry=_set_cache_entry,
-        ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
-    )
-    return save_path, moved_packages
+    return load_manifest(manifest_path)
 
 
 def _unique_output_path(directory: Path, filename: str) -> Path:
@@ -796,6 +746,9 @@ def reconcile_app_release_history(keep_latest: int | None = None) -> list[dict[s
 def resolve_storage_file(relative_path: str) -> Path:
     normalized = _normalize_relative_path(relative_path)
     target = STORAGE / Path(*PurePosixPath(normalized).parts)
+    if normalized.startswith("Update/") and not target.exists():
+        repair_update_storage_layout(STORAGE)
+        target = STORAGE / Path(*PurePosixPath(normalized).parts)
     try:
         target.resolve().relative_to(STORAGE.resolve())
     except ValueError:
@@ -869,10 +822,6 @@ def reconcile_all_plugin_package_histories() -> dict[str, list[dict[str, str]]]:
             relative_path=f"Plugins/{changed_plugin_id}",
         ),
     )
-
-
-def _get_download_count(plugin_id: str) -> int:
-    return get_download_count(get_db, plugin_id)
 
 
 def _record_download(plugin_id: str, version: str):
@@ -1068,52 +1017,46 @@ def upload_page():
 
     # Handle file upload
     file = request.files.get("package")
-    plugin_id = request.form.get("plugin_id", "").strip()
-
-    if not file or not file.filename:
-        return render_template("upload.html", message=None, error="请选择要上传的文件")
-
-    if not plugin_id:
-        # Try to infer from filename
-        m = re.match(r"^(.+?)-[\d.]+\.cvxp$", file.filename)
-        if m:
-            plugin_id = m.group(1)
-        else:
-            return render_template(
-                "upload.html", message=None, error="请填写插件 ID 或使用标准文件名格式"
-            )
-
-    if not _is_safe_id(plugin_id):
-        return render_template(
-            "upload.html", message=None, error="插件 ID 只能包含字母、数字、下划线和连字符"
-        )
-
-    safe_filename = _sanitize_filename(file.filename)
-    version = _extract_package_version(safe_filename, plugin_id)
-    if not safe_filename or not version:
-        return render_template(
-            "upload.html",
-            message=None,
-            error="文件名必须为 {PluginId}-{version}.cvxp，且版本只能包含数字和点",
-        )
+    plugin_id = request.form.get("plugin_id", "")
 
     try:
-        _, moved_packages = _save_plugin_package(
+        upload_request = validate_html_upload_request(
             file,
             plugin_id,
-            version,
-            filename=safe_filename,
+            sanitize_filename=_sanitize_filename,
+            validate_plugin_id=_is_safe_id,
+            validate_version=_is_safe_version,
         )
-    except ValueError as exc:
+        save_result = save_package_file(
+            STORAGE,
+            file,
+            upload_request,
+            validate_plugin_id=_is_safe_id,
+            read_text_file=read_text_file,
+            version_tuple=_version_tuple,
+            reconcile_plugin_package_history=reconcile_plugin_package_history,
+        )
+        finalize_plugin_publish(
+            STORAGE,
+            plugin_id=upload_request.plugin_id,
+            version=upload_request.version,
+            refresh_related_caches=_refresh_related_caches,
+            prewarm_plugin_metadata=prewarm_plugin_metadata,
+            get_download_counts=_get_download_counts,
+            get_cache_entry=_get_cache_entry,
+            set_cache_entry=_set_cache_entry,
+            ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
+        )
+    except PackageValidationError as exc:
         return render_template("upload.html", message=None, error=str(exc))
 
     return render_template(
         "upload.html",
         message=(
-            f"上传成功: {safe_filename} → Plugins/{plugin_id}/"
+            f"上传成功: {upload_request.safe_filename} → Plugins/{upload_request.plugin_id}/"
             + (
-                f"，并自动归档 {len(moved_packages)} 个旧版本"
-                if moved_packages
+                f"，并自动归档 {len(save_result.moved_packages)} 个旧版本"
+                if save_result.moved_packages
                 else ""
             )
         ),
@@ -1328,30 +1271,9 @@ def api_publish_package():
     Accepts multipart form: plugin metadata + .cvxp package file.
     """
     package = request.files.get("package")
-    if not package or not package.filename:
-        return jsonify({"error": "Package file is required"}), 400
-
     plugin_id = request.form.get("PluginId", request.form.get("plugin_id", "")).strip()
     version = request.form.get("Version", request.form.get("version", "")).strip()
 
-    if not plugin_id:
-        return jsonify({"error": "PluginId is required"}), 400
-    if not version:
-        return jsonify({"error": "Version is required"}), 400
-    if not _is_safe_id(plugin_id):
-        return jsonify({"error": "PluginId contains invalid characters"}), 400
-    if not _is_safe_version(version):
-        return jsonify({"error": "Version must be digits separated by dots"}), 400
-    if _sanitize_filename(package.filename).lower().endswith(".cvxp") is False:
-        return jsonify({"error": "Package file must have a .cvxp extension"}), 400
-
-    try:
-        plugin_dir = _ensure_plugin_dir(plugin_id)
-        _save_plugin_package(package, plugin_id, version)
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
-
-    # Save optional metadata
     name = request.form.get("Name", request.form.get("name", plugin_id)).strip()
     description = request.form.get("Description", request.form.get("description", "")).strip()
     author = request.form.get("Author", request.form.get("author", "")).strip()
@@ -1360,37 +1282,55 @@ def api_publish_package():
         "RequiresVersion", request.form.get("requires_version", "")
     ).strip()
     changelog_text = request.form.get("ChangeLog", request.form.get("changelog", "")).strip()
-
-    # Update manifest.json
-    manifest_path = plugin_dir / "manifest.json"
-    manifest = _load_manifest(manifest_path)
-
-    manifest["id"] = plugin_id
-    manifest["name"] = name or plugin_id
-    if description:
-        manifest["description"] = description
-    if author:
-        manifest["author"] = author
-    if category:
-        manifest["category"] = category
-    if requires_ver:
-        manifest["requires"] = requires_ver
-    manifest["version"] = version
-
-    with open(manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest, f, indent=2, ensure_ascii=False)
-
-    # Save changelog if provided
-    if changelog_text:
-        (plugin_dir / "CHANGELOG.md").write_text(changelog_text, encoding="utf-8")
-
-    # Save icon if provided
     icon = request.files.get("icon")
-    if icon and icon.filename:
-        icon.save(str(plugin_dir / "PackageIcon.png"))
+
+    try:
+        upload_request = validate_api_publish_request(
+            package,
+            plugin_id,
+            version,
+            sanitize_filename=_sanitize_filename,
+            validate_plugin_id=_is_safe_id,
+            validate_version=_is_safe_version,
+        )
+        save_result = save_package_file(
+            STORAGE,
+            package,
+            upload_request,
+            validate_plugin_id=_is_safe_id,
+            read_text_file=read_text_file,
+            version_tuple=_version_tuple,
+            reconcile_plugin_package_history=reconcile_plugin_package_history,
+        )
+        persist_plugin_metadata(
+            save_result.plugin_dir,
+            plugin_id=upload_request.plugin_id,
+            version=upload_request.version,
+            name=name or upload_request.plugin_id,
+            description=description,
+            author=author,
+            category=category,
+            requires_version=requires_ver,
+            changelog_text=changelog_text,
+            icon_file=icon,
+            manifest_loader=load_manifest,
+        )
+        finalize_plugin_publish(
+            STORAGE,
+            plugin_id=upload_request.plugin_id,
+            version=upload_request.version,
+            refresh_related_caches=_refresh_related_caches,
+            prewarm_plugin_metadata=prewarm_plugin_metadata,
+            get_download_counts=_get_download_counts,
+            get_cache_entry=_get_cache_entry,
+            set_cache_entry=_set_cache_entry,
+            ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
+        )
+    except PackageValidationError as exc:
+        return jsonify({"error": str(exc)}), 400
 
     return (
-        jsonify({"pluginId": plugin_id, "version": version}),
+        jsonify({"pluginId": upload_request.plugin_id, "version": upload_request.version}),
         201,
     )
 
@@ -1431,6 +1371,9 @@ def legacy_files(filepath):
     http://host:9999/D%3A/ColorVision/Tool/...
     """
     full_path = STORAGE / filepath
+    if filepath.replace("\\", "/").startswith("Update/") and not full_path.exists():
+        repair_update_storage_layout(STORAGE)
+        full_path = STORAGE / filepath
     try:
         full_path.resolve().relative_to(STORAGE.resolve())
     except ValueError:
@@ -1454,53 +1397,30 @@ def legacy_upload(filepath):
     Backward-compatible upload endpoint matching old file_manager.py pattern:
     PUT http://host:9998/upload/ColorVision/Plugins/{PluginId}/{filename}
     """
-    normalized = _normalize_relative_path(filepath.replace("ColorVision/", "", 1))
-    if not normalized:
-        abort(400, description="Upload path is required")
-    target = STORAGE / Path(*PurePosixPath(normalized).parts)
     try:
-        target.resolve().relative_to(STORAGE.resolve())
-    except ValueError:
-        abort(403)
-
-    # Sanitize: ensure the final component has no path traversal
-    if ".." in str(target):
-        abort(403)
-
-    parts = PurePosixPath(normalized).parts
-    plugin_id = parts[1] if len(parts) >= 2 and parts[0] == "Plugins" else None
-    if plugin_id and not _is_safe_id(plugin_id):
-        abort(400, description="Invalid plugin_id in upload path")
-    if plugin_id and target.suffix.lower() == ".cvxp":
-        version = _extract_package_version(target.name, plugin_id)
-        if not version:
-            abort(400, description="Invalid plugin package filename")
-
-    target.parent.mkdir(parents=True, exist_ok=True)
-    max_size = MAX_UPLOAD_SIZE_BYTES
-    total = 0
-    with open(target, "wb") as f:
-        while True:
-            chunk = request.stream.read(8192)
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > max_size:
-                f.close()
-                target.unlink(missing_ok=True)
-                return "File too large", 413
-            f.write(chunk)
-
-    if _is_root_release_file(target):
-        reconcile_app_release_history()
-    if plugin_id and target.suffix.lower() == ".cvxp":
-        reconcile_plugin_package_history(plugin_id)
-    if parts and parts[0] == "Update":
-        prune_update_packages(STORAGE)
-    _refresh_related_caches(
-        plugin_id=plugin_id,
-        relative_path=normalized,
-    )
+        store_legacy_upload(
+            storage=STORAGE,
+            raw_filepath=filepath,
+            stream=request.stream,
+            max_size=MAX_UPLOAD_SIZE_BYTES,
+            normalize_relative_path=_normalize_relative_path,
+            validate_plugin_id=_is_safe_id,
+            extract_package_version=lambda filename, plugin_id: extract_package_version(
+                filename,
+                plugin_id,
+                sanitize_filename=_sanitize_filename,
+                validate_version=_is_safe_version,
+            ),
+            is_root_release_file=_is_root_release_file,
+            reconcile_app_release_history=reconcile_app_release_history,
+            reconcile_plugin_package_history=reconcile_plugin_package_history,
+            prune_update_packages=prune_update_packages,
+            refresh_related_caches=_refresh_related_caches,
+        )
+    except UploadTooLargeError as exc:
+        return exc.message, exc.status_code
+    except UploadWorkflowError as exc:
+        abort(exc.status_code, description=exc.message)
 
     return "File uploaded successfully", 201
 
