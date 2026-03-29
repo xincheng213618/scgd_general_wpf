@@ -1541,6 +1541,59 @@ def api_stats():
 
 
 # ===================================================================
+# FEEDBACK / LOG UPLOAD API
+# ===================================================================
+
+
+@app.route("/api/feedback", methods=["POST"])
+def api_feedback():
+    """
+    Receive user feedback with optional log files, screenshots, and attachments.
+    The feedback is stored in storage/Feedback/{timestamp}_{hash}/.
+    """
+    message = request.form.get("message", "").strip()
+    user_name = request.form.get("userName", "").strip()
+    app_version = request.form.get("appVersion", "").strip()
+    machine_info = request.form.get("machineInfo", "").strip()
+
+    if not message and not request.files:
+        return jsonify({"error": "Message or at least one file is required"}), 400
+
+    # Create feedback directory
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    feedback_id = f"{timestamp}_{hashlib.md5((message + str(datetime.now())).encode()).hexdigest()[:8]}"
+    feedback_dir = STORAGE / "Feedback" / feedback_id
+    feedback_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save metadata
+    metadata = {
+        "feedbackId": feedback_id,
+        "message": message,
+        "userName": user_name,
+        "appVersion": app_version,
+        "machineInfo": machine_info,
+        "clientIp": _hash_ip(request.remote_addr),
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "files": [],
+    }
+
+    # Save uploaded files
+    for key in request.files:
+        for f in request.files.getlist(key):
+            if f and f.filename:
+                safe_name = _sanitize_filename(f.filename)
+                if safe_name:
+                    f.save(str(feedback_dir / safe_name))
+                    metadata["files"].append(safe_name)
+
+    # Write metadata JSON
+    with open(feedback_dir / "feedback.json", "w", encoding="utf-8") as mf:
+        json.dump(metadata, mf, indent=2, ensure_ascii=False)
+
+    return jsonify({"feedbackId": feedback_id, "message": "Feedback received"}), 201
+
+
+# ===================================================================
 # Entry point
 # ===================================================================
 
