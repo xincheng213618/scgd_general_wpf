@@ -702,4 +702,7 @@
   <data name="SendFailed" xml:space="preserve">
     <value>Send failed: {0}</value>
   </data>
+  <data name="ServerAddressNotConfigured" xml:space="preserve">
+    <value>Server address not configured</value>
+  </data>
 </root>

@@ -1812,5 +1812,13 @@ namespace ColorVision.UI.Desktop.Properties {
                 return ResourceManager.GetString("SendFailed", resourceCulture);
             }
         }
+        /// <summary>
+        ///   查找类似 无法确定服务器地址 的本地化字符串。
+        /// </summary>
+        public static string ServerAddressNotConfigured {
+            get {
+                return ResourceManager.GetString("ServerAddressNotConfigured", resourceCulture);
+            }
+        }
     }
 }

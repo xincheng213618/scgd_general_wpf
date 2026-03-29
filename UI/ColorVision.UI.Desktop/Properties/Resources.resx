@@ -682,4 +682,7 @@
   <data name="SendFailed" xml:space="preserve">
     <value>发送失败: {0}</value>
   </data>
+  <data name="ServerAddressNotConfigured" xml:space="preserve">
+    <value>无法确定服务器地址</value>
+  </data>
 </root>

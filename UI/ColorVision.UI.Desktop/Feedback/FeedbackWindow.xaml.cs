@@ -312,7 +312,7 @@ namespace ColorVision.UI.Desktop.Feedback
 
                 if (string.IsNullOrEmpty(baseUrl))
                 {
-                    StatusText.Text = string.Format(Properties.Resources.SendFailed, "无法确定服务器地址");
+                    StatusText.Text = string.Format(Properties.Resources.SendFailed, Properties.Resources.ServerAddressNotConfigured);
                     return;
                 }
 
