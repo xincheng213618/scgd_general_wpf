@@ -24,18 +24,16 @@ Run:
 import argparse
 import hashlib
 import json
-import os
 import re
 import sqlite3
-import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from flask import (
     Flask,
     abort,
     jsonify,
-    redirect,
     render_template,
     request,
     send_from_directory,
@@ -74,9 +72,13 @@ app.secret_key = CONFIG["secret_key"]
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB upload limit
 
 # ---------------------------------------------------------------------------
-# Database helpers (SQLite for download statistics)
+# Database helpers (SQLite for download statistics and cache)
 # ---------------------------------------------------------------------------
 DB_PATH = BASE_DIR / "marketplace.db"
+OVERVIEW_CACHE_KEY = "storage_overview:v2"
+OVERVIEW_CACHE_TTL_SECONDS = 300
+DIRECTORY_COUNT_CACHE_TTL_SECONDS = 300
+PLUGIN_INFO_CACHE_TTL_SECONDS = 300
 
 
 def get_db():
@@ -99,6 +101,14 @@ def init_db():
         );
         CREATE INDEX IF NOT EXISTS idx_dl_plugin ON download_log(plugin_id);
         CREATE INDEX IF NOT EXISTS idx_dl_time   ON download_log(downloaded_at);
+        CREATE TABLE IF NOT EXISTS cache_entry (
+            key         TEXT PRIMARY KEY,
+            value       TEXT NOT NULL,
+            signature   TEXT NOT NULL DEFAULT '',
+            expires_at  INTEGER NOT NULL,
+            updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_cache_expiry ON cache_entry(expires_at);
     """
     )
     db.commit()
@@ -106,6 +116,83 @@ def init_db():
 
 
 init_db()
+
+
+def _now_ts() -> int:
+    return int(datetime.now(timezone.utc).timestamp())
+
+
+def _set_cache_entry(key: str, value, *, ttl_seconds: int, signature: str = ""):
+    try:
+        payload = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+        db = get_db()
+        db.execute(
+            """
+            INSERT INTO cache_entry (key, value, signature, expires_at, updated_at)
+            VALUES (?, ?, ?, ?, datetime('now'))
+            ON CONFLICT(key) DO UPDATE SET
+                value = excluded.value,
+                signature = excluded.signature,
+                expires_at = excluded.expires_at,
+                updated_at = datetime('now')
+            """,
+            (key, payload, signature, _now_ts() + ttl_seconds),
+        )
+        db.commit()
+        db.close()
+    except Exception:
+        pass
+
+
+def _get_cache_entry(key: str, *, signature: str | None = None) -> dict | None:
+    try:
+        db = get_db()
+        row = db.execute(
+            "SELECT value, signature, expires_at, updated_at FROM cache_entry WHERE key = ?",
+            (key,),
+        ).fetchone()
+        db.close()
+    except Exception:
+        return None
+
+    if not row or row["expires_at"] <= _now_ts():
+        return None
+    if signature is not None and row["signature"] != signature:
+        return None
+
+    try:
+        value = json.loads(row["value"])
+    except (TypeError, json.JSONDecodeError):
+        return None
+
+    return {
+        "value": value,
+        "updated_at": row["updated_at"],
+        "expires_at": row["expires_at"],
+        "signature": row["signature"],
+    }
+
+
+def _invalidate_cache_prefix(prefix: str):
+    try:
+        db = get_db()
+        db.execute("DELETE FROM cache_entry WHERE key LIKE ?", (f"{prefix}%",))
+        db.commit()
+        db.close()
+    except Exception:
+        pass
+
+
+def _refresh_related_caches(*, plugin_id: str | None = None, relative_path: str = ""):
+    _invalidate_cache_prefix("storage_overview:")
+
+    top_level = Path(relative_path).parts[0] if relative_path else ""
+    if top_level:
+        _invalidate_cache_prefix(f"dir_file_count:{top_level}")
+
+    if plugin_id:
+        _invalidate_cache_prefix(f"plugin_info:{plugin_id}")
+        _invalidate_cache_prefix(f"dir_file_count:Plugins/{plugin_id}")
 
 # ---------------------------------------------------------------------------
 # Security helpers
@@ -147,27 +234,88 @@ def read_text_file(path: Path) -> str | None:
         return None
 
 
-def scan_plugins() -> list[dict]:
+def _storage_relative(path: Path) -> str:
+    try:
+        return path.relative_to(STORAGE).as_posix()
+    except ValueError:
+        return path.name
+
+
+def _plugin_signature(plugin_dir: Path) -> str:
+    parts = []
+    try:
+        dir_stat = plugin_dir.stat()
+        parts.append(f"dir:{dir_stat.st_mtime_ns}")
+    except OSError:
+        return "missing"
+
+    try:
+        entries = sorted(plugin_dir.iterdir(), key=lambda item: item.name.lower())
+    except OSError:
+        return "unreadable"
+
+    for entry in entries:
+        if entry.name.startswith("."):
+            continue
+        try:
+            stat = entry.stat()
+        except OSError:
+            continue
+        parts.append(
+            f"{entry.name}:{'d' if entry.is_dir() else 'f'}:{stat.st_mtime_ns}:{stat.st_size}"
+        )
+
+    return "|".join(parts)
+
+
+def _get_download_counts() -> dict[str, int]:
+    try:
+        db = get_db()
+        rows = db.execute(
+            "SELECT plugin_id, COUNT(*) AS cnt FROM download_log GROUP BY plugin_id"
+        ).fetchall()
+        db.close()
+        return {row["plugin_id"]: row["cnt"] for row in rows}
+    except Exception:
+        return {}
+
+
+def scan_plugins(download_counts: dict[str, int] | None = None) -> list[dict]:
     """Scan the Plugins directory and return metadata for each plugin."""
     plugins_dir = STORAGE / "Plugins"
     if not plugins_dir.is_dir():
         return []
 
+    if download_counts is None:
+        download_counts = _get_download_counts()
+
     plugins = []
     for entry in sorted(plugins_dir.iterdir()):
         if not entry.is_dir():
             continue
-        info = get_plugin_info(entry.name)
+        info = get_plugin_info(entry.name, download_counts=download_counts)
         if info:
             plugins.append(info)
     return plugins
 
 
-def get_plugin_info(plugin_id: str) -> dict | None:
+def get_plugin_info(
+    plugin_id: str, download_counts: dict[str, int] | None = None
+) -> dict | None:
     """Read metadata for a single plugin from its directory."""
     plugin_dir = STORAGE / "Plugins" / plugin_id
     if not plugin_dir.is_dir():
         return None
+
+    if download_counts is None:
+        download_counts = _get_download_counts()
+    cache_key = f"plugin_info:{plugin_id}"
+    signature = _plugin_signature(plugin_dir)
+    cached = _get_cache_entry(cache_key, signature=signature)
+    if cached:
+        info = dict(cached["value"])
+        info["total_downloads"] = download_counts.get(plugin_id, 0)
+        return info
 
     latest_version = read_text_file(plugin_dir / "LATEST_RELEASE")
 
@@ -206,10 +354,7 @@ def get_plugin_info(plugin_id: str) -> dict | None:
 
     has_icon = (plugin_dir / "PackageIcon.png").exists()
 
-    # Download count from DB
-    total_downloads = _get_download_count(plugin_id)
-
-    return {
+    info = {
         "id": manifest.get("id", plugin_id),
         "name": manifest.get("name", plugin_id),
         "description": manifest.get("description", ""),
@@ -222,7 +367,7 @@ def get_plugin_info(plugin_id: str) -> dict | None:
         "readme": readme or "",
         "changelog": changelog or "",
         "packages": packages,
-        "total_downloads": total_downloads,
+        "total_downloads": download_counts.get(plugin_id, 0),
         "modified": (
             packages[0]["modified"]
             if packages
@@ -231,6 +376,16 @@ def get_plugin_info(plugin_id: str) -> dict | None:
             ).isoformat()
         ),
     }
+
+    _set_cache_entry(
+        cache_key,
+        info,
+        ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
+        signature=signature,
+    )
+
+    info["total_downloads"] = download_counts.get(plugin_id, 0)
+    return info
 
 
 def _get_download_count(plugin_id: str) -> int:
@@ -295,16 +450,31 @@ app.jinja_env.globals["human_size"] = human_size
 # ---------------------------------------------------------------------------
 
 
-def scan_storage_overview() -> list[dict]:
+def scan_storage_overview() -> list[dict[str, Any]]:
     """Return a summary of top-level directories in storage."""
+    cached = _get_cache_entry(OVERVIEW_CACHE_KEY)
+    if cached:
+        return cached["value"]
+
     if not STORAGE.is_dir():
         return []
-    items = []
+
+    items: list[dict[str, Any]] = []
     for entry in sorted(STORAGE.iterdir()):
         if entry.name.startswith("."):
             continue
         if entry.is_dir():
-            file_count = sum(1 for _ in entry.rglob("*") if _.is_file())
+            cache_key = f"dir_file_count:{_storage_relative(entry)}"
+            count_cache = _get_cache_entry(cache_key)
+            if count_cache:
+                file_count = count_cache["value"].get("file_count", 0)
+            else:
+                file_count = sum(1 for child in entry.rglob("*") if child.is_file())
+                _set_cache_entry(
+                    cache_key,
+                    {"file_count": file_count},
+                    ttl_seconds=DIRECTORY_COUNT_CACHE_TTL_SECONDS,
+                )
             items.append(
                 {
                     "name": entry.name,
@@ -326,7 +496,47 @@ def scan_storage_overview() -> list[dict]:
                     ).isoformat(),
                 }
             )
+    _set_cache_entry(
+        OVERVIEW_CACHE_KEY,
+        items,
+        ttl_seconds=OVERVIEW_CACHE_TTL_SECONDS,
+        signature="storage",
+    )
     return items
+
+
+def build_storage_summary(overview: list[dict[str, Any]]) -> dict:
+    directory_count = sum(1 for item in overview if item["type"] == "dir")
+    top_level_file_count = sum(1 for item in overview if item["type"] == "file")
+    nested_file_count = sum(item.get("file_count", 0) for item in overview if item["type"] == "dir")
+    top_level_size = sum(item.get("size", 0) for item in overview if item["type"] == "file")
+    return {
+        "item_count": len(overview),
+        "directory_count": directory_count,
+        "top_level_file_count": top_level_file_count,
+        "total_file_count": top_level_file_count + nested_file_count,
+        "top_level_size": top_level_size,
+    }
+
+
+def get_storage_overview_context() -> tuple[list[dict[str, Any]], dict, dict]:
+    cached = _get_cache_entry(OVERVIEW_CACHE_KEY)
+    if cached:
+        overview = cached["value"]
+        return overview, build_storage_summary(overview), {
+            "cache_hit": True,
+            "updated_at": cached["updated_at"],
+            "updated_at_display": str(cached["updated_at"]).replace("T", " ")[:19],
+            "ttl_seconds": OVERVIEW_CACHE_TTL_SECONDS,
+        }
+
+    overview = scan_storage_overview()
+    return overview, build_storage_summary(overview), {
+        "cache_hit": False,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at_display": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        "ttl_seconds": OVERVIEW_CACHE_TTL_SECONDS,
+    }
 
 
 # ===================================================================
@@ -338,8 +548,14 @@ def scan_storage_overview() -> list[dict]:
 def index():
     """Home page — show storage overview."""
     app_info = get_app_info()
-    overview = scan_storage_overview()
-    return render_template("index.html", app_info=app_info, overview=overview)
+    overview, overview_summary, overview_meta = get_storage_overview_context()
+    return render_template(
+        "index.html",
+        app_info=app_info,
+        overview=overview,
+        overview_summary=overview_summary,
+        overview_meta=overview_meta,
+    )
 
 
 @app.route("/plugins")
@@ -349,7 +565,9 @@ def plugins_page():
     category = request.args.get("category", "").strip()
     sort_by = request.args.get("sort", "modified")
 
-    plugins = scan_plugins()
+    download_counts = _get_download_counts()
+    all_plugins = scan_plugins(download_counts=download_counts)
+    plugins = list(all_plugins)
 
     # Filter
     if keyword:
@@ -373,9 +591,7 @@ def plugins_page():
         plugins.sort(key=lambda p: p["modified"], reverse=True)
 
     # Collect categories
-    all_categories = sorted(
-        {p["category"] for p in scan_plugins() if p["category"]}
-    )
+    all_categories = sorted({p["category"] for p in all_plugins if p["category"]})
 
     return render_template(
         "plugins.html",
@@ -390,7 +606,7 @@ def plugins_page():
 @app.route("/plugins/<plugin_id>")
 def plugin_detail_page(plugin_id):
     """Plugin detail page."""
-    info = get_plugin_info(plugin_id)
+    info = get_plugin_info(plugin_id, download_counts=_get_download_counts())
     if not info:
         abort(404)
     return render_template("plugin_detail.html", plugin=info)
@@ -457,6 +673,8 @@ def upload_page():
                 latest_path.write_text(version, encoding="utf-8")
         except ValueError:
             latest_path.write_text(version, encoding="utf-8")
+
+    _refresh_related_caches(plugin_id=plugin_id, relative_path=f"Plugins/{plugin_id}")
 
     return render_template(
         "upload.html",
@@ -529,7 +747,7 @@ def api_search_plugins():
     page_size = int(request.args.get("PageSize", request.args.get("pageSize", 20)))
     page_size = min(max(page_size, 1), 100)
 
-    plugins = scan_plugins()
+    plugins = scan_plugins(download_counts=_get_download_counts())
 
     # Filter
     if keyword:
@@ -590,7 +808,7 @@ def api_search_plugins():
 @app.route("/api/plugins/categories", methods=["GET"])
 def api_categories():
     """Get all plugin categories."""
-    plugins = scan_plugins()
+    plugins = scan_plugins(download_counts=_get_download_counts())
     categories = sorted({p["category"] for p in plugins if p["category"]})
     return jsonify(categories)
 
@@ -612,7 +830,7 @@ def api_batch_version_check():
 @app.route("/api/plugins/<plugin_id>", methods=["GET"])
 def api_plugin_detail(plugin_id):
     """Get detailed plugin information."""
-    info = get_plugin_info(plugin_id)
+    info = get_plugin_info(plugin_id, download_counts=_get_download_counts())
     if not info:
         return jsonify({"error": "Plugin not found"}), 404
 
@@ -764,6 +982,8 @@ def api_publish_package():
     if icon and icon.filename:
         icon.save(str(plugin_dir / "PackageIcon.png"))
 
+    _refresh_related_caches(plugin_id=plugin_id, relative_path=f"Plugins/{plugin_id}")
+
     return (
         jsonify({"pluginId": plugin_id, "version": version}),
         201,
@@ -852,6 +1072,14 @@ def legacy_upload(filepath):
                 target.unlink(missing_ok=True)
                 return "File too large", 413
             f.write(chunk)
+
+    parts = Path(filepath.replace("ColorVision/", "", 1)).parts
+    plugin_id = parts[1] if len(parts) >= 2 and parts[0] == "Plugins" else None
+    _refresh_related_caches(
+        plugin_id=plugin_id,
+        relative_path=Path(filepath.replace("ColorVision/", "", 1)).as_posix(),
+    )
+
     return "File uploaded successfully", 201
 
 

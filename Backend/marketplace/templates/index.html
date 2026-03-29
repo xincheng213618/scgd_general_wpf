@@ -2,105 +2,155 @@
 {% block title %}ColorVision Marketplace — 首页{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2><i class="bi bi-palette"></i> ColorVision Marketplace</h2>
-        <p class="text-muted">插件市场 · 文件管理 · 版本发布</p>
-    </div>
-</div>
-
-<!-- App Info -->
-{% if app_info.latest_version %}
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-app-indicator text-primary"></i> ColorVision 应用</h5>
-                <p class="mb-1">最新版本: <span class="badge bg-primary badge-version">{{ app_info.latest_version }}</span></p>
+<section class="hero-panel mb-4">
+    <div class="row g-4 align-items-center position-relative">
+        <div class="col-lg-7">
+            <span class="soft-badge mb-3"><i class="bi bi-lightning-charge-fill"></i> 首页概览已接入 SQLite 缓存</span>
+            <h1 class="display-6 fw-semibold mb-3">插件市场、存储管理和发布入口集中在一个更轻的首页里。</h1>
+            <p class="page-lead mb-4">
+                现在首页目录概览优先复用数据库缓存，不再每次都递归深扫整个存储目录，首屏会更顺，界面也更像一个真正的后台面板。
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/plugins" class="btn btn-light btn-lg px-4"><i class="bi bi-puzzle me-2"></i>进入插件市场</a>
+                <a href="/browse" class="btn btn-outline-light btn-lg px-4"><i class="bi bi-folder2-open me-2"></i>浏览存储目录</a>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <div class="metric-card">
+                        <span class="metric-label">最新应用版本</span>
+                        <div class="metric-value">{{ app_info.latest_version or '未检测到' }}</div>
+                        <div class="metric-note">读取根目录 `LATEST_RELEASE`</div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="metric-card">
+                        <span class="metric-label">首页概览状态</span>
+                        <div class="metric-value">{{ '缓存命中' if overview_meta.cache_hit else '刚刚刷新' }}</div>
+                        <div class="metric-note">缓存周期 {{ overview_meta.ttl_seconds }} 秒</div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="metric-card">
+                        <span class="metric-label">一级目录</span>
+                        <div class="metric-value">{{ overview_summary.directory_count }}</div>
+                        <div class="metric-note">共 {{ overview_summary.item_count }} 个一级项目</div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="metric-card">
+                        <span class="metric-label">累计文件数</span>
+                        <div class="metric-value">{{ overview_summary.total_file_count }}</div>
+                        <div class="metric-note">根目录文件大小 {{ human_size(overview_summary.top_level_size) }}</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-{% endif %}
+</section>
 
-<!-- Quick Links -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <a href="/plugins" class="text-decoration-none">
-            <div class="card stat-card">
-                <div class="stat-number"><i class="bi bi-puzzle"></i></div>
-                <div class="stat-label">插件市场</div>
-            </div>
-        </a>
+<div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-3">
+        <div class="card h-100">
+            <a href="/plugins" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-puzzle"></i></div>
+                <h5>插件市场</h5>
+                <p class="mb-0">浏览插件、查看版本、按分类快速筛选。</p>
+            </a>
+        </div>
     </div>
-    <div class="col-md-3">
-        <a href="/upload" class="text-decoration-none">
-            <div class="card stat-card">
-                <div class="stat-number"><i class="bi bi-cloud-upload"></i></div>
-                <div class="stat-label">上传插件</div>
-            </div>
-        </a>
+    <div class="col-md-6 col-xl-3">
+        <div class="card h-100">
+            <a href="/upload" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-cloud-upload"></i></div>
+                <h5>上传发布</h5>
+                <p class="mb-0">上传 `.cvxp` 包，发布后自动刷新相关缓存。</p>
+            </a>
+        </div>
     </div>
-    <div class="col-md-3">
-        <a href="/browse" class="text-decoration-none">
-            <div class="card stat-card">
-                <div class="stat-number"><i class="bi bi-folder2-open"></i></div>
-                <div class="stat-label">文件浏览</div>
-            </div>
-        </a>
+    <div class="col-md-6 col-xl-3">
+        <div class="card h-100">
+            <a href="/browse" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-folder2-open"></i></div>
+                <h5>文件浏览</h5>
+                <p class="mb-0">直接浏览存储结构，定位插件、更新包和工具文件。</p>
+            </a>
+        </div>
     </div>
-    <div class="col-md-3">
-        <a href="/api/plugins" class="text-decoration-none">
-            <div class="card stat-card">
-                <div class="stat-number"><i class="bi bi-braces"></i></div>
-                <div class="stat-label">API 接口</div>
-            </div>
-        </a>
+    <div class="col-md-6 col-xl-3">
+        <div class="card h-100">
+            <a href="/api/plugins" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-braces"></i></div>
+                <h5>开放 API</h5>
+                <p class="mb-0">给 WPF 客户端或脚本调用的标准接口入口。</p>
+            </a>
+        </div>
     </div>
 </div>
 
-<!-- Storage Overview -->
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-hdd"></i> 存储目录概览</h5></div>
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr><th>名称</th><th>类型</th><th>详情</th><th>修改时间</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for item in overview %}
-                        <tr>
-                            <td>
-                                {% if item.type == 'dir' %}
-                                <a href="/browse/{{ item.name }}" class="text-decoration-none">
-                                    <i class="bi bi-folder-fill text-warning"></i> {{ item.name }}
-                                </a>
-                                {% else %}
-                                <a href="/browse/{{ item.name }}" class="text-decoration-none">
-                                    <i class="bi bi-file-earmark text-secondary"></i> {{ item.name }}
-                                </a>
-                                {% endif %}
-                            </td>
-                            <td>{{ '文件夹' if item.type == 'dir' else '文件' }}</td>
-                            <td>
-                                {% if item.type == 'dir' %}
-                                {{ item.file_count }} 个文件
-                                {% else %}
-                                {{ human_size(item.size) }}
-                                {% endif %}
-                            </td>
-                            <td><small>{{ item.modified[:10] }}</small></td>
-                        </tr>
-                        {% endfor %}
-                        {% if not overview %}
-                        <tr><td colspan="4" class="text-center text-muted py-4">存储目录为空或未配置</td></tr>
+<section class="panel-card p-4 table-shell">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title"><i class="bi bi-hdd-stack"></i>存储目录概览</h2>
+            <div class="section-subtitle mt-2">首页只展示一级概览，深层文件统计优先走数据库缓存，减少反复扫描磁盘。</div>
+        </div>
+        <div class="text-end">
+            <div class="surface-tag mb-2">
+                <i class="bi {{ 'bi-database-check' if overview_meta.cache_hit else 'bi-arrow-clockwise' }}"></i>
+                {{ '来自缓存' if overview_meta.cache_hit else '已重新生成' }}
+            </div>
+            <div class="text-soft small">更新时间：{{ overview_meta.updated_at_display }}</div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>名称</th>
+                    <th>类型</th>
+                    <th>详情</th>
+                    <th>修改时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in overview %}
+                <tr>
+                    <td>
+                        <a href="/browse/{{ item.name }}" class="text-decoration-none fw-semibold">
+                            {% if item.type == 'dir' %}
+                            <i class="bi bi-folder-fill text-warning me-2"></i>{{ item.name }}
+                            {% else %}
+                            <i class="bi bi-file-earmark text-secondary me-2"></i>{{ item.name }}
+                            {% endif %}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="badge rounded-pill {{ 'text-bg-warning' if item.type == 'dir' else 'text-bg-light' }}">
+                            {{ '文件夹' if item.type == 'dir' else '文件' }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if item.type == 'dir' %}
+                        <span class="fw-semibold">{{ item.file_count }}</span> 个文件
+                        {% else %}
+                        {{ human_size(item.size) }}
                         {% endif %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                    </td>
+                    <td><small class="text-soft">{{ item.modified[:19] }}</small></td>
+                </tr>
+                {% endfor %}
+                {% if not overview %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox fs-2 d-block mb-3"></i>
+                        存储目录为空或尚未正确配置。
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
     </div>
-</div>
+</section>
 {% endblock %}

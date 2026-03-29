@@ -8,49 +8,305 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC" crossorigin="anonymous">
     <style>
         :root {
-            --cv-primary: #0d6efd;
-            --cv-dark: #1a1d23;
-            --cv-card-bg: #ffffff;
+            --cv-primary: #3b82f6;
+            --cv-primary-soft: rgba(59, 130, 246, 0.12);
+            --cv-dark: #0f172a;
+            --cv-dark-soft: #1e293b;
+            --cv-card-bg: rgba(255, 255, 255, 0.92);
+            --cv-border: rgba(148, 163, 184, 0.22);
+            --cv-text: #0f172a;
+            --cv-text-muted: #64748b;
+            --cv-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
         }
-        body { background: #f5f7fa; min-height: 100vh; }
-        .navbar { background: var(--cv-dark) !important; }
-        .navbar-brand { font-weight: 700; letter-spacing: 0.5px; }
-        .navbar-brand i { color: #ffc107; }
-        .card { border: none; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: box-shadow 0.2s; }
-        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
-        .plugin-icon { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; }
-        .plugin-icon-placeholder { width: 48px; height: 48px; border-radius: 8px; background: #e9ecef; display: flex; align-items: center; justify-content: center; color: #adb5bd; font-size: 1.4rem; }
-        .badge-version { font-size: 0.75rem; }
-        .stat-card { text-align: center; padding: 1.5rem; }
-        .stat-card .stat-number { font-size: 2rem; font-weight: 700; color: var(--cv-primary); }
-        .stat-card .stat-label { color: #6c757d; font-size: 0.85rem; }
-        .breadcrumb { background: none; padding: 0; }
-        footer { margin-top: 3rem; padding: 1.5rem 0; color: #6c757d; font-size: 0.85rem; border-top: 1px solid #dee2e6; }
+        body {
+            min-height: 100vh;
+            color: var(--cv-text);
+            background:
+                radial-gradient(circle at top left, rgba(59, 130, 246, 0.15), transparent 28%),
+                radial-gradient(circle at top right, rgba(14, 165, 233, 0.14), transparent 22%),
+                linear-gradient(180deg, #f8fbff 0%, #f4f7fb 42%, #eef3f9 100%);
+        }
+        .navbar.marketplace-nav {
+            background: rgba(15, 23, 42, 0.9) !important;
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+        .brand-mark {
+            width: 2.2rem;
+            height: 2.2rem;
+            border-radius: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35);
+        }
+        .brand-text small {
+            display: block;
+            font-size: 0.72rem;
+            color: rgba(226, 232, 240, 0.72);
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .brand-text span {
+            color: #fff;
+        }
+        .navbar .nav-link {
+            color: rgba(226, 232, 240, 0.74) !important;
+            font-weight: 500;
+            border-radius: 999px;
+            padding: 0.55rem 0.95rem !important;
+            transition: all 0.18s ease;
+        }
+        .navbar .nav-link:hover,
+        .navbar .nav-link.active {
+            color: #fff !important;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .navbar .navbar-text {
+            color: rgba(226, 232, 240, 0.72) !important;
+        }
+        .page-shell {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .panel-card,
+        .card {
+            border: 1px solid var(--cv-border);
+            background: var(--cv-card-bg);
+            box-shadow: var(--cv-shadow);
+            border-radius: 1.25rem;
+        }
+        .card {
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 24px 44px rgba(15, 23, 42, 0.12);
+        }
+        .hero-panel {
+            position: relative;
+            overflow: hidden;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.96) 55%, rgba(37, 99, 235, 0.86) 100%);
+            color: #fff;
+            box-shadow: 0 24px 50px rgba(15, 23, 42, 0.2);
+        }
+        .hero-panel::after {
+            content: "";
+            position: absolute;
+            inset: auto -15% -35% auto;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(125, 211, 252, 0.34), transparent 68%);
+            pointer-events: none;
+        }
+        .soft-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.38rem 0.72rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.92);
+        }
+        .page-lead {
+            font-size: 1.02rem;
+            color: rgba(226, 232, 240, 0.86);
+            max-width: 42rem;
+        }
+        .metric-card {
+            height: 100%;
+            padding: 1.1rem 1.2rem;
+            border-radius: 1.15rem;
+            background: rgba(255, 255, 255, 0.09);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .metric-label {
+            display: block;
+            color: rgba(226, 232, 240, 0.76);
+            font-size: 0.82rem;
+            margin-bottom: 0.4rem;
+        }
+        .metric-value {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .metric-note {
+            color: rgba(226, 232, 240, 0.66);
+            font-size: 0.82rem;
+        }
+        .quick-link-card {
+            display: block;
+            height: 100%;
+            padding: 1.25rem;
+            text-decoration: none;
+            color: inherit;
+        }
+        .quick-link-icon {
+            width: 3rem;
+            height: 3rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1rem;
+            background: var(--cv-primary-soft);
+            color: var(--cv-primary);
+            font-size: 1.35rem;
+            margin-bottom: 1rem;
+        }
+        .quick-link-card h5 {
+            margin-bottom: 0.35rem;
+            font-weight: 650;
+        }
+        .quick-link-card p,
+        .section-subtitle,
+        .text-soft {
+            color: var(--cv-text-muted);
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.1rem;
+        }
+        .section-title {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+        .section-title i {
+            color: var(--cv-primary);
+            margin-right: 0.35rem;
+        }
+        .surface-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.38rem 0.72rem;
+            border-radius: 999px;
+            background: rgba(59, 130, 246, 0.08);
+            color: #1d4ed8;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+        .plugin-icon {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            background: #fff;
+        }
+        .plugin-icon-placeholder {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(14, 165, 233, 0.16));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--cv-primary);
+            font-size: 1.4rem;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+        }
+        .badge-version {
+            font-size: 0.75rem;
+            border-radius: 999px;
+            padding: 0.42rem 0.6rem;
+        }
+        .breadcrumb {
+            background: none;
+            padding: 0;
+            margin-bottom: 0;
+        }
+        .table-shell {
+            overflow: hidden;
+            border-radius: 1.25rem;
+        }
+        .table {
+            margin-bottom: 0;
+        }
+        .table thead th {
+            color: var(--cv-text-muted);
+            font-weight: 600;
+            background: rgba(248, 250, 252, 0.92);
+            border-bottom-color: rgba(148, 163, 184, 0.18);
+        }
+        .table > :not(caption) > * > * {
+            padding-top: 0.95rem;
+            padding-bottom: 0.95rem;
+            border-bottom-color: rgba(148, 163, 184, 0.16);
+            vertical-align: middle;
+        }
+        .table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+        footer {
+            margin-top: 2rem;
+            padding: 1.4rem 0 2rem;
+            color: var(--cv-text-muted);
+            font-size: 0.88rem;
+        }
+        footer a {
+            color: inherit;
+        }
+        @media (max-width: 991.98px) {
+            .hero-panel {
+                padding: 1.5rem;
+            }
+            .page-shell {
+                padding-top: 1.25rem;
+            }
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark marketplace-nav">
         <div class="container">
-            <a class="navbar-brand" href="/"><i class="bi bi-palette"></i> ColorVision Marketplace</a>
+            <a class="navbar-brand" href="/">
+                <span class="brand-mark"><i class="bi bi-palette"></i></span>
+                <span class="brand-text">
+                    <small>Plugin Hub</small>
+                    <span>ColorVision Marketplace</span>
+                </span>
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house"></i> 首页</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/plugins"><i class="bi bi-puzzle"></i> 插件市场</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/upload"><i class="bi bi-cloud-upload"></i> 上传</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/browse"><i class="bi bi-folder2-open"></i> 文件浏览</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.path == '/' else '' }}" href="/"><i class="bi bi-house-door me-1"></i> 首页</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.path.startswith('/plugins') else '' }}" href="/plugins"><i class="bi bi-puzzle me-1"></i> 插件市场</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.path.startswith('/upload') else '' }}" href="/upload"><i class="bi bi-cloud-upload me-1"></i> 上传</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.path.startswith('/browse') else '' }}" href="/browse"><i class="bi bi-folder2-open me-1"></i> 文件浏览</a></li>
                 </ul>
-                <span class="navbar-text text-light opacity-75"><small>Plugin Marketplace</small></span>
+                <span class="navbar-text"><small>轻量管理 · SQLite 缓存加速</small></span>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
+    <main class="container page-shell">
         {% block content %}{% endblock %}
-    </div>
+    </main>
 
     <footer>
         <div class="container text-center">
