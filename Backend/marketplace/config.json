@@ -4,6 +4,8 @@
     "port": 9998,
     "debug": false,
     "secret_key": "change-this-in-production",
+    "app_release_keep_count": 5,
+    "plugin_package_keep_count": 3,
     "upload_auth": {
         "username": "admin",
         "password": "admin"

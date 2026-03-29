@@ -16,7 +16,7 @@ namespace ColorVision.UI.Marketplace
         /// Example: "http://localhost:5000" or "https://marketplace.colorvision.com"
         /// </summary>
         public string MarketplaceApiUrl { get => _MarketplaceApiUrl; set { _MarketplaceApiUrl = value; OnPropertyChanged(); } }
-        private string _MarketplaceApiUrl = string.Empty;
+        private string _MarketplaceApiUrl = "http://xc213618.ddns.me:9998/";
 
         /// <summary>
         /// Whether to prefer the marketplace API over the legacy file-server for version checks and downloads.

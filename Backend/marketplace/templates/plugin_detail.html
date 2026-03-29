@@ -2,114 +2,176 @@
 {% block title %}{{ plugin.name }} — ColorVision 插件{% endblock %}
 
 {% block content %}
-<nav aria-label="breadcrumb">
+<nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="/plugins">插件市场</a></li>
         <li class="breadcrumb-item active">{{ plugin.name }}</li>
     </ol>
 </nav>
 
-<div class="row mb-4">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex align-items-start mb-3">
-                    {% if plugin.has_icon %}
-                    <img src="/plugins/{{ plugin.id }}/icon" class="me-3" style="width: 64px; height: 64px; object-fit: contain; border-radius: 12px;" alt="{{ plugin.name }}">
-                    {% else %}
-                    <div class="me-3 d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; border-radius: 12px; background: #e9ecef; color: #adb5bd; font-size: 2rem;">
-                        <i class="bi bi-puzzle"></i>
-                    </div>
-                    {% endif %}
-                    <div>
-                        <h2 class="mb-1">{{ plugin.name }}</h2>
-                        <p class="text-muted mb-0">{{ plugin.id }}</p>
-                    </div>
-                </div>
-
-                {% if plugin.description %}
-                <p class="lead">{{ plugin.description }}</p>
+<section class="hero-panel mb-4">
+    <div class="row g-4 align-items-center position-relative">
+        <div class="col-lg-8">
+            <span class="eyebrow mb-3"><i class="bi bi-puzzle"></i> 插件详情</span>
+            <div class="d-flex align-items-start gap-3 mb-3">
+                {% if plugin.has_icon %}
+                <img src="/plugins/{{ plugin.id }}/icon" class="plugin-icon" style="width: 68px; height: 68px; border-radius: 18px;" alt="{{ plugin.name }}">
+                {% else %}
+                <div class="plugin-icon-placeholder" style="width: 68px; height: 68px; border-radius: 18px; font-size: 1.8rem;"><i class="bi bi-puzzle"></i></div>
                 {% endif %}
-
-                <div class="row text-muted small mb-3">
-                    {% if plugin.author %}
-                    <div class="col-auto"><i class="bi bi-person"></i> {{ plugin.author }}</div>
-                    {% endif %}
-                    {% if plugin.version %}
-                    <div class="col-auto"><i class="bi bi-tag"></i> v{{ plugin.version }}</div>
-                    {% endif %}
-                    {% if plugin.requires %}
-                    <div class="col-auto"><i class="bi bi-gear"></i> 需要 ColorVision ≥ {{ plugin.requires }}</div>
-                    {% endif %}
-                    {% if plugin.category %}
-                    <div class="col-auto"><span class="badge bg-secondary">{{ plugin.category }}</span></div>
-                    {% endif %}
-                    {% if plugin.total_downloads > 0 %}
-                    <div class="col-auto"><i class="bi bi-download"></i> {{ plugin.total_downloads }} 次下载</div>
-                    {% endif %}
+                <div>
+                    <h1 class="display-6 fw-semibold mb-2">{{ plugin.name }}</h1>
+                    <div class="text-white-50">{{ plugin.id }}</div>
                 </div>
+            </div>
 
-                {% if plugin.url %}
-                <p><a href="{{ plugin.url }}" target="_blank"><i class="bi bi-link-45deg"></i> {{ plugin.url }}</a></p>
-                {% endif %}
+            {% if plugin.description %}
+            <p class="page-lead mb-4">{{ plugin.description }}</p>
+            {% endif %}
+
+            <div class="d-flex flex-wrap gap-2">
+                {% if plugin.version %}<span class="soft-badge"><i class="bi bi-tag"></i> v{{ plugin.version }}</span>{% endif %}
+                {% if plugin.category %}<span class="soft-badge"><i class="bi bi-collection"></i> {{ plugin.category }}</span>{% endif %}
+                {% if plugin.author %}<span class="soft-badge"><i class="bi bi-person"></i> {{ plugin.author }}</span>{% endif %}
+                {% if plugin.requires %}<span class="soft-badge"><i class="bi bi-cpu"></i> 需要 ≥ {{ plugin.requires }}</span>{% endif %}
+                <span class="soft-badge"><i class="bi bi-download"></i> {{ plugin.total_downloads }} 次下载</span>
             </div>
         </div>
+        <div class="col-lg-4">
+            <div class="hero-aside">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="metric-card">
+                            <span class="metric-label">当前版本</span>
+                            <div class="metric-value">{{ plugin.version or '—' }}</div>
+                            <div class="metric-note">LATEST_RELEASE</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-card">
+                            <span class="metric-label">可下载包</span>
+                            <div class="metric-value">{{ plugin.current_packages|length }}</div>
+                            <div class="metric-note">当前目录中的版本包</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-card">
+                            <span class="metric-label">历史包</span>
+                            <div class="metric-value">{{ plugin.historical_packages|length }}</div>
+                            <div class="metric-note">归档到 History 的旧版本</div>
+                        </div>
+                    </div>
+                    {% if plugin.url %}
+                    <div class="col-12">
+                        <a href="{{ plugin.url }}" target="_blank" class="btn btn-light w-100"><i class="bi bi-link-45deg me-2"></i>访问项目链接</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-        <!-- README -->
+<div class="row g-4">
+    <div class="col-xl-8">
         {% if plugin.readme %}
-        <div class="card mt-3">
-            <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-book"></i> README</h5></div>
-            <div class="card-body">
-                <pre style="white-space: pre-wrap; font-family: inherit;">{{ plugin.readme }}</pre>
+        <section class="panel-card p-4 mb-4">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title"><i class="bi bi-book"></i>README</h2>
+                    <div class="section-subtitle mt-2">以 Markdown 形式展示插件使用说明和介绍。</div>
+                </div>
             </div>
-        </div>
+            <div class="markdown-body">{{ render_markdown(plugin.readme) }}</div>
+        </section>
         {% endif %}
 
-        <!-- Changelog -->
         {% if plugin.changelog %}
-        <div class="card mt-3">
-            <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-clock-history"></i> 更新日志</h5></div>
-            <div class="card-body">
-                <pre style="white-space: pre-wrap; font-family: inherit;">{{ plugin.changelog }}</pre>
+        <section class="panel-card p-4">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title"><i class="bi bi-clock-history"></i>插件更新日志</h2>
+                    <div class="section-subtitle mt-2">直接读取插件目录中的 `CHANGELOG.md`。</div>
+                </div>
             </div>
-        </div>
+            <div class="markdown-body">{{ render_markdown(plugin.changelog) }}</div>
+        </section>
         {% endif %}
     </div>
 
-    <!-- Sidebar: Downloads -->
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-download"></i> 下载</h5></div>
-            <div class="card-body p-0">
-                {% if plugin.packages %}
-                <div class="list-group list-group-flush">
-                    {% for pkg in plugin.packages %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>v{{ pkg.version }}</strong>
-                            <br><small class="text-muted">{{ human_size(pkg.size) }} · {{ pkg.modified[:10] }}</small>
-                        </div>
-                        <a href="/api/packages/{{ plugin.id }}/{{ pkg.version }}" class="btn btn-sm btn-primary">
-                            <i class="bi bi-download"></i>
-                        </a>
-                    </div>
-                    {% endfor %}
+    <div class="col-xl-4">
+        <section class="panel-card p-4 mb-4">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title"><i class="bi bi-download"></i>版本下载</h2>
+                    <div class="section-subtitle mt-2">保留每个版本包的直接下载入口。</div>
                 </div>
-                {% else %}
-                <div class="text-center py-4 text-muted">暂无可用版本</div>
-                {% endif %}
             </div>
-        </div>
 
-        <!-- Files on disk -->
-        <div class="card mt-3">
-            <div class="card-header bg-white"><h5 class="mb-0"><i class="bi bi-folder"></i> 目录文件</h5></div>
-            <div class="card-body">
-                <a href="/browse/Plugins/{{ plugin.id }}" class="btn btn-outline-secondary btn-sm w-100">
-                    <i class="bi bi-folder2-open"></i> 浏览 Plugins/{{ plugin.id }}/
+            {% if plugin.current_packages %}
+            <div class="subtle-label mb-3">当前版本包</div>
+            <div class="release-list">
+                {% for pkg in plugin.current_packages %}
+                <div class="release-row">
+                    <div class="release-row-main">
+                        <div class="release-icon"><i class="bi bi-box-seam"></i></div>
+                        <div>
+                            <div class="release-title">v{{ pkg.version }}</div>
+                            <div class="release-meta">{{ human_size(pkg.size) }} · {{ pkg.modified[:19] }}</div>
+                            {% if pkg.fileHash %}<div class="release-meta">SHA256: {{ pkg.fileHash[:12] }}...</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="release-actions">
+                        <span class="surface-tag"><i class="bi bi-lightning-charge"></i>当前</span>
+                        <a href="/api/packages/{{ plugin.id }}/{{ pkg.version }}" class="btn btn-sm btn-primary"><i class="bi bi-download me-1"></i>下载</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted">暂无可用版本</div>
+            {% endif %}
+
+            {% if plugin.historical_packages %}
+            <div class="subtle-label mt-4 mb-3">历史归档版本</div>
+            <div class="release-list">
+                {% for pkg in plugin.historical_packages %}
+                <div class="release-row">
+                    <div class="release-row-main">
+                        <div class="release-icon"><i class="bi bi-archive"></i></div>
+                        <div>
+                            <div class="release-title">v{{ pkg.version }}</div>
+                            <div class="release-meta">{{ human_size(pkg.size) }} · {{ pkg.modified[:19] }}</div>
+                            <div class="release-meta">{{ pkg.relative_path }}</div>
+                        </div>
+                    </div>
+                    <div class="release-actions">
+                        <span class="surface-tag"><i class="bi bi-clock-history"></i>History</span>
+                        <a href="/api/packages/{{ plugin.id }}/{{ pkg.version }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download me-1"></i>下载</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="panel-card p-4">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title"><i class="bi bi-folder2-open"></i>目录与排障</h2>
+                    <div class="section-subtitle mt-2">保留文件视图，便于直接核对磁盘内容。</div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <a href="/browse/Plugins/{{ plugin.id }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-folder2-open me-2"></i>浏览 Plugins/{{ plugin.id }}/
+                </a>
+                <a href="/plugins" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left me-2"></i>返回插件市场
                 </a>
             </div>
-        </div>
+        </section>
     </div>
 </div>
 {% endblock %}

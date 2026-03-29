@@ -5,44 +5,47 @@
 <section class="hero-panel mb-4">
     <div class="row g-4 align-items-center position-relative">
         <div class="col-lg-7">
-            <span class="soft-badge mb-3"><i class="bi bi-lightning-charge-fill"></i> 首页概览已接入 SQLite 缓存</span>
-            <h1 class="display-6 fw-semibold mb-3">插件市场、存储管理和发布入口集中在一个更轻的首页里。</h1>
+            <span class="eyebrow mb-3"><i class="bi bi-stars"></i> 更适合长期维护的内部发布门户</span>
+            <h1 class="display-5 fw-semibold mb-3">把版本发布、历史下载、更新说明和插件分发放到一个真正可维护的入口里。</h1>
             <p class="page-lead mb-4">
-                现在首页目录概览优先复用数据库缓存，不再每次都递归深扫整个存储目录，首屏会更顺，界面也更像一个真正的后台面板。
+                首页目录概览已经接入数据库缓存；同时新增了应用版本档案与 CHANGELOG 展示入口，后续你就可以逐步把手工整理 History 的流程迁移成规则化管理。
             </p>
-            <div class="d-flex flex-wrap gap-2">
-                <a href="/plugins" class="btn btn-light btn-lg px-4"><i class="bi bi-puzzle me-2"></i>进入插件市场</a>
-                <a href="/browse" class="btn btn-outline-light btn-lg px-4"><i class="bi bi-folder2-open me-2"></i>浏览存储目录</a>
+            <div class="hero-actions">
+                <a href="/releases" class="btn btn-light btn-lg"><i class="bi bi-archive me-2"></i>查看版本档案</a>
+                <a href="/changelog" class="btn btn-outline-light btn-lg"><i class="bi bi-journal-text me-2"></i>查看 CHANGELOG</a>
+                <a href="/plugins" class="btn btn-outline-light btn-lg"><i class="bi bi-puzzle me-2"></i>插件市场</a>
             </div>
         </div>
         <div class="col-lg-5">
-            <div class="row g-3">
-                <div class="col-sm-6">
-                    <div class="metric-card">
-                        <span class="metric-label">最新应用版本</span>
-                        <div class="metric-value">{{ app_info.latest_version or '未检测到' }}</div>
-                        <div class="metric-note">读取根目录 `LATEST_RELEASE`</div>
+            <div class="hero-aside">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="metric-card">
+                            <span class="metric-label">最新应用版本</span>
+                            <div class="metric-value">{{ app_info.latest_version or '未检测到' }}</div>
+                            <div class="metric-note">读取根目录 `LATEST_RELEASE`</div>
+                        </div>
                     </div>
-                </div>
-                <div class="col-sm-6">
-                    <div class="metric-card">
-                        <span class="metric-label">首页概览状态</span>
-                        <div class="metric-value">{{ '缓存命中' if overview_meta.cache_hit else '刚刚刷新' }}</div>
-                        <div class="metric-note">缓存周期 {{ overview_meta.ttl_seconds }} 秒</div>
+                    <div class="col-sm-6">
+                        <div class="metric-card">
+                            <span class="metric-label">首页概览状态</span>
+                            <div class="metric-value">{{ '缓存命中' if overview_meta.cache_hit else '刚刚刷新' }}</div>
+                            <div class="metric-note">缓存周期 {{ overview_meta.ttl_seconds }} 秒</div>
+                        </div>
                     </div>
-                </div>
-                <div class="col-sm-6">
-                    <div class="metric-card">
-                        <span class="metric-label">一级目录</span>
-                        <div class="metric-value">{{ overview_summary.directory_count }}</div>
-                        <div class="metric-note">共 {{ overview_summary.item_count }} 个一级项目</div>
+                    <div class="col-sm-6">
+                        <div class="metric-card">
+                            <span class="metric-label">根目录保留版本</span>
+                            <div class="metric-value">{{ app_info.current_count }}</div>
+                            <div class="metric-note">可直接下载的当前安装包</div>
+                        </div>
                     </div>
-                </div>
-                <div class="col-sm-6">
-                    <div class="metric-card">
-                        <span class="metric-label">累计文件数</span>
-                        <div class="metric-value">{{ overview_summary.total_file_count }}</div>
-                        <div class="metric-note">根目录文件大小 {{ human_size(overview_summary.top_level_size) }}</div>
+                    <div class="col-sm-6">
+                        <div class="metric-card">
+                            <span class="metric-label">归档版本数</span>
+                            <div class="metric-value">{{ app_info.archive_count }}</div>
+                            <div class="metric-note">History 中可回溯文件</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -56,16 +59,28 @@
             <a href="/plugins" class="quick-link-card">
                 <div class="quick-link-icon"><i class="bi bi-puzzle"></i></div>
                 <h5>插件市场</h5>
-                <p class="mb-0">浏览插件、查看版本、按分类快速筛选。</p>
+                <p class="mb-2">浏览插件、查看版本、按分类快速筛选。</p>
+                <small>给 WPF 客户端和内部同事一个统一插件入口。</small>
             </a>
         </div>
     </div>
     <div class="col-md-6 col-xl-3">
         <div class="card h-100">
-            <a href="/upload" class="quick-link-card">
-                <div class="quick-link-icon"><i class="bi bi-cloud-upload"></i></div>
-                <h5>上传发布</h5>
-                <p class="mb-0">上传 `.cvxp` 包，发布后自动刷新相关缓存。</p>
+            <a href="/releases" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-archive"></i></div>
+                <h5>版本档案</h5>
+                <p class="mb-2">查看根目录版本包与 History 中的归档文件。</p>
+                <small>为“历史下载”提供明确入口，而不是只靠文件夹约定。</small>
+            </a>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="card h-100">
+            <a href="/changelog" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-journal-richtext"></i></div>
+                <h5>更新说明</h5>
+                <p class="mb-2">直接展示根目录 `CHANGELOG.md`，不再只当普通文件。</p>
+                <small>适合给用户和测试同学快速了解本次更新内容。</small>
             </a>
         </div>
     </div>
@@ -74,18 +89,87 @@
             <a href="/browse" class="quick-link-card">
                 <div class="quick-link-icon"><i class="bi bi-folder2-open"></i></div>
                 <h5>文件浏览</h5>
-                <p class="mb-0">直接浏览存储结构，定位插件、更新包和工具文件。</p>
+                <p class="mb-2">保留原始文件视角，便于排障、核对和临时管理。</p>
+                <small>适合进阶管理，不替代发布页面本身。</small>
             </a>
         </div>
     </div>
-    <div class="col-md-6 col-xl-3">
-        <div class="card h-100">
-            <a href="/api/plugins" class="quick-link-card">
-                <div class="quick-link-icon"><i class="bi bi-braces"></i></div>
-                <h5>开放 API</h5>
-                <p class="mb-0">给 WPF 客户端或脚本调用的标准接口入口。</p>
-            </a>
-        </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-7">
+        <section class="panel-card p-4 h-100">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title"><i class="bi bi-box-seam"></i>应用版本与历史档案</h2>
+                    <div class="section-subtitle mt-2">根目录保留近期版本，旧版本建议归档到 `History/<主版本>/<分支>/`。</div>
+                </div>
+                <a href="/releases" class="btn btn-sm btn-outline-primary">查看全部</a>
+            </div>
+
+            <div class="release-list mb-4">
+                {% for release in app_info.current_preview %}
+                <div class="release-row">
+                    <div class="release-row-main">
+                        <div class="release-icon"><i class="bi bi-download"></i></div>
+                        <div>
+                            <div class="release-title">ColorVision {{ release.version }}</div>
+                            <div class="release-meta">{{ release.filename }} · {{ release.kind }} · {{ human_size(release.size) }}</div>
+                        </div>
+                    </div>
+                    <div class="release-actions">
+                        <span class="surface-tag"><i class="bi bi-lightning-charge"></i>当前目录</span>
+                        <a href="/download/{{ release.relative_path }}" class="btn btn-sm btn-primary"><i class="bi bi-download me-1"></i>下载</a>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not app_info.current_preview %}
+                <div class="text-muted py-4 text-center">当前根目录没有识别到标准版本安装包。</div>
+                {% endif %}
+            </div>
+
+            <div class="subtle-label mb-3">最近归档预览</div>
+            <div class="release-list">
+                {% for release in app_info.archive_preview %}
+                <div class="release-row">
+                    <div class="release-row-main">
+                        <div class="release-icon"><i class="bi bi-clock-history"></i></div>
+                        <div>
+                            <div class="release-title">ColorVision {{ release.version }}</div>
+                            <div class="release-meta">{{ release.relative_path }} · {{ human_size(release.size) }}</div>
+                        </div>
+                    </div>
+                    <div class="release-actions">
+                        <span class="surface-tag"><i class="bi bi-archive"></i>{{ release.branch }}</span>
+                        <a href="/download/{{ release.relative_path }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download me-1"></i>下载</a>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not app_info.archive_preview %}
+                <div class="text-muted py-4 text-center">当前还没有识别到归档版本。</div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+    <div class="col-xl-5">
+        <section class="panel-card p-4 h-100">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title"><i class="bi bi-journal-text"></i>CHANGELOG 预览</h2>
+                    <div class="section-subtitle mt-2">把根目录更新说明直接变成页面内容，而不是让用户自己去找 `.md` 文件。</div>
+                </div>
+                <a href="/changelog" class="btn btn-sm btn-outline-primary">展开阅读</a>
+            </div>
+
+            {% if app_info.changelog %}
+            <div class="markdown-body markdown-preview">{{ app_info.changelog_preview_html }}</div>
+            {% else %}
+            <div class="text-muted py-5 text-center">
+                <i class="bi bi-journal-x fs-2 d-block mb-3"></i>
+                尚未检测到 `CHANGELOG.md`
+            </div>
+            {% endif %}
+        </section>
     </div>
 </div>
 
@@ -101,6 +185,21 @@
                 {{ '来自缓存' if overview_meta.cache_hit else '已重新生成' }}
             </div>
             <div class="text-soft small">更新时间：{{ overview_meta.updated_at_display }}</div>
+        </div>
+    </div>
+
+    <div class="stat-inline mb-4">
+        <div>
+            <strong>{{ overview_summary.directory_count }}</strong>
+            <span>一级目录</span>
+        </div>
+        <div>
+            <strong>{{ overview_summary.total_file_count }}</strong>
+            <span>累计文件</span>
+        </div>
+        <div>
+            <strong>{{ human_size(overview_summary.top_level_size) }}</strong>
+            <span>根目录文件体积</span>
         </div>
     </div>
 

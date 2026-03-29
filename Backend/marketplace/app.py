@@ -25,11 +25,17 @@ import argparse
 import hashlib
 import json
 import re
+import shutil
 import sqlite3
 from datetime import datetime, timezone
+from markupsafe import Markup
 from pathlib import Path
 from typing import Any
 
+try:
+    import markdown
+except ImportError:  # pragma: no cover - optional runtime fallback
+    markdown = None
 from flask import (
     Flask,
     abort,
@@ -51,6 +57,8 @@ DEFAULT_CONFIG = {
     "port": 9998,
     "debug": False,
     "secret_key": "change-this-in-production",
+    "app_release_keep_count": 5,
+    "plugin_package_keep_count": 3,
     "upload_auth": {"username": "admin", "password": "admin"},
 }
 
@@ -76,9 +84,15 @@ app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB upload limit
 # ---------------------------------------------------------------------------
 DB_PATH = BASE_DIR / "marketplace.db"
 OVERVIEW_CACHE_KEY = "storage_overview:v2"
+APP_RELEASES_CACHE_KEY = "app_releases:v1"
 OVERVIEW_CACHE_TTL_SECONDS = 300
+APP_RELEASES_CACHE_TTL_SECONDS = 300
 DIRECTORY_COUNT_CACHE_TTL_SECONDS = 300
 PLUGIN_INFO_CACHE_TTL_SECONDS = 300
+_APP_RELEASE_CANONICAL_RE = re.compile(
+    r"^ColorVision-(\d+(?:\.\d+)+)\.(exe|zip|rar)$", re.IGNORECASE
+)
+_APP_RELEASE_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
 
 
 def get_db():
@@ -185,13 +199,14 @@ def _invalidate_cache_prefix(prefix: str):
 
 def _refresh_related_caches(*, plugin_id: str | None = None, relative_path: str = ""):
     _invalidate_cache_prefix("storage_overview:")
+    _invalidate_cache_prefix("app_releases:")
 
     top_level = Path(relative_path).parts[0] if relative_path else ""
     if top_level:
         _invalidate_cache_prefix(f"dir_file_count:{top_level}")
 
     if plugin_id:
-        _invalidate_cache_prefix(f"plugin_info:{plugin_id}")
+        _invalidate_cache_prefix(f"plugin_info:")
         _invalidate_cache_prefix(f"dir_file_count:Plugins/{plugin_id}")
 
 # ---------------------------------------------------------------------------
@@ -234,6 +249,207 @@ def read_text_file(path: Path) -> str | None:
         return None
 
 
+def render_markdown(text: str | None) -> Markup:
+    if not text:
+        return Markup("")
+    if markdown is None:
+        return Markup(
+            f'<pre style="white-space: pre-wrap; margin: 0;">{Markup.escape(text)}</pre>'
+        )
+    html = markdown.markdown(
+        text,
+        extensions=["extra", "sane_lists", "nl2br"],
+        output_format="html5",
+    )
+    return Markup(html)
+
+
+def _extract_release_version(name: str) -> str | None:
+    canonical = _APP_RELEASE_CANONICAL_RE.match(name)
+    if canonical:
+        return canonical.group(1)
+    loose = _APP_RELEASE_VERSION_RE.search(name)
+    return loose.group(1) if loose else None
+
+
+def _is_root_release_file(path: Path) -> bool:
+    return path.parent == STORAGE and path.is_file() and _APP_RELEASE_CANONICAL_RE.match(path.name) is not None
+
+
+def _release_bucket(version: str) -> tuple[str, str]:
+    parts = version.split(".")
+    if len(parts) >= 3:
+        return ".".join(parts[:2]), ".".join(parts[:3])
+    if len(parts) >= 2:
+        joined = ".".join(parts[:2])
+        return joined, joined
+    return parts[0], parts[0]
+
+
+def _app_release_history_dir(version: str) -> Path:
+    major_minor, branch = _release_bucket(version)
+    return STORAGE / "History" / major_minor / branch
+
+
+def _build_release_artifact(file_path: Path, source: str) -> dict[str, Any] | None:
+    version = _extract_release_version(file_path.name)
+    if not version:
+        return None
+
+    try:
+        stat = file_path.stat()
+        relative_path = file_path.relative_to(STORAGE).as_posix()
+    except (OSError, ValueError):
+        return None
+
+    major_minor, branch = _release_bucket(version)
+    return {
+        "filename": file_path.name,
+        "version": version,
+        "size": stat.st_size,
+        "kind": file_path.suffix.lstrip(".").upper() or "FILE",
+        "source": source,
+        "major_minor": major_minor,
+        "branch": branch,
+        "relative_path": relative_path,
+        "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+    }
+
+
+def _release_sort_key(item: dict[str, Any]) -> tuple:
+    return (
+        _version_tuple(item.get("version", "0.0.0.0")),
+        item.get("source") == "current",
+        item.get("modified", ""),
+    )
+
+
+def scan_app_release_artifacts() -> list[dict[str, Any]]:
+    cached = _get_cache_entry(APP_RELEASES_CACHE_KEY)
+    if cached:
+        return cached["value"]
+
+    artifacts: list[dict[str, Any]] = []
+    if not STORAGE.is_dir():
+        return artifacts
+
+    for entry in STORAGE.iterdir():
+        if not entry.is_file():
+            continue
+        artifact = _build_release_artifact(entry, "current")
+        if artifact:
+            artifacts.append(artifact)
+
+    history_dir = STORAGE / "History"
+    if history_dir.is_dir():
+        for entry in history_dir.rglob("*"):
+            if not entry.is_file():
+                continue
+            artifact = _build_release_artifact(entry, "archive")
+            if artifact:
+                artifacts.append(artifact)
+
+    artifacts.sort(key=_release_sort_key, reverse=True)
+    _set_cache_entry(
+        APP_RELEASES_CACHE_KEY,
+        artifacts,
+        ttl_seconds=APP_RELEASES_CACHE_TTL_SECONDS,
+        signature="releases",
+    )
+    return artifacts
+
+
+def get_app_release_context() -> dict[str, Any]:
+    releases = scan_app_release_artifacts()
+    current_releases = [item for item in releases if item["source"] == "current"]
+    archived_releases = [item for item in releases if item["source"] == "archive"]
+    latest_release = current_releases[0] if current_releases else (releases[0] if releases else None)
+    recent_branches = []
+    for item in releases:
+        branch = item["branch"]
+        if branch not in recent_branches:
+            recent_branches.append(branch)
+
+    return {
+        "latest_release": latest_release,
+        "current_releases": current_releases,
+        "archived_releases": archived_releases,
+        "current_preview": current_releases[:6],
+        "archive_preview": archived_releases[:10],
+        "archive_recent": archived_releases[:120],
+        "current_count": len(current_releases),
+        "archive_count": len(archived_releases),
+        "release_branch_count": len(recent_branches),
+        "archive_more_count": max(len(archived_releases) - 120, 0),
+    }
+
+
+def reconcile_app_release_history(keep_latest: int | None = None) -> list[dict[str, str]]:
+    keep_latest = int(keep_latest or CONFIG.get("app_release_keep_count", 5) or 5)
+    if keep_latest < 1:
+        keep_latest = 1
+
+    candidates: list[tuple[tuple, Path, str]] = []
+    if not STORAGE.is_dir():
+        return []
+
+    for entry in STORAGE.iterdir():
+        if not _is_root_release_file(entry):
+            continue
+        version = _extract_release_version(entry.name)
+        if not version:
+            continue
+        candidates.append((_version_tuple(version), entry, version))
+
+    candidates.sort(key=lambda item: item[0], reverse=True)
+
+    moved: list[dict[str, str]] = []
+    for _, source_path, version in candidates[keep_latest:]:
+        target_dir = _app_release_history_dir(version)
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target_path = target_dir / source_path.name
+
+        if target_path.exists():
+            try:
+                if target_path.stat().st_size == source_path.stat().st_size:
+                    source_path.unlink(missing_ok=True)
+                    moved.append(
+                        {
+                            "from": source_path.name,
+                            "to": target_path.relative_to(STORAGE).as_posix(),
+                        }
+                    )
+                    continue
+            except OSError:
+                pass
+
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+            target_path = target_dir / f"{source_path.stem}-{stamp}{source_path.suffix}"
+
+        shutil.move(str(source_path), str(target_path))
+        moved.append(
+            {
+                "from": source_path.name,
+                "to": target_path.relative_to(STORAGE).as_posix(),
+            }
+        )
+
+    if moved:
+        _refresh_related_caches(relative_path="History")
+    return moved
+
+
+def resolve_storage_file(relative_path: str) -> Path:
+    target = STORAGE / relative_path
+    try:
+        target.resolve().relative_to(STORAGE.resolve())
+    except ValueError:
+        abort(403)
+    if not target.exists() or not target.is_file():
+        abort(404)
+    return target
+
+
 def _storage_relative(path: Path) -> str:
     try:
         return path.relative_to(STORAGE).as_posix()
@@ -241,7 +457,138 @@ def _storage_relative(path: Path) -> str:
         return path.name
 
 
-def _plugin_signature(plugin_dir: Path) -> str:
+def _plugin_history_dir(plugin_id: str) -> Path:
+    return STORAGE / "History" / "Plugins" / plugin_id
+
+
+def _plugin_package_from_file(
+    file_path: Path, plugin_id: str, source: str
+) -> dict[str, Any] | None:
+    if file_path.suffix.lower() != ".cvxp":
+        return None
+
+    m = re.match(rf"^{re.escape(plugin_id)}-(.+)\.cvxp$", file_path.name)
+    version = m.group(1) if m else file_path.stem
+    try:
+        stat = file_path.stat()
+    except OSError:
+        return None
+
+    file_hash = hashlib.sha256()
+    try:
+        with open(file_path, "rb") as fh:
+            for chunk in iter(lambda: fh.read(8192), b""):
+                file_hash.update(chunk)
+    except OSError:
+        return None
+
+    return {
+        "version": version,
+        "filename": file_path.name,
+        "size": stat.st_size,
+        "fileHash": file_hash.hexdigest(),
+        "source": source,
+        "relative_path": _storage_relative(file_path),
+        "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+    }
+
+
+def _scan_plugin_package_sets(plugin_id: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    plugin_dir = STORAGE / "Plugins" / plugin_id
+    history_dir = _plugin_history_dir(plugin_id)
+    current_packages: list[dict[str, Any]] = []
+    historical_packages: list[dict[str, Any]] = []
+
+    if plugin_dir.is_dir():
+        for file_path in plugin_dir.iterdir():
+            package = _plugin_package_from_file(file_path, plugin_id, "current")
+            if package:
+                current_packages.append(package)
+
+    if history_dir.is_dir():
+        for file_path in history_dir.iterdir():
+            package = _plugin_package_from_file(file_path, plugin_id, "archive")
+            if package:
+                historical_packages.append(package)
+
+    current_packages.sort(key=lambda p: p["modified"], reverse=True)
+    historical_packages.sort(key=lambda p: p["modified"], reverse=True)
+    return current_packages, historical_packages
+
+
+def reconcile_plugin_package_history(
+    plugin_id: str, keep_latest: int | None = None
+) -> list[dict[str, str]]:
+    plugin_dir = STORAGE / "Plugins" / plugin_id
+    if not plugin_dir.is_dir():
+        return []
+
+    keep_latest = int(keep_latest or CONFIG.get("plugin_package_keep_count", 3) or 3)
+    if keep_latest < 1:
+        keep_latest = 1
+
+    candidates: list[tuple[tuple, str, Path]] = []
+    for entry in plugin_dir.iterdir():
+        if not entry.is_file() or entry.suffix.lower() != ".cvxp":
+            continue
+        package = _plugin_package_from_file(entry, plugin_id, "current")
+        if not package:
+            continue
+        candidates.append((_version_tuple(package["version"]), package["modified"], entry))
+
+    candidates.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    moved: list[dict[str, str]] = []
+    history_dir = _plugin_history_dir(plugin_id)
+    history_dir.mkdir(parents=True, exist_ok=True)
+
+    for _, _, source_path in candidates[keep_latest:]:
+        target_path = history_dir / source_path.name
+        if target_path.exists():
+            try:
+                if target_path.stat().st_size == source_path.stat().st_size:
+                    source_path.unlink(missing_ok=True)
+                    moved.append(
+                        {
+                            "from": source_path.name,
+                            "to": target_path.relative_to(STORAGE).as_posix(),
+                        }
+                    )
+                    continue
+            except OSError:
+                pass
+
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+            target_path = history_dir / f"{source_path.stem}-{stamp}{source_path.suffix}"
+
+        shutil.move(str(source_path), str(target_path))
+        moved.append(
+            {
+                "from": source_path.name,
+                "to": target_path.relative_to(STORAGE).as_posix(),
+            }
+        )
+
+    if moved:
+        _refresh_related_caches(plugin_id=plugin_id, relative_path=f"Plugins/{plugin_id}")
+    return moved
+
+
+def reconcile_all_plugin_package_histories() -> dict[str, list[dict[str, str]]]:
+    plugins_dir = STORAGE / "Plugins"
+    if not plugins_dir.is_dir():
+        return {}
+
+    results: dict[str, list[dict[str, str]]] = {}
+    for entry in sorted(plugins_dir.iterdir(), key=lambda p: p.name.lower()):
+        if not entry.is_dir():
+            continue
+        moved = reconcile_plugin_package_history(entry.name)
+        if moved:
+            results[entry.name] = moved
+    return results
+
+
+def _plugin_signature(plugin_dir: Path, history_dir: Path | None = None) -> str:
     parts = []
     try:
         dir_stat = plugin_dir.stat()
@@ -264,6 +611,20 @@ def _plugin_signature(plugin_dir: Path) -> str:
         parts.append(
             f"{entry.name}:{'d' if entry.is_dir() else 'f'}:{stat.st_mtime_ns}:{stat.st_size}"
         )
+
+    if history_dir and history_dir.is_dir():
+        try:
+            entries = sorted(history_dir.iterdir(), key=lambda item: item.name.lower())
+        except OSError:
+            entries = []
+        for entry in entries:
+            if entry.name.startswith("."):
+                continue
+            try:
+                stat = entry.stat()
+            except OSError:
+                continue
+            parts.append(f"history:{entry.name}:{stat.st_mtime_ns}:{stat.st_size}")
 
     return "|".join(parts)
 
@@ -309,8 +670,9 @@ def get_plugin_info(
 
     if download_counts is None:
         download_counts = _get_download_counts()
-    cache_key = f"plugin_info:{plugin_id}"
-    signature = _plugin_signature(plugin_dir)
+    cache_key = f"plugin_info:v2:{plugin_id}"
+    history_dir = _plugin_history_dir(plugin_id)
+    signature = _plugin_signature(plugin_dir, history_dir)
     cached = _get_cache_entry(cache_key, signature=signature)
     if cached:
         info = dict(cached["value"])
@@ -329,29 +691,8 @@ def get_plugin_info(
         except (json.JSONDecodeError, OSError):
             pass
 
-    # Collect available package files
-    packages = []
-    for f in plugin_dir.iterdir():
-        if f.suffix == ".cvxp":
-            # Extract version from filename: PluginName-1.2.3.4.cvxp
-            m = re.match(rf"^{re.escape(plugin_id)}-(.+)\.cvxp$", f.name)
-            ver = m.group(1) if m else f.stem
-            file_hash = hashlib.sha256()
-            with open(f, "rb") as fh:
-                for chunk in iter(lambda: fh.read(8192), b""):
-                    file_hash.update(chunk)
-            packages.append(
-                {
-                    "version": ver,
-                    "filename": f.name,
-                    "size": f.stat().st_size,
-                    "fileHash": file_hash.hexdigest(),
-                    "modified": datetime.fromtimestamp(
-                        f.stat().st_mtime, tz=timezone.utc
-                    ).isoformat(),
-                }
-            )
-    packages.sort(key=lambda p: p["modified"], reverse=True)
+    current_packages, historical_packages = _scan_plugin_package_sets(plugin_id)
+    packages = list(current_packages)
 
     # Read optional files
     readme = read_text_file(plugin_dir / "README.md")
@@ -372,6 +713,9 @@ def get_plugin_info(
         "readme": readme or "",
         "changelog": changelog or "",
         "packages": packages,
+        "current_packages": current_packages,
+        "historical_packages": historical_packages,
+        "all_packages": current_packages + historical_packages,
         "total_downloads": download_counts.get(plugin_id, 0),
         "modified": (
             packages[0]["modified"]
@@ -432,9 +776,15 @@ def _hash_ip(ip: str | None) -> str:
 
 def get_app_info() -> dict:
     """Read application-level info (LATEST_RELEASE, CHANGELOG)."""
+    changelog = read_text_file(STORAGE / "CHANGELOG.md") or ""
+    preview_lines = changelog.splitlines()[:24]
+    release_context = get_app_release_context()
     return {
         "latest_version": read_text_file(STORAGE / "LATEST_RELEASE") or "",
-        "changelog": read_text_file(STORAGE / "CHANGELOG.md") or "",
+        "changelog": changelog,
+        "changelog_html": render_markdown(changelog),
+        "changelog_preview_html": render_markdown("\n".join(preview_lines)),
+        **release_context,
     }
 
 
@@ -449,6 +799,7 @@ def human_size(size_bytes: int) -> str:
 
 # Make human_size available in templates
 app.jinja_env.globals["human_size"] = human_size
+app.jinja_env.globals["render_markdown"] = render_markdown
 
 # ---------------------------------------------------------------------------
 # Scan top-level storage directories for the overview page
@@ -561,6 +912,27 @@ def index():
         overview_summary=overview_summary,
         overview_meta=overview_meta,
     )
+
+
+@app.route("/releases")
+def releases_page():
+    """Application release archive page."""
+    app_info = get_app_info()
+    return render_template("releases.html", app_info=app_info)
+
+
+@app.route("/changelog")
+def changelog_page():
+    """Application changelog page."""
+    app_info = get_app_info()
+    return render_template("changelog.html", app_info=app_info)
+
+
+@app.route("/download/<path:relative_path>")
+def download_storage_file(relative_path):
+    """Download any file inside storage as an attachment."""
+    target = resolve_storage_file(relative_path)
+    return send_from_directory(str(target.parent), target.name, as_attachment=True)
 
 
 @app.route("/plugins")
@@ -679,11 +1051,20 @@ def upload_page():
         except ValueError:
             latest_path.write_text(version, encoding="utf-8")
 
+    moved_packages = reconcile_plugin_package_history(plugin_id)
+
     _refresh_related_caches(plugin_id=plugin_id, relative_path=f"Plugins/{plugin_id}")
 
     return render_template(
         "upload.html",
-        message=f"上传成功: {safe_filename} → Plugins/{plugin_id}/",
+        message=(
+            f"上传成功: {safe_filename} → Plugins/{plugin_id}/"
+            + (
+                f"，并自动归档 {len(moved_packages)} 个旧版本"
+                if moved_packages
+                else ""
+            )
+        ),
         error=None,
     )
 
@@ -809,7 +1190,6 @@ def api_search_plugins():
         }
     )
 
-
 @app.route("/api/plugins/categories", methods=["GET"])
 def api_categories():
     """Get all plugin categories."""
@@ -863,8 +1243,18 @@ def api_plugin_detail(plugin_id):
                     "fileHash": pkg.get("fileHash"),
                     "downloadCount": 0,
                     "createdAt": pkg["modified"],
+                    "source": pkg.get("source", "current"),
                 }
-                for pkg in info["packages"]
+                for pkg in info["all_packages"]
+            ],
+            "archivedVersions": [
+                {
+                    "version": pkg["version"],
+                    "fileSize": pkg["size"],
+                    "fileHash": pkg.get("fileHash"),
+                    "createdAt": pkg["modified"],
+                }
+                for pkg in info["historical_packages"]
             ],
         }
     )
@@ -898,6 +1288,10 @@ def api_download_package(plugin_id, version):
     filepath = plugin_dir / filename
 
     if not filepath.exists():
+        history_path = STORAGE / "History" / "Plugins" / plugin_id / filename
+        if history_path.exists():
+            _record_download(plugin_id, version)
+            return send_from_directory(str(history_path.parent), history_path.name, as_attachment=True)
         return jsonify({"error": "Package not found"}), 404
 
     _record_download(plugin_id, version)
@@ -987,6 +1381,8 @@ def api_publish_package():
     icon = request.files.get("icon")
     if icon and icon.filename:
         icon.save(str(plugin_dir / "PackageIcon.png"))
+
+    reconcile_plugin_package_history(plugin_id)
 
     _refresh_related_caches(plugin_id=plugin_id, relative_path=f"Plugins/{plugin_id}")
 
@@ -1081,6 +1477,10 @@ def legacy_upload(filepath):
 
     parts = Path(filepath.replace("ColorVision/", "", 1)).parts
     plugin_id = parts[1] if len(parts) >= 2 and parts[0] == "Plugins" else None
+    if _is_root_release_file(target):
+        reconcile_app_release_history()
+    if plugin_id and target.suffix.lower() == ".cvxp":
+        reconcile_plugin_package_history(plugin_id)
     _refresh_related_caches(
         plugin_id=plugin_id,
         relative_path=Path(filepath.replace("ColorVision/", "", 1)).as_posix(),
@@ -1149,6 +1549,16 @@ if __name__ == "__main__":
     parser.add_argument("--storage", help="Override storage path")
     parser.add_argument("--port", type=int, help="Override port")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    parser.add_argument(
+        "--reconcile-history",
+        action="store_true",
+        help="Move old root ColorVision release packages into History and exit",
+    )
+    parser.add_argument(
+        "--reconcile-plugin-history",
+        action="store_true",
+        help="Move old plugin .cvxp packages into History/Plugins and exit",
+    )
     args = parser.parse_args()
 
     if args.storage:
@@ -1157,6 +1567,23 @@ if __name__ == "__main__":
         CONFIG["port"] = args.port
     if args.debug:
         CONFIG["debug"] = True
+
+    if args.reconcile_history:
+        moved = reconcile_app_release_history()
+        print(f"Reconciled {len(moved)} file(s) into History")
+        for item in moved[:20]:
+            print(f"  {item['from']} -> {item['to']}")
+        raise SystemExit(0)
+
+    if args.reconcile_plugin_history:
+        result = reconcile_all_plugin_package_histories()
+        moved_count = sum(len(items) for items in result.values())
+        print(f"Reconciled {moved_count} plugin package(s) across {len(result)} plugin(s)")
+        for plugin_id, items in list(result.items())[:20]:
+            print(f"[{plugin_id}] {len(items)} moved")
+            for item in items[:5]:
+                print(f"  {item['from']} -> {item['to']}")
+        raise SystemExit(0)
 
     print(f"Storage path: {STORAGE}")
     print(f"Listening on: http://{CONFIG['host']}:{CONFIG['port']}")

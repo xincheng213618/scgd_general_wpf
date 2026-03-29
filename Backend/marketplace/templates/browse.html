@@ -15,14 +15,18 @@
     </ol>
 </nav>
 
-<div class="card">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="bi bi-folder2-open"></i> {{ subpath or 'Storage Root' }}</h5>
-        <span class="text-muted">{{ items|length }} 个项目</span>
+<section class="panel-card p-4 table-shell">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title"><i class="bi bi-folder2-open"></i> {{ subpath or 'Storage Root' }}</h2>
+            <div class="section-subtitle mt-2">保留文件系统视角，适合排障、审计和核对归档路径。</div>
+        </div>
+        <div class="surface-tag"><i class="bi bi-grid"></i> {{ items|length }} 个项目</div>
     </div>
-    <div class="card-body p-0">
+
+    <div class="table-responsive">
         <table class="table table-hover mb-0">
-            <thead class="table-light">
+            <thead>
                 <tr>
                     <th style="width: 50%;">名称</th>
                     <th>大小</th>
@@ -77,5 +81,5 @@
             </tbody>
         </table>
     </div>
-</div>
+</section>
 {% endblock %}

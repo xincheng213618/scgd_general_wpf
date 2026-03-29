@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}CHANGELOG — ColorVision{% endblock %}
+
+{% block content %}
+<section class="hero-panel mb-4">
+	<div class="row g-4 align-items-center position-relative">
+		<div class="col-lg-8">
+			<span class="eyebrow mb-3"><i class="bi bi-journal-text"></i> 应用更新说明</span>
+			<h1 class="display-5 fw-semibold mb-3">根目录 `CHANGELOG.md` 应该被用户看见，而不是藏在文件树里。</h1>
+			<p class="page-lead mb-0">这里直接把 `H:\ColorVision\CHANGELOG.md` 渲染成页面，便于测试、发布和用户确认版本变更。</p>
+		</div>
+		<div class="col-lg-4">
+			<div class="hero-aside">
+				<div class="row g-3">
+					<div class="col-12">
+						<div class="metric-card">
+							<span class="metric-label">当前应用版本</span>
+							<div class="metric-value">{{ app_info.latest_version or '未检测到' }}</div>
+							<div class="metric-note">来自 `LATEST_RELEASE`</div>
+						</div>
+					</div>
+					<div class="col-12">
+						<a href="/download/CHANGELOG.md" class="btn btn-light w-100"><i class="bi bi-file-earmark-arrow-down me-2"></i>下载原始 CHANGELOG</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section class="panel-card p-4">
+	<div class="section-header">
+		<div>
+			<h2 class="section-title"><i class="bi bi-file-earmark-richtext"></i>变更记录</h2>
+			<div class="section-subtitle mt-2">直接从磁盘读取并以 Markdown 样式渲染。</div>
+		</div>
+		<a href="/browse/CHANGELOG.md" class="btn btn-sm btn-outline-primary">在文件浏览器中打开</a>
+	</div>
+
+	{% if app_info.changelog %}
+	<div class="markdown-body">{{ app_info.changelog_html }}</div>
+	{% else %}
+	<div class="text-center text-muted py-5">
+		<i class="bi bi-journal-x fs-1 d-block mb-3"></i>
+		当前未检测到根目录 `CHANGELOG.md`
+	</div>
+	{% endif %}
+</section>
+{% endblock %}
+
