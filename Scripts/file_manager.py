@@ -1,18 +1,27 @@
 import os
 
 
-from build import (
-    DEFAULT_UPLOAD_URL,
+from backend_client import (
     RemoteUploadSettings,
+    DEFAULT_UPLOAD_URL,
+    resolve_upload_base_url,
+    resolve_upload_credentials,
     upload_file as authenticated_upload_file,
 )
 
 
+def _require_requests():
+    try:
+        import requests
+    except ImportError as exc:
+        raise RuntimeError("FileManager requires the requests package for this operation.") from exc
+    return requests
+
+
 class FileManager:
     def __init__(self, base_url=None, username=None, password=None):
-        self.base_url = base_url or os.environ.get('COLORVISION_UPLOAD_URL', DEFAULT_UPLOAD_URL)
-        self.username = username if username is not None else os.environ.get('COLORVISION_UPLOAD_USERNAME', '')
-        self.password = password if password is not None else os.environ.get('COLORVISION_UPLOAD_PASSWORD', '')
+        self.base_url = resolve_upload_base_url(base_url)
+        self.username, self.password = resolve_upload_credentials(username, password)
 
     def upload_file(self, file_path, folder_name):
         if not self.username or not self.password:
@@ -32,6 +41,7 @@ class FileManager:
         return authenticated_upload_file(file_path, settings)
 
     def download_file(self, file_name, folder_name, save_path):
+        requests = _require_requests()
         download_url = f'{self.base_url}/download/{folder_name}/{file_name}'
         response = requests.get(download_url, stream=True)
 
@@ -44,6 +54,7 @@ class FileManager:
             print('File download failed:', response.text)
 
     def delete_file(self, file_name, folder_name):
+        requests = _require_requests()
         delete_url = f'{self.base_url}/delete/{folder_name}/{file_name}'
         response = requests.delete(delete_url)
 
@@ -53,6 +64,7 @@ class FileManager:
             print('File deletion failed:', response.text)
 
     def post_file(self, file_path, folder_name):
+        requests = _require_requests()
         file_name = os.path.basename(file_path)
         post_url = f'{self.base_url}/post/{folder_name}/{file_name}'
 

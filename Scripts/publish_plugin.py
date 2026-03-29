@@ -29,38 +29,50 @@ import argparse
 import os
 import sys
 
+from backend_client import (
+    DEFAULT_CONNECT_TIMEOUT,
+    DEFAULT_READ_TIMEOUT,
+    RemoteUploadSettings,
+    post_multipart_with_auth,
+    preflight_remote_upload,
+    resolve_upload_base_url,
+    resolve_upload_credentials,
+)
+
 
 DEFAULT_API_URL = "http://localhost:9999"
-DEFAULT_CONNECT_TIMEOUT = 10
-DEFAULT_READ_TIMEOUT = 120
+DEFAULT_PUBLISH_READ_TIMEOUT = 120
 
 
 def publish_plugin(args):
-    try:
-        import requests
-    except ImportError:
-        print("Error: publish_plugin.py requires the requests package. Please install it first.")
-        sys.exit(1)
-
-    api_url = args.api_url.rstrip("/")
+    api_url = resolve_upload_base_url(args.api_url)
     publish_url = f"{api_url}/api/packages/publish"
-    auth = None
-
-    username = (args.username or os.environ.get("COLORVISION_UPLOAD_USERNAME", "")).strip()
-    password = args.password or os.environ.get("COLORVISION_UPLOAD_PASSWORD", "")
-    if username or password:
-        auth = (username, password)
+    username, password = resolve_upload_credentials(args.username, args.password)
 
     if not os.path.isfile(args.file):
         print(f"Error: Package file not found: {args.file}")
         sys.exit(1)
 
-    if auth is None:
+    if not username or not password:
         print(
             "Error: /api/packages/publish now requires Basic Auth. "
             "Set COLORVISION_UPLOAD_USERNAME and COLORVISION_UPLOAD_PASSWORD, "
             "or pass --username/--password."
         )
+        sys.exit(2)
+
+    if not preflight_remote_upload(
+        RemoteUploadSettings(
+            base_url=api_url,
+            folder_name="Plugins",
+            username=username,
+            password=password,
+            enabled=True,
+            connect_timeout=DEFAULT_CONNECT_TIMEOUT,
+            read_timeout=DEFAULT_PUBLISH_READ_TIMEOUT,
+        )
+    ):
+        print("Publish preflight failed; aborting before package upload.")
         sys.exit(2)
 
     # Build form data
@@ -105,12 +117,14 @@ def publish_plugin(args):
         print(f"Publishing {args.plugin_id} v{args.version} to {publish_url}")
         print(f"Package: {args.file} ({file_size / 1024:.1f} KB)")
 
-        response = requests.post(
+        response = post_multipart_with_auth(
             publish_url,
             data=form_data,
             files=files,
-            auth=auth,
-            timeout=(DEFAULT_CONNECT_TIMEOUT, DEFAULT_READ_TIMEOUT),
+            username=username,
+            password=password,
+            connect_timeout=DEFAULT_CONNECT_TIMEOUT,
+            read_timeout=DEFAULT_PUBLISH_READ_TIMEOUT,
         )
 
         if response.status_code == 201:
@@ -127,9 +141,12 @@ def publish_plugin(args):
             print(f"✗ Publish failed (HTTP {response.status_code})")
             print(f"  Response: {response.text}")
             sys.exit(1)
-    except requests.exceptions.ConnectionError:
+    except RuntimeError as exc:
+        print(f"Error: {exc}")
+        sys.exit(1)
+    except Exception as exc:
         print(f"✗ Cannot connect to marketplace API at {api_url}")
-        print("  Make sure the backend is running.")
+        print(f"  {exc}")
         sys.exit(1)
     finally:
         for fh in file_handles:

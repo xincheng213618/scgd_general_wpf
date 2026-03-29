@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from build import DEFAULT_UPLOAD_URL
+from backend_client import DEFAULT_UPLOAD_URL
 from file_manager import FileManager
 
 
@@ -30,7 +30,7 @@ class FileManagerTests(unittest.TestCase):
     def test_upload_file_skips_when_credentials_are_missing(self):
         os.environ.pop("COLORVISION_UPLOAD_USERNAME", None)
         os.environ.pop("COLORVISION_UPLOAD_PASSWORD", None)
-        manager = FileManager(base_url="http://example.com:9998")
+        manager = FileManager(base_url="http://example.com:9998", username="", password="")
 
         with patch("builtins.print") as mocked_print:
             result = manager.upload_file(self.file_path, "ColorVision")
@@ -60,6 +60,13 @@ class FileManagerTests(unittest.TestCase):
         os.environ.pop("COLORVISION_UPLOAD_URL", None)
         manager = FileManager(username="user", password="pass")
         self.assertEqual(manager.base_url, DEFAULT_UPLOAD_URL)
+
+    def test_file_manager_uses_default_credentials_for_current_setup(self):
+        os.environ.pop("COLORVISION_UPLOAD_USERNAME", None)
+        os.environ.pop("COLORVISION_UPLOAD_PASSWORD", None)
+        manager = FileManager()
+        self.assertEqual(manager.username, "xincheng")
+        self.assertEqual(manager.password, "xincheng")
 
 
 if __name__ == "__main__":

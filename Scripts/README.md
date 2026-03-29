@@ -4,11 +4,16 @@
 
 The hardened backend now protects upload/publish endpoints with HTTP Basic Auth.
 
+Shared helper module:
+
+- `Scripts/backend_client.py` centralizes auth resolution, upload URL building, `/api/health` + `/api/ready` preflight, streamed PUT upload, and authenticated multipart POST helpers.
+
 - Legacy upload target: `PUT /upload/<folder>/<filename>`
 - Publish API target: `POST /api/packages/publish`
 - Recommended credential source:
   - `COLORVISION_UPLOAD_USERNAME`
   - `COLORVISION_UPLOAD_PASSWORD`
+- Built-in fallback for your current setup: `xincheng / xincheng`
 - Optional overrides:
   - `COLORVISION_UPLOAD_URL`
   - `COLORVISION_UPLOAD_FOLDER`
@@ -46,7 +51,7 @@ py Scripts\build_spectrum.py --upload
 
 ### `publish_plugin.py`
 
-Publishes a plugin package through `/api/packages/publish` and now also requires Basic Auth.
+Publishes a plugin package through `/api/packages/publish`, requires Basic Auth, and now also runs backend preflight before publishing.
 
 ```powershell
 py Scripts\publish_plugin.py -p Spectrum -v 1.0.0.1 -f .\Spectrum-1.0.0.1.cvxp --username your-user --password your-password
@@ -56,9 +61,11 @@ py Scripts\publish_plugin.py -p Spectrum -v 1.0.0.1 -f .\Spectrum-1.0.0.1.cvxp -
 
 ```powershell
 $env:COLORVISION_UPLOAD_URL = "http://xc213618.ddns.me:9998"
-$env:COLORVISION_UPLOAD_USERNAME = "your-user"
-$env:COLORVISION_UPLOAD_PASSWORD = "your-password"
+$env:COLORVISION_UPLOAD_USERNAME = "xincheng"
+$env:COLORVISION_UPLOAD_PASSWORD = "xincheng"
 ```
+
+If you do not set these two environment variables, the scripts now also fall back to `xincheng / xincheng` by default.
 
 ## Local fallback without backend upload
 
@@ -70,6 +77,7 @@ py Scripts\build.py --skip-remote-upload
 
 Focused script tests now live in:
 
+- `Scripts/test_backend_client.py`
 - `Scripts/test_build.py`
 - `Scripts/test_file_manager.py`
 - `Scripts/test_build_update.py`

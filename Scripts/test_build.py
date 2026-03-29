@@ -113,8 +113,7 @@ class BuildScriptTests(unittest.TestCase):
             "http://example.com:9998/upload/ColorVision/ColorVision-1.2.3.4.exe",
         )
         self.assertEqual(session.calls[0]["payload"], b"payload")
-        self.assertEqual(session.calls[0]["auth"].username, "tester")
-        self.assertEqual(session.calls[0]["auth"].password, "secret")
+        self.assertEqual(session.calls[0]["auth"], ("tester", "secret"))
         self.assertEqual(session.calls[0]["headers"], {"Content-Type": "application/octet-stream"})
 
     def test_preflight_remote_upload_passes_when_backend_is_ready(self):
@@ -268,6 +267,57 @@ class BuildScriptTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 2)
         mocked_rebuild.assert_not_called()
+
+    def test_main_uses_shared_default_credentials_when_not_explicitly_provided(self):
+        args = SimpleNamespace(
+            project="ColorVision",
+            skip_build=True,
+            skip_remote_upload=False,
+            upload_url=None,
+            upload_folder="ColorVision",
+            upload_user=None,
+            upload_password=None,
+            connect_timeout=10,
+            read_timeout=30,
+            upload_retries=2,
+            latest_file=str(self.root / "ColorVision-2.0.0.0.exe"),
+            setup_files_dir=None,
+        )
+        latest_file = Path(args.latest_file)
+        latest_file.write_bytes(b"payload")
+        changelog_path = self.root / "CHANGELOG.md"
+        changelog_path.write_text("hello", encoding="utf-8")
+        project = build.ProjectConfig(
+            name="ColorVision",
+            msbuild_path=Path("msbuild.exe"),
+            solution_path=Path("build.sln"),
+            advanced_installer_path=Path("AdvancedInstaller.com"),
+            aip_path=Path("ColorVision.aip"),
+            setup_files_dir=self.root,
+            latest_release_path=self.root / "LATEST_RELEASE",
+            target_directory=self.root,
+            changelog_src=changelog_path,
+            changelog_dst=self.root / "CHANGELOG.out.md",
+            wechat_target_directory=self.root,
+            baidu_target_directory=self.root,
+        )
+
+        captured_settings = {}
+
+        def fake_preflight(settings, session=None):
+            captured_settings["settings"] = settings
+            return False
+
+        with (
+            patch("build.parse_args", return_value=args),
+            patch("build.build_projects", return_value={"ColorVision": project}),
+            patch("build.preflight_remote_upload", side_effect=fake_preflight),
+        ):
+            exit_code = build.main()
+
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(captured_settings["settings"].username, "xincheng")
+        self.assertEqual(captured_settings["settings"].password, "xincheng")
 
 
 if __name__ == "__main__":

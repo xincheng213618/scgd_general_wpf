@@ -1,5 +1,4 @@
 import os
-import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -48,7 +47,7 @@ class PublishPluginTests(unittest.TestCase):
 
     def test_publish_plugin_requires_auth(self):
         with self.assertRaises(SystemExit) as ctx:
-            publish_plugin.publish_plugin(self._args())
+            publish_plugin.publish_plugin(self._args(username="", password=""))
         self.assertEqual(ctx.exception.code, 2)
 
     def test_publish_plugin_uses_environment_auth(self):
@@ -63,18 +62,25 @@ class PublishPluginTests(unittest.TestCase):
             def json():
                 return {"ok": True}
 
-        requests_module = SimpleNamespace(post=lambda *args, **kwargs: Response())
-        with patch.dict(sys.modules, {"requests": requests_module}):
-            with patch.object(requests_module, "post", return_value=Response()) as mocked_post:
+        with (
+            patch("publish_plugin.preflight_remote_upload", return_value=True) as mocked_preflight,
+            patch("publish_plugin.post_multipart_with_auth", return_value=Response()) as mocked_post,
+        ):
                 publish_plugin.publish_plugin(self._args())
 
+        mocked_preflight.assert_called_once()
         _, kwargs = mocked_post.call_args
-        self.assertEqual(kwargs["auth"], ("tester", "secret"))
-        self.assertEqual(kwargs["timeout"], (publish_plugin.DEFAULT_CONNECT_TIMEOUT, publish_plugin.DEFAULT_READ_TIMEOUT))
+        self.assertEqual(kwargs["username"], "tester")
+        self.assertEqual(kwargs["password"], "secret")
+        self.assertEqual(
+            (kwargs["connect_timeout"], kwargs["read_timeout"]),
+            (publish_plugin.DEFAULT_CONNECT_TIMEOUT, publish_plugin.DEFAULT_PUBLISH_READ_TIMEOUT),
+        )
 
 
 if __name__ == "__main__":
     unittest.main()
+
 
 
 
