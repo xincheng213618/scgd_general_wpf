@@ -45,16 +45,33 @@ class FileManagerTests(unittest.TestCase):
         os.environ["COLORVISION_UPLOAD_PASSWORD"] = "secret"
         manager = FileManager()
 
-        with patch("file_manager.authenticated_upload_file", return_value=True) as mocked_upload:
+        with (
+            patch("file_manager.preflight_remote_upload", return_value=True) as mocked_preflight,
+            patch("file_manager.authenticated_upload_file", return_value=True) as mocked_upload,
+        ):
             result = manager.upload_file(self.file_path, "ColorVision/Update")
 
         self.assertTrue(result)
+        mocked_preflight.assert_called_once()
         mocked_upload.assert_called_once()
         _, settings = mocked_upload.call_args[0]
         self.assertEqual(settings.base_url, "http://example.com:9998")
         self.assertEqual(settings.folder_name, "ColorVision/Update")
         self.assertEqual(settings.username, "tester")
         self.assertEqual(settings.password, "secret")
+
+    def test_upload_file_stops_when_preflight_fails(self):
+        manager = FileManager(base_url="http://example.com:9998", username="xincheng", password="xincheng")
+
+        with (
+            patch("file_manager.preflight_remote_upload", return_value=False) as mocked_preflight,
+            patch("file_manager.authenticated_upload_file") as mocked_upload,
+        ):
+            result = manager.upload_file(self.file_path, "ColorVision/Update")
+
+        self.assertFalse(result)
+        mocked_preflight.assert_called_once()
+        mocked_upload.assert_not_called()
 
     def test_file_manager_uses_default_upload_url(self):
         os.environ.pop("COLORVISION_UPLOAD_URL", None)

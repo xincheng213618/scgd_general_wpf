@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}工具与软件下载 — ColorVision{% endblock %}
+
+{% block content %}
+<section class="hero-panel mb-4">
+    <div class="row g-4 align-items-center position-relative">
+        <div class="col-lg-8">
+            <span class="eyebrow mb-3"><i class="bi bi-tools"></i> Tool / 软件分发</span>
+            <h1 class="display-5 fw-semibold mb-3">`H:\ColorVision\Tool` 不只是工具，也包括网上收集的软件安装包。</h1>
+            <p class="page-lead mb-4">
+                这里把 Tool 目录单独展示出来，方便同事快速找到安装包、辅助软件和临时依赖，而不是只能通过文件浏览器一级一级点进去。
+            </p>
+            <div class="hero-actions">
+                <a href="/browse/Tool" class="btn btn-light btn-lg"><i class="bi bi-folder2-open me-2"></i>浏览原始目录</a>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="hero-aside">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="metric-card">
+                            <span class="metric-label">文件数量</span>
+                            <div class="metric-value">{{ summary.file_count }}</div>
+                            <div class="metric-note">可直接下载的软件/工具</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-card">
+                            <span class="metric-label">子目录</span>
+                            <div class="metric-value">{{ summary.directory_count }}</div>
+                            <div class="metric-note">分类或分组目录</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="metric-card">
+                            <span class="metric-label">总文件体积</span>
+                            <div class="metric-value">{{ human_size(summary.total_size) }}</div>
+                            <div class="metric-note">仅统计当前页可见文件</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="panel-card p-4 table-shell">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title"><i class="bi bi-hdd-network"></i>Tool 目录内容</h2>
+            <div class="section-subtitle mt-2">既展示内部工具，也展示从网上收集的安装包和辅助软件。</div>
+        </div>
+        <div class="surface-tag"><i class="bi bi-grid"></i> {{ summary.item_count }} 个项目</div>
+    </div>
+
+    {% set parent_subpath = '' %}
+    {% set show_parent_link = false %}
+    {% set empty_message = 'Tool 目录不存在或当前为空。' %}
+    {% include '_storage_listing.html' %}
+</section>
+{% endblock %}
+
+

@@ -567,6 +567,8 @@
                     <li class="nav-item"><a class="nav-link {{ 'active' if request.path == '/' else '' }}" href="/"><i class="bi bi-house-door me-1"></i> 首页</a></li>
                     <li class="nav-item"><a class="nav-link {{ 'active' if request.path.startswith('/plugins') else '' }}" href="/plugins"><i class="bi bi-puzzle me-1"></i> 插件市场</a></li>
                     <li class="nav-item"><a class="nav-link {{ 'active' if request.path.startswith('/releases') else '' }}" href="/releases"><i class="bi bi-archive me-1"></i> 版本档案</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.path.startswith('/updates') else '' }}" href="/updates"><i class="bi bi-arrow-repeat me-1"></i> 增量更新</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.path.startswith('/tools') else '' }}" href="/tools"><i class="bi bi-tools me-1"></i> Tool / 软件</a></li>
                     <li class="nav-item"><a class="nav-link {{ 'active' if request.path.startswith('/upload') else '' }}" href="/upload"><i class="bi bi-cloud-upload me-1"></i> 上传</a></li>
                     <li class="nav-item"><a class="nav-link {{ 'active' if request.path.startswith('/browse') else '' }}" href="/browse"><i class="bi bi-folder2-open me-1"></i> 文件浏览</a></li>
                 </ul>
@@ -583,6 +585,8 @@
         <div class="container text-center">
             ColorVision Plugin Marketplace &copy; {{ now().year if now is defined else "2026" }}
             &middot; <a href="/releases" class="text-decoration-none">版本档案</a>
+            &middot; <a href="/updates" class="text-decoration-none">增量更新</a>
+            &middot; <a href="/tools" class="text-decoration-none">Tool / 软件</a>
             &middot; <a href="/changelog" class="text-decoration-none">CHANGELOG</a>
             &middot; <a href="/api/plugins" class="text-decoration-none">API</a>
             &middot; <a href="https://github.com/xincheng213618/scgd_general_wpf" class="text-decoration-none">GitHub</a>

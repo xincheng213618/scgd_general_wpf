@@ -7,6 +7,7 @@ The hardened backend now protects upload/publish endpoints with HTTP Basic Auth.
 Shared helper module:
 
 - `Scripts/backend_client.py` centralizes auth resolution, upload URL building, `/api/health` + `/api/ready` preflight, streamed PUT upload, and authenticated multipart POST helpers.
+- If the remote server is older and returns `404` for `/api/health` or `/api/ready`, the scripts now treat that as "legacy server, continue upload" instead of aborting.
 
 - Legacy upload target: `PUT /upload/<folder>/<filename>`
 - Publish API target: `POST /api/packages/publish`

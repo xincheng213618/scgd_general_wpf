@@ -34,6 +34,27 @@ from functools import wraps
 from markupsafe import Markup
 from pathlib import Path, PurePosixPath
 from typing import Any
+from page_contexts import (
+    build_browse_page_context,
+    build_index_page_context,
+    build_tools_page_context,
+    build_updates_page_context,
+)
+from plugin_marketplace import (
+    get_plugin_detail as get_plugin_detail_impl,
+    is_safe_plugin_id,
+    reconcile_all_plugin_package_histories as reconcile_all_plugin_package_histories_impl,
+    reconcile_plugin_package_history as reconcile_plugin_package_history_impl,
+    scan_plugin_summaries as scan_plugin_summaries_impl,
+)
+from storage_browser import (
+    build_storage_summary as build_storage_summary_impl,
+    get_storage_overview_context as get_storage_overview_context_impl,
+    scan_storage_overview as scan_storage_overview_impl,
+)
+from update_retention import (
+    prune_update_packages,
+)
 
 try:
     import markdown
@@ -226,7 +247,8 @@ def _refresh_related_caches(*, plugin_id: str | None = None, relative_path: str 
         _invalidate_cache_prefix(f"dir_file_count:{top_level}")
 
     if plugin_id:
-        _invalidate_cache_prefix(f"plugin_info:")
+        _invalidate_cache_prefix("plugin_summary:")
+        _invalidate_cache_prefix("plugin_detail:")
         _invalidate_cache_prefix(f"dir_file_count:Plugins/{plugin_id}")
 
 # ---------------------------------------------------------------------------
@@ -469,7 +491,7 @@ def _extract_package_version(filename: str, plugin_id: str) -> str | None:
 
 
 def _ensure_plugin_dir(plugin_id: str) -> Path:
-    if not _is_safe_id(plugin_id):
+    if not is_safe_plugin_id(plugin_id):
         raise ValueError("PluginId contains invalid characters")
     plugin_dir = STORAGE / "Plugins" / plugin_id
     plugin_dir.mkdir(parents=True, exist_ok=True)
@@ -565,6 +587,11 @@ def render_markdown(text: str | None) -> Markup:
         output_format="html5",
     )
     return Markup(html)
+
+
+def _storage_target(relative_path: str) -> Path:
+    normalized = _normalize_relative_path(relative_path)
+    return STORAGE / Path(*PurePosixPath(normalized).parts)
 
 
 def _extract_release_version(name: str) -> str | None:
@@ -761,178 +788,6 @@ def _storage_relative(path: Path) -> str:
         return path.name
 
 
-def _plugin_history_dir(plugin_id: str) -> Path:
-    return STORAGE / "History" / "Plugins" / plugin_id
-
-
-def _plugin_package_from_file(
-    file_path: Path, plugin_id: str, source: str
-) -> dict[str, Any] | None:
-    if file_path.suffix.lower() != ".cvxp":
-        return None
-
-    m = re.match(rf"^{re.escape(plugin_id)}-(.+)\.cvxp$", file_path.name)
-    version = m.group(1) if m else file_path.stem
-    try:
-        stat = file_path.stat()
-    except OSError:
-        return None
-
-    file_hash = hashlib.sha256()
-    try:
-        with open(file_path, "rb") as fh:
-            for chunk in iter(lambda: fh.read(8192), b""):
-                file_hash.update(chunk)
-    except OSError:
-        return None
-
-    return {
-        "version": version,
-        "filename": file_path.name,
-        "size": stat.st_size,
-        "fileHash": file_hash.hexdigest(),
-        "source": source,
-        "relative_path": _storage_relative(file_path),
-        "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
-    }
-
-
-def _scan_plugin_package_sets(plugin_id: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    plugin_dir = STORAGE / "Plugins" / plugin_id
-    history_dir = _plugin_history_dir(plugin_id)
-    current_packages: list[dict[str, Any]] = []
-    historical_packages: list[dict[str, Any]] = []
-
-    if plugin_dir.is_dir():
-        for file_path in plugin_dir.iterdir():
-            package = _plugin_package_from_file(file_path, plugin_id, "current")
-            if package:
-                current_packages.append(package)
-
-    if history_dir.is_dir():
-        for file_path in history_dir.iterdir():
-            package = _plugin_package_from_file(file_path, plugin_id, "archive")
-            if package:
-                historical_packages.append(package)
-
-    current_packages.sort(key=lambda p: p["modified"], reverse=True)
-    historical_packages.sort(key=lambda p: p["modified"], reverse=True)
-    return current_packages, historical_packages
-
-
-def reconcile_plugin_package_history(
-    plugin_id: str, keep_latest: int | None = None
-) -> list[dict[str, str]]:
-    plugin_dir = STORAGE / "Plugins" / plugin_id
-    if not plugin_dir.is_dir():
-        return []
-
-    keep_latest = int(keep_latest or CONFIG.get("plugin_package_keep_count", 3) or 3)
-    if keep_latest < 1:
-        keep_latest = 1
-
-    candidates: list[tuple[tuple, str, Path]] = []
-    for entry in plugin_dir.iterdir():
-        if not entry.is_file() or entry.suffix.lower() != ".cvxp":
-            continue
-        package = _plugin_package_from_file(entry, plugin_id, "current")
-        if not package:
-            continue
-        candidates.append((_version_tuple(package["version"]), package["modified"], entry))
-
-    candidates.sort(key=lambda item: (item[0], item[1]), reverse=True)
-    moved: list[dict[str, str]] = []
-    history_dir = _plugin_history_dir(plugin_id)
-    history_dir.mkdir(parents=True, exist_ok=True)
-
-    for _, _, source_path in candidates[keep_latest:]:
-        target_path = history_dir / source_path.name
-        if target_path.exists():
-            try:
-                if target_path.stat().st_size == source_path.stat().st_size:
-                    source_path.unlink(missing_ok=True)
-                    moved.append(
-                        {
-                            "from": source_path.name,
-                            "to": target_path.relative_to(STORAGE).as_posix(),
-                        }
-                    )
-                    continue
-            except OSError:
-                pass
-
-            stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-            target_path = history_dir / f"{source_path.stem}-{stamp}{source_path.suffix}"
-
-        shutil.move(str(source_path), str(target_path))
-        moved.append(
-            {
-                "from": source_path.name,
-                "to": target_path.relative_to(STORAGE).as_posix(),
-            }
-        )
-
-    if moved:
-        _refresh_related_caches(plugin_id=plugin_id, relative_path=f"Plugins/{plugin_id}")
-    return moved
-
-
-def reconcile_all_plugin_package_histories() -> dict[str, list[dict[str, str]]]:
-    plugins_dir = STORAGE / "Plugins"
-    if not plugins_dir.is_dir():
-        return {}
-
-    results: dict[str, list[dict[str, str]]] = {}
-    for entry in sorted(plugins_dir.iterdir(), key=lambda p: p.name.lower()):
-        if not entry.is_dir():
-            continue
-        moved = reconcile_plugin_package_history(entry.name)
-        if moved:
-            results[entry.name] = moved
-    return results
-
-
-def _plugin_signature(plugin_dir: Path, history_dir: Path | None = None) -> str:
-    parts = []
-    try:
-        dir_stat = plugin_dir.stat()
-        parts.append(f"dir:{dir_stat.st_mtime_ns}")
-    except OSError:
-        return "missing"
-
-    try:
-        entries = sorted(plugin_dir.iterdir(), key=lambda item: item.name.lower())
-    except OSError:
-        return "unreadable"
-
-    for entry in entries:
-        if entry.name.startswith("."):
-            continue
-        try:
-            stat = entry.stat()
-        except OSError:
-            continue
-        parts.append(
-            f"{entry.name}:{'d' if entry.is_dir() else 'f'}:{stat.st_mtime_ns}:{stat.st_size}"
-        )
-
-    if history_dir and history_dir.is_dir():
-        try:
-            entries = sorted(history_dir.iterdir(), key=lambda item: item.name.lower())
-        except OSError:
-            entries = []
-        for entry in entries:
-            if entry.name.startswith("."):
-                continue
-            try:
-                stat = entry.stat()
-            except OSError:
-                continue
-            parts.append(f"history:{entry.name}:{stat.st_mtime_ns}:{stat.st_size}")
-
-    return "|".join(parts)
-
-
 def _get_download_counts() -> dict[str, int]:
     try:
         db = get_db()
@@ -947,101 +802,57 @@ def _get_download_counts() -> dict[str, int]:
 
 def scan_plugins(download_counts: dict[str, int] | None = None) -> list[dict]:
     """Scan the Plugins directory and return metadata for each plugin."""
-    plugins_dir = STORAGE / "Plugins"
-    if not plugins_dir.is_dir():
-        return []
-
     if download_counts is None:
         download_counts = _get_download_counts()
-
-    plugins = []
-    for entry in sorted(plugins_dir.iterdir()):
-        if not entry.is_dir():
-            continue
-        info = get_plugin_info(entry.name, download_counts=download_counts)
-        if info:
-            plugins.append(info)
-    return plugins
+    return scan_plugin_summaries_impl(
+        STORAGE,
+        download_counts=download_counts,
+        get_cache_entry=_get_cache_entry,
+        set_cache_entry=_set_cache_entry,
+        ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
+    )
 
 
 def get_plugin_info(
     plugin_id: str, download_counts: dict[str, int] | None = None
 ) -> dict | None:
-    """Read metadata for a single plugin from its directory."""
-    if not _is_safe_id(plugin_id):
-        return None
-
-    plugin_dir = STORAGE / "Plugins" / plugin_id
-    if not plugin_dir.is_dir():
-        return None
-
     if download_counts is None:
         download_counts = _get_download_counts()
-    cache_key = f"plugin_info:v2:{plugin_id}"
-    history_dir = _plugin_history_dir(plugin_id)
-    signature = _plugin_signature(plugin_dir, history_dir)
-    cached = _get_cache_entry(cache_key, signature=signature)
-    if cached:
-        info = dict(cached["value"])
-        info["total_downloads"] = download_counts.get(plugin_id, 0)
-        return info
-
-    latest_version = read_text_file(plugin_dir / "LATEST_RELEASE")
-
-    # Read manifest.json if present
-    manifest = {}
-    manifest_path = plugin_dir / "manifest.json"
-    if manifest_path.exists():
-        try:
-            with open(manifest_path, encoding="utf-8") as f:
-                manifest = json.load(f)
-        except (json.JSONDecodeError, OSError):
-            pass
-
-    current_packages, historical_packages = _scan_plugin_package_sets(plugin_id)
-    packages = list(current_packages)
-
-    # Read optional files
-    readme = read_text_file(plugin_dir / "README.md")
-    changelog = read_text_file(plugin_dir / "CHANGELOG.md")
-
-    has_icon = (plugin_dir / "PackageIcon.png").exists()
-
-    info = {
-        "id": manifest.get("id", plugin_id),
-        "name": manifest.get("name", plugin_id),
-        "description": manifest.get("description", ""),
-        "author": manifest.get("author", ""),
-        "url": manifest.get("url", ""),
-        "version": latest_version or (packages[0]["version"] if packages else ""),
-        "requires": manifest.get("requires", ""),
-        "category": manifest.get("category", ""),
-        "has_icon": has_icon,
-        "readme": readme or "",
-        "changelog": changelog or "",
-        "packages": packages,
-        "current_packages": current_packages,
-        "historical_packages": historical_packages,
-        "all_packages": current_packages + historical_packages,
-        "total_downloads": download_counts.get(plugin_id, 0),
-        "modified": (
-            packages[0]["modified"]
-            if packages
-            else datetime.fromtimestamp(
-                plugin_dir.stat().st_mtime, tz=timezone.utc
-            ).isoformat()
-        ),
-    }
-
-    _set_cache_entry(
-        cache_key,
-        info,
+    return get_plugin_detail_impl(
+        STORAGE,
+        plugin_id,
+        download_counts=download_counts,
+        get_cache_entry=_get_cache_entry,
+        set_cache_entry=_set_cache_entry,
         ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
-        signature=signature,
     )
 
-    info["total_downloads"] = download_counts.get(plugin_id, 0)
-    return info
+
+def reconcile_plugin_package_history(
+    plugin_id: str, keep_latest: int | None = None
+) -> list[dict[str, str]]:
+    keep_count = int(keep_latest or CONFIG.get("plugin_package_keep_count", 3) or 3)
+    return reconcile_plugin_package_history_impl(
+        STORAGE,
+        plugin_id,
+        keep_latest=keep_count,
+        on_changed=lambda changed_plugin_id: _refresh_related_caches(
+            plugin_id=changed_plugin_id,
+            relative_path=f"Plugins/{changed_plugin_id}",
+        ),
+    )
+
+
+def reconcile_all_plugin_package_histories() -> dict[str, list[dict[str, str]]]:
+    keep_count = int(CONFIG.get("plugin_package_keep_count", 3) or 3)
+    return reconcile_all_plugin_package_histories_impl(
+        STORAGE,
+        keep_latest=keep_count,
+        on_changed=lambda changed_plugin_id: _refresh_related_caches(
+            plugin_id=changed_plugin_id,
+            relative_path=f"Plugins/{changed_plugin_id}",
+        ),
+    )
 
 
 def _get_download_count(plugin_id: str) -> int:
@@ -1122,91 +933,29 @@ def handle_http_exception(exc: HTTPException):
 
 def scan_storage_overview() -> list[dict[str, Any]]:
     """Return a summary of top-level directories in storage."""
-    cached = _get_cache_entry(OVERVIEW_CACHE_KEY)
-    if cached:
-        return cached["value"]
-
-    if not STORAGE.is_dir():
-        return []
-
-    items: list[dict[str, Any]] = []
-    for entry in sorted(STORAGE.iterdir()):
-        if entry.name.startswith("."):
-            continue
-        if entry.is_dir():
-            cache_key = f"dir_file_count:{_storage_relative(entry)}"
-            count_cache = _get_cache_entry(cache_key)
-            if count_cache:
-                file_count = count_cache["value"].get("file_count", 0)
-            else:
-                file_count = sum(1 for child in entry.rglob("*") if child.is_file())
-                _set_cache_entry(
-                    cache_key,
-                    {"file_count": file_count},
-                    ttl_seconds=DIRECTORY_COUNT_CACHE_TTL_SECONDS,
-                )
-            items.append(
-                {
-                    "name": entry.name,
-                    "type": "dir",
-                    "file_count": file_count,
-                    "modified": datetime.fromtimestamp(
-                        entry.stat().st_mtime, tz=timezone.utc
-                    ).isoformat(),
-                }
-            )
-        elif entry.is_file():
-            items.append(
-                {
-                    "name": entry.name,
-                    "type": "file",
-                    "size": entry.stat().st_size,
-                    "modified": datetime.fromtimestamp(
-                        entry.stat().st_mtime, tz=timezone.utc
-                    ).isoformat(),
-                }
-            )
-    _set_cache_entry(
-        OVERVIEW_CACHE_KEY,
-        items,
-        ttl_seconds=OVERVIEW_CACHE_TTL_SECONDS,
-        signature="storage",
+    return scan_storage_overview_impl(
+        STORAGE,
+        get_cache_entry=_get_cache_entry,
+        set_cache_entry=_set_cache_entry,
+        overview_cache_key=OVERVIEW_CACHE_KEY,
+        overview_cache_ttl_seconds=OVERVIEW_CACHE_TTL_SECONDS,
+        directory_count_cache_ttl_seconds=DIRECTORY_COUNT_CACHE_TTL_SECONDS,
     )
-    return items
 
 
 def build_storage_summary(overview: list[dict[str, Any]]) -> dict:
-    directory_count = sum(1 for item in overview if item["type"] == "dir")
-    top_level_file_count = sum(1 for item in overview if item["type"] == "file")
-    nested_file_count = sum(item.get("file_count", 0) for item in overview if item["type"] == "dir")
-    top_level_size = sum(int(item.get("size", 0) or 0) for item in overview if item["type"] == "file")
-    return {
-        "item_count": len(overview),
-        "directory_count": directory_count,
-        "top_level_file_count": top_level_file_count,
-        "total_file_count": top_level_file_count + nested_file_count,
-        "top_level_size": top_level_size,
-    }
+    return build_storage_summary_impl(overview)
 
 
 def get_storage_overview_context() -> tuple[list[dict[str, Any]], dict, dict]:
-    cached = _get_cache_entry(OVERVIEW_CACHE_KEY)
-    if cached:
-        overview = cached["value"]
-        return overview, build_storage_summary(overview), {
-            "cache_hit": True,
-            "updated_at": cached["updated_at"],
-            "updated_at_display": str(cached["updated_at"]).replace("T", " ")[:19],
-            "ttl_seconds": OVERVIEW_CACHE_TTL_SECONDS,
-        }
-
-    overview = scan_storage_overview()
-    return overview, build_storage_summary(overview), {
-        "cache_hit": False,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at_display": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-        "ttl_seconds": OVERVIEW_CACHE_TTL_SECONDS,
-    }
+    return get_storage_overview_context_impl(
+        STORAGE,
+        get_cache_entry=_get_cache_entry,
+        set_cache_entry=_set_cache_entry,
+        overview_cache_key=OVERVIEW_CACHE_KEY,
+        overview_cache_ttl_seconds=OVERVIEW_CACHE_TTL_SECONDS,
+        directory_count_cache_ttl_seconds=DIRECTORY_COUNT_CACHE_TTL_SECONDS,
+    )
 
 
 # ===================================================================
@@ -1217,14 +966,13 @@ def get_storage_overview_context() -> tuple[list[dict[str, Any]], dict, dict]:
 @app.route("/")
 def index():
     """Home page — show storage overview."""
-    app_info = get_app_info()
-    overview, overview_summary, overview_meta = get_storage_overview_context()
     return render_template(
         "index.html",
-        app_info=app_info,
-        overview=overview,
-        overview_summary=overview_summary,
-        overview_meta=overview_meta,
+        **build_index_page_context(
+            STORAGE,
+            get_app_info=get_app_info,
+            get_storage_overview_context=get_storage_overview_context,
+        ),
     )
 
 
@@ -1240,6 +988,18 @@ def changelog_page():
     """Application changelog page."""
     app_info = get_app_info()
     return render_template("changelog.html", app_info=app_info)
+
+
+@app.route("/updates")
+def updates_page():
+    """Incremental update package page."""
+    return render_template("updates.html", **build_updates_page_context(STORAGE))
+
+
+@app.route("/tools")
+def tools_page():
+    """Tool/software distribution page."""
+    return render_template("tools.html", **build_tools_page_context(STORAGE))
 
 
 @app.route("/download/<path:relative_path>")
@@ -1388,7 +1148,7 @@ def _version_tuple(v: str) -> tuple:
 def browse_page(subpath=""):
     """Generic file browser for the storage directory."""
     normalized = _normalize_relative_path(subpath)
-    target = STORAGE / Path(*PurePosixPath(normalized).parts)
+    target = _storage_target(normalized)
     if not target.exists():
         abort(404)
     # Security: prevent path traversal
@@ -1400,32 +1160,7 @@ def browse_page(subpath=""):
     if target.is_file():
         return send_from_directory(str(target.parent), target.name)
 
-    # List directory contents
-    items = []
-    for entry in sorted(target.iterdir(), key=lambda e: (e.is_file(), e.name.lower())):
-        if entry.name.startswith("."):
-            continue
-        info = {
-            "name": entry.name,
-            "is_dir": entry.is_dir(),
-            "path": f"{subpath}/{entry.name}" if subpath else entry.name,
-        }
-        if entry.is_file():
-            info["size"] = entry.stat().st_size
-        info["modified"] = datetime.fromtimestamp(
-            entry.stat().st_mtime, tz=timezone.utc
-        ).strftime("%Y-%m-%d %H:%M")
-        items.append(info)
-
-    # Build breadcrumbs
-    parts = [p for p in subpath.split("/") if p]
-    breadcrumbs = [("Home", "/browse")]
-    for i, part in enumerate(parts):
-        breadcrumbs.append((part, "/browse/" + "/".join(parts[: i + 1])))
-
-    return render_template(
-        "browse.html", items=items, subpath=subpath, breadcrumbs=breadcrumbs
-    )
+    return render_template("browse.html", **build_browse_page_context(STORAGE, normalized))
 
 
 # ===================================================================
@@ -1813,6 +1548,8 @@ def legacy_upload(filepath):
         reconcile_app_release_history()
     if plugin_id and target.suffix.lower() == ".cvxp":
         reconcile_plugin_package_history(plugin_id)
+    if parts and parts[0] == "Update":
+        prune_update_packages(STORAGE)
     _refresh_related_caches(
         plugin_id=plugin_id,
         relative_path=normalized,
@@ -1953,6 +1690,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Move old plugin .cvxp packages into History/Plugins and exit",
     )
+    parser.add_argument(
+        "--prune-updates",
+        action="store_true",
+        help="Prune incremental update packages, keeping only the latest and each branch's .1 package",
+    )
     args = parser.parse_args()
 
     if args.storage:
@@ -1985,6 +1727,14 @@ if __name__ == "__main__":
             print(f"[{plugin_id}] {len(items)} moved")
             for item in items[:5]:
                 print(f"  {item['from']} -> {item['to']}")
+        raise SystemExit(0)
+
+    if args.prune_updates:
+        result = prune_update_packages(STORAGE)
+        print(f"Retained {len(result['retained'])} update package(s)")
+        print(f"Deleted {len(result['deleted'])} update package(s)")
+        for item in result["deleted"][:20]:
+            print(f"  removed {item}")
         raise SystemExit(0)
 
     print(f"Storage path: {STORAGE}")

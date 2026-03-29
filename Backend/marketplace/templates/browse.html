@@ -24,62 +24,8 @@
         <div class="surface-tag"><i class="bi bi-grid"></i> {{ items|length }} 个项目</div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead>
-                <tr>
-                    <th style="width: 50%;">名称</th>
-                    <th>大小</th>
-                    <th>修改时间</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if subpath %}
-                <tr>
-                    <td>
-                        <a href="/browse/{{ '/'.join(subpath.split('/')[:-1]) }}" class="text-decoration-none">
-                            <i class="bi bi-arrow-90deg-up text-muted"></i> ..
-                        </a>
-                    </td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                {% endif %}
-                {% for item in items %}
-                <tr>
-                    <td>
-                        <a href="/browse/{{ item.path }}" class="text-decoration-none">
-                            {% if item.is_dir %}
-                            <i class="bi bi-folder-fill text-warning"></i>
-                            {% elif item.name.endswith('.cvxp') or item.name.endswith('.zip') %}
-                            <i class="bi bi-file-earmark-zip text-success"></i>
-                            {% elif item.name.endswith('.exe') %}
-                            <i class="bi bi-file-earmark-binary text-danger"></i>
-                            {% elif item.name.endswith('.md') %}
-                            <i class="bi bi-file-earmark-text text-info"></i>
-                            {% elif item.name.endswith('.json') %}
-                            <i class="bi bi-file-earmark-code text-primary"></i>
-                            {% elif item.name.endswith('.png') or item.name.endswith('.ico') %}
-                            <i class="bi bi-file-earmark-image text-success"></i>
-                            {% else %}
-                            <i class="bi bi-file-earmark text-secondary"></i>
-                            {% endif %}
-                            {{ item.name }}
-                        </a>
-                    </td>
-                    <td>
-                        {% if not item.is_dir and item.size is defined %}
-                        <small class="text-muted">{{ human_size(item.size) }}</small>
-                        {% endif %}
-                    </td>
-                    <td><small class="text-muted">{{ item.modified }}</small></td>
-                </tr>
-                {% endfor %}
-                {% if not items and not subpath %}
-                <tr><td colspan="3" class="text-center text-muted py-4">目录为空</td></tr>
-                {% endif %}
-            </tbody>
-        </table>
-    </div>
+    {% set show_parent_link = true %}
+    {% set empty_message = '目录为空' %}
+    {% include '_storage_listing.html' %}
 </section>
 {% endblock %}

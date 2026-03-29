@@ -54,7 +54,7 @@
 </section>
 
 <div class="row g-3 mb-4">
-    <div class="col-md-6 col-xl-3">
+    <div class="col-md-6 col-xl-4">
         <div class="card h-100">
             <a href="/plugins" class="quick-link-card">
                 <div class="quick-link-icon"><i class="bi bi-puzzle"></i></div>
@@ -64,7 +64,7 @@
             </a>
         </div>
     </div>
-    <div class="col-md-6 col-xl-3">
+    <div class="col-md-6 col-xl-4">
         <div class="card h-100">
             <a href="/releases" class="quick-link-card">
                 <div class="quick-link-icon"><i class="bi bi-archive"></i></div>
@@ -74,7 +74,7 @@
             </a>
         </div>
     </div>
-    <div class="col-md-6 col-xl-3">
+    <div class="col-md-6 col-xl-4">
         <div class="card h-100">
             <a href="/changelog" class="quick-link-card">
                 <div class="quick-link-icon"><i class="bi bi-journal-richtext"></i></div>
@@ -84,7 +84,27 @@
             </a>
         </div>
     </div>
-    <div class="col-md-6 col-xl-3">
+    <div class="col-md-6 col-xl-4">
+        <div class="card h-100">
+            <a href="/updates" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-arrow-repeat"></i></div>
+                <h5>增量更新</h5>
+                <p class="mb-2">查看 `Update` 目录中的增量更新包与保留策略。</p>
+                <small>只保留最新包和每个小版本的 `.1` 基线包。</small>
+            </a>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card h-100">
+            <a href="/tools" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-tools"></i></div>
+                <h5>Tool / 软件</h5>
+                <p class="mb-2">展示工具目录中的内部工具和网上下载的软件安装包。</p>
+                <small>不再只能靠文件浏览器逐层点开。</small>
+            </a>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
         <div class="card h-100">
             <a href="/browse" class="quick-link-card">
                 <div class="quick-link-icon"><i class="bi bi-folder2-open"></i></div>
@@ -97,12 +117,113 @@
 </div>
 
 <div class="row g-4 mb-4">
+    <div class="col-xl-6">
+        <section class="panel-card p-4 h-100">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title"><i class="bi bi-arrow-repeat"></i>增量更新预览</h2>
+                    <div class="section-subtitle mt-2">按“最新 + 每个小版本 `.1`”的规则保留，避免 Update 目录无限膨胀。</div>
+                </div>
+                <a href="/updates" class="btn btn-sm btn-outline-primary">查看全部</a>
+            </div>
+
+            <div class="stat-inline mb-4">
+                <div>
+                    <strong>{{ update_summary.canonical_count }}</strong>
+                    <span>识别到的增量包</span>
+                </div>
+                <div>
+                    <strong>{{ update_summary.retained_count }}</strong>
+                    <span>建议保留</span>
+                </div>
+                <div>
+                    <strong>{{ update_summary.latest_version or '暂无' }}</strong>
+                    <span>最新版本</span>
+                </div>
+            </div>
+
+            <div class="release-list">
+                {% for item in update_packages %}
+                <div class="release-row">
+                    <div class="release-row-main">
+                        <div class="release-icon"><i class="bi bi-file-earmark-zip"></i></div>
+                        <div>
+                            <div class="release-title">{{ item.version }}</div>
+                            <div class="release-meta">{{ item.filename }} · {{ human_size(item.size) }}</div>
+                        </div>
+                    </div>
+                    <div class="release-actions">
+                        <span class="surface-tag"><i class="bi bi-diagram-3"></i>{{ '.1 基线' if item.fix == 1 else 'fix ' ~ item.fix }}</span>
+                        <a href="/download/{{ item.relative_path }}" class="btn btn-sm btn-outline-primary">下载</a>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not update_packages %}
+                <div class="text-muted py-4 text-center">当前没有识别到标准增量更新包。</div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-6">
+        <section class="panel-card p-4 h-100">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title"><i class="bi bi-tools"></i>Tool / 软件预览</h2>
+                    <div class="section-subtitle mt-2">Tool 目录中既有内部工具，也有从网上下载的安装包和辅助软件。</div>
+                </div>
+                <a href="/tools" class="btn btn-sm btn-outline-primary">查看全部</a>
+            </div>
+
+            <div class="stat-inline mb-4">
+                <div>
+                    <strong>{{ tool_summary.file_count }}</strong>
+                    <span>文件</span>
+                </div>
+                <div>
+                    <strong>{{ tool_summary.directory_count }}</strong>
+                    <span>目录</span>
+                </div>
+                <div>
+                    <strong>{{ human_size(tool_summary.total_size) }}</strong>
+                    <span>当前页体积</span>
+                </div>
+            </div>
+
+            <div class="release-list">
+                {% for item in tool_items %}
+                <div class="release-row">
+                    <div class="release-row-main">
+                        <div class="release-icon"><i class="bi {{ 'bi-folder-fill' if item.is_dir else 'bi-file-earmark-arrow-down' }}"></i></div>
+                        <div>
+                            <div class="release-title">{{ item.name }}</div>
+                            <div class="release-meta">{{ item.modified }}{% if not item.is_dir and item.size is defined %} · {{ human_size(item.size) }}{% endif %}</div>
+                        </div>
+                    </div>
+                    <div class="release-actions">
+                        {% if item.is_dir %}
+                        <a href="/browse/{{ item.path }}" class="btn btn-sm btn-outline-secondary">浏览</a>
+                        {% else %}
+                        <a href="/download/{{ item.path }}" class="btn btn-sm btn-outline-primary">下载</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not tool_items %}
+                <div class="text-muted py-4 text-center">Tool 目录为空或尚未配置。</div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
     <div class="col-xl-7">
         <section class="panel-card p-4 h-100">
             <div class="section-header">
                 <div>
                     <h2 class="section-title"><i class="bi bi-box-seam"></i>应用版本与历史档案</h2>
-                    <div class="section-subtitle mt-2">根目录保留近期版本，旧版本建议归档到 `History/<主版本>/<分支>/`。</div>
+                    <div class="section-subtitle mt-2">根目录保留近期版本，旧版本建议归档到 <code>History/&lt;主版本&gt;/&lt;分支&gt;/</code>。</div>
                 </div>
                 <a href="/releases" class="btn btn-sm btn-outline-primary">查看全部</a>
             </div>

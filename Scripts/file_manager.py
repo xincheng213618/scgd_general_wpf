@@ -4,6 +4,7 @@ import os
 from backend_client import (
     RemoteUploadSettings,
     DEFAULT_UPLOAD_URL,
+    preflight_remote_upload,
     resolve_upload_base_url,
     resolve_upload_credentials,
     upload_file as authenticated_upload_file,
@@ -38,6 +39,11 @@ class FileManager:
             password=self.password,
             enabled=True,
         )
+
+        if not preflight_remote_upload(settings):
+            print('Remote upload preflight failed; skipping upload.')
+            return False
+
         return authenticated_upload_file(file_path, settings)
 
     def download_file(self, file_name, folder_name, save_path):
