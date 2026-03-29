@@ -690,4 +690,19 @@
   <data name="FeedbackSent" xml:space="preserve">
     <value>Feedback sent successfully. Thank you!</value>
   </data>
+  <data name="DiagnosticItems" xml:space="preserve">
+    <value>Diagnostic Items</value>
+  </data>
+  <data name="CollectingLogs" xml:space="preserve">
+    <value>Collecting: {0}...</value>
+  </data>
+  <data name="Uploading" xml:space="preserve">
+    <value>Uploading {0}%</value>
+  </data>
+  <data name="SendFailed" xml:space="preserve">
+    <value>Send failed: {0}</value>
+  </data>
+  <data name="ServerAddressNotConfigured" xml:space="preserve">
+    <value>Server address not configured</value>
+  </data>
 </root>

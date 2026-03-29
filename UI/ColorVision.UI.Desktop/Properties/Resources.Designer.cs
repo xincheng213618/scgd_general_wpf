@@ -1776,5 +1776,49 @@ namespace ColorVision.UI.Desktop.Properties {
                 return ResourceManager.GetString("FeedbackSent", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 诊断项目 的本地化字符串。
+        /// </summary>
+        public static string DiagnosticItems {
+            get {
+                return ResourceManager.GetString("DiagnosticItems", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 正在收集: {0}... 的本地化字符串。
+        /// </summary>
+        public static string CollectingLogs {
+            get {
+                return ResourceManager.GetString("CollectingLogs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上传中 {0}% 的本地化字符串。
+        /// </summary>
+        public static string Uploading {
+            get {
+                return ResourceManager.GetString("Uploading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发送失败: {0} 的本地化字符串。
+        /// </summary>
+        public static string SendFailed {
+            get {
+                return ResourceManager.GetString("SendFailed", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   查找类似 无法确定服务器地址 的本地化字符串。
+        /// </summary>
+        public static string ServerAddressNotConfigured {
+            get {
+                return ResourceManager.GetString("ServerAddressNotConfigured", resourceCulture);
+            }
+        }
     }
 }
