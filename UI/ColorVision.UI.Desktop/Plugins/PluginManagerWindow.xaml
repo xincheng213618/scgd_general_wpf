@@ -41,11 +41,10 @@
                                 </Border>
                             </StackPanel>
                         </Button>
-                        <Button Content="{x:Static properties:Resources.SendFeedback}" Command="{Binding SendFeedbackCommand}" Margin="0,0,5,0"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                         <Grid>
-                            <hc:ComboBox x:Name="DefalutSearchComboBox" Width="250" Padding="25,1,2,1"   IsEditable="True" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" hc:InfoElement.ShowClearButton="True" BorderBrush="#CCCEDB"   VerticalContentAlignment="Center"  />
+                            <hc:ComboBox x:Name="DefalutSearchComboBox" Width="250" Padding="25,1,2,1"   IsEditable="True" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" BorderThickness="1" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" hc:InfoElement.ShowClearButton="True" BorderBrush="#CCCEDB"   VerticalContentAlignment="Center" TextBoxBase.TextChanged="SearchComboBox_TextChanged" />
                             <Viewbox Width="20 " Height="20" HorizontalAlignment="Left" Margin="4,0,0,0">
                                 <Rectangle Width="25 " Height="25" >
                                     <Rectangle.Resources>

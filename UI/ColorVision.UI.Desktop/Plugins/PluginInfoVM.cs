@@ -48,7 +48,7 @@ namespace ColorVision.UI.Desktop.Plugins
         public RelayCommand OpenLocalPathCommand { get; set; }
         public RelayCommand ExtractPluginCommand { get; set; }
 
-        public PluginInfoVM(PluginInfo pluginInfo)
+        public PluginInfoVM(PluginInfo pluginInfo, bool skipIndividualCheck = false)
         {
             PluginInfo = pluginInfo;
             Name = pluginInfo.Name;
@@ -66,7 +66,7 @@ namespace ColorVision.UI.Desktop.Plugins
             ExtractPluginCommand = new RelayCommand(a => ExtractPlugin());
             ContextMenu = new ContextMenu();
 
-            if (PluginInfo.Enabled)
+            if (PluginInfo.Enabled && !skipIndividualCheck)
             {
                 Task.Run(() => CheckVersion());
             }

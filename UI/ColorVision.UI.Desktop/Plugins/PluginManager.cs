@@ -62,7 +62,6 @@ namespace ColorVision.UI.Desktop.Plugins
 
         // 在 PluginLoader 类中添加
         public RelayCommand UpdateAllCommand { get; set; }
-        public RelayCommand SendFeedbackCommand { get; set; }
 
         public int UpdateAvailableCount { get => _UpdateAvailableCount; set { _UpdateAvailableCount = value; OnPropertyChanged(); } }
         private int _UpdateAvailableCount;
@@ -75,7 +74,8 @@ namespace ColorVision.UI.Desktop.Plugins
             {
                 if (item.Value.Manifest != null)
                 {
-                    PluginInfoVM info = new PluginInfoVM(item.Value);
+                    // skipIndividualCheck=true: batch check will provide versions
+                    PluginInfoVM info = new PluginInfoVM(item.Value, skipIndividualCheck: true);
                     info.PropertyChanged += (s, e) =>
                     {
                         if (e.PropertyName == nameof(PluginInfoVM.HasUpdate))
@@ -109,7 +109,15 @@ namespace ColorVision.UI.Desktop.Plugins
                 }
                 catch (Exception ex)
                 {
-                    log.Debug($"Batch version check failed, individual checks will continue: {ex.Message}");
+                    log.Debug($"Batch version check failed, falling back to individual checks: {ex.Message}");
+                    // Batch check failed — fall back to individual checks for enabled plugins
+                    foreach (var plugin in Plugins)
+                    {
+                        if (plugin.PluginInfo.Enabled)
+                        {
+                            _ = Task.Run(() => plugin.CheckVersion());
+                        }
+                    }
                 }
             });
  
@@ -120,7 +128,6 @@ namespace ColorVision.UI.Desktop.Plugins
             OpenViewDllViersionCommand = new RelayCommand(a => OpenViewDllViersion());
             RestartCommand = new RelayCommand(a => Restart());
             UpdateAllCommand = new RelayCommand(a => UpdateAll());
-            SendFeedbackCommand = new RelayCommand(a => new Feedback.FeedbackWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
         public void UpdateAll()
         {

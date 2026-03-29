@@ -37,25 +37,15 @@ namespace ColorVision.UI.Desktop.Plugins
             DefalutSearchComboBox.ItemsSource = new List<string>() { "ImageProjector", "Pattern", "EventVWR", "ScreenRecorder", "SystemMonitor", "WindowsServicePlugin", "Spectrum" };
             ListViewPlugins.SelectedIndex = 0;
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex].Delete(), (s, e) => e.CanExecute = ListViewPlugins.SelectedIndex > -1));
+        }
 
-            // Populate search ComboBox from marketplace API dynamically
-            Task.Run(async () =>
+        private void SearchComboBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // When the marketplace tab is active and loaded, filter the marketplace list
+            if (MainTabControl.SelectedIndex == 1 && _marketplaceLoaded)
             {
-                try
-                {
-                    var client = Marketplace.MarketplaceClient.GetInstance();
-                    var result = await client.SearchPluginsAsync(new MarketplaceSearchRequest { PageSize = 100 });
-                    if (result.Items.Count > 0)
-                    {
-                        var pluginNames = result.Items.Select(p => p.PluginId).ToList();
-                        Application.Current?.Dispatcher.Invoke(() =>
-                        {
-                            DefalutSearchComboBox.ItemsSource = pluginNames;
-                        });
-                    }
-                }
-                catch (Exception ex) { log.Debug($"Failed to populate search ComboBox from marketplace: {ex.Message}"); }
-            });
+                FilterMarketplacePlugins(DefalutSearchComboBox.Text);
+            }
         }
 
         private bool IsRefreshChangedX;
@@ -81,11 +71,45 @@ namespace ColorVision.UI.Desktop.Plugins
                 _marketplacePlugins = result.Items;
                 ListViewMarketplace.ItemsSource = _marketplacePlugins;
                 MarketplaceStatus.Text = string.Format(Properties.Resources.MarketplacePluginCount, _marketplacePlugins.Count);
+
+                // Update search ComboBox with marketplace plugin IDs
+                if (_marketplacePlugins.Count > 0)
+                {
+                    DefalutSearchComboBox.ItemsSource = _marketplacePlugins.Select(p => p.PluginId).ToList();
+                }
             }
             catch (Exception ex)
             {
                 log.Debug($"LoadMarketplacePlugins failed: {ex.Message}");
                 MarketplaceStatus.Text = Properties.Resources.MarketplaceLoadFailed;
+            }
+        }
+
+        /// <summary>
+        /// Filter the marketplace list based on the current search text.
+        /// Called when the search box text changes while the Marketplace tab is active.
+        /// </summary>
+        private void FilterMarketplacePlugins(string keyword)
+        {
+            if (_marketplacePlugins == null || _marketplacePlugins.Count == 0) return;
+
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                ListViewMarketplace.ItemsSource = _marketplacePlugins;
+                MarketplaceStatus.Text = string.Format(Properties.Resources.MarketplacePluginCount, _marketplacePlugins.Count);
+            }
+            else
+            {
+                var kw = keyword.Trim().ToLowerInvariant();
+                var filtered = _marketplacePlugins.Where(p =>
+                    (p.Name?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (p.PluginId?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (p.Description?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (p.Author?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (p.Category?.Contains(kw, StringComparison.OrdinalIgnoreCase) ?? false)
+                ).ToList();
+                ListViewMarketplace.ItemsSource = filtered;
+                MarketplaceStatus.Text = string.Format(Properties.Resources.MarketplacePluginCount, filtered.Count);
             }
         }
 
