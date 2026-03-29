@@ -384,4 +384,6 @@ README.old.backup
 
 # Backend marketplace artifacts
 Backend/**/marketplace.db
+Backend/**/marketplace.db-shm
+Backend/**/marketplace.db-wal
 Backend/**/storage/

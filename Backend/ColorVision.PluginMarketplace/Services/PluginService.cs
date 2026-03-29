@@ -168,7 +168,7 @@ namespace ColorVision.PluginMarketplace.Services
         /// <summary>
         /// Publish a new plugin or add a new version to an existing plugin
         /// </summary>
-        public async Task<PluginVersion> PublishPluginAsync(PluginPublishRequest request, Stream packageStream, string? iconStream = null)
+        public async Task<PluginVersion> PublishPluginAsync(PluginPublishRequest request, Stream packageStream, string? iconRelativePath = null)
         {
             var plugin = await _db.Plugins.FirstOrDefaultAsync(p => p.PluginId == request.PluginId);
 

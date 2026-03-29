@@ -29,7 +29,6 @@ import argparse
 import os
 import sys
 import requests
-from tqdm import tqdm
 
 
 DEFAULT_API_URL = "http://localhost:5000"
