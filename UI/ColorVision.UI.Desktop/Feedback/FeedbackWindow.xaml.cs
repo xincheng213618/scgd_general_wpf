@@ -70,13 +70,13 @@ namespace ColorVision.UI.Desktop.Feedback
             }
         }
 
-        private void CaptureScreenshot_Click(object sender, RoutedEventArgs e)
+        private async void CaptureScreenshot_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 // Minimize this window, capture screen, then restore
                 this.WindowState = WindowState.Minimized;
-                System.Threading.Thread.Sleep(300);
+                await Task.Delay(300);
 
                 var screen = System.Windows.Forms.Screen.PrimaryScreen;
                 if (screen == null) return;

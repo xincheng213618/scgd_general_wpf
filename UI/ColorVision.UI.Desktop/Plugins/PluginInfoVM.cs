@@ -186,7 +186,7 @@ namespace ColorVision.UI.Desktop.Plugins
         }
 
 
-        public void Update()
+        public async void Update()
         {
             if (!HasUpdate || LastVersion == null) return;
 
@@ -197,16 +197,16 @@ namespace ColorVision.UI.Desktop.Plugins
 
             // Try to get expected hash from marketplace API for verification
             string? expectedHash = null;
-            Task.Run(async () =>
+            try
             {
-                try
-                {
-                    var client = MarketplaceClient.GetInstance();
-                    var detail = await client.GetPluginDetailAsync(PackageName);
-                    expectedHash = detail?.Versions?.FirstOrDefault(v => v.Version == LastVersion.ToString())?.FileHash;
-                }
-                catch { }
-            }).Wait(TimeSpan.FromSeconds(5));
+                var client = MarketplaceClient.GetInstance();
+                var detail = await client.GetPluginDetailAsync(PackageName);
+                expectedHash = detail?.Versions?.FirstOrDefault(v => v.Version == LastVersion.ToString())?.FileHash;
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"Could not fetch hash for {PackageName}: {ex.Message}");
+            }
 
             // Check if the file already exists with matching hash (skip redundant download)
             string? existingFile = MarketplaceClient.GetExistingFileIfValid(downloadDir, PackageName, LastVersion.ToString(), expectedHash);
