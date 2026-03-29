@@ -35,10 +35,51 @@ namespace ColorVision.UI.Desktop.Plugins
         public string? AssemblyCulture { get; set; }
         public string? AssemblyPublicKeyToken { get; set; }
 
+        public string HeaderMetaText => string.Join("  ·  ", new[]
+        {
+            PackageName,
+            AssemblyVersion?.ToString(),
+            AssemblyBuildDate?.ToString("yyyy/MM/dd HH:mm:ss"),
+        }.Where(item => !string.IsNullOrWhiteSpace(item))!);
+
+        public string? HeaderRightPrimary => PluginInfo?.Manifest?.DllName;
+        public string? HeaderRightSecondary => string.IsNullOrWhiteSpace(PluginInfo.Manifest.Requires.ToString())
+            ? null
+            : $"Build By {PluginInfo?.Manifest?.Requires}";
+
+        public string InstalledBadgeText => string.IsNullOrWhiteSpace(AssemblyVersion?.ToString())
+            ? "Installed"
+            : $"Installed v{AssemblyVersion}";
+        public Visibility InstalledBadgeVisibility => Visibility.Visible;
+        public Visibility UpdateBadgeVisibility => HasUpdate ? Visibility.Visible : Visibility.Collapsed;
+        public string UpdateBadgeText => HasUpdate && LastVersion != null
+            ? $"Update v{LastVersion}"
+            : string.Empty;
+
+        public Visibility OpenLocalPathVisibility => Visibility.Visible;
+        public Visibility ExtractPluginVisibility => Visibility.Visible;
+        public Visibility InstallVisibility => Visibility.Collapsed;
+        public Visibility PrimaryActionVisibility => HasUpdate ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility DownloadLatestVisibility => Visibility.Collapsed;
+        public Visibility OpenProjectUrlVisibility => Visibility.Collapsed;
+        public string PrimaryActionText => Resources.Update;
+
         public PluginInfo PluginInfo { get; set; }
 
 
-        public Version LastVersion { get => _LastVersion; set { _LastVersion = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasUpdate)); } }
+        public Version LastVersion
+        {
+            get => _LastVersion;
+            set
+            {
+                _LastVersion = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasUpdate));
+                OnPropertyChanged(nameof(UpdateBadgeVisibility));
+                OnPropertyChanged(nameof(UpdateBadgeText));
+                OnPropertyChanged(nameof(PrimaryActionVisibility));
+            }
+        }
         private Version _LastVersion;
 
         public bool HasUpdate => LastVersion != null && AssemblyVersion != null && LastVersion > AssemblyVersion;
@@ -47,6 +88,9 @@ namespace ColorVision.UI.Desktop.Plugins
         public RelayCommand UpdateCommand { get; set; }
         public RelayCommand OpenLocalPathCommand { get; set; }
         public RelayCommand ExtractPluginCommand { get; set; }
+        public ICommand? DownloadCommand => null;
+        public ICommand? InstallCommand => null;
+        public ICommand? OpenProjectUrlCommand => null;
 
         public PluginInfoVM(PluginInfo pluginInfo, bool skipIndividualCheck = false)
         {

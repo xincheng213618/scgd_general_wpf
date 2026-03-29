@@ -3,6 +3,7 @@ import copy
 import io
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -58,6 +59,28 @@ class MarketplaceAppTests(unittest.TestCase):
         (plugin_dir / "LATEST_RELEASE").write_text(version, encoding="utf-8")
         (plugin_dir / f"{plugin_id}-{version}.cvxp").write_bytes(b"demo-package")
         return plugin_dir
+
+    def _create_plugin_archive_with_metadata(
+        self,
+        plugin_id: str,
+        version: str,
+        *,
+        manifest_text: str,
+        readme_text: str = "",
+        changelog_text: str = "",
+    ) -> Path:
+        plugin_dir = self.storage / "Plugins" / plugin_id
+        plugin_dir.mkdir(parents=True, exist_ok=True)
+        (plugin_dir / "LATEST_RELEASE").write_text(version, encoding="utf-8")
+        archive_path = plugin_dir / f"{plugin_id}-{version}.cvxp"
+        with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as archive:
+            root = f"{plugin_id}/"
+            archive.writestr(root + "manifest.json", manifest_text)
+            if readme_text:
+                archive.writestr(root + "README.md", readme_text)
+            if changelog_text:
+                archive.writestr(root + "CHANGELOG.md", changelog_text)
+        return archive_path
 
     def _create_update_package(self, version: str, payload: bytes = b"update") -> Path:
         update_dir = self.storage / "Update"
@@ -156,6 +179,122 @@ class MarketplaceAppTests(unittest.TestCase):
         payload = response.get_json()
         self.assertTrue(payload["versions"])
         self.assertTrue(payload["versions"][0]["fileHash"])
+
+    def test_plugin_summary_can_fallback_to_archive_manifest(self):
+        self._create_plugin_archive_with_metadata(
+            "ZipManifestPlugin",
+            "1.0.0",
+            manifest_text='{"Id":"ZipManifestPlugin","Name":"Zip Manifest Plugin","Description":"from archive","Category":"Tools"}',
+        )
+
+        response = self.client.get("/api/plugins")
+
+        self.assertEqual(response.status_code, 200)
+        items = response.get_json()["items"]
+        plugin = next(item for item in items if item["pluginId"] == "ZipManifestPlugin")
+        self.assertEqual(plugin["name"], "Zip Manifest Plugin")
+        self.assertEqual(plugin["description"], "from archive")
+        self.assertEqual(plugin["category"], "Tools")
+
+    def test_plugin_catalog_snapshot_reuses_cached_summary_data(self):
+        self._create_plugin_archive_with_metadata(
+            "CachedListPlugin",
+            "1.0.0",
+            manifest_text='{"Id":"CachedListPlugin","Name":"Cached List Plugin","Description":"fast list"}',
+        )
+
+        first_response = self.client.get("/api/plugins")
+        self.assertEqual(first_response.status_code, 200)
+
+        with patch("plugin_marketplace._get_archive_metadata_for_plugin", side_effect=AssertionError("catalog should come from cache")):
+            second_response = self.client.get("/api/plugins")
+
+        self.assertEqual(second_response.status_code, 200)
+        items = second_response.get_json()["items"]
+        self.assertTrue(any(item["pluginId"] == "CachedListPlugin" for item in items))
+
+    def test_plugin_detail_can_fallback_to_archive_readme_and_changelog(self):
+        self._create_plugin_archive_with_metadata(
+            "ZipDocPlugin",
+            "1.0.0",
+            manifest_text='{"id":"ZipDocPlugin","name":"Zip Doc Plugin","description":"archive detail"}',
+            readme_text="# Hello from archive",
+            changelog_text="## 1.0.0\n- archive changelog",
+        )
+
+        response = self.client.get("/api/plugins/ZipDocPlugin")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertIn("Hello from archive", payload["readme"])
+        self.assertIn("archive changelog", payload["changelog"])
+
+    def test_plugin_detail_returns_richer_remote_metadata(self):
+        self._create_plugin_archive_with_metadata(
+            "RichPlugin",
+            "1.2.3",
+            manifest_text=(
+                '{"id":"RichPlugin","name":"Rich Plugin","description":"full detail",'
+                '"author":"Copilot","category":"Tools","url":"https://example.com/rich",'
+                '"requires":"2026.03"}'
+            ),
+            readme_text="# Rich readme",
+            changelog_text="## 1.2.3\n- richer detail",
+        )
+
+        plugin_dir = self.storage / "Plugins" / "RichPlugin"
+        historical = plugin_dir / "RichPlugin-1.0.0.cvxp"
+        historical.write_bytes(b"old-package")
+
+        response = self.client.get("/api/plugins/RichPlugin")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["latestVersion"], "1.2.3")
+        self.assertEqual(payload["requiresVersion"], "2026.03")
+        self.assertEqual(payload["currentPackageCount"], 1)
+        self.assertEqual(payload["historicalPackageCount"], 1)
+        self.assertEqual(payload["url"], "https://example.com/rich")
+        self.assertIn("richer detail", payload["changelog"])
+        self.assertEqual(payload["versions"][0]["source"], "current")
+        self.assertEqual(payload["archivedVersions"][0]["source"], "archive")
+
+    def test_archive_metadata_is_cached_across_detail_requests(self):
+        self._create_plugin_archive_with_metadata(
+            "CachedArchivePlugin",
+            "1.0.0",
+            manifest_text='{"id":"CachedArchivePlugin","name":"Cached Archive Plugin"}',
+            readme_text="# Cached Readme",
+        )
+
+        first_response = self.client.get("/api/plugins/CachedArchivePlugin")
+        self.assertEqual(first_response.status_code, 200)
+
+        with patch("plugin_marketplace._read_archive_metadata", side_effect=AssertionError("archive should be served from cache")):
+            second_response = self.client.get("/api/plugins/CachedArchivePlugin")
+
+        self.assertEqual(second_response.status_code, 200)
+        self.assertIn("Cached Readme", second_response.get_json()["readme"])
+
+    def test_publish_package_prewarms_plugin_metadata(self):
+        response = self.client.post(
+            "/api/packages/publish",
+            headers=self._auth_headers(),
+            data={
+                "PluginId": "WarmPlugin",
+                "Version": "1.2.3",
+                "Name": "Warm Plugin",
+                "Description": "warm metadata",
+                "package": (io.BytesIO(b"pkg"), "WarmPlugin-1.2.3.cvxp"),
+            },
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        cached_summary = marketplace_app._get_cache_entry("plugin_summary:v1:WarmPlugin")
+        cached_detail = marketplace_app._get_cache_entry("plugin_detail:v1:WarmPlugin")
+        self.assertIsNotNone(cached_summary)
+        self.assertIsNotNone(cached_detail)
 
     def test_api_ready_reports_ready_when_dependencies_are_available(self):
         response = self.client.get("/api/ready")

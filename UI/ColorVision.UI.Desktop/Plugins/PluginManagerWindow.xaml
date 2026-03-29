@@ -210,24 +210,36 @@
                 <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1 " Margin="0,0,0,2">
                     <Grid>
                         <DockPanel>
-                            <Image Source="{Binding Icon}" Width="50" Margin="10"/>
+                            <Border Width="68" Height="68" Margin="10" CornerRadius="8" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Background="#0D000000">
+                                <Image Source="{Binding Icon}" Width="50" Height="50" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
                             <StackPanel HorizontalAlignment="Left">
                                 <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding Name}" FontWeight="Bold" FontSize="20"  />
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PackageName}" />
-                                    <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding AssemblyVersion}" />
-                                    <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding AssemblyBuildDate,StringFormat=yyyy/MM/dd hh:mm:ss}" />
+                                    <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding HeaderMetaText,Mode=OneWay}" />
                                 </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <Border Background="#2E7D32" CornerRadius="10" Padding="8,2" Margin="0,0,6,0" Visibility="{Binding InstalledBadgeVisibility,Mode=OneWay}">
+                                        <TextBlock Text="{Binding InstalledBadgeText,Mode=OneWay}" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                    </Border>
+                                    <Border Background="#F57C00" CornerRadius="10" Padding="8,2" Margin="0,0,6,0" Visibility="{Binding UpdateBadgeVisibility ,Mode=OneWay}">
+                                        <TextBlock Text="{Binding UpdateBadgeText,Mode=OneWay}" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Foreground="Gray" MaxWidth="620" Margin="2,2,0,0" />
                             </StackPanel>
                         </DockPanel>
                         <StackPanel  HorizontalAlignment="Right" VerticalAlignment="Top">
-                            <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PluginInfo.Manifest.DllName}" HorizontalAlignment="Right" Padding="3"/>
+                            <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding HeaderRightPrimary,Mode=OneWay}" HorizontalAlignment="Right" Padding="3"/>
                             <StackPanel Orientation="Horizontal"  HorizontalAlignment="Right">
-                                <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PluginInfo.Manifest.Requires, StringFormat=Build By {0}}"/>
+                                <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding HeaderRightSecondary,Mode=OneWay}"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                <Button Content="OpenLocalPath" Background="Transparent" BorderThickness="0" Command="{Binding OpenLocalPathCommand}" Margin="0,0,5,0"/>
-                                <Button Content="{x:Static properties:Resources.ExtractPlugin}" Background="Transparent" BorderThickness="0" Command="{Binding ExtractPluginCommand}"/>
+                                <Button Content="OpenLocalPath" Background="Transparent" BorderThickness="0" Command="{Binding OpenLocalPathCommand}" Margin="0,0,5,0" Visibility="{Binding OpenLocalPathVisibility, FallbackValue=Visible}"/>
+                                <Button Content="{x:Static properties:Resources.ExtractPlugin}" Background="Transparent" BorderThickness="0" Command="{Binding ExtractPluginCommand}" Margin="0,0,5,0" Visibility="{Binding ExtractPluginVisibility, FallbackValue=Visible}"/>
+                                <Button Content="{Binding PrimaryActionText, FallbackValue={x:Static properties:Resources.Install}}" Background="Transparent" BorderThickness="0" Command="{Binding InstallCommand}" Margin="0,0,5,0" Visibility="{Binding PrimaryActionVisibility, FallbackValue=Collapsed}"/>
+                                <Button Content="{x:Static properties:Resources.Download}" Background="Transparent" BorderThickness="0" Command="{Binding DownloadCommand}" Margin="0,0,5,0" Visibility="{Binding DownloadLatestVisibility, FallbackValue=Collapsed}"/>
+                                <Button Content="OpenUrl" Background="Transparent" BorderThickness="0" Command="{Binding OpenProjectUrlCommand}" Visibility="{Binding OpenProjectUrlVisibility, FallbackValue=Collapsed}"/>
                             </StackPanel>
 
                         </StackPanel>

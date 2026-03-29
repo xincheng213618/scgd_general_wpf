@@ -23,6 +23,7 @@ namespace ColorVision.UI.Desktop.Plugins
 
         private List<MarketplacePluginSummary> _marketplacePlugins = new();
         private bool _marketplaceLoaded;
+        private int _marketplaceDetailRequestId;
 
         public PluginManagerWindow()
         {
@@ -54,6 +55,7 @@ namespace ColorVision.UI.Desktop.Plugins
         private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.Source != MainTabControl) return;
+            _marketplaceDetailRequestId++;
             if (MainTabControl.SelectedIndex == 1 && !_marketplaceLoaded)
             {
                 LoadMarketplacePlugins();
@@ -126,32 +128,26 @@ namespace ColorVision.UI.Desktop.Plugins
 
         private async void ShowMarketplaceDetail(MarketplacePluginSummary summary)
         {
+            int requestId = ++_marketplaceDetailRequestId;
             try
             {
                 var client = Marketplace.MarketplaceClient.GetInstance();
                 var detail = await client.GetPluginDetailAsync(summary.PluginId);
                 if (detail == null) return;
 
-                // Check if this plugin is installed locally
-                var installed = PluginManager.GetInstance().Plugins.FirstOrDefault(p => p.PackageName == summary.PluginId);
-                if (installed != null)
-                {
-                    // Show the installed plugin's detail
-                    BorderContent.DataContext = installed;
+                if (requestId != _marketplaceDetailRequestId)
                     return;
-                }
 
-                // Show marketplace detail using a MarketplaceDetailContext
-                var ctx = new MarketplaceDetailContext(detail);
+                // Check if this plugin is installed locally
+                var installed = PluginManager.GetInstance().Plugins.FirstOrDefault(p => string.Equals(p.PackageName, summary.PluginId, StringComparison.OrdinalIgnoreCase));
+                var ctx = new MarketplaceDetailContext(detail, installed);
                 BorderContent.DataContext = ctx;
 
-                // Render README
-                if (!string.IsNullOrEmpty(detail.Readme))
-                {
-                    string html = Markdig.Markdown.ToHtml(detail.Readme);
-                    await WebViewService.EnsureWebViewInitializedAsync(webViewReadMe);
-                    WebViewService.RenderMarkdown(webViewReadMe, html);
-                }
+                await ctx.InitializeAsync();
+                if (requestId != _marketplaceDetailRequestId)
+                    return;
+
+                await RefreshSelectedDetailAsync();
             }
             catch (Exception ex)
             {
@@ -159,50 +155,99 @@ namespace ColorVision.UI.Desktop.Plugins
             }
         }
 
+        private async Task RenderMarkdownAsync(Microsoft.Web.WebView2.Wpf.WebView2 webView, string markdown)
+        {
+            string html = Markdig.Markdown.ToHtml(markdown ?? string.Empty);
+            await WebViewService.EnsureWebViewInitializedAsync(webView);
+            WebViewService.RenderMarkdown(webView, html);
+        }
+
+        private async Task RefreshSelectedDetailAsync()
+        {
+            switch (BorderContent.DataContext)
+            {
+                case PluginInfoVM pluginInfoVM:
+                    await RefreshInstalledPluginDetailAsync(pluginInfoVM);
+                    break;
+                case MarketplaceDetailContext marketplaceDetail:
+                    await RefreshMarketplaceDetailAsync(marketplaceDetail);
+                    break;
+                default:
+                    DetailInfo.Children.Clear();
+                    DependentsListView.ItemsSource = null;
+                    break;
+            }
+        }
+
+        private async Task RefreshMarketplaceDetailAsync(MarketplaceDetailContext context)
+        {
+            if (TabControl1.SelectedIndex == 0 && !IsRefreshChangedX)
+            {
+                IsRefreshChangedX = true;
+                await RenderMarkdownAsync(webViewReadMe, context.Readme ?? string.Empty);
+            }
+
+            if (TabControl1.SelectedIndex == 1 && !IsRefreshChangedY)
+            {
+                IsRefreshChangedY = true;
+                await RenderMarkdownAsync(webViewChangeLog, context.ChangeLog ?? string.Empty);
+            }
+
+            if (TabControl1.SelectedIndex == 2)
+            {
+                context.PopulateDetailInfo(DetailInfo, DependentsListView);
+            }
+
+            if (TabControl1.SelectedIndex == 3)
+            {
+                DependentsListView.ItemsSource = null;
+            }
+        }
+
+        private async Task RefreshInstalledPluginDetailAsync(PluginInfoVM pluginInfoVM)
+        {
+            if (TabControl1.SelectedIndex == 0 && !IsRefreshChangedX)
+            {
+                IsRefreshChangedX = true;
+                await RenderMarkdownAsync(webViewReadMe, pluginInfoVM.PluginInfo?.README ?? string.Empty);
+            }
+
+            if (TabControl1.SelectedIndex == 1 && !IsRefreshChangedY)
+            {
+                IsRefreshChangedY = true;
+                await RenderMarkdownAsync(webViewChangeLog, pluginInfoVM.PluginInfo?.ChangeLog ?? string.Empty);
+            }
+
+            if (TabControl1.SelectedIndex == 2)
+            {
+                InitDetailInfo(pluginInfoVM);
+            }
+
+            if (TabControl1.SelectedIndex == 3)
+            {
+                if (pluginInfoVM.PluginInfo?.DepsJson != null)
+                {
+                    var target = pluginInfoVM.PluginInfo.DepsJson.Targets.Values.First();
+                    if (target != null)
+                    {
+                        var mainPackage = target.Values.FirstOrDefault();
+                        var dependencies = mainPackage?.Dependencies;
+                        DependentsListView.ItemsSource = dependencies;
+                    }
+                }
+            }
+        }
+
         private void ListViewPlugins_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (ListViewPlugins.SelectedIndex > -1)
             {
+                _marketplaceDetailRequestId++;
                 IsRefreshChangedX = false;
                 IsRefreshChangedY = false;
                 PluginInfoVM pluginInfoVM = PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
                 BorderContent.DataContext = pluginInfoVM;
-                Application.Current.Dispatcher.Invoke(async () =>
-                {
-                    if (TabControl1.SelectedIndex == 0 && !IsRefreshChangedX)
-                    {
-                        IsRefreshChangedX = true;
-                        string html = Markdig.Markdown.ToHtml(pluginInfoVM.PluginInfo?.README ?? string.Empty);
-                        await WebViewService.EnsureWebViewInitializedAsync(webViewReadMe);
-                        WebViewService.RenderMarkdown(webViewReadMe, html);
-                    }
-
-                    if (TabControl1.SelectedIndex == 1)
-                    {
-                        IsRefreshChangedY = true;
-                        string htm2 = Markdig.Markdown.ToHtml(pluginInfoVM.PluginInfo?.ChangeLog ?? string.Empty);
-                        await WebViewService.EnsureWebViewInitializedAsync(webViewChangeLog);
-                        WebViewService.RenderMarkdown(webViewChangeLog, htm2);
-                    }
-                    if (TabControl1.SelectedIndex == 2)
-                    {
-                        InitDetailInfo(pluginInfoVM);
-                    }
-                    if (TabControl1.SelectedIndex == 3)
-                    {
-
-                        if (pluginInfoVM.PluginInfo?.DepsJson != null)
-                        {
-                            var target = pluginInfoVM.PluginInfo.DepsJson.Targets.Values.First();
-                            if (target != null)
-                            {
-                                var mainPackage = target.Values.FirstOrDefault();
-                                var dependencies = mainPackage?.Dependencies;
-                                DependentsListView.ItemsSource = dependencies;
-                            }
-                        }
-                    }
-                });
+                Application.Current.Dispatcher.Invoke(async () => await RefreshSelectedDetailAsync());
             }
         }
 
@@ -304,46 +349,9 @@ namespace ColorVision.UI.Desktop.Plugins
 
         private void TabControl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (ListViewPlugins.SelectedIndex > -1)
-            {
-                PluginInfoVM pluginInfoVM = PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
-                BorderContent.DataContext = pluginInfoVM;
-                Application.Current.Dispatcher.Invoke(async () =>
-                {
-                    if (TabControl1.SelectedIndex == 0 && !IsRefreshChangedX)
-                    {
-                        IsRefreshChangedX = true;
-                        string html = Markdig.Markdown.ToHtml(pluginInfoVM.PluginInfo?.README ?? string.Empty);
-                        await WebViewService.EnsureWebViewInitializedAsync(webViewReadMe);
-                        WebViewService.RenderMarkdown(webViewReadMe, html);
-                    }
+            if (e.Source != TabControl1) return;
 
-                    if (TabControl1.SelectedIndex == 1 && !IsRefreshChangedY)
-                    {
-                        IsRefreshChangedY = true;
-                        string htm2 = Markdig.Markdown.ToHtml(pluginInfoVM.PluginInfo?.ChangeLog ?? string.Empty);
-                        await WebViewService.EnsureWebViewInitializedAsync(webViewChangeLog);
-                        WebViewService.RenderMarkdown(webViewChangeLog, htm2);
-                    }
-                    if (TabControl1.SelectedIndex == 2)
-                    {
-                        InitDetailInfo(pluginInfoVM);
-                    }
-                    if (TabControl1.SelectedIndex == 3)
-                    {
-                        if (pluginInfoVM.PluginInfo?.DepsJson != null)
-                        {
-                            var target = pluginInfoVM.PluginInfo.DepsJson.Targets.Values.First();
-                            if (target != null)
-                            {
-                                var mainPackage = target.Values.FirstOrDefault();
-                                var dependencies = mainPackage?.Dependencies;
-                                DependentsListView.ItemsSource = dependencies;
-                            }
-                        }
-                    }
-                });
-            }
+            Application.Current.Dispatcher.Invoke(async () => await RefreshSelectedDetailAsync());
         }
     }
 }

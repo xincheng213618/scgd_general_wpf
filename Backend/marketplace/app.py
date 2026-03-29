@@ -43,6 +43,7 @@ from page_contexts import (
 from plugin_marketplace import (
     get_plugin_detail as get_plugin_detail_impl,
     is_safe_plugin_id,
+    prewarm_plugin_metadata,
     reconcile_all_plugin_package_histories as reconcile_all_plugin_package_histories_impl,
     reconcile_plugin_package_history as reconcile_plugin_package_history_impl,
     scan_plugin_summaries as scan_plugin_summaries_impl,
@@ -536,6 +537,15 @@ def _save_plugin_package(
     _update_latest_release_file(plugin_dir, version)
     moved_packages = reconcile_plugin_package_history(plugin_id)
     _refresh_related_caches(plugin_id=plugin_id, relative_path=f"Plugins/{plugin_id}")
+    prewarm_plugin_metadata(
+        STORAGE,
+        plugin_id,
+        version,
+        download_counts=_get_download_counts(),
+        get_cache_entry=_get_cache_entry,
+        set_cache_entry=_set_cache_entry,
+        ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
+    )
     return save_path, moved_packages
 
 
@@ -1300,32 +1310,42 @@ def api_plugin_detail(plugin_id):
             "author": info["author"],
             "url": info["url"],
             "category": info["category"],
+            "latestVersion": info["version"],
+            "requiresVersion": info["requires"],
             "iconUrl": (
                 url_for("plugin_icon", plugin_id=info["id"], _external=True)
                 if info["has_icon"]
                 else None
             ),
             "readme": info["readme"],
+            "changelog": info["changelog"],
             "totalDownloads": info["total_downloads"],
             "updatedAt": info["modified"],
+            "currentPackageCount": len(info["current_packages"]),
+            "historicalPackageCount": len(info["historical_packages"]),
             "versions": [
                 {
                     "version": pkg["version"],
                     "requiresVersion": info["requires"],
+                    "changeLog": info["changelog"],
                     "fileSize": pkg["size"],
                     "fileHash": pkg.get("fileHash"),
                     "downloadCount": 0,
                     "createdAt": pkg["modified"],
                     "source": pkg.get("source", "current"),
                 }
-                for pkg in info["all_packages"]
+                for pkg in info["current_packages"]
             ],
             "archivedVersions": [
                 {
                     "version": pkg["version"],
+                    "requiresVersion": info["requires"],
+                    "changeLog": info["changelog"],
                     "fileSize": pkg["size"],
                     "fileHash": pkg.get("fileHash"),
+                    "downloadCount": 0,
                     "createdAt": pkg["modified"],
+                    "source": pkg.get("source", "archive"),
                 }
                 for pkg in info["historical_packages"]
             ],

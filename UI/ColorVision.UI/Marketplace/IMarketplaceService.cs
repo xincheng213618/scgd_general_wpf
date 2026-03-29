@@ -97,12 +97,18 @@ namespace ColorVision.UI.Marketplace
         public string? Author { get; set; }
         public string? Url { get; set; }
         public string? Category { get; set; }
+        public string? LatestVersion { get; set; }
+        public string? RequiresVersion { get; set; }
         public string? IconUrl { get; set; }
         public string? Readme { get; set; }
+        public string? Changelog { get; set; }
         public long TotalDownloads { get; set; }
+        public int CurrentPackageCount { get; set; }
+        public int HistoricalPackageCount { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public List<MarketplacePluginVersionInfo> Versions { get; set; } = new();
+        public List<MarketplacePluginVersionInfo> ArchivedVersions { get; set; } = new();
     }
 
     /// <summary>
@@ -117,5 +123,6 @@ namespace ColorVision.UI.Marketplace
         public string? FileHash { get; set; }
         public long DownloadCount { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string? Source { get; set; }
     }
 }

@@ -1,10 +1,14 @@
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
+using ColorVision.Themes;
 using log4net;
 using Newtonsoft.Json;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.UI.Desktop.Marketplace
 {
@@ -15,6 +19,7 @@ namespace ColorVision.UI.Desktop.Marketplace
     public class MarketplaceClient : IMarketplaceService
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MarketplaceClient));
+        private static readonly ConcurrentDictionary<string, Lazy<Task<ImageSource?>>> _iconCache = new(StringComparer.OrdinalIgnoreCase);
 
         private static MarketplaceClient? _instance;
         private static readonly object _locker = new();
@@ -178,6 +183,57 @@ namespace ColorVision.UI.Desktop.Marketplace
             {
                 log.Debug($"GetCategoriesAsync failed: {ex.Message}");
                 return new List<string>();
+            }
+        }
+
+        public static ImageSource GetDefaultPluginIcon()
+        {
+            var iconName = ThemeManager.Current.CurrentUITheme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico";
+            return new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{iconName}"));
+        }
+
+        public static async Task<ImageSource?> GetPluginIconAsync(string? iconUrl)
+        {
+            if (string.IsNullOrWhiteSpace(iconUrl))
+                return GetDefaultPluginIcon();
+
+            var lazyTask = _iconCache.GetOrAdd(iconUrl, url => new Lazy<Task<ImageSource?>>(() => LoadPluginIconCoreAsync(url)));
+
+            try
+            {
+                return await lazyTask.Value.ConfigureAwait(false) ?? GetDefaultPluginIcon();
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"GetPluginIconAsync failed for {iconUrl}: {ex.Message}");
+                _iconCache.TryRemove(iconUrl, out _);
+                return GetDefaultPluginIcon();
+            }
+        }
+
+        private static async Task<ImageSource?> LoadPluginIconCoreAsync(string iconUrl)
+        {
+            try
+            {
+                using var response = await _httpClient.GetAsync(iconUrl).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
+                byte[] imageBytes = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                if (imageBytes.Length == 0)
+                    return GetDefaultPluginIcon();
+
+                using var stream = new MemoryStream(imageBytes);
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.StreamSource = stream;
+                bitmap.EndInit();
+                bitmap.Freeze();
+                return bitmap;
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"LoadPluginIconCoreAsync failed for {iconUrl}: {ex.Message}");
+                return GetDefaultPluginIcon();
             }
         }
 
