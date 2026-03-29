@@ -1,4 +1,16 @@
-#   CHANGELOAG
+#   CHANGELOG
+
+## [1.4.5.1] 2026.03.29
+
+1.光谱仪插件（Plugins/Spectrum）重构：采用模块化架构设计，拆分为 Configs、Models、View、Layout、Data、License、Help、Menus、Calibration、PropertyEditor 等子模块
+
+2.光谱仪新增 CalibrationFileValidator 校正文件验证、ColorimetryHelper CIE色度计算、RaCalculator 显色指数计算
+
+3.光谱仪新增 DockLayoutManager 面板布局持久化、ViewResultManager 数据库存储
+
+4.光谱仪新增多语言支持（英语、法语、日语、韩语、繁体中文、俄语）
+
+5.光谱仪新增内置帮助文档系统
 
 ## [1.4.4.1] 2026.03.24
 

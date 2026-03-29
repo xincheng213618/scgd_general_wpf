@@ -1,4 +1,34 @@
-#   CHANGELOAG
+#   CHANGELOG
+
+## [2.1.4.0] 2026.03.29
+
+1.重构项目架构，采用模块化设计：将 MainWindow 拆分为 Chart、Connection、Measurement、Export、ListView、Eqe 等部分类
+
+2.新增 Configs 子目录：SpectrumConfig、CalibrationGroupConfig、CalibrationFileValidator、FilterWheelConfig、FilterWheelController、ShutterController、SmuConfig、SmuController
+
+3.新增 Models 子目录：SpectralData、ViewResultSpectrum 数据模型独立管理
+
+4.新增 View 子目录：ColorimetryHelper（CIE色度计算）、RaCalculator（显色指数Ra计算）、WavelengthToColor（波长转RGB）
+
+5.新增 Layout 子目录：DockLayoutManager 实现 AvalonDock 面板布局持久化
+
+6.新增 Data 子目录：ViewResultManager 数据库存储与管理，基于 SqlSugar ORM
+
+7.新增 License 子目录：LicenseSync 实现本地与全局许可证双向同步
+
+8.新增 Help 子目录：内置帮助文档系统，包含专业术语和使用指南
+
+9.新增 Menus 子目录：SpectrumMenuIBase 菜单基类，LayoutMenuItems 布局菜单项
+
+10.新增 Calibration 子目录：CalibrationGroupWindow、GenerateAmplitudeWindow 校正组管理界面
+
+11.新增 PropertyEditor 子目录：TextSerialPortPropertiesEditor 串口属性编辑器
+
+12.新增多语言支持：英语、法语、日语、韩语、繁体中文、俄语
+
+13.新增 CalibrationFileValidator 校正文件二进制验证
+
+14.优化 EQE（外量子效率）计算模块
 
 ## [2.0.0.0] 2026.03.23
 

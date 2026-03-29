@@ -65,6 +65,7 @@ ColorVision/
 │   └── ColorVision.*/        # 其他UI模块
 ├── Plugins/                  # 扩展插件
 │   ├── EventVWR/            # 事件查看器
+│   ├── Spectrum/            # 光谱仪测试工具
 │   ├── SystemMonitor/       # 系统监控
 │   └── WindowsServicePlugin/ # Windows服务
 ├── Projects/                 # 客户定制项目

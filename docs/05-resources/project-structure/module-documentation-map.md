@@ -25,6 +25,7 @@
 | └─ ColorVision.SocketProtocol/ | Socket | [ColorVision.SocketProtocol](../ui-components/ColorVision.SocketProtocol.md) | Socket协议 |
 | **Plugins/** | 插件 | [插件管理](../plugins/plugin-management/插件管理.md) \<br> [开发插件指南](../plugins/developing-a-plugin.md) | 插件系统 |
 | └─ Pattern/ | 图案检测 | [Pattern插件](../plugins/using-standard-plugins/pattern.md) | 图案检测插件 |
+| └─ Spectrum/ | 光谱仪 | [Spectrum插件](/04-api-reference/plugins/standard-plugins/spectrum.md) | 光谱仪测试插件 |
 | └─ SystemMonitor/ | 系统监控 | [系统监控插件](../plugins/system-monitor.md) | 性能监控 |
 | └─ EventVWR/ | 事件查看 | [使用标准插件](../plugins/using-standard-plugins/使用标准插件.md) | 事件查看器 |
 | └─ ScreenRecorder/ | 屏幕录制 | - | 录屏功能 |
@@ -136,7 +137,7 @@
 ### 我想开发插件
 1. 阅读插件开发指南：[开发插件指南](../plugins/developing-a-plugin.md)
 2. 了解插件管理机制：[插件管理](../plugins/plugin-management/插件管理.md)
-3. 查看标准插件示例：`Plugins/Pattern/`, `Plugins/SystemMonitor/`
+3. 查看标准插件示例：`Plugins/Pattern/`, `Plugins/Spectrum/`, `Plugins/SystemMonitor/`
 4. 参考插件生命周期：[插件生命周期](../plugins/plugin-lifecycle.md)
 
 ### 我想添加算法模板

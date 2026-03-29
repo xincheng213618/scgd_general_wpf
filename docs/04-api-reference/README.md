@@ -36,6 +36,7 @@ ColorVision API 参考文档，包含所有公开的 API、组件、服务和扩
 ### 插件 API
 插件系统和标准插件：
 - [Pattern 插件](./plugins/standard-plugins/pattern.md) - 图案分析插件
+- [Spectrum 插件](./plugins/standard-plugins/spectrum.md) - 光谱仪测试插件
 - [系统监控](./plugins/standard-plugins/system-monitor.md) - 系统监控插件
 
 ### 扩展点 API
