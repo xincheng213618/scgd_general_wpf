@@ -75,7 +75,11 @@ def load_config():
 CONFIG = load_config()
 STORAGE = Path(CONFIG["storage_path"])
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    static_folder=str(BASE_DIR / "static"),
+    template_folder=str(BASE_DIR / "templates"),
+)
 app.secret_key = CONFIG["secret_key"]
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB upload limit
 
