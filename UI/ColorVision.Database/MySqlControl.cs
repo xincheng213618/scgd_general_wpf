@@ -205,7 +205,7 @@ namespace ColorVision.Database
         public List<string> GetFilteredResourceTableNames()
         {
             var tableNames = GetTableNames();
-            var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_sys_mqtt_cfg", "t_scgd_rc", "t_scgd_sys_version" };
+            var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_sys_mqtt_cfg", "t_scgd_rc", "t_scgd_sys_version"  };
             return tableNames
                 .Where(name => !prefixes.Any(prefix => name.StartsWith(prefix, StringComparison.CurrentCulture)))
                 .ToList();

@@ -1,4 +1,4 @@
 @echo off
-cd /d "%~dp0..\Scripts"
+cd /d "%~dp0"
 python build_spectrum.py --upload %*
 pause
