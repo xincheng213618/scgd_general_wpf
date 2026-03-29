@@ -316,6 +316,40 @@ FileProcessorFactory.Instance.Register(".custom", typeof(CustomFileProcessor));
 - 使用 DPI 感知布局避免模糊
 - 支持多显示器间的窗口拖拽
 
+## 多语言支持
+
+ColorVision.UI 内置多语言国际化支持，通过 `.resx` 资源文件实现：
+
+| 语言 | 资源文件 | 说明 |
+|------|----------|------|
+| 默认（简体中文） | Resources.resx | 默认语言 |
+| English | Resources.en.resx | 英语 |
+| Français | Resources.fr.resx | 法语 |
+| 日本語 | Resources.ja.resx | 日语 |
+| 한국어 | Resources.ko.resx | 韩语 |
+| Русский | Resources.ru.resx | 俄语 |
+| 繁體中文 | Resources.zh-Hant.resx | 繁体中文 |
+
+## 更新日志
+
+### v1.5.1.1（2026-02）
+- ✅ 升级目标框架至 .NET 8.0 / .NET 10.0
+- ✅ 新增法语（Français）语言支持
+- ✅ 新增俄语（Русский）语言支持
+- ✅ 属性编辑控件支持 byte 类型的编辑和显示
+- ✅ PropertyGrid 动态属性编辑器增强
+
+### v1.4.x
+- 菜单管理窗口
+- 算法管理窗口
+- 配置管理优化
+
+### v1.3.x 及更早
+- 基础配置管理
+- 程序集加载
+- 文件处理器工厂
+- 显示管理
+
 ## 相关资源
 
 - [开发者指南](../developer-guide/)

@@ -17,10 +17,10 @@
 
 ### 基本信息
 
-- **版本**: 1.3.8.1
-- **目标框架**: .NET 8.0 / .NET 6.0 Windows
+- **版本**: 1.5.1.2
+- **目标框架**: .NET 8.0 / .NET 10.0 Windows
 - **技术栈**: WPF, Windows Forms
-- **包类型**: NuGet 包支持
+- **包类型**: NuGet 包支持（含符号包）
 
 ## 核心功能
 
@@ -418,6 +418,19 @@ ColorVision.Common 作为基础库，被其他所有组件依赖：
 - ColorVision.UI 依赖 Common
 - ColorVision.ImageEditor 依赖 Common
 - 所有业务模块都依赖 Common
+
+## 更新日志
+
+### v1.5.1.2（2026-02）
+- ✅ 升级目标框架至 .NET 8.0 / .NET 10.0
+- ✅ 移除 .NET 6.0 支持
+- ✅ 新增 NuGet 符号包发布支持
+- ✅ 改进 ViewModelBase 属性通知性能
+
+### v1.3.8.1 及更早
+- 基础 MVVM 架构支持
+- 接口定义系统（IConfig、IPlugin、IMenuItem 等）
+- ActionCommand / RelayCommand 命令模式
 
 ## 相关资源
 
