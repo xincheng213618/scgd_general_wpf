@@ -31,7 +31,14 @@ namespace Spectrum.License
                 catch (Exception ex)
                 {
                     log.Error($"无法重命名冲突文件 '{directoryPath}'", ex);
-                    File.Delete(directoryPath);
+                    try
+                    {
+                        File.Delete(directoryPath);
+                    }
+                    catch (Exception deleteEx)
+                    {
+                        log.Error($"无法删除冲突文件 '{directoryPath}'，目录创建可能失败", deleteEx);
+                    }
                 }
             }
             Directory.CreateDirectory(directoryPath);
