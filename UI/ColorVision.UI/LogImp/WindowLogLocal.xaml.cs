@@ -22,9 +22,9 @@ namespace ColorVision.UI.LogImp
         public Encoding Encoding { get; set; } = Encoding.Default;
 
         /// <summary>
-        /// The embedded LogLocalOutput control (exposed for external access if needed).
+        /// The embedded log control (exposed for external access if needed).
         /// </summary>
-        public LogLocalOutput? LogLocalOutput { get; private set; }
+        public LogLocalOutput? LogOutputControl { get; private set; }
 
         /// <summary>
         /// Create a new WindowLogLocal instance.
@@ -47,8 +47,8 @@ namespace ColorVision.UI.LogImp
             this.Title = $"Log - {Path.GetFileName(LogFilePath)}";
 
             // Create and host the LogLocalOutput UserControl
-            LogLocalOutput = new LogLocalOutput(LogFilePath, Encoding);
-            RootGrid.Children.Add(LogLocalOutput);
+            LogOutputControl = new LogLocalOutput(LogFilePath, Encoding);
+            RootGrid.Children.Add(LogOutputControl);
         }
     }
 }

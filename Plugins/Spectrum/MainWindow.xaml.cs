@@ -245,7 +245,7 @@ namespace Spectrum
         /// </summary>
         private void InitializeNativeLogPanel()
         {
-            string? logPath = FindSpectrometerLogFile();
+            string? logPath = Spectrum.License.MenuSpectrometerNativeLog.FindSpectrometerLogFile(AppDomain.CurrentDomain.BaseDirectory);
             if (!string.IsNullOrEmpty(logPath))
             {
                 var nativeLogOutput = new LogLocalOutput(logPath, System.Text.Encoding.GetEncoding("GB2312"));
@@ -263,44 +263,6 @@ namespace Spectrum
                 };
                 NativeLogGrid.Children.Add(placeholder);
             }
-        }
-
-        /// <summary>
-        /// Search for the C++ spectrometer log file in the application directory.
-        /// </summary>
-        private static string? FindSpectrometerLogFile()
-        {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            if (!Directory.Exists(baseDir)) return null;
-
-            string[] patterns = { "cvCamera*.log", "Spectr*.log", "Emission*.log" };
-
-            foreach (var pattern in patterns)
-            {
-                var files = Directory.GetFiles(baseDir, pattern, SearchOption.TopDirectoryOnly)
-                    .OrderByDescending(f => new FileInfo(f).LastWriteTimeUtc)
-                    .ToList();
-
-                if (files.Count > 0)
-                    return files[0];
-            }
-
-            // Also check a "log" subdirectory
-            string logDir = Path.Combine(baseDir, "log");
-            if (Directory.Exists(logDir))
-            {
-                foreach (var pattern in patterns)
-                {
-                    var files = Directory.GetFiles(logDir, pattern, SearchOption.TopDirectoryOnly)
-                        .OrderByDescending(f => new FileInfo(f).LastWriteTimeUtc)
-                        .ToList();
-
-                    if (files.Count > 0)
-                        return files[0];
-                }
-            }
-
-            return null;
         }
     }
 }
