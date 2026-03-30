@@ -27,35 +27,10 @@ import json
 import sqlite3
 from datetime import datetime, timezone
 from functools import wraps
-from app_releases import (
-    build_app_release_context,
-    build_release_artifact,
-    build_release_timeline,
-    is_root_release_file as is_root_release_file_impl,
-    reconcile_app_release_history as reconcile_app_release_history_impl,
-    release_sort_key,
-    scan_app_release_artifacts as scan_app_release_artifacts_impl,
-)
-from app_changelog import build_changelog_lookup, changelog_signature, get_cached_changelog_analysis
-from download_stats import (
-    build_stats_payload,
-    get_download_counts,
-    hash_ip,
-    record_download,
-)
-from feedback_service import FeedbackValidationError, save_feedback as save_feedback_impl
-from markupsafe import Markup
 from pathlib import Path
-from package_publish import (
-    PackageValidationError,
-    extract_package_version,
-    finalize_plugin_publish,
-    load_manifest,
-    persist_plugin_metadata,
-    save_package_file,
-    validate_api_publish_request,
-    validate_html_upload_request,
-)
+from typing import Any
+
+from app_releases import is_root_release_file as is_root_release_file_impl
 from catalog_view_models import (
     ALLOWED_CATALOG_SORTS,
     ALLOWED_CATALOG_SORT_ORDERS,
@@ -66,8 +41,20 @@ from catalog_view_models import (
     collect_catalog_categories,
     normalize_catalog_sort_name,
 )
-from storage_uploads import UploadTooLargeError, UploadWorkflowError, store_legacy_upload
-from typing import Any
+from download_stats import build_stats_payload
+from feedback_service import FeedbackValidationError, save_feedback as save_feedback_impl
+from markupsafe import Markup
+from marketplace_services import MarketplaceCacheSettings, MarketplaceDataService
+from package_publish import (
+    PackageValidationError,
+    extract_package_version,
+    finalize_plugin_publish,
+    load_manifest,
+    persist_plugin_metadata,
+    save_package_file,
+    validate_api_publish_request,
+    validate_html_upload_request,
+)
 from page_contexts import (
     build_browse_page_context,
     build_index_page_context,
@@ -76,32 +63,20 @@ from page_contexts import (
     build_upload_page_context,
     build_updates_page_context,
 )
+from plugin_marketplace import prewarm_plugin_metadata
 from runtime_health import (
     build_health_payload as build_health_payload_impl,
     build_ready_payload as build_ready_payload_impl,
     validate_runtime_config as validate_runtime_config_impl,
 )
-from plugin_marketplace import (
-    get_plugin_detail as get_plugin_detail_impl,
-    prewarm_plugin_metadata,
-    reconcile_all_plugin_package_histories as reconcile_all_plugin_package_histories_impl,
-    reconcile_plugin_package_history as reconcile_plugin_package_history_impl,
-    scan_plugin_summaries as scan_plugin_summaries_impl,
-)
-from storage_browser import (
-    build_storage_preview_context,
-    build_storage_summary as build_storage_summary_impl,
-    get_storage_overview_context as get_storage_overview_context_impl,
-    scan_storage_overview as scan_storage_overview_impl,
-)
 from storage_paths import (
     is_safe_id as is_safe_id_impl,
     is_safe_version as is_safe_version_impl,
     normalize_relative_path as normalize_relative_path_impl,
-    resolve_storage_file as resolve_storage_file_impl,
     sanitize_filename as sanitize_filename_impl,
     storage_target as storage_target_impl,
 )
+from storage_uploads import UploadTooLargeError, UploadWorkflowError, store_legacy_upload
 from update_retention import (
     prune_update_packages,
     repair_update_storage_layout,
@@ -114,8 +89,6 @@ except ImportError:  # pragma: no cover - optional runtime fallback
 from flask import (
     Flask,
     abort,
-    g,
-    has_request_context,
     jsonify,
     render_template,
     request,
@@ -513,6 +486,34 @@ def _render_markdown_cached(*, cache_key: str, signature: str, text: str | None)
     return rendered
 
 
+SERVICES = MarketplaceDataService(
+    storage_getter=lambda: STORAGE,
+    config_getter=lambda: CONFIG,
+    get_cache_entry=_get_cache_entry,
+    set_cache_entry=_set_cache_entry,
+    refresh_related_caches=_refresh_related_caches,
+    get_db=get_db,
+    read_text_file=read_text_file,
+    render_markdown_cached=_render_markdown_cached,
+    cache_settings=MarketplaceCacheSettings(
+        overview_cache_key=OVERVIEW_CACHE_KEY,
+        overview_cache_ttl_seconds=OVERVIEW_CACHE_TTL_SECONDS,
+        app_releases_cache_key=APP_RELEASES_CACHE_KEY,
+        app_releases_cache_ttl_seconds=APP_RELEASES_CACHE_TTL_SECONDS,
+        directory_count_cache_ttl_seconds=DIRECTORY_COUNT_CACHE_TTL_SECONDS,
+        plugin_info_cache_ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
+        changelog_analysis_cache_key=CHANGELOG_ANALYSIS_CACHE_KEY,
+        changelog_analysis_cache_ttl_seconds=CHANGELOG_ANALYSIS_CACHE_TTL_SECONDS,
+        home_releases_snapshot_cache_key=HOME_RELEASES_SNAPSHOT_CACHE_KEY,
+        home_releases_snapshot_ttl_seconds=HOME_RELEASES_SNAPSHOT_TTL_SECONDS,
+        home_tool_preview_cache_key=HOME_TOOL_PREVIEW_CACHE_KEY,
+        home_tool_preview_ttl_seconds=HOME_TOOL_PREVIEW_CACHE_TTL_SECONDS,
+        release_timeline_cache_key=RELEASE_TIMELINE_CACHE_KEY,
+        release_timeline_cache_ttl_seconds=RELEASE_TIMELINE_CACHE_TTL_SECONDS,
+    ),
+)
+
+
 def _storage_target(relative_path: str) -> Path:
     return storage_target_impl(STORAGE, relative_path)
 
@@ -522,64 +523,39 @@ def _is_root_release_file(path: Path) -> bool:
 
 
 def scan_app_release_artifacts() -> list[dict[str, Any]]:
-    return scan_app_release_artifacts_impl(
-        STORAGE,
-        get_cache_entry=_get_cache_entry,
-        set_cache_entry=_set_cache_entry,
-        cache_key=APP_RELEASES_CACHE_KEY,
-        ttl_seconds=APP_RELEASES_CACHE_TTL_SECONDS,
-    )
+    return SERVICES.scan_app_release_artifacts()
 
 
 def get_app_release_context() -> dict[str, Any]:
-    return build_app_release_context(scan_app_release_artifacts())
+    return SERVICES.get_app_release_context()
 
 
 def reconcile_app_release_history(keep_latest: int | None = None) -> list[dict[str, str]]:
-    keep_count = int(keep_latest or CONFIG.get("app_release_keep_count", 5) or 5)
-    return reconcile_app_release_history_impl(
-        STORAGE,
-        keep_latest=keep_count,
-        on_changed=lambda _: _refresh_related_caches(relative_path="History"),
-    )
+    return SERVICES.reconcile_app_release_history(keep_latest)
 
 
 def resolve_storage_file(relative_path: str) -> Path:
-    return resolve_storage_file_impl(
-        STORAGE,
-        relative_path,
-        repair_updates=repair_update_storage_layout,
-    )
+    return SERVICES.resolve_storage_file(relative_path)
 
 
 def _storage_relative(path: Path) -> str:
-    try:
-        return path.relative_to(STORAGE).as_posix()
-    except ValueError:
-        return path.name
+    return SERVICES.storage_relative(path)
 
 
 def _get_download_counts() -> dict[str, int]:
-    return get_download_counts(get_db)
+    return SERVICES.get_download_counts()
 
 
 def _request_cached_value(cache_key: str, loader):
-    if not has_request_context():
-        return loader()
-    if not hasattr(g, cache_key):
-        setattr(g, cache_key, loader())
-    return getattr(g, cache_key)
+    return SERVICES.request_cached_value(cache_key, loader)
 
 
 def _get_request_download_counts() -> dict[str, int]:
-    return _request_cached_value("download_counts", _get_download_counts)
+    return SERVICES.get_request_download_counts()
 
 
 def _get_request_plugin_catalog() -> list[dict]:
-    return _request_cached_value(
-        "plugin_catalog",
-        lambda: scan_plugins(download_counts=_get_request_download_counts()),
-    )
+    return SERVICES.get_request_plugin_catalog()
 
 
 def _get_request_app_info() -> dict:
@@ -587,248 +563,68 @@ def _get_request_app_info() -> dict:
 
 
 def _build_release_app_info() -> dict[str, Any]:
-    releases = scan_app_release_artifacts()
-    return {
-        "latest_version": read_text_file(STORAGE / "LATEST_RELEASE") or "",
-        **build_app_release_context(releases),
-    }
-
-
-def _path_mtime(path: Path) -> float:
-    try:
-        return path.stat().st_mtime
-    except OSError:
-        return 0.0
-
-
-def _collect_home_archive_preview() -> list[dict[str, Any]]:
-    history_dir = STORAGE / "History"
-    if not history_dir.is_dir():
-        return []
-
-    preview_artifacts: list[dict[str, Any]] = []
-    major_dirs = sorted(
-        (path for path in history_dir.iterdir() if path.is_dir()),
-        key=_path_mtime,
-        reverse=True,
-    )[:6]
-
-    collected_groups = 0
-    for major_dir in major_dirs:
-        branch_dirs = sorted(
-            (path for path in major_dir.iterdir() if path.is_dir()),
-            key=_path_mtime,
-            reverse=True,
-        )[:3]
-        for branch_dir in branch_dirs:
-            collected_groups += 1
-            files = sorted(
-                (path for path in branch_dir.iterdir() if path.is_file()),
-                key=_path_mtime,
-                reverse=True,
-            )[:3]
-            for file_path in files:
-                artifact = build_release_artifact(STORAGE, file_path, "archive")
-                if artifact:
-                    preview_artifacts.append(artifact)
-            if collected_groups >= 4:
-                return sorted(preview_artifacts, key=release_sort_key, reverse=True)
-
-    return sorted(preview_artifacts, key=release_sort_key, reverse=True)
+    return SERVICES.build_release_app_info()
 
 
 def _build_home_release_snapshot() -> dict[str, Any]:
-    full_cache = _get_cache_entry(APP_RELEASES_CACHE_KEY)
-    if full_cache:
-        context = build_app_release_context(full_cache["value"])
-        context["release_preview_fast"] = False
-        context["archive_count_estimated"] = False
-        context["archive_preview_note"] = ""
-        return context
-
-    cached = _get_cache_entry(HOME_RELEASES_SNAPSHOT_CACHE_KEY)
-    if cached:
-        return cached["value"]
-
-    current_releases: list[dict[str, Any]] = []
-    if STORAGE.is_dir():
-        for entry in STORAGE.iterdir():
-            if not entry.is_file():
-                continue
-            artifact = build_release_artifact(STORAGE, entry, "current")
-            if artifact:
-                current_releases.append(artifact)
-    current_releases.sort(key=release_sort_key, reverse=True)
-
-    archive_preview = _collect_home_archive_preview()
-    context = build_app_release_context(current_releases + archive_preview)
-    context["release_preview_fast"] = True
-    context["archive_count_estimated"] = bool(archive_preview)
-    context["archive_preview_note"] = "首页已启用快速历史预览；完整历史与精确统计请进入版本档案页。"
-    _set_cache_entry(
-        HOME_RELEASES_SNAPSHOT_CACHE_KEY,
-        context,
-        ttl_seconds=HOME_RELEASES_SNAPSHOT_TTL_SECONDS,
-        signature="home",
-    )
-    return context
+    return SERVICES.build_home_release_snapshot()
 
 
 def _build_home_app_info() -> dict[str, Any]:
-    changelog_path = STORAGE / "CHANGELOG.md"
-    changelog = read_text_file(changelog_path) or ""
-    preview_text = "\n".join(changelog.splitlines()[:24])
-    signature = changelog_signature(changelog_path)
-    return {
-        "latest_version": read_text_file(STORAGE / "LATEST_RELEASE") or "",
-        **_build_home_release_snapshot(),
-        "has_changelog": bool(changelog.strip()),
-        "changelog_preview_html": _render_markdown_cached(
-            cache_key="markdown:changelog_preview:v1",
-            signature=f"preview:{signature}:{len(preview_text)}",
-            text=preview_text,
-        ),
-    }
+    return SERVICES.build_home_app_info()
 
 
 def _build_changelog_app_info() -> dict[str, Any]:
-    changelog_path = STORAGE / "CHANGELOG.md"
-    changelog = read_text_file(changelog_path) or ""
-    signature = changelog_signature(changelog_path)
-    releases = scan_app_release_artifacts()
-    timeline_signature = f"{len(releases)}:{signature}"
-    cached_timeline = _get_cache_entry(RELEASE_TIMELINE_CACHE_KEY, signature=timeline_signature)
-    changelog_analysis = get_cached_changelog_analysis(
-        changelog_path,
-        get_cache_entry=_get_cache_entry,
-        set_cache_entry=_set_cache_entry,
-        cache_key=CHANGELOG_ANALYSIS_CACHE_KEY,
-        ttl_seconds=CHANGELOG_ANALYSIS_CACHE_TTL_SECONDS,
-    )
-    if cached_timeline:
-        release_timeline = cached_timeline["value"]
-    else:
-        release_timeline = build_release_timeline(
-            releases,
-            changelog_lookup=build_changelog_lookup(changelog_analysis.get("entries", [])),
-        )
-        _set_cache_entry(
-            RELEASE_TIMELINE_CACHE_KEY,
-            release_timeline,
-            ttl_seconds=RELEASE_TIMELINE_CACHE_TTL_SECONDS,
-            signature=timeline_signature,
-        )
-    return {
-        "latest_version": read_text_file(STORAGE / "LATEST_RELEASE") or "",
-        "changelog": changelog,
-        "changelog_html": _render_markdown_cached(
-            cache_key="markdown:changelog_full:v1",
-            signature=f"full:{signature}",
-            text=changelog,
-        ),
-        "changelog_analysis": changelog_analysis,
-        "release_timeline": release_timeline,
-    }
+    return SERVICES.build_changelog_app_info()
 
 
 def _get_request_home_app_info() -> dict:
-    return _request_cached_value("home_app_info", _build_home_app_info)
+    return SERVICES.get_request_home_app_info()
 
 
 def _get_request_release_app_info() -> dict:
-    return _request_cached_value("release_app_info", _build_release_app_info)
+    return SERVICES.get_request_release_app_info()
 
 
 def _get_request_changelog_app_info() -> dict:
-    return _request_cached_value("changelog_app_info", _build_changelog_app_info)
+    return SERVICES.get_request_changelog_app_info()
 
 
 def _build_home_tool_preview() -> dict[str, Any]:
-    cached = _get_cache_entry(HOME_TOOL_PREVIEW_CACHE_KEY)
-    if cached:
-        return cached["value"]
-
-    preview = build_storage_preview_context(STORAGE, "Tool", limit=8)
-    _set_cache_entry(
-        HOME_TOOL_PREVIEW_CACHE_KEY,
-        preview,
-        ttl_seconds=HOME_TOOL_PREVIEW_CACHE_TTL_SECONDS,
-        signature="tool",
-    )
-    return preview
+    return SERVICES.build_home_tool_preview()
 
 
 def _get_request_home_tool_preview() -> dict:
-    return _request_cached_value("home_tool_preview", _build_home_tool_preview)
+    return SERVICES.get_request_home_tool_preview()
 
 
 def scan_plugins(download_counts: dict[str, int] | None = None) -> list[dict]:
     """Scan the Plugins directory and return metadata for each plugin."""
-    if download_counts is None:
-        download_counts = _get_download_counts()
-    return scan_plugin_summaries_impl(
-        STORAGE,
-        download_counts=download_counts,
-        get_cache_entry=_get_cache_entry,
-        set_cache_entry=_set_cache_entry,
-        ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
-    )
+    return SERVICES.scan_plugins(download_counts=download_counts)
 
 
 def get_plugin_info(
     plugin_id: str, download_counts: dict[str, int] | None = None
 ) -> dict | None:
-    if download_counts is None:
-        download_counts = _get_download_counts()
-    return get_plugin_detail_impl(
-        STORAGE,
-        plugin_id,
-        download_counts=download_counts,
-        get_cache_entry=_get_cache_entry,
-        set_cache_entry=_set_cache_entry,
-        ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
-    )
+    return SERVICES.get_plugin_info(plugin_id, download_counts=download_counts)
 
 
 def reconcile_plugin_package_history(
     plugin_id: str, keep_latest: int | None = None
 ) -> list[dict[str, str]]:
-    keep_count = int(keep_latest or CONFIG.get("plugin_package_keep_count", 3) or 3)
-    return reconcile_plugin_package_history_impl(
-        STORAGE,
-        plugin_id,
-        keep_latest=keep_count,
-        on_changed=lambda changed_plugin_id: _refresh_related_caches(
-            plugin_id=changed_plugin_id,
-            relative_path=f"Plugins/{changed_plugin_id}",
-        ),
-    )
+    return SERVICES.reconcile_plugin_package_history(plugin_id, keep_latest=keep_latest)
 
 
 def reconcile_all_plugin_package_histories() -> dict[str, list[dict[str, str]]]:
-    keep_count = int(CONFIG.get("plugin_package_keep_count", 3) or 3)
-    return reconcile_all_plugin_package_histories_impl(
-        STORAGE,
-        keep_latest=keep_count,
-        on_changed=lambda changed_plugin_id: _refresh_related_caches(
-            plugin_id=changed_plugin_id,
-            relative_path=f"Plugins/{changed_plugin_id}",
-        ),
-    )
+    return SERVICES.reconcile_all_plugin_package_histories()
 
 
 def _record_download(plugin_id: str, version: str):
-    record_download(
-        get_db,
-        plugin_id=plugin_id,
-        version=version,
-        client_ip=request.remote_addr,
-        client_version=request.headers.get("X-Client-Version", ""),
-    )
+    SERVICES.record_download(plugin_id, version)
 
 
 def _hash_ip(ip: str | None) -> str:
-    return hash_ip(ip)
+    return SERVICES.hash_ip(ip)
 
 
 def _build_plugin_icon_url(plugin_id: str) -> str:
@@ -837,34 +633,7 @@ def _build_plugin_icon_url(plugin_id: str) -> str:
 
 def get_app_info() -> dict:
     """Read application-level info (LATEST_RELEASE, CHANGELOG)."""
-    changelog_path = STORAGE / "CHANGELOG.md"
-    changelog = read_text_file(changelog_path) or ""
-    preview_lines = changelog.splitlines()[:24]
-    release_context = get_app_release_context()
-    signature = changelog_signature(changelog_path)
-    changelog_analysis = get_cached_changelog_analysis(
-        changelog_path,
-        get_cache_entry=_get_cache_entry,
-        set_cache_entry=_set_cache_entry,
-        cache_key=CHANGELOG_ANALYSIS_CACHE_KEY,
-        ttl_seconds=CHANGELOG_ANALYSIS_CACHE_TTL_SECONDS,
-    )
-    return {
-        "latest_version": read_text_file(STORAGE / "LATEST_RELEASE") or "",
-        "changelog": changelog,
-        "changelog_html": _render_markdown_cached(
-            cache_key="markdown:changelog_full:v1",
-            signature=f"full:{signature}",
-            text=changelog,
-        ),
-        "changelog_preview_html": _render_markdown_cached(
-            cache_key="markdown:changelog_preview:v1",
-            signature=f"preview:{signature}:{len(preview_lines)}",
-            text="\n".join(preview_lines),
-        ),
-        "changelog_analysis": changelog_analysis,
-        **release_context,
-    }
+    return SERVICES.get_app_info()
 
 
 def human_size(size_bytes: int) -> str:
@@ -894,29 +663,15 @@ def handle_http_exception(exc: HTTPException):
 
 def scan_storage_overview() -> list[dict[str, Any]]:
     """Return a summary of top-level directories in storage."""
-    return scan_storage_overview_impl(
-        STORAGE,
-        get_cache_entry=_get_cache_entry,
-        set_cache_entry=_set_cache_entry,
-        overview_cache_key=OVERVIEW_CACHE_KEY,
-        overview_cache_ttl_seconds=OVERVIEW_CACHE_TTL_SECONDS,
-        directory_count_cache_ttl_seconds=DIRECTORY_COUNT_CACHE_TTL_SECONDS,
-    )
+    return SERVICES.scan_storage_overview()
 
 
 def build_storage_summary(overview: list[dict[str, Any]]) -> dict:
-    return build_storage_summary_impl(overview)
+    return SERVICES.build_storage_summary(overview)
 
 
 def get_storage_overview_context() -> tuple[list[dict[str, Any]], dict, dict]:
-    return get_storage_overview_context_impl(
-        STORAGE,
-        get_cache_entry=_get_cache_entry,
-        set_cache_entry=_set_cache_entry,
-        overview_cache_key=OVERVIEW_CACHE_KEY,
-        overview_cache_ttl_seconds=OVERVIEW_CACHE_TTL_SECONDS,
-        directory_count_cache_ttl_seconds=DIRECTORY_COUNT_CACHE_TTL_SECONDS,
-    )
+    return SERVICES.get_storage_overview_context()
 
 
 # ===================================================================
