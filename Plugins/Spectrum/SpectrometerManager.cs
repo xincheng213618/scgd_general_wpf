@@ -58,6 +58,14 @@ namespace Spectrum
         public float AutoIntTimeB { get => _AutoIntTimeB; set { _AutoIntTimeB = value; OnPropertyChanged(); } }
         private float _AutoIntTimeB = 1;
 
+        [DisplayName("自动积分阈值(%)")]
+        public double MaxPercent { get => _MaxPercent; set { _MaxPercent = value; OnPropertyChanged(); Max = (int)(_MaxPercent * 655.35); } }
+        private double _MaxPercent = 76.3;
+
+        [Browsable(false)]
+        public int Max { get => _Max; set { _Max = value; OnPropertyChanged(); } }
+        private int _Max = 50000;
+
         [DisplayName("旧版本模式")]
         public bool IsOldVersion { get => _IsOldVersion; set { _IsOldVersion = value; OnPropertyChanged(); } }
         private bool _IsOldVersion = false;
