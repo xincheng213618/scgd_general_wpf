@@ -21,6 +21,7 @@ using System.IO.Ports;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms.VisualStyles;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
@@ -257,8 +258,8 @@ namespace Spectrum
                 var placeholder = new TextBlock
                 {
                     Text = "光谱仪原生日志文件尚未生成。连接光谱仪后日志将自动显示。",
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                    VerticalAlignment = System.Windows.VerticalAlignment.Center,
                     Foreground = System.Windows.Media.Brushes.Gray
                 };
                 NativeLogGrid.Children.Add(placeholder);
