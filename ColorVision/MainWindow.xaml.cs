@@ -137,7 +137,11 @@ namespace ColorVision
             foreach (var provider in AssemblyHandler.GetInstance().GetAssemblies()
                 .SelectMany(a => a.GetTypes())
                 .Where(t => typeof(IDockPanelProvider).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface)
-                .Select(t => { try { return Activator.CreateInstance(t) as IDockPanelProvider; } catch { return null; } })
+                .Select(t =>
+                {
+                    try { return Activator.CreateInstance(t) as IDockPanelProvider; }
+                    catch (Exception ex) { log.Debug($"Failed to instantiate IDockPanelProvider {t.Name}: {ex.Message}"); return null; }
+                })
                 .Where(p => p != null)
                 .OrderBy(p => p!.Order))
             {
