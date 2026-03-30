@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Spectrum.Calibration;
 using Spectrum.Configs;
 using Spectrum.Data;
+using Spectrum.License;
 using Spectrum.Models;
 using Spectrum.PropertyEditor;
 using System.ComponentModel;
@@ -656,6 +657,9 @@ namespace Spectrum
 
         public void Connect()
         {
+            // Sync licenses from DB before connecting
+            LicenseDatabase.Instance.SyncToLocal();
+
             Handle = Spectrometer.CM_CreateEmission((int)Config.SpectrometerType, MyCallback);
             int ncom = 0;
             if (Config.IsComPort)
@@ -673,8 +677,57 @@ namespace Spectrum
             {
                 string errorMsg = Spectrometer.GetErrorMessage(iR);
                 log.Error($"光谱仪连接失败: {errorMsg}");
-                MessageBox.Show($"连接失败: {errorMsg}");
+                CheckDeviceAndPromptLicense(errorMsg);
             }
+        }
+
+        /// <summary>
+        /// On connection failure, detect if a device exists.
+        /// If exactly one device is found, it's likely a license issue - prompt user.
+        /// </summary>
+        private void CheckDeviceAndPromptLicense(string errorMsg)
+        {
+            try
+            {
+                int comPort = 0;
+                if (Config.IsComPort)
+                {
+                    if (int.TryParse(Config.SzComName.Replace("COM", ""), out int z))
+                        comPort = z;
+                }
+
+                int bufferLength = 1024;
+                StringBuilder sb = new StringBuilder(bufferLength);
+                Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, comPort, sb, bufferLength);
+                string raw = sb.ToString();
+
+                if (!string.IsNullOrWhiteSpace(raw))
+                {
+                    var result = JsonConvert.DeserializeObject<SpectrometerSnResult>(raw);
+                    if (result?.IDs != null && result.IDs.Count == 1)
+                    {
+                        log.Info($"检测到设备 {result.IDs[0]}，连接失败可能是许可证问题");
+                        var msgResult = MessageBox.Show(
+                            Application.Current.GetActiveWindow(),
+                            $"连接失败: {errorMsg}\n\n检测到设备: {result.IDs[0]}\n连接失败可能是许可证问题。\n\n是否打开许可证管理器?",
+                            "连接失败 - 许可证检查",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Warning);
+
+                        if (msgResult == MessageBoxResult.Yes)
+                        {
+                            new License.LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        }
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"设备检测失败: {ex.Message}");
+            }
+
+            MessageBox.Show($"连接失败: {errorMsg}");
         }
         public int Disconnect()
         {
