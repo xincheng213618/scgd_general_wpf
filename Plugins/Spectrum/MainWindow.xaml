@@ -756,11 +756,15 @@
                             </xcad:LayoutDocumentPane>
                         </xcad:LayoutDocumentPaneGroup>
 
-                        <!-- ═══ Bottom: Log + CIE Diagram ═══ -->
+                        <!-- ═══ Bottom: Log + Native Log + CIE Diagram ═══ -->
                         <xcad:LayoutAnchorablePaneGroup DockHeight="250">
                             <xcad:LayoutAnchorablePane>
                                 <xcad:LayoutAnchorable x:Name="LogPane" Title="日志" ContentId="LogPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
                                     <Grid x:Name="LogGrid">
+                                    </Grid>
+                                </xcad:LayoutAnchorable>
+                                <xcad:LayoutAnchorable x:Name="NativeLogPane" Title="光谱仪原生日志" ContentId="NativeLogPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
+                                    <Grid x:Name="NativeLogGrid">
                                     </Grid>
                                 </xcad:LayoutAnchorable>
                                 <xcad:LayoutAnchorable x:Name="CiePane" Title="CIE色度图" ContentId="CIEDiagram" CanClose="True" CanAutoHide="True" CanFloat="True">

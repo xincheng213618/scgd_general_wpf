@@ -25,9 +25,16 @@
         <ListView x:Name="LicenseListView" Grid.Row="1" Margin="0,0,0,8" SelectionChanged="LicenseListView_SelectionChanged">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="文件名" Width="200" DisplayMemberBinding="{Binding FileName}"/>
-                    <GridViewColumn Header="大小" Width="80" DisplayMemberBinding="{Binding FileSizeDisplay}"/>
-                    <GridViewColumn Header="导入时间" Width="150" DisplayMemberBinding="{Binding ImportedAtDisplay}"/>
+                    <GridViewColumn Header="文件名" Width="180" DisplayMemberBinding="{Binding FileName}"/>
+                    <GridViewColumn Header="大小" Width="70" DisplayMemberBinding="{Binding FileSizeDisplay}"/>
+                    <GridViewColumn Header="状态" Width="100">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding StatusDisplay}" Foreground="{Binding StatusBrush}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="导入时间" Width="140" DisplayMemberBinding="{Binding ImportedAtDisplay}"/>
                 </GridView>
             </ListView.View>
         </ListView>
