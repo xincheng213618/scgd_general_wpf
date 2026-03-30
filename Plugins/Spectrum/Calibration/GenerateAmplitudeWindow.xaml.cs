@@ -21,6 +21,7 @@ namespace Spectrum.Calibration
     public partial class GenerateAmplitudeWindow : Window
     {
         private SpectrometerManager Manager => SpectrometerManager.Instance;
+        private double[]? _cachedXs;
 
         public GenerateAmplitudeWindow()
         {
@@ -53,21 +54,25 @@ namespace Spectrum.Calibration
         {
             AmplitudePlot.Plot.Clear();
 
-            double[] xs = new double[Manager.fDarkData.Length];
-            for (int i = 0; i < xs.Length; i++)
-                xs[i] = i;
+            int len = Manager.fDarkData.Length;
+            if (_cachedXs == null || _cachedXs.Length != len)
+            {
+                _cachedXs = new double[len];
+                for (int i = 0; i < len; i++)
+                    _cachedXs[i] = i;
+            }
 
             // Plot dark data
-            double[] darkYs = new double[Manager.fDarkData.Length];
+            double[] darkYs = new double[len];
             bool hasDark = false;
-            for (int i = 0; i < Manager.fDarkData.Length; i++)
+            for (int i = 0; i < len; i++)
             {
                 darkYs[i] = Manager.fDarkData[i];
-                if (Manager.fDarkData[i] != 0) hasDark = true;
+                if (!hasDark && Manager.fDarkData[i] != 0) hasDark = true;
             }
             if (hasDark)
             {
-                var darkPlot = AmplitudePlot.Plot.Add.Scatter(xs, darkYs);
+                var darkPlot = AmplitudePlot.Plot.Add.Scatter(_cachedXs, darkYs);
                 darkPlot.Label = "暗数据";
                 darkPlot.Color = ScottPlot.Color.FromColor(System.Drawing.Color.DodgerBlue);
                 darkPlot.LineWidth = 1;
@@ -75,16 +80,16 @@ namespace Spectrum.Calibration
             }
 
             // Plot light data
-            double[] lightYs = new double[Manager.fLightData.Length];
+            double[] lightYs = new double[len];
             bool hasLight = false;
-            for (int i = 0; i < Manager.fLightData.Length; i++)
+            for (int i = 0; i < len; i++)
             {
                 lightYs[i] = Manager.fLightData[i];
-                if (Manager.fLightData[i] != 0) hasLight = true;
+                if (!hasLight && Manager.fLightData[i] != 0) hasLight = true;
             }
             if (hasLight)
             {
-                var lightPlot = AmplitudePlot.Plot.Add.Scatter(xs, lightYs);
+                var lightPlot = AmplitudePlot.Plot.Add.Scatter(_cachedXs, lightYs);
                 lightPlot.Label = "亮数据";
                 lightPlot.Color = ScottPlot.Color.FromColor(System.Drawing.Color.OrangeRed);
                 lightPlot.LineWidth = 1;
