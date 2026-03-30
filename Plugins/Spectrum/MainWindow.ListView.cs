@@ -28,8 +28,6 @@ namespace Spectrum
                 listView2.ItemsSource = selected.SpectralDatas;
                 // Draw CIE points on both diagrams simultaneously
                 DrawCIEPoinr(selected.fx, selected.fy, selected.fu, selected.fv);
-                // Update spectral parameter display with calculation details
-                UpdateCieParameterDisplay(selected);
             }
         }
 
