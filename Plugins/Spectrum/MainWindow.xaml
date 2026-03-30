@@ -617,21 +617,21 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn  Header="CIEx" >
+                                    <GridViewColumn  Header="X" >
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEx}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn  Header="CIEy" > 
+                                    <GridViewColumn  Header="Y" > 
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEy}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn  Header="CIEz" >
+                                    <GridViewColumn  Header="Z" >
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEz}"/>
