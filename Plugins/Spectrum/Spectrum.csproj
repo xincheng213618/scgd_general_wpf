@@ -110,6 +110,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Engine\cvColorVision\cvColorVision.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.Database\ColorVision.Database.csproj" />
+    <ProjectReference Include="..\..\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
+    <ProjectReference Include="..\..\UI\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
 
