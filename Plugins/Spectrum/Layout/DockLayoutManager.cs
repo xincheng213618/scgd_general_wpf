@@ -153,6 +153,18 @@ namespace Spectrum.Layout
                     logAnchorable.Content = logContent;
                 bottomPane.Children.Add(logAnchorable);
 
+                var nativeLogAnchorable = new LayoutAnchorable
+                {
+                    Title = "光谱仪原生日志",
+                    ContentId = "NativeLogPanel",
+                    CanClose = true,
+                    CanAutoHide = true,
+                    CanFloat = true
+                };
+                if (_contentRegistry.TryGetValue("NativeLogPanel", out var nativeLogContent))
+                    nativeLogAnchorable.Content = nativeLogContent;
+                bottomPane.Children.Add(nativeLogAnchorable);
+
                 var cieAnchorable = new LayoutAnchorable
                 {
                     Title = "CIE色度图",
@@ -212,6 +224,7 @@ namespace Spectrum.Layout
                 newAnchorable.Title = contentId switch
                 {
                     "LogPanel" => "日志",
+                    "NativeLogPanel" => "光谱仪原生日志",
                     "CIEDiagram" => "CIE色度图",
                     _ => contentId
                 };

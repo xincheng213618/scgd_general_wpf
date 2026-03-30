@@ -1,10 +1,13 @@
-﻿using System.IO;
+﻿using log4net;
+using System.IO;
 using System.Reflection;
 
 namespace Spectrum.License
 {
     public static class LicenseSync
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(LicenseSync));
+
         public static readonly string CompanyName = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company;
         public static readonly string LocalLicenseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "license");
         public static readonly string GlobalLicenseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),CompanyName, "license");
@@ -26,7 +29,7 @@ namespace Spectrum.License
                     }
                     catch(Exception ex)
                     {
-
+                        log.Debug($"同步许可证到全局目录失败: {file}", ex);
                     }
 
                 }
@@ -45,6 +48,16 @@ namespace Spectrum.License
                     Directory.CreateDirectory(LocalLicenseDir);
                     File.Copy(globalFile, localFile, true);
                 }
+            }
+
+            // 4. Also sync via database
+            try
+            {
+                LicenseDatabase.Instance.SyncToLocal();
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"数据库同步许可证失败", ex);
             }
         }
     }

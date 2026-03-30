@@ -36,11 +36,10 @@ namespace Spectrum
                 IsRun = true;
                 if (Manager.IntTimeConfig.IsOldVersion)
                 {
-                    ret = Spectrometer.CM_Emission_GetAutoTime(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, (int)Manager.MaxPercent);
+                    ret = Spectrometer.CM_Emission_GetAutoTime(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, (int)Manager.IntTimeConfig.MaxPercent);
                     if (ret == 1)
                     {
                         log.Info($"自动积分时间获取成功: {fIntTime}ms");
-                        Manager.IntTime = fIntTime;
                     }
                     else
                     {
@@ -49,11 +48,10 @@ namespace Spectrum
                 }
                 else
                 {
-                    ret = Spectrometer.CM_Emission_GetAutoTimeEx(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, Manager.Max, MyAutoTimeCallback);
+                    ret = Spectrometer.CM_Emission_GetAutoTimeEx(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, Manager.IntTimeConfig.Max, MyAutoTimeCallback);
                     if (ret == 1)
                     {
                         log.Info($"自动积分时间获取成功: {fIntTime}ms");
-                        Manager.IntTime = fIntTime;
                     }
                     else
                     {
@@ -64,18 +62,23 @@ namespace Spectrum
                 // Apply sync frequency adjustment if enabled
                 if (ret == 1 && Manager.GetDataConfig.IsSyncFrequencyEnabled)
                 {
-                    float syncIntTime = Manager.IntTime;
+                    float syncIntTime = fIntTime;
                     COLOR_PARA cOLOR_PARA = new COLOR_PARA();
                     int syncRet = Spectrometer.CM_Emission_GetDataSyncfreq(SpectrometerHandle, 0, Manager.GetDataConfig.Syncfreq, Manager.GetDataConfig.SyncfreqFactor, ref syncIntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, 0, 0, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
                     if (syncRet == 1)
                     {
-                        log.Info($"同步频率调整积分时间: {Manager.IntTime}ms → {syncIntTime}ms");
-                        Manager.IntTime = syncIntTime;
+                        log.Info($"同步频率调整积分时间: {fIntTime}ms → {syncIntTime}ms");
+                        fIntTime = syncIntTime;
                     }
                     else
                     {
                         log.Warn($"同步频率调整积分时间失败: {Spectrometer.GetErrorMessage(syncRet)}");
                     }
+                }
+
+                if (ret == 1)
+                {
+                    Manager.IntTime = fIntTime;
                 }
 
                 IsRun = false;
@@ -182,11 +185,14 @@ namespace Spectrum
 
                 if (Manager.IntTimeConfig.IsOldVersion)
                 {
-                    ret = Spectrometer.CM_Emission_GetAutoTime(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, (int)Manager.MaxPercent);
+                    ret = Spectrometer.CM_Emission_GetAutoTime(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, (int)Manager.IntTimeConfig.MaxPercent);
                     if (ret == 1)
                     {
                         log.Debug($"自动积分时间: {fIntTime}ms");
-                        Manager.IntTime = fIntTime;
+                        // When sync frequency is enabled, defer updating Manager.IntTime
+                        // to avoid showing intermediate value before sync adjustment
+                        if (!Manager.GetDataConfig.IsSyncFrequencyEnabled)
+                            Manager.IntTime = fIntTime;
                     }
                     else
                     {
@@ -197,11 +203,12 @@ namespace Spectrum
                 }
                 else
                 {
-                    ret = Spectrometer.CM_Emission_GetAutoTimeEx(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, Manager.Max, MyAutoTimeCallback);
+                    ret = Spectrometer.CM_Emission_GetAutoTimeEx(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, Manager.IntTimeConfig.Max, MyAutoTimeCallback);
                     if (ret == 1)
                     {
                         log.Debug($"自动积分时间: {fIntTime}ms");
-                        Manager.IntTime = fIntTime;
+                        if (!Manager.GetDataConfig.IsSyncFrequencyEnabled)
+                            Manager.IntTime = fIntTime;
                     }
                     else
                     {
@@ -215,7 +222,10 @@ namespace Spectrum
 
             if (Manager.EnableAdaptiveAutoDark)
             {
-                ret = Spectrometer.CM_Emission_AutoDarkStorage(SpectrometerHandle, Manager.IntTime, Manager.Average, 0, Manager.fDarkData);
+                // When auto-integration deferred Manager.IntTime update (sync frequency enabled),
+                // use the field-level fIntTime which has the fresh auto-integration result
+                float darkIntTime = (Manager.EnableAutoIntegration && Manager.GetDataConfig.IsSyncFrequencyEnabled) ? fIntTime : Manager.IntTime;
+                ret = Spectrometer.CM_Emission_AutoDarkStorage(SpectrometerHandle, darkIntTime, Manager.Average, 0, Manager.fDarkData);
                 if (ret == 1)
                 {
                     log.Debug("自适应校零数据获取成功");
@@ -243,13 +253,15 @@ namespace Spectrum
 
             if (Manager.GetDataConfig.IsSyncFrequencyEnabled)
             {
-                float fIntTime = Manager.IntTime;
-                ret = Spectrometer.CM_Emission_GetDataSyncfreq(SpectrometerHandle, 0, Manager.GetDataConfig.Syncfreq, Manager.GetDataConfig.SyncfreqFactor, ref fIntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
+                // Use field-level fIntTime (auto-integration result) when auto-integration ran,
+                // otherwise use Manager.IntTime (user-set value)
+                float syncIntTime = Manager.EnableAutoIntegration ? fIntTime : Manager.IntTime;
+                ret = Spectrometer.CM_Emission_GetDataSyncfreq(SpectrometerHandle, 0, Manager.GetDataConfig.Syncfreq, Manager.GetDataConfig.SyncfreqFactor, ref syncIntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, fDx, fDy, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
                 if (ret != 1)
                     log.Warn($"同步频率采集数据失败: {Spectrometer.GetErrorMessage(ret)}");
 
                 if (Manager.EnableAutoIntegration)
-                    Manager.IntTime = fIntTime;
+                    Manager.IntTime = syncIntTime;
             }
             else
             {

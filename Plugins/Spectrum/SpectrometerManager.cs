@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Spectrum.Calibration;
 using Spectrum.Configs;
 using Spectrum.Data;
+using Spectrum.License;
 using Spectrum.Models;
 using Spectrum.PropertyEditor;
 using System.ComponentModel;
@@ -57,6 +58,14 @@ namespace Spectrum
         [DisplayName("自动积分时间起始")]
         public float AutoIntTimeB { get => _AutoIntTimeB; set { _AutoIntTimeB = value; OnPropertyChanged(); } }
         private float _AutoIntTimeB = 1;
+
+        [DisplayName("自动积分阈值(%)")]
+        public double MaxPercent { get => _MaxPercent; set { _MaxPercent = value; OnPropertyChanged(); Max = (int)(_MaxPercent * 655.35); } } // 655.35 = 65535 / 100, converts percentage to 16-bit ADC scale
+        private double _MaxPercent = 76.3;
+
+        [Browsable(false)]
+        public int Max { get => _Max; set { _Max = value; OnPropertyChanged(); } }
+        private int _Max = 50000;
 
         [DisplayName("旧版本模式")]
         public bool IsOldVersion { get => _IsOldVersion; set { _IsOldVersion = value; OnPropertyChanged(); } }
@@ -369,6 +378,9 @@ namespace Spectrum
         public RelayCommand GenerateAmplitudeCommand { get; set; }
 
         [JsonIgnore]
+        public RelayCommand GenerateAmplitudeFromExistingCommand { get; set; }
+
+        [JsonIgnore]
         public RelayCommand ConnectCommand { get; set; }
 
         [JsonIgnore]
@@ -388,6 +400,7 @@ namespace Spectrum
             GetDarkDataCommand = new RelayCommand(a => GetDarkData());
             GetLightDataCommand = new RelayCommand(a => GetLightData());
             GenerateAmplitudeCommand = new RelayCommand(a => GenerateAmplitude());
+            GenerateAmplitudeFromExistingCommand = new RelayCommand(a => GenerateAmplitudeFromExisting());
 
             ConnectCommand = new RelayCommand(a => Connect());
             DisconnectCommand = new RelayCommand(a => Disconnect());
@@ -594,7 +607,7 @@ namespace Spectrum
         {
             using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
             {
-                saveFileDialog.FileName = "Magiude.dat"; // 默认文件名
+                saveFileDialog.FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
                 saveFileDialog.Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*";
                 saveFileDialog.Title = "选择保存文件路径";
 
@@ -644,6 +657,9 @@ namespace Spectrum
 
         public void Connect()
         {
+            // Sync licenses from DB before connecting
+            LicenseDatabase.Instance.SyncToLocal();
+
             Handle = Spectrometer.CM_CreateEmission((int)Config.SpectrometerType, MyCallback);
             int ncom = 0;
             if (Config.IsComPort)
@@ -661,8 +677,57 @@ namespace Spectrum
             {
                 string errorMsg = Spectrometer.GetErrorMessage(iR);
                 log.Error($"光谱仪连接失败: {errorMsg}");
-                MessageBox.Show($"连接失败: {errorMsg}");
+                CheckDeviceAndPromptLicense(errorMsg);
             }
+        }
+
+        /// <summary>
+        /// On connection failure, detect if a device exists.
+        /// If exactly one device is found, it's likely a license issue - prompt user.
+        /// </summary>
+        private void CheckDeviceAndPromptLicense(string errorMsg)
+        {
+            try
+            {
+                int comPort = 0;
+                if (Config.IsComPort)
+                {
+                    if (int.TryParse(Config.SzComName.Replace("COM", ""), out int z))
+                        comPort = z;
+                }
+
+                int bufferLength = 1024;
+                StringBuilder sb = new StringBuilder(bufferLength);
+                Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, comPort, sb, bufferLength);
+                string raw = sb.ToString();
+
+                if (!string.IsNullOrWhiteSpace(raw))
+                {
+                    var result = JsonConvert.DeserializeObject<SpectrometerSnResult>(raw);
+                    if (result?.IDs != null && result.IDs.Count == 1)
+                    {
+                        log.Info($"检测到设备 {result.IDs[0]}，连接失败可能是许可证问题");
+                        var msgResult = MessageBox.Show(
+                            Application.Current.GetActiveWindow(),
+                            $"连接失败: {errorMsg}\n\n检测到设备: {result.IDs[0]}\n连接失败可能是许可证问题。\n\n是否打开许可证管理器?",
+                            "连接失败 - 许可证检查",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Warning);
+
+                        if (msgResult == MessageBoxResult.Yes)
+                        {
+                            new License.LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        }
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"设备检测失败: {ex.Message}");
+            }
+
+            MessageBox.Show($"连接失败: {errorMsg}");
         }
         public int Disconnect()
         {
@@ -675,8 +740,26 @@ namespace Spectrum
             return -1;
         }
 
+        /// <summary>
+        /// Event raised when dark data or light data has been acquired, for chart refresh.
+        /// </summary>
+        public event EventHandler DataAcquired;
+
         public void GenerateAmplitude()  
         {
+            string outputPath = MaguideFileOutput;
+            if (string.IsNullOrEmpty(outputPath))
+            {
+                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+                saveFileDialog.FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
+                saveFileDialog.Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*";
+                saveFileDialog.Title = "选择幅值标定文件保存路径";
+                if (saveFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                    return;
+                outputPath = saveFileDialog.FileName;
+                MaguideFileOutput = outputPath;
+            }
+
             int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fLightData);
             if (ret != 1)
             {
@@ -685,16 +768,51 @@ namespace Spectrum
                 MessageBox.Show($"获取 LightData 失败: {errorMsg}");
                 return;
             }
-            log.Debug($"生成幅值文件参数: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={MaguideFileOutput}");
-            int ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, MaguideFileOutput);
+            DataAcquired?.Invoke(this, EventArgs.Empty);
+
+            log.Debug($"生成幅值文件参数: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={outputPath}");
+            int ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, outputPath);
             if (ret1 == 1)
             {
-                log.Info("幅值文件生成成功");
-                MessageBox.Show("生成成功");
+                log.Info($"幅值文件生成成功: {outputPath}");
+                MessageBox.Show($"生成成功\n文件: {outputPath}");
             }
             else
             {
                 string errorMsg = Spectrometer.GetErrorMessage(ret1);
+                log.Error($"幅值文件生成失败: {errorMsg}");
+                MessageBox.Show($"生成失败: {errorMsg}");
+            }
+        }
+
+        /// <summary>
+        /// Generate amplitude file from existing dark/light data (manual mode - no auto-acquire).
+        /// </summary>
+        public void GenerateAmplitudeFromExisting()
+        {
+            string outputPath = MaguideFileOutput;
+            if (string.IsNullOrEmpty(outputPath))
+            {
+                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+                saveFileDialog.FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
+                saveFileDialog.Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*";
+                saveFileDialog.Title = "选择幅值标定文件保存路径";
+                if (saveFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                    return;
+                outputPath = saveFileDialog.FileName;
+                MaguideFileOutput = outputPath;
+            }
+
+            log.Debug($"手动生成幅值文件: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={outputPath}");
+            int ret = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, outputPath);
+            if (ret == 1)
+            {
+                log.Info($"幅值文件生成成功: {outputPath}");
+                MessageBox.Show($"生成成功\n文件: {outputPath}");
+            }
+            else
+            {
+                string errorMsg = Spectrometer.GetErrorMessage(ret);
                 log.Error($"幅值文件生成失败: {errorMsg}");
                 MessageBox.Show($"生成失败: {errorMsg}");
             }
@@ -706,6 +824,7 @@ namespace Spectrum
             if (ret == 1)
             {
                 log.Info("LightData 获取成功");
+                DataAcquired?.Invoke(this, EventArgs.Empty);
                 MessageBox.Show("获取成功");
             }
             else
@@ -722,6 +841,7 @@ namespace Spectrum
             if (ret == 1)
             {
                 log.Info("校零成功");
+                DataAcquired?.Invoke(this, EventArgs.Empty);
                 MessageBox.Show("校零成功");
             }
             else
@@ -793,7 +913,7 @@ namespace Spectrum
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile;
 
-        public string MaguideFileOutput { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
+        public string MaguideFileOutput { get => _MaguideFileOutput; set { _MaguideFileOutput = value; OnPropertyChanged(); } }
         private string _MaguideFileOutput;
 
 

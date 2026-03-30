@@ -5,10 +5,55 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Spectrum"
         mc:Ignorable="d"
-        Title="许可文件管理" Height="350" Width="400" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
+        Title="许可证管理" Height="450" Width="550" WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="10">
-        <ListBox x:Name="LicenseListBox" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="220" />
-        <Button x:Name="UploadButton" Content="上传许可文件" Width="120" Height="30" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,0,0,10" Click="UploadButton_Click"/>
-        <Button x:Name="DeleteButton" Content="删除选中文件" Width="120" Height="30" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0,10" Click="DeleteButton_Click"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header info -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Text="许可证管理" FontSize="16" FontWeight="Bold" Margin="0,0,0,4"/>
+            <TextBlock x:Name="LicenseDirText" Foreground="Gray" FontSize="11" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+
+        <!-- License list -->
+        <ListView x:Name="LicenseListView" Grid.Row="1" Margin="0,0,0,8" SelectionChanged="LicenseListView_SelectionChanged">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="文件名" Width="180" DisplayMemberBinding="{Binding FileName}"/>
+                    <GridViewColumn Header="大小" Width="70" DisplayMemberBinding="{Binding FileSizeDisplay}"/>
+                    <GridViewColumn Header="状态" Width="100">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding StatusDisplay}" Foreground="{Binding StatusBrush}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="导入时间" Width="140" DisplayMemberBinding="{Binding ImportedAtDisplay}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <!-- Detail panel -->
+        <Border Grid.Row="2" x:Name="DetailPanel" BorderBrush="LightGray" BorderThickness="1" CornerRadius="3" Padding="8" Margin="0,0,0,8"
+                Visibility="Collapsed">
+            <StackPanel>
+                <TextBlock Text="许可证详情" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBlock x:Name="DetailText" TextWrapping="Wrap" Foreground="Gray" FontSize="11"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="导入许可证" Padding="12,6" Margin="0,0,8,0" Click="ImportButton_Click" Background="#27AE60" Foreground="White"/>
+            <Button Content="删除选中" Padding="12,6" Margin="0,0,8,0" Click="DeleteButton_Click"/>
+            <Button Content="同步许可证" Padding="12,6" Margin="0,0,8,0" Click="SyncButton_Click"/>
+            <Button Content="关闭" Padding="12,6" Click="CloseButton_Click"/>
+        </StackPanel>
     </Grid>
 </Window>
