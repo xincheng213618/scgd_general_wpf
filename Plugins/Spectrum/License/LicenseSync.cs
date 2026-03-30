@@ -12,10 +12,35 @@ namespace Spectrum.License
         public static readonly string LocalLicenseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "license");
         public static readonly string GlobalLicenseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),CompanyName, "license");
 
+        /// <summary>
+        /// Ensures the specified directory exists.
+        /// If a file (not a directory) with the same name exists, it is renamed to avoid conflicts.
+        /// </summary>
+        public static void EnsureDirectoryExists(string directoryPath)
+        {
+            if (File.Exists(directoryPath))
+            {
+                string backupPath = directoryPath + ".bak";
+                try
+                {
+                    if (File.Exists(backupPath))
+                        File.Delete(backupPath);
+                    File.Move(directoryPath, backupPath);
+                    log.Warn($"路径 '{directoryPath}' 处存在同名文件，已重命名为 '{backupPath}'");
+                }
+                catch (Exception ex)
+                {
+                    log.Error($"无法重命名冲突文件 '{directoryPath}'", ex);
+                    File.Delete(directoryPath);
+                }
+            }
+            Directory.CreateDirectory(directoryPath);
+        }
+
         public static void SyncLicenses()
         {
             // 1. 确保全局目录存在
-            Directory.CreateDirectory(GlobalLicenseDir);
+            EnsureDirectoryExists(GlobalLicenseDir);
 
             // 2. 把当前目录下 license 文件夹下所有 .lic 文件拷贝到全局目录（全覆盖）
             if (Directory.Exists(LocalLicenseDir))
@@ -36,7 +61,7 @@ namespace Spectrum.License
             }
             else
             {
-                Directory.CreateDirectory(LocalLicenseDir);
+                EnsureDirectoryExists(LocalLicenseDir);
             }
 
             // 3. 检查全局目录中的 .lic 文件，如果本地没有，则复制回来
@@ -45,7 +70,7 @@ namespace Spectrum.License
                 var localFile = Path.Combine(LocalLicenseDir, Path.GetFileName(globalFile));
                 if (!File.Exists(localFile))
                 {
-                    Directory.CreateDirectory(LocalLicenseDir);
+                    EnsureDirectoryExists(LocalLicenseDir);
                     File.Copy(globalFile, localFile, true);
                 }
             }

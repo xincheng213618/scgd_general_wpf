@@ -97,7 +97,16 @@ namespace Spectrum.Layout
             try
             {
                 if (File.Exists(LayoutFilePath))
-                    File.Delete(LayoutFilePath);
+                {
+                    try
+                    {
+                        File.Delete(LayoutFilePath);
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        log.Warn($"无法删除布局文件（可能在受保护目录中）: {LayoutFilePath}", ex);
+                    }
+                }
 
                 var defaultLayout = new LayoutRoot();
                 var mainPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };

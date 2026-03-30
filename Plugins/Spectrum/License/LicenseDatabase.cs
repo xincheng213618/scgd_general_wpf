@@ -62,7 +62,7 @@ namespace Spectrum.License
         public LicenseDatabase()
         {
             string appDataDir = LicenseSync.GlobalLicenseDir;
-            Directory.CreateDirectory(appDataDir);
+            LicenseSync.EnsureDirectoryExists(appDataDir);
             _dbPath = Path.Combine(appDataDir, "licenses.db");
             InitializeDatabase();
         }
@@ -105,7 +105,7 @@ namespace Spectrum.License
 
                 // Copy to local license dir
                 string localDir = LicenseSync.LocalLicenseDir;
-                Directory.CreateDirectory(localDir);
+                LicenseSync.EnsureDirectoryExists(localDir);
                 string destPath = Path.Combine(localDir, fileName);
                 File.Copy(sourceFilePath, destPath, true);
 
@@ -150,7 +150,7 @@ namespace Spectrum.License
             {
                 string localDir = LicenseSync.LocalLicenseDir;
                 string globalDir = LicenseSync.GlobalLicenseDir;
-                Directory.CreateDirectory(localDir);
+                LicenseSync.EnsureDirectoryExists(localDir);
 
                 using var db = CreateClient();
                 var records = db.Queryable<LicenseRecord>().ToList();
