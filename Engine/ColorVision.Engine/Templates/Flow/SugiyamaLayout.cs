@@ -239,11 +239,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             // Stable sort by barycenter value
-            layer.Sort((a, b) =>
-            {
-                int cmp = barycenters[a].CompareTo(barycenters[b]);
-                return cmp;
-            });
+            layer.Sort((a, b) => barycenters[a].CompareTo(barycenters[b]));
         }
 
         /// <summary>
@@ -329,20 +325,16 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (layer.Count <= 1) return;
 
-            // Sort by current Top to respect ordering
-            var sorted = layer.OrderBy(n => n.Top).ToList();
-
-            // Copy back sorted order
-            layer.Clear();
-            layer.AddRange(sorted);
+            // Sort in-place by current Top to respect ordering
+            layer.Sort((a, b) => a.Top.CompareTo(b.Top));
 
             // Push overlapping nodes down
-            for (int i = 1; i < sorted.Count; i++)
+            for (int i = 1; i < layer.Count; i++)
             {
-                int requiredTop = sorted[i - 1].Top + sorted[i - 1].Height + _verticalSpacing;
-                if (sorted[i].Top < requiredTop)
+                int requiredTop = layer[i - 1].Top + layer[i - 1].Height + _verticalSpacing;
+                if (layer[i].Top < requiredTop)
                 {
-                    sorted[i].Top = requiredTop;
+                    layer[i].Top = requiredTop;
                 }
             }
         }
