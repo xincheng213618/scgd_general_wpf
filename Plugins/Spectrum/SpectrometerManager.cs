@@ -93,17 +93,14 @@ namespace Spectrum
     [DisplayName("自动积分与数据采集配置")]
     public class MeasurementDataConfig : ViewModelBase
     {
-        public MeasurementDataConfig(IntTimeConfig intTimeConfig, GetDataConfig getDataConfig)
-        {
-            IntTimeConfig = intTimeConfig;
-            GetDataConfig = getDataConfig;
-        }
 
         [DisplayName("自动积分时间配置")]
-        public IntTimeConfig IntTimeConfig { get; }
+        public IntTimeConfig IntTimeConfig { get => _IntTimeConfig; set { _IntTimeConfig = value; OnPropertyChanged(); } }
+        private IntTimeConfig _IntTimeConfig = new IntTimeConfig();
 
         [DisplayName("数据采集配置")]
-        public GetDataConfig GetDataConfig { get; }
+        public GetDataConfig GetDataConfig { get => _GetDataConfig; set { _GetDataConfig = value; OnPropertyChanged(); } }
+        private GetDataConfig _GetDataConfig = new GetDataConfig();
     }
 
 
@@ -402,7 +399,7 @@ namespace Spectrum
             SetMaguideFileCommand = new RelayCommand(a => SetMaguideFile());
             LoadMaguideFileCommand = new RelayCommand(a => LoadMaguideFile());
             SetMaguideOutputFileCommand = new RelayCommand(a => SetMaguideOutputFile());
-            EditIntTimeConfigCommand = new RelayCommand(a => EditIntTimeConfig());
+            EditIntTimeConfigCommand = new RelayCommand(a => EditMeasurementDataConfig());
 
             EditAutodarkParamCommand = new RelayCommand(a => EditAutodarkParam());
 
@@ -609,17 +606,17 @@ namespace Spectrum
             }
         }
 
-        public void EditIntTimeConfig()
+        public MeasurementDataConfig MeasurementDataConfig { get; set; } = new MeasurementDataConfig();
+        public IntTimeConfig IntTimeConfig => MeasurementDataConfig.IntTimeConfig;
+
+        public GetDataConfig GetDataConfig => MeasurementDataConfig.GetDataConfig;
+
+        public void EditMeasurementDataConfig()
         {
-            var config = new MeasurementDataConfig(IntTimeConfig, GetDataConfig);
-            new PropertyEditorWindow(config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new PropertyEditorWindow(MeasurementDataConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        public IntTimeConfig IntTimeConfig { get => _IntTimeConfig; set { _IntTimeConfig = value; OnPropertyChanged(); } }
-        private IntTimeConfig _IntTimeConfig = new IntTimeConfig();
 
-        public GetDataConfig GetDataConfig { get => _GetDataConfig; set { _GetDataConfig = value; OnPropertyChanged(); } }
-        private GetDataConfig _GetDataConfig = new GetDataConfig();
 
         /// <summary>
         /// 连续测试时间
