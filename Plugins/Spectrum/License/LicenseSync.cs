@@ -29,7 +29,7 @@ namespace Spectrum.License
                     }
                     catch(Exception ex)
                     {
-                        log.Debug($"同步许可证到全局目录失败: {Path.GetFileName(file)}", ex);
+                        log.Debug($"同步许可证到全局目录失败: {file}", ex);
                     }
 
                 }
