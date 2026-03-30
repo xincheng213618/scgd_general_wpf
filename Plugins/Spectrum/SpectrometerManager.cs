@@ -59,7 +59,7 @@ namespace Spectrum
         private float _AutoIntTimeB = 1;
 
         [DisplayName("自动积分阈值(%)")]
-        public double MaxPercent { get => _MaxPercent; set { _MaxPercent = value; OnPropertyChanged(); Max = (int)(_MaxPercent * 655.35); } }
+        public double MaxPercent { get => _MaxPercent; set { _MaxPercent = value; OnPropertyChanged(); Max = (int)(_MaxPercent * 655.35); } } // 655.35 = 65535 / 100, converts percentage to 16-bit ADC scale
         private double _MaxPercent = 76.3;
 
         [Browsable(false)]
