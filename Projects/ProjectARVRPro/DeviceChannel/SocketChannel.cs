@@ -63,11 +63,11 @@ namespace ProjectARVRPro.DeviceChannel
             try
             {
                 byte[] data = Encoding.UTF8.GetBytes(command);
-                await _stream.WriteAsync(data);
+                await _stream.WriteAsync(data, 0, data.Length);
                 log.Info($"Socket通道 [{Name}] 已发送: {command}");
 
                 byte[] buffer = new byte[4096];
-                int bytesRead = await _stream.ReadAsync(buffer);
+                int bytesRead = await _stream.ReadAsync(buffer, 0, buffer.Length);
                 string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                 log.Info($"Socket通道 [{Name}] 应答: {response}");
                 return new DeviceCommandResult { Success = true, Response = response };
