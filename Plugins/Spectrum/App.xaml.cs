@@ -6,6 +6,7 @@ using log4net;
 using log4net.Config;
 using Spectrum.License;
 using System.Reflection;
+using System.Text;
 using System.Windows;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
@@ -49,6 +50,8 @@ namespace Spectrum
                     fileAppender.ActivateOptions();
                 }
             }
+
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); // 确保 .NET Core 及以上支持 GBK
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
             ConfigHandler.GetInstance();
