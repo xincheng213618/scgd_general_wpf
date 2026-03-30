@@ -6,17 +6,12 @@ namespace Spectrum
 {
     public partial class MainWindow
     {
-        private void EqeCheckBox_Changed(object sender, RoutedEventArgs e)
-        {
-            bool isEnabled = EqeCheckBox.IsChecked == true;
-            UpdateEqeColumnsVisibility(isEnabled);
-        }
-
-        private void UpdateEqeColumnsVisibility(bool eqeEnabled)
+        internal void UpdateEqeColumnsVisibility(bool eqeEnabled)
         {
             if (!IsInitialized) return;
 
             EqePanel.Visibility = eqeEnabled ? Visibility.Visible : Visibility.Collapsed;
+            EqeGroupBox.Visibility = eqeEnabled ? Visibility.Visible : Visibility.Collapsed;
             // double.NaN = auto-size (visible), 0 = hidden
             double width = eqeEnabled ? double.NaN : 0;
             ColEqe.Width = width;
@@ -28,6 +23,8 @@ namespace Spectrum
             ColRecalculated.Width = width;
             // Hide brightness column in 光通量模式
             ColBrightness.Width = eqeEnabled ? 0 : double.NaN;
+            // Update status bar mode text
+            StatusModeText.Text = eqeEnabled ? "光通量模式" : "亮色度模式";
         }
 
         private void CalculateEqe_Click(object sender, RoutedEventArgs e)

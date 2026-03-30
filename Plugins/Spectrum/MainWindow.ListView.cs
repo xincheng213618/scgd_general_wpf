@@ -28,8 +28,6 @@ namespace Spectrum
                 listView2.ItemsSource = selected.SpectralDatas;
                 // Draw CIE points on both diagrams simultaneously
                 DrawCIEPoinr(selected.fx, selected.fy, selected.fu, selected.fv);
-                // Update spectral parameter display with calculation details
-                UpdateCieParameterDisplay(selected);
             }
         }
 
@@ -112,21 +110,6 @@ namespace Spectrum
 
         }
 
-        private void DominantColor_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            if (sender is FrameworkElement fe && fe.Tag is string hex)
-            {
-                try
-                {
-                    Clipboard.SetText(hex);
-                }
-                catch (Exception ex)
-                {
-                    log.Error("Failed to copy color to clipboard", ex);
-                }
-            }
-        }
-
         //清空数据
         private void Cleartable_Click(object sender, RoutedEventArgs e)
         {
@@ -195,7 +178,7 @@ namespace Spectrum
                         if (tb != null)
                             path = tb.Path?.Path ?? "";
                     }
-                    // Also check for Border (e.g. DominantWavelengthColor) - use the Tag binding
+                    // Also check for Border with Tag binding
                     if (string.IsNullOrEmpty(path))
                     {
                         var border = dt.LoadContent() as System.Windows.Controls.Border;
