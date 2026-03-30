@@ -1,3 +1,4 @@
+using log4net;
 using Newtonsoft.Json;
 using Spectrum.Configs;
 using System.Windows;
@@ -12,6 +13,8 @@ namespace Spectrum.Calibration
     /// </summary>
     public partial class CalibrationGroupWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(CalibrationGroupWindow));
+
         private SpectrometerManager Manager { get; }
         private bool _suppressSelectionChanged;
         private bool _hasUnsavedChanges;
@@ -282,6 +285,10 @@ namespace Spectrum.Calibration
                 foreach (var g in restored.Groups)
                     Manager.CalibrationGroupConfig.Groups.Add(g);
                 Manager.CalibrationGroupConfig.ActiveGroupName = restored.ActiveGroupName;
+            }
+            else
+            {
+                log.Warn("Failed to deserialize initial config snapshot during discard");
             }
             Manager.WavelengthFile = _initialWavelengthFile;
             Manager.MaguideFile = _initialMaguideFile;
