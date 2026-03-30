@@ -46,6 +46,10 @@ class AppChangelogTests(unittest.TestCase):
         self.assertTrue(analysis["chart"]["svg"]["points"])
         self.assertIn("M ", analysis["chart"]["svg"]["path"])
         self.assertTrue(analysis["milestones"])
+        self.assertTrue(analysis["major_nodes"])
+        self.assertTrue(analysis["story"])
+        self.assertIn("annotation_label", analysis["milestones"][0])
+        self.assertIn("annotation_reason", analysis["milestones"][0])
 
     def test_get_cached_changelog_analysis_invalidates_when_signature_changes(self):
         self.path.write_text("## [1.0.0.1] 2026.03.01\n\n1.初始版本\n", encoding="utf-8")

@@ -583,18 +583,6 @@
             color: var(--cv-text-muted);
             font-size: 0.86rem;
         }
-        .chart-shell {
-            padding: 1.15rem;
-            border-radius: 1.25rem;
-            border: 1px solid rgba(15, 23, 42, 0.06);
-            background: rgba(255, 255, 255, 0.88);
-            box-shadow: var(--cv-shadow-soft);
-        }
-        .chart-svg {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
         .chart-grid-line {
             stroke: rgba(148, 163, 184, 0.22);
             stroke-width: 1;
@@ -606,17 +594,125 @@
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-        .chart-bar {
-            fill: rgba(37, 99, 235, 0.14);
-        }
-        .chart-bar.is-milestone {
-            fill: rgba(15, 118, 110, 0.2);
-        }
         .chart-point {
             fill: #2563eb;
         }
         .chart-point.is-milestone {
             fill: #0f766e;
+        }
+        .release-timeline-shell {
+            position: relative;
+            padding: 1rem;
+            border-radius: 1.25rem;
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: var(--cv-shadow-soft);
+        }
+        .release-timeline-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.9rem;
+        }
+        .release-timeline-toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .release-timeline-viewport {
+            overflow: auto;
+            padding-bottom: 0.35rem;
+            cursor: grab;
+            border-radius: 1rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(29, 78, 216, 0.35) rgba(15, 23, 42, 0.05);
+        }
+        .release-timeline-viewport:focus-visible {
+            outline: 2px solid rgba(37, 99, 235, 0.35);
+            outline-offset: 2px;
+        }
+        .release-timeline-viewport.is-dragging {
+            cursor: grabbing;
+            user-select: none;
+        }
+        .release-timeline-viewport::-webkit-scrollbar {
+            height: 0.68rem;
+        }
+        .release-timeline-viewport::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: rgba(29, 78, 216, 0.28);
+        }
+        .release-timeline-viewport::-webkit-scrollbar-track {
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.05);
+        }
+        .release-timeline-stage {
+            min-width: 100%;
+            transition: width 0.14s ease;
+        }
+        .release-timeline-svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .release-timeline-axis-label,
+        .release-timeline-label,
+        .release-timeline-count {
+            fill: var(--cv-text-muted);
+            font-size: 0.76rem;
+            user-select: none;
+        }
+        .release-timeline-label {
+            text-anchor: end;
+        }
+        .release-timeline-count {
+            text-anchor: middle;
+            font-weight: 700;
+        }
+        .release-timeline-node {
+            cursor: pointer;
+            outline: none;
+        }
+        .release-timeline-node:focus-visible .chart-point,
+        .release-timeline-node:hover .chart-point {
+            stroke: rgba(15, 23, 42, 0.58);
+            stroke-width: 2.5;
+        }
+        .release-timeline-halo {
+            fill: rgba(15, 118, 110, 0.1);
+        }
+        .release-timeline-tooltip {
+            position: absolute;
+            z-index: 5;
+            max-width: 22rem;
+            padding: 0.85rem 0.95rem;
+            border-radius: 1rem;
+            background: rgba(15, 23, 42, 0.96);
+            color: #fff;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.28);
+            pointer-events: none;
+            font-size: 0.84rem;
+            line-height: 1.55;
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+        .release-timeline-tooltip[hidden] {
+            display: none !important;
+        }
+        .release-timeline-tooltip strong {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 0.92rem;
+        }
+        .release-timeline-tooltip ul {
+            margin: 0.45rem 0 0;
+            padding-left: 1rem;
+        }
+        .release-highlight-card {
+            height: 100%;
         }
         .milestone-card {
             height: 100%;
@@ -821,6 +917,9 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
+            .release-timeline-tooltip {
+                max-width: min(18rem, calc(100vw - 3rem));
+            }
         }
     </style>
     {% block extra_head %}{% endblock %}
@@ -865,6 +964,8 @@
             &middot; <a href="/tools" class="text-decoration-none">Tool / 软件</a>
             &middot; <a href="/changelog" class="text-decoration-none">CHANGELOG</a>
             &middot; <a href="/api/plugins" class="text-decoration-none">API</a>
+            &middot; <a href="https://xincheng213618.github.io/scgd_general_wpf/" class="text-decoration-none" target="_blank" rel="noopener noreferrer">项目文档</a>
+            &middot; <a href="https://deepwiki.com/xincheng213618/scgd_general_wpf" class="text-decoration-none" target="_blank" rel="noopener noreferrer">DeepWiki</a>
             &middot; <a href="https://github.com/xincheng213618/scgd_general_wpf" class="text-decoration-none">GitHub</a>
         </div>
     </footer>

@@ -5,16 +5,16 @@
 <section class="hero-panel mb-4">
     <div class="row g-4 align-items-center position-relative">
         <div class="col-lg-7">
-            <span class="eyebrow mb-3"><i class="bi bi-stars"></i> 更适合长期维护的内部发布门户</span>
-            <h1 class="display-5 fw-semibold mb-3">把版本发布、历史下载、更新说明和插件分发放到一个真正可维护的入口里。</h1>
+            <span class="eyebrow mb-3"><i class="bi bi-stars"></i> 内部发布与归档入口</span>
+            <h1 class="display-5 fw-semibold mb-3">把版本包、历史归档、更新说明和工具分发收口到一个内部可维护的发布门户。</h1>
             <p class="page-lead mb-4">
-                首页现在优先强调文件系统视角：除了版本页，你也能直接看到 `History / Update / Tool / Plugins` 的真实目录入口，以及每一段历史归档对应的时间和制品形态。
+                这里优先服务发布、测试和回溯场景：直接进入 `History / Update / Tool / Plugins` 的真实目录，核对当前制品、历史文件和对应更新记录，不再依赖手工翻文件夹。
             </p>
             <div class="hero-actions">
-                <a href="/plugins" class="btn btn-light btn-lg"><i class="bi bi-puzzle me-2"></i>插件市场</a>
-                <a href="/releases" class="btn btn-outline-light btn-lg"><i class="bi bi-archive me-2"></i>查看版本档案</a>
-                <a href="/changelog" class="btn btn-outline-light btn-lg"><i class="bi bi-journal-text me-2"></i>查看 CHANGELOG</a>
-                <a href="/browse/History" class="btn btn-outline-light btn-lg"><i class="bi bi-folder2-open me-2"></i>浏览 History</a>
+                <a href="/releases" class="btn btn-light btn-lg"><i class="bi bi-archive me-2"></i>进入版本档案</a>
+                <a href="/changelog" class="btn btn-outline-light btn-lg"><i class="bi bi-journal-text me-2"></i>查看更新说明</a>
+                <a href="/browse/History" class="btn btn-outline-light btn-lg"><i class="bi bi-folder2-open me-2"></i>核对 History</a>
+                <a href="/plugins" class="btn btn-outline-light btn-lg"><i class="bi bi-puzzle me-2"></i>插件分发</a>
             </div>
         </div>
         <div class="col-lg-5">
@@ -29,21 +29,21 @@
                     </div>
                     <div class="col-sm-6">
                         <div class="metric-card">
-                            <span class="metric-label">首页概览状态</span>
+                            <span class="metric-label">门户缓存状态</span>
                             <div class="metric-value">{{ '缓存命中' if overview_meta.cache_hit else '刚刚刷新' }}</div>
                             <div class="metric-note">缓存周期 {{ overview_meta.ttl_seconds }} 秒</div>
                         </div>
                     </div>
                     <div class="col-sm-6">
                         <div class="metric-card">
-                            <span class="metric-label">根目录当前制品</span>
+                            <span class="metric-label">当前发布制品</span>
                             <div class="metric-value">{{ app_info.current_count }}</div>
-                            <div class="metric-note">当前根目录可直接下载的版本文件</div>
+                            <div class="metric-note">根目录中可直接分发的版本文件</div>
                         </div>
                     </div>
                     <div class="col-sm-6">
                         <div class="metric-card">
-                            <span class="metric-label">历史归档制品</span>
+                            <span class="metric-label">历史归档文件</span>
                             <div class="metric-value">{{ app_info.archive_count }}</div>
                             <div class="metric-note">包含早期 ZIP / RAR / EXE 记录</div>
                         </div>
@@ -52,59 +52,6 @@
             </div>
         </div>
     </div>
-</section>
-        <section class="panel-card p-4 mb-4">
-            <div class="section-header">
-                <div>
-                    <h2 class="section-title"><i class="bi bi-graph-up-arrow"></i>迭代过程图表</h2>
-                    <div class="section-subtitle mt-2">从 `CHANGELOG.md` 中拆出版本节点、发布时间和变更量，结合缓存后的分析数据直接展示迭代节奏。</div>
-                </div>
-                <div class="summary-strip">
-                    <div class="summary-chip"><i class="bi bi-boxes"></i> {{ app_info.changelog_analysis.summary.release_count }} 次发布</div>
-                    <div class="summary-chip"><i class="bi bi-diagram-3"></i> {{ app_info.changelog_analysis.summary.phase_count }} 个阶段</div>
-                    <div class="summary-chip"><i class="bi bi-hourglass-split"></i> 平均 {{ app_info.changelog_analysis.summary.avg_gap_days }} 天</div>
-                </div>
-            </div>
-            <div class="row g-4 align-items-start">
-                <div class="col-xl-8">
-                    <div class="chart-shell">
-                        {% set chart = app_info.changelog_analysis.chart.svg %}
-                        <svg class="chart-svg" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="ColorVision 版本迭代过程图表">
-                            <line class="chart-grid-line" x1="42" y1="{{ chart.baseline_y }}" x2="{{ chart.width - 42 }}" y2="{{ chart.baseline_y }}"></line>
-                            <line class="chart-grid-line" x1="42" y1="28" x2="42" y2="{{ chart.baseline_y }}"></line>
-                            {% for bar in chart.bars %}
-                            <rect class="chart-bar {{ 'is-milestone' if bar.is_milestone else '' }}" x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}" rx="7"></rect>
-                            {% endfor %}
-                            <path class="chart-line" d="{{ chart.path }}"></path>
-                            {% for point in chart.points %}
-                            <circle class="chart-point {{ 'is-milestone' if point.is_milestone else '' }}" cx="{{ point.x }}" cy="{{ point.y }}" r="{{ 5 if point.is_milestone else 3.5 }}">
-                                <title>{{ point.version }} · {{ point.date_display }} · {{ point.change_count }} 条变更</title>
-                            </circle>
-                            {% endfor %}
-                        </svg>
-                    </div>
-                </div>
-                <div class="col-xl-4">
-                    <div class="row g-3">
-                        {% for milestone in app_info.changelog_analysis.milestones[:4] %}
-                        <div class="col-12">
-                            <div class="milestone-card">
-                                <h5>ColorVision {{ milestone.version }}</h5>
-                                <p>{{ milestone.date_display }} · {{ milestone.change_count }} 条更新{% if milestone.major_minor %} · {{ milestone.major_minor }} 阶段{% endif %}</p>
-                                <div class="summary-strip mb-2">
-                                    {% for tag in milestone.tags %}
-                                    <div class="summary-chip">{{ tag }}</div>
-                                    {% endfor %}
-                                </div>
-                                {% if milestone.highlights %}
-                                <div class="text-soft small">{{ milestone.highlights[0] }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
 </section>
 
 <div class="row g-3 mb-4">
@@ -315,6 +262,10 @@
                 <a href="/releases" class="btn btn-sm btn-outline-primary">查看全部</a>
             </div>
 
+            {% if app_info.release_preview_fast %}
+            <div class="text-soft small mb-3">{{ app_info.archive_preview_note }}</div>
+            {% endif %}
+
             <div class="release-list mb-4">
                 {% for release in app_info.current_preview %}
                 <div class="release-row">
@@ -384,7 +335,7 @@
                 <a href="/changelog" class="btn btn-sm btn-outline-primary">展开阅读</a>
             </div>
 
-            {% if app_info.changelog %}
+            {% if app_info.has_changelog %}
             <div class="markdown-body markdown-preview">{{ app_info.changelog_preview_html }}</div>
             {% else %}
             <div class="text-muted py-5 text-center">
@@ -418,13 +369,17 @@
         </div>
         <div>
             <strong>{{ overview_summary.total_file_count }}</strong>
-            <span>累计文件</span>
+            <span>{{ '快速索引文件' if overview_summary.estimated_directory_count else '累计文件' }}</span>
         </div>
         <div>
             <strong>{{ human_size(overview_summary.top_level_size) }}</strong>
             <span>根目录文件体积</span>
         </div>
     </div>
+
+    {% if overview_summary.estimated_directory_count %}
+    <div class="text-soft small mb-3">当前有 {{ overview_summary.estimated_directory_count }} 个目录使用快速索引计数，以保证首页首屏响应速度。</div>
+    {% endif %}
 
     <div class="table-responsive">
         <table class="table table-hover align-middle">
@@ -455,7 +410,7 @@
                     </td>
                     <td>
                         {% if item.type == 'dir' %}
-                        <span class="fw-semibold">{{ item.file_count }}</span> 个文件
+                        <span class="fw-semibold">{{ item.file_count }}</span> 个文件{% if item.file_count_estimated %}<span class="text-soft small">（快速）</span>{% endif %}
                         {% else %}
                         {{ human_size(item.size) }}
                         {% endif %}

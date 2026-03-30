@@ -1,0 +1,21 @@
+{
+  "home_app_info": {
+    "ms": 809.52,
+    "type": "dict"
+  },
+  "storage_overview": {
+    "ms": 1.74,
+    "type": "tuple"
+  },
+  "update_scan": {
+    "ms": 8438.86,
+    "type": "tuple"
+  },
+  "tool_context": {
+    "ms": 72.36,
+    "type": "dict"
+  },
+  "build_index_page_context": {
+    "ms": 1766.09
+  }
+}

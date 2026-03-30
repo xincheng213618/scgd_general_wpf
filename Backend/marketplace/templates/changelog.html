@@ -29,58 +29,9 @@
 </section>
 
 <section class="panel-card p-4 mb-4">
-	<div class="section-header">
-		<div>
-			<h2 class="section-title"><i class="bi bi-graph-up-arrow"></i>迭代图表与关键节点</h2>
-			<div class="section-subtitle mt-2">从更新日志中拆出发布时间、变更数量和关键主题，帮助快速读懂迭代过程，而不是只看长篇文本。</div>
-		</div>
-		<div class="summary-strip">
-			<div class="summary-chip"><i class="bi bi-boxes"></i>{{ app_info.changelog_analysis.summary.release_count }} 次发布</div>
-			<div class="summary-chip"><i class="bi bi-hourglass-split"></i>平均 {{ app_info.changelog_analysis.summary.avg_gap_days }} 天</div>
-			<div class="summary-chip"><i class="bi bi-diagram-3"></i>{{ app_info.changelog_analysis.summary.phase_count }} 个阶段</div>
-		</div>
-	</div>
-
-	<div class="row g-4 align-items-start">
-		<div class="col-xl-8">
-			<div class="chart-shell">
-				{% set chart = app_info.changelog_analysis.chart.svg %}
-				<svg class="chart-svg" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="CHANGELOG 版本迭代图表">
-					<line class="chart-grid-line" x1="42" y1="{{ chart.baseline_y }}" x2="{{ chart.width - 42 }}" y2="{{ chart.baseline_y }}"></line>
-					<line class="chart-grid-line" x1="42" y1="28" x2="42" y2="{{ chart.baseline_y }}"></line>
-					{% for bar in chart.bars %}
-					<rect class="chart-bar {{ 'is-milestone' if bar.is_milestone else '' }}" x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}" rx="7"></rect>
-					{% endfor %}
-					<path class="chart-line" d="{{ chart.path }}"></path>
-					{% for point in chart.points %}
-					<circle class="chart-point {{ 'is-milestone' if point.is_milestone else '' }}" cx="{{ point.x }}" cy="{{ point.y }}" r="{{ 5 if point.is_milestone else 3.5 }}">
-						<title>{{ point.version }} · {{ point.date_display }} · {{ point.change_count }} 条变更</title>
-					</circle>
-					{% endfor %}
-				</svg>
-			</div>
-		</div>
-		<div class="col-xl-4">
-			<div class="row g-3">
-				{% for milestone in app_info.changelog_analysis.milestones %}
-				<div class="col-12">
-					<div class="milestone-card">
-						<h5>ColorVision {{ milestone.version }}</h5>
-						<p>{{ milestone.date_display }} · {{ milestone.change_count }} 条更新{% if milestone.major_minor %} · {{ milestone.major_minor }} 阶段{% endif %}</p>
-						<div class="summary-strip mb-2">
-							{% for tag in milestone.tags %}
-							<div class="summary-chip">{{ tag }}</div>
-							{% endfor %}
-						</div>
-						{% for highlight in milestone.highlights[:2] %}
-						<div class="text-soft small {% if not loop.first %}mt-2{% endif %}">• {{ highlight }}</div>
-						{% endfor %}
-					</div>
-				</div>
-				{% endfor %}
-			</div>
-		</div>
-	</div>
+	{% set timeline_data = app_info.release_timeline %}
+	{% set timeline_title = '真实发布历史时间线' %}
+	{% include '_release_timeline.html' %}
 </section>
 
 <section class="panel-card p-4">
@@ -101,5 +52,9 @@
 	</div>
 	{% endif %}
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='release-timeline.js') }}"></script>
 {% endblock %}
 

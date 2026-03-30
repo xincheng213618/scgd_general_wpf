@@ -29,11 +29,14 @@ from datetime import datetime, timezone
 from functools import wraps
 from app_releases import (
     build_app_release_context,
+    build_release_artifact,
+    build_release_timeline,
     is_root_release_file as is_root_release_file_impl,
     reconcile_app_release_history as reconcile_app_release_history_impl,
+    release_sort_key,
     scan_app_release_artifacts as scan_app_release_artifacts_impl,
 )
-from app_changelog import get_cached_changelog_analysis
+from app_changelog import build_changelog_lookup, changelog_signature, get_cached_changelog_analysis
 from download_stats import (
     build_stats_payload,
     get_download_counts,
@@ -86,6 +89,7 @@ from plugin_marketplace import (
     scan_plugin_summaries as scan_plugin_summaries_impl,
 )
 from storage_browser import (
+    build_storage_preview_context,
     build_storage_summary as build_storage_summary_impl,
     get_storage_overview_context as get_storage_overview_context_impl,
     scan_storage_overview as scan_storage_overview_impl,
@@ -179,8 +183,15 @@ OVERVIEW_CACHE_TTL_SECONDS = 300
 APP_RELEASES_CACHE_TTL_SECONDS = 300
 DIRECTORY_COUNT_CACHE_TTL_SECONDS = 300
 PLUGIN_INFO_CACHE_TTL_SECONDS = 300
-CHANGELOG_ANALYSIS_CACHE_KEY = "app_changelog:v1"
+CHANGELOG_ANALYSIS_CACHE_KEY = "app_changelog:v2"
 CHANGELOG_ANALYSIS_CACHE_TTL_SECONDS = 3600
+MARKDOWN_RENDER_CACHE_TTL_SECONDS = 3600
+HOME_RELEASES_SNAPSHOT_CACHE_KEY = "home_release_snapshot:v1"
+HOME_RELEASES_SNAPSHOT_TTL_SECONDS = 300
+HOME_TOOL_PREVIEW_CACHE_KEY = "home_tool_preview:v1"
+HOME_TOOL_PREVIEW_CACHE_TTL_SECONDS = 300
+RELEASE_TIMELINE_CACHE_KEY = "release_timeline:v1"
+RELEASE_TIMELINE_CACHE_TTL_SECONDS = 3600
 
 
 def get_db():
@@ -288,6 +299,9 @@ def _invalidate_cache_prefix(prefix: str):
 def _refresh_related_caches(*, plugin_id: str | None = None, relative_path: str = ""):
     _invalidate_cache_prefix("storage_overview:")
     _invalidate_cache_prefix("app_releases:")
+    _invalidate_cache_prefix("home_release_snapshot:")
+    _invalidate_cache_prefix("home_tool_preview:")
+    _invalidate_cache_prefix("release_timeline:")
 
     top_level = Path(relative_path).parts[0] if relative_path else ""
     if top_level:
@@ -485,6 +499,20 @@ def render_markdown(text: str | None) -> Markup:
     return Markup(html)
 
 
+def _render_markdown_cached(*, cache_key: str, signature: str, text: str | None) -> Markup:
+    cached = _get_cache_entry(cache_key, signature=signature)
+    if cached:
+        return Markup(str(cached["value"]))
+    rendered = render_markdown(text)
+    _set_cache_entry(
+        cache_key,
+        str(rendered),
+        ttl_seconds=MARKDOWN_RENDER_CACHE_TTL_SECONDS,
+        signature=signature,
+    )
+    return rendered
+
+
 def _storage_target(relative_path: str) -> Path:
     return storage_target_impl(STORAGE, relative_path)
 
@@ -556,6 +584,182 @@ def _get_request_plugin_catalog() -> list[dict]:
 
 def _get_request_app_info() -> dict:
     return _request_cached_value("app_info", get_app_info)
+
+
+def _build_release_app_info() -> dict[str, Any]:
+    releases = scan_app_release_artifacts()
+    return {
+        "latest_version": read_text_file(STORAGE / "LATEST_RELEASE") or "",
+        **build_app_release_context(releases),
+    }
+
+
+def _path_mtime(path: Path) -> float:
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return 0.0
+
+
+def _collect_home_archive_preview() -> list[dict[str, Any]]:
+    history_dir = STORAGE / "History"
+    if not history_dir.is_dir():
+        return []
+
+    preview_artifacts: list[dict[str, Any]] = []
+    major_dirs = sorted(
+        (path for path in history_dir.iterdir() if path.is_dir()),
+        key=_path_mtime,
+        reverse=True,
+    )[:6]
+
+    collected_groups = 0
+    for major_dir in major_dirs:
+        branch_dirs = sorted(
+            (path for path in major_dir.iterdir() if path.is_dir()),
+            key=_path_mtime,
+            reverse=True,
+        )[:3]
+        for branch_dir in branch_dirs:
+            collected_groups += 1
+            files = sorted(
+                (path for path in branch_dir.iterdir() if path.is_file()),
+                key=_path_mtime,
+                reverse=True,
+            )[:3]
+            for file_path in files:
+                artifact = build_release_artifact(STORAGE, file_path, "archive")
+                if artifact:
+                    preview_artifacts.append(artifact)
+            if collected_groups >= 4:
+                return sorted(preview_artifacts, key=release_sort_key, reverse=True)
+
+    return sorted(preview_artifacts, key=release_sort_key, reverse=True)
+
+
+def _build_home_release_snapshot() -> dict[str, Any]:
+    full_cache = _get_cache_entry(APP_RELEASES_CACHE_KEY)
+    if full_cache:
+        context = build_app_release_context(full_cache["value"])
+        context["release_preview_fast"] = False
+        context["archive_count_estimated"] = False
+        context["archive_preview_note"] = ""
+        return context
+
+    cached = _get_cache_entry(HOME_RELEASES_SNAPSHOT_CACHE_KEY)
+    if cached:
+        return cached["value"]
+
+    current_releases: list[dict[str, Any]] = []
+    if STORAGE.is_dir():
+        for entry in STORAGE.iterdir():
+            if not entry.is_file():
+                continue
+            artifact = build_release_artifact(STORAGE, entry, "current")
+            if artifact:
+                current_releases.append(artifact)
+    current_releases.sort(key=release_sort_key, reverse=True)
+
+    archive_preview = _collect_home_archive_preview()
+    context = build_app_release_context(current_releases + archive_preview)
+    context["release_preview_fast"] = True
+    context["archive_count_estimated"] = bool(archive_preview)
+    context["archive_preview_note"] = "首页已启用快速历史预览；完整历史与精确统计请进入版本档案页。"
+    _set_cache_entry(
+        HOME_RELEASES_SNAPSHOT_CACHE_KEY,
+        context,
+        ttl_seconds=HOME_RELEASES_SNAPSHOT_TTL_SECONDS,
+        signature="home",
+    )
+    return context
+
+
+def _build_home_app_info() -> dict[str, Any]:
+    changelog_path = STORAGE / "CHANGELOG.md"
+    changelog = read_text_file(changelog_path) or ""
+    preview_text = "\n".join(changelog.splitlines()[:24])
+    signature = changelog_signature(changelog_path)
+    return {
+        "latest_version": read_text_file(STORAGE / "LATEST_RELEASE") or "",
+        **_build_home_release_snapshot(),
+        "has_changelog": bool(changelog.strip()),
+        "changelog_preview_html": _render_markdown_cached(
+            cache_key="markdown:changelog_preview:v1",
+            signature=f"preview:{signature}:{len(preview_text)}",
+            text=preview_text,
+        ),
+    }
+
+
+def _build_changelog_app_info() -> dict[str, Any]:
+    changelog_path = STORAGE / "CHANGELOG.md"
+    changelog = read_text_file(changelog_path) or ""
+    signature = changelog_signature(changelog_path)
+    releases = scan_app_release_artifacts()
+    timeline_signature = f"{len(releases)}:{signature}"
+    cached_timeline = _get_cache_entry(RELEASE_TIMELINE_CACHE_KEY, signature=timeline_signature)
+    changelog_analysis = get_cached_changelog_analysis(
+        changelog_path,
+        get_cache_entry=_get_cache_entry,
+        set_cache_entry=_set_cache_entry,
+        cache_key=CHANGELOG_ANALYSIS_CACHE_KEY,
+        ttl_seconds=CHANGELOG_ANALYSIS_CACHE_TTL_SECONDS,
+    )
+    if cached_timeline:
+        release_timeline = cached_timeline["value"]
+    else:
+        release_timeline = build_release_timeline(
+            releases,
+            changelog_lookup=build_changelog_lookup(changelog_analysis.get("entries", [])),
+        )
+        _set_cache_entry(
+            RELEASE_TIMELINE_CACHE_KEY,
+            release_timeline,
+            ttl_seconds=RELEASE_TIMELINE_CACHE_TTL_SECONDS,
+            signature=timeline_signature,
+        )
+    return {
+        "latest_version": read_text_file(STORAGE / "LATEST_RELEASE") or "",
+        "changelog": changelog,
+        "changelog_html": _render_markdown_cached(
+            cache_key="markdown:changelog_full:v1",
+            signature=f"full:{signature}",
+            text=changelog,
+        ),
+        "changelog_analysis": changelog_analysis,
+        "release_timeline": release_timeline,
+    }
+
+
+def _get_request_home_app_info() -> dict:
+    return _request_cached_value("home_app_info", _build_home_app_info)
+
+
+def _get_request_release_app_info() -> dict:
+    return _request_cached_value("release_app_info", _build_release_app_info)
+
+
+def _get_request_changelog_app_info() -> dict:
+    return _request_cached_value("changelog_app_info", _build_changelog_app_info)
+
+
+def _build_home_tool_preview() -> dict[str, Any]:
+    cached = _get_cache_entry(HOME_TOOL_PREVIEW_CACHE_KEY)
+    if cached:
+        return cached["value"]
+
+    preview = build_storage_preview_context(STORAGE, "Tool", limit=8)
+    _set_cache_entry(
+        HOME_TOOL_PREVIEW_CACHE_KEY,
+        preview,
+        ttl_seconds=HOME_TOOL_PREVIEW_CACHE_TTL_SECONDS,
+        signature="tool",
+    )
+    return preview
+
+
+def _get_request_home_tool_preview() -> dict:
+    return _request_cached_value("home_tool_preview", _build_home_tool_preview)
 
 
 def scan_plugins(download_counts: dict[str, int] | None = None) -> list[dict]:
@@ -637,6 +841,7 @@ def get_app_info() -> dict:
     changelog = read_text_file(changelog_path) or ""
     preview_lines = changelog.splitlines()[:24]
     release_context = get_app_release_context()
+    signature = changelog_signature(changelog_path)
     changelog_analysis = get_cached_changelog_analysis(
         changelog_path,
         get_cache_entry=_get_cache_entry,
@@ -647,8 +852,16 @@ def get_app_info() -> dict:
     return {
         "latest_version": read_text_file(STORAGE / "LATEST_RELEASE") or "",
         "changelog": changelog,
-        "changelog_html": render_markdown(changelog),
-        "changelog_preview_html": render_markdown("\n".join(preview_lines)),
+        "changelog_html": _render_markdown_cached(
+            cache_key="markdown:changelog_full:v1",
+            signature=f"full:{signature}",
+            text=changelog,
+        ),
+        "changelog_preview_html": _render_markdown_cached(
+            cache_key="markdown:changelog_preview:v1",
+            signature=f"preview:{signature}:{len(preview_lines)}",
+            text="\n".join(preview_lines),
+        ),
         "changelog_analysis": changelog_analysis,
         **release_context,
     }
@@ -718,8 +931,9 @@ def index():
         "index.html",
         **build_index_page_context(
             STORAGE,
-            get_app_info=_get_request_app_info,
+            get_app_info=_get_request_home_app_info,
             get_storage_overview_context=get_storage_overview_context,
+            get_tool_preview=_get_request_home_tool_preview,
         ),
     )
 
@@ -730,7 +944,7 @@ def releases_page():
     return render_template(
         "releases.html",
         **build_releases_page_context(
-            _get_request_app_info(),
+            _get_request_release_app_info(),
             major_minor=request.args.get("major_minor", ""),
             branch=request.args.get("branch", ""),
             kind=request.args.get("kind", ""),
@@ -742,7 +956,7 @@ def releases_page():
 @app.route("/changelog")
 def changelog_page():
     """Application changelog page."""
-    app_info = _get_request_app_info()
+    app_info = _get_request_changelog_app_info()
     return render_template("changelog.html", app_info=app_info)
 
 

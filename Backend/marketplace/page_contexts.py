@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from storage_browser import build_storage_page_context
-from update_retention import build_update_summary, scan_update_packages
+from update_retention import build_update_summary, scan_update_packages, scan_update_preview_fast
 
 
 RETENTION_NOTE = "保留最新增量包，以及每个小版本的 .1 增量包。"
@@ -254,11 +254,12 @@ def build_index_page_context(
     *,
     get_app_info: Callable[[], dict[str, Any]],
     get_storage_overview_context: Callable[[], tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]],
+    get_tool_preview: Callable[[], dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     app_info = get_app_info()
     overview, overview_summary, overview_meta = get_storage_overview_context()
-    update_packages, update_other_files = scan_update_packages(storage)
-    tools_context = build_storage_page_context(storage, "Tool")
+    update_packages, update_summary = scan_update_preview_fast(storage)
+    tools_context = get_tool_preview() if get_tool_preview is not None else build_storage_page_context(storage, "Tool")
     filesystem_spotlight = _build_filesystem_spotlight(overview)
     recent_change_dashboard, recent_change_summary = _build_recent_change_dashboard(
         app_info,
@@ -272,8 +273,8 @@ def build_index_page_context(
         "filesystem_spotlight": filesystem_spotlight,
         "recent_change_dashboard": recent_change_dashboard,
         "recent_change_summary": recent_change_summary,
-        "update_packages": update_packages[:8],
-        "update_summary": build_update_summary(update_packages, update_other_files),
+        "update_packages": update_packages,
+        "update_summary": update_summary,
         "tool_items": tools_context["items"][:8],
         "tool_summary": tools_context["summary"],
     }

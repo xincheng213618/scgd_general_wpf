@@ -183,6 +183,8 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertIn("RAR 归档", html)
         self.assertRegex(html, r"2026-0[34]-\d{2} \d{2}:\d{2}")
         self.assertIn("包含 ZIP / RAR 历史制品", html)
+        self.assertNotIn("版本归档聚合时间线", html)
+        self.assertNotIn("release-timeline.js", html)
 
     def test_releases_page_supports_archive_filters(self):
         self._create_app_release("1.2.0.1", suffix=".exe", mtime=1_775_000_000)
@@ -224,7 +226,7 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertIn("当前版本", html)
         self.assertIn("目录", html)
 
-    def test_index_page_renders_iteration_chart_and_prioritizes_plugins(self):
+    def test_index_page_prioritizes_plugins_without_iteration_chart(self):
         self._create_changelog(
             """# CHANGELOG\n\n## [1.2.0.1] 2026.03.24\n\n1.新增插件市场\n2.优化下载中心\n3.重构更新逻辑\n\n## [1.1.0.1] 2026.03.01\n\n1.修复更新逻辑\n"""
         )
@@ -233,9 +235,12 @@ class MarketplaceAppTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("迭代过程图表", html)
-        self.assertIn("插件生态", html)
-        self.assertIn("ColorVision 1.2.0.1", html)
+        self.assertNotIn("迭代过程图表", html)
+        self.assertNotIn("当前阶段", html)
+        self.assertIn("内部发布与归档入口", html)
+        self.assertIn("进入版本档案", html)
+        self.assertIn("首页文件系统视角", html)
+        self.assertIn("更新说明", html)
         self.assertLess(html.index("插件市场"), html.index("最近变更"))
 
     def test_changelog_page_renders_iteration_chart_and_milestones(self):
@@ -247,9 +252,12 @@ class MarketplaceAppTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertIn("迭代图表与关键节点", html)
-        self.assertIn("CHANGELOG 版本迭代图表", html)
-        self.assertIn("架构重构", html)
+        self.assertIn("真实发布历史时间线", html)
+        self.assertIn("按 `major.minor.patch` 聚合真实历史文件", html)
+        self.assertIn("历史文件 0", html)
+        self.assertIn("暂无高亮节点", html)
+        self.assertIn("滚轮平移，Ctrl + 滚轮缩放", html)
+        self.assertIn("release-timeline.js", html)
 
     def test_tools_page_lists_tool_directory_contents(self):
         tool_dir = self.storage / "Tool"

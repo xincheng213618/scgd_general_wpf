@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
+from app_changelog import base_release_version, resolve_changelog_for_release_group
+
 
 _APP_RELEASE_CANONICAL_RE = re.compile(
     r"^ColorVision-(\d+(?:\.\d+)+)\.(exe|zip|rar)$", re.IGNORECASE
@@ -120,6 +122,17 @@ def build_archive_timeline_groups(archived_releases: list[dict[str, Any]]) -> li
 
 def version_tuple(value: str) -> tuple[int, ...]:
     return tuple(int(part) for part in value.split(".") if part.isdigit())
+
+
+def _parse_iso_datetime(value: str) -> datetime:
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return datetime.fromtimestamp(0, tz=timezone.utc)
+
+
+def _timeline_radius(fix_count: int) -> int:
+    return max(7, min(22, 7 + max(fix_count - 1, 0) * 2))
 
 
 def extract_release_version(name: str) -> str | None:
@@ -267,6 +280,138 @@ def build_app_release_context(releases: list[dict[str, Any]]) -> dict[str, Any]:
         "archive_count": len(archived_releases),
         "release_branch_count": len(recent_branches),
         "archive_more_count": max(len(archived_releases) - 120, 0),
+    }
+
+
+def build_release_timeline(
+    releases: list[dict[str, Any]],
+    *,
+    changelog_lookup: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    current_releases = [item for item in releases if item.get("source") == "current"]
+    archived_releases = [item for item in releases if item.get("source") == "archive"]
+
+    grouped: dict[str, dict[str, Any]] = {}
+    for item in archived_releases:
+        branch = base_release_version(str(item.get("version", ""))) or str(item.get("branch", ""))
+        group = grouped.get(branch)
+        if group is None:
+            group = {
+                "branch": branch,
+                "major_minor": str(item.get("major_minor", "")),
+                "items": [],
+                "versions": [],
+                "fix_values": set(),
+            }
+            grouped[branch] = group
+        group["items"].append(item)
+        version = str(item.get("version", ""))
+        if version and version not in group["versions"]:
+            group["versions"].append(version)
+        parts = [part for part in version.split(".") if part]
+        if len(parts) >= 4 and parts[-1].isdigit():
+            group["fix_values"].add(int(parts[-1]))
+
+    nodes: list[dict[str, Any]] = []
+    for branch, group in grouped.items():
+        items = sorted(group["items"], key=lambda item: item.get("modified", ""), reverse=True)
+        latest = items[0]
+        earliest = items[-1]
+        fix_count = max(len(group["fix_values"]) or len(group["versions"]), 1)
+        mapped = resolve_changelog_for_release_group(
+            changelog_lookup or {},
+            versions=sorted(group["versions"], key=version_tuple, reverse=True),
+            branch=branch,
+        )
+        sort_date = str(mapped.get("date_display", "")) if mapped else str(latest.get("modified_date", ""))
+        annotation_label = str(mapped.get("annotation_label", "历史节点")) if mapped else "历史节点"
+        annotation_reason = str(mapped.get("annotation_reason", "未找到直接对应的 CHANGELOG 记录。")) if mapped else "未找到直接对应的 CHANGELOG 记录。"
+        is_milestone = bool((mapped or {}).get("is_milestone")) or fix_count >= 4
+        nodes.append(
+            {
+                "branch": branch,
+                "major_minor": group["major_minor"],
+                "file_count": len(items),
+                "fix_count": fix_count,
+                "radius": _timeline_radius(fix_count),
+                "versions": sorted(group["versions"], key=version_tuple, reverse=True),
+                "latest_version": sorted(group["versions"], key=version_tuple, reverse=True)[0],
+                "latest_modified": latest.get("modified", ""),
+                "latest_modified_display": latest.get("modified_display", ""),
+                "earliest_modified_display": earliest.get("modified_display", ""),
+                "relative_path": latest.get("relative_path", ""),
+                "is_milestone": is_milestone,
+                "annotation_label": annotation_label,
+                "annotation_reason": annotation_reason,
+                "changelog_entry": mapped,
+                "sort_date": sort_date,
+                "kind_summary": _build_kind_summary(items),
+            }
+        )
+
+    nodes.sort(
+        key=lambda item: (
+            item.get("sort_date", ""),
+            version_tuple(str(item.get("latest_version", "0.0.0.0"))),
+        ),
+        reverse=False,
+    )
+
+    chart_width = max(900, 180 + len(nodes) * 120)
+    baseline_y = 220
+    top_y = 56
+    usable_height = baseline_y - top_y
+    max_fix_count = max((node["fix_count"] for node in nodes), default=1)
+    label_stride = max(len(nodes) // 10, 1)
+    for index, node in enumerate(nodes):
+        x = 90 + index * 120
+        y = baseline_y - ((usable_height * max(node["fix_count"], 1)) / max_fix_count)
+        node["x"] = round(x, 2)
+        node["y"] = round(y, 2)
+        node["show_label"] = index % label_stride == 0 or index == len(nodes) - 1
+        node["tooltip"] = {
+            "branch": node["branch"],
+            "fileCount": node["file_count"],
+            "fixCount": node["fix_count"],
+            "latestVersion": node["latest_version"],
+            "kindSummary": node["kind_summary"],
+            "annotationLabel": node["annotation_label"],
+            "annotationReason": node["annotation_reason"],
+            "changelogDate": mapped.get("date_display", "") if (mapped := node.get("changelog_entry")) else "",
+            "changelogHighlights": list((mapped or {}).get("highlights", []))[:3],
+        }
+
+    highlighted_nodes = [node for node in nodes if node.get("is_milestone")]
+    highlighted_nodes.sort(
+        key=lambda item: (
+            1 if item.get("changelog_entry") and item["changelog_entry"].get("is_milestone") else 0,
+            item.get("fix_count", 0),
+            version_tuple(str(item.get("latest_version", "0.0.0.0"))),
+        ),
+        reverse=True,
+    )
+    return {
+        "history_file_count": len(archived_releases),
+        "current_file_count": len(current_releases),
+        "node_count": len(nodes),
+        "max_fix_count": max_fix_count,
+        "nodes": nodes,
+        "highlighted_nodes": highlighted_nodes[:8],
+        "svg": {
+            "width": chart_width,
+            "height": 280,
+            "baseline_y": baseline_y,
+            "top_y": top_y,
+            "path": " ".join(
+                ("M" if index == 0 else "L") + f" {node['x']} {node['y']}"
+                for index, node in enumerate(nodes)
+            ),
+        },
+        "label_stride": label_stride,
+        "story": [
+            f"历史文件共 {len(archived_releases)} 个，聚合为 {len(nodes)} 个版本节点（忽略 fix）。",
+            f"每个节点的大小表示 fix 数量，当前最大 fix 数为 {max_fix_count}。",
+        ] if nodes else [],
     }
 
 
