@@ -49,7 +49,6 @@ namespace Spectrum
                 properties.Add("Color Rendering(Ra)");
                 properties.Add("FWHM");
                 properties.Add("Excitation Purity(%)");
-                properties.Add("Dominant Wavelength Color");
                 properties.Add("CIE2015X");
                 properties.Add("CIE2015Y");
                 properties.Add("CIE2015Z");
@@ -97,7 +96,6 @@ namespace Spectrum
                         csvBuilder.Append(result.fRa + ",");
                         csvBuilder.Append(result.fHW + ",");
                         csvBuilder.Append(result.ExcitationPurityPercent + ",");
-                        csvBuilder.Append(result.DominantWavelengthHex + ",");
                         csvBuilder.Append(result.fCIEx2015 + ",");
                         csvBuilder.Append(result.fCIEy2015 + ",");
                         csvBuilder.Append(result.fCIEz2015 + ",");
@@ -144,7 +142,6 @@ namespace Spectrum
                 properties.Add("Correlated Color Temperature(CCT)(K)");
                 properties.Add("Peak Wavelength(Lp)(nm)");
                 properties.Add("Excitation Purity(%)");
-                properties.Add("Dominant Wavelength Color");
                 properties.Add("Voltage(V)");
                 properties.Add("Current(mA)");
                 properties.Add("CIE2015X");
@@ -187,7 +184,6 @@ namespace Spectrum
                         csvBuilder.Append(result.fCCT + ",");
                         csvBuilder.Append(result.fLp + ",");
                         csvBuilder.Append(result.ExcitationPurityPercent + ",");
-                        csvBuilder.Append(result.DominantWavelengthHex + ",");
                         csvBuilder.Append(result.V + ",");
                         csvBuilder.Append(result.I + ",");
                         csvBuilder.Append(result.fCIEx2015 + ",");

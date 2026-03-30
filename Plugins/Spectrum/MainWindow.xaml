@@ -178,22 +178,6 @@
                                     </Button>
                                 </StackPanel>
                                 <DockPanel Margin="0,0,0,6">
-                                    <Button DockPanel.Dock="Right" Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditGetDataConfigCommand}" Padding="0" Height="20" Width="20" >
-                                        <Button.Triggers>
-                                            <EventTrigger RoutedEvent="Button.Click">
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="rotateTransform22" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Button.Triggers>
-                                        <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
-                                            <TextBlock.RenderTransform>
-                                                <RotateTransform x:Name="rotateTransform22"/>
-                                            </TextBlock.RenderTransform>
-                                        </TextBlock>
-                                    </Button>
                                     <StackPanel Orientation="Horizontal">
                                         <CheckBox Content="{x:Static properties:Resources.自动积分}" IsChecked="{Binding EnableAutoIntegration}" Margin="0,0,8,0"/>
                                         <CheckBox Content="自适应校零" IsChecked="{Binding EnableAdaptiveAutoDark}" Margin="0,0,8,0"/>
@@ -696,17 +680,6 @@
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fLd}"/>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                    <GridViewColumn  Header="主波长颜色" >
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
-                                                <Border Background="{Binding DominantWavelengthColor}" Width="40" Height="16" CornerRadius="2" Cursor="Hand" ToolTip="{Binding DominantWavelengthHex}" MouseLeftButtonDown="DominantColor_Click">
-                                                    <Border.Tag>
-                                                        <Binding Path="DominantWavelengthHex"/>
-                                                    </Border.Tag>
-                                                </Border>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>

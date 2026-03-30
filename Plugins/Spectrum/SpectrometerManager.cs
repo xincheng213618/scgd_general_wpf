@@ -58,6 +58,7 @@ namespace Spectrum
         public float AutoIntTimeB { get => _AutoIntTimeB; set { _AutoIntTimeB = value; OnPropertyChanged(); } }
         private float _AutoIntTimeB = 1;
 
+        [DisplayName("旧版本模式")]
         public bool IsOldVersion { get => _IsOldVersion; set { _IsOldVersion = value; OnPropertyChanged(); } }
         private bool _IsOldVersion = false;
     }
@@ -80,11 +81,29 @@ namespace Spectrum
         public int FilterBW { get => _FilterBW; set { _FilterBW = value; OnPropertyChanged(); } }
         private int _FilterBW = 5;
 
+        [DisplayName("起始波长")]
         public float SetWL1 { get => _SetWL1; set { _SetWL1 = value; OnPropertyChanged(); } }
         private float _SetWL1 = 380;
+
+        [DisplayName("结束波长")]
         public float SetWL2 { get => _SetWL2; set { _SetWL2 = value; OnPropertyChanged(); } }
         private float _SetWL2 = 780;
+    }
 
+    [DisplayName("自动积分与数据采集配置")]
+    public class MeasurementDataConfig : ViewModelBase
+    {
+        public MeasurementDataConfig(IntTimeConfig intTimeConfig, GetDataConfig getDataConfig)
+        {
+            IntTimeConfig = intTimeConfig;
+            GetDataConfig = getDataConfig;
+        }
+
+        [DisplayName("自动积分时间配置")]
+        public IntTimeConfig IntTimeConfig { get; }
+
+        [DisplayName("数据采集配置")]
+        public GetDataConfig GetDataConfig { get; }
     }
 
 
@@ -362,9 +381,6 @@ namespace Spectrum
         public RelayCommand EditIntTimeConfigCommand { get; set; }
 
         [JsonIgnore]
-        public RelayCommand EditGetDataConfigCommand { get; set; }
-
-        [JsonIgnore]
         public RelayCommand EditAutodarkParamCommand { get; set; }
 
 
@@ -388,7 +404,6 @@ namespace Spectrum
             SetMaguideOutputFileCommand = new RelayCommand(a => SetMaguideOutputFile());
             EditIntTimeConfigCommand = new RelayCommand(a => EditIntTimeConfig());
 
-            EditGetDataConfigCommand = new RelayCommand(a => EditGetDataConfig());
             EditAutodarkParamCommand = new RelayCommand(a => EditAutodarkParam());
 
             GetSpectrSerialNumberCommand = new RelayCommand(a => GetSpectrSerialNumber());
@@ -596,16 +611,12 @@ namespace Spectrum
 
         public void EditIntTimeConfig()
         {
-            new PropertyEditorWindow(IntTimeConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            var config = new MeasurementDataConfig(IntTimeConfig, GetDataConfig);
+            new PropertyEditorWindow(config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public IntTimeConfig IntTimeConfig { get => _IntTimeConfig; set { _IntTimeConfig = value; OnPropertyChanged(); } }
         private IntTimeConfig _IntTimeConfig = new IntTimeConfig();
-
-        public void EditGetDataConfig()
-        {
-            new PropertyEditorWindow(GetDataConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
 
         public GetDataConfig GetDataConfig { get => _GetDataConfig; set { _GetDataConfig = value; OnPropertyChanged(); } }
         private GetDataConfig _GetDataConfig = new GetDataConfig();
