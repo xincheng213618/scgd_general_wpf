@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using Spectrum.Configs;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,6 +8,7 @@ namespace Spectrum.Calibration
     /// <summary>
     /// CalibrationGroupWindow.xaml — manages calibration groups for a specific spectrometer SN.
     /// Changes are staged and only saved when user clicks "保存".
+    /// Closing without saving discards all in-memory changes.
     /// </summary>
     public partial class CalibrationGroupWindow : Window
     {
@@ -14,9 +16,20 @@ namespace Spectrum.Calibration
         private bool _suppressSelectionChanged;
         private bool _hasUnsavedChanges;
 
+        // Backup of initial state for restore on discard
+        private readonly string _initialConfigJson;
+        private readonly string _initialWavelengthFile;
+        private readonly string _initialMaguideFile;
+
         public CalibrationGroupWindow(SpectrometerManager manager)
         {
             Manager = manager;
+
+            // Save initial state before any edits
+            _initialConfigJson = JsonConvert.SerializeObject(Manager.CalibrationGroupConfig);
+            _initialWavelengthFile = Manager.WavelengthFile;
+            _initialMaguideFile = Manager.MaguideFile;
+
             InitializeComponent();
             RefreshGroupList();
             UpdateConfigPathDisplay();
@@ -98,7 +111,8 @@ namespace Spectrum.Calibration
             var group = ComboBoxGroups.SelectedItem as CalibrationGroup;
             if (group != null)
             {
-                Manager.ActiveCalibrationGroupName = group.GroupName;
+                // Set directly on config without triggering save/apply side-effects
+                Manager.CalibrationGroupConfig.ActiveGroupName = group.GroupName;
             }
             UpdateGroupDetail();
         }
@@ -138,7 +152,8 @@ namespace Spectrum.Calibration
                     return;
 
                 group.GroupName = newName;
-                Manager.ActiveCalibrationGroupName = newName;
+                // Set directly on config without triggering save/apply side-effects
+                Manager.CalibrationGroupConfig.ActiveGroupName = newName;
                 MarkUnsaved();
 
                 // Refresh ComboBox display
@@ -158,7 +173,6 @@ namespace Spectrum.Calibration
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 group.WavelengthFile = dialog.FileName;
-                Manager.WavelengthFile = dialog.FileName;
                 TextBoxWavelengthFile.Text = dialog.FileName;
                 MarkUnsaved();
                 ValidateWavelength(dialog.FileName);
@@ -175,7 +189,6 @@ namespace Spectrum.Calibration
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 group.MaguideFile = dialog.FileName;
-                Manager.MaguideFile = dialog.FileName;
                 TextBoxMaguideFile.Text = dialog.FileName;
                 MarkUnsaved();
                 ValidateMaguide(dialog.FileName);
@@ -237,32 +250,67 @@ namespace Spectrum.Calibration
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
-            Manager.SaveCalibrationConfig();
+            ApplyAndSave();
             MarkSaved();
             MessageBox.Show("标定配置已保存", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void BtnClose_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Applies the current edits to Manager and saves to disk.
+        /// </summary>
+        private void ApplyAndSave()
+        {
+            // Apply active group files to Manager
+            var group = Manager.CalibrationGroupConfig.ActiveGroup;
+            if (group != null)
+            {
+                Manager.WavelengthFile = group.WavelengthFile;
+                Manager.MaguideFile = group.MaguideFile;
+            }
+            Manager.SaveCalibrationConfig();
+        }
+
+        /// <summary>
+        /// Discards all in-memory changes and restores the initial state.
+        /// </summary>
+        private void DiscardChanges()
+        {
+            var restored = JsonConvert.DeserializeObject<CalibrationGroupConfig>(_initialConfigJson);
+            if (restored != null)
+            {
+                Manager.CalibrationGroupConfig.Groups.Clear();
+                foreach (var g in restored.Groups)
+                    Manager.CalibrationGroupConfig.Groups.Add(g);
+                Manager.CalibrationGroupConfig.ActiveGroupName = restored.ActiveGroupName;
+            }
+            Manager.WavelengthFile = _initialWavelengthFile;
+            Manager.MaguideFile = _initialMaguideFile;
+        }
+
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
             if (_hasUnsavedChanges)
             {
                 var result = MessageBox.Show("有未保存的更改，是否保存？", "提示", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
                 if (result == MessageBoxResult.Yes)
                 {
-                    Manager.SaveCalibrationConfig();
+                    ApplyAndSave();
                 }
                 else if (result == MessageBoxResult.Cancel)
                 {
+                    e.Cancel = true;
                     return;
                 }
                 else
                 {
-                    // Discard changes: reload config from disk
-                    Manager.CalibrationGroupConfig.Reload(Manager.SerialNumber);
-                    RefreshGroupList();
-                    UpdateConfigPathDisplay();
+                    DiscardChanges();
                 }
             }
+            base.OnClosing(e);
+        }
+
+        private void BtnClose_Click(object sender, RoutedEventArgs e)
+        {
             Close();
         }
     }
