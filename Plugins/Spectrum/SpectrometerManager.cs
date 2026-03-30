@@ -690,7 +690,6 @@ namespace Spectrum
         /// <summary>
         /// Event raised when dark data or light data has been acquired, for chart refresh.
         /// </summary>
-        [JsonIgnore]
         public event EventHandler DataAcquired;
 
         public void GenerateAmplitude()  
