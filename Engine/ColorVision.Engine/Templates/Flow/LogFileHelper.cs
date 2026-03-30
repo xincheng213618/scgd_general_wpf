@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             var latest = Directory.EnumerateFiles(logDirectory, pattern, SearchOption.TopDirectoryOnly)
                                   .Select(p => new FileInfo(p))
-                                  .OrderByDescending(f => f.LastWriteTimeUtc)
+                                  .OrderByDescending(f => f.CreationTime)
                                   .FirstOrDefault();
 
             return latest?.FullName;
