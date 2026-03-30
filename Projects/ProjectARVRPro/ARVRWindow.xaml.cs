@@ -14,6 +14,7 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
+using ProjectARVRPro.DeviceChannel;
 using ProjectARVRPro.Fix;
 using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
@@ -1196,6 +1197,15 @@ namespace ProjectARVRPro
             finally
             {
                 _isRunAllRunning = false;
+                // 断开所有设备通道（长连接资源回收）
+                try
+                {
+                    await DeviceChannelManager.GetInstance().DisconnectAllAsync();
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("断开设备通道异常", ex);
+                }
             }
         }
 
@@ -1224,6 +1234,9 @@ namespace ProjectARVRPro
                         log.Info($"步间延时 {action.TimeoutMs}ms");
                         await Task.Delay(action.TimeoutMs > 0 ? action.TimeoutMs : 1000);
                         return true;
+
+                    case InterStepActionType.DeviceChannel:
+                        return await ExecuteDeviceChannelInterStepAction(action);
 
                     default:
                         return true;
@@ -1323,6 +1336,49 @@ namespace ProjectARVRPro
                 log.Error($"串口步间指令异常: {action.SerialPortName}", ex);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// 通过 DeviceChannelManager 执行步间指令（支持雷鸟串口、通用串口、Socket 等长连接通道）
+        /// </summary>
+        private async Task<bool> ExecuteDeviceChannelInterStepAction(InterStepAction action)
+        {
+            if (string.IsNullOrWhiteSpace(action.DeviceChannelName))
+            {
+                log.Error("设备通道步间指令配置错误: 通道名称为空");
+                return false;
+            }
+
+            var channelManager = DeviceChannelManager.GetInstance();
+            var channelConfig = channelManager.FindConfig(action.DeviceChannelName);
+            if (channelConfig == null)
+            {
+                log.Error($"设备通道步间指令配置错误: 找不到通道 '{action.DeviceChannelName}'");
+                return false;
+            }
+
+            string command = action.Command ?? string.Empty;
+            int? timeout = action.TimeoutMs > 0 ? action.TimeoutMs : null;
+
+            var result = await channelManager.ExecuteAsync(channelConfig, command, timeout);
+
+            if (!result.Success)
+            {
+                log.Error($"设备通道步间指令失败: {action.DeviceChannelName}, 指令={command}, 错误={result.ErrorMessage}");
+                return false;
+            }
+
+            // 校验期望应答
+            if (!string.IsNullOrEmpty(action.ExpectedResponse) && result.Response != null)
+            {
+                if (!result.Response.Contains(action.ExpectedResponse))
+                {
+                    log.Warn($"设备通道应答不匹配，期望包含: {action.ExpectedResponse}, 实际: {result.Response}");
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public void Dispose()
