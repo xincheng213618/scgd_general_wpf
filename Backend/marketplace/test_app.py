@@ -1,6 +1,8 @@
 import base64
 import copy
 import io
+import os
+import re
 import tempfile
 import unittest
 import zipfile
@@ -89,6 +91,31 @@ class MarketplaceAppTests(unittest.TestCase):
         path.write_bytes(payload)
         return path
 
+    def _create_changelog(self, text: str) -> Path:
+        path = self.storage / "CHANGELOG.md"
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def _create_app_release(
+        self,
+        version: str,
+        *,
+        in_history: bool = False,
+        suffix: str = ".zip",
+        payload: bytes = b"release",
+        mtime: float | None = None,
+    ) -> Path:
+        if in_history:
+            release_dir = self.storage / "History" / ".".join(version.split(".")[:2]) / ".".join(version.split(".")[:3])
+            release_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            release_dir = self.storage
+        path = release_dir / f"ColorVision-{version}{suffix}"
+        path.write_bytes(payload)
+        if mtime is not None:
+            os.utime(path, (mtime, mtime))
+        return path
+
     def test_upload_page_requires_basic_auth(self):
         response = self.client.get("/upload")
         self.assertEqual(response.status_code, 401)
@@ -123,6 +150,106 @@ class MarketplaceAppTests(unittest.TestCase):
         self.assertIn("1.0.0.1", html)
         self.assertIn("1.0.0.3", html)
         self.assertIn("notes.txt", html)
+
+    def test_index_page_emphasizes_filesystem_spotlight_and_archive_timeline(self):
+        (self.storage / "History").mkdir(parents=True, exist_ok=True)
+        (self.storage / "Tool").mkdir(parents=True, exist_ok=True)
+        (self.storage / "Update").mkdir(parents=True, exist_ok=True)
+        self._create_app_release("1.2.0.1", suffix=".exe")
+        self._create_app_release("1.0.0.1", in_history=True, suffix=".zip")
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("首页文件系统视角", html)
+        self.assertIn("打开目录", html)
+        self.assertIn("History 归档", html)
+        self.assertIn("阶段 1.0.0", html)
+        self.assertIn("ZIP 归档", html)
+
+    def test_releases_page_renders_grouped_archive_timeline_with_timestamps(self):
+        self._create_app_release("1.2.0.1", suffix=".exe", mtime=1_775_000_000)
+        self._create_app_release("1.0.0.1", in_history=True, suffix=".zip", mtime=1_774_000_000)
+        self._create_app_release("1.0.0.0", in_history=True, suffix=".rar", mtime=1_773_000_000)
+
+        response = self.client.get("/releases")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("归档历史时间线", html)
+        self.assertIn("历史阶段 1.0.0", html)
+        self.assertIn("ZIP 归档", html)
+        self.assertIn("RAR 归档", html)
+        self.assertRegex(html, r"2026-0[34]-\d{2} \d{2}:\d{2}")
+        self.assertIn("包含 ZIP / RAR 历史制品", html)
+
+    def test_releases_page_supports_archive_filters(self):
+        self._create_app_release("1.2.0.1", suffix=".exe", mtime=1_775_000_000)
+        self._create_app_release("1.1.0.1", in_history=True, suffix=".zip", mtime=1_774_000_000)
+        self._create_app_release("1.0.0.1", in_history=True, suffix=".exe", mtime=1_773_000_000)
+
+        response = self.client.get("/releases?major_minor=1.1&branch=1.1.0&kind=ZIP&era=archive")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("当前显示 1 条记录", html)
+        self.assertIn("历史阶段 1.1.0", html)
+        self.assertNotIn("历史阶段 1.0.0", html)
+        self.assertIn("压缩归档时代", html)
+        self.assertIn("<details class=\"timeline-group timeline-disclosure\" open>", html)
+
+    def test_releases_page_defaults_to_first_stage_expanded(self):
+        self._create_app_release("1.2.0.1", suffix=".exe", mtime=1_775_000_000)
+        self._create_app_release("1.1.0.1", in_history=True, suffix=".zip", mtime=1_774_000_000)
+        self._create_app_release("1.0.0.1", in_history=True, suffix=".exe", mtime=1_773_000_000)
+
+        response = self.client.get("/releases")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertEqual(html.count('<details class="timeline-group timeline-disclosure" open>'), 1)
+
+    def test_index_page_renders_recent_change_dashboard(self):
+        (self.storage / "History").mkdir(parents=True, exist_ok=True)
+        self._create_app_release("1.2.0.1", suffix=".exe", mtime=1_775_000_000)
+        self._create_app_release("1.1.0.1", in_history=True, suffix=".zip", mtime=1_774_000_000)
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("最近变更", html)
+        self.assertIn("ColorVision 1.2.0.1", html)
+        self.assertIn("当前版本", html)
+        self.assertIn("目录", html)
+
+    def test_index_page_renders_iteration_chart_and_prioritizes_plugins(self):
+        self._create_changelog(
+            """# CHANGELOG\n\n## [1.2.0.1] 2026.03.24\n\n1.新增插件市场\n2.优化下载中心\n3.重构更新逻辑\n\n## [1.1.0.1] 2026.03.01\n\n1.修复更新逻辑\n"""
+        )
+
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("迭代过程图表", html)
+        self.assertIn("插件生态", html)
+        self.assertIn("ColorVision 1.2.0.1", html)
+        self.assertLess(html.index("插件市场"), html.index("最近变更"))
+
+    def test_changelog_page_renders_iteration_chart_and_milestones(self):
+        self._create_changelog(
+            """# CHANGELOG\n\n## [1.2.0.1] 2026.03.24\n\n1.新增插件市场\n2.优化下载中心\n3.重构更新逻辑\n\n## [1.1.0.1] 2026.03.01\n\n1.修复更新逻辑\n"""
+        )
+
+        response = self.client.get("/changelog")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("迭代图表与关键节点", html)
+        self.assertIn("CHANGELOG 版本迭代图表", html)
+        self.assertIn("架构重构", html)
 
     def test_tools_page_lists_tool_directory_contents(self):
         tool_dir = self.storage / "Tool"
@@ -335,6 +462,69 @@ class MarketplaceAppTests(unittest.TestCase):
         payload = api_response.get_json()
         self.assertEqual([item["pluginId"] for item in payload["items"]], ["AlphaPlugin", "BetaPlugin"])
 
+    def test_plugins_page_supports_html_pagination(self):
+        for index in range(1, 6):
+            plugin_id = f"PagePlugin{index:02d}"
+            plugin_dir = self._create_plugin(plugin_id, "1.0.0")
+            (plugin_dir / "manifest.json").write_text(
+                (
+                    "{"
+                    f'"id":"{plugin_id}",'
+                    f'"name":"Page Plugin {index:02d}",'
+                    '"description":"paged catalog"'
+                    "}"
+                ),
+                encoding="utf-8",
+            )
+
+        response = self.client.get("/plugins?sort=name&page=2&pageSize=2")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("第 2 / 3 页", html)
+        self.assertIn("Page Plugin 03", html)
+        self.assertIn("Page Plugin 04", html)
+        self.assertNotIn("Page Plugin 01", html)
+        self.assertNotIn("Page Plugin 05", html)
+
+    def test_api_plugins_accepts_legacy_sort_aliases(self):
+        plugin_dir = self._create_plugin("AliasPlugin", "1.0.0")
+        (plugin_dir / "manifest.json").write_text(
+            '{"id":"AliasPlugin","name":"Alias Plugin","description":"legacy sort alias"}',
+            encoding="utf-8",
+        )
+
+        response = self.client.get("/api/plugins?SortBy=modifiedAt&SortOrder=desc")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["sortBy"], "updated")
+        self.assertEqual(payload["sortOrder"], "desc")
+        self.assertTrue(any(item["pluginId"] == "AliasPlugin" for item in payload["items"]))
+
+    def test_plugins_page_clamps_out_of_range_page_to_last_page(self):
+        for index in range(1, 4):
+            plugin_id = f"ClampPlugin{index:02d}"
+            plugin_dir = self._create_plugin(plugin_id, "1.0.0")
+            (plugin_dir / "manifest.json").write_text(
+                (
+                    "{"
+                    f'"id":"{plugin_id}",'
+                    f'"name":"Clamp Plugin {index:02d}",'
+                    '"description":"clamp pagination"'
+                    "}"
+                ),
+                encoding="utf-8",
+            )
+
+        response = self.client.get("/plugins?sort=name&page=9&pageSize=2")
+
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("第 2 / 2 页", html)
+        self.assertIn("Clamp Plugin 03", html)
+        self.assertNotIn("Clamp Plugin 01", html)
+
     def test_api_categories_returns_sorted_unique_values(self):
         first_dir = self._create_plugin("ToolsPlugin", "1.0.0")
         (first_dir / "manifest.json").write_text(
@@ -513,6 +703,38 @@ class MarketplaceAppTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("maximum", response.get_json()["error"])
+
+    def test_api_feedback_persists_metadata_and_deduplicates_attachment_names(self):
+        response = self.client.post(
+            "/api/feedback",
+            data={
+                "message": "app crashed on startup",
+                "userName": "tester",
+                "appVersion": "2026.03",
+                "machineInfo": "x64",
+                "attachments": [
+                    (io.BytesIO(b"first"), "report.txt"),
+                    (io.BytesIO(b"second"), "report.txt"),
+                ],
+            },
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        payload = response.get_json()
+        self.assertEqual(payload["message"], "Feedback received")
+
+        feedback_dir = self.storage / "Feedback" / payload["feedbackId"]
+        self.assertTrue(feedback_dir.is_dir())
+
+        metadata = marketplace_app.json.loads((feedback_dir / "feedback.json").read_text(encoding="utf-8"))
+        self.assertEqual(metadata["message"], "app crashed on startup")
+        self.assertEqual(metadata["userName"], "tester")
+        self.assertEqual(len(metadata["files"]), 2)
+        self.assertEqual(metadata["files"][0], "report.txt")
+        self.assertEqual(metadata["files"][1], "report-1.txt")
+        self.assertEqual((feedback_dir / "report.txt").read_bytes(), b"first")
+        self.assertEqual((feedback_dir / "report-1.txt").read_bytes(), b"second")
 
     def test_validate_runtime_config_rejects_default_credentials(self):
         insecure_config = {

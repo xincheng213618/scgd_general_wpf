@@ -7,14 +7,30 @@
         <div class="col-lg-8">
             <span class="eyebrow mb-3"><i class="bi bi-cloud-upload"></i> 发布插件</span>
             <h1 class="display-6 fw-semibold mb-3">把插件发布流程做成可重复、可追溯的操作。</h1>
-            <p class="page-lead mb-0">上传 `.cvxp` 后，插件目录、版本元数据和缓存会自动更新。后续如果你愿意，我还可以继续把插件历史归档策略也补进去。</p>
+            <p class="page-lead mb-0">上传 `.cvxp` 后，插件目录、版本元数据和缓存会自动更新；页面也会直接提示大小限制和历史版本保留策略，减少误操作。</p>
         </div>
         <div class="col-lg-4">
-            <div class="hero-aside">
-                <div class="metric-card">
-                    <span class="metric-label">当前能力</span>
-                    <div class="metric-value">表单 + API</div>
-                    <div class="metric-note">既支持网页上传，也支持脚本化发布</div>
+            <div class="row g-3">
+                <div class="col-sm-6 col-lg-12 col-xl-6">
+                    <div class="metric-card">
+                        <span class="metric-label">最大上传</span>
+                        <div class="metric-value">{{ human_size(max_upload_size_bytes) }}</div>
+                        <div class="metric-note">超出后端将直接拒绝</div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-12 col-xl-6">
+                    <div class="metric-card">
+                        <span class="metric-label">历史保留</span>
+                        <div class="metric-value">{{ plugin_package_keep_count }}</div>
+                        <div class="metric-note">当前目录保留的最新包数量</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="metric-card">
+                        <span class="metric-label">发布方式</span>
+                        <div class="metric-value">表单 + API</div>
+                        <div class="metric-note">既支持网页上传，也支持脚本化发布</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -41,6 +57,12 @@
             <div class="card border-0 shadow-none bg-transparent">
                 <div class="card-body p-0">
                 <form method="post" enctype="multipart/form-data">
+                    <div class="summary-strip mb-4">
+                        <div class="summary-chip"><i class="bi bi-shield-check"></i> 需要 Basic Auth</div>
+                        <div class="summary-chip"><i class="bi bi-archive"></i> 自动归档旧版本</div>
+                        <div class="summary-chip"><i class="bi bi-hdd-stack"></i> 上限 {{ human_size(max_upload_size_bytes) }}</div>
+                    </div>
+
                     <div class="mb-3">
                         <label for="plugin_id" class="form-label">插件 ID</label>
                         <input type="text" class="form-control" id="plugin_id" name="plugin_id"
@@ -52,7 +74,7 @@
                         <label for="package" class="form-label">选择文件 <span class="text-danger">*</span></label>
                         <input type="file" class="form-control" id="package" name="package"
                                accept=".cvxp,.zip" required>
-                        <div class="form-text">支持 .cvxp 格式，文件名格式: PluginName-1.2.3.4.cvxp</div>
+                        <div class="form-text">支持 .cvxp 格式，文件名格式: PluginName-1.2.3.4.cvxp；建议优先使用规范文件名以便自动识别版本。</div>
                     </div>
 
                     <button type="submit" class="btn btn-primary">
@@ -75,6 +97,11 @@
 
             <div class="card border-0 shadow-none bg-transparent">
                 <div class="card-body p-0">
+                <div class="summary-strip mb-4">
+                    {% if supports_html_upload %}<div class="summary-chip"><i class="bi bi-window"></i> Web 表单</div>{% endif %}
+                    {% if supports_api_publish %}<div class="summary-chip"><i class="bi bi-terminal"></i> API / CI</div>{% endif %}
+                </div>
+
                 <p class="text-muted">也可以通过 API 接口上传插件:</p>
                 <pre class="bg-light p-3 rounded"><code>curl -X POST {{ request.host_url }}api/packages/publish \
   -F "PluginId=Spectrum" \
@@ -90,6 +117,12 @@
   -p Spectrum -v 1.0.0.1 \
   -f Spectrum-1.0.0.1.cvxp \
   --api-url {{ request.host_url.rstrip('/') }}</code></pre>
+
+                <div class="helper-list mt-4">
+                    <div class="helper-list-item"><i class="bi bi-check2-circle"></i><span>上传成功后会刷新插件摘要缓存，列表页可立即看到新版本。</span></div>
+                    <div class="helper-list-item"><i class="bi bi-check2-circle"></i><span>超过保留数的旧包会自动归档到 `History/Plugins/...`。</span></div>
+                    <div class="helper-list-item"><i class="bi bi-check2-circle"></i><span>如果是自动化发布，优先使用 API 以获得更完整的元数据写入。</span></div>
+                </div>
             </div>
             </div>
         </section>

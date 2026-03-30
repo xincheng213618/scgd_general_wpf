@@ -7,22 +7,22 @@
         <div class="col-lg-8">
             <span class="soft-badge mb-3"><i class="bi bi-search"></i> 浏览、搜索、下载</span>
             <h1 class="display-6 fw-semibold mb-3">插件市场</h1>
-            <p class="page-lead mb-0">插件卡片已压缩成更清晰的信息层级，搜索和筛选集中到一个面板里，查看效率会更高。</p>
+            <p class="page-lead mb-0">插件列表现在按页加载，筛选、排序和结果区间都在同一屏可见；插件数量继续增长时，页面也更稳。</p>
         </div>
         <div class="col-lg-4">
             <div class="row g-3">
                 <div class="col-sm-6 col-lg-12 col-xl-6">
                     <div class="metric-card">
-                        <span class="metric-label">当前结果</span>
-                        <div class="metric-value">{{ plugins|length }}</div>
-                        <div class="metric-note">筛选后可见插件数</div>
+                        <span class="metric-label">筛选结果</span>
+                        <div class="metric-value">{{ filtered_count }}</div>
+                        <div class="metric-note">共 {{ total_plugins }} 个插件</div>
                     </div>
                 </div>
                 <div class="col-sm-6 col-lg-12 col-xl-6">
                     <div class="metric-card">
-                        <span class="metric-label">分类数量</span>
-                        <div class="metric-value">{{ categories|length }}</div>
-                        <div class="metric-note">来自已有插件元数据</div>
+                        <span class="metric-label">当前页</span>
+                        <div class="metric-value">{{ page }}</div>
+                        <div class="metric-note">共 {{ total_pages or 1 }} 页 · 每页 {{ page_size }} 条</div>
                     </div>
                 </div>
             </div>
@@ -34,13 +34,13 @@
     <div class="section-header mb-3">
         <div>
             <h2 class="section-title"><i class="bi bi-funnel"></i>筛选与排序</h2>
-            <div class="section-subtitle mt-2">支持关键字、分类与排序组合筛选。</div>
+            <div class="section-subtitle mt-2">支持关键字、分类、排序和每页数量，适合插件量持续增长后的日常管理。</div>
         </div>
-        <div class="surface-tag"><i class="bi bi-grid"></i> 共 {{ plugins|length }} 个插件</div>
+        <div class="surface-tag"><i class="bi bi-sliders"></i> 已启用 {{ active_filter_count }} 项条件</div>
     </div>
 
     <form method="get" action="/plugins" class="row g-3 align-items-end">
-        <div class="col-lg-5">
+        <div class="col-lg-4">
             <label class="form-label text-soft small">关键字</label>
             <div class="input-group input-group-lg">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -50,27 +50,40 @@
         <div class="col-md-4 col-lg-3">
             <label class="form-label text-soft small">分类</label>
             <select name="category" class="form-select form-select-lg">
-                <option value="">所有分类</option>
-                {% for cat in categories %}
-                <option value="{{ cat }}" {{ 'selected' if cat == category else '' }}>{{ cat }}</option>
+                {% for option in category_options %}
+                <option value="{{ option.value }}" {{ 'selected' if option.selected else '' }}>{{ option.label }}{% if option.value %} ({{ option.count }}){% endif %}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="col-md-4 col-lg-2">
             <label class="form-label text-soft small">排序</label>
             <select name="sort" class="form-select form-select-lg">
-                <option value="modified" {{ 'selected' if sort_by == 'modified' else '' }}>最近更新</option>
+                <option value="updated" {{ 'selected' if sort_by == 'updated' else '' }}>最近更新</option>
                 <option value="name" {{ 'selected' if sort_by == 'name' else '' }}>名称</option>
                 <option value="downloads" {{ 'selected' if sort_by == 'downloads' else '' }}>下载量</option>
             </select>
         </div>
-        <div class="col-md-4 col-lg-2 d-flex gap-2">
+        <div class="col-md-4 col-lg-1">
+            <label class="form-label text-soft small">每页</label>
+            <select name="pageSize" class="form-select form-select-lg">
+                {% for option in page_size_options %}
+                <option value="{{ option }}" {{ 'selected' if option == page_size else '' }}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-lg-2 d-flex gap-2">
             <button type="submit" class="btn btn-primary btn-lg flex-grow-1"><i class="bi bi-search me-1"></i>搜索</button>
-            {% if keyword or category %}
-            <a href="/plugins" class="btn btn-outline-secondary btn-lg">清除</a>
+            {% if keyword or category or sort_by != 'updated' or page_size != 12 %}
+            <a href="{{ reset_url }}" class="btn btn-outline-secondary btn-lg">清除</a>
             {% endif %}
         </div>
     </form>
+
+    <div class="summary-strip mt-4">
+        <div class="summary-chip"><i class="bi bi-list-task"></i> 当前显示 {{ showing_from }} - {{ showing_to }} / {{ filtered_count }}</div>
+        <div class="summary-chip"><i class="bi bi-tags"></i> 分类数 {{ categories|length }}</div>
+        <div class="summary-chip"><i class="bi bi-sort-down"></i> 排序 {{ '名称升序' if sort_by == 'name' else ('下载量优先' if sort_by == 'downloads' else '最近更新') }}</div>
+    </div>
 </section>
 
 <div class="row g-4">
@@ -126,9 +139,29 @@
 </div>
 
 {% if not plugins %}
-<div class="panel-card p-5 text-center text-muted">
+<div class="panel-card empty-state-panel p-5 text-center text-muted">
     <i class="bi bi-search fs-1 d-block mb-3"></i>
     <p class="mb-0">{% if keyword %}没有找到匹配 “{{ keyword }}” 的插件{% else %}当前还没有可展示的插件{% endif %}</p>
 </div>
+{% endif %}
+
+{% if has_pagination %}
+<nav class="mt-4" aria-label="插件分页导航">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3 text-soft small">
+        <div>第 {{ page }} / {{ total_pages }} 页</div>
+        <div>当前页展示 {{ plugins|length }} 个插件</div>
+    </div>
+    <ul class="pagination pagination-modern justify-content-center mb-0 flex-wrap">
+        {% for item in pagination_items %}
+        <li class="page-item {{ 'active' if item.active else '' }} {{ 'disabled' if item.disabled else '' }} {{ 'page-item-ellipsis' if item.ellipsis else '' }}">
+            {% if item.ellipsis %}
+            <span class="page-link">{{ item.label }}</span>
+            {% else %}
+            <a class="page-link" href="{{ item.href }}">{{ item.label }}</a>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</nav>
 {% endif %}
 {% endblock %}

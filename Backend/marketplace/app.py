@@ -22,23 +22,27 @@ Run:
 """
 
 import argparse
-import hashlib
 import hmac
 import json
-import os
-import re
-import shutil
 import sqlite3
 from datetime import datetime, timezone
 from functools import wraps
+from app_releases import (
+    build_app_release_context,
+    is_root_release_file as is_root_release_file_impl,
+    reconcile_app_release_history as reconcile_app_release_history_impl,
+    scan_app_release_artifacts as scan_app_release_artifacts_impl,
+)
+from app_changelog import get_cached_changelog_analysis
 from download_stats import (
     build_stats_payload,
     get_download_counts,
     hash_ip,
     record_download,
 )
+from feedback_service import FeedbackValidationError, save_feedback as save_feedback_impl
 from markupsafe import Markup
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from package_publish import (
     PackageValidationError,
     extract_package_version,
@@ -49,20 +53,30 @@ from package_publish import (
     validate_api_publish_request,
     validate_html_upload_request,
 )
-from plugin_queries import (
-    build_plugin_search_result,
-    collect_plugin_categories,
-    filter_plugin_summaries,
-    normalize_catalog_sort,
-    sort_plugin_summaries,
+from catalog_view_models import (
+    ALLOWED_CATALOG_SORTS,
+    ALLOWED_CATALOG_SORT_ORDERS,
+    DEFAULT_HTML_PAGE_SIZE,
+    build_plugin_catalog_page_context,
+    build_plugin_detail_api_result,
+    build_plugin_search_api_result,
+    collect_catalog_categories,
+    normalize_catalog_sort_name,
 )
 from storage_uploads import UploadTooLargeError, UploadWorkflowError, store_legacy_upload
 from typing import Any
 from page_contexts import (
     build_browse_page_context,
     build_index_page_context,
+    build_releases_page_context,
     build_tools_page_context,
+    build_upload_page_context,
     build_updates_page_context,
+)
+from runtime_health import (
+    build_health_payload as build_health_payload_impl,
+    build_ready_payload as build_ready_payload_impl,
+    validate_runtime_config as validate_runtime_config_impl,
 )
 from plugin_marketplace import (
     get_plugin_detail as get_plugin_detail_impl,
@@ -76,6 +90,14 @@ from storage_browser import (
     get_storage_overview_context as get_storage_overview_context_impl,
     scan_storage_overview as scan_storage_overview_impl,
 )
+from storage_paths import (
+    is_safe_id as is_safe_id_impl,
+    is_safe_version as is_safe_version_impl,
+    normalize_relative_path as normalize_relative_path_impl,
+    resolve_storage_file as resolve_storage_file_impl,
+    sanitize_filename as sanitize_filename_impl,
+    storage_target as storage_target_impl,
+)
 from update_retention import (
     prune_update_packages,
     repair_update_storage_layout,
@@ -88,6 +110,8 @@ except ImportError:  # pragma: no cover - optional runtime fallback
 from flask import (
     Flask,
     abort,
+    g,
+    has_request_context,
     jsonify,
     render_template,
     request,
@@ -155,10 +179,8 @@ OVERVIEW_CACHE_TTL_SECONDS = 300
 APP_RELEASES_CACHE_TTL_SECONDS = 300
 DIRECTORY_COUNT_CACHE_TTL_SECONDS = 300
 PLUGIN_INFO_CACHE_TTL_SECONDS = 300
-_APP_RELEASE_CANONICAL_RE = re.compile(
-    r"^ColorVision-(\d+(?:\.\d+)+)\.(exe|zip|rar)$", re.IGNORECASE
-)
-_APP_RELEASE_VERSION_RE = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
+CHANGELOG_ANALYSIS_CACHE_KEY = "app_changelog:v1"
+CHANGELOG_ANALYSIS_CACHE_TTL_SECONDS = 3600
 
 
 def get_db():
@@ -276,49 +298,23 @@ def _refresh_related_caches(*, plugin_id: str | None = None, relative_path: str 
         _invalidate_cache_prefix("plugin_detail:")
         _invalidate_cache_prefix(f"dir_file_count:Plugins/{plugin_id}")
 
-# ---------------------------------------------------------------------------
-# Security helpers
-# ---------------------------------------------------------------------------
-
-_SAFE_ID_RE = re.compile(r"^[A-Za-z0-9_\-]+$")
-_SAFE_VERSION_RE = re.compile(r"^[0-9]+(\.[0-9]+)*$")
-
-
 def _is_safe_id(value: str) -> bool:
     """Validate that a plugin ID contains only safe characters."""
-    return bool(value) and _SAFE_ID_RE.match(value) is not None
+    return is_safe_id_impl(value)
 
 
 def _is_safe_version(value: str) -> bool:
     """Validate that a version string contains only digits and dots."""
-    return bool(value) and _SAFE_VERSION_RE.match(value) is not None
+    return is_safe_version_impl(value)
 
 
 def _sanitize_filename(filename: str) -> str:
     """Remove path separators and other dangerous characters from a filename."""
-    # Use only the basename, strip any directory components
-    name = Path(filename).name
-    # Remove any remaining path separator characters
-    name = re.sub(r'[/\\:*?"<>|]', "_", name)
-    return name
+    return sanitize_filename_impl(filename)
 
 
 def _normalize_relative_path(relative_path: str) -> str:
-    normalized_input = (relative_path or "").replace("\\", "/").strip()
-    if not normalized_input:
-        return ""
-    pure_path = PurePosixPath(normalized_input)
-    if pure_path.is_absolute() or ":" in normalized_input:
-        abort(403)
-
-    parts: list[str] = []
-    for part in pure_path.parts:
-        if part in ("", "."):
-            continue
-        if part == "..":
-            abort(403)
-        parts.append(part)
-    return "/".join(parts)
+    return normalize_relative_path_impl(relative_path)
 
 
 def _get_upload_auth() -> tuple[str, str]:
@@ -370,107 +366,41 @@ def require_upload_auth(view_func):
 
 
 def _validate_runtime_config(config: dict[str, Any]) -> list[str]:
-    issues: list[str] = []
-    if str(config.get("secret_key", "")).strip() == DEFAULT_SECRET_KEY:
-        issues.append("secret_key must be changed from the default value")
-
-    auth_config = config.get("upload_auth") or {}
-    if not isinstance(auth_config, dict):
-        auth_config = {}
-    username = str(auth_config.get("username", "")).strip()
-    password = str(auth_config.get("password", ""))
-    if (
-        username == str(DEFAULT_UPLOAD_AUTH.get("username", "")).strip()
-        and password == str(DEFAULT_UPLOAD_AUTH.get("password", ""))
-    ):
-        issues.append("upload_auth.username/password must be changed from the default values")
-    if not username or not password:
-        issues.append("upload_auth.username and upload_auth.password must be configured")
-    return issues
+    return validate_runtime_config_impl(
+        config,
+        default_secret_key=DEFAULT_SECRET_KEY,
+        default_upload_auth=DEFAULT_UPLOAD_AUTH,
+    )
 
 
 def _probe_database() -> tuple[bool, str | None]:
-    try:
-        db = get_db()
-        db.execute("SELECT 1").fetchone()
-        db.close()
-        return True, None
-    except Exception as exc:
-        return False, str(exc)
+    from runtime_health import probe_database
+
+    return probe_database(get_db)
 
 
 def _directory_check(path: Path, *, ensure: bool = False) -> dict[str, Any]:
-    error = ""
-    if ensure:
-        try:
-            path.mkdir(parents=True, exist_ok=True)
-        except OSError as exc:
-            error = str(exc)
+    from runtime_health import directory_check
 
-    exists = path.exists()
-    is_dir = path.is_dir()
-    probe_path = path if exists else path.parent
-    writable = probe_path.exists() and os.access(probe_path, os.W_OK)
-    ok = exists and is_dir and writable and not error
-    return {
-        "path": str(path),
-        "exists": exists,
-        "isDir": is_dir,
-        "writable": writable,
-        "ok": ok,
-        "error": error,
-    }
+    return directory_check(path, ensure=ensure)
 
 
 def _build_health_payload() -> dict[str, Any]:
-    return {
-        "status": "ok",
-        "service": "ColorVision Marketplace",
-        "time": datetime.now(timezone.utc).isoformat(),
-        "storagePath": str(STORAGE),
-        "dbPath": str(DB_PATH),
-        "debug": bool(CONFIG.get("debug")),
-    }
+    return build_health_payload_impl(
+        storage=STORAGE,
+        db_path=DB_PATH,
+        config=CONFIG,
+    )
 
 
 def _build_ready_payload() -> dict[str, Any]:
-    storage_check = _directory_check(STORAGE, ensure=True)
-    plugins_check = _directory_check(STORAGE / "Plugins", ensure=True)
-    db_ok, db_error = _probe_database()
-    username, password = _get_upload_auth()
-    auth_ok = bool(username and password)
-
-    issues: list[str] = []
-    if not storage_check["ok"]:
-        issues.append("storage path is not ready for uploads")
-    if not plugins_check["ok"]:
-        issues.append("Plugins directory is not ready for uploads")
-    if not db_ok:
-        issues.append("database is not ready")
-    if not auth_ok:
-        issues.append("upload authentication is not configured")
-
-    ready = not issues
-    return {
-        "status": "ready" if ready else "degraded",
-        "ready": ready,
-        "time": datetime.now(timezone.utc).isoformat(),
-        "checks": {
-            "storage": storage_check,
-            "plugins": plugins_check,
-            "database": {
-                "path": str(DB_PATH),
-                "ok": db_ok,
-                "error": db_error or "",
-            },
-            "uploadAuth": {
-                "ok": auth_ok,
-                "usernameConfigured": bool(username),
-                "passwordConfigured": bool(password),
-            },
-        },
-        "issues": issues,
-    }
+    return build_ready_payload_impl(
+        storage=STORAGE,
+        db_path=DB_PATH,
+        config=CONFIG,
+        get_db=get_db,
+        get_upload_auth=_get_upload_auth,
+    )
 
 
 def _parse_int_arg(
@@ -513,26 +443,18 @@ def _load_manifest(manifest_path: Path) -> dict[str, Any]:
     return load_manifest(manifest_path)
 
 
-def _unique_output_path(directory: Path, filename: str) -> Path:
-    candidate = directory / filename
-    if not candidate.exists():
-        return candidate
-
-    stem = Path(filename).stem
-    suffix = Path(filename).suffix
-    index = 1
-    while True:
-        candidate = directory / f"{stem}-{index}{suffix}"
-        if not candidate.exists():
-            return candidate
-        index += 1
-
-
 def _read_limited_form_value(field_name: str, *, default: str = "") -> str:
-    value = request.form.get(field_name, default)
-    if len(value) > MAX_FEEDBACK_FIELD_LENGTH:
-        abort(400, description=f"{field_name} exceeds the maximum length")
-    return value.strip()
+    from feedback_service import read_limited_form_value
+
+    try:
+        return read_limited_form_value(
+            request.form,
+            field_name,
+            default=default,
+            max_length=MAX_FEEDBACK_FIELD_LENGTH,
+        )
+    except FeedbackValidationError as exc:
+        abort(400, description=exc.message)
 
 
 # ---------------------------------------------------------------------------
@@ -564,198 +486,42 @@ def render_markdown(text: str | None) -> Markup:
 
 
 def _storage_target(relative_path: str) -> Path:
-    normalized = _normalize_relative_path(relative_path)
-    return STORAGE / Path(*PurePosixPath(normalized).parts)
-
-
-def _extract_release_version(name: str) -> str | None:
-    canonical = _APP_RELEASE_CANONICAL_RE.match(name)
-    if canonical:
-        return canonical.group(1)
-    loose = _APP_RELEASE_VERSION_RE.search(name)
-    return loose.group(1) if loose else None
+    return storage_target_impl(STORAGE, relative_path)
 
 
 def _is_root_release_file(path: Path) -> bool:
-    return path.parent == STORAGE and path.is_file() and _APP_RELEASE_CANONICAL_RE.match(path.name) is not None
-
-
-def _release_bucket(version: str) -> tuple[str, str]:
-    parts = version.split(".")
-    if len(parts) >= 3:
-        return ".".join(parts[:2]), ".".join(parts[:3])
-    if len(parts) >= 2:
-        joined = ".".join(parts[:2])
-        return joined, joined
-    return parts[0], parts[0]
-
-
-def _app_release_history_dir(version: str) -> Path:
-    major_minor, branch = _release_bucket(version)
-    return STORAGE / "History" / major_minor / branch
-
-
-def _build_release_artifact(file_path: Path, source: str) -> dict[str, Any] | None:
-    version = _extract_release_version(file_path.name)
-    if not version:
-        return None
-
-    try:
-        stat = file_path.stat()
-        relative_path = file_path.relative_to(STORAGE).as_posix()
-    except (OSError, ValueError):
-        return None
-
-    major_minor, branch = _release_bucket(version)
-    return {
-        "filename": file_path.name,
-        "version": version,
-        "size": stat.st_size,
-        "kind": file_path.suffix.lstrip(".").upper() or "FILE",
-        "source": source,
-        "major_minor": major_minor,
-        "branch": branch,
-        "relative_path": relative_path,
-        "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
-    }
-
-
-def _release_sort_key(item: dict[str, Any]) -> tuple:
-    return (
-        _version_tuple(item.get("version", "0.0.0.0")),
-        item.get("source") == "current",
-        item.get("modified", ""),
-    )
+    return is_root_release_file_impl(STORAGE, path)
 
 
 def scan_app_release_artifacts() -> list[dict[str, Any]]:
-    cached = _get_cache_entry(APP_RELEASES_CACHE_KEY)
-    if cached:
-        return cached["value"]
-
-    artifacts: list[dict[str, Any]] = []
-    if not STORAGE.is_dir():
-        return artifacts
-
-    for entry in STORAGE.iterdir():
-        if not entry.is_file():
-            continue
-        artifact = _build_release_artifact(entry, "current")
-        if artifact:
-            artifacts.append(artifact)
-
-    history_dir = STORAGE / "History"
-    if history_dir.is_dir():
-        for entry in history_dir.rglob("*"):
-            if not entry.is_file():
-                continue
-            artifact = _build_release_artifact(entry, "archive")
-            if artifact:
-                artifacts.append(artifact)
-
-    artifacts.sort(key=_release_sort_key, reverse=True)
-    _set_cache_entry(
-        APP_RELEASES_CACHE_KEY,
-        artifacts,
+    return scan_app_release_artifacts_impl(
+        STORAGE,
+        get_cache_entry=_get_cache_entry,
+        set_cache_entry=_set_cache_entry,
+        cache_key=APP_RELEASES_CACHE_KEY,
         ttl_seconds=APP_RELEASES_CACHE_TTL_SECONDS,
-        signature="releases",
     )
-    return artifacts
 
 
 def get_app_release_context() -> dict[str, Any]:
-    releases = scan_app_release_artifacts()
-    current_releases = [item for item in releases if item["source"] == "current"]
-    archived_releases = [item for item in releases if item["source"] == "archive"]
-    latest_release = current_releases[0] if current_releases else (releases[0] if releases else None)
-    recent_branches = []
-    for item in releases:
-        branch = item["branch"]
-        if branch not in recent_branches:
-            recent_branches.append(branch)
-
-    return {
-        "latest_release": latest_release,
-        "current_releases": current_releases,
-        "archived_releases": archived_releases,
-        "current_preview": current_releases[:6],
-        "archive_preview": archived_releases[:10],
-        "archive_recent": archived_releases[:120],
-        "current_count": len(current_releases),
-        "archive_count": len(archived_releases),
-        "release_branch_count": len(recent_branches),
-        "archive_more_count": max(len(archived_releases) - 120, 0),
-    }
+    return build_app_release_context(scan_app_release_artifacts())
 
 
 def reconcile_app_release_history(keep_latest: int | None = None) -> list[dict[str, str]]:
-    keep_latest = int(keep_latest or CONFIG.get("app_release_keep_count", 5) or 5)
-    if keep_latest < 1:
-        keep_latest = 1
-
-    candidates: list[tuple[tuple, Path, str]] = []
-    if not STORAGE.is_dir():
-        return []
-
-    for entry in STORAGE.iterdir():
-        if not _is_root_release_file(entry):
-            continue
-        version = _extract_release_version(entry.name)
-        if not version:
-            continue
-        candidates.append((_version_tuple(version), entry, version))
-
-    candidates.sort(key=lambda item: item[0], reverse=True)
-
-    moved: list[dict[str, str]] = []
-    for _, source_path, version in candidates[keep_latest:]:
-        target_dir = _app_release_history_dir(version)
-        target_dir.mkdir(parents=True, exist_ok=True)
-        target_path = target_dir / source_path.name
-
-        if target_path.exists():
-            try:
-                if target_path.stat().st_size == source_path.stat().st_size:
-                    source_path.unlink(missing_ok=True)
-                    moved.append(
-                        {
-                            "from": source_path.name,
-                            "to": target_path.relative_to(STORAGE).as_posix(),
-                        }
-                    )
-                    continue
-            except OSError:
-                pass
-
-            stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-            target_path = target_dir / f"{source_path.stem}-{stamp}{source_path.suffix}"
-
-        shutil.move(str(source_path), str(target_path))
-        moved.append(
-            {
-                "from": source_path.name,
-                "to": target_path.relative_to(STORAGE).as_posix(),
-            }
-        )
-
-    if moved:
-        _refresh_related_caches(relative_path="History")
-    return moved
+    keep_count = int(keep_latest or CONFIG.get("app_release_keep_count", 5) or 5)
+    return reconcile_app_release_history_impl(
+        STORAGE,
+        keep_latest=keep_count,
+        on_changed=lambda _: _refresh_related_caches(relative_path="History"),
+    )
 
 
 def resolve_storage_file(relative_path: str) -> Path:
-    normalized = _normalize_relative_path(relative_path)
-    target = STORAGE / Path(*PurePosixPath(normalized).parts)
-    if normalized.startswith("Update/") and not target.exists():
-        repair_update_storage_layout(STORAGE)
-        target = STORAGE / Path(*PurePosixPath(normalized).parts)
-    try:
-        target.resolve().relative_to(STORAGE.resolve())
-    except ValueError:
-        abort(403)
-    if not target.exists() or not target.is_file():
-        abort(404)
-    return target
+    return resolve_storage_file_impl(
+        STORAGE,
+        relative_path,
+        repair_updates=repair_update_storage_layout,
+    )
 
 
 def _storage_relative(path: Path) -> str:
@@ -767,6 +533,29 @@ def _storage_relative(path: Path) -> str:
 
 def _get_download_counts() -> dict[str, int]:
     return get_download_counts(get_db)
+
+
+def _request_cached_value(cache_key: str, loader):
+    if not has_request_context():
+        return loader()
+    if not hasattr(g, cache_key):
+        setattr(g, cache_key, loader())
+    return getattr(g, cache_key)
+
+
+def _get_request_download_counts() -> dict[str, int]:
+    return _request_cached_value("download_counts", _get_download_counts)
+
+
+def _get_request_plugin_catalog() -> list[dict]:
+    return _request_cached_value(
+        "plugin_catalog",
+        lambda: scan_plugins(download_counts=_get_request_download_counts()),
+    )
+
+
+def _get_request_app_info() -> dict:
+    return _request_cached_value("app_info", get_app_info)
 
 
 def scan_plugins(download_counts: dict[str, int] | None = None) -> list[dict]:
@@ -844,14 +633,23 @@ def _build_plugin_icon_url(plugin_id: str) -> str:
 
 def get_app_info() -> dict:
     """Read application-level info (LATEST_RELEASE, CHANGELOG)."""
-    changelog = read_text_file(STORAGE / "CHANGELOG.md") or ""
+    changelog_path = STORAGE / "CHANGELOG.md"
+    changelog = read_text_file(changelog_path) or ""
     preview_lines = changelog.splitlines()[:24]
     release_context = get_app_release_context()
+    changelog_analysis = get_cached_changelog_analysis(
+        changelog_path,
+        get_cache_entry=_get_cache_entry,
+        set_cache_entry=_set_cache_entry,
+        cache_key=CHANGELOG_ANALYSIS_CACHE_KEY,
+        ttl_seconds=CHANGELOG_ANALYSIS_CACHE_TTL_SECONDS,
+    )
     return {
         "latest_version": read_text_file(STORAGE / "LATEST_RELEASE") or "",
         "changelog": changelog,
         "changelog_html": render_markdown(changelog),
         "changelog_preview_html": render_markdown("\n".join(preview_lines)),
+        "changelog_analysis": changelog_analysis,
         **release_context,
     }
 
@@ -920,7 +718,7 @@ def index():
         "index.html",
         **build_index_page_context(
             STORAGE,
-            get_app_info=get_app_info,
+            get_app_info=_get_request_app_info,
             get_storage_overview_context=get_storage_overview_context,
         ),
     )
@@ -929,14 +727,22 @@ def index():
 @app.route("/releases")
 def releases_page():
     """Application release archive page."""
-    app_info = get_app_info()
-    return render_template("releases.html", app_info=app_info)
+    return render_template(
+        "releases.html",
+        **build_releases_page_context(
+            _get_request_app_info(),
+            major_minor=request.args.get("major_minor", ""),
+            branch=request.args.get("branch", ""),
+            kind=request.args.get("kind", ""),
+            era=request.args.get("era", ""),
+        ),
+    )
 
 
 @app.route("/changelog")
 def changelog_page():
     """Application changelog page."""
-    app_info = get_app_info()
+    app_info = _get_request_app_info()
     return render_template("changelog.html", app_info=app_info)
 
 
@@ -962,26 +768,18 @@ def download_storage_file(relative_path):
 @app.route("/plugins")
 def plugins_page():
     """Plugin marketplace page — browse and search plugins."""
-    keyword = request.args.get("q", "").strip()
-    category = request.args.get("category", "").strip()
-    sort_by = normalize_catalog_sort(request.args.get("sort", "modified"))
-
-    download_counts = _get_download_counts()
-    all_plugins = scan_plugins(download_counts=download_counts)
-    plugins = sort_plugin_summaries(
-        filter_plugin_summaries(all_plugins, keyword=keyword, category=category),
-        sort_by=sort_by,
-        descending=sort_by != "name",
-    )
-    all_categories = collect_plugin_categories(all_plugins)
-
+    page = _parse_int_arg("page", default=1, minimum=1)
+    page_size = _parse_int_arg("pageSize", default=DEFAULT_HTML_PAGE_SIZE, minimum=1, maximum=60)
     return render_template(
         "plugins.html",
-        plugins=plugins,
-        keyword=keyword,
-        category=category,
-        sort_by=sort_by,
-        categories=all_categories,
+        **build_plugin_catalog_page_context(
+            _get_request_plugin_catalog(),
+            keyword=request.args.get("q", ""),
+            category=request.args.get("category", ""),
+            sort_by=request.args.get("sort", "updated"),
+            page=page,
+            page_size=page_size,
+        ),
     )
 
 
@@ -990,7 +788,7 @@ def plugin_detail_page(plugin_id):
     """Plugin detail page."""
     if not _is_safe_id(plugin_id):
         abort(404)
-    info = get_plugin_info(plugin_id, download_counts=_get_download_counts())
+    info = get_plugin_info(plugin_id, download_counts=_get_request_download_counts())
     if not info:
         abort(404)
     return render_template("plugin_detail.html", plugin=info)
@@ -1013,7 +811,15 @@ def plugin_icon(plugin_id):
 def upload_page():
     """Upload page — upload a .cvxp plugin package."""
     if request.method == "GET":
-        return render_template("upload.html", message=None, error=None)
+        return render_template(
+            "upload.html",
+            **build_upload_page_context(
+                message=None,
+                error=None,
+                max_upload_size_bytes=MAX_UPLOAD_SIZE_BYTES,
+                plugin_package_keep_count=int(CONFIG.get("plugin_package_keep_count", 3) or 3),
+            ),
+        )
 
     # Handle file upload
     file = request.files.get("package")
@@ -1048,19 +854,31 @@ def upload_page():
             ttl_seconds=PLUGIN_INFO_CACHE_TTL_SECONDS,
         )
     except PackageValidationError as exc:
-        return render_template("upload.html", message=None, error=str(exc))
+        return render_template(
+            "upload.html",
+            **build_upload_page_context(
+                message=None,
+                error=str(exc),
+                max_upload_size_bytes=MAX_UPLOAD_SIZE_BYTES,
+                plugin_package_keep_count=int(CONFIG.get("plugin_package_keep_count", 3) or 3),
+            ),
+        )
 
     return render_template(
         "upload.html",
-        message=(
-            f"上传成功: {upload_request.safe_filename} → Plugins/{upload_request.plugin_id}/"
-            + (
-                f"，并自动归档 {len(save_result.moved_packages)} 个旧版本"
-                if save_result.moved_packages
-                else ""
-            )
+        **build_upload_page_context(
+            message=(
+                f"上传成功: {upload_request.safe_filename} → Plugins/{upload_request.plugin_id}/"
+                + (
+                    f"，并自动归档 {len(save_result.moved_packages)} 个旧版本"
+                    if save_result.moved_packages
+                    else ""
+                )
+            ),
+            error=None,
+            max_upload_size_bytes=MAX_UPLOAD_SIZE_BYTES,
+            plugin_package_keep_count=int(CONFIG.get("plugin_package_keep_count", 3) or 3),
         ),
-        error=None,
     )
 
 
@@ -1111,28 +929,23 @@ def api_search_plugins():
     """Search and list plugins. Compatible with IMarketplaceService.SearchPluginsAsync."""
     keyword = request.args.get("Keyword", request.args.get("keyword", "")).strip()
     category = request.args.get("Category", request.args.get("category", "")).strip()
-    sort_by = normalize_catalog_sort(request.args.get("SortBy", request.args.get("sort", "updated")))
+    sort_by = request.args.get("SortBy", request.args.get("sort", "updated"))
     sort_order = request.args.get("SortOrder", request.args.get("sortOrder", "desc")).strip().lower()
     page = _parse_int_arg("Page", "page", default=1, minimum=1)
     page_size = _parse_int_arg("PageSize", "pageSize", default=20, minimum=1, maximum=100)
-    if sort_by not in {"updated", "name", "downloads"}:
+    normalized_sort = normalize_catalog_sort_name(sort_by)
+    if normalized_sort not in ALLOWED_CATALOG_SORTS:
         abort(400, description="Invalid SortBy parameter")
-    if sort_order not in {"asc", "desc"}:
+    if sort_order not in ALLOWED_CATALOG_SORT_ORDERS:
         abort(400, description="Invalid SortOrder parameter")
 
-    plugins = sort_plugin_summaries(
-        filter_plugin_summaries(
-            scan_plugins(download_counts=_get_download_counts()),
+    return jsonify(
+        build_plugin_search_api_result(
+            _get_request_plugin_catalog(),
             keyword=keyword,
             category=category,
-        ),
-        sort_by=sort_by,
-        descending=sort_order != "asc",
-    )
-
-    return jsonify(
-        build_plugin_search_result(
-            plugins,
+            sort_by=normalized_sort,
+            sort_order=sort_order,
             page=page,
             page_size=page_size,
             icon_url_builder=_build_plugin_icon_url,
@@ -1142,7 +955,7 @@ def api_search_plugins():
 @app.route("/api/plugins/categories", methods=["GET"])
 def api_categories():
     """Get all plugin categories."""
-    return jsonify(collect_plugin_categories(scan_plugins(download_counts=_get_download_counts())))
+    return jsonify(collect_catalog_categories(_get_request_plugin_catalog()))
 
 
 @app.route("/api/plugins/batch-version-check", methods=["POST"])
@@ -1168,59 +981,11 @@ def api_plugin_detail(plugin_id):
     """Get detailed plugin information."""
     if not _is_safe_id(plugin_id):
         abort(400, description="Invalid plugin_id")
-    info = get_plugin_info(plugin_id, download_counts=_get_download_counts())
+    info = get_plugin_info(plugin_id, download_counts=_get_request_download_counts())
     if not info:
         return jsonify({"error": "Plugin not found"}), 404
 
-    return jsonify(
-        {
-            "pluginId": info["id"],
-            "name": info["name"],
-            "description": info["description"],
-            "author": info["author"],
-            "url": info["url"],
-            "category": info["category"],
-            "latestVersion": info["version"],
-            "requiresVersion": info["requires"],
-            "iconUrl": (
-                url_for("plugin_icon", plugin_id=info["id"], _external=True)
-                if info["has_icon"]
-                else None
-            ),
-            "readme": info["readme"],
-            "changelog": info["changelog"],
-            "totalDownloads": info["total_downloads"],
-            "updatedAt": info["modified"],
-            "currentPackageCount": len(info["current_packages"]),
-            "historicalPackageCount": len(info["historical_packages"]),
-            "versions": [
-                {
-                    "version": pkg["version"],
-                    "requiresVersion": info["requires"],
-                    "changeLog": info["changelog"],
-                    "fileSize": pkg["size"],
-                    "fileHash": pkg.get("fileHash"),
-                    "downloadCount": 0,
-                    "createdAt": pkg["modified"],
-                    "source": pkg.get("source", "current"),
-                }
-                for pkg in info["current_packages"]
-            ],
-            "archivedVersions": [
-                {
-                    "version": pkg["version"],
-                    "requiresVersion": info["requires"],
-                    "changeLog": info["changelog"],
-                    "fileSize": pkg["size"],
-                    "fileHash": pkg.get("fileHash"),
-                    "downloadCount": 0,
-                    "createdAt": pkg["modified"],
-                    "source": pkg.get("source", "archive"),
-                }
-                for pkg in info["historical_packages"]
-            ],
-        }
-    )
+    return jsonify(build_plugin_detail_api_result(info, icon_url_builder=_build_plugin_icon_url))
 
 
 @app.route("/api/plugins/<plugin_id>/latest-version", methods=["GET"])
@@ -1447,55 +1212,21 @@ def api_feedback():
     Receive user feedback with optional log files, screenshots, and attachments.
     The feedback is stored in storage/Feedback/{timestamp}_{hash}/.
     """
-    message = _read_limited_form_value("message")
-    user_name = _read_limited_form_value("userName")
-    app_version = _read_limited_form_value("appVersion")
-    machine_info = _read_limited_form_value("machineInfo")
+    try:
+        result = save_feedback_impl(
+            STORAGE,
+            form=request.form,
+            files=request.files,
+            remote_addr=request.remote_addr,
+            max_feedback_files=MAX_FEEDBACK_FILES,
+            max_feedback_field_length=MAX_FEEDBACK_FIELD_LENGTH,
+            sanitize_filename=_sanitize_filename,
+            hash_ip=_hash_ip,
+        )
+    except FeedbackValidationError as exc:
+        return jsonify({"error": exc.message}), 400
 
-    uploaded_files = [
-        file_item
-        for key in request.files
-        for file_item in request.files.getlist(key)
-        if file_item and file_item.filename
-    ]
-    if len(uploaded_files) > MAX_FEEDBACK_FILES:
-        return jsonify({"error": f"A maximum of {MAX_FEEDBACK_FILES} files is allowed"}), 400
-
-    if not message and not uploaded_files:
-        return jsonify({"error": "Message or at least one file is required"}), 400
-
-    # Create feedback directory
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    feedback_seed = f"{message}|{user_name}|{datetime.now(timezone.utc).isoformat()}"
-    feedback_id = f"{timestamp}_{hashlib.sha256(feedback_seed.encode()).hexdigest()[:12]}"
-    feedback_dir = STORAGE / "Feedback" / feedback_id
-    feedback_dir.mkdir(parents=True, exist_ok=True)
-
-    # Save metadata
-    metadata = {
-        "feedbackId": feedback_id,
-        "message": message,
-        "userName": user_name,
-        "appVersion": app_version,
-        "machineInfo": machine_info,
-        "clientIp": _hash_ip(request.remote_addr),
-        "createdAt": datetime.now(timezone.utc).isoformat(),
-        "files": [],
-    }
-
-    # Save uploaded files
-    for f in uploaded_files:
-        safe_name = _sanitize_filename(f.filename)
-        if safe_name:
-            output_path = _unique_output_path(feedback_dir, safe_name)
-            f.save(str(output_path))
-            metadata["files"].append(output_path.name)
-
-    # Write metadata JSON
-    with open(feedback_dir / "feedback.json", "w", encoding="utf-8") as mf:
-        json.dump(metadata, mf, indent=2, ensure_ascii=False)
-
-    return jsonify({"feedbackId": feedback_id, "message": "Feedback received"}), 201
+    return jsonify({"feedbackId": result.feedback_id, "message": "Feedback received"}), 201
 
 
 # ===================================================================

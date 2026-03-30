@@ -8,12 +8,13 @@
             <span class="eyebrow mb-3"><i class="bi bi-stars"></i> 更适合长期维护的内部发布门户</span>
             <h1 class="display-5 fw-semibold mb-3">把版本发布、历史下载、更新说明和插件分发放到一个真正可维护的入口里。</h1>
             <p class="page-lead mb-4">
-                首页目录概览已经接入数据库缓存；同时新增了应用版本档案与 CHANGELOG 展示入口，后续你就可以逐步把手工整理 History 的流程迁移成规则化管理。
+                首页现在优先强调文件系统视角：除了版本页，你也能直接看到 `History / Update / Tool / Plugins` 的真实目录入口，以及每一段历史归档对应的时间和制品形态。
             </p>
             <div class="hero-actions">
-                <a href="/releases" class="btn btn-light btn-lg"><i class="bi bi-archive me-2"></i>查看版本档案</a>
+                <a href="/plugins" class="btn btn-light btn-lg"><i class="bi bi-puzzle me-2"></i>插件市场</a>
+                <a href="/releases" class="btn btn-outline-light btn-lg"><i class="bi bi-archive me-2"></i>查看版本档案</a>
                 <a href="/changelog" class="btn btn-outline-light btn-lg"><i class="bi bi-journal-text me-2"></i>查看 CHANGELOG</a>
-                <a href="/plugins" class="btn btn-outline-light btn-lg"><i class="bi bi-puzzle me-2"></i>插件市场</a>
+                <a href="/browse/History" class="btn btn-outline-light btn-lg"><i class="bi bi-folder2-open me-2"></i>浏览 History</a>
             </div>
         </div>
         <div class="col-lg-5">
@@ -35,22 +36,75 @@
                     </div>
                     <div class="col-sm-6">
                         <div class="metric-card">
-                            <span class="metric-label">根目录保留版本</span>
+                            <span class="metric-label">根目录当前制品</span>
                             <div class="metric-value">{{ app_info.current_count }}</div>
-                            <div class="metric-note">可直接下载的当前安装包</div>
+                            <div class="metric-note">当前根目录可直接下载的版本文件</div>
                         </div>
                     </div>
                     <div class="col-sm-6">
                         <div class="metric-card">
-                            <span class="metric-label">归档版本数</span>
+                            <span class="metric-label">历史归档制品</span>
                             <div class="metric-value">{{ app_info.archive_count }}</div>
-                            <div class="metric-note">History 中可回溯文件</div>
+                            <div class="metric-note">包含早期 ZIP / RAR / EXE 记录</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</section>
+        <section class="panel-card p-4 mb-4">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title"><i class="bi bi-graph-up-arrow"></i>迭代过程图表</h2>
+                    <div class="section-subtitle mt-2">从 `CHANGELOG.md` 中拆出版本节点、发布时间和变更量，结合缓存后的分析数据直接展示迭代节奏。</div>
+                </div>
+                <div class="summary-strip">
+                    <div class="summary-chip"><i class="bi bi-boxes"></i> {{ app_info.changelog_analysis.summary.release_count }} 次发布</div>
+                    <div class="summary-chip"><i class="bi bi-diagram-3"></i> {{ app_info.changelog_analysis.summary.phase_count }} 个阶段</div>
+                    <div class="summary-chip"><i class="bi bi-hourglass-split"></i> 平均 {{ app_info.changelog_analysis.summary.avg_gap_days }} 天</div>
+                </div>
+            </div>
+            <div class="row g-4 align-items-start">
+                <div class="col-xl-8">
+                    <div class="chart-shell">
+                        {% set chart = app_info.changelog_analysis.chart.svg %}
+                        <svg class="chart-svg" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="ColorVision 版本迭代过程图表">
+                            <line class="chart-grid-line" x1="42" y1="{{ chart.baseline_y }}" x2="{{ chart.width - 42 }}" y2="{{ chart.baseline_y }}"></line>
+                            <line class="chart-grid-line" x1="42" y1="28" x2="42" y2="{{ chart.baseline_y }}"></line>
+                            {% for bar in chart.bars %}
+                            <rect class="chart-bar {{ 'is-milestone' if bar.is_milestone else '' }}" x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}" height="{{ bar.height }}" rx="7"></rect>
+                            {% endfor %}
+                            <path class="chart-line" d="{{ chart.path }}"></path>
+                            {% for point in chart.points %}
+                            <circle class="chart-point {{ 'is-milestone' if point.is_milestone else '' }}" cx="{{ point.x }}" cy="{{ point.y }}" r="{{ 5 if point.is_milestone else 3.5 }}">
+                                <title>{{ point.version }} · {{ point.date_display }} · {{ point.change_count }} 条变更</title>
+                            </circle>
+                            {% endfor %}
+                        </svg>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="row g-3">
+                        {% for milestone in app_info.changelog_analysis.milestones[:4] %}
+                        <div class="col-12">
+                            <div class="milestone-card">
+                                <h5>ColorVision {{ milestone.version }}</h5>
+                                <p>{{ milestone.date_display }} · {{ milestone.change_count }} 条更新{% if milestone.major_minor %} · {{ milestone.major_minor }} 阶段{% endif %}</p>
+                                <div class="summary-strip mb-2">
+                                    {% for tag in milestone.tags %}
+                                    <div class="summary-chip">{{ tag }}</div>
+                                    {% endfor %}
+                                </div>
+                                {% if milestone.highlights %}
+                                <div class="text-soft small">{{ milestone.highlights[0] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
 </section>
 
 <div class="row g-3 mb-4">
@@ -106,15 +160,48 @@
     </div>
     <div class="col-md-6 col-xl-4">
         <div class="card h-100">
-            <a href="/browse" class="quick-link-card">
+            <a href="/browse/History" class="quick-link-card">
                 <div class="quick-link-icon"><i class="bi bi-folder2-open"></i></div>
-                <h5>文件浏览</h5>
-                <p class="mb-2">保留原始文件视角，便于排障、核对和临时管理。</p>
-                <small>适合进阶管理，不替代发布页面本身。</small>
+                <h5>History 文件系统</h5>
+                <p class="mb-2">直接进入 `History/`，从磁盘结构查看每个阶段保留下来的历史制品。</p>
+                <small>适合核对真实文件、补偿整理和历史追溯。</small>
             </a>
         </div>
     </div>
 </div>
+
+<section class="panel-card p-4 mb-4">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title"><i class="bi bi-hdd-stack"></i>首页文件系统视角</h2>
+            <div class="section-subtitle mt-2">把最重要的目录入口放到首页上层，发布页用于阅读，文件系统页用于核对真实历史。</div>
+        </div>
+        <div class="summary-strip">
+            <div class="summary-chip"><i class="bi bi-diagram-3"></i> 一级目录 {{ overview_summary.directory_count }}</div>
+            <div class="summary-chip"><i class="bi bi-files"></i> 累计文件 {{ overview_summary.total_file_count }}</div>
+            <div class="summary-chip"><i class="bi bi-clock-history"></i> 更新时间 {{ overview_meta.updated_at_display }}</div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        {% for item in filesystem_spotlight %}
+        <div class="col-md-6 col-xl-4">
+            <div class="filesystem-card">
+                <div class="filesystem-card-top">
+                    <div class="quick-link-icon"><i class="bi {{ item.icon }}"></i></div>
+                    <span class="surface-tag"><i class="bi bi-files"></i>{{ item.file_count }} 个文件</span>
+                </div>
+                <h3 class="filesystem-card-title">{{ item.label }}</h3>
+                <p>{{ item.description }}</p>
+                <div class="filesystem-card-footer">
+                    <div class="text-soft small">{{ '最近更新 ' ~ item.modified if item.exists else '目录尚未创建' }}</div>
+                    <a href="{{ item.href }}" class="btn btn-sm btn-outline-primary">打开目录</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
 
 <div class="row g-4 mb-4">
     <div class="col-xl-6">
@@ -222,8 +309,8 @@
         <section class="panel-card p-4 h-100">
             <div class="section-header">
                 <div>
-                    <h2 class="section-title"><i class="bi bi-box-seam"></i>应用版本与历史档案</h2>
-                    <div class="section-subtitle mt-2">根目录保留近期版本，旧版本建议归档到 <code>History/&lt;主版本&gt;/&lt;分支&gt;/</code>。</div>
+                    <h2 class="section-title"><i class="bi bi-box-seam"></i>应用版本与历史时间线</h2>
+                    <div class="section-subtitle mt-2">根目录看当前制品，History 看迭代记录；每个阶段都显示时间范围、文件类型和真实路径。</div>
                 </div>
                 <a href="/releases" class="btn btn-sm btn-outline-primary">查看全部</a>
             </div>
@@ -234,8 +321,9 @@
                     <div class="release-row-main">
                         <div class="release-icon"><i class="bi bi-download"></i></div>
                         <div>
-                            <div class="release-title">ColorVision {{ release.version }}</div>
-                            <div class="release-meta">{{ release.filename }} · {{ release.kind }} · {{ human_size(release.size) }}</div>
+                            <div class="release-title">{{ release.display_title }}</div>
+                            <div class="release-meta">{{ release.filename }} · {{ release.kind_label }} · {{ human_size(release.size) }}</div>
+                            <div class="release-meta">{{ release.modified_display }}</div>
                         </div>
                     </div>
                     <div class="release-actions">
@@ -249,24 +337,38 @@
                 {% endif %}
             </div>
 
-            <div class="subtle-label mb-3">最近归档预览</div>
-            <div class="release-list">
-                {% for release in app_info.archive_preview %}
-                <div class="release-row">
-                    <div class="release-row-main">
-                        <div class="release-icon"><i class="bi bi-clock-history"></i></div>
+            <div class="subtle-label mb-3">历史阶段预览</div>
+            <div>
+                {% for group in app_info.archive_timeline_preview %}
+                <div class="timeline-group">
+                    <div class="timeline-group-header">
                         <div>
-                            <div class="release-title">ColorVision {{ release.version }}</div>
-                            <div class="release-meta">{{ release.relative_path }} · {{ human_size(release.size) }}</div>
+                            <h3 class="timeline-group-title">阶段 {{ group.branch }}</h3>
+                            <div class="timeline-group-subtitle">{{ group.time_range_display }} · {{ group.kind_summary }}</div>
+                        </div>
+                        <div class="summary-strip">
+                            <div class="summary-chip"><i class="bi bi-boxes"></i>{{ group.count }} 个历史制品</div>
+                            {% if group.contains_archive_only_formats %}
+                            <div class="summary-chip"><i class="bi bi-file-earmark-zip"></i>包含早期压缩归档</div>
+                            {% endif %}
                         </div>
                     </div>
-                    <div class="release-actions">
-                        <span class="surface-tag"><i class="bi bi-archive"></i>{{ release.branch }}</span>
-                        <a href="/download/{{ release.relative_path }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download me-1"></i>下载</a>
+                    <div class="timeline-track">
+                        {% for release in group['items'][:3] %}
+                        <div class="timeline-item">
+                            <div class="timeline-item-head">
+                                <div>
+                                    <div class="release-title">{{ release.display_title }}</div>
+                                    <div class="timeline-meta">{{ release.kind_label }} · {{ release.modified_display }} · {{ release.relative_path }}</div>
+                                </div>
+                                <a href="/download/{{ release.relative_path }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download me-1"></i>下载</a>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
                 {% endfor %}
-                {% if not app_info.archive_preview %}
+                {% if not app_info.archive_timeline_preview %}
                 <div class="text-muted py-4 text-center">当前还没有识别到归档版本。</div>
                 {% endif %}
             </div>
@@ -298,7 +400,7 @@
     <div class="section-header">
         <div>
             <h2 class="section-title"><i class="bi bi-hdd-stack"></i>存储目录概览</h2>
-            <div class="section-subtitle mt-2">首页只展示一级概览，深层文件统计优先走数据库缓存，减少反复扫描磁盘。</div>
+            <div class="section-subtitle mt-2">首页保留一级视角，便于快速跳到真实目录；深层文件统计继续优先走数据库缓存，减少反复扫描磁盘。</div>
         </div>
         <div class="text-end">
             <div class="surface-tag mb-2">
@@ -371,6 +473,36 @@
                 {% endif %}
             </tbody>
         </table>
+    </div>
+</section>
+
+<section class="panel-card p-4 mt-4">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title"><i class="bi bi-activity"></i>最近变更</h2>
+            <div class="section-subtitle mt-2">最近变更放在最后，作为补充信息查看，不再干扰首页主入口和历史视角。</div>
+        </div>
+        <div class="summary-strip">
+            <div class="summary-chip"><i class="bi bi-lightning-charge"></i> 制品 {{ recent_change_summary.release_count }}</div>
+            <div class="summary-chip"><i class="bi bi-folder2-open"></i> 目录 {{ recent_change_summary.directory_count }}</div>
+            <div class="summary-chip"><i class="bi bi-clock-history"></i> 最新 {{ recent_change_summary.latest_timestamp }}</div>
+        </div>
+    </div>
+
+    <div class="change-feed">
+        {% for item in recent_change_dashboard %}
+        <div class="change-feed-item">
+            <div>
+                <div class="change-feed-title">{{ item.title }}</div>
+                <div class="change-feed-meta">{{ item.category }} · {{ item.subtitle }}</div>
+                <div class="change-feed-meta">{{ item.timestamp }}</div>
+            </div>
+            <a href="{{ item.href }}" class="btn btn-sm btn-outline-primary">{{ item.action_label }}</a>
+        </div>
+        {% endfor %}
+        {% if not recent_change_dashboard %}
+        <div class="text-muted py-4 text-center">当前还没有足够的变更记录用于展示。</div>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

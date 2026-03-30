@@ -12,22 +12,42 @@ def storage_relative(storage: Path, path: Path) -> str:
         return path.name
 
 
-def build_entry_record(storage: Path, entry: Path, relative_path: str) -> dict[str, Any]:
+def _format_modified_timestamps(timestamp: float) -> tuple[str, str]:
+    dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+    return dt.isoformat(), dt.strftime("%Y-%m-%d %H:%M")
+
+
+def _build_listing_item(entry: Path, relative_path: str) -> dict[str, Any] | None:
+    try:
+        stat = entry.stat()
+    except OSError:
+        return None
+
+    modified_iso, modified_display = _format_modified_timestamps(stat.st_mtime)
     item: dict[str, Any] = {
         "name": entry.name,
         "is_dir": entry.is_dir(),
         "path": relative_path,
         "relative_path": relative_path,
-        "modified": datetime.fromtimestamp(
-            entry.stat().st_mtime, tz=timezone.utc
-        ).isoformat(),
-        "modified_display": datetime.fromtimestamp(
-            entry.stat().st_mtime, tz=timezone.utc
-        ).strftime("%Y-%m-%d %H:%M"),
+        "modified": modified_display,
+        "modified_iso": modified_iso,
     }
-    if entry.is_file():
-        item["size"] = entry.stat().st_size
-    else:
+    if not item["is_dir"]:
+        item["size"] = stat.st_size
+    return item
+
+
+def build_entry_record(storage: Path, entry: Path, relative_path: str) -> dict[str, Any]:
+    item = _build_listing_item(entry, relative_path) or {
+        "name": entry.name,
+        "is_dir": entry.is_dir(),
+        "path": relative_path,
+        "relative_path": relative_path,
+        "modified": "",
+        "modified_iso": "",
+    }
+    item["modified_display"] = item["modified"]
+    if item["is_dir"]:
         item["file_count"] = sum(1 for child in entry.rglob("*") if child.is_file())
     return item
 
@@ -38,18 +58,9 @@ def list_directory_contents(target: Path, subpath: str) -> list[dict[str, Any]]:
         if entry.name.startswith("."):
             continue
         relative_path = f"{subpath}/{entry.name}" if subpath else entry.name
-        info: dict[str, Any] = {
-            "name": entry.name,
-            "is_dir": entry.is_dir(),
-            "path": relative_path,
-            "relative_path": relative_path,
-            "modified": datetime.fromtimestamp(
-                entry.stat().st_mtime, tz=timezone.utc
-            ).strftime("%Y-%m-%d %H:%M"),
-        }
-        if entry.is_file():
-            info["size"] = entry.stat().st_size
-        items.append(info)
+        info = _build_listing_item(entry, relative_path)
+        if info:
+            items.append(info)
     return items
 
 
