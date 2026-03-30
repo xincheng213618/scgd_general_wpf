@@ -6,14 +6,7 @@ namespace Spectrum
 {
     public partial class MainWindow
     {
-        private void SpectrumMode_Changed(object sender, RoutedEventArgs e)
-        {
-            bool isLuminousFlux = RadioLuminousFluxMode.IsChecked == true;
-            MainWindowConfig.Instance.EqeEnabled = isLuminousFlux;
-            UpdateEqeColumnsVisibility(isLuminousFlux);
-        }
-
-        private void UpdateEqeColumnsVisibility(bool eqeEnabled)
+        internal void UpdateEqeColumnsVisibility(bool eqeEnabled)
         {
             if (!IsInitialized) return;
 
@@ -30,6 +23,8 @@ namespace Spectrum
             ColRecalculated.Width = width;
             // Hide brightness column in 光通量模式
             ColBrightness.Width = eqeEnabled ? 0 : double.NaN;
+            // Update status bar mode text
+            StatusModeText.Text = eqeEnabled ? "光通量模式" : "亮色度模式";
         }
 
         private void CalculateEqe_Click(object sender, RoutedEventArgs e)

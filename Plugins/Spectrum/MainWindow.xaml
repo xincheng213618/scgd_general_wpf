@@ -36,11 +36,6 @@
         <Grid>
             <Menu x:Name="menu" Grid.Row="0" Padding="2" >
             </Menu>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,30,0">
-                <TextBlock Text="模式: " VerticalAlignment="Center" Margin="0,0,4,0"/>
-                <RadioButton x:Name="RadioBrightnessMode" Content="亮色度模式" GroupName="SpectrumMode" VerticalAlignment="Center" Margin="0,0,8,0" Checked="SpectrumMode_Changed"/>
-                <RadioButton x:Name="RadioLuminousFluxMode" Content="光通量模式" GroupName="SpectrumMode" VerticalAlignment="Center" Margin="0,0,8,0" Checked="SpectrumMode_Changed"/>
-            </StackPanel>
             <Button HorizontalAlignment="Right" Margin="5,0,5,0"  Command="{Binding SetEmissionSP100Config.EditCommand}" Padding="2" Height="18" Width="18" >
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
@@ -845,6 +840,10 @@
                 </StackPanel>
             </StatusBarItem>
             <Separator/>
+            <StatusBarItem ToolTip="当前测量模式 (通过 工具 菜单切换)">
+                <TextBlock x:Name="StatusModeText" Text="亮色度模式" Foreground="#8E44AD"/>
+            </StatusBarItem>
+            <Separator/>
             <StatusBarItem>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Shutter: "/>
@@ -871,7 +870,7 @@
                             <Style TargetType="Ellipse">
                                 <Setter Property="Fill" Value="#E53935"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsNDConnected}" Value="True">
+                                    <DataTrigger Binding="{Binding FilterWheelController.IsConnected}" Value="True">
                                         <Setter Property="Fill" Value="#27AE60"/>
                                     </DataTrigger>
                                 </Style.Triggers>

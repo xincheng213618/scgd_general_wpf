@@ -232,12 +232,6 @@ namespace Spectrum
             });
 
             UpdateEqeColumnsVisibility(MainWindowConfig.Instance.EqeEnabled);
-
-            // Set initial radio button state
-            if (MainWindowConfig.Instance.EqeEnabled)
-                RadioLuminousFluxMode.IsChecked = true;
-            else
-                RadioBrightnessMode.IsChecked = true;
         }
     }
 }
