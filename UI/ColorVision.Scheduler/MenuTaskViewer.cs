@@ -4,7 +4,7 @@ using System.Windows;
 
 namespace ColorVision.Scheduler
 {
-    public class MenuTaskViewer :  MenuItemBase
+    public class MenuTaskViewer : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
 
@@ -14,6 +14,7 @@ namespace ColorVision.Scheduler
 
         public override void Execute()
         {
+            QuartzSchedulerManager.GetInstance();
             new TaskViewerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
