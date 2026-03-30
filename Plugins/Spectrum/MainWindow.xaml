@@ -814,19 +814,6 @@
                                             <TextBlock Text="CIE 1976" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,2"/>
                                             <Image x:Name="image1976" Height="220" Width="210" Stretch="Uniform" Source="Assets\Image\CIE-1976.jpg"/>
                                         </StackPanel>
-                                        <!-- Spectral Parameters & Calculation Details -->
-                                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Margin="4,2">
-                                            <StackPanel x:Name="CieParamsPanel">
-                                                <TextBlock Text="光谱参数及计算过程" FontWeight="Bold" Margin="0,2,0,4"/>
-
-                                                <TextBlock x:Name="TextDominantWavelength" TextWrapping="Wrap" Margin="0,1"/>
-                                                <TextBlock x:Name="TextFWHM" TextWrapping="Wrap" Margin="0,1"/>
-                                                <TextBlock x:Name="TextCCT" TextWrapping="Wrap" Margin="0,1"/>
-                                                <TextBlock x:Name="TextExcitationPurity" TextWrapping="Wrap" Margin="0,1"/>
-                                                <TextBlock x:Name="TextColorRendering" TextWrapping="Wrap" Margin="0,1"/>
-                                                <TextBlock x:Name="TextChromaticity" TextWrapping="Wrap" Margin="0,1"/>
-                                            </StackPanel>
-                                        </ScrollViewer>
                                     </Grid>
                                 </xcad:LayoutAnchorable>
                             </xcad:LayoutAnchorablePane>
