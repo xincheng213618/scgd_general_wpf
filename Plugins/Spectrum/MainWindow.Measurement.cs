@@ -60,6 +60,24 @@ namespace Spectrum
                         log.Warn($"自动积分时间获取失败: {Spectrometer.GetErrorMessage(ret)}");
                     }
                 }
+
+                // Apply sync frequency adjustment if enabled
+                if (ret == 1 && Manager.GetDataConfig.IsSyncFrequencyEnabled)
+                {
+                    float syncIntTime = Manager.IntTime;
+                    COLOR_PARA cOLOR_PARA = new COLOR_PARA();
+                    int syncRet = Spectrometer.CM_Emission_GetDataSyncfreq(SpectrometerHandle, 0, Manager.GetDataConfig.Syncfreq, Manager.GetDataConfig.SyncfreqFactor, ref syncIntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.fDarkData, 0, 0, Manager.GetDataConfig.SetWL1, Manager.GetDataConfig.SetWL2, ref cOLOR_PARA);
+                    if (syncRet == 1)
+                    {
+                        log.Info($"同步频率调整积分时间: {Manager.IntTime}ms → {syncIntTime}ms");
+                        Manager.IntTime = syncIntTime;
+                    }
+                    else
+                    {
+                        log.Warn($"同步频率调整积分时间失败: {Spectrometer.GetErrorMessage(syncRet)}");
+                    }
+                }
+
                 IsRun = false;
                 SetOperationButtonsEnabled(true);
             });
