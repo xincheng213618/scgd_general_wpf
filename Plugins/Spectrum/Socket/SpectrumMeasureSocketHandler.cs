@@ -54,7 +54,9 @@ namespace Spectrum.Socket
                 // Record count before measurement to detect new results
                 int countBefore = MainWindow.ViewResultSpectrums.Count;
 
-                // Measure() runs on background thread and dispatches UI updates internally
+                // ISocketJsonHandler.Handle() is synchronous by interface contract.
+                // Measure() is async and handles its own UI thread dispatching internally,
+                // so we bridge via Task.Run to avoid blocking the socket handler thread.
                 var measureTask = Task.Run(async () => await mainWindow.Measure());
                 if (!measureTask.Wait(TimeSpan.FromSeconds(60)))
                 {

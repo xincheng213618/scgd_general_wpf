@@ -2,7 +2,6 @@ using ColorVision.SocketProtocol;
 using cvColorVision;
 using log4net;
 using System.Net.Sockets;
-using System.Windows;
 
 namespace Spectrum.Socket
 {
@@ -48,26 +47,8 @@ namespace Spectrum.Socket
             {
                 log.Info("Socket指令: 执行光谱仪校零");
 
-                var task = Task.Run(async () =>
-                {
-                    if (manager.ShutterController.IsConnected)
-                    {
-                        log.Debug("开启快门进行校零");
-                        await manager.ShutterController.OpenShutter();
-                    }
-
-                    int ret = Spectrometer.CM_Emission_DarkStorage(
-                        manager.Handle, manager.IntTime, manager.Average, 0, manager.fDarkData);
-
-                    if (manager.ShutterController.IsConnected)
-                    {
-                        log.Debug("关闭快门");
-                        await manager.ShutterController.CloseShutter();
-                    }
-
-                    return ret;
-                });
-
+                // ISocketJsonHandler.Handle is synchronous; use Task.Run to bridge async
+                var task = Task.Run(async () => await manager.PerformDarkCalibrationAsync());
                 if (!task.Wait(TimeSpan.FromSeconds(30)))
                 {
                     return new SocketResponse

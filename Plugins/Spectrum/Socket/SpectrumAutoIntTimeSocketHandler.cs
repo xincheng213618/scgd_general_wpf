@@ -1,5 +1,4 @@
 using ColorVision.SocketProtocol;
-using cvColorVision;
 using log4net;
 using System.Net.Sockets;
 
@@ -51,53 +50,11 @@ namespace Spectrum.Socket
             {
                 log.Info("Socket指令: 获取自动积分时间");
 
-                float fIntTime = 0;
-                int ret;
+                float? result = manager.GetAutoIntegrationTime();
 
-                if (manager.IntTimeConfig.IsOldVersion)
+                if (result.HasValue)
                 {
-                    ret = Spectrometer.CM_Emission_GetAutoTime(
-                        manager.Handle, ref fIntTime,
-                        manager.IntTimeConfig.IntLimitTime,
-                        manager.IntTimeConfig.AutoIntTimeB,
-                        (int)manager.IntTimeConfig.MaxPercent);
-                }
-                else
-                {
-                    ret = Spectrometer.CM_Emission_GetAutoTimeEx(
-                        manager.Handle, ref fIntTime,
-                        manager.IntTimeConfig.IntLimitTime,
-                        manager.IntTimeConfig.AutoIntTimeB,
-                        manager.IntTimeConfig.Max, null);
-                }
-
-                if (ret == 1)
-                {
-                    // Apply sync frequency adjustment if enabled
-                    if (manager.GetDataConfig.IsSyncFrequencyEnabled)
-                    {
-                        float syncIntTime = fIntTime;
-                        COLOR_PARA cOLOR_PARA = new COLOR_PARA();
-                        int syncRet = Spectrometer.CM_Emission_GetDataSyncfreq(
-                            manager.Handle, 0,
-                            manager.GetDataConfig.Syncfreq,
-                            manager.GetDataConfig.SyncfreqFactor,
-                            ref syncIntTime, manager.Average,
-                            manager.GetDataConfig.FilterBW,
-                            manager.fDarkData, 0, 0,
-                            manager.GetDataConfig.SetWL1,
-                            manager.GetDataConfig.SetWL2,
-                            ref cOLOR_PARA);
-
-                        if (syncRet == 1)
-                        {
-                            log.Info($"同步频率调整积分时间: {fIntTime}ms → {syncIntTime}ms");
-                            fIntTime = syncIntTime;
-                        }
-                    }
-
-                    manager.IntTime = fIntTime;
-                    log.Info($"自动积分时间获取成功: {fIntTime}ms");
+                    manager.IntTime = result.Value;
 
                     return new SocketResponse
                     {
@@ -105,19 +62,17 @@ namespace Spectrum.Socket
                         EventName = EventName,
                         Code = 200,
                         Msg = "自动积分时间获取成功",
-                        Data = new { IntTime = fIntTime }
+                        Data = new { IntTime = result.Value }
                     };
                 }
                 else
                 {
-                    string errorMsg = Spectrometer.GetErrorMessage(ret);
-                    log.Warn($"自动积分时间获取失败: {errorMsg}");
                     return new SocketResponse
                     {
                         MsgID = request.MsgID,
                         EventName = EventName,
                         Code = -3,
-                        Msg = $"自动积分时间获取失败: {errorMsg}"
+                        Msg = "自动积分时间获取失败"
                     };
                 }
             }

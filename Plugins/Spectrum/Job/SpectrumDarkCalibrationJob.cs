@@ -17,9 +17,8 @@ namespace Spectrum.Job
         public async Task Execute(IJobExecutionContext context)
         {
             var manager = SpectrometerManager.Instance;
-            var mainWindow = MainWindow.Instance;
 
-            if (mainWindow == null)
+            if (MainWindow.Instance == null)
             {
                 log.Warn("光谱仪窗口未打开，无法执行校零任务");
                 throw new JobExecutionException("光谱仪窗口未打开");
@@ -33,20 +32,7 @@ namespace Spectrum.Job
 
             log.Info("开始执行光谱仪校零任务");
 
-            if (manager.ShutterController.IsConnected)
-            {
-                log.Debug("开启快门进行校零");
-                await manager.ShutterController.OpenShutter();
-            }
-
-            int ret = Spectrometer.CM_Emission_DarkStorage(
-                manager.Handle, manager.IntTime, manager.Average, 0, manager.fDarkData);
-
-            if (manager.ShutterController.IsConnected)
-            {
-                log.Debug("关闭快门");
-                await manager.ShutterController.CloseShutter();
-            }
+            int ret = await manager.PerformDarkCalibrationAsync();
 
             if (ret == 1)
             {
