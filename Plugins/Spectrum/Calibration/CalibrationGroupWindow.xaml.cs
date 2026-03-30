@@ -297,17 +297,24 @@ namespace Spectrum.Calibration
         /// </summary>
         private void DiscardChanges()
         {
-            var restored = JsonConvert.DeserializeObject<CalibrationGroupConfig>(_initialConfigJson);
-            if (restored != null)
+            try
             {
-                Manager.CalibrationGroupConfig.Groups.Clear();
-                foreach (var g in restored.Groups)
-                    Manager.CalibrationGroupConfig.Groups.Add(g);
-                Manager.CalibrationGroupConfig.ActiveGroupName = restored.ActiveGroupName;
+                var restored = JsonConvert.DeserializeObject<CalibrationGroupConfig>(_initialConfigJson);
+                if (restored != null)
+                {
+                    Manager.CalibrationGroupConfig.Groups.Clear();
+                    foreach (var g in restored.Groups)
+                        Manager.CalibrationGroupConfig.Groups.Add(g);
+                    Manager.CalibrationGroupConfig.ActiveGroupName = restored.ActiveGroupName;
+                }
+                else
+                {
+                    log.Warn("Failed to deserialize initial config snapshot during discard");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                log.Warn("Failed to deserialize initial config snapshot during discard");
+                log.Error("Failed to restore initial config snapshot during discard", ex);
             }
             Manager.WavelengthFile = _initialWavelengthFile;
             Manager.MaguideFile = _initialMaguideFile;
