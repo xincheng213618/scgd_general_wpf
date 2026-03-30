@@ -37,7 +37,9 @@
             <Menu x:Name="menu" Grid.Row="0" Padding="2" >
             </Menu>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,30,0">
-                <CheckBox x:Name="EqeCheckBox" Content="光通量模式" IsChecked="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeEnabled}" Checked="EqeCheckBox_Changed" Unchecked="EqeCheckBox_Changed" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Text="模式: " VerticalAlignment="Center" Margin="0,0,4,0"/>
+                <RadioButton x:Name="RadioBrightnessMode" Content="亮色度模式" GroupName="SpectrumMode" VerticalAlignment="Center" Margin="0,0,8,0" Checked="SpectrumMode_Changed"/>
+                <RadioButton x:Name="RadioLuminousFluxMode" Content="光通量模式" GroupName="SpectrumMode" VerticalAlignment="Center" Margin="0,0,8,0" Checked="SpectrumMode_Changed"/>
             </StackPanel>
             <Button HorizontalAlignment="Right" Margin="5,0,5,0"  Command="{Binding SetEmissionSP100Config.EditCommand}" Padding="2" Height="18" Width="18" >
                 <Button.Triggers>
@@ -325,8 +327,8 @@
                             </StackPanel>
                         </GroupBox>
 
-                        <!-- ═══ EQE参数配置 ═══ -->
-                        <GroupBox Header="EQE参数配置">
+                        <!-- ═══ 光通量参数配置 ═══ -->
+                        <GroupBox x:Name="EqeGroupBox" Header="光通量参数配置" Visibility="Collapsed">
                             <StackPanel>
                                 <StackPanel x:Name="EqePanel" Visibility="Collapsed">
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">

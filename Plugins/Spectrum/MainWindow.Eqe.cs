@@ -6,10 +6,11 @@ namespace Spectrum
 {
     public partial class MainWindow
     {
-        private void EqeCheckBox_Changed(object sender, RoutedEventArgs e)
+        private void SpectrumMode_Changed(object sender, RoutedEventArgs e)
         {
-            bool isEnabled = EqeCheckBox.IsChecked == true;
-            UpdateEqeColumnsVisibility(isEnabled);
+            bool isLuminousFlux = RadioLuminousFluxMode.IsChecked == true;
+            MainWindowConfig.Instance.EqeEnabled = isLuminousFlux;
+            UpdateEqeColumnsVisibility(isLuminousFlux);
         }
 
         private void UpdateEqeColumnsVisibility(bool eqeEnabled)
@@ -17,6 +18,7 @@ namespace Spectrum
             if (!IsInitialized) return;
 
             EqePanel.Visibility = eqeEnabled ? Visibility.Visible : Visibility.Collapsed;
+            EqeGroupBox.Visibility = eqeEnabled ? Visibility.Visible : Visibility.Collapsed;
             // double.NaN = auto-size (visible), 0 = hidden
             double width = eqeEnabled ? double.NaN : 0;
             ColEqe.Width = width;

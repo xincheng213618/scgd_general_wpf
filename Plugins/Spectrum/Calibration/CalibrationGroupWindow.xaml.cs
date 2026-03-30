@@ -122,7 +122,22 @@ namespace Spectrum.Calibration
 
         private void BtnAddGroup_Click(object sender, RoutedEventArgs e)
         {
-            Manager.AddCalibrationGroupCommand.Execute(null);
+            // Add group directly to config without auto-saving
+            int idx = Manager.CalibrationGroupConfig.Groups.Count;
+            string newName;
+            do
+            {
+                newName = $"Group{idx}";
+                idx++;
+            } while (Manager.CalibrationGroupConfig.Groups.Any(g => g.GroupName == newName));
+
+            Manager.CalibrationGroupConfig.Groups.Add(new CalibrationGroup
+            {
+                GroupName = newName,
+                WavelengthFile = Manager.WavelengthFile,
+                MaguideFile = Manager.MaguideFile,
+            });
+
             RefreshGroupList();
             // Select the newly added group (last one)
             if (ComboBoxGroups.Items.Count > 0)
@@ -137,7 +152,11 @@ namespace Spectrum.Calibration
                 MessageBox.Show("至少保留一个分组", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            Manager.RemoveCalibrationGroupCommand.Execute(null);
+            // Remove group directly from config without auto-saving
+            var group = ComboBoxGroups.SelectedItem as CalibrationGroup;
+            if (group == null) return;
+            Manager.CalibrationGroupConfig.Groups.Remove(group);
+            Manager.CalibrationGroupConfig.ActiveGroupName = Manager.CalibrationGroupConfig.Groups.FirstOrDefault()?.GroupName ?? "Default";
             RefreshGroupList();
             MarkUnsaved();
         }
