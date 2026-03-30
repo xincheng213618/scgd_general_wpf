@@ -377,6 +377,9 @@ namespace Spectrum
         public RelayCommand GenerateAmplitudeCommand { get; set; }
 
         [JsonIgnore]
+        public RelayCommand GenerateAmplitudeFromExistingCommand { get; set; }
+
+        [JsonIgnore]
         public RelayCommand ConnectCommand { get; set; }
 
         [JsonIgnore]
@@ -396,6 +399,7 @@ namespace Spectrum
             GetDarkDataCommand = new RelayCommand(a => GetDarkData());
             GetLightDataCommand = new RelayCommand(a => GetLightData());
             GenerateAmplitudeCommand = new RelayCommand(a => GenerateAmplitude());
+            GenerateAmplitudeFromExistingCommand = new RelayCommand(a => GenerateAmplitudeFromExisting());
 
             ConnectCommand = new RelayCommand(a => Connect());
             DisconnectCommand = new RelayCommand(a => Disconnect());
@@ -602,7 +606,7 @@ namespace Spectrum
         {
             using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
             {
-                saveFileDialog.FileName = "Magiude.dat"; // 默认文件名
+                saveFileDialog.FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
                 saveFileDialog.Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*";
                 saveFileDialog.Title = "选择保存文件路径";
 
@@ -683,8 +687,27 @@ namespace Spectrum
             return -1;
         }
 
+        /// <summary>
+        /// Event raised when dark data or light data has been acquired, for chart refresh.
+        /// </summary>
+        [JsonIgnore]
+        public event EventHandler DataAcquired;
+
         public void GenerateAmplitude()  
         {
+            string outputPath = MaguideFileOutput;
+            if (string.IsNullOrEmpty(outputPath))
+            {
+                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+                saveFileDialog.FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
+                saveFileDialog.Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*";
+                saveFileDialog.Title = "选择幅值标定文件保存路径";
+                if (saveFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                    return;
+                outputPath = saveFileDialog.FileName;
+                MaguideFileOutput = outputPath;
+            }
+
             int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fLightData);
             if (ret != 1)
             {
@@ -693,16 +716,51 @@ namespace Spectrum
                 MessageBox.Show($"获取 LightData 失败: {errorMsg}");
                 return;
             }
-            log.Debug($"生成幅值文件参数: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={MaguideFileOutput}");
-            int ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, MaguideFileOutput);
+            DataAcquired?.Invoke(this, EventArgs.Empty);
+
+            log.Debug($"生成幅值文件参数: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={outputPath}");
+            int ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, outputPath);
             if (ret1 == 1)
             {
-                log.Info("幅值文件生成成功");
-                MessageBox.Show("生成成功");
+                log.Info($"幅值文件生成成功: {outputPath}");
+                MessageBox.Show($"生成成功\n文件: {outputPath}");
             }
             else
             {
                 string errorMsg = Spectrometer.GetErrorMessage(ret1);
+                log.Error($"幅值文件生成失败: {errorMsg}");
+                MessageBox.Show($"生成失败: {errorMsg}");
+            }
+        }
+
+        /// <summary>
+        /// Generate amplitude file from existing dark/light data (manual mode - no auto-acquire).
+        /// </summary>
+        public void GenerateAmplitudeFromExisting()
+        {
+            string outputPath = MaguideFileOutput;
+            if (string.IsNullOrEmpty(outputPath))
+            {
+                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+                saveFileDialog.FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
+                saveFileDialog.Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*";
+                saveFileDialog.Title = "选择幅值标定文件保存路径";
+                if (saveFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                    return;
+                outputPath = saveFileDialog.FileName;
+                MaguideFileOutput = outputPath;
+            }
+
+            log.Debug($"手动生成幅值文件: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={outputPath}");
+            int ret = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, outputPath);
+            if (ret == 1)
+            {
+                log.Info($"幅值文件生成成功: {outputPath}");
+                MessageBox.Show($"生成成功\n文件: {outputPath}");
+            }
+            else
+            {
+                string errorMsg = Spectrometer.GetErrorMessage(ret);
                 log.Error($"幅值文件生成失败: {errorMsg}");
                 MessageBox.Show($"生成失败: {errorMsg}");
             }
@@ -714,6 +772,7 @@ namespace Spectrum
             if (ret == 1)
             {
                 log.Info("LightData 获取成功");
+                DataAcquired?.Invoke(this, EventArgs.Empty);
                 MessageBox.Show("获取成功");
             }
             else
@@ -730,6 +789,7 @@ namespace Spectrum
             if (ret == 1)
             {
                 log.Info("校零成功");
+                DataAcquired?.Invoke(this, EventArgs.Empty);
                 MessageBox.Show("校零成功");
             }
             else
@@ -801,7 +861,7 @@ namespace Spectrum
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile;
 
-        public string MaguideFileOutput { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
+        public string MaguideFileOutput { get => _MaguideFileOutput; set { _MaguideFileOutput = value; OnPropertyChanged(); } }
         private string _MaguideFileOutput;
 
 
