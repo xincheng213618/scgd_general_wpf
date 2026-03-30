@@ -741,6 +741,84 @@ namespace Spectrum
         }
 
         /// <summary>
+        /// 执行校零操作，自动处理快门控制
+        /// 可被定时任务和Socket指令共享调用
+        /// </summary>
+        /// <returns>校零结果：1=成功，其他=失败</returns>
+        public async Task<int> PerformDarkCalibrationAsync()
+        {
+            if (ShutterController.IsConnected)
+            {
+                log.Debug("开启快门进行校零");
+                await ShutterController.OpenShutter();
+            }
+
+            int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fDarkData);
+
+            if (ShutterController.IsConnected)
+            {
+                log.Debug("关闭快门");
+                await ShutterController.CloseShutter();
+            }
+
+            return ret;
+        }
+
+        /// <summary>
+        /// 获取自动积分时间，自动处理同步频率调整
+        /// 可被定时任务和Socket指令共享调用
+        /// </summary>
+        /// <returns>成功返回积分时间，失败返回null</returns>
+        public float? GetAutoIntegrationTime()
+        {
+            float fIntTime = 0;
+            int ret;
+
+            if (IntTimeConfig.IsOldVersion)
+            {
+                ret = Spectrometer.CM_Emission_GetAutoTime(
+                    Handle, ref fIntTime, IntTimeConfig.IntLimitTime,
+                    IntTimeConfig.AutoIntTimeB, (int)IntTimeConfig.MaxPercent);
+            }
+            else
+            {
+                ret = Spectrometer.CM_Emission_GetAutoTimeEx(
+                    Handle, ref fIntTime, IntTimeConfig.IntLimitTime,
+                    IntTimeConfig.AutoIntTimeB, IntTimeConfig.Max, null);
+            }
+
+            if (ret != 1)
+            {
+                log.Warn($"自动积分时间获取失败: {Spectrometer.GetErrorMessage(ret)}");
+                return null;
+            }
+
+            // Apply sync frequency adjustment if enabled
+            if (GetDataConfig.IsSyncFrequencyEnabled)
+            {
+                float syncIntTime = fIntTime;
+                COLOR_PARA cOLOR_PARA = new COLOR_PARA();
+                int syncRet = Spectrometer.CM_Emission_GetDataSyncfreq(
+                    Handle, 0, GetDataConfig.Syncfreq, GetDataConfig.SyncfreqFactor,
+                    ref syncIntTime, Average, GetDataConfig.FilterBW,
+                    fDarkData, 0, 0, GetDataConfig.SetWL1, GetDataConfig.SetWL2,
+                    ref cOLOR_PARA);
+                if (syncRet == 1)
+                {
+                    log.Info($"同步频率调整积分时间: {fIntTime}ms → {syncIntTime}ms");
+                    fIntTime = syncIntTime;
+                }
+                else
+                {
+                    log.Warn($"同步频率调整积分时间失败: {Spectrometer.GetErrorMessage(syncRet)}");
+                }
+            }
+
+            log.Info($"自动积分时间获取成功: {fIntTime}ms");
+            return fIntTime;
+        }
+
+        /// <summary>
         /// Event raised when dark data or light data has been acquired, for chart refresh.
         /// </summary>
         public event EventHandler DataAcquired;

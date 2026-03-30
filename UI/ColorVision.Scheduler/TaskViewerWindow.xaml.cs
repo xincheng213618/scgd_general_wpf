@@ -35,8 +35,11 @@ namespace ColorVision.Scheduler
             _taskInfosView.Filter = FilterTasks;
             ListViewTask.ItemsSource = _taskInfosView;
             
-            LoadTasks();
-            // 订阅监听器事件
+            if (QuartzSchedulerManager.Scheduler != null)
+            {
+                LoadTasks();
+            }
+
             var listener = QuartzSchedulerManager.GetInstance().Listener;
             if (listener != null)
             {
