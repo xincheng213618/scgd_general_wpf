@@ -471,7 +471,8 @@
             <im:ImageView x:Name="ImageView"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"   Background="{DynamicResource RegionBrush}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" />
             <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
             <Grid x:Name="FocusPointGrid" Visibility="Visible" Grid.Row="1" Height="300" >
-                <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" ContextMenuOpening="ListView1_ContextMenuOpening" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" ContextMenuOpening="ListView1_ContextMenuOpening" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged"
+                           AllowDrop="True" Drop="ListView1_Drop" DragOver="ListView1_DragOver" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
 
@@ -485,7 +486,6 @@
                             <StackPanel  Orientation="Horizontal">
                                 <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Width="100"  Margin="5,0"/>
                                 <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F1},Converter={StaticResource RoundToNearestHalfConverter}}" Width="60"  Margin="5,0"/>
-                                <TextBox Text="{Binding Attribute.Text}"  HorizontalContentAlignment="Center" Width="200"  Margin="5,0"/>
                             </StackPanel>
                         </DataTemplate>
                         <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type dr:DVRectangle}">
@@ -501,12 +501,33 @@
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <TextBox Text="{Binding Attribute.Rect,StringFormat={}{0:F0}}" Width="200" Margin="5,0"/>
-                                <TextBox Text="{Binding Attribute.Text}"  HorizontalContentAlignment="Center"  Width="200"  Margin="5,0"/>
                             </StackPanel>
+                        </DataTemplate>
+
+                        <DataTemplate x:Key="TextColumnCircleTextTemplate" DataType="{x:Type dr:DVCircleText}">
+                            <TextBox Text="{Binding Attribute.Text}" HorizontalContentAlignment="Center" Width="180" Margin="2,0"/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="TextColumnRectangleTextTemplate" DataType="{x:Type dr:DVRectangleText}">
+                            <TextBox Text="{Binding Attribute.Text}" HorizontalContentAlignment="Center" Width="180" Margin="2,0"/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="TextColumnEmptyTemplate">
+                            <TextBlock Text="" Width="180" Margin="2,0"/>
+                        </DataTemplate>
+
+                        <DataTemplate x:Key="RadiusColumnCircleTemplate" DataType="{x:Type dr:DVCircle}">
+                            <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F1}}" HorizontalContentAlignment="Center" Width="60" Margin="2,0"/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="RadiusColumnCircleTextTemplate" DataType="{x:Type dr:DVCircleText}">
+                            <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F1},Converter={StaticResource RoundToNearestHalfConverter}}" HorizontalContentAlignment="Center" Width="60" Margin="2,0"/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="RadiusColumnEmptyTemplate">
+                            <TextBlock Text="" Width="60" Margin="2,0"/>
                         </DataTemplate>
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="ListViewItem_PreviewMouseLeftButtonDown"/>
+                            <EventSetter Event="PreviewMouseMove" Handler="ListViewItem_PreviewMouseMove"/>
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.View>
@@ -527,7 +548,15 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resources.Value}"  Width="400">
+                            <GridViewColumn x:Name="NameColumn" Header="名称" Width="200">
+                                <GridViewColumn.CellTemplateSelector>
+                                    <local:PoiTextColumnTemplateSelector
+                                        CircleTextTemplate="{StaticResource TextColumnCircleTextTemplate}"
+                                        RectangleTextTemplate="{StaticResource TextColumnRectangleTextTemplate}"
+                                        EmptyTemplate="{StaticResource TextColumnEmptyTemplate}" />
+                                </GridViewColumn.CellTemplateSelector>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="{x:Static properties:Resources.Value}"  Width="250">
                                 <GridViewColumn.CellTemplateSelector>
                                     <converter:DrawCanvasTemplateSelector  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}" DrawingVisualCircleWordTemplate="{StaticResource DrawingVisualCircleWordTemplate}"  DrawingVisualRectangleWordTemplate="{StaticResource DrawingVisualRectangleWordTemplate}" DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
                                 </GridViewColumn.CellTemplateSelector>

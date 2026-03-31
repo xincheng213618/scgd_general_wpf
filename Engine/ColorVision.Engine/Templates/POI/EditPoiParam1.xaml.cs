@@ -858,6 +858,21 @@ namespace ColorVision.Engine.Templates.POI
 
                 }
             }
+            else if (e.KeyboardDevice.Modifiers == ModifierKeys.Alt && e.SystemKey == Key.Up)
+            {
+                MoveUp();
+                e.Handled = true;
+            }
+            else if (e.KeyboardDevice.Modifiers == ModifierKeys.Alt && e.SystemKey == Key.Down)
+            {
+                MoveDown();
+                e.Handled = true;
+            }
+            else if (e.KeyboardDevice.Modifiers == ModifierKeys.Control && e.Key == Key.D)
+            {
+                BatchFillDown();
+                e.Handled = true;
+            }
         }
 
         DrawingVisual drawingVisualDatum;
@@ -1695,10 +1710,10 @@ namespace ColorVision.Engine.Templates.POI
                         ListView1.ContextMenu.Items.Add(item);
                 }
             }
-            var moveUpItem = new MenuItem { Header = "上移", Command = MoveUpCommand };
+            var moveUpItem = new MenuItem { Header = "上移 (Alt+↑)", Command = MoveUpCommand };
             ListView1.ContextMenu.Items.Add(moveUpItem);
 
-            var moveDownItem = new MenuItem { Header = "下移", Command = MoveDownCommand };
+            var moveDownItem = new MenuItem { Header = "下移 (Alt+↓)", Command = MoveDownCommand };
             ListView1.ContextMenu.Items.Add(moveDownItem);
 
             var moveToTopItem = new MenuItem { Header = "移动到首位", Command = MoveToTopCommand };
@@ -1707,6 +1722,38 @@ namespace ColorVision.Engine.Templates.POI
             var moveToBottomItem = new MenuItem { Header = "移动到末尾", Command = MoveToBottomCommand };
             ListView1.ContextMenu.Items.Add(moveToBottomItem);
 
+            ListView1.ContextMenu.Items.Add(new Separator());
+
+            if (ListView1.SelectedItems.Count > 1)
+            {
+                var batchHeader = new MenuItem { Header = $"批量编辑 ({ListView1.SelectedItems.Count} 项)", IsEnabled = false };
+                batchHeader.FontWeight = FontWeights.Bold;
+                ListView1.ContextMenu.Items.Add(batchHeader);
+
+                var batchTextItem = new MenuItem { Header = "批量设置名称..." };
+                batchTextItem.Click += (s, ev) => BatchSetText();
+                ListView1.ContextMenu.Items.Add(batchTextItem);
+
+                bool hasCircles = ListView1.SelectedItems.Cast<IDrawingVisual>().Any(v => v is DVCircleText || v is DVCircle);
+                if (hasCircles)
+                {
+                    var batchRadiusItem = new MenuItem { Header = "批量设置半径..." };
+                    batchRadiusItem.Click += (s, ev) => BatchSetRadius();
+                    ListView1.ContextMenu.Items.Add(batchRadiusItem);
+                }
+
+                bool hasRects = ListView1.SelectedItems.Cast<IDrawingVisual>().Any(v => v is DVRectangleText || v is DVRectangle);
+                if (hasRects)
+                {
+                    var batchSizeItem = new MenuItem { Header = "批量设置尺寸..." };
+                    batchSizeItem.Click += (s, ev) => BatchSetRectSize();
+                    ListView1.ContextMenu.Items.Add(batchSizeItem);
+                }
+
+                var fillDownItem = new MenuItem { Header = "向下填充 (Ctrl+D)" };
+                fillDownItem.Click += (s, ev) => BatchFillDown();
+                ListView1.ContextMenu.Items.Add(fillDownItem);
+            }
 
 
         }
@@ -1767,6 +1814,244 @@ namespace ColorVision.Engine.Templates.POI
                 UpdateDBIndex(item, DrawingVisualLists.Count - 1);
             }
         }
+
+        #region Drag-and-Drop Reordering
+
+        private Point _dragStartPoint;
+        private IDrawingVisual _draggedItem;
+        private bool _isDragging;
+
+        private void ListViewItem_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (Keyboard.FocusedElement is TextBox)
+                return;
+
+            _dragStartPoint = e.GetPosition(null);
+            if (sender is ListViewItem listViewItem)
+                _draggedItem = listViewItem.Content as IDrawingVisual;
+        }
+
+        private void ListViewItem_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton != MouseButtonState.Pressed || _draggedItem == null)
+                return;
+
+            if (Keyboard.FocusedElement is TextBox)
+                return;
+
+            Point currentPosition = e.GetPosition(null);
+            Vector diff = _dragStartPoint - currentPosition;
+
+            if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
+            {
+                _isDragging = true;
+                DataObject dragData = new DataObject("PoiDragItem", _draggedItem);
+                DragDrop.DoDragDrop((DependencyObject)sender, dragData, DragDropEffects.Move);
+                _isDragging = false;
+                _draggedItem = null;
+            }
+        }
+
+        private void ListView1_DragOver(object sender, DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent("PoiDragItem"))
+            {
+                e.Effects = DragDropEffects.None;
+                e.Handled = true;
+                return;
+            }
+            e.Effects = DragDropEffects.Move;
+            e.Handled = true;
+        }
+
+        private void ListView1_Drop(object sender, DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent("PoiDragItem"))
+                return;
+
+            var droppedData = e.Data.GetData("PoiDragItem") as IDrawingVisual;
+            if (droppedData == null)
+                return;
+
+            IDrawingVisual target = null;
+
+            var element = e.OriginalSource as DependencyObject;
+            while (element != null && element is not ListViewItem)
+                element = VisualTreeHelper.GetParent(element);
+
+            if (element is ListViewItem listViewItem)
+                target = listViewItem.Content as IDrawingVisual;
+
+            if (target == null || ReferenceEquals(droppedData, target))
+                return;
+
+            int oldIndex = DrawingVisualLists.IndexOf(droppedData);
+            int newIndex = DrawingVisualLists.IndexOf(target);
+
+            if (oldIndex < 0 || newIndex < 0)
+                return;
+
+            DrawingVisualLists.Move(oldIndex, newIndex);
+            ListView1.SelectedItem = droppedData;
+        }
+
+        #endregion
+
+        #region Batch Editing
+
+        private void BatchFillDown()
+        {
+            if (ListView1.SelectedItems.Count < 2) return;
+
+            var selectedItems = ListView1.SelectedItems.Cast<IDrawingVisual>().ToList();
+            var first = selectedItems[0];
+
+            if (first is DVCircleText firstCircle)
+            {
+                for (int i = 1; i < selectedItems.Count; i++)
+                {
+                    if (selectedItems[i] is DVCircleText circle)
+                    {
+                        circle.Attribute.Radius = firstCircle.Attribute.Radius;
+                        circle.Render();
+                    }
+                }
+            }
+            else if (first is DVRectangleText firstRect)
+            {
+                for (int i = 1; i < selectedItems.Count; i++)
+                {
+                    if (selectedItems[i] is DVRectangleText rect)
+                    {
+                        var newRect = new Rect(rect.Attribute.Rect.X, rect.Attribute.Rect.Y,
+                            firstRect.Attribute.Rect.Width, firstRect.Attribute.Rect.Height);
+                        rect.Attribute.Rect = newRect;
+                        rect.Render();
+                    }
+                }
+            }
+        }
+
+        private void BatchSetText()
+        {
+            var selectedItems = ListView1.SelectedItems.Cast<IDrawingVisual>().ToList();
+            if (selectedItems.Count == 0) return;
+
+            string currentText = "";
+            if (selectedItems[0] is DVCircleText ct)
+                currentText = ct.Attribute.Text ?? "";
+            else if (selectedItems[0] is DVRectangleText rt)
+                currentText = rt.Attribute.Text ?? "";
+
+            var dialog = new BatchEditDialog("批量设置名称", "请输入名称模板 (使用 {n} 表示序号):", currentText)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                string template = dialog.InputValue;
+                int seq = 1;
+                foreach (var item in selectedItems)
+                {
+                    string newText = template.Contains("{n}") ? template.Replace("{n}", seq.ToString()) : template;
+                    if (item is DVCircleText circle)
+                    {
+                        circle.Attribute.Text = newText;
+                        circle.Render();
+                    }
+                    else if (item is DVRectangleText rect)
+                    {
+                        rect.Attribute.Text = newText;
+                        rect.Render();
+                    }
+                    seq++;
+                }
+            }
+        }
+
+        private void BatchSetRadius()
+        {
+            var selectedItems = ListView1.SelectedItems.Cast<IDrawingVisual>()
+                .Where(v => v is DVCircleText || v is DVCircle).ToList();
+            if (selectedItems.Count == 0) return;
+
+            string currentValue = "";
+            if (selectedItems[0] is DVCircleText ct)
+                currentValue = ct.Attribute.Radius.ToString("F1");
+            else if (selectedItems[0] is DVCircle c)
+                currentValue = c.Attribute.Radius.ToString("F1");
+
+            var dialog = new BatchEditDialog("批量设置半径", "请输入半径值:", currentValue)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                if (double.TryParse(dialog.InputValue, out double radius))
+                {
+                    foreach (var item in selectedItems)
+                    {
+                        if (item is DVCircleText circle)
+                        {
+                            circle.Attribute.Radius = radius;
+                            circle.Render();
+                        }
+                        else if (item is DVCircle c)
+                        {
+                            c.Attribute.Radius = radius;
+                            c.Render();
+                        }
+                    }
+                }
+            }
+        }
+
+        private void BatchSetRectSize()
+        {
+            var selectedItems = ListView1.SelectedItems.Cast<IDrawingVisual>()
+                .Where(v => v is DVRectangleText || v is DVRectangle).ToList();
+            if (selectedItems.Count == 0) return;
+
+            string currentValue = "";
+            if (selectedItems[0] is DVRectangleText rt)
+                currentValue = $"{rt.Attribute.Rect.Width:F0},{rt.Attribute.Rect.Height:F0}";
+            else if (selectedItems[0] is DVRectangle r)
+                currentValue = $"{r.Attribute.Rect.Width:F0},{r.Attribute.Rect.Height:F0}";
+
+            var dialog = new BatchEditDialog("批量设置尺寸", "请输入宽度,高度 (用逗号分隔):", currentValue)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                var parts = dialog.InputValue.Split(',');
+                if (parts.Length == 2 && double.TryParse(parts[0].Trim(), out double width) && double.TryParse(parts[1].Trim(), out double height))
+                {
+                    foreach (var item in selectedItems)
+                    {
+                        if (item is DVRectangleText rect)
+                        {
+                            rect.Attribute.Rect = new Rect(rect.Attribute.Rect.X, rect.Attribute.Rect.Y, width, height);
+                            rect.Render();
+                        }
+                        else if (item is DVRectangle r)
+                        {
+                            r.Attribute.Rect = new Rect(r.Attribute.Rect.X, r.Attribute.Rect.Y, width, height);
+                            r.Render();
+                        }
+                    }
+                }
+            }
+        }
+
+        #endregion
 
 
         private void UpdateDBIndex(IDrawingVisual movedItem, int newIndex)
