@@ -1819,7 +1819,6 @@ namespace ColorVision.Engine.Templates.POI
 
         private Point _dragStartPoint;
         private IDrawingVisual _draggedItem;
-        private bool _isDragging;
 
         private void ListViewItem_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -1845,10 +1844,8 @@ namespace ColorVision.Engine.Templates.POI
             if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
                 Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
             {
-                _isDragging = true;
                 DataObject dragData = new DataObject("PoiDragItem", _draggedItem);
                 DragDrop.DoDragDrop((DependencyObject)sender, dragData, DragDropEffects.Move);
-                _isDragging = false;
                 _draggedItem = null;
             }
         }
@@ -2032,20 +2029,23 @@ namespace ColorVision.Engine.Templates.POI
             if (dialog.ShowDialog() == true)
             {
                 var parts = dialog.InputValue.Split(',');
-                if (parts.Length == 2 && double.TryParse(parts[0].Trim(), out double width) && double.TryParse(parts[1].Trim(), out double height))
+                if (parts.Length != 2 || !double.TryParse(parts[0].Trim(), out double width) || !double.TryParse(parts[1].Trim(), out double height))
                 {
-                    foreach (var item in selectedItems)
+                    MessageBox.Show("请输入正确的格式：宽度,高度 (例如: 100,50)", "格式错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                foreach (var item in selectedItems)
+                {
+                    if (item is DVRectangleText rect)
                     {
-                        if (item is DVRectangleText rect)
-                        {
-                            rect.Attribute.Rect = new Rect(rect.Attribute.Rect.X, rect.Attribute.Rect.Y, width, height);
-                            rect.Render();
-                        }
-                        else if (item is DVRectangle r)
-                        {
-                            r.Attribute.Rect = new Rect(r.Attribute.Rect.X, r.Attribute.Rect.Y, width, height);
-                            r.Render();
-                        }
+                        rect.Attribute.Rect = new Rect(rect.Attribute.Rect.X, rect.Attribute.Rect.Y, width, height);
+                        rect.Render();
+                    }
+                    else if (item is DVRectangle r)
+                    {
+                        r.Attribute.Rect = new Rect(r.Attribute.Rect.X, r.Attribute.Rect.Y, width, height);
+                        r.Render();
                     }
                 }
             }
