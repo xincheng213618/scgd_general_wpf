@@ -1,10 +1,8 @@
 ﻿using ColorVision.Rbac.ViewModels;
 using ColorVision.UI.Authorizations;
-using System.Globalization;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Media;
 
 namespace ColorVision.Rbac
 {
@@ -22,10 +20,10 @@ namespace ColorVision.Rbac
             
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
+        private async void Window_Initialized(object sender, EventArgs e)
         {
             RbacManager = RbacManager.GetInstance();
-            LoadUsers();
+            await LoadUsersAsync();
             LoadRoles();
             UpdateStatusInfo();
             UpdateSessionInfo();
@@ -72,14 +70,14 @@ namespace ColorVision.Rbac
             };
         }
 
-        private void LoadUsers()
+        private async Task LoadUsersAsync()
         {
-            var users = RbacManager.GetUsers();
+            var users = await Task.Run(() => RbacManager.GetUsers());
             _allUsers = new List<UserViewModel>();
             
             foreach (var user in users)
             {
-                var userRoles = RbacManager.GetUserRoles(user.Id);
+                var userRoles = await Task.Run(() => RbacManager.GetUserRoles(user.Id));
                 _allUsers.Add(UserViewModel.FromEntity(user, userRoles));
             }
             
@@ -89,7 +87,7 @@ namespace ColorVision.Rbac
 
         private void ApplyFilter()
         {
-            var searchText = TxtSearch.Text.Trim().ToLower();
+            var searchText = TxtSearch.Text.Trim();
             
             if (string.IsNullOrEmpty(searchText))
             {
@@ -98,9 +96,9 @@ namespace ColorVision.Rbac
             else
             {
                 var filtered = _allUsers.Where(u =>
-                    u.Username.ToLower().Contains(searchText) ||
-                    (u.Remark?.ToLower().Contains(searchText) ?? false) ||
-                    (u.RolesDisplay?.ToLower().Contains(searchText) ?? false)
+                    u.Username.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    (u.Remark?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (u.RolesDisplay?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false)
                 ).ToList();
                 
                 UsersListView.ItemsSource = filtered;
@@ -113,7 +111,7 @@ namespace ColorVision.Rbac
             RolesListView.ItemsSource = roles;
         }
 
-        private void BtnCreateUser_Click(object sender, RoutedEventArgs e)
+        private async void BtnCreateUser_Click(object sender, RoutedEventArgs e)
         {
             var window = new CreateUserWindow
             {
@@ -121,11 +119,11 @@ namespace ColorVision.Rbac
             };
             if (window.ShowDialog() == true)
             {
-                LoadUsers();
+                await LoadUsersAsync();
             }
         }
 
-        private void BtnCreateRole_Click(object sender, RoutedEventArgs e)
+        private async void BtnCreateRole_Click(object sender, RoutedEventArgs e)
         {
             // UI 层二次校验，防止普通用户通过窗口创建角色
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
@@ -144,7 +142,7 @@ namespace ColorVision.Rbac
                 return;
             }
 
-            bool result = RbacManager.CreateRole(roleName, roleCode, roleRemark);
+            bool result = await RbacManager.CreateRoleAsync(roleName, roleCode, roleRemark);
             if (result)
             {
                 MessageBox.Show("角色创建成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -160,7 +158,7 @@ namespace ColorVision.Rbac
         }
 
         // 新增：编辑用户角色
-        private void BtnEditRoles_Click(object sender, RoutedEventArgs e)
+        private async void BtnEditRoles_Click(object sender, RoutedEventArgs e)
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
@@ -175,7 +173,7 @@ namespace ColorVision.Rbac
                 };
                 if (window.ShowDialog() == true)
                 {
-                    LoadUsers();
+                    await LoadUsersAsync();
                 }
             }
         }
@@ -196,7 +194,7 @@ namespace ColorVision.Rbac
                     if (await RbacManager.DeleteUserAsync(vm.Id, vm.Username))
                     {
                         MessageBox.Show("用户删除成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
-                        LoadUsers();
+                        await LoadUsersAsync();
                     }
                 }
             }
@@ -227,7 +225,7 @@ namespace ColorVision.Rbac
 
                 if (success)
                 {
-                    LoadUsers();
+                    await LoadUsersAsync();
                 }
             }
         }
@@ -268,133 +266,12 @@ namespace ColorVision.Rbac
             ApplyFilter();
         }
 
-        private void BtnRefresh_Click(object sender, RoutedEventArgs e)
+        private async void BtnRefresh_Click(object sender, RoutedEventArgs e)
         {
-            LoadUsers();
+            await LoadUsersAsync();
             LoadRoles();
             UpdateSessionInfo();
             UpdateCacheStats();
-            MessageBox.Show("数据已刷新", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-    }
-
-    // Value Converters
-    public class BoolToColorConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return boolValue ? new SolidColorBrush(Color.FromRgb(0, 120, 212)) : new SolidColorBrush(Color.FromRgb(153, 153, 153));
-            }
-            return new SolidColorBrush(Colors.Gray);
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class BoolToStatusTextConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return boolValue ? "启用" : "禁用";
-            }
-            return "未知";
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class BoolToYesNoConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return boolValue ? "是" : "否";
-            }
-            return "否";
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class BoolToDeleteColorConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return boolValue ? new SolidColorBrush(Colors.Red) : new SolidColorBrush(Colors.Green);
-            }
-            return new SolidColorBrush(Colors.Black);
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class BoolToToggleIconConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return boolValue ? "\uE8FB" : "\uE7BA"; // Enabled: Checkmark, Disabled: BlockContact
-            }
-            return "\uE7BA";
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class BoolToToggleColorConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return boolValue ? new SolidColorBrush(Color.FromRgb(117, 117, 117)) : new SolidColorBrush(Color.FromRgb(76, 175, 80));
-            }
-            return new SolidColorBrush(Colors.Gray);
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class BoolToToggleTooltipConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is bool boolValue)
-            {
-                return boolValue ? "禁用用户" : "启用用户";
-            }
-            return "切换状态";
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
         }
     }
 }

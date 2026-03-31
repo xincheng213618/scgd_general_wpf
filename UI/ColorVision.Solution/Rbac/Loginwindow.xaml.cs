@@ -2,6 +2,7 @@
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Rbac
 {
@@ -14,7 +15,18 @@ namespace ColorVision.Rbac
         public LoginWindow()
         {
             InitializeComponent();
-            this.ApplyCaption();
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+                DragMove();
+        }
+
+        private void BtnClose_Click(object sender, RoutedEventArgs e)
+        {
+            this.DialogResult = false;
+            this.Close();
         }
 
         private async void Window_Initialized(object sender, EventArgs e)
@@ -120,8 +132,6 @@ namespace ColorVision.Rbac
                     return;
                 }
 
-                await CompleteLogin(userLoginResult, ChkRememberMe.IsChecked == true);
-
                 // 检测默认密码（用户名==密码，如 admin/admin），强制修改
                 if (username == password)
                 {
@@ -130,9 +140,15 @@ namespace ColorVision.Rbac
                         Owner = this,
                         WindowStartupLocation = WindowStartupLocation.CenterOwner
                     };
-                    changeWindow.ShowDialog();
-                    // 无论是否修改，都允许继续使用（但每次登录都会提示直到修改）
+                    if (changeWindow.ShowDialog() != true)
+                    {
+                        // 用户拒绝修改默认密码，不允许登录
+                        MessageBox.Show("首次登录必须修改默认密码。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
                 }
+
+                await CompleteLogin(userLoginResult, ChkRememberMe.IsChecked == true);
 
                 this.DialogResult = true;
                 this.Close();

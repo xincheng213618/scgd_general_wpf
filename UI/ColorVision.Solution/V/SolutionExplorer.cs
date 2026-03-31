@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8602,CS8604,CS4014
+﻿#pragma warning disable CS8604,CS4014
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.Properties;
 using ColorVision.Solution.Workspace;
@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.Solution.V
 {
@@ -29,7 +30,7 @@ namespace ColorVision.Solution.V
     /// <summary>
     /// 解决方案资源管理器，管理目录、配置、命令及事件
     /// </summary>
-    public class SolutionExplorer : VObject
+    public class SolutionExplorer : VObject, IDisposable
     {
         private static readonly ILog Logger = LogManager.GetLogger(typeof(SolutionExplorer));
         public DirectoryInfo DirectoryInfo { get; private set; }
@@ -40,6 +41,7 @@ namespace ColorVision.Solution.V
 
         public static SolutionSetting Setting => SolutionSetting.Instance;
         private FileSystemWatcher _fileSystemWatcher;
+        private DispatcherTimer _changedDebounceTimer;
         public SolutionConfig Config { get; private set; }
         public FileInfo ConfigFileInfo { get; private set; }
         public SolutionEnvironments SolutionEnvironments { get; }
@@ -107,6 +109,13 @@ namespace ColorVision.Solution.V
         {
             if (DirectoryInfo?.Exists == true)
             {
+                _changedDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+                _changedDebounceTimer.Tick += (s, e) =>
+                {
+                    _changedDebounceTimer.Stop();
+                    VisualChildrenEventHandler?.Invoke(this, EventArgs.Empty);
+                };
+
                 _fileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName)
                 {
                     EnableRaisingEvents = true,
@@ -116,9 +125,9 @@ namespace ColorVision.Solution.V
                 _fileSystemWatcher.Deleted += FileSystemWatcher_Deleted;
                 _fileSystemWatcher.Changed += (s, e) => Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    VisualChildrenEventHandler?.Invoke(this, EventArgs.Empty);
+                    _changedDebounceTimer.Stop();
+                    _changedDebounceTimer.Start();
                 });
-                _fileSystemWatcher.Renamed += (s, e) => { /* 可扩展: 重命名处理逻辑 */ };
             }
         }
 
@@ -219,6 +228,13 @@ namespace ColorVision.Solution.V
         public override void ShowProperty()
         {
             Common.NativeMethods.FileProperties.ShowFolderProperties(DirectoryInfo.FullName);
+        }
+
+        public void Dispose()
+        {
+            _fileSystemWatcher?.Dispose();
+            _changedDebounceTimer?.Stop();
+            GC.SuppressFinalize(this);
         }
 
     }

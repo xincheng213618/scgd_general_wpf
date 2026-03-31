@@ -35,14 +35,29 @@
 
         public static void SortByName(this VObject vObject)
         {
-            var sortedList = vObject.VisualChildren.OrderBy(v => v.Name).ToList();
+            var sorted = vObject.VisualChildren.OrderBy(v => v.Name).ToList();
 
-            vObject.VisualChildren.Clear();
-
-            // 添加排序后的项回到集合中
-            foreach (var item in sortedList)
+            // 比较是否需要排序，避免不必要的UI更新
+            bool needsSort = false;
+            for (int i = 0; i < sorted.Count; i++)
             {
-                vObject.VisualChildren.Add(item);
+                if (!ReferenceEquals(vObject.VisualChildren[i], sorted[i]))
+                {
+                    needsSort = true;
+                    break;
+                }
+            }
+
+            if (!needsSort) return;
+
+            // 使用Move而非Clear+Add，减少CollectionChanged事件
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                int currentIndex = vObject.VisualChildren.IndexOf(sorted[i]);
+                if (currentIndex != i)
+                {
+                    vObject.VisualChildren.Move(currentIndex, i);
+                }
             }
         }
 

@@ -45,7 +45,7 @@ namespace ColorVision.Solution.V
             InitializeCommands();
             InitializeEventHandlers();
             
-            Task.Run(() => GeneralChild());
+            Application.Current?.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, () => VMUtil.Instance.GeneralChild(this, DirectoryInfo));
         }
 
         private void InitializeFileSystemWatcher()
@@ -83,16 +83,6 @@ namespace ColorVision.Solution.V
                             VisualChildren.Remove(a);
                         }
                     });
-                };
-                FileSystemWatcher.Changed += (s, e) =>
-                {
-                    Application.Current?.Dispatcher.Invoke(() =>
-                    {
-                    });
-                };
-                FileSystemWatcher.Renamed += (s, e) =>
-                {
-
                 };
                 FileSystemWatcher.EnableRaisingEvents = true;
             }
@@ -135,10 +125,7 @@ namespace ColorVision.Solution.V
         }
         public virtual void GeneralChild()
         {
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                VMUtil.Instance.GeneralChild(this, DirectoryInfo);
-            });
+            VMUtil.Instance.GeneralChild(this, DirectoryInfo);
         }
 
         public override void InitContextMenu()

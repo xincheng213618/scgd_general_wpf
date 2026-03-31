@@ -63,13 +63,13 @@ namespace ColorVision.Solution.V
                 vObject.AddChild(vFolder);
             }
 
+            int fileCount = 0;
             foreach (var item in directoryInfo.GetFiles())
             {
-                i++;
-                if (i == 10)
+                fileCount++;
+                if (fileCount % 10 == 0)
                 {
                     await Task.Delay(100);
-                    i = 0;
                 }
                 var _stopwatch = Stopwatch.StartNew();
                 CreateFile(vObject, item);
@@ -78,24 +78,12 @@ namespace ColorVision.Solution.V
             }
         }
 
-        int i;
         public async Task CreateDir(IObject vObject, DirectoryInfo directoryInfo)
         {
             // Use factory pattern with new registry system
             var vFolder = VObjectFactory.CreateVFolder(directoryInfo);
             vObject.AddChild(vFolder);
             await GeneralChild(vFolder, directoryInfo);
-
-            foreach (var item in directoryInfo.GetFiles())
-            {
-                i++;
-                if (i == 100)
-                {
-                    await Task.Delay(100);
-                    i = 0;
-                }
-                CreateFile(vObject, item);
-            }
         }
 
         public void CreateFile(IObject vObject, FileInfo fileInfo)

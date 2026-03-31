@@ -1,5 +1,5 @@
-using ColorVision.Themes;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Rbac
 {
@@ -19,10 +19,15 @@ namespace ColorVision.Rbac
         public ChangePasswordWindow(int userId, bool isForceChange = false)
         {
             InitializeComponent();
-            this.ApplyCaption();
             _rbacManager = RbacManager.GetInstance();
             _userId = userId;
             IsForceChange = isForceChange;
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+                DragMove();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

@@ -49,19 +49,28 @@ namespace ColorVision.Rbac
             if (!Directory.Exists(DirectoryPath))
                 Directory.CreateDirectory(DirectoryPath);
 
-            db = new SqlSugarClient(new ConnectionConfig()
+            try
             {
-                ConnectionString = $"DataSource={SqliteDbPath};",
-                DbType = DbType.Sqlite,
-                IsAutoCloseConnection = true,
-            });
+                db = new SqlSugarClient(new ConnectionConfig()
+                {
+                    ConnectionString = $"DataSource={SqliteDbPath};",
+                    DbType = DbType.Sqlite,
+                    IsAutoCloseConnection = true,
+                });
 
-            db.CodeFirst.InitTables<UserEntity, UserDetailEntity>();
-            db.CodeFirst.InitTables<TenantEntity, UserTenantEntity>();
-            db.CodeFirst.InitTables<RoleEntity, UserRoleEntity>();
-            db.CodeFirst.InitTables<PermissionEntity, RolePermissionEntity>();
-            db.CodeFirst.InitTables<AuditLogEntity>();
-            db.CodeFirst.InitTables<SessionEntity>();
+                db.CodeFirst.InitTables<UserEntity, UserDetailEntity>();
+                db.CodeFirst.InitTables<TenantEntity, UserTenantEntity>();
+                db.CodeFirst.InitTables<RoleEntity, UserRoleEntity>();
+                db.CodeFirst.InitTables<PermissionEntity, RolePermissionEntity>();
+                db.CodeFirst.InitTables<AuditLogEntity>();
+                db.CodeFirst.InitTables<SessionEntity>();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"RBAC 数据库初始化失败: {ex.Message}\n\n数据库路径: {SqliteDbPath}", 
+                    "数据库错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
+            }
 
             // 初始化服务
             AuditLogService = new AuditLogService(db);
@@ -171,7 +180,7 @@ namespace ColorVision.Rbac
                 .ToList();
         }
 
-        public bool CreateRole(string name, string code, string remark = "")
+        public async Task<bool> CreateRoleAsync(string name, string code, string remark = "")
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
@@ -181,7 +190,7 @@ namespace ColorVision.Rbac
 
             try
             {
-                var result = RoleService.CreateRoleAsync(name, code, remark).GetAwaiter().GetResult();
+                var result = await RoleService.CreateRoleAsync(name, code, remark);
                 return result;
             }
             catch (Exceptions.PermissionDeniedException ex)
@@ -328,6 +337,11 @@ namespace ColorVision.Rbac
                 MessageBox.Show("当前用户无权删除用户。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
+            if (Config.LoginResult?.User?.Id == userId)
+            {
+                MessageBox.Show("不能删除当前登录的用户。", "操作拒绝", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
             try
             {
                 var result = await UserService.DeleteUserAsync(userId);
@@ -388,6 +402,11 @@ namespace ColorVision.Rbac
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
                 MessageBox.Show("当前用户无权启用/禁用用户。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            if (Config.LoginResult?.User?.Id == userId)
+            {
+                MessageBox.Show("不能禁用当前登录的用户。", "操作拒绝", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
             try

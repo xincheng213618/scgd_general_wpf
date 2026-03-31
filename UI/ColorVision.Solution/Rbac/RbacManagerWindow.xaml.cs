@@ -1,10 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.Rbac
@@ -115,7 +115,17 @@ namespace ColorVision.Rbac
         public RbacManagerWindow()
         {
             InitializeComponent();
-            this.ApplyCaption();
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+                DragMove();
+        }
+
+        private void BtnClose_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
         }
         
         private void Window_Initialized(object sender, EventArgs e)
@@ -230,16 +240,28 @@ namespace ColorVision.Rbac
                 // 重置权限
                 Authorization.Instance.PermissionMode = UI.Authorizations.PermissionMode.Guest;
                 
-                // 更新UI
-                OnPropertyChanged(nameof(CurrentUserDisplay));
-                OnPropertyChanged(nameof(UserRoleDisplay));
-                OnPropertyChanged(nameof(StatusDisplay));
-                OnPropertyChanged(nameof(IsAdminUser));
-                OnPropertyChanged(nameof(AdminButtonVisibility));
-                OnPropertyChanged(nameof(LoggedInButtonVisibility));
-                OnPropertyChanged(nameof(LoginButtonVisibility));
-                
-                MessageBox.Show("已成功退出登录", "退出", MessageBoxButton.OK, MessageBoxImage.Information);
+                // 退出登录后引导重新登录
+                var loginWindow = new LoginWindow()
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                if (loginWindow.ShowDialog() == true && rbacManager.IsUserLoggedIn())
+                {
+                    // 重新登录成功，更新 UI
+                    OnPropertyChanged(nameof(CurrentUserDisplay));
+                    OnPropertyChanged(nameof(UserRoleDisplay));
+                    OnPropertyChanged(nameof(StatusDisplay));
+                    OnPropertyChanged(nameof(IsAdminUser));
+                    OnPropertyChanged(nameof(AdminButtonVisibility));
+                    OnPropertyChanged(nameof(LoggedInButtonVisibility));
+                    OnPropertyChanged(nameof(LoginButtonVisibility));
+                }
+                else
+                {
+                    // 未重新登录，关闭管理窗口
+                    this.Close();
+                }
             }
         }
     }

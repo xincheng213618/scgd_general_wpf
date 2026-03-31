@@ -17,8 +17,13 @@ namespace ColorVision.Solution.V
         {
             if (sender is TextBox tb && tb.Tag is VObject baseObject)
             {
-                baseObject.Name = tb.Text;
-                if (e.Key == Key.Escape || e.Key == Key.Enter)
+                if (e.Key == Key.Enter)
+                {
+                    baseObject.Name = tb.Text;
+                    baseObject.IsEditMode = false;
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Escape)
                 {
                     baseObject.IsEditMode = false;
                     e.Handled = true;

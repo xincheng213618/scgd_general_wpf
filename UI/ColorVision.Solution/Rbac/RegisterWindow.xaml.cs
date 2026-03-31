@@ -1,5 +1,5 @@
-﻿using ColorVision.Themes;
-using System.Windows;
+﻿using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Rbac
 {
@@ -12,7 +12,12 @@ namespace ColorVision.Rbac
         public RegisterWindow()
         {
             InitializeComponent();
-            this.ApplyCaption();
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+                DragMove();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -58,6 +63,13 @@ namespace ColorVision.Rbac
                     TxtStatus.Text = "用户名已存在或创建失败";
                     return;
                 }
+                // 审计日志
+                try
+                {
+                    await RbacManager.GetInstance().AuditLogService.AddAsync(
+                        null, username, "user.register", $"新用户注册:{username}");
+                }
+                catch { }
                 MessageBox.Show(this, "注册成功，请使用新账户登录", "注册成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 DialogResult = true;
             }
