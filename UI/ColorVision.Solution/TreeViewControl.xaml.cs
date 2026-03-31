@@ -1,4 +1,4 @@
-﻿using ColorVision.Solution.V;
+﻿using ColorVision.Solution.Explorer;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -122,11 +122,11 @@ namespace ColorVision.Solution
                 TreeViewItem item = ViewHelper.FindVisualParent<TreeViewItem>(result.VisualHit);
                 if (item == null)
                     return;
-                if (item.DataContext is VObject vObject)
+                if (item.DataContext is SolutionNode vObject)
                 {
                     vObject.IsSelected = true;
                 }
-                if (SelectedTreeViewItem != null && SelectedTreeViewItem != item && SelectedTreeViewItem.DataContext is VObject vobj)
+                if (SelectedTreeViewItem != null && SelectedTreeViewItem != item && SelectedTreeViewItem.DataContext is SolutionNode vobj)
                 {
                     vobj.IsEditMode = false;
                 }
@@ -154,7 +154,7 @@ namespace ColorVision.Solution
                 var keywords = text.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
                 var filteredResults = SolutionManager.GetInstance().SolutionExplorers.
                     SelectMany(explorer => explorer.VisualChildren.GetAllVisualChildren())
-                    .OfType<VObject>()
+                    .OfType<SolutionNode>()
                     .Where(template => keywords.All(keyword =>
                         template.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
                         ))

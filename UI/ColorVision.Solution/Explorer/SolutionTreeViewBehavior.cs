@@ -1,21 +1,21 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Solution.V
+namespace ColorVision.Solution.Explorer
 {
-    public partial class TreeViewTextbox : ResourceDictionary
+    public partial class SolutionTreeViewBehavior : ResourceDictionary
     {
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (sender is TextBox tb && tb.Tag is VObject baseObject)
+            if (sender is TextBox tb && tb.Tag is SolutionNode baseObject)
                 baseObject.IsEditMode = false;
         }
 
         private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (sender is TextBox tb && tb.Tag is VObject baseObject)
+            if (sender is TextBox tb && tb.Tag is SolutionNode baseObject)
             {
                 if (e.Key == Key.Enter)
                 {
@@ -35,7 +35,7 @@ namespace ColorVision.Solution.V
             if (sender is TextBox textBox)
             {
                 textBox.SelectAll();
-                textBox.Focus(); // 可选，确保焦点在 TextBox 上
+                textBox.Focus();
             }
         }
         private void TreeViewItem_Initialized(object sender, EventArgs e)

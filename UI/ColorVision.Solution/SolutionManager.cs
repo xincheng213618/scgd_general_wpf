@@ -2,7 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.RecentFile;
 using ColorVision.Solution.Workspace;
-using ColorVision.Solution.V;
+using ColorVision.Solution.Explorer;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Shell;
@@ -50,11 +50,7 @@ namespace ColorVision.Solution
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
 
             bool su = false;
-            var parser = ArgumentParser.GetInstance();
-
-            parser.AddArgument("solutionpath", false, "s");
-            parser.Parse();
-            var solutionpath = parser.GetValue("solutionpath");
+            var solutionpath = ArgumentParser.GetInstance().GetValue("solutionpath");
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 if (solutionpath != null)

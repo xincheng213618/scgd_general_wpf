@@ -1,10 +1,10 @@
-﻿using ColorVision.UI;
+using ColorVision.UI;
 using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
-    public class CommadnInitialized : MainWindowInitializedBase
+    public class CommandInitializer : MainWindowInitializedBase
     {
         public override Task Initialize()
         {

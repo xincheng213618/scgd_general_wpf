@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Solution.Explorer;
+using ColorVision.UI;
 using ColorVision.UI.Shell;
 using System.IO;
 using System.Windows;
@@ -16,6 +17,9 @@ namespace ColorVision.Solution
         public override async Task InitializeAsync() 
         {
             await Task.Delay(0);
+
+            SolutionNodeFactory.InitializeRegistries();
+
             var parser = ArgumentParser.GetInstance();
 
             var input = parser.GetValue("input");

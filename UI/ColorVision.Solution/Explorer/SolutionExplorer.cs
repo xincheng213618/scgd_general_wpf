@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8604,CS4014
+#pragma warning disable CS8604,CS4014
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.Properties;
 using ColorVision.Solution.Workspace;
@@ -13,7 +13,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 
-namespace ColorVision.Solution.V
+namespace ColorVision.Solution.Explorer
 {
     /// <summary>
     /// 配置解决方案的模型类，支持MVVM绑定
@@ -30,7 +30,7 @@ namespace ColorVision.Solution.V
     /// <summary>
     /// 解决方案资源管理器，管理目录、配置、命令及事件
     /// </summary>
-    public class SolutionExplorer : VObject, IDisposable
+    public class SolutionExplorer : SolutionNode, IDisposable
     {
         private static readonly ILog Logger = LogManager.GetLogger(typeof(SolutionExplorer));
         public DirectoryInfo DirectoryInfo { get; private set; }
@@ -53,7 +53,7 @@ namespace ColorVision.Solution.V
             SolutionEnvironments = solutionEnvironments ?? throw new ArgumentNullException(nameof(solutionEnvironments));
             CopyFullPathCommand = new RelayCommand(_ => Common.NativeMethods.Clipboard.SetText(SolutionEnvironments.SolutionPath));
             OpenFileInExplorerCommand = new RelayCommand(_ => Process.Start("explorer.exe", DirectoryInfo.FullName), _ => DirectoryInfo.Exists);
-            AddDirCommand = new RelayCommand(_ => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
+            AddDirCommand = new RelayCommand(_ => SolutionNodeFactory.CreateNewFolder(this, DirectoryInfo.FullName));
             SaveCommand = new RelayCommand(_ => SaveConfig());
             EditCommand = new RelayCommand(_ =>
             {
@@ -69,7 +69,7 @@ namespace ColorVision.Solution.V
             InitializeFileSystemWatcher();
 
             var stopwatch = Stopwatch.StartNew();
-            VMUtil.Instance.GeneralChild(this, DirectoryInfo);
+            SolutionNodeFactory.PopulateChildren(this, DirectoryInfo);
             stopwatch.Stop();
             Logger.Info($"工程初始化时间: {stopwatch.Elapsed.TotalSeconds} 秒");
 
@@ -123,7 +123,7 @@ namespace ColorVision.Solution.V
                 };
                 _fileSystemWatcher.Created += FileSystemWatcher_Created;
                 _fileSystemWatcher.Deleted += FileSystemWatcher_Deleted;
-                _fileSystemWatcher.Changed += (s, e) => Application.Current?.Dispatcher.Invoke(() =>
+                _fileSystemWatcher.Changed += (s, e) => Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
                     _changedDebounceTimer.Stop();
                     _changedDebounceTimer.Start();
@@ -133,22 +133,26 @@ namespace ColorVision.Solution.V
 
         private void FileSystemWatcher_Created(object sender, FileSystemEventArgs e)
         {
-            Application.Current?.Dispatcher.Invoke(() =>
+            Application.Current?.Dispatcher.BeginInvoke(() =>
             {
+                // Duplicate protection
+                if (VisualChildren.Any(c => c.FullPath == e.FullPath))
+                    return;
+
                 if (File.Exists(e.FullPath))
                 {
-                    VMUtil.Instance.CreateFile(this, new FileInfo(e.FullPath));
+                    SolutionNodeFactory.AddFileNode(this, new FileInfo(e.FullPath));
                 }
                 else if (Directory.Exists(e.FullPath))
                 {
-                    VMUtil.Instance.CreateDir(this, new DirectoryInfo(e.FullPath));
+                    SolutionNodeFactory.AddFolderNode(this, new DirectoryInfo(e.FullPath));
                 }
             });
         }
 
         private void FileSystemWatcher_Deleted(object sender, FileSystemEventArgs e)
         {
-            Application.Current?.Dispatcher.Invoke(() =>
+            Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 var child = VisualChildren.FirstOrDefault(a => a.FullPath == e.FullPath);
                 if (child != null)

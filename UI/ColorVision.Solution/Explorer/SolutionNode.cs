@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Utilities;
+using ColorVision.Common.Utilities;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -11,61 +11,36 @@ using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Solution.V
+namespace ColorVision.Solution.Explorer
 {
-    /// <summary>
-    /// Interface defining the contract for visual objects in the solution explorer
-    /// </summary>
-    public interface IObject
+    public interface ISolutionNode
     {
-        /// <summary>
-        /// Parent object in the hierarchy
-        /// </summary>
-        public VObject Parent { get; set; }
-        
-        /// <summary>
-        /// Collection of child visual objects
-        /// </summary>
-        public ObservableCollection<VObject> VisualChildren { get; set; }
-        
-        /// <summary>
-        /// Adds a child object to the visual hierarchy
-        /// </summary>
-        /// <param name="vObject">Child object to add</param>
-        public abstract void AddChild(VObject vObject);
-        
-        /// <summary>
-        /// Removes a child object from the visual hierarchy
-        /// </summary>
-        /// <param name="vObject">Child object to remove</param>
-        public abstract void RemoveChild(VObject vObject);
+        public SolutionNode Parent { get; set; }
+        public ObservableCollection<SolutionNode> VisualChildren { get; set; }
+        public void AddChild(SolutionNode node);
+        public void RemoveChild(SolutionNode node);
     }
 
-
-    /// <summary>
-    /// Base class for all visual objects in the solution explorer.
-    /// Provides common functionality for tree view items including commands, menus, and properties.
-    /// </summary>
     [DataContract]
-    public class VObject : INotifyPropertyChanged, IObject
+    public class SolutionNode : INotifyPropertyChanged, ISolutionNode
     {
-        public VObject Parent { get; set; }
+        public SolutionNode Parent { get; set; }
 
-        public virtual ObservableCollection<VObject> VisualChildren { get; set; }
+        public virtual ObservableCollection<SolutionNode> VisualChildren { get; set; }
 
         public event EventHandler AddChildEventHandler;
 
-        public virtual void AddChild(VObject vObject)
+        public virtual void AddChild(SolutionNode node)
         {
-            if (vObject == null) return;
-            vObject.Parent = this;
+            if (node == null) return;
+            node.Parent = this;
             AddChildEventHandler?.Invoke(this, new EventArgs());
-            VisualChildren.SortedAdd(vObject);
+            VisualChildren.SortedAdd(node);
         }
         public event EventHandler RemoveChildEventHandler;
-        public virtual void RemoveChild(VObject vObject)
+        public virtual void RemoveChild(SolutionNode node)
         {
-            this.VisualChildren.Remove(vObject);
+            this.VisualChildren.Remove(node);
             RemoveChildEventHandler?.Invoke(this, new EventArgs());
         }
 
@@ -107,7 +82,6 @@ namespace ColorVision.Solution.V
         public virtual bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded;
 
-
         public virtual bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
 
@@ -115,17 +89,24 @@ namespace ColorVision.Solution.V
 
         public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
 
-        public VObject()
+        private bool _menuInitialized;
+
+        public SolutionNode()
         {
-            VisualChildren = new ObservableCollection<VObject>() { };
+            VisualChildren = new ObservableCollection<SolutionNode>() { };
             MenuItemMetadatas = new List<MenuItemMetadata>();
             ContextMenu = new ContextMenu();
-            ContextMenu.Initialized += (s, e) => { InitMenuItem(); InitContextMenu(); };
+            ContextMenu.Opened += (s, e) =>
+            {
+                if (!_menuInitialized)
+                {
+                    InitMenuItem();
+                    InitContextMenu();
+                    _menuInitialized = true;
+                }
+            };
         }
 
-        /// <summary>
-        /// Initialize commands and event handlers. Called after constructor to avoid heavy constructor.
-        /// </summary>
         public virtual void Initialize()
         {
             OpenCommand = new RelayCommand((s) => Open());
@@ -146,8 +127,7 @@ namespace ColorVision.Solution.V
                 {
                     var iMenuItem = iMenuItems1[i];
                     string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
-                    MenuItem menuItem;
-                    menuItem = new MenuItem
+                    MenuItem menuItem = new MenuItem
                     {
                         Header = iMenuItem.Header,
                         Icon = iMenuItem.Icon,
@@ -170,20 +150,15 @@ namespace ColorVision.Solution.V
                 }
             }
 
-            var iMenuItemMetas = MenuItemMetadatas.Where(item=>item.OwnerGuid ==MenuItemConstants.Menu && item.Visibility==Visibility.Visible).OrderBy(item => item.Order).ToList();
+            var iMenuItemMetas = MenuItemMetadatas.Where(item=>item.OwnerGuid == MenuItemConstants.Menu && item.Visibility == Visibility.Visible).OrderBy(item => item.Order).ToList();
 
             for (int i = 0; i < iMenuItemMetas.Count; i++)
             {
-                MenuItemMetadata  menuItemMeta = iMenuItemMetas[i];
-                if (menuItemMeta.Icon is Viewbox viewbox)
-                {
-                    Viewbox viewbox1 = new Viewbox();
-
-                }
+                MenuItemMetadata menuItemMeta = iMenuItemMetas[i];
                 MenuItem menuItem = new MenuItem() 
                 { 
                     Header = menuItemMeta.Header, 
-                    Command = menuItemMeta.Command ,
+                    Command = menuItemMeta.Command,
                     Icon  = menuItemMeta.Icon
                 };
                 if (menuItemMeta.GuidId != null)
@@ -204,14 +179,9 @@ namespace ColorVision.Solution.V
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ReName", Order = 104, Command = Commands.ReName, Header = UI.Properties.Resources.MenuRename ,Icon = MenuItemIcon.TryFindResource("DIRename"), InputGestureText = "F2" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径", Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = ColorVision.Solution.Properties.Resources.MenuProperty, Icon = MenuItemIcon.TryFindResource("DIProperty") });
-
         }
 
-        public virtual void ShowProperty()
-        {
-
-        }
-
+        public virtual void ShowProperty() { }
 
         public virtual void Delete()
         {
@@ -227,16 +197,12 @@ namespace ColorVision.Solution.V
         public virtual bool CanPaste { get; set; } = true;
         public virtual bool CanCut { get; set; } = true;
 
-
         public void MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             Open();
         }
 
-        public virtual void Open()
-        {
-
-        }
+        public virtual void Open() { }
 
         public virtual void CopyFullPath()
         {
@@ -246,41 +212,22 @@ namespace ColorVision.Solution.V
             }
         }
 
-        /// <summary>
-        /// Log an operation for tracking purposes
-        /// </summary>
-        /// <param name="message">Operation message</param>
         protected virtual void LogOperation(string message)
         {
-            // TODO: Implement proper logging using a logging framework
-            System.Diagnostics.Debug.WriteLine($"[VObject] {DateTime.Now:yyyy-MM-dd HH:mm:ss} INFO: {message}");
+            System.Diagnostics.Debug.WriteLine($"[SolutionNode] {DateTime.Now:yyyy-MM-dd HH:mm:ss} INFO: {message}");
         }
 
-        /// <summary>
-        /// Log an error for tracking purposes
-        /// </summary>
-        /// <param name="message">Error message</param>
-        /// <param name="exception">Exception details</param>
         protected virtual void LogError(string message, Exception? exception = null)
         {
-            // TODO: Implement proper logging using a logging framework
             var fullMessage = exception != null ? $"{message}\nException: {exception}" : message;
-            System.Diagnostics.Debug.WriteLine($"[VObject] {DateTime.Now:yyyy-MM-dd HH:mm:ss} ERROR: {fullMessage}");
+            System.Diagnostics.Debug.WriteLine($"[SolutionNode] {DateTime.Now:yyyy-MM-dd HH:mm:ss} ERROR: {fullMessage}");
         }
 
-        /// <summary>
-        /// Show user-friendly error message
-        /// </summary>
-        /// <param name="message">User-friendly error message</param>
         protected virtual void ShowUserError(string message)
         {
             MessageBox.Show(message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 
-        /// <summary>
-        /// Show user-friendly information message
-        /// </summary>
-        /// <param name="message">Information message</param>
         protected virtual void ShowUserInfo(string message)
         {
             MessageBox.Show(message, "提示", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -300,7 +247,7 @@ namespace ColorVision.Solution.V
         {
             if (obj == null) return -1;
             else if (obj == this) return 0;
-            else if (obj is VObject vObject) return Common.NativeMethods.Shlwapi.CompareLogical(Name, vObject.Name);
+            else if (obj is SolutionNode node) return Common.NativeMethods.Shlwapi.CompareLogical(Name, node.Name);
             else return -1;
         }
     }

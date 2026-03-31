@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
@@ -8,14 +8,9 @@ using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
 
-namespace ColorVision.Solution.V
+namespace ColorVision.Solution.Explorer
 {
-    /// <summary>
-    /// Visual representation of a file in the solution explorer.
-    /// Provides file-specific operations like opening with different editors, 
-    /// opening containing folder, etc.
-    /// </summary>
-    public class VFile : VObject
+    public class FileNode : SolutionNode
     {
         public IFileMeta FileMeta { get; set; }
         public RelayCommand OpenContainingFolderCommand { get; set; }
@@ -24,7 +19,7 @@ namespace ColorVision.Solution.V
 
         public RelayCommand OpenMethodCommand { get; set; }
 
-        public VFile(IFileMeta fileMeta) :base()
+        public FileNode(IFileMeta fileMeta) : base()
         {
             FileMeta = fileMeta;
             Name1 = fileMeta.Name;
@@ -48,14 +43,13 @@ namespace ColorVision.Solution.V
 
             if (types.Count == 0) return;
 
-            var window = new EditorSelectionWindow(types, current, FullPath) { Owner = Application.Current.GetActiveWindow() , WindowStartupLocation =WindowStartupLocation.CenterScreen};
+            var window = new EditorSelectionWindow(types, current, FullPath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen };
             if (window.ShowDialog() == true)
             {
                 var selectedType = window.SelectedEditorType;
                 EditorManager.Instance.SetDefaultEditor(ext, selectedType);
             }
         }
-
 
         public override void InitMenuItem()
         {
@@ -64,8 +58,8 @@ namespace ColorVision.Solution.V
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.MenuOpen, Icon = MenuItemIcon.TryFindResource("DIOpen") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });
-
         }
+
         public override void ShowProperty()
         {
             FileProperties.ShowFileProperties(FileInfo.FullName);
@@ -73,8 +67,8 @@ namespace ColorVision.Solution.V
 
         public override void Open()
         {
-            var IEditor = EditorManager.Instance.OpenFile(FullPath);
-            IEditor?.Open(FullPath);
+            var editor = EditorManager.Instance.OpenFile(FullPath);
+            editor?.Open(FullPath);
         }
 
         public override void Delete()
@@ -95,7 +89,7 @@ namespace ColorVision.Solution.V
             {
                 LogError($"删除文件失败 - 文件未找到: {ex.Message}", ex);
                 ShowUserError("文件不存在，可能已被删除");
-                base.Delete(); // 从界面移除
+                base.Delete();
             }
             catch (IOException ex)
             {
@@ -108,13 +102,13 @@ namespace ColorVision.Solution.V
                 ShowUserError($"删除失败: {ex.Message}");
             }
         }
-        
+
         public override bool ReName(string name)
         {
-            if (string.IsNullOrWhiteSpace(name)) 
-            { 
+            if (string.IsNullOrWhiteSpace(name))
+            {
                 ShowUserError("文件名不允许为空");
-                return false; 
+                return false;
             }
 
             string? originalPath = null;
@@ -126,12 +120,11 @@ namespace ColorVision.Solution.V
                 {
                     originalPath = FileInfo.FullName;
                     originalFileInfo = new FileInfo(originalPath);
-                    
+
                     LogOperation($"开始重命名文件: {originalPath} -> {name}");
 
                     string destinationFilePath = Path.Combine(FileInfo.Directory.FullName, name);
-                    
-                    // 检查目标文件是否已存在
+
                     if (File.Exists(destinationFilePath))
                     {
                         ShowUserError($"目标文件 '{name}' 已存在");
@@ -141,7 +134,7 @@ namespace ColorVision.Solution.V
                     File.Move(FileInfo.FullName, destinationFilePath);
                     FileInfo = new FileInfo(destinationFilePath);
                     FullPath = destinationFilePath;
-                    
+
                     LogOperation($"成功重命名文件: {originalPath} -> {destinationFilePath}");
                     return true;
                 }
@@ -194,7 +187,7 @@ namespace ColorVision.Solution.V
                 LogError($"回滚文件重命名操作失败: {rollbackEx.Message}", rollbackEx);
                 ShowUserError("回滚操作也失败了，文件状态可能不一致");
             }
-            
+
             return false;
         }
     }

@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8602,CS8603,CS4014,CS8765
+#pragma warning disable CS8602,CS8603,CS4014,CS8765
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
@@ -10,14 +10,9 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.Solution.V
+namespace ColorVision.Solution.Explorer
 {
-    /// <summary>
-    /// Visual representation of a folder in the solution explorer.
-    /// Implements IDisposable to properly manage FileSystemWatcher resources.
-    /// Provides folder-specific operations like opening in explorer, adding subfolders, etc.
-    /// </summary>
-    public class VFolder : VObject, IDisposable
+    public class FolderNode : SolutionNode, IDisposable
     {
         public IFolderMeta FolderMeta { get; set; }
 
@@ -29,7 +24,7 @@ namespace ColorVision.Solution.V
         public RelayCommand OpenInCmdCommand { get; set; }
         public RelayCommand OpenMethodCommand { get; set; }
 
-        public VFolder(IFolderMeta folder) :base()
+        public FolderNode(IFolderMeta folder) : base()
         {
             FolderMeta = folder;
             FullPath = DirectoryInfo.FullName;
@@ -40,12 +35,13 @@ namespace ColorVision.Solution.V
         public override void Initialize()
         {
             base.Initialize();
-            
+
             InitializeFileSystemWatcher();
             InitializeCommands();
-            InitializeEventHandlers();
-            
-            Application.Current?.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, () => VMUtil.Instance.GeneralChild(this, DirectoryInfo));
+            AddChildEventHandler += (s, e) => NotifyPropertyChanged(nameof(HasFile));
+
+            Application.Current?.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background,
+                () => SolutionNodeFactory.PopulateChildren(this, DirectoryInfo));
         }
 
         private void InitializeFileSystemWatcher()
@@ -53,34 +49,33 @@ namespace ColorVision.Solution.V
             if (DirectoryInfo != null && DirectoryInfo.Exists)
             {
                 FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName);
-                
+
                 FileSystemWatcher.Created += (s, e) =>
                 {
-                    if (File.Exists(e.FullPath))
+                    Application.Current?.Dispatcher.BeginInvoke(() =>
                     {
-                        Application.Current?.Dispatcher.Invoke(() =>
+                        // Duplicate protection
+                        if (VisualChildren.Any(c => c.FullPath == e.FullPath))
+                            return;
+
+                        if (File.Exists(e.FullPath))
                         {
-                            VMUtil.Instance.CreateFile(this, new FileInfo(e.FullPath));
-                        });
-                        return;
-                    }
-                    if (Directory.Exists(e.FullPath))
-                    {
-                        Application.Current?.Dispatcher.Invoke(async () =>
+                            SolutionNodeFactory.AddFileNode(this, new FileInfo(e.FullPath));
+                        }
+                        else if (Directory.Exists(e.FullPath))
                         {
-                            await VMUtil.Instance.CreateDir(this, new DirectoryInfo(e.FullPath));
-                        }); ;
-                        return;
-                    }
+                            SolutionNodeFactory.AddFolderNode(this, new DirectoryInfo(e.FullPath));
+                        }
+                    });
                 };
                 FileSystemWatcher.Deleted += (s, e) =>
                 {
-                    Application.Current?.Dispatcher.Invoke(() =>
+                    Application.Current?.Dispatcher.BeginInvoke(() =>
                     {
-                        var a = VisualChildren.FirstOrDefault(a => a.FullPath == e.FullPath);
-                        if (a != null)
+                        var child = VisualChildren.FirstOrDefault(a => a.FullPath == e.FullPath);
+                        if (child != null)
                         {
-                            VisualChildren.Remove(a);
+                            VisualChildren.Remove(child);
                         }
                     });
                 };
@@ -91,14 +86,11 @@ namespace ColorVision.Solution.V
         private void InitializeCommands()
         {
             OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
-            AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
+            AddDirCommand = new RelayCommand(a => SolutionNodeFactory.CreateNewFolder(this, DirectoryInfo.FullName));
             OpenInCmdCommand = new RelayCommand(a => System.Diagnostics.Process.Start("cmd.exe", $"/K cd \"{DirectoryInfo.FullName}\""), a => DirectoryInfo.Exists);
             OpenMethodCommand = new RelayCommand(a => OpenMethod());
         }
 
-        /// <summary>
-        /// 打开文件夹编辑器选择窗口
-        /// </summary>
         public void OpenMethod()
         {
             var types = EditorManager.Instance.GetFolderEditors();
@@ -114,18 +106,10 @@ namespace ColorVision.Solution.V
             }
         }
 
-        private void InitializeEventHandlers()
-        {
-            AddChildEventHandler +=(s,e) => NotifyPropertyChanged(nameof(HasFile));
-        }
         public override void Open()
         {
-            var IEditor = EditorManager.Instance.OpenFolder(FullPath);
-            IEditor?.Open(FullPath);
-        }
-        public virtual void GeneralChild()
-        {
-            VMUtil.Instance.GeneralChild(this, DirectoryInfo);
+            var editor = EditorManager.Instance.OpenFolder(FullPath);
+            editor?.Open(FullPath);
         }
 
         public override void InitContextMenu()
@@ -146,7 +130,7 @@ namespace ColorVision.Solution.V
             });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹",Command = AddDirCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹", Command = AddDirCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenInCmdCommad", Order = 200, Header = "在终端中打开", Command = OpenInCmdCommand });
         }
@@ -156,14 +140,14 @@ namespace ColorVision.Solution.V
             FileProperties.ShowFolderProperties(DirectoryInfo.FullName);
         }
 
-        public override ImageSource Icon {get => FolderMeta.Icon; set { FolderMeta.Icon = value; NotifyPropertyChanged(); } }
+        public override ImageSource Icon { get => FolderMeta.Icon; set { FolderMeta.Icon = value; NotifyPropertyChanged(); } }
 
         public override bool ReName(string name)
         {
-            if (string.IsNullOrWhiteSpace(name)) 
-            { 
+            if (string.IsNullOrWhiteSpace(name))
+            {
                 ShowUserError("文件夹名称不允许为空");
-                return false; 
+                return false;
             }
 
             string? originalPath = null;
@@ -176,8 +160,7 @@ namespace ColorVision.Solution.V
                 {
                     originalPath = DirectoryInfo.FullName;
                     originalDirectoryInfo = new DirectoryInfo(originalPath);
-                    
-                    // 记录操作日志
+
                     LogOperation($"开始重命名文件夹: {originalPath} -> {name}");
 
                     // 临时禁用文件系统监视器
@@ -189,15 +172,14 @@ namespace ColorVision.Solution.V
 
                     foreach (var item in VisualChildren)
                     {
-                        if (item is VFolder vFolder && vFolder.FileSystemWatcher?.EnableRaisingEvents == true)
+                        if (item is FolderNode folder && folder.FileSystemWatcher?.EnableRaisingEvents == true)
                         {
-                            vFolder.FileSystemWatcher.EnableRaisingEvents = false;
+                            folder.FileSystemWatcher.EnableRaisingEvents = false;
                         }
                     }
 
                     string destinationDirectoryPath = Path.Combine(DirectoryInfo.Parent.FullName, name);
-                    
-                    // 检查目标路径是否已存在
+
                     if (Directory.Exists(destinationDirectoryPath))
                     {
                         ShowUserError($"目标文件夹 '{name}' 已存在");
@@ -209,8 +191,8 @@ namespace ColorVision.Solution.V
                     FullPath = destinationDirectoryPath;
 
                     VisualChildren.Clear();
-                    VMUtil.Instance.GeneralChild(this, DirectoryInfo);
-                    
+                    SolutionNodeFactory.PopulateChildren(this, DirectoryInfo);
+
                     if (FileSystemWatcher != null)
                     {
                         FileSystemWatcher.Path = DirectoryInfo.FullName;
@@ -264,7 +246,7 @@ namespace ColorVision.Solution.V
                     LogOperation($"尝试回滚重命名操作: {originalPath}");
                     DirectoryInfo = originalDirectoryInfo;
                     FullPath = originalPath;
-                    
+
                     if (FileSystemWatcher != null)
                     {
                         FileSystemWatcher.Path = originalPath;
@@ -273,9 +255,9 @@ namespace ColorVision.Solution.V
                             FileSystemWatcher.EnableRaisingEvents = true;
                         }
                     }
-                    
+
                     VisualChildren.Clear();
-                    VMUtil.Instance.GeneralChild(this, DirectoryInfo);
+                    SolutionNodeFactory.PopulateChildren(this, DirectoryInfo);
                     LogOperation("成功回滚重命名操作");
                 }
             }
@@ -284,13 +266,13 @@ namespace ColorVision.Solution.V
                 LogError($"回滚重命名操作失败: {rollbackEx.Message}", rollbackEx);
                 ShowUserError("回滚操作也失败了，文件夹状态可能不一致");
             }
-            
+
             return false;
         }
 
         public override void Delete()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(),$"\"{Name}\"{Resources.FolderDeleteSign}","ColorVision",MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"\"{Name}\"{Resources.FolderDeleteSign}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
             {
                 base.Delete();
             }
@@ -335,7 +317,7 @@ namespace ColorVision.Solution.V
             GC.SuppressFinalize(this);
         }
 
-        ~VFolder()
+        ~FolderNode()
         {
             Dispose(false);
         }

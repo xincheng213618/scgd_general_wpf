@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Solution.V
+namespace ColorVision.Solution.Explorer
 {
     public class SolutionEnvironments
     {
