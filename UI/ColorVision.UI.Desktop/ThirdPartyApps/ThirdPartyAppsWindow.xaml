@@ -14,11 +14,21 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Top bar: Search + App count + Refresh -->
+        <!-- Top bar: Search + App count + Add + Refresh -->
         <DockPanel Grid.Row="0" Margin="0,0,0,12">
-            <Button DockPanel.Dock="Right" Padding="8,6" Margin="8,0,0,0" Click="BtnRefresh_Click"
-                    ToolTip="Refresh" Background="Transparent" BorderThickness="0" Cursor="Hand">
+            <Button DockPanel.Dock="Right" Padding="8,6" Margin="4,0,0,0" Click="BtnRefresh_Click"
+                    ToolTip="刷新" Background="Transparent" BorderThickness="0" Cursor="Hand">
                 <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                           Foreground="{DynamicResource GlobalTextBrush}"/>
+            </Button>
+            <Button DockPanel.Dock="Right" Padding="8,6" Margin="4,0,0,0" Click="BtnAddApp_Click"
+                    ToolTip="添加自定义应用" Background="Transparent" BorderThickness="0" Cursor="Hand">
+                <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                           Foreground="{DynamicResource GlobalTextBrush}"/>
+            </Button>
+            <Button DockPanel.Dock="Right" Padding="8,6" Margin="4,0,0,0" Click="BtnAddScript_Click"
+                    ToolTip="添加快捷脚本" Background="Transparent" BorderThickness="0" Cursor="Hand">
+                <TextBlock Text="&#xE756;" FontFamily="Segoe MDL2 Assets" FontSize="16"
                            Foreground="{DynamicResource GlobalTextBrush}"/>
             </Button>
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
