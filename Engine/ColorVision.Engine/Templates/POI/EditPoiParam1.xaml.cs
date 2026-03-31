@@ -227,6 +227,35 @@ namespace ColorVision.Engine.Templates.POI
 
             ImageShow.VisualsAdd += (s, e) =>
             {
+                if (PoiConfig.IsUserDraw)
+                {
+                    PoiConfig.IsUserDraw = false;
+                    if (e.Visual is DVCircleText dVCircleText)
+                    {
+                        PoiConfig.CenterX = (int)dVCircleText.Attribute.Center.X;
+                        PoiConfig.CenterY = (int)dVCircleText.Attribute.Center.Y;
+                        PoiConfig.AreaCircleRadius = (int)dVCircleText.Attribute.Radius;
+                        RenderPoiConfig();
+                        dVCircleText.Attribute.PropertyChanged += (s1, e1) =>
+                        {
+                            PoiConfig.CenterX = (int)dVCircleText.Attribute.Center.X;
+                            PoiConfig.CenterY = (int)dVCircleText.Attribute.Center.Y;
+                            PoiConfig.AreaCircleRadius = (int)dVCircleText.Attribute.Radius;
+                            RenderPoiConfig();
+                        };
+                    }
+                    if (e.Visual is DVRectangleText dVRectangleText)
+                    {
+                        UpdateAreaFromRect(dVRectangleText.Attribute.Rect);
+                        dVRectangleText.Attribute.PropertyChanged += (s1, e1) =>
+                        {
+                            UpdateAreaFromRect(dVRectangleText.Attribute.Rect);
+                        };
+                    }
+                    ImageShow.RemoveVisualCommand((System.Windows.Media.Visual)e.Visual);
+                    return;
+                }
+
                 if (e.Visual is IDrawingVisual visual)
                 {
                     if (visual.BaseAttribute.Param == null)
@@ -235,9 +264,9 @@ namespace ColorVision.Engine.Templates.POI
                         {
                             KBPoiVMParam poiPointParam = new KBPoiVMParam();
                             visual.BaseAttribute.Param = poiPointParam;
-                            poiPointParam.PropertyChanged += (s, e) =>
+                            poiPointParam.PropertyChanged += (s1, e1) =>
                             {
-                                if (e.PropertyName == "Area")
+                                if (e1.PropertyName == "Area")
                                 {
                                     CalPoiPointParamB(rectangle);
                                 }
@@ -1268,6 +1297,35 @@ namespace ColorVision.Engine.Templates.POI
         private void SetDefault_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void UpdateAreaFromRect(Rect rect)
+        {
+            if (PoiConfig.PointType == GraphicTypes.Quadrilateral)
+            {
+                PoiConfig.Polygon1X = (int)rect.X;
+                PoiConfig.Polygon1Y = (int)rect.Y;
+                PoiConfig.Polygon2X = (int)(rect.X + rect.Width);
+                PoiConfig.Polygon2Y = (int)rect.Y;
+                PoiConfig.Polygon3X = (int)(rect.X + rect.Width);
+                PoiConfig.Polygon3Y = (int)(rect.Y + rect.Height);
+                PoiConfig.Polygon4X = (int)rect.X;
+                PoiConfig.Polygon4Y = (int)(rect.Y + rect.Height);
+            }
+            else
+            {
+                PoiConfig.CenterX = (int)(rect.Width / 2 + rect.X);
+                PoiConfig.CenterY = (int)(rect.Height / 2 + rect.Y);
+                PoiConfig.AreaRectWidth = (int)rect.Width;
+                PoiConfig.AreaRectHeight = (int)rect.Height;
+            }
+            RenderPoiConfig();
+        }
+
+        private void DrawAreaOnImage_Click(object sender, RoutedEventArgs e)
+        {
+            PoiConfig.IsUserDraw = true;
+            PoiConfig.IsShowPoiConfig = true;
         }
 
         private void Cal_Click(object sender, RoutedEventArgs e)
