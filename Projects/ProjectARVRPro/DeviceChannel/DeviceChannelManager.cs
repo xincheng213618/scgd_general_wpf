@@ -4,6 +4,7 @@ using log4net;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows;
 
 namespace ProjectARVRPro.DeviceChannel
 {

@@ -71,10 +71,10 @@ namespace ColorVision.ImageEditor
         }
 
         /// <summary>
-        /// 处理键盘事件
+        /// 锟斤拷锟斤拷锟斤拷锟斤拷锟铰硷拷
         /// </summary>
-        /// <param name="sender">事件发送者</param>
-        /// <param name="e">键盘事件参数</param>
+        /// <param name="sender">锟铰硷拷锟斤拷锟斤拷锟斤拷</param>
+        /// <param name="e">锟斤拷锟斤拷锟铰硷拷锟斤拷锟斤拷</param>
         public void HandleKeyDown(object sender, KeyEventArgs e)
         {
             if (!ImageEditMode)
@@ -103,10 +103,10 @@ namespace ColorVision.ImageEditor
         }
 
         /// <summary>
-        /// 移动视图位置
+        /// 锟狡讹拷锟斤拷图位锟斤拷
         /// </summary>
-        /// <param name="x">X方向移动量</param>
-        /// <param name="y">Y方向移动量</param>
+        /// <param name="x">X锟斤拷锟斤拷锟狡讹拷锟斤拷</param>
+        /// <param name="y">Y锟斤拷锟斤拷锟狡讹拷锟斤拷</param>
         private void MoveView(double x, double y)
         {
             TranslateTransform translateTransform = new();
@@ -118,7 +118,7 @@ namespace ColorVision.ImageEditor
         }
 
         /// <summary>
-        /// 处理上下文菜单打开事件
+        /// 锟斤拷锟斤拷锟斤拷锟斤拷锟侥菜碉拷锟斤拷锟铰硷拷
         /// </summary>
         public void HandleContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
@@ -174,7 +174,7 @@ namespace ColorVision.ImageEditor
         }
 
         /// <summary>
-        /// 创建标准上下文菜单
+        /// 锟斤拷锟斤拷锟斤拷准锟斤拷锟斤拷锟侥菜碉拷
         /// </summary>
         public void CreateStandardContextMenu()
         {
@@ -193,7 +193,7 @@ namespace ColorVision.ImageEditor
 
             var iMenuItems = MenuItemMetadatas.OrderBy(item => item.Order).ToList();
 
-            // 递归创建菜单结构
+            // 锟捷归创锟斤拷锟剿碉拷锟结构
             void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
             {
                 var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
@@ -225,7 +225,7 @@ namespace ColorVision.ImageEditor
                 }
             }
 
-            // 创建顶级菜单
+            // 锟斤拷锟斤拷锟斤拷锟斤拷锟剿碉拷
             var iMenuItemMetas = MenuItemMetadatas
                 .Where(item => item.OwnerGuid == MenuItemConstants.Menu && item.Visibility == Visibility.Visible)
                 .OrderBy(item => item.Order)
@@ -292,7 +292,7 @@ namespace ColorVision.ImageEditor
 
 
 
-        private bool _ImageEditMode;
+        internal bool _ImageEditMode;
         public bool ImageEditMode
         {
             get => _ImageEditMode;
