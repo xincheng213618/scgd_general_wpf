@@ -49,8 +49,6 @@ namespace Spectrum.License
         /// 将许可证文件复制到本地目录（通常在安装目录下）。
         /// 如果没有写权限（如 Program Files），则先写入临时目录，再通过管理员权限 xcopy 复制。
         /// </summary>
-        /// <param name="sourceFiles">要复制的源文件路径列表</param>
-        /// <returns>是否成功</returns>
         public static bool CopyToLocalLicenseDir(IEnumerable<string> sourceFiles)
         {
             var files = sourceFiles.ToList();
@@ -97,7 +95,7 @@ namespace Spectrum.License
                     File.Copy(file, dest, true);
                 }
 
-                // 构建批处理命令：创建目录 -> 复制文件 -> 删除临时目录
+                // 构建批处理命令: 创建目录 -> 复制文件 -> 删除临时目录
                 string cmdArgs = $"/c mkdir \"{LocalLicenseDir}\" 2>nul & xcopy \"{tempDir}\\*.*\" \"{LocalLicenseDir}\\\" /Y /I & rmdir /s /q \"{tempDir}\"";
 
                 var psi = new ProcessStartInfo
