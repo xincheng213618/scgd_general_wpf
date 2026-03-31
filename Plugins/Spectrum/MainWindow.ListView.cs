@@ -247,35 +247,6 @@ namespace Spectrum
             ConfigService.Instance.SaveConfigs();
         }
 
-        private void StatusBarConnectionType_DoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            try
-            {
-                // Open Device Manager on double-click (useful for USB connections)
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("devmgmt.msc") { UseShellExecute = true });
-            }
-            catch (Exception ex)
-            {
-                log.Warn("Failed to open Device Manager", ex);
-            }
-        }
-
-        private void StatusBarSN_DoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            if (!string.IsNullOrEmpty(Manager.SerialNumber) && Manager.SerialNumber != "---")
-            {
-                try
-                {
-                    Clipboard.SetText(Manager.SerialNumber);
-                    log.Debug($"序列号已复制到剪贴板: {Manager.SerialNumber}");
-                }
-                catch (Exception ex)
-                {
-                    log.Warn("Failed to copy SN to clipboard", ex);
-                }
-            }
-        }
-
         public void Dispose()
         {
             Manager.SmuController.Close();

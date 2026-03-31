@@ -88,8 +88,8 @@ namespace Spectrum
                     if (ret != 1)
                         log.Warn($"SP100 参数设置失败: {Spectrometer.GetErrorMessage(ret)}");
 
-                    State2.Text = Spectrum.Properties.Resources.连接成功;
-                    State4.Text = "SP-100";
+                    Manager.ConnectionStatusText = Spectrum.Properties.Resources.连接成功;
+                    Manager.HardwareModelText = "SP-100";
                     button3.IsEnabled = true;
                     button5.IsEnabled = true;
                     button6.IsEnabled = true;
@@ -119,8 +119,8 @@ namespace Spectrum
             IsRun = false;
             ret = Manager.Disconnect();
             Manager.SerialNumber = string.Empty;
-            State2.Text = Spectrum.Properties.Resources.未连接;
-            State4.Text = "---";
+            Manager.ConnectionStatusText = Spectrum.Properties.Resources.未连接;
+            Manager.HardwareModelText = "---";
         }
 
         public async Task ReConnet()

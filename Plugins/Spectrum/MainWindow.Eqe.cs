@@ -24,7 +24,7 @@ namespace Spectrum
             // Hide brightness column in 光通量模式
             ColBrightness.Width = eqeEnabled ? 0 : double.NaN;
             // Update status bar mode text
-            StatusModeText.Text = eqeEnabled ? "光通量模式" : "亮色度模式";
+            Manager.MeasurementModeText = eqeEnabled ? "光通量模式" : "亮色度模式";
         }
 
         private void CalculateEqe_Click(object sender, RoutedEventArgs e)

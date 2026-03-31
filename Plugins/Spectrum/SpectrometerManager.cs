@@ -201,6 +201,27 @@ namespace Spectrum
         }
 
         /// <summary>
+        /// 连接状态文本 (连接成功/未连接)
+        /// </summary>
+        [JsonIgnore]
+        public string ConnectionStatusText { get => _ConnectionStatusText; set { _ConnectionStatusText = value; OnPropertyChanged(); } }
+        private string _ConnectionStatusText = "未连接";
+
+        /// <summary>
+        /// 硬件型号文本
+        /// </summary>
+        [JsonIgnore]
+        public string HardwareModelText { get => _HardwareModelText; set { _HardwareModelText = value; OnPropertyChanged(); } }
+        private string _HardwareModelText = "---";
+
+        /// <summary>
+        /// 测量模式文本
+        /// </summary>
+        [JsonIgnore]
+        public string MeasurementModeText { get => _MeasurementModeText; set { _MeasurementModeText = value; OnPropertyChanged(); } }
+        private string _MeasurementModeText = "亮色度模式";
+
+        /// <summary>
         /// Calibration group config, loaded per-SN from Documents/Spectrometer/{SN}/
         /// </summary>
         [JsonIgnore]

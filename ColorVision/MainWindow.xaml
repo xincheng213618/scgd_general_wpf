@@ -10,6 +10,7 @@
         xmlns:input ="clr-namespace:System.Windows.Input;assembly=netstandard"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
+        xmlns:cvui="clr-namespace:ColorVision.UI.StatusBar;assembly=ColorVision.UI"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
         Title="" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -125,15 +126,8 @@
                 </xcad:LayoutPanel>
             </xcad:LayoutRoot>
         </xcad:DockingManager>
-        <Border Grid.Row="2" Height="30"  Background="{DynamicResource GlobalBackground}" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderBrush}" Visibility="{Binding IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}">
-            <Grid x:Name="StatusBarContainer">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-            </Grid>
-        </Border>
+        <cvui:StatusBarControl x:Name="MainStatusBar" Grid.Row="2" TargetName="MainWindow"
+                               Visibility="{Binding IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}"/>
 
     </Grid>
 </Window>

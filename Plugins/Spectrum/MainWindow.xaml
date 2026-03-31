@@ -12,6 +12,7 @@
         xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
+        xmlns:cvui="clr-namespace:ColorVision.UI.StatusBar;assembly=ColorVision.UI"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SpectrometerManager}"
         Title="光谱仪软件" Height="1080" Width="1920" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -795,91 +796,7 @@
             </xcad:LayoutRoot>
         </xcad:DockingManager>
 
-        <StatusBar Grid.Row="2">
-            <StatusBarItem>
-                <StackPanel Orientation="Horizontal">
-                    <Ellipse Width="10" Height="10" Margin="0,0,4,0">
-                        <Ellipse.Style>
-                            <Style TargetType="Ellipse">
-                                <Setter Property="Fill" Value="#E53935"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsConnected}" Value="True">
-                                        <Setter Property="Fill" Value="#27AE60"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Ellipse.Style>
-                    </Ellipse>
-                    <TextBlock x:Name="State1" Text="{x:Static properties:Resources.连接状态}" />
-                    <TextBlock x:Name="State2" Text="{x:Static properties:Resources.未连接}" Margin="2,0,0,0"/>
-                </StackPanel>
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem ToolTip="双击打开设备管理器" MouseDoubleClick="StatusBarConnectionType_DoubleClick">
-                <TextBlock x:Name="StateConnectionType" Text="{Binding ConnectionTypeDisplay}" />
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="State3" Text="{x:Static properties:Resources.硬件型号}" />
-                    <TextBlock x:Name="State4" Text="---" Margin="2,0,0,0"/>
-                </StackPanel>
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem ToolTip="SN序列号，双击复制" MouseDoubleClick="StatusBarSN_DoubleClick">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="SN: "/>
-                    <TextBlock x:Name="StateSN" Text="{Binding SerialNumber, FallbackValue='---'}"/>
-                </StackPanel>
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="标定: "/>
-                    <TextBlock Text="{Binding ActiveCalibrationGroupName, FallbackValue='Default'}" Foreground="#3498DB"/>
-                </StackPanel>
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem ToolTip="当前测量模式 (通过 工具 菜单切换)">
-                <TextBlock x:Name="StatusModeText" Text="亮色度模式" Foreground="#8E44AD"/>
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Shutter: "/>
-                    <Ellipse Width="8" Height="8" Margin="2,0,0,0">
-                        <Ellipse.Style>
-                            <Style TargetType="Ellipse">
-                                <Setter Property="Fill" Value="#E53935"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ShutterController.IsConnected}" Value="True">
-                                        <Setter Property="Fill" Value="#27AE60"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Ellipse.Style>
-                    </Ellipse>
-                </StackPanel>
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="CFW: "/>
-                    <Ellipse Width="8" Height="8" Margin="2,0,0,0">
-                        <Ellipse.Style>
-                            <Style TargetType="Ellipse">
-                                <Setter Property="Fill" Value="#E53935"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding FilterWheelController.IsConnected}" Value="True">
-                                        <Setter Property="Fill" Value="#27AE60"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Ellipse.Style>
-                    </Ellipse>
-                </StackPanel>
-            </StatusBarItem>
-        </StatusBar>
+        <cvui:StatusBarControl x:Name="SpectrumStatusBar" Grid.Row="2" TargetName="Spectrum"/>
 
     </Grid>
 </Window>
