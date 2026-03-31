@@ -272,13 +272,14 @@ namespace ColorVision.SocketProtocol
             }
             catch (SocketException e)
             {
-                log.Error(e);
+                log.Error("Socket server error on port " + Config.ServerPort + ": " + e.Message);
             }
             finally
             {
                 tcpListener.Stop();
                 IsConnect = false;
-                Config.IsServerEnabled = false;
+                // 不修改 Config.IsServerEnabled，保留用户配置
+                // 下次启动时仍会尝试开启服务器
             }
         }
 

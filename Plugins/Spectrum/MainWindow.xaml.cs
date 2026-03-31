@@ -146,6 +146,8 @@ namespace Spectrum
 
             MenuManager.GetInstance().LoadMenuForWindow("Spectrum", menu);
 
+            StatusBarManager.GetInstance().Init(StatusBarGrid, "Spectrum");
+
             image1931.Source = src1931?.ToBitmapSource();
             image1976.Source = src1976?.ToBitmapSource();
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues(typeof(SpectrometerType)).Cast<SpectrometerType>()

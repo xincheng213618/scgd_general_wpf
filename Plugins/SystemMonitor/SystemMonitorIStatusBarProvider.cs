@@ -14,29 +14,33 @@ namespace SystemMonitor
             {
                 new StatusBarMeta()
                 {
+                    Id = "SystemMonitor_Time",
                     Name = "Time",
                     Description = Resources.PerformanceTest,
-                    Order =12,
-                    Type =StatusBarType.Text,
-                    BindingName  = nameof(SystemMonitors.Time),
-                    VisibilityBindingName ="Config.IsShowTime",
+                    Order = 9999,
+                    Type = StatusBarType.Text,
+                    BindingName = nameof(SystemMonitors.Time),
                     Source = SystemMonitors.GetInstance()
                 },
                 new StatusBarMeta()
                 {
-                    Type =StatusBarType.Text,
-                    BindingName  = nameof(SystemMonitors.GetUptime),
-                    VisibilityBindingName ="Config.IsShowTime",
+                    Id = "SystemMonitor_Uptime",
+                    Name = "Uptime",
+                    Description = "System Uptime",
+                    Type = StatusBarType.Text,
+                    Alignment = StatusBarAlignment.Right,
+                    Order = 2,
+                    BindingName = nameof(SystemMonitors.GetUptime),
                     Source = SystemMonitors.GetInstance()
                 },
                 new StatusBarMeta()
                 {
+                    Id = "SystemMonitor_RAM",
                     Name = "RAM",
                     Description = Resources.PerformanceTest,
-                    Order =10,
-                    Type =StatusBarType.Text,
-                    BindingName  = nameof(SystemMonitors.MemoryThis),
-                    VisibilityBindingName ="Config.IsShowRAM",
+                    Order = 9999,
+                    Type = StatusBarType.Text,
+                    BindingName = nameof(SystemMonitors.MemoryThis),
                     Source = SystemMonitors.GetInstance()
                 }
             };

@@ -203,7 +203,13 @@ namespace ColorVision
 
             MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget,Menu1);
             this.LoadHotKeyFromAssembly();
-            StatusBarManager.GetInstance().Init(StatusBarGrid, StatusBarTextDocker);
+            StatusBarManager.GetInstance().Init(StatusBarGrid, MenuItemConstants.MainWindowTarget);
+
+            // 监听 DockingManager 活动文档切换，更新状态栏上下文项
+            DockingManager1.ActiveContentChanged += (s, e) =>
+            {
+                StatusBarManager.GetInstance().OnActiveDocumentChanged(DockingManager1.ActiveContent);
+            };
 
             Application.Current.MainWindow = this;
             Task.Run(() =>

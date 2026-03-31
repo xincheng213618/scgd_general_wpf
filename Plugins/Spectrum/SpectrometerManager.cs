@@ -177,8 +177,22 @@ namespace Spectrum
         public IntPtr Handle { get; set; } = IntPtr.Zero;
         
         [JsonIgnore]
-        public bool IsConnected { get => _IsConnected; set { _IsConnected = value; OnPropertyChanged(); OnPropertyChanged(nameof(ConnectionTypeDisplay)); } }
+        public bool IsConnected { get => _IsConnected; set { _IsConnected = value; OnPropertyChanged(); OnPropertyChanged(nameof(ConnectionTypeDisplay)); OnPropertyChanged(nameof(HardwareModel)); } }
         private bool _IsConnected = false;
+
+        /// <summary>
+        /// 硬件型号，连接后显示
+        /// </summary>
+        [JsonIgnore]
+        public string HardwareModel { get => _IsConnected ? _HardwareModel : "---"; set { _HardwareModel = value; OnPropertyChanged(); } }
+        private string _HardwareModel = "SP-100";
+
+        /// <summary>
+        /// 当前测量模式文本
+        /// </summary>
+        [JsonIgnore]
+        public string MeasurementMode { get => _MeasurementMode; set { _MeasurementMode = value; OnPropertyChanged(); } }
+        private string _MeasurementMode = "亮色度模式";
 
         /// <summary>
         /// The serial number of the currently connected spectrometer.

@@ -8,8 +8,16 @@ using System.Windows;
 
 namespace ColorVision.Database
 {
-    public class MySqlSettingProvider : IConfigSettingProvider,IStatusBarProvider
+    public class MySqlSettingProvider : IConfigSettingProvider, IStatusBarProviderUpdatable
     {
+        public event EventHandler StatusBarItemsChanged;
+
+        public MySqlSettingProvider()
+        {
+            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) =>
+                StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             return new List<ConfigSettingMetadata> {
@@ -24,19 +32,20 @@ namespace ColorVision.Database
         }
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
+            bool isConnected = MySqlControl.GetInstance().IsConnect;
             RelayCommand relayCommand = new RelayCommand(a => new MySqlConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             return new List<StatusBarMeta>
             {
                 new StatusBarMeta()
                 {
+                    Id = "MySQL",
                     Name = Properties.Resources.EnableDatabase,
-                    Description = Properties.Resources.EnableDatabase,
-                    Order =0,
-                    BindingName = "MySqlControl.IsConnect",
-                    VisibilityBindingName = nameof(MySqlSetting.IsUseMySql),
-                    ButtonStyleName ="ButtonDrawingImageMysql",
+                    Description = isConnected ? "MySQL Connected" : "MySQL Disconnected",
+                    Order = 999,
+                    Type = StatusBarType.Icon,
+                    IconResourceKey = isConnected ? "DrawingImageMysql" : "DrawingImageMysqlRed",
                     Source = MySqlSetting.Instance,
-                    Command =relayCommand
+                    Command = relayCommand
                 }
             };
         }

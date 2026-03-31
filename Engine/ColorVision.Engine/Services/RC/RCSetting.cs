@@ -1,14 +1,23 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.RC
 {
-    public class RCSettingProvider : IConfigSettingProvider,IStatusBarProvider
+    public class RCSettingProvider : IConfigSettingProvider, IStatusBarProviderUpdatable
     {
+        public event EventHandler StatusBarItemsChanged;
+
+        public RCSettingProvider()
+        {
+            MqttRCService.GetInstance().RCServiceConnectChanged += (s, e) =>
+                StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             return new List<ConfigSettingMetadata>
@@ -24,21 +33,20 @@ namespace ColorVision.Engine.Services.RC
 
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
-
-
+            bool isConnected = MqttRCService.GetInstance().IsConnect;
             RelayCommand relayCommand = new RelayCommand(a => new RCServiceConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             return new List<StatusBarMeta>
             {
                 new StatusBarMeta()
                 {
+                    Id = "RC",
                     Name = "RC",
-                    Description = "RC",
-                    Order =3,
-                    BindingName = "MQTTRCService.IsConnect",
-                    VisibilityBindingName =nameof(RCSetting.IsUseRCService),
-                    ButtonStyleName ="ButtonDrawingImageRCService",
+                    Description = isConnected ? "RC Service Connected" : "RC Service Disconnected",
+                    Order = 999,
+                    Type = StatusBarType.Icon,
+                    IconResourceKey = isConnected ? "DrawingImageRCService" : "DrawingImageRCServiceRed",
                     Source = RCSetting.Instance,
-                    Command =relayCommand
+                    Command = relayCommand
                 }
             };
         }
