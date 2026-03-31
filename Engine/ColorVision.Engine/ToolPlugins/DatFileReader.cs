@@ -16,36 +16,36 @@ namespace ColorVision.Engine.ToolPlugins
 
 
 
-    public class Test : MenuItemBase
-    {
-        public override string OwnerGuid => "Tool";
-        public override string GuidId => "Test";
-        public override int Order => 7;
-        public override string Header => "Test";
+    //public class Test : MenuItemBase
+    //{
+    //    public override string OwnerGuid => "Tool";
+    //    public override string GuidId => "Test";
+    //    public override int Order => 7;
+    //    public override string Header => "Test";
 
-        public override void Execute()
-        {
-            string path = @"C:\Users\Xin\Desktop\20260131T140254.0361975_FindLED_po.dat";
+    //    public override void Execute()
+    //    {
+    //        string path = @"C:\Users\Xin\Desktop\20260131T140254.0361975_FindLED_po.dat";
 
-            PositionData data = ReadPositionFile(path);
+    //        PositionData data = ReadPositionFile(path);
 
-            Console.WriteLine($"加载成功: {path}");
-            Console.WriteLine($"Mat 尺寸: {data.MatData.Rows}x{data.MatData.Cols}");
-            Console.WriteLine($"Mat 类型: {data.MatData.Type()} (期望 CV_64FC2)");
+    //        Console.WriteLine($"加载成功: {path}");
+    //        Console.WriteLine($"Mat 尺寸: {data.MatData.Rows}x{data.MatData.Cols}");
+    //        Console.WriteLine($"Mat 类型: {data.MatData.Type()} (期望 CV_64FC2)");
 
-            // 验证 Attribute 数据
-            Console.WriteLine($"Attribute Angle: {data.Attribute.angle}");
-            Console.WriteLine($"Attribute Center: {data.Attribute.center}");
+    //        // 验证 Attribute 数据
+    //        Console.WriteLine($"Attribute Angle: {data.Attribute.angle}");
+    //        Console.WriteLine($"Attribute Center: {data.Attribute.center}");
 
-            // 访问 Mat 中的某个点的数据 (示例：访问中心点)
-            int cy = data.MatData.Rows / 2;
-            int cx = data.MatData.Cols / 2;
+    //        // 访问 Mat 中的某个点的数据 (示例：访问中心点)
+    //        int cy = data.MatData.Rows / 2;
+    //        int cx = data.MatData.Cols / 2;
 
-            // 获取 Vec2d (OpenCvSharp 中对应 CV_64FC2 的结构是 Vec2d)
-            Vec2d pointVal = data.MatData.At<Vec2d>(cy, cx);
-            Console.WriteLine($"中心点数据 (Row:{cy}, Col:{cx}): X={pointVal.Item0}, Y={pointVal.Item1}");
-        }
-    }
+    //        // 获取 Vec2d (OpenCvSharp 中对应 CV_64FC2 的结构是 Vec2d)
+    //        Vec2d pointVal = data.MatData.At<Vec2d>(cy, cx);
+    //        Console.WriteLine($"中心点数据 (Row:{cy}, Col:{cx}): X={pointVal.Item0}, Y={pointVal.Item1}");
+    //    }
+    //}
 
     public partial class DatFileReader
     {

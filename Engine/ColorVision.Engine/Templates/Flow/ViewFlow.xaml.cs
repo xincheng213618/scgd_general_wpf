@@ -390,13 +390,6 @@ namespace ColorVision.Engine.Services.Flow
             PreProcessManager.GetInstance().Edit();
         }
 
-        private void NodeListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (NodeListView.SelectedIndex > -1)
-            {
-                STNodeEditorMain.SetActiveNode(FlowEngineManager.CVBaseServerNodes[NodeListView.SelectedIndex]);
-            }
-        }
 
         public void Dispose()
         {

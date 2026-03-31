@@ -66,6 +66,11 @@ namespace ProjectStarkSemi
         private Point currentImageCenter;
         private int currentImageRadius;
 
+        // Backup of original Mat data for filter reset
+        private OpenCvSharp.Mat? OriginalXMat;
+        private OpenCvSharp.Mat? OriginalYMat;
+        private OpenCvSharp.Mat? OriginalZMat;
+
         public double MaxAngle
         {
             get
@@ -430,35 +435,108 @@ namespace ProjectStarkSemi
             }
         }
 
+        /// <summary>
+        /// 对单通道Mat应用指定滤波
+        /// </summary>
+        private OpenCvSharp.Mat ApplyFilterToMat(OpenCvSharp.Mat src, ImageFilterType filterType, int kernelSize, double sigma, int d, double sigmaColor, double sigmaSpace)
+        {
+            var dst = new OpenCvSharp.Mat();
+
+            // 需要先转换为支持的类型进行滤波，再转回
+            OpenCvSharp.Mat src8U = new OpenCvSharp.Mat();
+            bool needConvert = src.Depth() != OpenCvSharp.MatType.CV_8U && src.Depth() != OpenCvSharp.MatType.CV_32F;
+
+            OpenCvSharp.Mat workMat = src;
+
+            switch (filterType)
+            {
+                case ImageFilterType.LowPass:
+                    OpenCvSharp.Cv2.Blur(workMat, dst, new OpenCvSharp.Size(kernelSize, kernelSize));
+                    break;
+                case ImageFilterType.MovingAverage:
+                    OpenCvSharp.Cv2.BoxFilter(workMat, dst, workMat.Type(), new OpenCvSharp.Size(kernelSize, kernelSize));
+                    break;
+                case ImageFilterType.Gaussian:
+                    OpenCvSharp.Cv2.GaussianBlur(workMat, dst, new OpenCvSharp.Size(kernelSize, kernelSize), sigma);
+                    break;
+                case ImageFilterType.Median:
+                    // MedianBlur 需要 CV_8U 或 CV_32F
+                    if (src.Depth() == OpenCvSharp.MatType.CV_32F)
+                    {
+                        OpenCvSharp.Cv2.MedianBlur(workMat, dst, kernelSize);
+                    }
+                    else
+                    {
+                        // 转为 CV_32F 再处理
+                        OpenCvSharp.Mat floatMat = new OpenCvSharp.Mat();
+                        workMat.ConvertTo(floatMat, OpenCvSharp.MatType.CV_32FC1);
+                        OpenCvSharp.Cv2.MedianBlur(floatMat, dst, kernelSize);
+                        // 转回原始类型
+                        var result = new OpenCvSharp.Mat();
+                        dst.ConvertTo(result, src.Type());
+                        floatMat.Dispose();
+                        dst.Dispose();
+                        dst = result;
+                    }
+                    break;
+                case ImageFilterType.Bilateral:
+                    // BilateralFilter 需要 CV_8U 或 CV_32F
+                    if (src.Depth() == OpenCvSharp.MatType.CV_32F)
+                    {
+                        OpenCvSharp.Cv2.BilateralFilter(workMat, dst, d, sigmaColor, sigmaSpace);
+                    }
+                    else
+                    {
+                        OpenCvSharp.Mat floatMat = new OpenCvSharp.Mat();
+                        workMat.ConvertTo(floatMat, OpenCvSharp.MatType.CV_32FC1);
+                        OpenCvSharp.Cv2.BilateralFilter(floatMat, dst, d, sigmaColor, sigmaSpace);
+                        var result = new OpenCvSharp.Mat();
+                        dst.ConvertTo(result, src.Type());
+                        floatMat.Dispose();
+                        dst.Dispose();
+                        dst = result;
+                    }
+                    break;
+                default:
+                    return src.Clone();
+            }
+
+            return dst;
+        }
+
         private void btnApplyFilter_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                if (ImageView.ImageShow.Source == null)
+                var filterType = (ImageFilterType)cbFilterType.SelectedIndex;
+
+                // 选择"无滤波"时，恢复原始数据
+                if (filterType == ImageFilterType.None)
+                {
+                    if (OriginalXMat != null || OriginalYMat != null || OriginalZMat != null)
+                    {
+                        XMat?.Dispose();
+                        YMat?.Dispose();
+                        ZMat?.Dispose();
+                        XMat = OriginalXMat?.Clone();
+                        YMat = OriginalYMat?.Clone();
+                        ZMat = OriginalZMat?.Clone();
+                        CreateAndAnalyzePolarLines();
+                        log.Info("已恢复原始数据");
+                        MessageBox.Show("已恢复原始数据", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    return;
+                }
+
+                // 检查数据是否可用
+                bool hasData = XMat != null || YMat != null || ZMat != null;
+                if (!hasData)
                 {
                     MessageBox.Show("请先获取图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
-                var filterType = (ImageFilterType)cbFilterType.SelectedIndex;
-                if (filterType == ImageFilterType.None)
-                {
-                    log.Info("未选择滤波类型");
-                    return;
-                }
-
                 log.Info($"开始应用滤波: {filterType}");
-
-                // Convert WPF BitmapSource to OpenCV XYZMat
-                BitmapSource bitmapSource = ImageView.ImageShow.Source as BitmapSource;
-                if (bitmapSource == null)
-                {
-                    MessageBox.Show("图像格式不支持", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                OpenCvSharp.Mat srcMat = BitmapSourceConverter.ToMat(bitmapSource);
-                OpenCvSharp.Mat dstMat = new OpenCvSharp.Mat();
 
                 int kernelSize = (int)sliderKernelSize.Value;
                 double sigma = sliderSigma.Value;
@@ -469,48 +547,48 @@ namespace ProjectStarkSemi
                 // Ensure kernel size is odd
                 if (kernelSize % 2 == 0) kernelSize++;
 
-                // Apply selected filter
-                switch (filterType)
+                // 首次滤波时备份原始数据
+                if (OriginalXMat == null && OriginalYMat == null && OriginalZMat == null)
                 {
-                    case ImageFilterType.LowPass:
-                        // 低通滤波（均值滤波）
-                        OpenCvSharp.Cv2.Blur(srcMat, dstMat, new OpenCvSharp.Size(kernelSize, kernelSize));
-                        log.Info($"应用低通滤波，核大小: {kernelSize}");
-                        break;
-
-                    case ImageFilterType.MovingAverage:
-                        // 移动平均滤波（方框滤波）
-                        OpenCvSharp.Cv2.BoxFilter(srcMat, dstMat, srcMat.Type(), new OpenCvSharp.Size(kernelSize, kernelSize));
-                        log.Info($"应用移动平均滤波，核大小: {kernelSize}");
-                        break;
-
-                    case ImageFilterType.Gaussian:
-                        // 高斯滤波
-                        OpenCvSharp.Cv2.GaussianBlur(srcMat, dstMat, new OpenCvSharp.Size(kernelSize, kernelSize), sigma);
-                        log.Info($"应用高斯滤波，核大小: {kernelSize}, σ: {sigma}");
-                        break;
-
-                    case ImageFilterType.Median:
-                        // 中值滤波
-                        OpenCvSharp.Cv2.MedianBlur(srcMat, dstMat, kernelSize);
-                        log.Info($"应用中值滤波，核大小: {kernelSize}");
-                        break;
-
-                    case ImageFilterType.Bilateral:
-                        // 双边滤波
-                        OpenCvSharp.Cv2.BilateralFilter(srcMat, dstMat, d, sigmaColor, sigmaSpace);
-                        log.Info($"应用双边滤波，d: {d}, σColor: {sigmaColor}, σSpace: {sigmaSpace}");
-                        break;
+                    OriginalXMat = XMat?.Clone();
+                    OriginalYMat = YMat?.Clone();
+                    OriginalZMat = ZMat?.Clone();
                 }
 
-                // Convert back to WPF BitmapSource
-                BitmapSource filteredImage = BitmapSourceConverter.ToBitmapSource(dstMat);
-                ImageView.SetImageSource(filteredImage);
+                // 从原始数据开始滤波（避免多次滤波叠加）
+                XMat?.Dispose();
+                YMat?.Dispose();
+                ZMat?.Dispose();
+                XMat = OriginalXMat?.Clone();
+                YMat = OriginalYMat?.Clone();
+                ZMat = OriginalZMat?.Clone();
 
-                srcMat.Dispose();
-                dstMat.Dispose();
+                // 对每个通道分别应用滤波
+                if (XMat != null)
+                {
+                    var filtered = ApplyFilterToMat(XMat, filterType, kernelSize, sigma, d, sigmaColor, sigmaSpace);
+                    XMat.Dispose();
+                    XMat = filtered;
+                }
+                if (YMat != null)
+                {
+                    var filtered = ApplyFilterToMat(YMat, filterType, kernelSize, sigma, d, sigmaColor, sigmaSpace);
+                    YMat.Dispose();
+                    YMat = filtered;
+                }
+                if (ZMat != null)
+                {
+                    var filtered = ApplyFilterToMat(ZMat, filterType, kernelSize, sigma, d, sigmaColor, sigmaSpace);
+                    ZMat.Dispose();
+                    ZMat = filtered;
+                }
 
-                log.Info("滤波应用成功");
+                log.Info($"滤波应用到XYZ通道完成: {filterType}, kernelSize={kernelSize}");
+
+                // 重新分析（重建极角线和同心圆数据）
+                CreateAndAnalyzePolarLines();
+
+                log.Info("滤波应用成功，数据已更新");
                 MessageBox.Show("滤波应用成功", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -1180,7 +1258,7 @@ namespace ProjectStarkSemi
         /// </summary>
         private void ExportAngleModeToCSV(string filePath, ExportChannel channel)
         {
-            if (currentBitmapSource == null)
+            if (YMat == null)
             {
                 log.Warn("没有图像数据，无法导出");
                 return;
@@ -1257,63 +1335,46 @@ namespace ProjectStarkSemi
         {
             var angleLines = new List<PolarAngleLine>();
 
-            if (currentBitmapSource == null) return angleLines;
+            if (YMat == null) return angleLines;
 
-            OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
+            int imageWidth = YMat.Width;
+            int imageHeight = YMat.Height;
 
-            try
+            // Create lines from 0° to 180° (181 lines)
+            for (int phi = 0; phi <= 180; phi++)
             {
-                int numSamples = (int)MaxAngle + 1; // 0 to MaxAngle inclusive
-                int radius = (int)(MaxAngle / ConoscopeConfig.ConoscopeCoefficient);
-
-                // Create lines from 0° to 180° (181 lines)
-                for (int phi = 0; phi <= 180; phi++)
+                PolarAngleLine polarLine = new PolarAngleLine
                 {
-                    PolarAngleLine polarLine = new PolarAngleLine
+                    Angle = phi
+                };
+
+                double radians = (180 - phi) * Math.PI / 180.0;
+
+                // Sample from center (theta=0) to edge (theta=MaxAngle)
+                for (int theta = 0; theta <= (int)MaxAngle; theta++)
+                {
+                    double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
+                    double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                    double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
+
+                    int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
+                    int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
+
+                    ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
+
+                    polarLine.RgbData.Add(new RgbSample
                     {
-                        Angle = phi
-                    };
-
-                    // Add 90° to place 0° at the top (first quadrant/north)
-                    // Negate to make rotation counter-clockwise in screen coordinates
-                    double radians = (180 - phi) * Math.PI / 180.0;
-
-                    // Sample from center (theta=0) to edge (theta=MaxAngle)
-                    for (int theta = 0; theta <= (int)MaxAngle; theta++)
-                    {
-                        double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
-                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
-
-                        int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
-                        int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
-
-                        double r = 0, g = 0, b = 0;
-                        double X = 0, Y = 0, Z = 0;
-
-                        ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
-
-                        polarLine.RgbData.Add(new RgbSample
-                        {
-                            Position = theta, // 0 to MaxAngle
-                            R = r,
-                            G = g,
-                            B = b,
-                            X = X,
-                            Y = Y,
-                            Z = Z
-                        });
-                    }
-
-                    angleLines.Add(polarLine);
+                        Position = theta,
+                        X = X,
+                        Y = Y,
+                        Z = Z
+                    });
                 }
 
-                log.Info($"创建了 {angleLines.Count} 条方位角 (0°-180°) 用于导出");
+                angleLines.Add(polarLine);
             }
-            finally
-            {
-                mat.Dispose();
-            }
+
+            log.Info($"创建了 {angleLines.Count} 条方位角 (0°-180°) 用于导出");
 
             return angleLines;
         }
@@ -1407,89 +1468,81 @@ namespace ProjectStarkSemi
         {
             concentricCircleLines.Clear();
 
-            if (currentBitmapSource == null) return;
+            if (YMat == null) return;
 
-            // Convert BitmapSource to OpenCV XYZMat
-            OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
+            int imageWidth = YMat.Width;
+            int imageHeight = YMat.Height;
 
-            try
+            // Calculate the number of concentric circles based on model
+            int numCircles = (int)MaxAngle;
+
+            // For each degree from 0 to MaxAngle, create a concentric circle
+            // 0 degree is center point
+            for (int degree = 0; degree <= numCircles; degree++)
             {
-                // Calculate the number of concentric circles based on model
-                int numCircles = (int)MaxAngle;
-
-                // For each degree from 0 to MaxAngle, create a concentric circle
-                // 0 degree is center point
-                for (int degree = 0; degree <= numCircles; degree++)
+                ConcentricCircleLine circleLine = new ConcentricCircleLine
                 {
-                    ConcentricCircleLine circleLine = new ConcentricCircleLine
+                    RadiusAngle = degree
+                };
+
+                if (degree == 0)
+                {
+                    // Center point (0 degree): Use the center pixel value for all 360 samples
+                    int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(currentImageCenter.X)));
+                    int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(currentImageCenter.Y)));
+
+                    ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
+
+                    // Fill all 360 samples with the center point value
+                    for (int anglePos = 0; anglePos <= 360; anglePos++)
                     {
-                        RadiusAngle = degree
-                    };
-
-                    if (degree == 0)
-                    {
-                        // Center point (0 degree): Use the center pixel value for all 360 samples
-                        int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(currentImageCenter.X)));
-                        int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(currentImageCenter.Y)));
-
-                        double r = 0, g = 0, b = 0;
-                        double X = 0, Y = 0, Z = 0;
-
-                        ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
-
-                        // Fill all 360 samples with the center point value
-                        for (int anglePos = 0; anglePos <= 360; anglePos++)
+                        circleLine.RgbData.Add(new RgbSample
                         {
-                            circleLine.RgbData.Add(new RgbSample
-                            {
-                                Position = anglePos, // 0 to MaxAngle
-                                R = r,
-                                G = g,
-                                B = b,
-                                X = X,
-                                Y = Y,
-                                Z = Z
-                            });
-                        }
+                            Position = anglePos,
+                            X = X,
+                            Y = Y,
+                            Z = Z
+                        });
                     }
-                    else
+                }
+                else
+                {
+                    // Calculate radius in pixels for this degree angle
+                    double radiusPixels = degree / ConoscopeConfig.ConoscopeCoefficient;
+
+                    // Sample points along the circle (360 samples for full circle, one per degree)
+                    for (int anglePos = 0; anglePos <= 360; anglePos++)
                     {
-                        // Calculate radius in pixels for this degree angle
-                        double radiusPixels = degree / ConoscopeConfig.ConoscopeCoefficient;
+                        double radians = (90 - anglePos) * Math.PI / 180.0;
+                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
 
-                        // Sample points along the circle (360 samples for full circle, one per degree)
-                        for (int anglePos = 0; anglePos <= 360; anglePos++)
-                        {
-                            // Add 90° to place 0° at the top (first quadrant/north)
-                            // Negate to make rotation counter-clockwise in screen coordinates
-                            double radians = (90 - anglePos) * Math.PI / 180.0;
-                            double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                            double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
+                        int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
+                        int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
 
-                            // Ensure coordinates are within bounds
-                            int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
-                            int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
-
-
-                            double r = 0, g = 0, b = 0;
-                            double X = 0, Y = 0, Z = 0;
-
-                            ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
-                            circleLine.RgbData.Add(new RgbSample{ Position = anglePos,  R = r, G = g,   B = b, X = X, Y = Y, Z = Z });
-
-     
-                        }
+                        ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
+                        circleLine.RgbData.Add(new RgbSample { Position = anglePos, X = X, Y = Y, Z = Z });
                     }
-
-                    concentricCircleLines.Add(circleLine);
                 }
 
-                log.Info($"创建了 {concentricCircleLines.Count} 个极角数据 (包含0度中心点)");
+                concentricCircleLines.Add(circleLine);
             }
-            finally
-            {
-                mat.Dispose();
-            }
+
+            log.Info($"创建了 {concentricCircleLines.Count} 个极角数据 (包含0度中心点)");
+        }
+
+        /// <summary>
+        /// 直接从XMat/YMat/ZMat提取XYZ通道值（参考VAMdemo简洁方式）
+        /// </summary>
+        private void ExtractXYZValues(int ix, int iy, out double X, out double Y, out double Z)
+        {
+            X = Y = Z = 0;
+            if (XMat != null)
+                X = XMat.At<float>(iy, ix);
+            if (YMat != null)
+                Y = YMat.At<float>(iy, ix);
+            if (ZMat != null)
+                Z = ZMat.At<float>(iy, ix);
         }
 
         /// <summary>
@@ -1594,8 +1647,10 @@ namespace ProjectStarkSemi
         {
             try
             {
-                // Convert BitmapSource to OpenCV RGBMat
-                OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(bitmapSource);
+                if (YMat == null) return;
+
+                int imageWidth = YMat.Width;
+                int imageHeight = YMat.Height;
 
                 // Calculate line length
                 double lineLength = Math.Sqrt(Math.Pow(end.X - start.X, 2) + Math.Pow(end.Y - start.Y, 2));
@@ -1604,11 +1659,8 @@ namespace ProjectStarkSemi
                 if (numSamples <= 1)
                 {
                     log.Warn($"线长度太短 ({numSamples} 像素)，无法采样");
-                    mat.Dispose();
                     return;
                 }
-
-                PixelFormat PixelFormat = ImageView.EditorContext.Config.GetProperties<PixelFormat>("PixelFormat");
 
                 // Sample points along the line
                 for (int i = 0; i < numSamples; i++)
@@ -1617,129 +1669,25 @@ namespace ProjectStarkSemi
                     double x = start.X + t * (end.X - start.X);
                     double y = start.Y + t * (end.Y - start.Y);
 
-                    // Ensure coordinates are within bounds
-                    int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
-                    int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+                    int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
+                    int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
 
-                    if (ix == 0)
-                    {
-                        log.Info(ix);
-                    }
+                    double position = -MaxAngle + (i / (double)(numSamples - 1)) * MaxAngle * 2;
 
-                    double position = - MaxAngle + (i / (double)(numSamples - 1)) * MaxAngle * 2;
-
-                    // Extract RGB values based on image type
-                    double r = 0, g = 0, b = 0;
-                    double X = 0, Y = 0, Z = 0;
-
-                    if (mat.Channels() == 1)
-                    {
-                        // Grayscale image
-                        if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
-                        {
-                            byte value = mat.At<byte>(iy, ix);
-                            r = g = b = value;
-                        }
-                        else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
-                        {
-                            ushort value = mat.At<ushort>(iy, ix);
-                            r = g = b = value;
-                        }
-                    }
-                    else if (mat.Channels() >= 3)
-                    {
-                        // Color image (BGR or BGRA)
-                        if (mat.Depth() == OpenCvSharp.MatType.CV_8U)
-                        {
-                            OpenCvSharp.Vec3b pixel = mat.At<OpenCvSharp.Vec3b>(iy, ix);
-                            switch (PixelFormat.ToString())
-                            {
-                                case "Bgr32":
-                                case "Bgra32":
-                                case "Pbgra32":
-                                case "Bgr24":
-                                    b = pixel.Item0;
-                                    g = pixel.Item1;
-                                    r = pixel.Item2;
-                                    break;
-                                case "Rgb24":
-                                case "Rgb48":
-                                    r = pixel.Item0;
-                                    g = pixel.Item1;
-                                    b = pixel.Item2;
-                                    break;
-                                case "Gray8":
-                                    break;
-                                case "Gray16":
-                                    break;
-                                case "Gray32Float":
-                                    break;
-                                default:
-                                    b = pixel.Item0;
-                                    g = pixel.Item1;
-                                    r = pixel.Item2;
-                                    break;
-                            }
-  
-                        }
-                        else if (mat.Depth() == OpenCvSharp.MatType.CV_16U)
-                        {
-                            OpenCvSharp.Vec3w pixel = mat.At<OpenCvSharp.Vec3w>(iy, ix);
-                            switch (PixelFormat.ToString())
-                            {
-                                case "Bgr32":
-                                case "Bgra32":
-                                case "Pbgra32":
-                                case "Bgr24":
-                                    b = pixel.Item0;
-                                    g = pixel.Item1;
-                                    r = pixel.Item2;
-                                    break;
-                                case "Rgb24":
-                                case "Rgb48":
-                                    r = pixel.Item0;
-                                    g = pixel.Item1;
-                                    b = pixel.Item2;
-                                    break;
-                                case "Gray8":
-                                    break;
-                                case "Gray16":
-                                    break;
-                                case "Gray32Float":
-                                    break;
-                                default:
-                                    b = pixel.Item0;
-                                    g = pixel.Item1;
-                                    r = pixel.Item2;
-                                    break;
-                            }
-                        }
-
-                        if (XMat != null)
-                            X = XMat.At<float>(iy, ix);
-                        if (YMat != null)
-                            Y = YMat.At<float>(iy, ix);
-                        if (ZMat != null)
-                            Z = ZMat.At<float>(iy, ix);
-                    }
-
+                    ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
 
                     polarLine.RgbData.Add(new RgbSample
                     {
                         Position = position,
-                        DX =ix,
-                        DY =iy,
-                        R = r,
-                        G = g,
-                        B = b,
+                        DX = ix,
+                        DY = iy,
                         X = X,
                         Y = Y,
-                        Z =Z,
+                        Z = Z,
                     });
                 }
 
-                mat.Dispose();
-                log.Info($"完成RGB采样: 方位角{polarLine.Angle}°, 采样点数{polarLine.RgbData.Count}");
+                log.Info($"完成采样: 方位角{polarLine.Angle}°, 采样点数{polarLine.RgbData.Count}");
             }
             catch (Exception ex)
             {
@@ -1754,48 +1702,37 @@ namespace ProjectStarkSemi
         {
             try
             {
-                // Convert BitmapSource to OpenCV Mat
-                OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(bitmapSource);
+                if (YMat == null) return;
+
+                int imageWidth = YMat.Width;
+                int imageHeight = YMat.Height;
 
                 // Calculate radius in pixels
                 double radiusPixels = radiusAngle / ConoscopeConfig.ConoscopeCoefficient;
 
-                // Sample 720 points around the circle for smoother visualization (0.5 degree intervals)
-                // Export still uses original data, but display benefits from higher resolution
                 int numSamples = 360;
                 for (int i = 0; i < numSamples; i++)
                 {
-                    double anglePos = i * 360.0 / numSamples; // 0.5 degree intervals
-                    // Add 90° to place 0° at the top (first quadrant/north)
-                    // Negate to make rotation counter-clockwise in screen coordinates
+                    double anglePos = i * 360.0 / numSamples;
                     double radians = (90 - anglePos) * Math.PI / 180.0;
                     double x = center.X + radiusPixels * Math.Cos(radians);
                     double y = center.Y + radiusPixels * Math.Sin(radians);
 
-                    // Ensure coordinates are within bounds
-                    int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
-                    int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
+                    int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
+                    int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
 
-                    // Extract RGB values
-                    double r = 0, g = 0, b = 0;
-                    double X = 0, Y = 0, Z = 0;
-
-                    ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
+                    ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
 
                     circleLine.RgbData.Add(new RgbSample
                     {
-                        Position = anglePos, // 0 to 360 with 0.5 degree intervals
-                        R = r,
-                        G = g,
-                        B = b,
+                        Position = anglePos,
                         X = X,
                         Y = Y,
                         Z = Z
                     });
                 }
 
-                mat.Dispose();
-                log.Info($"完成RGB采样: 极角半径角度{circleLine.RadiusAngle}°, 采样点数{circleLine.RgbData.Count}");
+                log.Info($"完成采样: 极角半径角度{circleLine.RadiusAngle}°, 采样点数{circleLine.RgbData.Count}");
             }
             catch (Exception ex)
             {
@@ -2005,6 +1942,12 @@ namespace ProjectStarkSemi
             YMat = null;
             ZMat?.Dispose();
             ZMat = null;
+            OriginalXMat?.Dispose();
+            OriginalXMat = null;
+            OriginalYMat?.Dispose();
+            OriginalYMat = null;
+            OriginalZMat?.Dispose();
+            OriginalZMat = null;
             ImageView?.Dispose();
             GC.SuppressFinalize(this);
         }
@@ -2157,109 +2100,95 @@ namespace ProjectStarkSemi
         /// </summary>
         private void ExportAzimuthWithStep(string filePath, ExportChannel channel, double azimuthStep, double radialStep)
         {
-            if (currentBitmapSource == null)
+            if (YMat == null)
             {
                 log.Warn("没有图像数据，无法导出");
                 return;
             }
 
-            OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
+            int imageWidth = YMat.Width;
+            int imageHeight = YMat.Height;
 
-            try
+            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
             {
-                using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                // Write header comments
+                writer.WriteLine($"# Azimuth Export Data (azimuth step = {azimuthStep}°, radial step = {radialStep}°)");
+                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                writer.WriteLine($"# Export Channel: {channel}");
+                writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
+                writer.WriteLine($"# Max Angle: {MaxAngle}°");
+                writer.WriteLine($"# Phi (Column): Azimuth angle (0°-180°, step={azimuthStep}°)");
+                writer.WriteLine($"# Theta (Row): Polar radius (0 to MaxAngle, step={radialStep}°)");
+                writer.WriteLine();
+
+                // Create list of angles to export based on step
+                var anglesToExport = new List<double>();
+                for (double phi = 0; phi <= 180; phi += azimuthStep)
                 {
-                    // Write header comments
-                    writer.WriteLine($"# Azimuth Export Data (azimuth step = {azimuthStep}°, radial step = {radialStep}°)");
-                    writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                    writer.WriteLine($"# Export Channel: {channel}");
-                    writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
-                    writer.WriteLine($"# Max Angle: {MaxAngle}°");
-                    writer.WriteLine($"# Phi (Column): Azimuth angle (0°-180°, step={azimuthStep}°)");
-                    writer.WriteLine($"# Theta (Row): Polar radius (0 to MaxAngle, step={radialStep}°)");
-                    writer.WriteLine();
-
-                    // Create list of angles to export based on step
-                    var anglesToExport = new List<double>();
-                    for (double phi = 0; phi <= 180; phi += azimuthStep)
-                    {
-                        anglesToExport.Add(phi);
-                    }
-
-                    // Write CSV header
-                    StringBuilder headerLine = new StringBuilder();
-                    headerLine.Append("Phi \\ Theta");
-                    foreach (var angle in anglesToExport)
-                    {
-                        headerLine.Append($",{angle:F2}");
-                    }
-                    writer.WriteLine(headerLine.ToString());
-
-                    // Sample data for each angle
-                    var angleData = new List<List<RgbSample>>();
-                    foreach (var phi in anglesToExport)
-                    {
-                        var samples = new List<RgbSample>();
-                        // Add 90° to place 0° at the top (first quadrant/north)
-                        // Negate to make rotation counter-clockwise in screen coordinates
-                        double radians = (90 - phi) * Math.PI / 180.0;
-
-                        for (double theta = 0; theta <= MaxAngle; theta += radialStep)
-                        {
-                            double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
-                            double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                            double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
-
-                            int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
-                            int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
-
-                            double r = 0, g = 0, b = 0;
-                            double X = 0, Y = 0, Z = 0;
-
-                            ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
-
-                            samples.Add(new RgbSample
-                            {
-                                Position = theta,
-                                R = r,
-                                G = g,
-                                B = b,
-                                X = X,
-                                Y = Y,
-                                Z = Z
-                            });
-                        }
-                        angleData.Add(samples);
-                    }
-
-                    // Write data rows
-                    int maxSamples = angleData[0].Count;
-                    for (int i = 0; i < maxSamples; i++)
-                    {
-                        StringBuilder dataLine = new StringBuilder();
-                        dataLine.Append($"{angleData[0][i].Position:F2}");
-
-                        foreach (var samples in angleData)
-                        {
-                            if (samples.Count > i)
-                            {
-                                double value = GetChannelValue(samples[i], channel);
-                                dataLine.Append($",{value:F2}");
-                            }
-                            else
-                            {
-                                dataLine.Append(",");
-                            }
-                        }
-                        writer.WriteLine(dataLine.ToString());
-                    }
-
-                    log.Info($"方位角导出完成，步进={azimuthStep}, 角度数={anglesToExport.Count}, 通道={channel}");
+                    anglesToExport.Add(phi);
                 }
-            }
-            finally
-            {
-                mat.Dispose();
+
+                // Write CSV header
+                StringBuilder headerLine = new StringBuilder();
+                headerLine.Append("Phi \\ Theta");
+                foreach (var angle in anglesToExport)
+                {
+                    headerLine.Append($",{angle:F2}");
+                }
+                writer.WriteLine(headerLine.ToString());
+
+                // Sample data for each angle
+                var angleData = new List<List<RgbSample>>();
+                foreach (var phi in anglesToExport)
+                {
+                    var samples = new List<RgbSample>();
+                    double radians = (90 - phi) * Math.PI / 180.0;
+
+                    for (double theta = 0; theta <= MaxAngle; theta += radialStep)
+                    {
+                        double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
+                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
+
+                        int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
+                        int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
+
+                        ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
+
+                        samples.Add(new RgbSample
+                        {
+                            Position = theta,
+                            X = X,
+                            Y = Y,
+                            Z = Z
+                        });
+                    }
+                    angleData.Add(samples);
+                }
+
+                // Write data rows
+                int maxSamples = angleData[0].Count;
+                for (int i = 0; i < maxSamples; i++)
+                {
+                    StringBuilder dataLine = new StringBuilder();
+                    dataLine.Append($"{angleData[0][i].Position:F2}");
+
+                    foreach (var samples in angleData)
+                    {
+                        if (samples.Count > i)
+                        {
+                            double value = GetChannelValue(samples[i], channel);
+                            dataLine.Append($",{value:F2}");
+                        }
+                        else
+                        {
+                            dataLine.Append(",");
+                        }
+                    }
+                    writer.WriteLine(dataLine.ToString());
+                }
+
+                log.Info($"方位角导出完成，步进={azimuthStep}, 角度数={anglesToExport.Count}, 通道={channel}");
             }
         }
 
@@ -2268,109 +2197,95 @@ namespace ProjectStarkSemi
         /// </summary>
         private void ExportPolarWithStep(string filePath, ExportChannel channel, double polarStep, double circumStep)
         {
-            if (currentBitmapSource == null)
+            if (YMat == null)
             {
                 log.Warn("没有图像数据，无法导出");
                 return;
             }
 
-            OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
+            int imageWidth = YMat.Width;
+            int imageHeight = YMat.Height;
 
-            try
+            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
             {
-                using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                // Write header comments
+                writer.WriteLine($"# Polar Angle Export Data (ring step = {polarStep}°, circumferential step = {circumStep}°)");
+                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                writer.WriteLine($"# Export Channel: {channel}");
+                writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
+                writer.WriteLine($"# Max Angle: {MaxAngle}°");
+                writer.WriteLine($"# Phi (Column): Polar radius angle (0-{MaxAngle}°, step={polarStep}°)");
+                writer.WriteLine($"# Theta (Row): Circumferential angle (0-360°, step={circumStep}°)");
+                writer.WriteLine();
+
+                // Create list of polar angles to export
+                var polarAngles = new List<double>();
+                for (double phi = 0; phi <= MaxAngle; phi += polarStep)
                 {
-                    // Write header comments
-                    writer.WriteLine($"# Polar Angle Export Data (ring step = {polarStep}°, circumferential step = {circumStep}°)");
-                    writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                    writer.WriteLine($"# Export Channel: {channel}");
-                    writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
-                    writer.WriteLine($"# Max Angle: {MaxAngle}°");
-                    writer.WriteLine($"# Phi (Column): Polar radius angle (0-{MaxAngle}°, step={polarStep}°)");
-                    writer.WriteLine($"# Theta (Row): Circumferential angle (0-360°, step={circumStep}°)");
-                    writer.WriteLine();
-
-                    // Create list of polar angles to export
-                    var polarAngles = new List<double>();
-                    for (double phi = 0; phi <= MaxAngle; phi += polarStep)
-                    {
-                        polarAngles.Add(phi);
-                    }
-
-                    // Write CSV header
-                    StringBuilder headerLine = new StringBuilder();
-                    headerLine.Append("Phi \\ Theta");
-                    foreach (var angle in polarAngles)
-                    {
-                        headerLine.Append($",{angle:F2}");
-                    }
-                    writer.WriteLine(headerLine.ToString());
-
-                    // Sample data for each polar angle
-                    var polarData = new List<List<RgbSample>>();
-                    foreach (var polarAngle in polarAngles)
-                    {
-                        var samples = new List<RgbSample>();
-                        double radiusPixels = polarAngle / ConoscopeConfig.ConoscopeCoefficient;
-
-                        for (double theta = 0; theta <= 360; theta += circumStep)
-                        {
-                            // Add 90° to place 0° at the top (first quadrant/north)
-                            // Negate to make rotation counter-clockwise in screen coordinates
-                            double radians = (90 - theta) * Math.PI / 180.0;
-                            double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                            double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
-
-                            int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
-                            int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
-
-                            double r = 0, g = 0, b = 0;
-                            double X = 0, Y = 0, Z = 0;
-
-                            ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
-
-                            samples.Add(new RgbSample
-                            {
-                                Position = theta,
-                                R = r,
-                                G = g,
-                                B = b,
-                                X = X,
-                                Y = Y,
-                                Z = Z
-                            });
-                        }
-                        polarData.Add(samples);
-                    }
-
-                    // Write data rows
-                    int maxSamples = polarData[0].Count;
-                    for (int i = 0; i < maxSamples; i++)
-                    {
-                        StringBuilder dataLine = new StringBuilder();
-                        dataLine.Append($"{polarData[0][i].Position:F2}");
-
-                        foreach (var samples in polarData)
-                        {
-                            if (samples.Count > i)
-                            {
-                                double value = GetChannelValue(samples[i], channel);
-                                dataLine.Append($",{value:F2}");
-                            }
-                            else
-                            {
-                                dataLine.Append(",");
-                            }
-                        }
-                        writer.WriteLine(dataLine.ToString());
-                    }
-
-                    log.Info($"极角导出完成，极角步进={polarStep}, 圆周步进={circumStep}, 极角数={polarAngles.Count}, 通道={channel}");
+                    polarAngles.Add(phi);
                 }
-            }
-            finally
-            {
-                mat.Dispose();
+
+                // Write CSV header
+                StringBuilder headerLine = new StringBuilder();
+                headerLine.Append("Phi \\ Theta");
+                foreach (var angle in polarAngles)
+                {
+                    headerLine.Append($",{angle:F2}");
+                }
+                writer.WriteLine(headerLine.ToString());
+
+                // Sample data for each polar angle
+                var polarData = new List<List<RgbSample>>();
+                foreach (var polarAngle in polarAngles)
+                {
+                    var samples = new List<RgbSample>();
+                    double radiusPixels = polarAngle / ConoscopeConfig.ConoscopeCoefficient;
+
+                    for (double theta = 0; theta <= 360; theta += circumStep)
+                    {
+                        double radians = (90 - theta) * Math.PI / 180.0;
+                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
+
+                        int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
+                        int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
+
+                        ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
+
+                        samples.Add(new RgbSample
+                        {
+                            Position = theta,
+                            X = X,
+                            Y = Y,
+                            Z = Z
+                        });
+                    }
+                    polarData.Add(samples);
+                }
+
+                // Write data rows
+                int maxSamples = polarData[0].Count;
+                for (int i = 0; i < maxSamples; i++)
+                {
+                    StringBuilder dataLine = new StringBuilder();
+                    dataLine.Append($"{polarData[0][i].Position:F2}");
+
+                    foreach (var samples in polarData)
+                    {
+                        if (samples.Count > i)
+                        {
+                            double value = GetChannelValue(samples[i], channel);
+                            dataLine.Append($",{value:F2}");
+                        }
+                        else
+                        {
+                            dataLine.Append(",");
+                        }
+                    }
+                    writer.WriteLine(dataLine.ToString());
+                }
+
+                log.Info($"极角导出完成，极角步进={polarStep}, 圆周步进={circumStep}, 极角数={polarAngles.Count}, 通道={channel}");
             }
         }
 
@@ -2379,60 +2294,49 @@ namespace ProjectStarkSemi
         /// </summary>
         private void ExportAzimuthCrossSection(string filePath, ExportChannel channel, double azimuthAngle)
         {
-            if (currentBitmapSource == null)
+            if (YMat == null)
             {
                 log.Warn("没有图像数据，无法导出");
                 return;
             }
 
-            OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
+            int imageWidth = YMat.Width;
+            int imageHeight = YMat.Height;
 
-            try
+            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
             {
-                using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                // Write header comments
+                writer.WriteLine($"# Azimuth Cross-Section Export (Angle = {azimuthAngle}°)");
+                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                writer.WriteLine($"# Export Channel: {channel}");
+                writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
+                writer.WriteLine($"# Max Angle: {MaxAngle}°");
+                writer.WriteLine();
+
+                // Write CSV header
+                writer.WriteLine("Polar Radius (degrees),Value");
+
+                double radians = (90 - azimuthAngle) * Math.PI / 180.0;
+
+                // Sample from center to edge
+                for (int theta = -(int)MaxAngle; theta <= (int)MaxAngle; theta++)
                 {
-                    // Write header comments
-                    writer.WriteLine($"# Azimuth Cross-Section Export (Angle = {azimuthAngle}°)");
-                    writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                    writer.WriteLine($"# Export Channel: {channel}");
-                    writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
-                    writer.WriteLine($"# Max Angle: {MaxAngle}°");
-                    writer.WriteLine();
+                    double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
+                    double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                    double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
 
-                    // Write CSV header
-                    writer.WriteLine("Polar Radius (degrees),Value");
+                    int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
+                    int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
 
-                    // Add 90° to place 0° at the top (first quadrant/north)
-                    // Negate to make rotation counter-clockwise in screen coordinates
-                    double radians = (90 - azimuthAngle) * Math.PI / 180.0;
+                    ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
 
-                    // Sample from center to edge
-                    for (int theta = -(int)MaxAngle; theta <= (int)MaxAngle; theta++)
-                    {
-                        double radiusPixels = theta / ConoscopeConfig.ConoscopeCoefficient;
-                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
-
-                        int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
-                        int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
-
-                        double r = 0, g = 0, b = 0;
-                        double X = 0, Y = 0, Z = 0;
-
-                        ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
-
-                        var sample = new RgbSample { R = r, G = g, B = b, X = X, Y = Y, Z = Z };
-                        double value = GetChannelValue(sample, channel);
-                        
-                        writer.WriteLine($"{theta},{value:F2}");
-                    }
-
-                    log.Info($"方位角截面导出完成: {azimuthAngle}°, 通道={channel}");
+                    var sample = new RgbSample { X = X, Y = Y, Z = Z };
+                    double value = GetChannelValue(sample, channel);
+                    
+                    writer.WriteLine($"{theta},{value:F2}");
                 }
-            }
-            finally
-            {
-                mat.Dispose();
+
+                log.Info($"方位角截面导出完成: {azimuthAngle}°, 通道={channel}");
             }
         }
 
@@ -2441,60 +2345,49 @@ namespace ProjectStarkSemi
         /// </summary>
         private void ExportPolarCrossSection(string filePath, ExportChannel channel, double polarAngle)
         {
-            if (currentBitmapSource == null)
+            if (YMat == null)
             {
                 log.Warn("没有图像数据，无法导出");
                 return;
             }
 
-            OpenCvSharp.Mat mat = BitmapSourceConverter.ToMat(currentBitmapSource);
+            int imageWidth = YMat.Width;
+            int imageHeight = YMat.Height;
 
-            try
+            using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
             {
-                using (StreamWriter writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                // Write header comments
+                writer.WriteLine($"# Polar Cross-Section Export (Radius Angle = {polarAngle}°)");
+                writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                writer.WriteLine($"# Export Channel: {channel}");
+                writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
+                writer.WriteLine($"# Max Angle: {MaxAngle}°");
+                writer.WriteLine();
+
+                // Write CSV header
+                writer.WriteLine("Circumferential Angle (degrees),Value");
+
+                double radiusPixels = polarAngle / ConoscopeConfig.ConoscopeCoefficient;
+
+                // Sample around the circle
+                for (int theta = 0; theta <= 360; theta++)
                 {
-                    // Write header comments
-                    writer.WriteLine($"# Polar Cross-Section Export (Radius Angle = {polarAngle}°)");
-                    writer.WriteLine($"# Export Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-                    writer.WriteLine($"# Export Channel: {channel}");
-                    writer.WriteLine($"# Model: {ConoscopeConfig.CurrentModel}");
-                    writer.WriteLine($"# Max Angle: {MaxAngle}°");
-                    writer.WriteLine();
+                    double radians = (90 - theta) * Math.PI / 180.0;
+                    double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
+                    double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
 
-                    // Write CSV header
-                    writer.WriteLine("Circumferential Angle (degrees),Value");
+                    int ix = Math.Max(0, Math.Min(imageWidth - 1, (int)Math.Round(x)));
+                    int iy = Math.Max(0, Math.Min(imageHeight - 1, (int)Math.Round(y)));
 
-                    double radiusPixels = polarAngle / ConoscopeConfig.ConoscopeCoefficient;
+                    ExtractXYZValues(ix, iy, out double X, out double Y, out double Z);
 
-                    // Sample around the circle
-                    for (int theta = 0; theta <= 360; theta++)
-                    {
-                        // Add 90° to place 0° at the top (first quadrant/north)
-                        // Negate to make rotation counter-clockwise in screen coordinates
-                        double radians = (90 - theta) * Math.PI / 180.0;
-                        double x = currentImageCenter.X + radiusPixels * Math.Cos(radians);
-                        double y = currentImageCenter.Y + radiusPixels * Math.Sin(radians);
-
-                        int ix = Math.Max(0, Math.Min(mat.Width - 1, (int)Math.Round(x)));
-                        int iy = Math.Max(0, Math.Min(mat.Height - 1, (int)Math.Round(y)));
-
-                        double r = 0, g = 0, b = 0;
-                        double X = 0, Y = 0, Z = 0;
-
-                        ExtractPixelValues(mat, ix, iy, out r, out g, out b, out X, out Y, out Z);
-
-                        var sample = new RgbSample { R = r, G = g, B = b, X = X, Y = Y, Z = Z };
-                        double value = GetChannelValue(sample, channel);
-                        
-                        writer.WriteLine($"{theta},{value:F2}");
-                    }
-
-                    log.Info($"极角截面导出完成: {polarAngle}°, 通道={channel}");
+                    var sample = new RgbSample { X = X, Y = Y, Z = Z };
+                    double value = GetChannelValue(sample, channel);
+                    
+                    writer.WriteLine($"{theta},{value:F2}");
                 }
-            }
-            finally
-            {
-                mat.Dispose();
+
+                log.Info($"极角截面导出完成: {polarAngle}°, 通道={channel}");
             }
         }
 
@@ -2511,7 +2404,7 @@ namespace ProjectStarkSemi
                     return;
                 }
 
-                if (currentBitmapSource == null)
+                if (YMat == null)
                 {
                     MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
@@ -2557,7 +2450,7 @@ namespace ProjectStarkSemi
                     return;
                 }
 
-                if (currentBitmapSource == null)
+                if (YMat == null)
                 {
                     MessageBox.Show("请先加载图像", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
