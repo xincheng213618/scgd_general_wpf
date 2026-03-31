@@ -1,6 +1,7 @@
 using AvalonDock;
 using AvalonDock.Layout;
 using AvalonDock.Layout.Serialization;
+using ColorVision.UI;
 using ColorVision.UI.Views;
 using log4net;
 using System.IO;
@@ -20,8 +21,11 @@ namespace ColorVision.Solution.Workspace
         private const int DefaultBottomPaneHeight = 200;
     private const int DefaultSidePaneWidth = 303;
 
+        /// <summary>
+        /// 布局文件存储在用户 AppData 目录，避免 Program Files 等受保护目录的权限问题。
+        /// </summary>
         private static string LayoutFilePath => Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory, "MainWindowDockLayout.xml");
+            Environments.DirAppData, "MainWindowDockLayout.xml");
 
         private readonly DockingManager _dockingManager;
 
@@ -80,6 +84,7 @@ namespace ColorVision.Solution.Workspace
         {
             try
             {
+                Directory.CreateDirectory(Path.GetDirectoryName(LayoutFilePath)!);
                 var serializer = new XmlLayoutSerializer(_dockingManager);
                 using var stream = new StreamWriter(LayoutFilePath);
                 serializer.Serialize(stream);
@@ -154,16 +159,7 @@ namespace ColorVision.Solution.Workspace
             try
             {
                 if (File.Exists(LayoutFilePath))
-                {
-                    try
-                    {
-                        File.Delete(LayoutFilePath);
-                    }
-                    catch (UnauthorizedAccessException ex)
-                    {
-                        log.Warn($"无法删除布局文件（可能在受保护目录中）: {LayoutFilePath}", ex);
-                    }
-                }
+                    File.Delete(LayoutFilePath);
 
                 var defaultLayout = new LayoutRoot();
                 var rootPanel = new LayoutPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
