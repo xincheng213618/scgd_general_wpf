@@ -34,23 +34,19 @@ namespace ColorVision.Solution.Terminal
         }
 
         /// <summary>
-        /// Run a command in the terminal panel and activate it.
+        /// Send a command string to the terminal's shell.
         /// </summary>
-        public void RunCommand(string fileName, string arguments, string? workingDirectory = null)
+        public void SendCommand(string command)
         {
             if (_terminalControl == null) return;
             ActivatePanel();
-            _terminalControl.RunProcess(fileName, arguments, workingDirectory);
+            _terminalControl.SendCommand(command);
         }
 
         private void ActivatePanel()
         {
-            // Show and activate the terminal panel in the DockingManager
             var layoutManager = WorkspaceManager.LayoutManager;
-            if (layoutManager != null)
-            {
-                layoutManager.ShowPanel(PanelId);
-            }
+            layoutManager?.ShowPanel(PanelId);
         }
     }
 

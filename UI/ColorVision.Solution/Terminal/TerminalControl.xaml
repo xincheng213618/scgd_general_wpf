@@ -5,7 +5,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="600"
-             Background="{DynamicResource ContentBackgroundBrush}">
+             Background="#1E1E1E"
+             Loaded="UserControl_Loaded">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -15,48 +16,60 @@
 
         <!-- Toolbar -->
         <ToolBar Grid.Row="0" Background="Transparent" Band="0" BandIndex="0">
-            <Button x:Name="ButtonClear" Content="清除" Click="ButtonClear_Click" Padding="6,2" Margin="2"
-                    Foreground="{DynamicResource GlobalTextBrush}"/>
-            <Button x:Name="ButtonStop" Content="停止" Click="ButtonStop_Click" Padding="6,2" Margin="2"
-                    Foreground="{DynamicResource GlobalTextBrush}" IsEnabled="False"/>
+            <ComboBox x:Name="ShellSelector" Width="120" Margin="2" SelectionChanged="ShellSelector_Changed">
+                <ComboBoxItem Content="PowerShell" IsSelected="True"/>
+                <ComboBoxItem Content="CMD"/>
+            </ComboBox>
             <Separator/>
-            <TextBlock Text="工作目录:" VerticalAlignment="Center" Margin="4,0"
-                       Foreground="{DynamicResource GlobalTextBrush}"/>
-            <TextBlock x:Name="TextWorkingDir" Text="-" VerticalAlignment="Center" Margin="4,0"
-                       Foreground="{DynamicResource GlobalTextBrush}" MaxWidth="300" TextTrimming="CharacterEllipsis"/>
+            <Button x:Name="ButtonNewShell" Content="+ 新终端" Click="ButtonNewShell_Click" Padding="6,2" Margin="2"
+                    Foreground="{DynamicResource GlobalTextBrush}" ToolTip="启动新的终端会话"/>
+            <Button x:Name="ButtonClear" Content="清屏" Click="ButtonClear_Click" Padding="6,2" Margin="2"
+                    Foreground="{DynamicResource GlobalTextBrush}"/>
+            <Button x:Name="ButtonKill" Content="终止" Click="ButtonKill_Click" Padding="6,2" Margin="2"
+                    Foreground="{DynamicResource GlobalTextBrush}" ToolTip="终止当前终端进程"/>
         </ToolBar>
 
         <!-- Output area -->
-        <ScrollViewer Grid.Row="1" x:Name="OutputScrollViewer" 
-                      VerticalScrollBarVisibility="Auto" 
-                      HorizontalScrollBarVisibility="Auto"
-                      Background="{DynamicResource ContentBackgroundBrush}">
-            <TextBlock x:Name="OutputTextBlock" 
-                       FontFamily="Consolas, Courier New, monospace" 
-                       FontSize="13"
-                       TextWrapping="Wrap"
-                       Foreground="{DynamicResource GlobalTextBrush}"
-                       Padding="6,4"/>
-        </ScrollViewer>
+        <TextBox Grid.Row="1" x:Name="OutputTextBox"
+                 FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
+                 FontSize="14"
+                 Background="#1E1E1E"
+                 Foreground="#CCCCCC"
+                 CaretBrush="#CCCCCC"
+                 BorderThickness="0"
+                 IsReadOnly="True"
+                 TextWrapping="NoWrap"
+                 AcceptsReturn="True"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Auto"
+                 Padding="8,4"
+                 PreviewKeyDown="OutputTextBox_PreviewKeyDown"
+                 FocusVisualStyle="{x:Null}"/>
 
-        <!-- Input area -->
-        <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" x:Name="PromptText" Text=">" 
-                       VerticalAlignment="Center" Margin="6,4"
-                       FontFamily="Consolas" FontSize="13"
-                       Foreground="{DynamicResource GlobalTextBrush}"/>
-            <TextBox Grid.Column="1" x:Name="InputTextBox"
-                     FontFamily="Consolas, Courier New, monospace" FontSize="13"
-                     Background="{DynamicResource ContentBackgroundBrush}"
-                     Foreground="{DynamicResource GlobalTextBrush}"
-                     BorderThickness="0,1,0,0"
-                     Padding="4,4"
-                     KeyDown="InputTextBox_KeyDown"
-                     IsEnabled="False"/>
-        </Grid>
+        <!-- Input line with path prompt -->
+        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="#3F3F46" Background="#1E1E1E">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" x:Name="PromptLabel"
+                           FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
+                           FontSize="14"
+                           Foreground="#6A9955"
+                           VerticalAlignment="Center"
+                           Padding="8,6,0,6"
+                           Text="PS>"/>
+                <TextBox Grid.Column="1" x:Name="InputTextBox"
+                         FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
+                         FontSize="14"
+                         Background="#1E1E1E"
+                         Foreground="#CCCCCC"
+                         CaretBrush="#CCCCCC"
+                         BorderThickness="0"
+                         Padding="4,6,8,6"
+                         PreviewKeyDown="InputTextBox_PreviewKeyDown"/>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>
