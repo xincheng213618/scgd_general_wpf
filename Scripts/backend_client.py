@@ -251,3 +251,69 @@ def post_multipart_with_auth(
         timeout=(connect_timeout, read_timeout),
     )
 
+
+def upload_content(
+    content: str | bytes,
+    remote_filename: str,
+    settings: RemoteUploadSettings,
+    *,
+    session: Any | None = None,
+) -> bool:
+    """Upload raw content (e.g. a version string) to a remote path."""
+    requests = get_requests_module()
+    if requests is None:
+        print("Remote upload requires the requests package.")
+        return False
+
+    if isinstance(content, str):
+        content = content.encode("utf-8")
+
+    upload_url = build_upload_url(settings.base_url, settings.folder_name, remote_filename)
+    http_client = session or requests.Session()
+    auth = resolve_auth_tuple(settings)
+
+    try:
+        response = http_client.put(
+            upload_url,
+            data=content,
+            auth=auth,
+            timeout=(settings.connect_timeout, settings.read_timeout),
+            headers={"Content-Type": "application/octet-stream"},
+        )
+        if response.status_code == 201:
+            print(f"Uploaded {remote_filename} successfully")
+            return True
+        print(f"Upload {remote_filename} failed: HTTP {response.status_code}: {response.text.strip()}")
+        return False
+    except requests.RequestException as exc:
+        print(f"Upload {remote_filename} failed: {exc}")
+        return False
+
+
+def fetch_latest_version(
+    settings: RemoteUploadSettings,
+    *,
+    session: Any | None = None,
+) -> str:
+    """Fetch the current LATEST_RELEASE version from the backend API."""
+    requests = get_requests_module()
+    if requests is None:
+        print("Fetching latest version requires the requests package.")
+        return "0.0.0.0"
+
+    url = f"{settings.base_url.rstrip('/')}/api/app/latest-version"
+    http_client = session or requests.Session()
+
+    try:
+        response = http_client.get(
+            url,
+            timeout=(settings.connect_timeout, min(settings.read_timeout, 15)),
+        )
+        if response.status_code == 200:
+            payload = response.json()
+            return payload.get("version", "").strip() or "0.0.0.0"
+        print(f"Failed to fetch latest version: HTTP {response.status_code}")
+    except requests.RequestException as exc:
+        print(f"Failed to fetch latest version: {exc}")
+    return "0.0.0.0"
+

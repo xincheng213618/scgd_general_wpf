@@ -880,6 +880,13 @@ def browse_page(subpath=""):
 # ===================================================================
 
 
+@app.route("/api/app/latest-version", methods=["GET"])
+def api_app_latest_version():
+    """Return the current LATEST_RELEASE version string for build scripts."""
+    version = SERVICES._read_text_file(STORAGE / "LATEST_RELEASE") or ""
+    return jsonify({"version": version.strip()})
+
+
 @app.route("/api/health", methods=["GET"])
 def api_health():
     """Lightweight liveness check for deployment and script preflight."""
