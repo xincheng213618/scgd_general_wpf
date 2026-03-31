@@ -266,6 +266,7 @@ namespace ColorVision.UI.Desktop.Plugins
 
             // Use marketplace API URL with fallback to legacy URL
             string url = MarketplaceClient.GetInstance().GetDownloadUrl(PackageName, LastVersion.ToString());
+            string expectedFileName = $"{PackageName}-{LastVersion}.cvxp";
 
             DownloadWindow.ShowInstance();
             Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>
@@ -292,7 +293,7 @@ namespace ColorVision.UI.Desktop.Plugins
                 {
                     log.Error($"Plugin download failed for {PackageName}: {task.ErrorMessage}");
                 }
-            });
+            }, expectedFileName);
         }
 
 

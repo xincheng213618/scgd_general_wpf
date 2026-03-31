@@ -800,12 +800,12 @@ namespace ColorVision.UI.Desktop.Download
         /// <summary>
         /// Add a download task with default settings
         /// </summary>
-        public DownloadTask AddDownload(string url, string? savePath = null, string? authorization = null, Action<DownloadTask>? onCompleted = null)
+        public DownloadTask AddDownload(string url, string? savePath = null, string? authorization = null, Action<DownloadTask>? onCompleted = null, string? fileName = null)
         {
             string targetDir = savePath ?? Config.DefaultDownloadPath;
             Directory.CreateDirectory(targetDir);
 
-            string fileName = GetFileNameFromUrl(url);
+            fileName ??= GetFileNameFromUrl(url);
             string filePath = GetUniqueFilePath(targetDir, fileName);
             fileName = Path.GetFileName(filePath);
 

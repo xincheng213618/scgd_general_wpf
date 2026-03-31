@@ -453,6 +453,7 @@ namespace ColorVision.UI.Desktop.Plugins
 
             var client = MarketplaceClient.GetInstance();
             string url = client.GetDownloadUrl(PackageName, versionInfo.Version);
+            string expectedFileName = $"{PackageName}-{versionInfo.Version}.cvxp";
 
             DownloadWindow.ShowInstance();
             Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>
@@ -483,7 +484,7 @@ namespace ColorVision.UI.Desktop.Plugins
                 {
                     log.Error($"Marketplace package download failed for {PackageName} v{versionInfo.Version}: {task.ErrorMessage}");
                 }
-            });
+            }, expectedFileName);
         }
     }
 }
