@@ -828,13 +828,14 @@ namespace ColorVision.ImageEditor
         /// <summary>
         /// Start a transient (non-recording) selection mode on the current image.
         /// The user draws a single shape inline; on mouse-up the mode ends and returns the result.
+        /// For Polygon mode: each click adds a point; press Enter/Space to complete, Escape to cancel.
         /// Returns null if cancelled (Escape) or too-small selection.
         /// </summary>
-        /// <param name="shapeType">Rectangle or Circle</param>
+        /// <param name="shapeType">Rectangle, Circle, or Polygon</param>
         /// <returns>SelectResult with shape properties, or null if cancelled</returns>
         public Task<SelectResult> BeginSelectAsync(SelectShapeType shapeType)
         {
-            var mode = new TransientSelectMode(ImageShow, Zoombox1, shapeType);
+            var mode = new TransientSelectMode(ImageShow, Zoombox1, ImageViewModel, shapeType);
             return mode.Start();
         }
 

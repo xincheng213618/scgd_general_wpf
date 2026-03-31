@@ -205,7 +205,20 @@ namespace ColorVision.Engine.Templates.POI
 
         private async void DrawAreaOnImage_Click(object sender, RoutedEventArgs e)
         {
-            SelectShapeType shapeType = PoiConfig.PointType == GraphicTypes.Circle ? SelectShapeType.Circle : SelectShapeType.Rectangle;
+            SelectShapeType shapeType;
+            switch (PoiConfig.PointType)
+            {
+                case GraphicTypes.Circle:
+                    shapeType = SelectShapeType.Circle;
+                    break;
+                case GraphicTypes.Quadrilateral:
+                case GraphicTypes.Polygon:
+                    shapeType = SelectShapeType.Polygon;
+                    break;
+                default:
+                    shapeType = SelectShapeType.Rectangle;
+                    break;
+            }
 
             var result = await ImageView.BeginSelectAsync(shapeType);
             if (result == null) return;
@@ -215,6 +228,26 @@ namespace ColorVision.Engine.Templates.POI
                 PoiConfig.CenterX = (int)result.Center.X;
                 PoiConfig.CenterY = (int)result.Center.Y;
                 PoiConfig.AreaCircleRadius = (int)result.Radius;
+            }
+            else if (result.ShapeType == SelectShapeType.Polygon && result.Points != null)
+            {
+                if (PoiConfig.PointType == GraphicTypes.Quadrilateral && result.Points.Count >= 4)
+                {
+                    PoiConfig.Polygon1X = (int)result.Points[0].X;
+                    PoiConfig.Polygon1Y = (int)result.Points[0].Y;
+                    PoiConfig.Polygon2X = (int)result.Points[1].X;
+                    PoiConfig.Polygon2Y = (int)result.Points[1].Y;
+                    PoiConfig.Polygon3X = (int)result.Points[2].X;
+                    PoiConfig.Polygon3Y = (int)result.Points[2].Y;
+                    PoiConfig.Polygon4X = (int)result.Points[3].X;
+                    PoiConfig.Polygon4Y = (int)result.Points[3].Y;
+                }
+                else
+                {
+                    PoiConfig.Polygons.Clear();
+                    foreach (var pt in result.Points)
+                        PoiConfig.Polygons.Add(new PolygonPoint(pt.X, pt.Y));
+                }
             }
             else
             {
