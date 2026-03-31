@@ -15,7 +15,15 @@ namespace ColorVision.ImageEditor
     {
         Rectangle,
         Circle,
-        Polygon
+        /// <summary>
+        /// Free-form polygon: click to add points, Enter/Space/right-click to complete, Escape to cancel.
+        /// </summary>
+        Polygon,
+        /// <summary>
+        /// Quadrilateral (4-point polygon): auto-completes after the 4th click.
+        /// Right-click or Escape cancels.
+        /// </summary>
+        Quadrilateral
     }
 
     /// <summary>
@@ -51,9 +59,10 @@ namespace ColorVision.ImageEditor
 
     /// <summary>
     /// Provides a transient (non-recording) drawing selection mode on an existing ImageView.
-    /// The user draws a single shape (rectangle, circle, or polygon) inline on the image canvas.
+    /// The user draws a single shape (rectangle, circle, polygon, or quadrilateral) inline on the image canvas.
     /// For Rectangle/Circle: on mouse-up, the mode ends automatically.
-    /// For Polygon: each click adds a point; press Enter/Space to complete or Escape to cancel.
+    /// For Polygon: each click adds a point; press Enter/Space/right-click to complete, Escape to cancel.
+    /// For Quadrilateral: each click adds a point; auto-completes after the 4th click, right-click/Escape cancels.
     /// The drawn visual is NOT added to the DrawingVisualLists / undo stack.
     /// 
     /// Usage:
@@ -78,8 +87,13 @@ namespace ColorVision.ImageEditor
         private ModifierKeys _previousActivateOn;
         private bool _previousEditMode;
 
-        // Polygon mode state
+        // Polygon/Quadrilateral mode state
         private List<Point> _polygonPoints;
+
+        /// <summary>
+        /// Whether the shape type is a multi-click mode (Polygon or Quadrilateral).
+        /// </summary>
+        private bool IsMultiClickMode => _shapeType == SelectShapeType.Polygon || _shapeType == SelectShapeType.Quadrilateral;
 
         public TransientSelectMode(DrawCanvas drawCanvas, Zoombox zoombox, ImageViewModel imageViewModel, SelectShapeType shapeType)
         {
@@ -110,9 +124,10 @@ namespace ColorVision.ImageEditor
             _drawCanvas.PreviewMouseLeftButtonDown += OnMouseDown;
             _drawCanvas.PreviewMouseMove += OnMouseMove;
             _drawCanvas.PreviewMouseLeftButtonUp += OnMouseUp;
+            _drawCanvas.PreviewMouseRightButtonDown += OnMouseRightDown;
             _drawCanvas.PreviewKeyDown += OnKeyDown;
 
-            if (_shapeType == SelectShapeType.Polygon)
+            if (IsMultiClickMode)
             {
                 _polygonPoints = new List<Point>();
             }
@@ -124,16 +139,27 @@ namespace ColorVision.ImageEditor
         {
             var pos = e.GetPosition(_drawCanvas);
 
-            if (_shapeType == SelectShapeType.Polygon)
+            if (IsMultiClickMode)
             {
-                // Polygon: each click adds a point
+                // Multi-click mode: each click adds a point
                 _polygonPoints.Add(pos);
                 if (_visual == null)
                 {
                     _visual = new DrawingVisual();
                     _drawCanvas.AddVisual(_visual);
                 }
-                // Add a trailing point for live preview
+
+                // Quadrilateral: auto-complete after 4th point
+                if (_shapeType == SelectShapeType.Quadrilateral && _polygonPoints.Count >= 4)
+                {
+                    RenderPolygonPreview(pos);
+                    var result = BuildPolygonResult(_polygonPoints);
+                    Cleanup();
+                    _tcs.TrySetResult(result);
+                    e.Handled = true;
+                    return;
+                }
+
                 RenderPolygonPreview(pos);
                 _drawCanvas.CaptureMouse();
                 e.Handled = true;
@@ -155,7 +181,7 @@ namespace ColorVision.ImageEditor
         {
             var current = e.GetPosition(_drawCanvas);
 
-            if (_shapeType == SelectShapeType.Polygon)
+            if (IsMultiClickMode)
             {
                 if (_visual != null && _polygonPoints.Count > 0)
                 {
@@ -173,9 +199,9 @@ namespace ColorVision.ImageEditor
 
         private void OnMouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (_shapeType == SelectShapeType.Polygon)
+            if (IsMultiClickMode)
             {
-                // Polygon: mouse-up just finalizes the point position (already added in OnMouseDown)
+                // Multi-click mode: mouse-up just finalizes the point position (already added in OnMouseDown)
                 _drawCanvas.ReleaseMouseCapture();
                 e.Handled = true;
                 return;
@@ -204,6 +230,28 @@ namespace ColorVision.ImageEditor
             e.Handled = true;
         }
 
+        private void OnMouseRightDown(object sender, MouseButtonEventArgs e)
+        {
+            if (IsMultiClickMode)
+            {
+                // Right-click completes polygon if enough points, otherwise cancels
+                if (_polygonPoints != null && _polygonPoints.Count >= 2)
+                {
+                    var result = BuildPolygonResult(_polygonPoints);
+                    Cleanup();
+                    _tcs.TrySetResult(result);
+                }
+                else
+                {
+                    Cleanup();
+                    _tcs.TrySetResult(null);
+                }
+                // Suppress context menu
+                e.Handled = true;
+                return;
+            }
+        }
+
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
             Key realKey = e.Key;
@@ -218,7 +266,7 @@ namespace ColorVision.ImageEditor
                 return;
             }
 
-            if (_shapeType == SelectShapeType.Polygon)
+            if (IsMultiClickMode)
             {
                 if (realKey == Key.Enter || realKey == Key.Space || realKey == Key.End || realKey == Key.Tab)
                 {
@@ -324,7 +372,7 @@ namespace ColorVision.ImageEditor
 
             return new SelectResult
             {
-                ShapeType = SelectShapeType.Polygon,
+                ShapeType = _shapeType,
                 Rect = rect,
                 Center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2),
                 Radius = Math.Min(rect.Width, rect.Height) / 2,
@@ -339,6 +387,7 @@ namespace ColorVision.ImageEditor
             _drawCanvas.PreviewMouseLeftButtonDown -= OnMouseDown;
             _drawCanvas.PreviewMouseMove -= OnMouseMove;
             _drawCanvas.PreviewMouseLeftButtonUp -= OnMouseUp;
+            _drawCanvas.PreviewMouseRightButtonDown -= OnMouseRightDown;
             _drawCanvas.PreviewKeyDown -= OnKeyDown;
 
             if (_visual != null)
