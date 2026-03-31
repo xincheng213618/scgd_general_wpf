@@ -49,7 +49,9 @@ namespace ColorVision.Rbac.Services
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
-            dialog.ShowDialog();
+            if (dialog.ShowDialog() != true)
+                return;
+
             try
             {
                 // 用原对象的 UpdatedAt 作为并发期望值

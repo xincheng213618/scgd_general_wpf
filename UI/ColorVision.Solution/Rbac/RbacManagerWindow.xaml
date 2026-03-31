@@ -125,6 +125,7 @@
                         <Button Command="{Binding LoginCommand}" 
                                 Style="{StaticResource ModernButton}"
                                 Margin="0,0,10,0"
+                                Visibility="{Binding LoginButtonVisibility}"
                                 ToolTip="点击登录或切换账户">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE8A7;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
@@ -134,10 +135,22 @@
                         <Button Command="{Binding EditCommand}" 
                                 Style="{StaticResource SecondaryButton}"
                                 Margin="0,0,10,0"
+                                Visibility="{Binding LoggedInButtonVisibility}"
                                 ToolTip="编辑当前用户详细信息">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
                                 <TextBlock Text="{x:Static properties:Resources.EditInfo}"/>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="BtnChangePassword"
+                                Click="BtnChangePassword_Click"
+                                Style="{StaticResource SecondaryButton}"
+                                Margin="0,0,10,0"
+                                Visibility="{Binding LoggedInButtonVisibility}"
+                                ToolTip="修改当前账户密码">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>
+                                <TextBlock Text="修改密码"/>
                             </StackPanel>
                         </Button>
                         <Button Command="{Binding OpenUserManagerCommand}" 
@@ -152,6 +165,7 @@
                         <Button Click="BtnLogout_Click" 
                                 Style="{StaticResource SecondaryButton}"
                                 Margin="10,0,0,0"
+                                Visibility="{Binding LoggedInButtonVisibility}"
                                 ToolTip="退出登录">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE7E8;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,6,0"/>

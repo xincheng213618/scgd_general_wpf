@@ -19,7 +19,7 @@ namespace SystemMonitor.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -61,11 +61,353 @@ namespace SystemMonitor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 性能检测 的本地化字符串。
+        ///   查找类似 应用启动时间 的本地化字符串。
+        /// </summary>
+        public static string AppStartTime {
+            get {
+                return ResourceManager.GetString("AppStartTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 系统架构 的本地化字符串。
+        /// </summary>
+        public static string Architecture {
+            get {
+                return ResourceManager.GetString("Architecture", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 可用内存 的本地化字符串。
+        /// </summary>
+        public static string AvailableMemory {
+            get {
+                return ResourceManager.GetString("AvailableMemory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 缓存大小 的本地化字符串。
+        /// </summary>
+        public static string CacheSize {
+            get {
+                return ResourceManager.GetString("CacheSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清理缓存 的本地化字符串。
+        /// </summary>
+        public static string ClearCache {
+            get {
+                return ResourceManager.GetString("ClearCache", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 计算机名 的本地化字符串。
+        /// </summary>
+        public static string ComputerName {
+            get {
+                return ResourceManager.GetString("ComputerName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 核心数 的本地化字符串。
+        /// </summary>
+        public static string CoreCount {
+            get {
+                return ResourceManager.GetString("CoreCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前应用 的本地化字符串。
+        /// </summary>
+        public static string CurrentApp {
+            get {
+                return ResourceManager.GetString("CurrentApp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 日期格式 的本地化字符串。
+        /// </summary>
+        public static string DateFormat {
+            get {
+                return ResourceManager.GetString("DateFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 可用空间 的本地化字符串。
+        /// </summary>
+        public static string FreeSpace {
+            get {
+                return ResourceManager.GetString("FreeSpace", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显存 的本地化字符串。
+        /// </summary>
+        public static string GPUMemory {
+            get {
+                return ResourceManager.GetString("GPUMemory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 句柄数 的本地化字符串。
+        /// </summary>
+        public static string HandleCount {
+            get {
+                return ResourceManager.GetString("HandleCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 本地磁盘 的本地化字符串。
+        /// </summary>
+        public static string LocalDisk {
+            get {
+                return ResourceManager.GetString("LocalDisk", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 内存占用 的本地化字符串。
+        /// </summary>
+        public static string MemoryUsage {
+            get {
+                return ResourceManager.GetString("MemoryUsage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 网络 的本地化字符串。
+        /// </summary>
+        public static string Network {
+            get {
+                return ResourceManager.GetString("Network", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 未检测到 的本地化字符串。
+        /// </summary>
+        public static string NotDetected {
+            get {
+                return ResourceManager.GetString("NotDetected", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 操作系统 的本地化字符串。
+        /// </summary>
+        public static string OS {
+            get {
+                return ResourceManager.GetString("OS", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 系统启动时间 的本地化字符串。
+        /// </summary>
+        public static string OSBootTime {
+            get {
+                return ResourceManager.GetString("OSBootTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 系统运行时长 的本地化字符串。
+        /// </summary>
+        public static string OSUptime {
+            get {
+                return ResourceManager.GetString("OSUptime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 性能监控 的本地化字符串。
+        /// </summary>
+        public static string PerformanceMonitor {
+            get {
+                return ResourceManager.GetString("PerformanceMonitor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 系统监控 的本地化字符串。
         /// </summary>
         public static string PerformanceTest {
             get {
                 return ResourceManager.GetString("PerformanceTest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 进程监控 的本地化字符串。
+        /// </summary>
+        public static string ProcessMonitor {
+            get {
+                return ResourceManager.GetString("ProcessMonitor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 进程名称 的本地化字符串。
+        /// </summary>
+        public static string ProcessName {
+            get {
+                return ResourceManager.GetString("ProcessName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 刷新 的本地化字符串。
+        /// </summary>
+        public static string Refresh {
+            get {
+                return ResourceManager.GetString("Refresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 运行时信息 的本地化字符串。
+        /// </summary>
+        public static string RuntimeInfo {
+            get {
+                return ResourceManager.GetString("RuntimeInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 屏幕分辨率 的本地化字符串。
+        /// </summary>
+        public static string ScreenResolution {
+            get {
+                return ResourceManager.GetString("ScreenResolution", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 设置 的本地化字符串。
+        /// </summary>
+        public static string Settings {
+            get {
+                return ResourceManager.GetString("Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示CPU 的本地化字符串。
+        /// </summary>
+        public static string ShowCPU {
+            get {
+                return ResourceManager.GetString("ShowCPU", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示磁盘 的本地化字符串。
+        /// </summary>
+        public static string ShowDisk {
+            get {
+                return ResourceManager.GetString("ShowDisk", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示RAM 的本地化字符串。
+        /// </summary>
+        public static string ShowRAM {
+            get {
+                return ResourceManager.GetString("ShowRAM", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示时间 的本地化字符串。
+        /// </summary>
+        public static string ShowTime {
+            get {
+                return ResourceManager.GetString("ShowTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 显示运行时长 的本地化字符串。
+        /// </summary>
+        public static string ShowUptime {
+            get {
+                return ResourceManager.GetString("ShowUptime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 状态栏显示项 的本地化字符串。
+        /// </summary>
+        public static string StatusBarSettings {
+            get {
+                return ResourceManager.GetString("StatusBarSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 存储管理 的本地化字符串。
+        /// </summary>
+        public static string StorageManagement {
+            get {
+                return ResourceManager.GetString("StorageManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 系统信息 的本地化字符串。
+        /// </summary>
+        public static string SystemInfo {
+            get {
+                return ResourceManager.GetString("SystemInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 线程数 的本地化字符串。
+        /// </summary>
+        public static string ThreadCount {
+            get {
+                return ResourceManager.GetString("ThreadCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 总内存 的本地化字符串。
+        /// </summary>
+        public static string TotalRAM {
+            get {
+                return ResourceManager.GetString("TotalRAM", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 总容量 的本地化字符串。
+        /// </summary>
+        public static string TotalStorage {
+            get {
+                return ResourceManager.GetString("TotalStorage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 总体使用率 的本地化字符串。
+        /// </summary>
+        public static string TotalUsage {
+            get {
+                return ResourceManager.GetString("TotalUsage", resourceCulture);
             }
         }
         
@@ -75,6 +417,33 @@ namespace SystemMonitor.Properties {
         public static string UpdateSpeed {
             get {
                 return ResourceManager.GetString("UpdateSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 运行时长 的本地化字符串。
+        /// </summary>
+        public static string Uptime {
+            get {
+                return ResourceManager.GetString("Uptime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 已用 的本地化字符串。
+        /// </summary>
+        public static string Used {
+            get {
+                return ResourceManager.GetString("Used", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用户名 的本地化字符串。
+        /// </summary>
+        public static string UserName {
+            get {
+                return ResourceManager.GetString("UserName", resourceCulture);
             }
         }
     }

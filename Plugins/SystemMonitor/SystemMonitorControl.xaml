@@ -9,93 +9,436 @@
              xmlns:u ="clr-namespace:ColorVision.UI.Configs;assembly=ColorVision.UI"
              xmlns:hc ="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance u:SystemMonitor}"
-             d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
+             d:DataContext="{d:DesignInstance u:SystemMonitors}"
+             d:DesignHeight="700" d:DesignWidth="850" Initialized="UserControl_Initialized">
     <UserControl.Resources>
-        <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
+        <Style x:Key="CardBorder" TargetType="{x:Type Border}">
             <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Margin" Value="10,10,15,5"/>
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
             <Setter Property="CornerRadius" Value="8"/>
         </Style>
+        <Style x:Key="SectionTitle" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalForeground}"/>
+        </Style>
+        <Style x:Key="InfoLabel" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalForeground2}"/>
+            <Setter Property="Margin" Value="0,2"/>
+        </Style>
+        <Style x:Key="InfoValue" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalForeground}"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+        <Style x:Key="BigValue" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalForeground}"/>
+        </Style>
     </UserControl.Resources>
-    <ScrollViewer>
-        <StackPanel>
-            <Border Style="{StaticResource BorderModuleArea}" >
-                <StackPanel Margin="5">
-                    <DockPanel Margin="5,2">
-                        <TextBox DockPanel.Dock="Right"   Text="{Binding UpdateSpeed}" HorizontalContentAlignment="Right" HorizontalAlignment="Left" Width="200"/>
-                        <TextBlock Text="{x:Static properties:Resources.UpdateSpeed}" />
-                    </DockPanel>
-                    <DockPanel Margin="5,2">
-                        <TextBox  DockPanel.Dock="Right"  Text="{Binding Config.DefaultTimeFormat}"  HorizontalContentAlignment="Right" Width="200"/>
-                        <TextBlock Text="日期格式" />
-                    </DockPanel>
-                    <DockPanel Margin="5">
-                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding Config.IsShowTime}"/>
-                        <TextBlock Text="显示时间"/>
-                    </DockPanel>
-                    <DockPanel Margin="5">
-                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding Config.IsShowRAM}"/>
-                        <TextBlock Text="显示RAM"/>
-                    </DockPanel>
-                    <DockPanel Margin="5">
-                        <Button Content="清理" DockPanel.Dock="Right" Command="{Binding ClearCacheCommand}"/>
-                        <TextBlock Text="清理缓存"/>
-                    </DockPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="4">
 
-                    <ui:RatingControl HorizontalAlignment="Left" Value="5" />
-                </StackPanel>
-            </Border>
-
-            <Border  Style="{StaticResource BorderModuleArea}" >
+            <!-- 性能监控 (顶部，更醒目) -->
+            <Border Style="{StaticResource CardBorder}">
                 <StackPanel>
-                    <ListView  Grid.Row="1" Background="{StaticResource TransparentBrush}"  BorderThickness="0" ItemsSource="{Binding DriveInfos}" Height="200">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Header="Drive" DisplayMemberBinding="{Binding Name}"  Width="80"  />
-                                <GridViewColumn Header="Type" DisplayMemberBinding="{Binding DriveFormat}"  />
-                                <GridViewColumn Header="Total Size (GB)">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding TotalSize, Converter={StaticResource MemorySizeConverter}}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Free Space  (GB)">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding AvailableFreeSpace, Converter={StaticResource MemorySizeConverter}}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
+                    <TextBlock Text="{x:Static properties:Resources.PerformanceMonitor}" Style="{StaticResource SectionTitle}"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- CPU -->
+                        <Border Grid.Column="0" Margin="0,0,6,0" Padding="16" CornerRadius="6"
+                                BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1"
+                                Background="{DynamicResource RegionBrush}">
+                            <StackPanel>
+                                <TextBlock Text="CPU" FontWeight="Bold" FontSize="15" Margin="0,0,0,10"/>
+                                <Grid HorizontalAlignment="Center" Margin="0,4">
+                                    <hc:WaveProgressBar Value="{Binding CPUPercent}" Width="130" Height="130"/>
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <TextBlock Text="{Binding CPUText}" HorizontalAlignment="Center" FontWeight="Bold" FontSize="20"/>
+                                    </StackPanel>
+                                </Grid>
+                                <DockPanel Margin="0,10,0,2">
+                                    <TextBlock Text="{x:Static properties:Resources.TotalUsage}" Style="{StaticResource InfoLabel}"/>
+                                    <TextBlock Text="{Binding CPUText}" Style="{StaticResource InfoValue}" FontWeight="SemiBold"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="{x:Static properties:Resources.CurrentApp}" Style="{StaticResource InfoLabel}"/>
+                                    <TextBlock Text="{Binding CPUThisText}" Style="{StaticResource InfoValue}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="{x:Static properties:Resources.ThreadCount}" Style="{StaticResource InfoLabel}"/>
+                                    <TextBlock Text="{Binding ThreadCount}" Style="{StaticResource InfoValue}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="{x:Static properties:Resources.HandleCount}" Style="{StaticResource InfoLabel}"/>
+                                    <TextBlock Text="{Binding HandleCount}" Style="{StaticResource InfoValue}"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- RAM -->
+                        <Border Grid.Column="1" Margin="6,0,0,0" Padding="16" CornerRadius="6"
+                                BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1"
+                                Background="{DynamicResource RegionBrush}">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,10">
+                                    <TextBlock Text="RAM" FontWeight="Bold" FontSize="15"/>
+                                    <TextBlock Text="{Binding TotalRAMText}" Style="{StaticResource InfoValue}" FontSize="15"/>
+                                </DockPanel>
+                                <Grid HorizontalAlignment="Center" Margin="0,4">
+                                    <hc:WaveProgressBar Value="{Binding RAMPercent}" Width="130" Height="130"/>
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <TextBlock Text="{Binding RAMText}" HorizontalAlignment="Center" FontWeight="Bold" FontSize="20"/>
+                                    </StackPanel>
+                                </Grid>
+                                <DockPanel Margin="0,10,0,2">
+                                    <TextBlock Text="{x:Static properties:Resources.TotalUsage}" Style="{StaticResource InfoLabel}"/>
+                                    <TextBlock Text="{Binding RAMText}" Style="{StaticResource InfoValue}" FontWeight="SemiBold"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="{x:Static properties:Resources.CurrentApp}" Style="{StaticResource InfoLabel}"/>
+                                    <TextBlock Text="{Binding RAMThis}" Style="{StaticResource InfoValue}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="{x:Static properties:Resources.AvailableMemory}" Style="{StaticResource InfoLabel}"/>
+                                    <TextBlock Text="{Binding MemoryAvailable}" Style="{StaticResource InfoValue}"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
                 </StackPanel>
             </Border>
-            
 
+            <!-- 存储管理 (Steam风格) -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <DockPanel>
+                        <TextBlock Text="{x:Static properties:Resources.StorageManagement}" Style="{StaticResource SectionTitle}" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                            <TextBlock Style="{StaticResource InfoLabel}" VerticalAlignment="Center" Margin="0,0,8,0">
+                                <Run Text="{x:Static properties:Resources.TotalStorage}"/>
+                                <Run Text=": "/>
+                                <Run Text="{Binding TotalDiskSpace, Mode=OneWay}" FontWeight="SemiBold"/>
+                                <Run Text=" | "/>
+                                <Run Text="{x:Static properties:Resources.FreeSpace}"/>
+                                <Run Text=": "/>
+                                <Run Text="{Binding TotalDiskFree, Mode=OneWay}" FontWeight="SemiBold"/>
+                            </TextBlock>
+                            <Button Content="⟳" Width="28" Height="28" Padding="0"
+                                    ToolTip="{x:Static properties:Resources.Refresh}"
+                                    Command="{Binding RefreshDrivesCommand}" />
+                        </StackPanel>
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding Drives}" Margin="0,4,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,4" Padding="12,10" CornerRadius="6"
+                                        BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1"
+                                        Background="{DynamicResource RegionBrush}">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,6">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Image Source="{DynamicResource DrawingImageHardDisk}" Width="18" Height="18" Margin="0,0,8,0"/>
+                                                <TextBlock FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center">
+                                                    <Run Text="{Binding VolumeLabel, Mode=OneWay}"/>
+                                                    <Run Text=" ("/>
+                                                    <Run Text="{Binding Name, Mode=OneWay}"/>
+                                                    <Run Text=")"/>
+                                                </TextBlock>
+                                                <TextBlock Style="{StaticResource InfoLabel}" VerticalAlignment="Center" Margin="12,0,0,0"
+                                                           Text="{Binding DriveFormat, Mode=OneWay}"/>
+                                            </StackPanel>
+                                            <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="13">
+                                                <Run Text="{Binding UsedSpaceText, Mode=OneWay}" FontWeight="SemiBold"/>
+                                                <Run Text=" / "/>
+                                                <Run Text="{Binding TotalSizeText, Mode=OneWay}"/>
+                                            </TextBlock>
+                                        </DockPanel>
 
+                                        <!-- 使用率进度条 -->
+                                        <ProgressBar Height="22" Margin="0,0,0,4"
+                                                     Minimum="0" Maximum="100" Value="{Binding UsagePercent, Mode=OneWay}"
+                                                     Foreground="{Binding UsageColor, Mode=OneWay}"
+                                                     Background="{DynamicResource GlobalBorderBrush1}"/>
 
-
-
-
-            <Border  Style="{StaticResource BorderModuleArea}" >
-                <StackPanel Orientation="Horizontal" Margin="15">
-                    <Grid Margin="10,0">
-                        <hc:WaveProgressBar  Value="{Binding RAMPercent}"/>
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
-                    </Grid>
-                    <Grid  Margin="10,0">
-                        <hc:WaveProgressBar  Value="{Binding RAMThisPercent}"/>
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding RAMThis}"/>
-                    </Grid>
-                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding Time}"/>
+                                        <DockPanel>
+                                            <TextBlock Style="{StaticResource InfoLabel}">
+                                                <Run Text="{x:Static properties:Resources.FreeSpace}"/>
+                                                <Run Text=": "/>
+                                                <Run Text="{Binding FreeSpaceText, Mode=OneWay}"/>
+                                            </TextBlock>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </Border>
+
+            <!-- 进程监控 -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <DockPanel>
+                        <TextBlock Text="{x:Static properties:Resources.ProcessMonitor}" Style="{StaticResource SectionTitle}"/>
+                        <Button Content="⟳" Width="28" Height="28" Padding="0" HorizontalAlignment="Right"
+                                ToolTip="{x:Static properties:Resources.Refresh}"
+                                Command="{Binding RefreshProcessesCommand}" VerticalAlignment="Top"/>
+                    </DockPanel>
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="100"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="PID" Style="{StaticResource InfoLabel}" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Column="1" Text="{x:Static properties:Resources.ProcessName}" Style="{StaticResource InfoLabel}" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Column="2" Text="{x:Static properties:Resources.MemoryUsage}" Style="{StaticResource InfoLabel}" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding TopProcesses}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,1" Padding="4,3" CornerRadius="3"
+                                        Background="{DynamicResource RegionBrush}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="60"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="100"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding PID}" Style="{StaticResource InfoLabel}" FontSize="11"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Style="{StaticResource InfoLabel}" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding MemoryText}" Style="{StaticResource InfoValue}" FontSize="11"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- 系统信息 -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="{x:Static properties:Resources.SystemInfo}" Style="{StaticResource SectionTitle}"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="{x:Static properties:Resources.ComputerName}" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding MachineName}" Style="{StaticResource InfoValue}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="{x:Static properties:Resources.OS}" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding OSVersion}" Style="{StaticResource InfoValue}" TextTrimming="CharacterEllipsis"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="CPU" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding ProcessorName}" Style="{StaticResource InfoValue}" TextTrimming="CharacterEllipsis"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="{x:Static properties:Resources.CoreCount}" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding ProcessorCount}" Style="{StaticResource InfoValue}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="{x:Static properties:Resources.ScreenResolution}" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding ScreenInfo}" Style="{StaticResource InfoValue}"/>
+                            </DockPanel>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="GPU" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding GPUName}" Style="{StaticResource InfoValue}" TextTrimming="CharacterEllipsis"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="{x:Static properties:Resources.GPUMemory}" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding GPUMemoryText}" Style="{StaticResource InfoValue}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="{x:Static properties:Resources.TotalRAM}" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding TotalRAMText}" Style="{StaticResource InfoValue}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="{x:Static properties:Resources.Architecture}" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding Architecture}" Style="{StaticResource InfoValue}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="{x:Static properties:Resources.UserName}" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding UserName}" Style="{StaticResource InfoValue}"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 运行时信息 -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="{x:Static properties:Resources.RuntimeInfo}" Style="{StaticResource SectionTitle}"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text=".NET" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding DotNetVersion}" Style="{StaticResource InfoValue}" TextTrimming="CharacterEllipsis"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="PID" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding CurrentPID}" Style="{StaticResource InfoValue}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="{x:Static properties:Resources.AppStartTime}" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding ProcessStartTimeText}" Style="{StaticResource InfoValue}"/>
+                            </DockPanel>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="{x:Static properties:Resources.OSBootTime}" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding OSBootTimeText}" Style="{StaticResource InfoValue}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="{x:Static properties:Resources.Uptime}" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding GetUptime}" Style="{StaticResource InfoValue}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock Text="{x:Static properties:Resources.OSUptime}" Style="{StaticResource InfoLabel}"/>
+                                <TextBlock Text="{Binding OSUptime}" Style="{StaticResource InfoValue}"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 网络 -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <DockPanel>
+                        <TextBlock Text="{x:Static properties:Resources.Network}" Style="{StaticResource SectionTitle}"/>
+                        <Button Content="⟳" Width="28" Height="28" Padding="0" HorizontalAlignment="Right"
+                                ToolTip="{x:Static properties:Resources.Refresh}"
+                                Command="{Binding RefreshNetworkCommand}" VerticalAlignment="Top"/>
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding NetworkInterfaces}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,3" Padding="10,8" CornerRadius="4"
+                                        BorderBrush="{DynamicResource GlobalBorderBrush1}" BorderThickness="1"
+                                        Background="{DynamicResource RegionBrush}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Ellipse Grid.Column="0" Width="10" Height="10" Margin="0,0,10,0"
+                                                 VerticalAlignment="Center">
+                                            <Ellipse.Fill>
+                                                <SolidColorBrush Color="{Binding StatusColor, Mode=OneWay}"/>
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"/>
+                                            <TextBlock Style="{StaticResource InfoLabel}" FontSize="11">
+                                                <Run Text="IP: "/>
+                                                <Run Text="{Binding IPAddress, Mode=OneWay}"/>
+                                                <Run Text="  |  MAC: "/>
+                                                <Run Text="{Binding MacAddress, Mode=OneWay}"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" VerticalAlignment="Center"
+                                                   Text="{Binding SpeedText}" Style="{StaticResource InfoLabel}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- 设置和缓存 -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="{x:Static properties:Resources.Settings}" Style="{StaticResource SectionTitle}"/>
+
+                    <DockPanel Margin="0,4">
+                        <TextBlock Text="{x:Static properties:Resources.UpdateSpeed}" Style="{StaticResource InfoLabel}" 
+                                   VerticalAlignment="Center" Width="120"/>
+                        <TextBox Text="{Binding UpdateSpeed}" HorizontalContentAlignment="Right" Width="120"
+                                 HorizontalAlignment="Left" Margin="8,0"/>
+                        <TextBlock Text="ms" Style="{StaticResource InfoLabel}" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,4">
+                        <TextBlock Text="{x:Static properties:Resources.DateFormat}" Style="{StaticResource InfoLabel}" 
+                                   VerticalAlignment="Center" Width="120"/>
+                        <TextBox Text="{Binding Config.DefaultTimeFormat}" HorizontalContentAlignment="Right" Width="200"
+                                 HorizontalAlignment="Left" Margin="8,0"/>
+                    </DockPanel>
+
+                    <Separator Margin="0,8"/>
+                    <TextBlock Text="{x:Static properties:Resources.StatusBarSettings}" Style="{StaticResource InfoLabel}" 
+                               FontWeight="SemiBold" Margin="0,4,0,8"/>
+
+                    <DockPanel Margin="0,4">
+                        <TextBlock Text="{x:Static properties:Resources.ShowTime}" Style="{StaticResource InfoLabel}" 
+                                   VerticalAlignment="Center" Width="120"/>
+                        <ui:ToggleSwitch IsChecked="{Binding Config.IsShowTime}" HorizontalAlignment="Left"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,4">
+                        <TextBlock Text="{x:Static properties:Resources.ShowUptime}" Style="{StaticResource InfoLabel}" 
+                                   VerticalAlignment="Center" Width="120"/>
+                        <ui:ToggleSwitch IsChecked="{Binding Config.IsShowUptime}" HorizontalAlignment="Left"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,4">
+                        <TextBlock Text="{x:Static properties:Resources.ShowCPU}" Style="{StaticResource InfoLabel}" 
+                                   VerticalAlignment="Center" Width="120"/>
+                        <ui:ToggleSwitch IsChecked="{Binding Config.IsShowCPU}" HorizontalAlignment="Left"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,4">
+                        <TextBlock Text="{x:Static properties:Resources.ShowRAM}" Style="{StaticResource InfoLabel}" 
+                                   VerticalAlignment="Center" Width="120"/>
+                        <ui:ToggleSwitch IsChecked="{Binding Config.IsShowRAM}" HorizontalAlignment="Left"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,4">
+                        <TextBlock Text="{x:Static properties:Resources.ShowDisk}" Style="{StaticResource InfoLabel}" 
+                                   VerticalAlignment="Center" Width="120"/>
+                        <ui:ToggleSwitch IsChecked="{Binding Config.IsShowDisk}" HorizontalAlignment="Left"/>
+                    </DockPanel>
+
+                    <Separator Margin="0,8"/>
+                    <DockPanel Margin="0,8,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{x:Static properties:Resources.CacheSize}" Style="{StaticResource InfoLabel}" 
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CacheSize}" FontWeight="SemiBold" Margin="8,0"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button Content="{x:Static properties:Resources.ClearCache}" HorizontalAlignment="Right"
+                                Command="{Binding ClearCacheCommand}" Padding="16,4"/>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
         </StackPanel>
-
     </ScrollViewer>
 </UserControl>

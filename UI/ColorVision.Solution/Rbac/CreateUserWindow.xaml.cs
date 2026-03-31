@@ -1,5 +1,4 @@
-﻿using ColorVision.UI.Authorizations;
-using System.Windows;
+﻿using System.Windows;
 
 namespace ColorVision.Rbac
 {
@@ -32,13 +31,6 @@ namespace ColorVision.Rbac
 
         private async void BtnCreate_Click(object sender, RoutedEventArgs e)
         {
-            // Permission check
-            if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
-            {
-                ShowStatus("权限不足：只有管理员可以创建用户", true);
-                return;
-            }
-
             // Validation
             string username = TxtUsername.Text.Trim();
             string password = TxtPassword.Password.Trim();
@@ -73,25 +65,10 @@ namespace ColorVision.Rbac
             try
             {
                 var roleIds = roleId.HasValue ? new System.Collections.Generic.List<int> { roleId.Value } : null;
-                bool result = await _rbacManager.UserService.CreateUserAsync(username, password, remark, roleIds);
+                bool result = await _rbacManager.CreateUserAsync(username, password, remark, roleIds);
 
                 if (result)
                 {
-                    // Audit log
-                    try
-                    {
-                        if (_rbacManager.Config.LoginResult?.UserDetail?.UserId != null &&
-                            _rbacManager.Config.LoginResult?.User?.Username != null)
-                        {
-                            await _rbacManager.AuditLogService.AddAsync(
-                                _rbacManager.Config.LoginResult.UserDetail.UserId,
-                                _rbacManager.Config.LoginResult.User.Username,
-                                "user.create",
-                                $"创建用户:{username}");
-                        }
-                    }
-                    catch { }
-
                     MessageBox.Show($"用户 '{username}' 创建成功！", "成功", 
                         MessageBoxButton.OK, MessageBoxImage.Information);
                     DialogResult = true;

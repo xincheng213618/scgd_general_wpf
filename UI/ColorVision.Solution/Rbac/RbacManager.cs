@@ -61,7 +61,7 @@ namespace ColorVision.Rbac
             db.CodeFirst.InitTables<RoleEntity, UserRoleEntity>();
             db.CodeFirst.InitTables<PermissionEntity, RolePermissionEntity>();
             db.CodeFirst.InitTables<AuditLogEntity>();
-            db.CodeFirst.InitTables<SessionEntity>(); // 新增会话表
+            db.CodeFirst.InitTables<SessionEntity>();
 
             // 初始化服务
             AuditLogService = new AuditLogService(db);
@@ -81,9 +81,7 @@ namespace ColorVision.Rbac
             EditUserDetailAction = new EditUserDetailAction(UserService);
 
             InitAdmin();
-            // 种子权限
-            PermissionService.EnsureSeedAsync().GetAwaiter().GetResult();
-            SeedRolePermissions();
+            SeedPermissionsAndRoles();
 
             LoginCommand = new RelayCommand(a => new LoginWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             EditCommand = new RelayCommand(a=> EditUserDetailAction.EditAsync(), a => IsUserLoggedIn());
@@ -95,8 +93,11 @@ namespace ColorVision.Rbac
                 Authorization.Instance.PermissionMode = Config.LoginResult.UserDetail.PermissionMode;
         }
 
-        private void SeedRolePermissions()
+        private void SeedPermissionsAndRoles()
         {
+            // 种子权限（同步执行，仅在初始化时调用一次）
+            PermissionService.EnsureSeed();
+
             // 为 admin 角色赋予全部权限
             var adminRole = db.Queryable<RoleEntity>().First(r => r.Code == "admin");
             if (adminRole == null) return;
@@ -112,7 +113,6 @@ namespace ColorVision.Rbac
 
         public void OpenUserManager()
         {
-            // Check if user has admin permissions
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
                 MessageBox.Show("只有管理员才能访问用户管理功能。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -124,7 +124,6 @@ namespace ColorVision.Rbac
 
         public void OpenPermissionManager()
         {
-            // Check if user has admin permissions
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
                 MessageBox.Show("只有管理员才能访问权限管理功能。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -155,8 +154,7 @@ namespace ColorVision.Rbac
 
         public List<UserEntity> GetUsers()
         {
-            var users = db.Queryable<UserEntity>().Where(u => u.IsDelete == false || u.IsDelete == null).ToList();
-            return users;
+            return db.Queryable<UserEntity>().Where(u => u.IsDelete == false || u.IsDelete == null).ToList();
         }
 
         public List<RoleEntity> GetRoles()
@@ -237,7 +235,6 @@ namespace ColorVision.Rbac
                     UpdatedAt = DateTimeOffset.Now
                 };
                 var adminId = db.Insertable(adminUser).ExecuteReturnIdentity();
-                // 详情
                 db.Storageable(new UserDetailEntity
                 {
                     UserId = adminId,
@@ -260,24 +257,30 @@ namespace ColorVision.Rbac
             }
         }
 
-        public bool CreateUser(string username, string password, string remark = "", List<int> roleIds = null)
+        public async Task<bool> CreateUserAsync(string username, string password, string remark = "", List<int>? roleIds = null)
         {
-            // 权限检查：仅管理员及以上（SuperAdministrator）可创建用户
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
                 MessageBox.Show("当前用户无权创建新用户。", "权限不足", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
-            var result = UserService.CreateUserAsync(username, password, remark, roleIds).GetAwaiter().GetResult();
+            var result = await UserService.CreateUserAsync(username, password, remark, roleIds);
             if (result)
             {
-                try { AuditLogService.AddAsync(Config.LoginResult?.UserDetail?.UserId, Config.LoginResult?.User?.Username, "user.create", $"创建用户:{username}"); } catch { }
+                try
+                {
+                    await AuditLogService.AddAsync(
+                        Config.LoginResult?.UserDetail?.UserId,
+                        Config.LoginResult?.User?.Username,
+                        "user.create",
+                        $"创建用户:{username}");
+                }
+                catch { }
             }
             return result;
         }
 
-        // 新增：更新用户角色
-        public bool UpdateUserRoles(int userId, IEnumerable<int> roleIds)
+        public async Task<bool> UpdateUserRolesAsync(int userId, IEnumerable<int> roleIds)
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
@@ -286,23 +289,20 @@ namespace ColorVision.Rbac
             }
             try
             {
-                db.Deleteable<UserRoleEntity>().Where(ur => ur.UserId == userId).ExecuteCommand();
-                if (roleIds != null)
+                var result = await UserService.UpdateUserRolesAsync(userId, roleIds);
+                if (result)
                 {
-                    var list = roleIds.Distinct().Select(rid => new UserRoleEntity { UserId = userId, RoleId = rid }).ToList();
-                    if (list.Count > 0)
-                        db.Insertable(list).ExecuteCommand();
-                }
-                // 安全地记录审计日志，避免未登录时出错
-                try 
-                { 
-                    if (Config.LoginResult?.UserDetail?.UserId != null && Config.LoginResult?.User?.Username != null)
+                    try
                     {
-                        AuditLogService.AddAsync(Config.LoginResult.UserDetail.UserId, Config.LoginResult.User.Username, "user.role.update", $"设置用户{userId}角色:{string.Join(',', roleIds ?? Array.Empty<int>())}"); 
+                        await AuditLogService.AddAsync(
+                            Config.LoginResult?.UserDetail?.UserId,
+                            Config.LoginResult?.User?.Username,
+                            "user.role.update",
+                            $"设置用户{userId}角色:{string.Join(',', roleIds ?? Array.Empty<int>())}");
                     }
-                } 
-                catch { }
-                return true;
+                    catch { }
+                }
+                return result;
             }
             catch (Exception ex)
             {
@@ -312,19 +312,16 @@ namespace ColorVision.Rbac
         }
 
         /// <summary>
-        /// 检查用户是否已登录（包括通过记住我功能自动登录的情况）
+        /// 检查用户是否已登录
         /// </summary>
-        private bool IsUserLoggedIn()
+        public bool IsUserLoggedIn()
         {
             return Config.LoginResult != null && 
                    Config.LoginResult.User != null && 
                    Config.LoginResult.UserDetail != null;
         }
 
-        /// <summary>
-        /// 删除用户（逻辑删除）
-        /// </summary>
-        public bool DeleteUser(int userId, string username)
+        public async Task<bool> DeleteUserAsync(int userId, string username)
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
@@ -333,21 +330,20 @@ namespace ColorVision.Rbac
             }
             try
             {
-                db.Updateable<UserEntity>()
-                    .SetColumns(u => u.IsDelete == true)
-                    .Where(u => u.Id == userId)
-                    .ExecuteCommand();
-
-                // 审计日志
-                try
+                var result = await UserService.DeleteUserAsync(userId);
+                if (result)
                 {
-                    if (Config.LoginResult?.UserDetail?.UserId != null && Config.LoginResult?.User?.Username != null)
+                    try
                     {
-                        AuditLogService.AddAsync(Config.LoginResult.UserDetail.UserId, Config.LoginResult.User.Username, "user.delete", $"删除用户:{username}(ID:{userId})");
+                        await AuditLogService.AddAsync(
+                            Config.LoginResult?.UserDetail?.UserId,
+                            Config.LoginResult?.User?.Username,
+                            "user.delete",
+                            $"删除用户:{username}(ID:{userId})");
                     }
+                    catch { }
                 }
-                catch { }
-                return true;
+                return result;
             }
             catch (Exception ex)
             {
@@ -356,10 +352,7 @@ namespace ColorVision.Rbac
             }
         }
 
-        /// <summary>
-        /// 启用用户
-        /// </summary>
-        public bool EnableUser(int userId, string username)
+        public async Task<bool> EnableUserAsync(int userId, string username)
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
@@ -368,21 +361,20 @@ namespace ColorVision.Rbac
             }
             try
             {
-                db.Updateable<UserEntity>()
-                    .SetColumns(u => u.IsEnable == true)
-                    .Where(u => u.Id == userId)
-                    .ExecuteCommand();
-
-                // 审计日志
-                try
+                var result = await UserService.EnableUserAsync(userId);
+                if (result)
                 {
-                    if (Config.LoginResult?.UserDetail?.UserId != null && Config.LoginResult?.User?.Username != null)
+                    try
                     {
-                        AuditLogService.AddAsync(Config.LoginResult.UserDetail.UserId, Config.LoginResult.User.Username, "user.enable", $"启用用户:{username}(ID:{userId})");
+                        await AuditLogService.AddAsync(
+                            Config.LoginResult?.UserDetail?.UserId,
+                            Config.LoginResult?.User?.Username,
+                            "user.enable",
+                            $"启用用户:{username}(ID:{userId})");
                     }
+                    catch { }
                 }
-                catch { }
-                return true;
+                return result;
             }
             catch (Exception ex)
             {
@@ -391,10 +383,7 @@ namespace ColorVision.Rbac
             }
         }
 
-        /// <summary>
-        /// 禁用用户
-        /// </summary>
-        public bool DisableUser(int userId, string username)
+        public async Task<bool> DisableUserAsync(int userId, string username)
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
@@ -403,21 +392,20 @@ namespace ColorVision.Rbac
             }
             try
             {
-                db.Updateable<UserEntity>()
-                    .SetColumns(u => u.IsEnable == false)
-                    .Where(u => u.Id == userId)
-                    .ExecuteCommand();
-
-                // 审计日志
-                try
+                var result = await UserService.DisableUserAsync(userId);
+                if (result)
                 {
-                    if (Config.LoginResult?.UserDetail?.UserId != null && Config.LoginResult?.User?.Username != null)
+                    try
                     {
-                        AuditLogService.AddAsync(Config.LoginResult.UserDetail.UserId, Config.LoginResult.User.Username, "user.disable", $"禁用用户:{username}(ID:{userId})");
+                        await AuditLogService.AddAsync(
+                            Config.LoginResult?.UserDetail?.UserId,
+                            Config.LoginResult?.User?.Username,
+                            "user.disable",
+                            $"禁用用户:{username}(ID:{userId})");
                     }
+                    catch { }
                 }
-                catch { }
-                return true;
+                return result;
             }
             catch (Exception ex)
             {
@@ -426,10 +414,7 @@ namespace ColorVision.Rbac
             }
         }
 
-        /// <summary>
-        /// 重置用户密码
-        /// </summary>
-        public string ResetUserPassword(int userId, string username)
+        public async Task<string?> ResetUserPasswordAsync(int userId, string username)
         {
             if (Authorization.Instance.PermissionMode > PermissionMode.Administrator)
             {
@@ -438,24 +423,19 @@ namespace ColorVision.Rbac
             }
             try
             {
-                // 生成随机密码
-                string newPassword = GenerateRandomPassword();
-                string hashedPassword = Security.PasswordHasher.Hash(newPassword);
-
-                db.Updateable<UserEntity>()
-                    .SetColumns(u => u.Password == hashedPassword)
-                    .Where(u => u.Id == userId)
-                    .ExecuteCommand();
-
-                // 审计日志
-                try
+                var newPassword = await UserService.ResetUserPasswordAsync(userId);
+                if (newPassword != null)
                 {
-                    if (Config.LoginResult?.UserDetail?.UserId != null && Config.LoginResult?.User?.Username != null)
+                    try
                     {
-                        AuditLogService.AddAsync(Config.LoginResult.UserDetail.UserId, Config.LoginResult.User.Username, "user.password.reset", $"重置用户密码:{username}(ID:{userId})");
+                        await AuditLogService.AddAsync(
+                            Config.LoginResult?.UserDetail?.UserId,
+                            Config.LoginResult?.User?.Username,
+                            "user.password.reset",
+                            $"重置用户密码:{username}(ID:{userId})");
                     }
+                    catch { }
                 }
-                catch { }
                 return newPassword;
             }
             catch (Exception ex)
@@ -463,17 +443,6 @@ namespace ColorVision.Rbac
                 MessageBox.Show($"重置密码失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 return null;
             }
-        }
-
-        /// <summary>
-        /// 生成随机密码
-        /// </summary>
-        private string GenerateRandomPassword()
-        {
-            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-            var random = new Random();
-            return new string(Enumerable.Repeat(chars, 8)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
         }
 
         public void Dispose()

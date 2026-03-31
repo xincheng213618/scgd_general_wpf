@@ -141,7 +141,7 @@ namespace ColorVision.Rbac
             }
         }
 
-        private void BtnSave_Click(object sender, RoutedEventArgs e)
+        private async void BtnSave_Click(object sender, RoutedEventArgs e)
         {
             BtnSave.IsEnabled = false;
             BtnSave.Content = "保存中...";
@@ -153,7 +153,7 @@ namespace ColorVision.Rbac
                     .Select(c => (int)c.Tag)
                     .ToList();
 
-                if (_rbacManager.UpdateUserRoles(_user.Id, selectedIds))
+                if (await _rbacManager.UpdateUserRolesAsync(_user.Id, selectedIds))
                 {
                     MessageBox.Show("角色更新成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                     DialogResult = true;

@@ -37,6 +37,7 @@ namespace ColorVision.Rbac.Services
                 return null;
 
             return await _db.Queryable<TenantEntity>()
+                .Where(t => t.Name == code)
                 .FirstAsync(ct);
         }
 

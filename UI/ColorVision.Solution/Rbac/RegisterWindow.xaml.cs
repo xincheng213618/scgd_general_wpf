@@ -35,9 +35,9 @@ namespace ColorVision.Rbac
                 TxtStatus.Text = "用户名和密码不能为空";
                 return;
             }
-            if (pwd1.Length < 3)
+            if (pwd1.Length < 6)
             {
-                TxtStatus.Text = "密码长度至少 3 位";
+                TxtStatus.Text = "密码长度至少 6 位";
                 return;
             }
             if (pwd1 != pwd2)

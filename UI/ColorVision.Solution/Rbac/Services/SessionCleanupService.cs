@@ -9,7 +9,7 @@ namespace ColorVision.Rbac.Services
         private readonly ISessionService _sessionService;
         private readonly Timer _cleanupTimer;
         private readonly TimeSpan _cleanupInterval;
-        private bool _isRunning = false;
+        private int _isRunning = 0;
         private bool _disposed = false;
 
         public SessionCleanupService(ISessionService sessionService, TimeSpan? cleanupInterval = null)
@@ -28,10 +28,9 @@ namespace ColorVision.Rbac.Services
 
         private async void CleanupCallback(object? state)
         {
-            if (_isRunning || _disposed)
+            if (_disposed || Interlocked.CompareExchange(ref _isRunning, 1, 0) != 0)
                 return;
 
-            _isRunning = true;
             try
             {
                 await _sessionService.CleanupExpiredSessionsAsync();
@@ -42,7 +41,7 @@ namespace ColorVision.Rbac.Services
             }
             finally
             {
-                _isRunning = false;
+                Interlocked.Exchange(ref _isRunning, 0);
             }
         }
 
@@ -51,17 +50,16 @@ namespace ColorVision.Rbac.Services
         /// </summary>
         public async Task CleanupNowAsync()
         {
-            if (_isRunning || _disposed)
+            if (_disposed || Interlocked.CompareExchange(ref _isRunning, 1, 0) != 0)
                 return;
 
-            _isRunning = true;
             try
             {
                 await _sessionService.CleanupExpiredSessionsAsync();
             }
             finally
             {
-                _isRunning = false;
+                Interlocked.Exchange(ref _isRunning, 0);
             }
         }
 

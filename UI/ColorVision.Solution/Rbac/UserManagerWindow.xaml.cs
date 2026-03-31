@@ -181,7 +181,7 @@ namespace ColorVision.Rbac
         }
 
         // 新增：删除用户
-        private void BtnDeleteUser_Click(object sender, RoutedEventArgs e)
+        private async void BtnDeleteUser_Click(object sender, RoutedEventArgs e)
         {
             if (sender is FrameworkElement fe && fe.Tag is UserViewModel vm)
             {
@@ -193,7 +193,7 @@ namespace ColorVision.Rbac
 
                 if (result == MessageBoxResult.Yes)
                 {
-                    if (RbacManager.DeleteUser(vm.Id, vm.Username))
+                    if (await RbacManager.DeleteUserAsync(vm.Id, vm.Username))
                     {
                         MessageBox.Show("用户删除成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                         LoadUsers();
@@ -203,14 +203,14 @@ namespace ColorVision.Rbac
         }
 
         // 新增：启用/禁用用户
-        private void BtnToggleUser_Click(object sender, RoutedEventArgs e)
+        private async void BtnToggleUser_Click(object sender, RoutedEventArgs e)
         {
             if (sender is FrameworkElement fe && fe.Tag is UserViewModel vm)
             {
                 bool success;
                 if (vm.IsEnable)
                 {
-                    success = RbacManager.DisableUser(vm.Id, vm.Username);
+                    success = await RbacManager.DisableUserAsync(vm.Id, vm.Username);
                     if (success)
                     {
                         MessageBox.Show($"用户 '{vm.Username}' 已禁用", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -218,7 +218,7 @@ namespace ColorVision.Rbac
                 }
                 else
                 {
-                    success = RbacManager.EnableUser(vm.Id, vm.Username);
+                    success = await RbacManager.EnableUserAsync(vm.Id, vm.Username);
                     if (success)
                     {
                         MessageBox.Show($"用户 '{vm.Username}' 已启用", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -233,7 +233,7 @@ namespace ColorVision.Rbac
         }
 
         // 新增：重置密码
-        private void BtnResetPassword_Click(object sender, RoutedEventArgs e)
+        private async void BtnResetPassword_Click(object sender, RoutedEventArgs e)
         {
             if (sender is FrameworkElement fe && fe.Tag is UserViewModel vm)
             {
@@ -245,7 +245,7 @@ namespace ColorVision.Rbac
 
                 if (result == MessageBoxResult.Yes)
                 {
-                    string newPassword = RbacManager.ResetUserPassword(vm.Id, vm.Username);
+                    string? newPassword = await RbacManager.ResetUserPasswordAsync(vm.Id, vm.Username);
                     if (!string.IsNullOrEmpty(newPassword))
                     {
                         MessageBox.Show(
