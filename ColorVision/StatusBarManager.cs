@@ -41,20 +41,23 @@ namespace ColorVision.UI
         /// <summary>
         /// 兼容旧接口：使用MainWindowTarget初始化
         /// </summary>
+        [Obsolete("Use Init(string targetName, Grid container) instead")]
         public void Init(Grid statusBarGrid, StackPanel statusBarTextDocker)
         {
-            // 兼容旧调用：将旧的Grid替换为新的布局
             var parent = statusBarGrid.Parent as Grid;
-            if (parent != null)
+            if (parent == null)
             {
-                parent.Children.Clear();
-                parent.ColumnDefinitions.Clear();
-                parent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) });
-                parent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                parent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) });
-
-                Init(StatusBarConstants.MainWindowTarget, parent);
+                log.Warn("StatusBarManager.Init: statusBarGrid has no Grid parent, falling back to direct container.");
+                return;
             }
+
+            parent.Children.Clear();
+            parent.ColumnDefinitions.Clear();
+            parent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) });
+            parent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            parent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) });
+
+            Init(StatusBarConstants.MainWindowTarget, parent);
         }
 
         private void CollectAllMetas()
@@ -264,7 +267,7 @@ namespace ColorVision.UI
             // 图标部分
             if (!string.IsNullOrEmpty(meta.IconResourceKey))
             {
-                if (Application.Current.TryFindResource(meta.IconResourceKey) is Brush brush)
+                if (Application.Current.TryFindResource(meta.IconResourceKey) is Brush)
                 {
                     var rect = new Rectangle { Width = 14, Height = 14 };
                     rect.SetResourceReference(Rectangle.FillProperty, meta.IconResourceKey);

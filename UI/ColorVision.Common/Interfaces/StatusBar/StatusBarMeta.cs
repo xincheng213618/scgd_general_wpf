@@ -32,7 +32,7 @@ namespace ColorVision.UI
         public ICommand Command { get; set; }
 
         /// <summary>
-        /// 状态栏项的对齐方式（左侧或右侧），为null时根据Type自动推断：Icon→Left, Text→Right, IconText→Left
+        /// 状态栏项的对齐方式（左侧或右侧），为null时根据Type自动推断：Icon/IconText→Left, Text→Right
         /// </summary>
         public StatusBarAlignment? Alignment { get; set; }
 

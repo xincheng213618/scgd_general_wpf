@@ -101,7 +101,7 @@ graph TD
 - `Searchbox`：搜索输入框，绑定搜索事件。
 - `LeftTabControl`：左侧标签页，含项目和采集视图。
 - `ViewGrid` 和 `SolutionGrid`：右侧视图区域，动态显示不同内容。
-- `StatusBarGrid`：状态栏，包含图标和文本区域。
+- `StatusBarContainer`：VS Code 风格状态栏容器，支持左右分区显示，通过 `StatusBarManager` 动态加载状态栏项。
 
 ### 2. MainWindow.xaml.cs 逻辑解析
 
@@ -110,7 +110,7 @@ graph TD
 - `MainWindow` 类：主窗口类，继承自 `Window`。
 - `Window_Initialized`：窗口初始化事件，完成菜单绑定、视图管理器初始化、插件加载、快捷键绑定等。
 - `ViewGrid_Click`：视图布局切换事件，根据按钮Tag切换不同视图布局。
-- `StatusBarGrid_Initialized`：状态栏初始化，动态加载状态栏图标和文本项。
+- `StatusBarGrid_Initialized`：状态栏初始化，通过 `StatusBarManager` 按 TargetName 过滤并动态加载左右分区状态栏项。
 - 搜索相关事件：`Searchbox_TextChanged`、`Searchbox_PreviewKeyDown`、`ListView1_MouseDoubleClick` 实现搜索输入响应和结果执行。
 
 #### 代码示例：视图布局切换
