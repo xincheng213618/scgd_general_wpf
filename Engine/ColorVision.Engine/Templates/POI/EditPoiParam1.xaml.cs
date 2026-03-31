@@ -1331,6 +1331,8 @@ namespace ColorVision.Engine.Templates.POI
                     shapeType = SelectShapeType.Circle;
                     break;
                 case GraphicTypes.Quadrilateral:
+                    shapeType = SelectShapeType.Quadrilateral;
+                    break;
                 case GraphicTypes.Polygon:
                     shapeType = SelectShapeType.Polygon;
                     break;
@@ -1348,7 +1350,7 @@ namespace ColorVision.Engine.Templates.POI
                 PoiConfig.CenterY = (int)result.Center.Y;
                 PoiConfig.AreaCircleRadius = (int)result.Radius;
             }
-            else if (result.ShapeType == SelectShapeType.Polygon && result.Points != null)
+            else if ((result.ShapeType == SelectShapeType.Quadrilateral || result.ShapeType == SelectShapeType.Polygon) && result.Points != null)
             {
                 if (PoiConfig.PointType == GraphicTypes.Quadrilateral && result.Points.Count >= 4)
                 {

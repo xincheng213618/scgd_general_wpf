@@ -886,7 +886,7 @@ namespace ColorVision.ImageEditor
                     shapeType = SelectShapeType.Circle;
                     break;
                 case GraphicTypes.Quadrilateral:
-                    shapeType = SelectShapeType.Polygon;
+                    shapeType = SelectShapeType.Quadrilateral;
                     break;
                 default:
                     shapeType = SelectShapeType.Rectangle;
@@ -902,7 +902,7 @@ namespace ColorVision.ImageEditor
                 Config.CenterY = (int)result.Center.Y;
                 Config.AreaCircleRadius = (int)result.Radius;
             }
-            else if (result.ShapeType == SelectShapeType.Polygon && result.Points != null && result.Points.Count >= 4)
+            else if ((result.ShapeType == SelectShapeType.Quadrilateral || result.ShapeType == SelectShapeType.Polygon) && result.Points != null && result.Points.Count >= 4)
             {
                 Config.Polygon1X = (int)result.Points[0].X;
                 Config.Polygon1Y = (int)result.Points[0].Y;
