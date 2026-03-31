@@ -823,6 +823,44 @@ namespace ColorVision.ImageEditor
         }
 
 
+        #region Transient Select Mode
+
+        /// <summary>
+        /// Start a transient (non-recording) selection mode on the current image.
+        /// The user draws a single shape inline; on mouse-up the mode ends and returns the result.
+        /// Returns null if cancelled (Escape) or too-small selection.
+        /// </summary>
+        /// <param name="shapeType">Rectangle or Circle</param>
+        /// <returns>SelectResult with shape properties, or null if cancelled</returns>
+        public Task<SelectResult> BeginSelectAsync(SelectShapeType shapeType)
+        {
+            var mode = new TransientSelectMode(ImageShow, Zoombox1, shapeType);
+            return mode.Start();
+        }
+
+        /// <summary>
+        /// Start a transient rectangle selection on the current image.
+        /// Returns the selected Rect, or null if cancelled.
+        /// </summary>
+        public async Task<Rect?> BeginSelectRectAsync()
+        {
+            var result = await BeginSelectAsync(SelectShapeType.Rectangle);
+            return result?.Rect;
+        }
+
+        /// <summary>
+        /// Start a transient circle selection on the current image.
+        /// Returns (Center, Radius), or null if cancelled.
+        /// </summary>
+        public async Task<(Point Center, double Radius)?> BeginSelectCircleAsync()
+        {
+            var result = await BeginSelectAsync(SelectShapeType.Circle);
+            if (result == null) return null;
+            return (result.Center, result.Radius);
+        }
+
+        #endregion
+
         public void Dispose()
         {
             Clear();
