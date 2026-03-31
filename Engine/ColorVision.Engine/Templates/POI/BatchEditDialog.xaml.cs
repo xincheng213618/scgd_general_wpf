@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Templates.POI
 {
     public partial class BatchEditDialog : Window
     {
-        public string InputValue { get; private set; }
+        public string InputValue { get; private set; } = string.Empty;
 
         public BatchEditDialog(string title, string prompt, string defaultValue = "")
         {

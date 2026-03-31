@@ -1814,7 +1814,6 @@ namespace ColorVision.Engine.Templates.POI
             if (sender is ListViewItem listViewItem)
                 _draggedItem = listViewItem.Content as IDrawingVisual;
         }
-        private bool _isDragging;
 
         private void ListViewItem_PreviewMouseMove(object sender, MouseEventArgs e)
         {
