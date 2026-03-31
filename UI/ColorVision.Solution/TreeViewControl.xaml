@@ -135,22 +135,10 @@
                                         <Trigger Property="ItemsControl.HasItems" Value="false">
                                             <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
                                         </Trigger>
-                                        <Trigger Property="TreeViewItem.IsSelected" Value="true">
-                                            <Setter TargetName="Bd" Value="{DynamicResource PrimaryBrush}" Property="Background" />
-                                            <Setter Value="{DynamicResource TextIconBrush}" Property="Foreground" />
-                                        </Trigger>
                                         <DataTrigger Binding="{Binding IsMultiSelected}" Value="True">
                                             <Setter TargetName="Bd" Value="{DynamicResource PrimaryBrush}" Property="Background" />
                                             <Setter Value="{DynamicResource TextIconBrush}" Property="Foreground" />
                                         </DataTrigger>
-                                        <MultiTrigger>
-                                            <MultiTrigger.Conditions>
-                                                <Condition Property="TreeViewItem.IsSelected" Value="true" />
-                                                <Condition Property="TreeViewItem.IsSelectionActive" Value="false" />
-                                            </MultiTrigger.Conditions>
-                                            <Setter TargetName="Bd" Value="{DynamicResource DarkDefaultBrush}" Property="Background" />
-                                            <Setter Value="{DynamicResource PrimaryTextBrush}" Property="Foreground" />
-                                        </MultiTrigger>
                                         <Trigger Property="IsEnabled" Value="false">
                                             <Setter Property="UIElement.Opacity" Value=".4" />
                                         </Trigger>

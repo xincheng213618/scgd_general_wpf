@@ -143,7 +143,8 @@ namespace ColorVision.Solution
                             _selectedNodes.Add(node);
                             node.IsMultiSelected = true;
                         }
-                        e.Handled = true; // Prevent TreeView from overriding selection
+                        ClearTreeViewSelection();
+                        e.Handled = true;
                     }
                     else if (isShift && _selectedNodes.Count > 0)
                     {
@@ -151,11 +152,13 @@ namespace ColorVision.Solution
                         if (!_selectedNodes.Contains(node))
                             _selectedNodes.Add(node);
                         node.IsMultiSelected = true;
-                        e.Handled = true; // Prevent TreeView from overriding selection
+                        ClearTreeViewSelection();
+                        e.Handled = true;
                     }
                     else if (isRightClick && _selectedNodes.Contains(node))
                     {
                         // Right-click on already selected node: keep multi-selection
+                        ClearTreeViewSelection();
                         e.Handled = true;
                     }
                     else
@@ -165,6 +168,10 @@ namespace ColorVision.Solution
                         _selectedNodes.Add(node);
                         node.IsMultiSelected = true;
                     }
+
+                    // Ensure TreeView has keyboard focus for Ctrl+C/V/X commands
+                    if (!SolutionTreeView.IsKeyboardFocusWithin)
+                        SolutionTreeView.Focus();
                 }
 
                 if (SelectedTreeViewItem != null && SelectedTreeViewItem != item && SelectedTreeViewItem.DataContext is SolutionNode vobj)
@@ -185,6 +192,16 @@ namespace ColorVision.Solution
             foreach (var node in _selectedNodes)
                 node.IsMultiSelected = false;
             _selectedNodes.Clear();
+        }
+
+        /// <summary>
+        /// Clear TreeView's internal IsSelected state to prevent visual conflicts.
+        /// We use IsMultiSelected exclusively for selection visuals.
+        /// </summary>
+        private void ClearTreeViewSelection()
+        {
+            if (SolutionTreeView.SelectedItem is SolutionNode selected)
+                selected.IsSelected = false;
         }
 
         private readonly char[] Chars = new[] { ' ' };

@@ -13,9 +13,18 @@ namespace ColorVision.Solution
 
         private void IniCommand()
         {
-            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand));
-            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand));
-            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
+            // Add command bindings to both the TreeView and the UserControl
+            // so keyboard shortcuts work regardless of internal focus state
+            var copyBinding = new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand);
+            var cutBinding = new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand);
+            var pasteBinding = new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand);
+
+            SolutionTreeView.CommandBindings.Add(copyBinding);
+            SolutionTreeView.CommandBindings.Add(cutBinding);
+            SolutionTreeView.CommandBindings.Add(pasteBinding);
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
 
             SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) =>
             {

@@ -1,8 +1,10 @@
+using ColorVision.Common.MVVM;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Solution.Explorer
 {
@@ -66,28 +68,58 @@ namespace ColorVision.Solution.Explorer
         private void BuildMultiNodeMenu(IReadOnlyList<SolutionNode> nodes)
         {
             // For multi-select, only show operations that are valid for all selected nodes
-            var metadatasByGuid = new Dictionary<string, MenuItemMetadata>();
-            var firstNodeMetadatas = new List<MenuItemMetadata>();
-            nodes[0].CollectMenuItems(firstNodeMetadatas);
-
-            foreach (var meta in firstNodeMetadatas)
+            // Collect all metadata per node, keyed by GuidId
+            var allNodeMetadatas = new List<List<MenuItemMetadata>>();
+            foreach (var node in nodes)
             {
-                metadatasByGuid[meta.GuidId] = meta;
+                var metas = new List<MenuItemMetadata>();
+                node.CollectMenuItems(metas);
+                allNodeMetadatas.Add(metas);
             }
 
-            // Keep only items that appear in ALL selected nodes
-            for (int i = 1; i < nodes.Count; i++)
+            // Intersect GuidIds: keep only items present in ALL nodes
+            var commonGuids = new HashSet<string>(allNodeMetadatas[0].Select(m => m.GuidId));
+            for (int i = 1; i < allNodeMetadatas.Count; i++)
             {
-                var nodeMetadatas = new List<MenuItemMetadata>();
-                nodes[i].CollectMenuItems(nodeMetadatas);
-                var nodeGuids = new HashSet<string>(nodeMetadatas.Select(m => m.GuidId));
-                var toRemove = metadatasByGuid.Keys.Where(k => !nodeGuids.Contains(k)).ToList();
-                foreach (var key in toRemove)
-                    metadatasByGuid.Remove(key);
+                var nodeGuids = new HashSet<string>(allNodeMetadatas[i].Select(m => m.GuidId));
+                commonGuids.IntersectWith(nodeGuids);
             }
 
-            // Filter to common operations (Cut/Copy/Paste/Delete work on multi-select)
-            var commonMetadatas = metadatasByGuid.Values.ToList();
+            // Build metadata list with wrapped commands that execute on all nodes
+            var commonMetadatas = new List<MenuItemMetadata>();
+            foreach (var meta in allNodeMetadatas[0].Where(m => commonGuids.Contains(m.GuidId)))
+            {
+                // For RoutedCommands (Cut/Copy/Paste/Delete), keep as-is — they're handled by CommandBindings
+                if (meta.Command is RoutedCommand)
+                {
+                    commonMetadatas.Add(meta);
+                    continue;
+                }
+
+                // For per-node commands (Open, etc.), wrap to execute on ALL selected nodes
+                var guidId = meta.GuidId;
+                var multiCommand = new RelayCommand(_ =>
+                {
+                    foreach (var nodeMetas in allNodeMetadatas)
+                    {
+                        var matching = nodeMetas.FirstOrDefault(m => m.GuidId == guidId);
+                        matching?.Command?.Execute(null);
+                    }
+                });
+
+                commonMetadatas.Add(new MenuItemMetadata()
+                {
+                    GuidId = meta.GuidId,
+                    OwnerGuid = meta.OwnerGuid,
+                    Order = meta.Order,
+                    Header = meta.Header,
+                    Icon = meta.Icon,
+                    InputGestureText = meta.InputGestureText,
+                    Command = multiCommand,
+                    Visibility = meta.Visibility,
+                });
+            }
+
             BuildMenuFromMetadata(commonMetadatas);
         }
 

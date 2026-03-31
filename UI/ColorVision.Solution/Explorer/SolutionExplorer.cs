@@ -25,6 +25,12 @@ namespace ColorVision.Solution.Explorer
         public bool IsSetting { get; set; }
         public bool IsSetting1 { get; set; }
         public ObservableCollection<string> Paths { get; set; }
+
+        /// <summary>
+        /// 项目引用列表 - 存储相对于解决方案目录的项目路径
+        /// 类似VS的.sln，项目路径信息保存在解决方案配置中
+        /// </summary>
+        public ObservableCollection<string> Projects { get; set; } = new ObservableCollection<string>();
     }
 
     /// <summary>
@@ -342,6 +348,17 @@ namespace ColorVision.Solution.Explorer
             {
                 var dirInfo = ProjectTemplateRegistry.CreateFromTemplate(
                     window.SelectedTemplate, DirectoryInfo.FullName, window.ProjectName);
+
+                // Register project path in solution config (like VS .sln)
+                if (dirInfo != null)
+                {
+                    string relativePath = Path.GetRelativePath(DirectoryInfo.FullName, dirInfo.FullName);
+                    if (!Config.Projects.Contains(relativePath))
+                    {
+                        Config.Projects.Add(relativePath);
+                        SaveConfig();
+                    }
+                }
                 // FileSystemWatcher will pick up the new folder automatically
             }
         }
@@ -362,6 +379,14 @@ namespace ColorVision.Solution.Explorer
                 if (!Directory.Exists(destDir))
                 {
                     CopyDirectory(sourceDir, destDir);
+                }
+
+                // Register project path in solution config
+                string relativePath = Path.GetRelativePath(DirectoryInfo.FullName, destDir);
+                if (!Config.Projects.Contains(relativePath))
+                {
+                    Config.Projects.Add(relativePath);
+                    SaveConfig();
                 }
             }
         }
