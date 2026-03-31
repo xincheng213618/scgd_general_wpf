@@ -22,7 +22,10 @@ namespace ProjectARVRPro.Process
         SwitchPG,
         /// <summary>简单延时</summary>
         [Description("延时")]
-        Delay
+        Delay,
+        /// <summary>通过设备通道执行指令（雷鸟串口、通用串口、Socket 等）</summary>
+        [Description("设备通道")]
+        DeviceChannel
     }
 
     /// <summary>
@@ -94,6 +97,13 @@ namespace ProjectARVRPro.Process
         private int _BaudRate = 9600;
 
         /// <summary>
+        /// 设备通道名称（用于 DeviceChannel 类型，引用 DeviceChannelManager 中的配置）
+        /// </summary>
+        [DisplayName("通道名称")]
+        public string DeviceChannelName { get => _DeviceChannelName; set { if (_DeviceChannelName != value) { _DeviceChannelName = value; OnPropertyChanged(); } } }
+        private string _DeviceChannelName = string.Empty;
+
+        /// <summary>
         /// 创建深拷贝
         /// </summary>
         public InterStepAction Clone()
@@ -108,7 +118,8 @@ namespace ProjectARVRPro.Process
                 Host = Host,
                 Port = Port,
                 SerialPortName = SerialPortName,
-                BaudRate = BaudRate
+                BaudRate = BaudRate,
+                DeviceChannelName = DeviceChannelName
             };
         }
     }

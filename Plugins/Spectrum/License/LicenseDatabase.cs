@@ -62,7 +62,7 @@ namespace Spectrum.License
         public LicenseDatabase()
         {
             string appDataDir = LicenseSync.GlobalLicenseDir;
-            Directory.CreateDirectory(appDataDir);
+            LicenseSync.EnsureDirectoryExists(appDataDir);
             _dbPath = Path.Combine(appDataDir, "licenses.db");
             InitializeDatabase();
         }
@@ -103,11 +103,14 @@ namespace Spectrum.License
                 string hash = ComputeFileHash(sourceFilePath);
                 long fileSize = new FileInfo(sourceFilePath).Length;
 
-                // Copy to local license dir
-                string localDir = LicenseSync.LocalLicenseDir;
-                Directory.CreateDirectory(localDir);
-                string destPath = Path.Combine(localDir, fileName);
-                File.Copy(sourceFilePath, destPath, true);
+                // Copy to global license dir (always writable) first
+                string globalDir = LicenseSync.GlobalLicenseDir;
+                LicenseSync.EnsureDirectoryExists(globalDir);
+                string globalDest = Path.Combine(globalDir, fileName);
+                File.Copy(sourceFilePath, globalDest, true);
+
+                // Copy to local license dir (may need elevation)
+                LicenseSync.CopyToLocalLicenseDir(new[] { sourceFilePath });
 
                 // Upsert into DB
                 using var db = CreateClient();
@@ -143,6 +146,7 @@ namespace Spectrum.License
         /// <summary>
         /// Sync licenses from DB to local license/ directory.
         /// If a license in the global dir (tracked by DB) is missing or different locally, copy it.
+        /// Uses elevated copy when the local dir is not writable (e.g., under Program Files).
         /// </summary>
         public void SyncToLocal()
         {
@@ -150,11 +154,12 @@ namespace Spectrum.License
             {
                 string localDir = LicenseSync.LocalLicenseDir;
                 string globalDir = LicenseSync.GlobalLicenseDir;
-                Directory.CreateDirectory(localDir);
 
                 using var db = CreateClient();
                 var records = db.Queryable<LicenseRecord>().ToList();
 
+                // Collect files that need to be synced to local
+                var filesToSync = new List<string>();
                 foreach (var record in records)
                 {
                     string globalFile = Path.Combine(globalDir, record.FileName);
@@ -172,10 +177,15 @@ namespace Spectrum.License
 
                         if (needsCopy)
                         {
-                            File.Copy(globalFile, localFile, true);
-                            log.Info($"许可证已同步到本地: {record.FileName}");
+                            filesToSync.Add(globalFile);
                         }
                     }
+                }
+
+                // Batch copy with elevation fallback
+                if (filesToSync.Count > 0)
+                {
+                    LicenseSync.CopyToLocalLicenseDir(filesToSync);
                 }
 
                 // Also scan local dir for any .lic files not in DB and register them
