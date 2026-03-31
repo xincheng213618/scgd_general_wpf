@@ -1324,8 +1324,36 @@ namespace ColorVision.Engine.Templates.POI
 
         private void DrawAreaOnImage_Click(object sender, RoutedEventArgs e)
         {
-            PoiConfig.IsUserDraw = true;
-            PoiConfig.IsShowPoiConfig = true;
+            CropShapeType shapeType = PoiConfig.PointType == GraphicTypes.Circle ? CropShapeType.Circle : CropShapeType.Rectangle;
+
+            ImageCropperWindow cropper;
+            if (File.Exists(PoiConfig.BackgroundFilePath))
+                cropper = new ImageCropperWindow(PoiConfig.BackgroundFilePath, shapeType);
+            else if (ImageView.ViewBitmapSource is BitmapSource bs)
+                cropper = new ImageCropperWindow(bs, shapeType);
+            else if (KBJson.Width > 0 && KBJson.Height > 0)
+                cropper = new ImageCropperWindow(KBJson.Width, KBJson.Height, shapeType);
+            else
+                return;
+
+            cropper.Owner = this;
+            cropper.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+
+            if (cropper.ShowDialog() == true && cropper.CropResult is CropResult result)
+            {
+                if (result.ShapeType == CropShapeType.Circle)
+                {
+                    PoiConfig.CenterX = (int)result.Center.X;
+                    PoiConfig.CenterY = (int)result.Center.Y;
+                    PoiConfig.AreaCircleRadius = (int)result.Radius;
+                }
+                else
+                {
+                    UpdateAreaFromRect(result.Rect);
+                }
+                PoiConfig.IsShowPoiConfig = true;
+                RenderPoiConfig();
+            }
         }
 
         private void Cal_Click(object sender, RoutedEventArgs e)
