@@ -1,0 +1,62 @@
+<UserControl x:Class="ColorVision.Solution.Terminal.TerminalControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="300" d:DesignWidth="600"
+             Background="{DynamicResource ContentBackgroundBrush}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <ToolBar Grid.Row="0" Background="Transparent" Band="0" BandIndex="0">
+            <Button x:Name="ButtonClear" Content="清除" Click="ButtonClear_Click" Padding="6,2" Margin="2"
+                    Foreground="{DynamicResource GlobalTextBrush}"/>
+            <Button x:Name="ButtonStop" Content="停止" Click="ButtonStop_Click" Padding="6,2" Margin="2"
+                    Foreground="{DynamicResource GlobalTextBrush}" IsEnabled="False"/>
+            <Separator/>
+            <TextBlock Text="工作目录:" VerticalAlignment="Center" Margin="4,0"
+                       Foreground="{DynamicResource GlobalTextBrush}"/>
+            <TextBlock x:Name="TextWorkingDir" Text="-" VerticalAlignment="Center" Margin="4,0"
+                       Foreground="{DynamicResource GlobalTextBrush}" MaxWidth="300" TextTrimming="CharacterEllipsis"/>
+        </ToolBar>
+
+        <!-- Output area -->
+        <ScrollViewer Grid.Row="1" x:Name="OutputScrollViewer" 
+                      VerticalScrollBarVisibility="Auto" 
+                      HorizontalScrollBarVisibility="Auto"
+                      Background="{DynamicResource ContentBackgroundBrush}">
+            <TextBlock x:Name="OutputTextBlock" 
+                       FontFamily="Consolas, Courier New, monospace" 
+                       FontSize="13"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource GlobalTextBrush}"
+                       Padding="6,4"/>
+        </ScrollViewer>
+
+        <!-- Input area -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" x:Name="PromptText" Text=">" 
+                       VerticalAlignment="Center" Margin="6,4"
+                       FontFamily="Consolas" FontSize="13"
+                       Foreground="{DynamicResource GlobalTextBrush}"/>
+            <TextBox Grid.Column="1" x:Name="InputTextBox"
+                     FontFamily="Consolas, Courier New, monospace" FontSize="13"
+                     Background="{DynamicResource ContentBackgroundBrush}"
+                     Foreground="{DynamicResource GlobalTextBrush}"
+                     BorderThickness="0,1,0,0"
+                     Padding="4,4"
+                     KeyDown="InputTextBox_KeyDown"
+                     IsEnabled="False"/>
+        </Grid>
+    </Grid>
+</UserControl>

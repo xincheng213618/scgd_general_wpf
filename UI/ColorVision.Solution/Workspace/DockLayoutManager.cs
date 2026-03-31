@@ -362,6 +362,55 @@ namespace ColorVision.Solution.Workspace
         }
 
         /// <summary>
+        /// 显示并激活指定面板。如果面板已隐藏或被关闭，则重新显示。
+        /// </summary>
+        public void ShowPanel(string contentId)
+        {
+            var anchorable = FindAnchorable(contentId);
+            if (anchorable != null)
+            {
+                if (anchorable.IsHidden)
+                    anchorable.Show();
+                anchorable.IsActive = true;
+                return;
+            }
+
+            // Panel was closed and removed from layout tree — re-add from registry
+            if (_contentRegistry.TryGetValue(contentId, out var content))
+            {
+                var title = _panelInfoRegistry.TryGetValue(contentId, out var info) ? info.Title : contentId;
+
+                var newAnchorable = new LayoutAnchorable
+                {
+                    ContentId = contentId,
+                    Title = title,
+                    Content = content,
+                    CanClose = true,
+                    CanAutoHide = true,
+                    CanFloat = true
+                };
+
+                var existingPane = _dockingManager.Layout.Descendents()
+                    .OfType<LayoutAnchorablePane>().FirstOrDefault();
+                if (existingPane != null)
+                {
+                    existingPane.Children.Add(newAnchorable);
+                }
+                else if (_dockingManager.Layout.RootPanel != null)
+                {
+                    var pane = new LayoutAnchorablePane();
+                    pane.Children.Add(newAnchorable);
+                    var group = new LayoutAnchorablePaneGroup { DockHeight = new GridLength(DefaultBottomPaneHeight) };
+                    group.Children.Add(pane);
+                    _dockingManager.Layout.RootPanel.Children.Add(group);
+                }
+
+                newAnchorable.Show();
+                newAnchorable.IsActive = true;
+            }
+        }
+
+        /// <summary>
         /// 获取所有已注册面板的 ID 列表
         /// </summary>
         public IReadOnlyList<string> GetRegisteredPanelIds()
