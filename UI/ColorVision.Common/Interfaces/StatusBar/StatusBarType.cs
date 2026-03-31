@@ -1,8 +1,9 @@
-﻿namespace ColorVision.UI
+namespace ColorVision.UI
 {
     public enum StatusBarType
     {
         Icon,
-        Text
+        Text,
+        IconText
     }
 }

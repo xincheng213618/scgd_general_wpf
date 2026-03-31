@@ -126,14 +126,12 @@
             </xcad:LayoutRoot>
         </xcad:DockingManager>
         <Border Grid.Row="2" Height="30"  Background="{DynamicResource GlobalBackground}" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderBrush}" Visibility="{Binding IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}">
-            <Grid>
+            <Grid x:Name="StatusBarContainer">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Grid Grid.Row="0" x:Name="StatusBarGrid" />
-                <StackPanel x:Name="StatusBarTextDocker" Grid.Column="2" Orientation="Horizontal"/>
             </Grid>
         </Border>
 
