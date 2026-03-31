@@ -61,9 +61,13 @@ graph TD
 - 视图布局通过 `ViewGridManager` 动态管理，支持多种窗口布局模式（单窗口、双窗口、三窗口、四窗口等）。
 
 ### 4. 状态栏（StatusBar）
-- 位于窗口底部，显示应用状态信息和快捷操作按钮。
-- 状态栏图标和文本项通过实现 `IStatusBarProvider` 的组件动态加载。
-- 支持状态栏项的显示与隐藏控制，提供上下文菜单用于快速切换显示项。
+- 位于窗口底部，采用 VS Code 风格，使用可复用的 `StatusBarControl`（定义在 `ColorVision.UI`）。
+- 支持左右分区显示（`StatusBarAlignment.Left` / `Right`），按 `Order` 排序。
+- 状态栏项通过实现 `IStatusBarProvider` 的组件动态加载，支持按 `TargetName` 过滤（如 `MainWindow`、`Spectrum`、`Global`）。
+- 支持 Icon、Text、IconText 三种类型的状态栏项，每项可设置 ToolTip、左键命令、右键命令。
+- 右键点击空白区域弹出上下文菜单，可控制各状态栏项的显示/隐藏。
+- 支持动态状态栏项（`IStatusBarIconProvider`），当活动文档变化时自动更新。
+- 可在 XAML 中直接使用 `<cvui:StatusBarControl TargetName="..." />`。
 
 ## 架构概览
 
@@ -101,7 +105,7 @@ graph TD
 - `Searchbox`：搜索输入框，绑定搜索事件。
 - `LeftTabControl`：左侧标签页，含项目和采集视图。
 - `ViewGrid` 和 `SolutionGrid`：右侧视图区域，动态显示不同内容。
-- `StatusBarContainer`：VS Code 风格状态栏容器，支持左右分区显示，通过 `StatusBarManager` 动态加载状态栏项。
+- `MainStatusBar`：`StatusBarControl` 实例，通过 `TargetName="MainWindow"` 自动加载匹配的状态栏项。
 
 ### 2. MainWindow.xaml.cs 逻辑解析
 
@@ -110,7 +114,7 @@ graph TD
 - `MainWindow` 类：主窗口类，继承自 `Window`。
 - `Window_Initialized`：窗口初始化事件，完成菜单绑定、视图管理器初始化、插件加载、快捷键绑定等。
 - `ViewGrid_Click`：视图布局切换事件，根据按钮Tag切换不同视图布局。
-- `StatusBarGrid_Initialized`：状态栏初始化，通过 `StatusBarManager` 按 TargetName 过滤并动态加载左右分区状态栏项。
+- `StatusBarGrid_Initialized`：状态栏通过 `StatusBarControl` 自动初始化，由 `StatusBarManager` 注册。
 - 搜索相关事件：`Searchbox_TextChanged`、`Searchbox_PreviewKeyDown`、`ListView1_MouseDoubleClick` 实现搜索输入响应和结果执行。
 
 #### 代码示例：视图布局切换
