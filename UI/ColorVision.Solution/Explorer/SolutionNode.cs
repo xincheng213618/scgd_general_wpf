@@ -85,6 +85,13 @@ namespace ColorVision.Solution.Explorer
         public virtual bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
 
+        /// <summary>
+        /// Separate from IsSelected (which TreeView controls for single-select).
+        /// IsMultiSelected is managed entirely by TreeViewControl for multi-select visual feedback.
+        /// </summary>
+        public bool IsMultiSelected { get => _IsMultiSelected; set { _IsMultiSelected = value; NotifyPropertyChanged(); } }
+        private bool _IsMultiSelected;
+
         public ContextMenu ContextMenu { get; set; }
 
         public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
@@ -95,16 +102,6 @@ namespace ColorVision.Solution.Explorer
         {
             VisualChildren = new ObservableCollection<SolutionNode>() { };
             MenuItemMetadatas = new List<MenuItemMetadata>();
-            ContextMenu = new ContextMenu();
-            ContextMenu.Opened += (s, e) =>
-            {
-                if (!_menuInitialized)
-                {
-                    InitMenuItem();
-                    InitContextMenu();
-                    _menuInitialized = true;
-                }
-            };
         }
 
         public virtual void Initialize()

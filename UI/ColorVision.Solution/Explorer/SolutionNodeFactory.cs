@@ -19,6 +19,7 @@ namespace ColorVision.Solution.Explorer
             FolderMetaRegistry.RegisterFolderMetasFromAssemblies();
             FileMetaRegistry.RegisterFileMetasFromAssemblies();
             NewItemTemplateRegistry.Initialize();
+            ProjectTemplateRegistry.Initialize();
             _registriesInitialized = true;
         }
 
@@ -87,8 +88,67 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
-        public static async Task PopulateChildren(ISolutionNode parent, DirectoryInfo directoryInfo)
+        public static async Task PopulateChildren(ISolutionNode parent, DirectoryInfo directoryInfo, SolutionCache? cache = null)
         {
+            // Try loading from cache first
+            if (cache != null)
+            {
+                var cachedChildren = cache.GetChildren(directoryInfo.FullName);
+                if (cachedChildren.Count > 0)
+                {
+                    // Load directories first from cache
+                    foreach (var entry in cachedChildren.Where(e => e.IsDirectory))
+                    {
+                        var dirInfo = new DirectoryInfo(entry.FullPath);
+                        if (!dirInfo.Exists) continue;
+
+                        var folder = CreateFolderNode(dirInfo);
+                        parent.AddChild(folder);
+                    }
+
+                    // Load files from cache
+                    int cachedFileCount = 0;
+                    foreach (var entry in cachedChildren.Where(e => !e.IsDirectory))
+                    {
+                        cachedFileCount++;
+                        if (cachedFileCount % 10 == 0)
+                            await Task.Delay(100);
+
+                        if (entry.Extension.Contains("lnk"))
+                        {
+                            string targetPath = Common.NativeMethods.ShortcutCreator.GetShortcutTargetFile(entry.FullPath);
+                            var fileInfo = new FileInfo(targetPath);
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                FileNode file = CreateFileNode(fileInfo);
+                                parent.AddChild(file);
+                            });
+                        }
+                        else
+                        {
+                            var fileInfo = new FileInfo(entry.FullPath);
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                FileNode file = CreateFileNode(fileInfo);
+                                parent.AddChild(file);
+                            });
+                        }
+                    }
+
+                    // Validate cache in background, rebuild if stale
+                    _ = Task.Run(() =>
+                    {
+                        if (!cache.ValidateDirectory(directoryInfo.FullName))
+                        {
+                            log.Info($"缓存过期，后台重建: {directoryInfo.FullName}");
+                            cache.RebuildCache(directoryInfo.FullName);
+                        }
+                    });
+
+                    return;
+                }
+            }
+
             foreach (var item in directoryInfo.GetDirectories())
             {
                 if ((item.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)

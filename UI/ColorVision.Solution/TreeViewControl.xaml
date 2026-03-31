@@ -139,6 +139,10 @@
                                             <Setter TargetName="Bd" Value="{DynamicResource PrimaryBrush}" Property="Background" />
                                             <Setter Value="{DynamicResource TextIconBrush}" Property="Foreground" />
                                         </Trigger>
+                                        <DataTrigger Binding="{Binding IsMultiSelected}" Value="True">
+                                            <Setter TargetName="Bd" Value="{DynamicResource PrimaryBrush}" Property="Background" />
+                                            <Setter Value="{DynamicResource TextIconBrush}" Property="Foreground" />
+                                        </DataTrigger>
                                         <MultiTrigger>
                                             <MultiTrigger.Conditions>
                                                 <Condition Property="TreeViewItem.IsSelected" Value="true" />

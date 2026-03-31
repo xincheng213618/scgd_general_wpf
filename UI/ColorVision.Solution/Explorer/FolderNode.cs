@@ -40,8 +40,9 @@ namespace ColorVision.Solution.Explorer
             InitializeCommands();
             AddChildEventHandler += (s, e) => NotifyPropertyChanged(nameof(HasFile));
 
+            var cache = SolutionManager.GetInstance().CurrentSolutionExplorer?.Cache;
             Application.Current?.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background,
-                () => SolutionNodeFactory.PopulateChildren(this, DirectoryInfo));
+                () => SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, cache));
         }
 
         private void InitializeFileSystemWatcher()
@@ -52,6 +53,16 @@ namespace ColorVision.Solution.Explorer
 
                 FileSystemWatcher.Created += (s, e) =>
                 {
+                    // Update cache
+                    var cache = SolutionManager.GetInstance().CurrentSolutionExplorer?.Cache;
+                    if (cache != null)
+                    {
+                        if (File.Exists(e.FullPath))
+                            cache.AddFile(e.FullPath, DirectoryInfo.FullName);
+                        else if (Directory.Exists(e.FullPath))
+                            cache.AddDirectory(e.FullPath, DirectoryInfo.FullName);
+                    }
+
                     Application.Current?.Dispatcher.BeginInvoke(() =>
                     {
                         // Duplicate protection
@@ -70,6 +81,9 @@ namespace ColorVision.Solution.Explorer
                 };
                 FileSystemWatcher.Deleted += (s, e) =>
                 {
+                    // Update cache
+                    SolutionManager.GetInstance().CurrentSolutionExplorer?.Cache?.Remove(e.FullPath);
+
                     Application.Current?.Dispatcher.BeginInvoke(() =>
                     {
                         var child = VisualChildren.FirstOrDefault(a => a.FullPath == e.FullPath);
@@ -130,51 +144,57 @@ namespace ColorVision.Solution.Explorer
             });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹", Command = AddDirCommand });
-
-            // Add template-based new file items under "Add" menu
-            var templatesByCategory = NewItemTemplateRegistry.GetTemplatesByCategory();
-            int templateOrder = 10;
-            foreach (var category in templatesByCategory)
-            {
-                string categoryGuid = $"AddCategory_{category.Key}";
-                MenuItemMetadatas.Add(new MenuItemMetadata()
-                {
-                    OwnerGuid = "Add",
-                    GuidId = categoryGuid,
-                    Order = templateOrder++,
-                    Header = category.Key
-                });
-                int itemOrder = 1;
-                foreach (var template in category.Value)
-                {
-                    var t = template; // capture
-                    MenuItemMetadatas.Add(new MenuItemMetadata()
-                    {
-                        OwnerGuid = categoryGuid,
-                        GuidId = $"Template_{t.Name}_{t.Extension}",
-                        Order = itemOrder++,
-                        Header = t.Name,
-                        Icon = t.Icon,
-                        Command = new RelayCommand(_ => CreateFromTemplate(t))
-                    });
-                }
-            }
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddNewItem", Order = 1, Header = "新建项(_N)...", Command = new RelayCommand(_ => ShowAddNewItemDialog()) });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddExistingItem", Order = 2, Header = "现有项(_E)...", Command = new RelayCommand(_ => AddExistingItem()) });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 10, Header = "新建文件夹", Command = AddDirCommand });
 
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenInCmdCommad", Order = 200, Header = "在终端中打开", Command = OpenInCmdCommand });
         }
 
-        private void CreateFromTemplate(INewItemTemplate template)
+        private void ShowAddNewItemDialog()
         {
-            var fileInfo = NewItemTemplateRegistry.CreateFromTemplate(template, DirectoryInfo.FullName);
-            if (fileInfo != null)
+            var window = new AddNewItemWindow(DirectoryInfo.FullName)
             {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            if (window.ShowDialog() == true && window.SelectedTemplate != null && window.NewFileName != null)
+            {
+                string fullPath = System.IO.Path.Combine(DirectoryInfo.FullName, window.NewFileName);
+                string? content = window.SelectedTemplate.GetDefaultContent(window.NewFileName);
+                if (content != null)
+                    System.IO.File.WriteAllText(fullPath, content);
+                else
+                    System.IO.File.Create(fullPath).Dispose();
+
+                var fileInfo = new FileInfo(fullPath);
                 var fileNode = SolutionNodeFactory.CreateFileNode(fileInfo);
                 AddChild(fileNode);
                 if (!IsExpanded) IsExpanded = true;
-                fileNode.IsEditMode = true;
                 fileNode.IsSelected = true;
+            }
+        }
+
+        private void AddExistingItem()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "添加现有项",
+                Filter = "所有文件 (*.*)|*.*",
+                Multiselect = true
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                foreach (var sourcePath in dialog.FileNames)
+                {
+                    string destPath = System.IO.Path.Combine(DirectoryInfo.FullName, System.IO.Path.GetFileName(sourcePath));
+                    if (!System.IO.File.Exists(destPath))
+                    {
+                        System.IO.File.Copy(sourcePath, destPath);
+                    }
+                }
+                if (!IsExpanded) IsExpanded = true;
             }
         }
 

@@ -10,7 +10,13 @@ namespace ColorVision.Solution.Explorer
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
             if (sender is TextBox tb && tb.Tag is SolutionNode baseObject)
+            {
+                if (baseObject.IsEditMode)
+                {
+                    baseObject.Name = tb.Text;
+                }
                 baseObject.IsEditMode = false;
+            }
         }
 
         private void PreviewKeyDown(object sender, KeyEventArgs e)

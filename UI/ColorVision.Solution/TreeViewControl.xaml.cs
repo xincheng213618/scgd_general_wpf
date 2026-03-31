@@ -128,6 +128,7 @@ namespace ColorVision.Solution
                 {
                     bool isCtrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
                     bool isShift = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
+                    bool isRightClick = e.RightButton == MouseButtonState.Pressed;
 
                     if (isCtrl)
                     {
@@ -135,28 +136,34 @@ namespace ColorVision.Solution
                         if (_selectedNodes.Contains(node))
                         {
                             _selectedNodes.Remove(node);
-                            node.IsSelected = false;
+                            node.IsMultiSelected = false;
                         }
                         else
                         {
                             _selectedNodes.Add(node);
-                            node.IsSelected = true;
+                            node.IsMultiSelected = true;
                         }
+                        e.Handled = true; // Prevent TreeView from overriding selection
                     }
                     else if (isShift && _selectedNodes.Count > 0)
                     {
-                        // Shift+Click: range select (simplified — select all visible between first and clicked)
-                        // For now, just add to selection
+                        // Shift+Click: add to selection
                         if (!_selectedNodes.Contains(node))
                             _selectedNodes.Add(node);
-                        node.IsSelected = true;
+                        node.IsMultiSelected = true;
+                        e.Handled = true; // Prevent TreeView from overriding selection
+                    }
+                    else if (isRightClick && _selectedNodes.Contains(node))
+                    {
+                        // Right-click on already selected node: keep multi-selection
+                        e.Handled = true;
                     }
                     else
                     {
-                        // Normal click: single select
+                        // Normal click (or right-click on unselected node): single select
                         ClearSelection();
                         _selectedNodes.Add(node);
-                        node.IsSelected = true;
+                        node.IsMultiSelected = true;
                     }
                 }
 
@@ -176,7 +183,7 @@ namespace ColorVision.Solution
         private void ClearSelection()
         {
             foreach (var node in _selectedNodes)
-                node.IsSelected = false;
+                node.IsMultiSelected = false;
             _selectedNodes.Clear();
         }
 
