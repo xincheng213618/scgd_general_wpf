@@ -131,8 +131,51 @@ namespace ColorVision.Solution.Explorer
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹", Command = AddDirCommand });
+
+            // Add template-based new file items under "Add" menu
+            var templatesByCategory = NewItemTemplateRegistry.GetTemplatesByCategory();
+            int templateOrder = 10;
+            foreach (var category in templatesByCategory)
+            {
+                string categoryGuid = $"AddCategory_{category.Key}";
+                MenuItemMetadatas.Add(new MenuItemMetadata()
+                {
+                    OwnerGuid = "Add",
+                    GuidId = categoryGuid,
+                    Order = templateOrder++,
+                    Header = category.Key
+                });
+                int itemOrder = 1;
+                foreach (var template in category.Value)
+                {
+                    var t = template; // capture
+                    MenuItemMetadatas.Add(new MenuItemMetadata()
+                    {
+                        OwnerGuid = categoryGuid,
+                        GuidId = $"Template_{t.Name}_{t.Extension}",
+                        Order = itemOrder++,
+                        Header = t.Name,
+                        Icon = t.Icon,
+                        Command = new RelayCommand(_ => CreateFromTemplate(t))
+                    });
+                }
+            }
+
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenInCmdCommad", Order = 200, Header = "在终端中打开", Command = OpenInCmdCommand });
+        }
+
+        private void CreateFromTemplate(INewItemTemplate template)
+        {
+            var fileInfo = NewItemTemplateRegistry.CreateFromTemplate(template, DirectoryInfo.FullName);
+            if (fileInfo != null)
+            {
+                var fileNode = SolutionNodeFactory.CreateFileNode(fileInfo);
+                AddChild(fileNode);
+                if (!IsExpanded) IsExpanded = true;
+                fileNode.IsEditMode = true;
+                fileNode.IsSelected = true;
+            }
         }
 
         public override void ShowProperty()

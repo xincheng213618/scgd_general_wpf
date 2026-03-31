@@ -181,6 +181,21 @@ namespace ColorVision.Solution.Explorer
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = ColorVision.Solution.Properties.Resources.MenuProperty, Icon = MenuItemIcon.TryFindResource("DIProperty") });
         }
 
+        /// <summary>
+        /// Collect menu items for the shared context menu service.
+        /// Called on-demand when the shared ContextMenu opens on this node.
+        /// This avoids allocating per-node menus until needed.
+        /// </summary>
+        public void CollectMenuItems(List<MenuItemMetadata> target)
+        {
+            if (!_menuInitialized)
+            {
+                InitMenuItem();
+                _menuInitialized = true;
+            }
+            target.AddRange(MenuItemMetadatas);
+        }
+
         public virtual void ShowProperty() { }
 
         public virtual void Delete()

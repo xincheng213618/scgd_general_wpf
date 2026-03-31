@@ -9,6 +9,7 @@ namespace ColorVision.Solution
     public partial class TreeViewControl
     {
         private const string ClipboardFormat = "SolutionNodePath";
+        private bool _isCutOperation;
 
         private void IniCommand()
         {
@@ -18,42 +19,41 @@ namespace ColorVision.Solution
 
             SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) =>
             {
-                if (SelectedTreeViewItem?.DataContext is SolutionNode baseObject) baseObject.Delete();
+                // Multi-select delete
+                var toDelete = _selectedNodes.Where(n => n.CanDelete).ToList();
+                foreach (var node in toDelete)
+                    node.Delete();
             }
-            , (s, e) => e.CanExecute = SelectedTreeViewItem != null && SelectedTreeViewItem.DataContext is SolutionNode baseObject && baseObject.CanDelete));
-
+            , (s, e) => e.CanExecute = _selectedNodes.Any(n => n.CanDelete)));
 
             SolutionTreeView.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) =>
             {
-                if (SelectedTreeViewItem != null && SelectedTreeViewItem.DataContext is SolutionNode baseObject)
-                    baseObject.IsEditMode = true;
-            }, (s, e) => e.CanExecute = SelectedTreeViewItem != null && SelectedTreeViewItem.DataContext is SolutionNode baseObject && baseObject.CanReName));
+                // Rename only works on single selection
+                if (_selectedNodes.Count == 1 && _selectedNodes[0].CanReName)
+                    _selectedNodes[0].IsEditMode = true;
+            }, (s, e) => e.CanExecute = _selectedNodes.Count == 1 && _selectedNodes[0].CanReName));
         }
 
-        #region 通用命令执行函数
+        #region Command Handlers
+
         private void CanExecuteCommand(object sender, CanExecuteRoutedEventArgs e)
         {
-            var node = e.Parameter as SolutionNode
-                ?? SelectedTreeViewItem?.DataContext as SolutionNode;
-
-            if (node == null)
+            if (_selectedNodes.Count == 0)
                 return;
 
-            if (e.Command == ApplicationCommands.SelectAll)
+            if (e.Command == ApplicationCommands.Copy)
             {
-                e.CanExecute = false;
-            }
-            else if (e.Command == ApplicationCommands.Copy)
-            {
-                e.CanExecute = node.CanCopy && !string.IsNullOrEmpty(node.FullPath);
+                e.CanExecute = _selectedNodes.All(n => n.CanCopy && !string.IsNullOrEmpty(n.FullPath));
             }
             else if (e.Command == ApplicationCommands.Cut)
             {
-                e.CanExecute = node.CanCut && !string.IsNullOrEmpty(node.FullPath);
+                e.CanExecute = _selectedNodes.All(n => n.CanCut && !string.IsNullOrEmpty(n.FullPath));
             }
             else if (e.Command == ApplicationCommands.Paste)
             {
-                e.CanExecute = node.CanPaste && Clipboard.ContainsData(ClipboardFormat);
+                e.CanExecute = _selectedNodes.Count == 1
+                    && _selectedNodes[0].CanPaste
+                    && Clipboard.ContainsData(ClipboardFormat);
             }
         }
 
@@ -61,50 +61,80 @@ namespace ColorVision.Solution
         {
             if (e.Command == ApplicationCommands.Copy)
             {
-                var node = e.Parameter as SolutionNode
-                    ?? SelectedTreeViewItem?.DataContext as SolutionNode;
-                if (node != null && !string.IsNullOrEmpty(node.FullPath))
+                var paths = _selectedNodes
+                    .Where(n => !string.IsNullOrEmpty(n.FullPath))
+                    .Select(n => n.FullPath)
+                    .ToArray();
+                if (paths.Length > 0)
                 {
-                    Clipboard.SetData(ClipboardFormat, node.FullPath);
+                    Clipboard.SetData(ClipboardFormat, paths);
+                    _isCutOperation = false;
                 }
             }
             else if (e.Command == ApplicationCommands.Cut)
             {
-                var node = e.Parameter as SolutionNode
-                    ?? SelectedTreeViewItem?.DataContext as SolutionNode;
-                if (node != null && !string.IsNullOrEmpty(node.FullPath))
+                var paths = _selectedNodes
+                    .Where(n => !string.IsNullOrEmpty(n.FullPath))
+                    .Select(n => n.FullPath)
+                    .ToArray();
+                if (paths.Length > 0)
                 {
-                    Clipboard.SetData(ClipboardFormat, node.FullPath);
+                    Clipboard.SetData(ClipboardFormat, paths);
+                    _isCutOperation = true;
                 }
             }
             else if (e.Command == ApplicationCommands.Paste)
             {
-                if (Clipboard.ContainsData(ClipboardFormat))
-                {
-                    var sourcePath = Clipboard.GetData(ClipboardFormat) as string;
-                    var targetNode = SelectedTreeViewItem?.DataContext as SolutionNode;
-                    if (!string.IsNullOrEmpty(sourcePath) && targetNode != null)
-                    {
-                        string targetDir = targetNode.FullPath;
-                        if (targetNode is FileNode)
-                            targetDir = Path.GetDirectoryName(targetNode.FullPath);
+                if (!Clipboard.ContainsData(ClipboardFormat) || _selectedNodes.Count == 0)
+                    return;
 
-                        if (!string.IsNullOrEmpty(targetDir) && Directory.Exists(targetDir))
+                var data = Clipboard.GetData(ClipboardFormat);
+                string[] sourcePaths;
+                if (data is string singlePath)
+                    sourcePaths = new[] { singlePath };
+                else if (data is string[] paths)
+                    sourcePaths = paths;
+                else
+                    return;
+
+                var targetNode = _selectedNodes[0];
+                string targetDir = targetNode.FullPath;
+                if (targetNode is FileNode)
+                    targetDir = Path.GetDirectoryName(targetNode.FullPath) ?? targetDir;
+
+                if (string.IsNullOrEmpty(targetDir) || !Directory.Exists(targetDir))
+                    return;
+
+                foreach (var sourcePath in sourcePaths)
+                {
+                    if (File.Exists(sourcePath))
+                    {
+                        var destPath = Path.Combine(targetDir, Path.GetFileName(sourcePath));
+                        if (!File.Exists(destPath))
                         {
-                            if (File.Exists(sourcePath))
-                            {
-                                var destPath = Path.Combine(targetDir, Path.GetFileName(sourcePath));
-                                if (!File.Exists(destPath))
-                                    File.Copy(sourcePath, destPath);
-                            }
-                            else if (Directory.Exists(sourcePath))
-                            {
-                                var destPath = Path.Combine(targetDir, Path.GetFileName(sourcePath));
-                                if (!Directory.Exists(destPath))
-                                    CopyDirectory(sourcePath, destPath);
-                            }
+                            if (_isCutOperation)
+                                File.Move(sourcePath, destPath);
+                            else
+                                File.Copy(sourcePath, destPath);
                         }
                     }
+                    else if (Directory.Exists(sourcePath))
+                    {
+                        var destPath = Path.Combine(targetDir, Path.GetFileName(sourcePath));
+                        if (!Directory.Exists(destPath))
+                        {
+                            if (_isCutOperation)
+                                Directory.Move(sourcePath, destPath);
+                            else
+                                CopyDirectory(sourcePath, destPath);
+                        }
+                    }
+                }
+
+                if (_isCutOperation)
+                {
+                    Clipboard.Clear();
+                    _isCutOperation = false;
                 }
             }
         }

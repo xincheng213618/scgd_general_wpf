@@ -39,8 +39,16 @@ namespace ColorVision.Solution
     public partial class TreeViewControl : UserControl
     {
         public static SolutionManager SolutionManager => SolutionManager.GetInstance();
+
+        private readonly SolutionContextMenuService _contextMenuService;
+        private readonly List<SolutionNode> _selectedNodes = new();
+
+        public IReadOnlyList<SolutionNode> SelectedNodes => _selectedNodes;
+
         public TreeViewControl()
         {
+            _contextMenuService = new SolutionContextMenuService();
+            _contextMenuService.GetSelectedNodes = () => _selectedNodes;
             InitializeComponent();
         }
 
@@ -96,21 +104,14 @@ namespace ColorVision.Solution
             AllowDrop = true;
             Drop += TreeViewControl_Drop;
 
-            SolutionTreeView.ContextMenu = new ContextMenu();
-            SolutionTreeView.ContextMenuOpening += SolutionTreeView_ContextMenuOpening;
-        }
-
-
-        private void SolutionTreeView_ContextMenuOpening(object sender, ContextMenuEventArgs e)
-        {
+            // Use the shared context menu service instead of per-node ContextMenu
+            SolutionTreeView.ContextMenu = _contextMenuService.ContextMenu;
         }
 
         private Point SelectPoint;
 
         private TreeViewItem? SelectedTreeViewItem;
 
-
-        //第一次的点击逻辑
         protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
         {
             base.OnPreviewMouseDown(e);
@@ -122,24 +123,63 @@ namespace ColorVision.Solution
                 TreeViewItem item = ViewHelper.FindVisualParent<TreeViewItem>(result.VisualHit);
                 if (item == null)
                     return;
-                if (item.DataContext is SolutionNode vObject)
+
+                if (item.DataContext is SolutionNode node)
                 {
-                    vObject.IsSelected = true;
+                    bool isCtrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
+                    bool isShift = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
+
+                    if (isCtrl)
+                    {
+                        // Ctrl+Click: toggle selection
+                        if (_selectedNodes.Contains(node))
+                        {
+                            _selectedNodes.Remove(node);
+                            node.IsSelected = false;
+                        }
+                        else
+                        {
+                            _selectedNodes.Add(node);
+                            node.IsSelected = true;
+                        }
+                    }
+                    else if (isShift && _selectedNodes.Count > 0)
+                    {
+                        // Shift+Click: range select (simplified — select all visible between first and clicked)
+                        // For now, just add to selection
+                        if (!_selectedNodes.Contains(node))
+                            _selectedNodes.Add(node);
+                        node.IsSelected = true;
+                    }
+                    else
+                    {
+                        // Normal click: single select
+                        ClearSelection();
+                        _selectedNodes.Add(node);
+                        node.IsSelected = true;
+                    }
                 }
+
                 if (SelectedTreeViewItem != null && SelectedTreeViewItem != item && SelectedTreeViewItem.DataContext is SolutionNode vobj)
                 {
                     vobj.IsEditMode = false;
                 }
                 SelectedTreeViewItem = item;
-                if (e.ClickCount == 2)
-                {
-                }
             }
             else
             {
+                ClearSelection();
                 SelectedTreeViewItem = null;
             }
         }
+
+        private void ClearSelection()
+        {
+            foreach (var node in _selectedNodes)
+                node.IsSelected = false;
+            _selectedNodes.Clear();
+        }
+
         private readonly char[] Chars = new[] { ' ' };
 
         public void SearchBar1TextChanged()
@@ -160,7 +200,6 @@ namespace ColorVision.Solution
                         ))
                     .ToList();
 
-                // 更新 ListView 的数据源
                 SolutionTreeView.ItemsSource = filteredResults;
             }
         }
@@ -176,7 +215,4 @@ namespace ColorVision.Solution
             e.Handled = true;
         }
     }
-
-
-
 }

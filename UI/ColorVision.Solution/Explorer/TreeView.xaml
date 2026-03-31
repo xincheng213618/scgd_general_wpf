@@ -72,7 +72,7 @@
     </Style>
 
     <HierarchicalDataTemplate DataType="{x:Type Explorer:SolutionExplorer}"   ItemsSource="{Binding VisualChildren}">
-        <StackPanel Style="{StaticResource TreeViewItemPanel}" ContextMenu="{Binding ContextMenu}" >
+        <StackPanel Style="{StaticResource TreeViewItemPanel}" >
             <TextBlock Text=" '"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
             <TextBlock Text="'"/>
@@ -80,13 +80,13 @@
     </HierarchicalDataTemplate>
 
     <HierarchicalDataTemplate DataType="{x:Type Explorer:FileNode}"   ItemsSource="{Binding VisualChildren}">
-        <StackPanel Style="{StaticResource TreeViewItemPanel}" ContextMenu="{Binding ContextMenu}">
+        <StackPanel Style="{StaticResource TreeViewItemPanel}">
             <Image Source="{Binding Icon}" Height="14" Margin="0,0,1,0"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
         </StackPanel>
     </HierarchicalDataTemplate>
     <HierarchicalDataTemplate DataType="{x:Type Explorer:FolderNode}"   ItemsSource="{Binding VisualChildren}">
-        <StackPanel Style="{StaticResource TreeViewItemPanel}" ContextMenu="{Binding ContextMenu}" >
+        <StackPanel Style="{StaticResource TreeViewItemPanel}" >
             <Image Source="{Binding Icon}" Height="15" Margin="0,0,1,0"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
         </StackPanel>

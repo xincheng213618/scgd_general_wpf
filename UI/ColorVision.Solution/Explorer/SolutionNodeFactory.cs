@@ -18,6 +18,7 @@ namespace ColorVision.Solution.Explorer
             if (_registriesInitialized) return;
             FolderMetaRegistry.RegisterFolderMetasFromAssemblies();
             FileMetaRegistry.RegisterFileMetasFromAssemblies();
+            NewItemTemplateRegistry.Initialize();
             _registriesInitialized = true;
         }
 

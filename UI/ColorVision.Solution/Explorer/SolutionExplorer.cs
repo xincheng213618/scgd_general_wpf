@@ -195,6 +195,36 @@ namespace ColorVision.Solution.Explorer
                 Header = ColorVision.Solution.Properties.Resources.AddFolder,
                 Command = AddDirCommand
             });
+
+            // Add template-based new file items under "Add" menu
+            var templatesByCategory = NewItemTemplateRegistry.GetTemplatesByCategory();
+            int templateOrder = 10;
+            foreach (var category in templatesByCategory)
+            {
+                string categoryGuid = $"AddCategory_{category.Key}";
+                MenuItemMetadatas.Add(new MenuItemMetadata()
+                {
+                    OwnerGuid = "Add",
+                    GuidId = categoryGuid,
+                    Order = templateOrder++,
+                    Header = category.Key
+                });
+                int itemOrder = 1;
+                foreach (var template in category.Value)
+                {
+                    var t = template;
+                    MenuItemMetadatas.Add(new MenuItemMetadata()
+                    {
+                        OwnerGuid = categoryGuid,
+                        GuidId = $"Template_{t.Name}_{t.Extension}",
+                        Order = itemOrder++,
+                        Header = t.Name,
+                        Icon = t.Icon,
+                        Command = new RelayCommand(_ => CreateFromTemplate(t))
+                    });
+                }
+            }
+
             MenuItemMetadatas.Add(new MenuItemMetadata
             {
                 GuidId = "CopyFullPath",
@@ -210,6 +240,18 @@ namespace ColorVision.Solution.Explorer
                 Command = OpenFileInExplorerCommand,
                 Header = Resources.MenuOpenFileInExplorer
             });
+        }
+
+        private void CreateFromTemplate(INewItemTemplate template)
+        {
+            var fileInfo = NewItemTemplateRegistry.CreateFromTemplate(template, DirectoryInfo.FullName);
+            if (fileInfo != null)
+            {
+                var fileNode = SolutionNodeFactory.CreateFileNode(fileInfo);
+                AddChild(fileNode);
+                fileNode.IsEditMode = true;
+                fileNode.IsSelected = true;
+            }
         }
 
 
