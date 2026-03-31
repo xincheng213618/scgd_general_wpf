@@ -155,7 +155,10 @@ namespace ColorVision.Engine.Templates.POI
                     PoiConfig.IsUserDraw = false;
                     if (e.Visual is DVCircleText dVCircleText)
                     {
-
+                        PoiConfig.CenterX = (int)dVCircleText.Attribute.Center.X;
+                        PoiConfig.CenterY = (int)dVCircleText.Attribute.Center.Y;
+                        PoiConfig.AreaCircleRadius = (int)dVCircleText.Attribute.Radius;
+                        RenderPoiConfig();
                         dVCircleText.Attribute.PropertyChanged += (s, e) =>
                         {
                             PoiConfig.CenterX = (int)dVCircleText.Attribute.Center.X;
@@ -166,17 +169,44 @@ namespace ColorVision.Engine.Templates.POI
                     }
                     if (e.Visual is DVRectangleText dVRectangleText)
                     {
+                        UpdateAreaFromRect(dVRectangleText.Attribute.Rect);
                         dVRectangleText.Attribute.PropertyChanged += (s, e) =>
                         {
-                            PoiConfig.CenterX = (int)(dVRectangleText.Attribute.Rect.Width / 2 + dVRectangleText.Attribute.Rect.X);
-                            PoiConfig.CenterY = (int)(dVRectangleText.Attribute.Rect.Height / 2 + dVRectangleText.Attribute.Rect.Y);
-                            PoiConfig.AreaRectWidth = (int)dVRectangleText.Attribute.Rect.Width;
-                            PoiConfig.AreaRectHeight = (int)dVRectangleText.Attribute.Rect.Height;
-                            RenderPoiConfig();
+                            UpdateAreaFromRect(dVRectangleText.Attribute.Rect);
                         };
                     }
+                    ImageShow.RemoveVisualCommand((System.Windows.Media.Visual)e.Visual);
                 }
             };
+        }
+
+        private void UpdateAreaFromRect(Rect rect)
+        {
+            if (PoiConfig.PointType == GraphicTypes.Quadrilateral)
+            {
+                PoiConfig.Polygon1X = (int)rect.X;
+                PoiConfig.Polygon1Y = (int)rect.Y;
+                PoiConfig.Polygon2X = (int)(rect.X + rect.Width);
+                PoiConfig.Polygon2Y = (int)rect.Y;
+                PoiConfig.Polygon3X = (int)(rect.X + rect.Width);
+                PoiConfig.Polygon3Y = (int)(rect.Y + rect.Height);
+                PoiConfig.Polygon4X = (int)rect.X;
+                PoiConfig.Polygon4Y = (int)(rect.Y + rect.Height);
+            }
+            else
+            {
+                PoiConfig.CenterX = (int)(rect.Width / 2 + rect.X);
+                PoiConfig.CenterY = (int)(rect.Height / 2 + rect.Y);
+                PoiConfig.AreaRectWidth = (int)rect.Width;
+                PoiConfig.AreaRectHeight = (int)rect.Height;
+            }
+            RenderPoiConfig();
+        }
+
+        private void DrawAreaOnImage_Click(object sender, RoutedEventArgs e)
+        {
+            PoiConfig.IsUserDraw = true;
+            PoiConfig.IsShowPoiConfig = true;
         }
 
         private ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();

@@ -145,6 +145,7 @@
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5" >
                                 <ToggleButton  HorizontalAlignment="Left"  Height="16" Style="{StaticResource ToggleButtonSwitch}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsUserDraw}"/>
                                 <TextBlock  HorizontalAlignment="Left" Text="使用绘图添加布点区域"/>
+                                <Button Content="框选区域" Margin="10,0,0,0" Height="22" Padding="8,0" Click="DrawAreaOnImage_Click" ToolTip="在图像上框选设置布点区域"/>
                                 <ToggleButton HorizontalAlignment="Left" Height="16" Margin="10,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
                                 <TextBlock   HorizontalAlignment="Left"  Text="布点区域显示"/>
                             </StackPanel>
