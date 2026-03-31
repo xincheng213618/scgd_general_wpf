@@ -46,7 +46,7 @@ namespace ColorVision.ImageEditor
         /// <summary>
         /// For polygon/quadrilateral selections: the collection of points
         /// </summary>
-        public List<Point> Points { get; set; }
+        public List<Point> Points { get; set; } = new();
     }
 
     /// <summary>
@@ -96,7 +96,9 @@ namespace ColorVision.ImageEditor
             _previousActivateOn = _zoombox.ActivateOn;
             _previousEditMode = _imageViewModel.ImageEditMode;
 
-            // Suppress edit mode so SelectEditorVisual doesn't interfere
+            // Suppress edit mode so SelectEditorVisual doesn't interfere.
+            // Use backing field directly to avoid the property setter's side effects
+            // (cursor change, ActivateOn toggle, DrawEditorManager reset).
             if (_previousEditMode)
             {
                 _imageViewModel._ImageEditMode = false;
@@ -347,7 +349,7 @@ namespace ColorVision.ImageEditor
 
             _drawCanvas.ReleaseMouseCapture();
 
-            // Restore previous state
+            // Restore previous state (use backing field to avoid property setter side effects)
             _zoombox.Cursor = _previousCursor;
             _zoombox.ActivateOn = _previousActivateOn;
             if (_previousEditMode)
