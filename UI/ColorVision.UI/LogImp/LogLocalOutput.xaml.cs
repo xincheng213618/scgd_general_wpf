@@ -25,9 +25,11 @@ namespace ColorVision.UI.LogImp
         /// </summary>
         public WindowLogLocalConfig Config => ConfigHandler.GetInstance().GetRequiredService<WindowLogLocalConfig>();
 
-        private DispatcherTimer _refreshTimer;
+        private DispatcherTimer? _refreshTimer;
         private long _lastReadPosition;
         private readonly object _fileLock = new object();
+        private FileSystemWatcher? _fileWatcher;
+        private bool _fileChangePending;
 
         /// <summary>
         /// File encoding (defaults to system default; use GB2312 for C++ logs on Chinese Windows).
@@ -61,10 +63,8 @@ namespace ColorVision.UI.LogImp
 
             SearchBar1Brush = SearchBar1.BorderBrush;
 
-            this.Unloaded += (s, e) =>
-            {
-                _refreshTimer?.Stop();
-            };
+            this.Loaded += UserControl_Loaded;
+            this.Unloaded += UserControl_Unloaded;
 
             // Initial load
             LoadLogFile();
@@ -74,30 +74,107 @@ namespace ColorVision.UI.LogImp
             };
             _refreshTimer.Tick += RefreshTimer_Tick;
 
+            // Setup FileSystemWatcher for immediate file change detection
+            SetupFileWatcher();
+
             // Listen for config changes
-            Config.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(WindowLogLocalConfig.RefreshIntervalMs))
-                {
-                    _refreshTimer.Interval = TimeSpan.FromMilliseconds(Config.RefreshIntervalMs);
-                }
-                else if (e.PropertyName == nameof(WindowLogLocalConfig.AutoRefresh))
-                {
-                    if (Config.AutoRefresh)
-                        _refreshTimer.Start();
-                    else
-                        _refreshTimer.Stop();
-                }
-                else if (e.PropertyName == nameof(WindowLogLocalConfig.LogReverse))
-                {
-                    _lastReadPosition = 0;
-                    LoadLogFile();
-                }
-            };
+            Config.PropertyChanged += Config_PropertyChanged;
 
             if (Config.AutoRefresh)
             {
                 _refreshTimer.Start();
+                EnableFileWatcher(true);
+            }
+        }
+
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (Config.AutoRefresh)
+            {
+                _refreshTimer?.Start();
+                EnableFileWatcher(true);
+                // Catch up on any changes missed while unloaded
+                ReadNewLogContent();
+            }
+        }
+
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _refreshTimer?.Stop();
+            EnableFileWatcher(false);
+        }
+
+        private void SetupFileWatcher()
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(LogFilePath);
+                var fileName = Path.GetFileName(LogFilePath);
+                if (string.IsNullOrEmpty(dir) || string.IsNullOrEmpty(fileName)) return;
+                if (!Directory.Exists(dir)) return;
+
+                _fileWatcher = new FileSystemWatcher(dir, fileName)
+                {
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
+                    EnableRaisingEvents = false
+                };
+                _fileWatcher.Changed += OnFileChanged;
+                _fileWatcher.Created += OnFileChanged;
+            }
+            catch
+            {
+                // FileSystemWatcher may fail on network paths; fall back to timer-only
+            }
+        }
+
+        private void EnableFileWatcher(bool enable)
+        {
+            if (_fileWatcher != null)
+            {
+                try { _fileWatcher.EnableRaisingEvents = enable; }
+                catch { /* path may no longer be valid */ }
+            }
+        }
+
+        private void OnFileChanged(object sender, FileSystemEventArgs e)
+        {
+            if (_fileChangePending) return;
+            _fileChangePending = true;
+
+            Dispatcher.BeginInvoke(() =>
+            {
+                _fileChangePending = false;
+                if (Config.AutoRefresh)
+                {
+                    ReadNewLogContent();
+                }
+            }, DispatcherPriority.Background);
+        }
+
+        private void Config_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(WindowLogLocalConfig.RefreshIntervalMs))
+            {
+                if (_refreshTimer != null)
+                    _refreshTimer.Interval = TimeSpan.FromMilliseconds(Config.RefreshIntervalMs);
+            }
+            else if (e.PropertyName == nameof(WindowLogLocalConfig.AutoRefresh))
+            {
+                if (Config.AutoRefresh)
+                {
+                    _refreshTimer?.Start();
+                    EnableFileWatcher(true);
+                }
+                else
+                {
+                    _refreshTimer?.Stop();
+                    EnableFileWatcher(false);
+                }
+            }
+            else if (e.PropertyName == nameof(WindowLogLocalConfig.LogReverse))
+            {
+                _lastReadPosition = 0;
+                LoadLogFile();
             }
         }
 
@@ -137,7 +214,7 @@ namespace ColorVision.UI.LogImp
                     }
 
                     logTextBox.Text = string.Join(Environment.NewLine, lines);
-                    _lastReadPosition = fileStream.Position;
+                    _lastReadPosition = fileStream.Length;
                 }
 
                 if (Config.AutoScrollToEnd && !Config.LogReverse)
@@ -186,7 +263,7 @@ namespace ColorVision.UI.LogImp
                     }
 
                     fileStream.Seek(_lastReadPosition, SeekOrigin.Begin);
-                    using var reader = new StreamReader(fileStream, Encoding);
+                    using var reader = new StreamReader(fileStream, Encoding, detectEncodingFromByteOrderMarks: false);
 
                     var newLines = new List<string>();
                     string? line;
@@ -250,7 +327,7 @@ namespace ColorVision.UI.LogImp
                         }
                     }
 
-                    _lastReadPosition = fileStream.Position;
+                    _lastReadPosition = fileStream.Length;
                 }
             }
             catch (IOException)
