@@ -37,10 +37,8 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Row="0"  Width="220" >
-                    <StackPanel Margin="0,0,0,5">
-                        <TextBox Text="{Binding FlowEngineManager.SlectFlowParam.Name}" Style="{DynamicResource TextBox.Small}"/>
-                    </StackPanel>
+                <StackPanel Grid.Row="0"  Width="250" >
+
                     <UniformGrid  Columns="6" Margin="0,0,0,5">
                         <Button Command="{Binding SaveCommand}" Height="30" Width="30"  Margin="0,0,5,0" Padding="2">
                             <Image Source="{DynamicResource DrawingImageSave}" Height="20" />
@@ -94,35 +92,12 @@
                         </StackPanel>
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
                             <Button Content="{x:Static properties:Resources.ParsingManagement}" Click="Button_Click_1" Margin="0,0,5,0"/>
-                            <Button Content="{x:Static properties:Resources.PreprocessManager}" Click="Button_Click_PreProcess"/>
-                        </StackPanel>
-                        <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                            <Button Content="{x:Static properties:Resources.PreprocessManager}" Click="Button_Click_PreProcess"  Margin="0,0,5,0"/>
                             <Button Content="节点时间分析" Click="Button_Click_NodeAnalysis"/>
                         </StackPanel>
+
                     </StackPanel>
                 </StackPanel>
-                <ListView x:Name="NodeListView" Grid.Column="2" Height="110" Padding="0" BorderThickness="0" Background="Transparent"  SelectionChanged="NodeListView_SelectionChanged" ItemsSource="{Binding FlowEngineManager.CVBaseServerNodes}">
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                    <ListView.View>
-                        <GridView >
-                            <GridView.ColumnHeaderContainerStyle>
-                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                </Style>
-                            </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn   Width="230">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Title,Mode=OneWay}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
 
                 <Grid Grid.Column="1">
                     <Grid.RowDefinitions>
@@ -134,20 +109,6 @@
                     <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Height="35">
                         <Button Content="{x:Static properties:Resources.ExecutionProcess}"  x:Name="ButtonRun" Visibility="{Binding FlowEngineManager.FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter1}}" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
                         <Button Content="{x:Static properties:Resources.StopProcess}"  x:Name="ButtonStop" Visibility="{Binding FlowEngineManager.FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter}}" FontWeight="Bold" FontSize="16" Click="Button_FlowStop_Click" />
-                    </StackPanel>
-                    <StackPanel  Grid.Row="1" VerticalAlignment="Bottom" Orientation="Horizontal">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
-                            <Button Content="x64" Command="{Binding FlowEngineManager.WindowsServiceX64.OpenLogCommand}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
-                            <Button Content="dev" Command="{Binding FlowEngineManager.WindowsServiceDev.OpenLogCommand}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,5,0">
-                            <Button Content="RC" Command="{Binding FlowEngineManager.WindowsServiceReg.OpenLogCommand}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="Camera" Command="{Binding FlowEngineManager.OpenCameraLogCommand}"/>
-                        </StackPanel>
                     </StackPanel>
                 </Grid>
 

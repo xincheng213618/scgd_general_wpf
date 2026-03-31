@@ -74,9 +74,8 @@ namespace ColorVision.Solution.Explorer
             });
 
             InitializeSolution();
-            InitializeFileSystemWatcher();
 
-            // Initialize SQLite cache for faster subsequent loads
+            // Initialize SQLite cache BEFORE file watcher to avoid watcher picking up cache.db creation
             try
             {
                 Cache = new SolutionCache(SolutionEnvironments.SolutionPath);
@@ -86,6 +85,8 @@ namespace ColorVision.Solution.Explorer
                 Logger.Warn($"缓存初始化失败，使用文件系统加载: {ex.Message}");
                 Cache = null;
             }
+
+            InitializeFileSystemWatcher();
 
             var stopwatch = Stopwatch.StartNew();
             SolutionNodeFactory.PopulateChildren(this, DirectoryInfo, Cache);
@@ -169,6 +170,10 @@ namespace ColorVision.Solution.Explorer
 
         private void FileSystemWatcher_Created(object sender, FileSystemEventArgs e)
         {
+            // Skip internal solution files (e.g. .cvsln, .cache.db)
+            if (e.Name != null && SolutionNodeFactory.IsInternalFile(e.Name))
+                return;
+
             // Update cache
             if (Cache != null)
             {

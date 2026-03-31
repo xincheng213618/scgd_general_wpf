@@ -149,8 +149,7 @@ namespace ColorVision.Solution.Explorer
 
                 foreach (var file in dirInfo.GetFiles())
                 {
-                    if (file.Extension.Contains("cvsln")) continue;
-                    if (file.Extension.Contains("cvproj")) continue;
+                    if (SolutionNodeFactory.IsInternalFile(file.Name)) continue;
 
                     var entry = new FileTreeCacheEntry
                     {
@@ -192,7 +191,7 @@ namespace ColorVision.Solution.Explorer
                         .Where(d => (d.Attributes & FileAttributes.Hidden) != FileAttributes.Hidden)
                         .ToList();
                     var actualFiles = dirInfo.GetFiles()
-                        .Where(f => !f.Extension.Contains("cvsln") && !f.Extension.Contains("cvproj"))
+                        .Where(f => !SolutionNodeFactory.IsInternalFile(f.Name))
                         .ToList();
 
                     int expectedCount = actualDirs.Count + actualFiles.Count;

@@ -134,10 +134,20 @@ namespace ColorVision.Solution.Explorer
             }
         }
 
+        /// <summary>
+        /// Check if a file is an internal solution file that should be hidden from the tree.
+        /// </summary>
+        public static bool IsInternalFile(string fileName)
+        {
+            if (fileName.EndsWith(".cvsln", StringComparison.OrdinalIgnoreCase)) return true;
+            if (fileName.EndsWith(".cvproj", StringComparison.OrdinalIgnoreCase)) return true;
+            if (fileName.EndsWith(".cvsln.cache.db", StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
+
         public static void AddFileNode(ISolutionNode parent, FileInfo fileInfo)
         {
-            if (fileInfo.Extension.Contains("cvsln")) return;
-            if (fileInfo.Extension.Contains("cvproj")) return;
+            if (IsInternalFile(fileInfo.Name)) return;
 
             if (fileInfo.Extension.Contains("lnk"))
             {
