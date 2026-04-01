@@ -367,7 +367,7 @@ public class MQTTHelper
         return Task.CompletedTask;
     }
 
-    private Task DisconnectedHandle(MqttClientDisconnectedEventArgs arg)
+    private async Task DisconnectedHandle(MqttClientDisconnectedEventArgs arg)
     {
         _Callback?.Invoke(new ResultData_MQTT
         {
@@ -376,15 +376,20 @@ public class MQTTHelper
             ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>已断开与MQTT服务器连接！"
         });
 
-        // 自动重连逻辑建议由外部控制或使用 Reconnect 策略，这里简单保留原逻辑
-        // 注意：v5 中如果在 DisconnectedHandle 直接调用 Reconnect 可能引发死锁或异常，建议使用 Task.Run
+        // 延迟重连，避免频繁重连浪费资源
         if (_MqttClient != null)
         {
-            Task.Run(async () => {
-                try { await _MqttClient.ReconnectAsync(); } catch { /* log error */ }
-            });
+            try
+            {
+                await Task.Delay(2000);
+                if (_MqttClient != null)
+                    await _MqttClient.ReconnectAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.WarnFormat("MQTT重连失败：{0}", ex.Message);
+            }
         }
-        return Task.CompletedTask;
     }
 
     private Task ApplicationMessageReceivedHandle(MqttApplicationMessageReceivedEventArgs arg)
@@ -401,7 +406,8 @@ public class MQTTHelper
             ResultObject2 = payload
         };
 
-        _Callback?.Invoke(resultData);
+        // 将回调分发到线程池，避免阻塞 MQTTnet 内部消息分发线程
+        Task.Run(() => _Callback?.Invoke(resultData));
         return Task.CompletedTask;
     }
 

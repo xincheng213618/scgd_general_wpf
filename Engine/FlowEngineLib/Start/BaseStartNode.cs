@@ -59,8 +59,7 @@ public abstract class BaseStartNode : CVCommonNode
 		}
 		m_op_start.Connected += m_op_start_Connected;
 		m_op_start.DisConnected += m_op_start_DisConnected;
-		ThreadPool.SetMinThreads(1, 1);
-		ThreadPool.SetMaxThreads(5, 5);
+		ThreadPool.SetMinThreads(8, 8);
 	}
 
 	public void DoLoopNextAction(CVLoopCFC next)

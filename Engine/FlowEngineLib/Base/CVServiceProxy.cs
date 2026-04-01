@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,7 +19,7 @@ public class CVServiceProxy
 
 	protected STNodeOption m_in_act_status;
 
-	protected Dictionary<string, CVTransAction> m_trans_action;
+	protected ConcurrentDictionary<string, CVTransAction> m_trans_action = new();
 
 	protected bool m_is_out_release;
 
@@ -95,15 +96,14 @@ public class CVServiceProxy
 	public void DoServerTransfer(CVStartCFC action, STNodeOptionEventArgs e)
 	{
 		CVTransAction cVTransAction = null;
-		if (m_trans_action.ContainsKey(action.SerialNumber))
+		if (m_trans_action.TryGetValue(action.SerialNumber, out cVTransAction))
 		{
-			cVTransAction = m_trans_action[action.SerialNumber];
 			cVTransAction.trans_action = action;
 		}
 		else if (action.IsRunning)
 		{
 			cVTransAction = new CVTransAction(action);
-			m_trans_action.Add(action.SerialNumber, cVTransAction);
+			m_trans_action.TryAdd(action.SerialNumber, cVTransAction);
 			logger.DebugFormat("{0} DoServerTransfer => {1}", Title, action.SerialNumber);
 		}
 		if (cVTransAction != null)
@@ -228,7 +228,7 @@ public class CVServiceProxy
 		if (m_is_out_release)
 		{
 			logger.DebugFormat("{0} DoOutAction => {1}/{2}", Title, trans.trans_action.SerialNumber, cmd.cmd.MsgID);
-			m_trans_action.Remove(trans.trans_action.SerialNumber);
+			m_trans_action.TryRemove(trans.trans_action.SerialNumber, out _);
 		}
 		else
 		{
@@ -313,16 +313,16 @@ public class CVServiceProxy
 		return trans.trans_action.FlowStatus == StatusTypeEnum.Paused;
 	}
 
-	private void WaitingOverTime(CVBaseEventCmd cmd)
+	private async void WaitingOverTime(CVBaseEventCmd cmd)
 	{
 		CVMQTTRequest cmd2 = cmd.cmd;
 		int maxDelay = GetMaxDelay();
-		Task<bool> task = cmd.waiter.WaitForMessage(maxDelay);
+		bool result = await cmd.waiter.WaitForMessageAsync(maxDelay);
 		if (logger.IsInfoEnabled)
 		{
-			logger.InfoFormat("{0}/{1}/{2}/{3} => Task.WaitOverTime={4}[{5} ms]", Title, DeviceCode, ZIndex, NodeID, task.Result, maxDelay);
+			logger.InfoFormat("{0}/{1}/{2}/{3} => Task.WaitOverTime={4}[{5} ms]", Title, DeviceCode, ZIndex, NodeID, result, maxDelay);
 		}
-		if (task.Result)
+		if (result)
 		{
 			return;
 		}
@@ -341,13 +341,12 @@ public class CVServiceProxy
 
 	private CVTransAction RemoveTrans(string serialNumber, string svrEventId)
 	{
-		if (m_trans_action.ContainsKey(serialNumber))
+		if (m_trans_action.TryGetValue(serialNumber, out var cVTransAction))
 		{
-			CVTransAction cVTransAction = m_trans_action[serialNumber];
 			if (cVTransAction.m_sever_actionEvent.ContainsKey(svrEventId))
 			{
 				logger.DebugFormat("{0} RemoveTrans => {1}/{2}", Title, serialNumber, svrEventId);
-				m_trans_action.Remove(serialNumber);
+				m_trans_action.TryRemove(serialNumber, out _);
 				return cVTransAction;
 			}
 		}
@@ -370,9 +369,8 @@ public class CVServiceProxy
 
 	private CVTransAction GetCVTransByEvent(string serialNumber, string eventName)
 	{
-		if (!string.IsNullOrEmpty(serialNumber) && m_trans_action.ContainsKey(serialNumber))
+		if (!string.IsNullOrEmpty(serialNumber) && m_trans_action.TryGetValue(serialNumber, out var result))
 		{
-			CVTransAction result = m_trans_action[serialNumber];
 			if (string.IsNullOrEmpty(eventName))
 			{
 				return result;
