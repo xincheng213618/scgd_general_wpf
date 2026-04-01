@@ -544,6 +544,7 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineManager.BatchProgress = 0;
 
             _nodeRecords.Clear();
+            FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
             FlowControl.FlowCompleted += FlowControl_FlowCompleted;
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
 
@@ -551,7 +552,17 @@ namespace ColorVision.Engine.Templates.Flow
             stopwatch.Start();
 
             timer.Change(0, 100); // 启动定时器
-            FlowEngineManager.Batch = new MeasureBatchModel() { TId = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Id, Name = sn, Code = sn };
+            int selectedIndex = ComboBoxFlow.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= TemplateFlow.Params.Count)
+            {
+                FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                stopwatch.Stop();
+                timer.Change(Timeout.Infinite, 500);
+                View.logTextBox.Text = "未选择有效的流程模板";
+                log.Warn("未选择有效的流程模板");
+                return;
+            }
+            FlowEngineManager.Batch = new MeasureBatchModel() { TId = TemplateFlow.Params[selectedIndex].Id, Name = sn, Code = sn };
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
             FlowEngineManager.Batch.Id = Db.Insertable(FlowEngineManager.Batch).ExecuteReturnIdentity();
@@ -561,6 +572,7 @@ namespace ColorVision.Engine.Templates.Flow
             bool preresult = await PreProcessing(FlowName, sn);
             if (!preresult)
             {
+                FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
                 stopwatch.Stop();
                 timer.Change(Timeout.Infinite, 500);
                 View.logTextBox.Text = "预处理失败，流程取消执行";
@@ -578,6 +590,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void StopFlow()
         {
+            FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
             FlowControl?.Stop();
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
@@ -585,7 +598,7 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineManager.Batch.FlowStatus = FlowStatus.Canceled;
             FlowEngineManager.Batch.TotalTime = (int)stopwatch.ElapsedMilliseconds;
             using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            Db.Updateable(FlowEngineManager.Batch);
+            Db.Updateable(FlowEngineManager.Batch).ExecuteCommand();
             View.logTextBox.Text = ColorVision.Engine.Properties.Resources.ExecutionCancelled;
 
         }
