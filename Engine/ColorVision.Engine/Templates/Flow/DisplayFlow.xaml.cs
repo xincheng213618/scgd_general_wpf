@@ -65,6 +65,7 @@ namespace ColorVision.Engine.Templates.Flow
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
         private int _pendingUiUpdate;
+        private CancellationTokenSource _refreshCts;
 
         public DisplayFlow(FlowEngineManager flowEngineManager)
         {
@@ -108,7 +109,7 @@ namespace ColorVision.Engine.Templates.Flow
                         LastFlowTime = time;
 
                 }
-                _ = Refresh();
+                _ = DebouncedRefresh();
             };
 
 
@@ -140,6 +141,22 @@ namespace ColorVision.Engine.Templates.Flow
                 ComboBoxFlow.SelectedIndex = 0;
             }
             this.Loaded -= FlowDisplayControl_Loaded;
+        }
+
+        private async Task DebouncedRefresh()
+        {
+            _refreshCts?.Cancel();
+            var cts = new CancellationTokenSource();
+            _refreshCts = cts;
+            try
+            {
+                await Task.Delay(200, cts.Token);
+            }
+            catch (TaskCanceledException)
+            {
+                return;
+            }
+            await Refresh();
         }
 
         bool IsRefresh;
@@ -451,7 +468,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     record.EndTime = DateTime.Now;
                     record.ElapsedMs = (long)(record.EndTime.Value - record.StartTime).TotalMilliseconds;
-                    FlowNodeRecordDataBaseHelper.Update(record);
+                    Task.Run(() => FlowNodeRecordDataBaseHelper.Update(record));
                 }
             }
         }
@@ -477,9 +494,12 @@ namespace ColorVision.Engine.Templates.Flow
                     NodeType = algorithmNode.NodeType,
                     StartTime = DateTime.Now,
                 };
-                int insertId = FlowNodeRecordDataBaseHelper.Insert(record);
-                if (insertId > 0)
-                    _nodeRecords[algorithmNode.NodeID] = record;
+                _nodeRecords[algorithmNode.NodeID] = record;
+                Task.Run(() => {
+                    int insertId = FlowNodeRecordDataBaseHelper.Insert(record);
+                    if (insertId <= 0)
+                        _nodeRecords.TryRemove(algorithmNode.NodeID, out _);
+                });
             }
         }
 
@@ -624,6 +644,8 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void Dispose()
         {
+            _refreshCts?.Cancel();
+            _refreshCts?.Dispose();
             timer.Dispose();
             GC.SuppressFinalize(this);
         }
