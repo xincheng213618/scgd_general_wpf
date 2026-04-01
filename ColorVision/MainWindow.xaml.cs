@@ -175,11 +175,6 @@ namespace ColorVision
             // 将所有已注册的视图创建为文档标签页
             DockViewManager.ShowAllViews();
 
-            // 激活第一个 Flow 视图（如果有的话）
-            var firstFlowView = DockViewManager.Views.OfType<ColorVision.Engine.Services.Flow.ViewFlow>().FirstOrDefault();
-            if (firstFlowView != null)
-                DockViewManager.ActiveView(firstFlowView);
-
             // 切换到 DeviceControl 面板时，跳转到上次显示的视图
             HookAcquirePanelActivation();
 

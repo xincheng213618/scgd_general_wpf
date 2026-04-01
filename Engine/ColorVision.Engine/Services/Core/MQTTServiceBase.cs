@@ -21,8 +21,6 @@ namespace ColorVision.Engine.Services
         public MQTTControl MQTTControl { get; set; }
 
         public virtual DeviceStatusType DeviceStatus { get; set; }
-        public event EventHandler Connected;
-        public event EventHandler DisConnected;
 
         private Timer _heartbeatTimer;
 
@@ -56,28 +54,7 @@ namespace ColorVision.Engine.Services
                     if (json.EventName == "Heartbeat")
                     {
                         LastAliveTime = DateTime.Now;
-                        if (!IsAlive)
-                        {
-                            Connected?.Invoke(this, new EventArgs());
-                        }
                         IsAlive = true;
-                        return Task.CompletedTask;
-                    }
-                    //Token unavailable
-                    if (json.Code == -10)
-                    {
-                        log.Warn("token 失效，正在重新获取");
-                        MqttRCService.GetInstance().QueryServices();
-                        return Task.CompletedTask;
-                    }
-                    //if (json.Code == 102)
-                    //{
-                    //    return Task.CompletedTask;
-                    //}
-
-                    if (json.Code != 0 && json.Code != 1 && json.Code != -1&& json.Code != -401)
-                    {
-                        MsgReturnReceived?.Invoke(json);
                         return Task.CompletedTask;
                     }
 
@@ -143,7 +120,6 @@ namespace ColorVision.Engine.Services
             long overTime = 2* HeartbeatTime;
             if (sp > TimeSpan.FromMilliseconds(overTime))
             {
-                DisConnected?.Invoke(sender, new EventArgs());
                 IsAlive = false;
             }
             else

@@ -26,14 +26,6 @@ namespace ColorVision.UI
             manager.AddView(viewControl);
             if (!string.IsNullOrEmpty(title))
                 manager.ViewTitles[viewControl] = title;
-
-            if (userControl is IDisPlayControl disPlayControl)
-            {
-                disPlayControl.Selected += (s, e) =>
-                {
-                    DockViewManager.GetInstance().ActiveView(viewControl);
-                };
-            }
         }
 
 

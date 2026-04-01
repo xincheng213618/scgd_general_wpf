@@ -60,7 +60,6 @@ namespace ColorVision.Engine.MQTT
             {
                 await MQTTClient.ConnectAsync(options);
                 IsConnect = true;
-                log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT connected");
                 return true;
             }
             catch (Exception ex)
