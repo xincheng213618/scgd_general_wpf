@@ -17,10 +17,6 @@ namespace ColorVision.Database
         public override string GuidId => nameof(ExportMySqlMenuItem);
         public override string Header => "MySql";
         public override int Order => 20;
-        public override void Execute()
-        {
-            new MySqlConnect() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
     }
 
     public class ExportMySqlConnect : MenuItemBase

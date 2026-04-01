@@ -7,185 +7,126 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Solution.Properties"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.Sign_in}" Height="650"  Width="450" 
-        Background="{DynamicResource GlobalBackground}" 
+        Title="{x:Static properties:Resources.Sign_in}" Height="550"  Width="420" 
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStyle="None"
         Initialized="Window_Initialized"
         WindowStartupLocation="CenterScreen"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
     <Window.Resources>
-        <!-- 现代化按钮样式 -->
-        <Style x:Key="ModernButton" TargetType="Button">
-            <Setter Property="Background" Value="#0078D4"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="15,10"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="Medium"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
-                                CornerRadius="6"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                BorderBrush="{TemplateBinding BorderBrush}">
-                            <ContentPresenter HorizontalAlignment="Center" 
-                                            VerticalAlignment="Center"
-                                            Margin="{TemplateBinding Padding}"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#106EBE"/>
-                </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#005A9E"/>
-                </Trigger>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Background" Value="#CCCCCC"/>
-                    <Setter Property="Cursor" Value="Arrow"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="RbacStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Window.Resources>
     
-    <Grid>
-        <!-- 背景渐变 -->
-        <Grid.Background>
-            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#E8F0FE" Offset="0"/>
-                <GradientStop Color="#F8FBFF" Offset="1"/>
-            </LinearGradientBrush>
-        </Grid.Background>
-        
-        <Border Background="White" 
-                CornerRadius="12" 
-                Margin="40"
-                Padding="0"
-                Effect="{DynamicResource EffectShadow2}">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                
-                <!-- 顶部区域 - 带图标 -->
-                <Border Grid.Row="0" Background="#0078D4" CornerRadius="12,12,0,0" Padding="20">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="&#xE77B;" 
-                                   FontFamily="Segoe MDL2 Assets" 
-                                   FontSize="48" 
-                                   Foreground="White"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,10,0,10"/>
-                        <TextBlock Text="{x:Static properties:Resources.AccountLogin}" 
-                                   FontSize="24" 
-                                   FontWeight="Bold"
-                                   Foreground="White"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,0,0,10"/>
-                        <TextBlock Text="欢迎使用 ColorVision 系统" 
-                                   FontSize="12" 
-                                   Foreground="#E0FFFFFF"
-                                   HorizontalAlignment="Center"/>
-                    </StackPanel>
-                </Border>
-                
-                <!-- 表单区域 -->
-                <StackPanel Grid.Row="1" Margin="40,30,40,20" VerticalAlignment="Center">
-                    <!-- 用户名输入 -->
-                    <DockPanel Margin="0,0,0,20">
-                        <StackPanel>
-                            <TextBlock Text="{x:Static properties:Resources.UserName}" 
-                                       FontSize="13" 
-                                       Foreground="#666666"
-                                       Margin="0,0,0,8"/>
-                            <Border BorderBrush="#DDDDDD" 
-                                    BorderThickness="1" 
-                                    CornerRadius="6"
-                                    Background="White">
-                                <hc:TextBox x:Name="Account1"   
-                                            ToolTip="{x:Static properties:Resources.Account}"  
-                                            VerticalAlignment="Center" 
-                                            Text="{Binding Name}" 
-                                            hc:InfoElement.Placeholder="{x:Static properties:Resources.FillAccount}"  
-                                            BorderThickness="0"
-                                            Padding="12,10"
-                                            FontSize="14"/>
-                            </Border>
-                        </StackPanel>
-                    </DockPanel>
-                    
-                    <!-- 密码输入 -->
-                    <DockPanel Margin="0,0,0,15">
-                        <StackPanel>
-                            <TextBlock Text="{x:Static properties:Resources.Password}" 
-                                       FontSize="13" 
-                                       Foreground="#666666"
-                                       Margin="0,0,0,8"/>
-                            <Border BorderBrush="#DDDDDD" 
-                                    BorderThickness="1" 
-                                    CornerRadius="6"
-                                    Background="White">
-                                <hc:PasswordBox x:Name="PasswordBox1"  
-                                                ToolTip="{x:Static properties:Resources.Password}"  
-                                                VerticalAlignment="Center"  
-                                                hc:InfoElement.Placeholder="{x:Static properties:Resources.FillPassword}"  
-                                                BorderThickness="0"
-                                                Padding="12,10"
-                                                FontSize="14"
-                                                hc:ShowEyeButton="True"/>
-                            </Border>
-                        </StackPanel>
-                    </DockPanel>
-                    
-                    <!-- 记住我 -->
-                    <CheckBox x:Name="ChkRememberMe"
-                              Content="{x:Static properties:Resources.RememberLoginStatus7Days}"
-                              Foreground="#666666"
-                              FontSize="12"
-                              Margin="0,0,0,25"
-                              ToolTip="勾选后，下次启动软件将自动登录"/>
-                    
-                    <!-- 登录按钮 -->
-                    <Button x:Name="BtnLogin"
-                            Content="{x:Static properties:Resources.Sign_in}" 
-                            Height="44"
-                            Click="Button_Click"
-                            Style="{StaticResource ModernButton}"/>
+    <Border Background="{DynamicResource GlobalBackground}" CornerRadius="12"
+            BorderBrush="{DynamicResource BordrBrush}" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" Direction="270" ShadowDepth="2" Opacity="0.25" BlurRadius="12"/>
+        </Border.Effect>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 关闭按钮 -->
+            <Button Grid.Row="0" Style="{StaticResource RbacCloseButton}" 
+                    Click="BtnClose_Click"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0"
+                    Panel.ZIndex="10"/>
+            
+            <!-- 顶部区域 -->
+            <Border Grid.Row="0" Background="{DynamicResource StatusBarBackgroundBrush}" 
+                    CornerRadius="12,12,0,0" Padding="20">
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE77B;" 
+                               FontFamily="Segoe MDL2 Assets" 
+                               FontSize="42" 
+                               Foreground="White"
+                               HorizontalAlignment="Center"
+                               Margin="0,8,0,8"/>
+                    <TextBlock Text="{x:Static properties:Resources.AccountLogin}" 
+                               FontSize="22" 
+                               FontWeight="Bold"
+                               Foreground="White"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,6"/>
+                    <TextBlock Text="欢迎使用 ColorVision 系统" 
+                               FontSize="12" 
+                               Foreground="#C0FFFFFF"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+            
+            <!-- 表单区域 -->
+            <StackPanel Grid.Row="1" Margin="35,25,35,15" VerticalAlignment="Center">
+                <StackPanel Margin="0,0,0,18">
+                    <TextBlock Text="{x:Static properties:Resources.UserName}" 
+                               FontSize="13" Margin="0,0,0,6"/>
+                    <hc:TextBox x:Name="Account1"   
+                                ToolTip="{x:Static properties:Resources.Account}"  
+                                VerticalAlignment="Center" 
+                                Text="{Binding Name}" 
+                                hc:InfoElement.Placeholder="{x:Static properties:Resources.FillAccount}"  
+                                Padding="10,8"
+                                FontSize="14"/>
                 </StackPanel>
                 
-                <!-- 底部区域 -->
-                <Border Grid.Row="2" 
-                        BorderBrush="#EEEEEE" 
-                        BorderThickness="0,1,0,0"
-                        Padding="20,15"
-                        Background="#FAFAFA"
-                        CornerRadius="0,0,12,12">
-                    <StackPanel>
-                        <TextBlock HorizontalAlignment="Center" 
-                                   Foreground="#666666"
-                                   FontSize="12">
-                            <Run Text="{x:Static properties:Resources.NoAccountYet}"/>
-                            <Hyperlink Click="RegisterHyperlink_Click" 
-                                       ToolTip="注册新账户"
-                                       Foreground="#0078D4"
-                                       TextDecorations="None">
-                                <Run Text="{x:Static properties:Resources.Create_an_account}" />
-                            </Hyperlink>
-                        </TextBlock>
-                        <TextBlock x:Name="TxtVersion"
-                                   Text="ColorVision RBAC v2.0"
-                                   HorizontalAlignment="Center"
-                                   Foreground="#999999"
-                                   FontSize="10"
-                                   Margin="0,8,0,0"/>
-                    </StackPanel>
-                </Border>
-            </Grid>
-        </Border>
-    </Grid>
+                <StackPanel Margin="0,0,0,12">
+                    <TextBlock Text="{x:Static properties:Resources.Password}" 
+                               FontSize="13" Margin="0,0,0,6"/>
+                    <hc:PasswordBox x:Name="PasswordBox1"  
+                                    ToolTip="{x:Static properties:Resources.Password}"  
+                                    VerticalAlignment="Center"  
+                                    hc:InfoElement.Placeholder="{x:Static properties:Resources.FillPassword}"  
+                                    Padding="10,8"
+                                    FontSize="14"
+                                    hc:ShowEyeButton="True"/>
+                </StackPanel>
+                
+                <CheckBox x:Name="ChkRememberMe"
+                          Content="{x:Static properties:Resources.RememberLoginStatus7Days}"
+                          FontSize="12"
+                          Margin="0,0,0,20"
+                          ToolTip="勾选后，下次启动软件将自动登录"/>
+                
+                <Button x:Name="BtnLogin"
+                        Content="{x:Static properties:Resources.Sign_in}" 
+                        Height="40"
+                        Click="Button_Click"
+                        Style="{StaticResource ModernButton}"/>
+            </StackPanel>
+            
+            <!-- 底部区域 -->
+            <Border Grid.Row="2" 
+                    BorderBrush="{DynamicResource GlobalBorderBrush1}" 
+                    BorderThickness="0,1,0,0"
+                    Padding="20,12"
+                    CornerRadius="0,0,12,12">
+                <StackPanel>
+                    <TextBlock HorizontalAlignment="Center" FontSize="12">
+                        <Run Text="{x:Static properties:Resources.NoAccountYet}"/>
+                        <Hyperlink Click="RegisterHyperlink_Click" 
+                                   ToolTip="注册新账户"
+                                   Foreground="{DynamicResource StatusBarBackgroundBrush}"
+                                   TextDecorations="None">
+                            <Run Text="{x:Static properties:Resources.Create_an_account}" />
+                        </Hyperlink>
+                    </TextBlock>
+                    <TextBlock x:Name="TxtVersion"
+                               Text="ColorVision RBAC v2.0"
+                               HorizontalAlignment="Center"
+                               Opacity="0.5"
+                               FontSize="10"
+                               Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
 </Window>

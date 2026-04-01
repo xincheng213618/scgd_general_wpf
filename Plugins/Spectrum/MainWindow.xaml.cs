@@ -21,6 +21,7 @@ using System.IO.Ports;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms.VisualStyles;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
@@ -128,6 +129,11 @@ namespace Spectrum
                 LogGrid.Children.Add(logOutput);
             }
             LayoutManager.RegisterContent("LogPanel", LogGrid);
+
+            // Initialize native C++ spectrometer log panel
+            InitializeNativeLogPanel();
+            LayoutManager.RegisterContent("NativeLogPanel", NativeLogGrid);
+
             LayoutManager.RegisterContent("CIEDiagram", CiePane.Content);
 
             // Load saved layout if exists
@@ -139,6 +145,8 @@ namespace Spectrum
             Manager.AutodarkParam.ExecuteAdaptiveAutoDark = () => Button4_Click_1(null, null);
 
             MenuManager.GetInstance().LoadMenuForWindow("Spectrum", menu);
+
+            StatusBarManager.GetInstance().Init(StatusBarGrid, "Spectrum");
 
             image1931.Source = src1931?.ToBitmapSource();
             image1976.Source = src1976?.ToBitmapSource();
@@ -232,6 +240,32 @@ namespace Spectrum
             });
 
             UpdateEqeColumnsVisibility(MainWindowConfig.Instance.EqeEnabled);
+        }
+
+        /// <summary>
+        /// Initialize the native C++ spectrometer log panel in the DockingManager.
+        /// Searches for spectrometer log files and creates a LogLocalOutput UserControl.
+        /// </summary>
+        private void InitializeNativeLogPanel()
+        {
+            string? logPath = Spectrum.License.MenuSpectrometerNativeLog.FindSpectrometerLogFile(AppDomain.CurrentDomain.BaseDirectory);
+            if (!string.IsNullOrEmpty(logPath))
+            {
+                var nativeLogOutput = new LogLocalOutput(logPath, System.Text.Encoding.GetEncoding("GB2312"));
+                NativeLogGrid.Children.Add(nativeLogOutput);
+            }
+            else
+            {
+                // Show a placeholder message when no log file is found yet
+                var placeholder = new TextBlock
+                {
+                    Text = "光谱仪原生日志文件尚未生成。连接光谱仪后日志将自动显示。",
+                    HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                    VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                    Foreground = System.Windows.Media.Brushes.Gray
+                };
+                NativeLogGrid.Children.Add(placeholder);
+            }
         }
     }
 }

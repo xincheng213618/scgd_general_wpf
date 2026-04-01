@@ -59,7 +59,7 @@ namespace ColorVision.ImageEditor
     /// <summary>
     /// ImageShow.xaml 的交互逻辑
     /// </summary>
-    public partial class ImageView : UserControl, IDisposable
+    public partial class ImageView : UserControl, IDisposable, IActiveDocumentStatusProvider
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
         public ImageViewModel ImageViewModel { get; set; }
@@ -68,6 +68,7 @@ namespace ColorVision.ImageEditor
         public ObservableCollection<IDrawingVisual> DrawingVisualLists => ImageViewModel.EditorContext.DrawingVisualLists;
 
         public event EventHandler ClearImageEventHandler;
+        public event EventHandler StatusBarItemsChanged;
 
         public EditorContext EditorContext { get; set; }
         public bool IsShowScaleRuler { get; set; }
@@ -337,6 +338,63 @@ namespace ColorVision.ImageEditor
             ComboBoxLayers.Visibility = Visibility.Collapsed;
         }
 
+        public IEnumerable<StatusBarMeta> GetActiveStatusBarItems()
+        {
+            var items = new List<StatusBarMeta>();
+
+            var cols = Config.GetProperties<int>("Cols");
+            var rows = Config.GetProperties<int>("Rows");
+            if (cols > 0 && rows > 0)
+            {
+                items.Add(new StatusBarMeta
+                {
+                    Id = "ImageDimensions",
+                    Name = "Image Size",
+                    Description = $"{cols} x {rows}",
+                    Type = StatusBarType.Text,
+                    Alignment = StatusBarAlignment.Right,
+                    Order = 100,
+                    Source = this,
+                });
+                // 使用直接赋值内容，因为 Properties dict 不是 INotifyPropertyChanged 可绑定的
+                items[^1].BindingName = null; // 不绑定，使用 Description 显示
+            }
+
+            var channel = Config.GetProperties<int>("Channel");
+            var depth = Config.GetProperties<int>("Depth");
+            if (channel > 0)
+            {
+                items.Add(new StatusBarMeta
+                {
+                    Id = "ImageFormat",
+                    Name = "Format",
+                    Description = $"Ch:{channel} Depth:{depth}bit",
+                    Type = StatusBarType.Text,
+                    Alignment = StatusBarAlignment.Right,
+                    Order = 101,
+                    Source = this,
+                });
+            }
+
+            var filePath = Config.FilePath;
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                var ext = Path.GetExtension(filePath).ToUpperInvariant();
+                items.Add(new StatusBarMeta
+                {
+                    Id = "ImageFileType",
+                    Name = "File Type",
+                    Description = ext,
+                    Type = StatusBarType.Text,
+                    Alignment = StatusBarAlignment.Right,
+                    Order = 102,
+                    Source = this,
+                });
+            }
+
+            return items;
+        }
+
         public void OpenImage(WriteableBitmap? writeableBitmap)
         {
             if (writeableBitmap != null)
@@ -535,6 +593,9 @@ namespace ColorVision.ImageEditor
 
             ImageShow.RaiseImageInitialized();
             CommandManager.InvalidateRequerySuggested();
+
+            // 图像加载完成后通知状态栏刷新
+            StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
 
         }
 
@@ -822,6 +883,45 @@ namespace ColorVision.ImageEditor
             }
         }
 
+
+        #region Transient Select Mode
+
+        /// <summary>
+        /// Start a transient (non-recording) selection mode on the current image.
+        /// The user draws a single shape inline; on mouse-up the mode ends and returns the result.
+        /// For Polygon mode: each click adds a point; press Enter/Space to complete, Escape to cancel.
+        /// Returns null if cancelled (Escape) or too-small selection.
+        /// </summary>
+        /// <param name="shapeType">Rectangle, Circle, or Polygon</param>
+        /// <returns>SelectResult with shape properties, or null if cancelled</returns>
+        public Task<SelectResult> BeginSelectAsync(SelectShapeType shapeType)
+        {
+            var mode = new TransientSelectMode(ImageShow, Zoombox1, ImageViewModel, shapeType);
+            return mode.Start();
+        }
+
+        /// <summary>
+        /// Start a transient rectangle selection on the current image.
+        /// Returns the selected Rect, or null if cancelled.
+        /// </summary>
+        public async Task<Rect?> BeginSelectRectAsync()
+        {
+            var result = await BeginSelectAsync(SelectShapeType.Rectangle);
+            return result?.Rect;
+        }
+
+        /// <summary>
+        /// Start a transient circle selection on the current image.
+        /// Returns (Center, Radius), or null if cancelled.
+        /// </summary>
+        public async Task<(Point Center, double Radius)?> BeginSelectCircleAsync()
+        {
+            var result = await BeginSelectAsync(SelectShapeType.Circle);
+            if (result == null) return null;
+            return (result.Center, result.Radius);
+        }
+
+        #endregion
 
         public void Dispose()
         {

@@ -8,9 +8,9 @@ namespace ColorVision.Rbac.Services
     public interface IPermissionService
     {
         /// <summary>
-        /// 确保种子权限数据存在
+        /// 确保种子权限数据存在（同步，仅用于初始化）
         /// </summary>
-        Task EnsureSeedAsync();
+        void EnsureSeed();
 
         /// <summary>
         /// 获取所有启用的权限

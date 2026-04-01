@@ -877,9 +877,74 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void ShowPoiConfig_Click(object sender, RoutedEventArgs e)
+        private async void ShowPoiConfig_Click(object sender, RoutedEventArgs e)
         {
+            SelectShapeType shapeType;
+            switch (Config.GraphicTypes)
+            {
+                case GraphicTypes.Circle:
+                    shapeType = SelectShapeType.Circle;
+                    break;
+                case GraphicTypes.Quadrilateral:
+                    shapeType = SelectShapeType.Quadrilateral;
+                    break;
+                default:
+                    shapeType = SelectShapeType.Rectangle;
+                    break;
+            }
 
+            var result = await EditorContext.ImageView.BeginSelectAsync(shapeType);
+            if (result == null) return;
+
+            if (result.ShapeType == SelectShapeType.Circle)
+            {
+                Config.CenterX = (int)result.Center.X;
+                Config.CenterY = (int)result.Center.Y;
+                Config.AreaCircleRadius = (int)result.Radius;
+            }
+            else if ((result.ShapeType == SelectShapeType.Quadrilateral || result.ShapeType == SelectShapeType.Polygon) && result.Points != null && result.Points.Count >= 4)
+            {
+                Config.Polygon1X = (int)result.Points[0].X;
+                Config.Polygon1Y = (int)result.Points[0].Y;
+                Config.Polygon2X = (int)result.Points[1].X;
+                Config.Polygon2Y = (int)result.Points[1].Y;
+                Config.Polygon3X = (int)result.Points[2].X;
+                Config.Polygon3Y = (int)result.Points[2].Y;
+                Config.Polygon4X = (int)result.Points[3].X;
+                Config.Polygon4Y = (int)result.Points[3].Y;
+            }
+            else
+            {
+                Rect rect = result.Rect;
+                Config.Polygon1X = (int)rect.X;
+                Config.Polygon1Y = (int)rect.Y;
+                Config.Polygon2X = (int)(rect.X + rect.Width);
+                Config.Polygon2Y = (int)rect.Y;
+                Config.Polygon3X = (int)(rect.X + rect.Width);
+                Config.Polygon3Y = (int)(rect.Y + rect.Height);
+                Config.Polygon4X = (int)rect.X;
+                Config.Polygon4Y = (int)(rect.Y + rect.Height);
+            }
+
+            // Show the selection on the canvas
+            List<Point> pts_src = new()
+            {
+                Config.Polygon1,
+                Config.Polygon2,
+                Config.Polygon3,
+                Config.Polygon4
+            };
+            List<Point> sorted = Helpers.SortPolyPoints(pts_src);
+            ImageShow.RemoveVisualCommand(Polygon);
+            Polygon = new DVDatumPolygon() { IsComple = true };
+            Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / EditorContext.Zoombox.ContentMatrix.M11);
+            Polygon.Attribute.Brush = Brushes.Transparent;
+            Polygon.Attribute.Points.Add(sorted[0]);
+            Polygon.Attribute.Points.Add(sorted[1]);
+            Polygon.Attribute.Points.Add(sorted[2]);
+            Polygon.Attribute.Points.Add(sorted[3]);
+            Polygon.Render();
+            ImageShow.AddVisualCommand(Polygon);
         }
 
         private void CheckBox_Checked(object sender, RoutedEventArgs e)

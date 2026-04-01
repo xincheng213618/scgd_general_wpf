@@ -1,5 +1,4 @@
 ﻿using ColorVision.Rbac.Dtos;
-using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using System.Windows;
 
@@ -44,12 +43,14 @@ namespace ColorVision.Rbac.Services
                 UpdatedAt = original.UpdatedAt
             };
 
-            var dialog = new PropertyEditorWindow(editable)
+            var dialog = new EditUserInfoWindow(editable)
             {
                 Owner = Application.Current.GetActiveWindow(),
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
-            dialog.ShowDialog();
+            if (dialog.ShowDialog() != true)
+                return;
+
             try
             {
                 // 用原对象的 UpdatedAt 作为并发期望值

@@ -36,9 +36,6 @@
         <Grid>
             <Menu x:Name="menu" Grid.Row="0" Padding="2" >
             </Menu>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,30,0">
-                <CheckBox x:Name="EqeCheckBox" Content="光通量模式" IsChecked="{Binding Source={x:Static local:MainWindowConfig.Instance}, Path=EqeEnabled}" Checked="EqeCheckBox_Changed" Unchecked="EqeCheckBox_Changed" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            </StackPanel>
             <Button HorizontalAlignment="Right" Margin="5,0,5,0"  Command="{Binding SetEmissionSP100Config.EditCommand}" Padding="2" Height="18" Width="18" >
                 <Button.Triggers>
                     <EventTrigger RoutedEvent="Button.Click">
@@ -123,10 +120,6 @@
                         <GroupBox Header="测量参数" Visibility="{Binding IsConnected,Converter={StaticResource bool2VisibilityConverter}}">
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <TextBlock Text="自动积分阈值 (%)" Width="110"/>
-                                    <TextBox Style="{StaticResource TextBox.Small}" Width="90" VerticalAlignment="Center" Text="{Binding MaxPercent}" TextWrapping="Wrap" />
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                     <TextBlock Text="积分时间 (ms)" Width="110"/>
                                     <TextBox Style="{StaticResource TextBox.Small}" Width="90" VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding IntTime}" />
                                     <Button Margin="4,0,4,0" HorizontalAlignment="Left" Command="{Binding EditIntTimeConfigCommand}" Padding="0" Height="20" Width="20" >
@@ -178,22 +171,6 @@
                                     </Button>
                                 </StackPanel>
                                 <DockPanel Margin="0,0,0,6">
-                                    <Button DockPanel.Dock="Right" Margin="4,0,0,0" HorizontalAlignment="Left" Command="{Binding EditGetDataConfigCommand}" Padding="0" Height="20" Width="20" >
-                                        <Button.Triggers>
-                                            <EventTrigger RoutedEvent="Button.Click">
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="rotateTransform22" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Button.Triggers>
-                                        <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
-                                            <TextBlock.RenderTransform>
-                                                <RotateTransform x:Name="rotateTransform22"/>
-                                            </TextBlock.RenderTransform>
-                                        </TextBlock>
-                                    </Button>
                                     <StackPanel Orientation="Horizontal">
                                         <CheckBox Content="{x:Static properties:Resources.自动积分}" IsChecked="{Binding EnableAutoIntegration}" Margin="0,0,8,0"/>
                                         <CheckBox Content="自适应校零" IsChecked="{Binding EnableAdaptiveAutoDark}" Margin="0,0,8,0"/>
@@ -341,8 +318,8 @@
                             </StackPanel>
                         </GroupBox>
 
-                        <!-- ═══ EQE参数配置 ═══ -->
-                        <GroupBox Header="EQE参数配置">
+                        <!-- ═══ 光通量参数配置 ═══ -->
+                        <GroupBox x:Name="EqeGroupBox" Header="光通量参数配置" Visibility="Collapsed">
                             <StackPanel>
                                 <StackPanel x:Name="EqePanel" Visibility="Collapsed">
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
@@ -636,21 +613,21 @@
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn  Header="CIEx" >
+                                    <GridViewColumn  Header="X" >
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEx}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn  Header="CIEy" > 
+                                    <GridViewColumn  Header="Y" > 
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEy}"/>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
-                                    <GridViewColumn  Header="CIEz" >
+                                    <GridViewColumn  Header="Z" >
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fCIEz}"/>
@@ -696,17 +673,6 @@
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
                                                 <TextBlock Text="{ Binding fLd}"/>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                    <GridViewColumn  Header="主波长颜色" >
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate  DataType="{x:Type models:ViewResultSpectrum}">
-                                                <Border Background="{Binding DominantWavelengthColor}" Width="40" Height="16" CornerRadius="2" Cursor="Hand" ToolTip="{Binding DominantWavelengthHex}" MouseLeftButtonDown="DominantColor_Click">
-                                                    <Border.Tag>
-                                                        <Binding Path="DominantWavelengthHex"/>
-                                                    </Border.Tag>
-                                                </Border>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
@@ -790,11 +756,15 @@
                             </xcad:LayoutDocumentPane>
                         </xcad:LayoutDocumentPaneGroup>
 
-                        <!-- ═══ Bottom: Log + CIE Diagram ═══ -->
+                        <!-- ═══ Bottom: Log + Native Log + CIE Diagram ═══ -->
                         <xcad:LayoutAnchorablePaneGroup DockHeight="250">
                             <xcad:LayoutAnchorablePane>
                                 <xcad:LayoutAnchorable x:Name="LogPane" Title="日志" ContentId="LogPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
                                     <Grid x:Name="LogGrid">
+                                    </Grid>
+                                </xcad:LayoutAnchorable>
+                                <xcad:LayoutAnchorable x:Name="NativeLogPane" Title="光谱仪原生日志" ContentId="NativeLogPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
+                                    <Grid x:Name="NativeLogGrid">
                                     </Grid>
                                 </xcad:LayoutAnchorable>
                                 <xcad:LayoutAnchorable x:Name="CiePane" Title="CIE色度图" ContentId="CIEDiagram" CanClose="True" CanAutoHide="True" CanFloat="True">
@@ -814,19 +784,6 @@
                                             <TextBlock Text="CIE 1976" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,2"/>
                                             <Image x:Name="image1976" Height="220" Width="210" Stretch="Uniform" Source="Assets\Image\CIE-1976.jpg"/>
                                         </StackPanel>
-                                        <!-- Spectral Parameters & Calculation Details -->
-                                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Margin="4,2">
-                                            <StackPanel x:Name="CieParamsPanel">
-                                                <TextBlock Text="光谱参数及计算过程" FontWeight="Bold" Margin="0,2,0,4"/>
-
-                                                <TextBlock x:Name="TextDominantWavelength" TextWrapping="Wrap" Margin="0,1"/>
-                                                <TextBlock x:Name="TextFWHM" TextWrapping="Wrap" Margin="0,1"/>
-                                                <TextBlock x:Name="TextCCT" TextWrapping="Wrap" Margin="0,1"/>
-                                                <TextBlock x:Name="TextExcitationPurity" TextWrapping="Wrap" Margin="0,1"/>
-                                                <TextBlock x:Name="TextColorRendering" TextWrapping="Wrap" Margin="0,1"/>
-                                                <TextBlock x:Name="TextChromaticity" TextWrapping="Wrap" Margin="0,1"/>
-                                            </StackPanel>
-                                        </ScrollViewer>
                                     </Grid>
                                 </xcad:LayoutAnchorable>
                             </xcad:LayoutAnchorablePane>
@@ -838,87 +795,7 @@
             </xcad:LayoutRoot>
         </xcad:DockingManager>
 
-        <StatusBar Grid.Row="2">
-            <StatusBarItem>
-                <StackPanel Orientation="Horizontal">
-                    <Ellipse Width="10" Height="10" Margin="0,0,4,0">
-                        <Ellipse.Style>
-                            <Style TargetType="Ellipse">
-                                <Setter Property="Fill" Value="#E53935"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsConnected}" Value="True">
-                                        <Setter Property="Fill" Value="#27AE60"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Ellipse.Style>
-                    </Ellipse>
-                    <TextBlock x:Name="State1" Text="{x:Static properties:Resources.连接状态}" />
-                    <TextBlock x:Name="State2" Text="{x:Static properties:Resources.未连接}" Margin="2,0,0,0"/>
-                </StackPanel>
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem ToolTip="双击打开设备管理器" MouseDoubleClick="StatusBarConnectionType_DoubleClick">
-                <TextBlock x:Name="StateConnectionType" Text="{Binding ConnectionTypeDisplay}" />
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="State3" Text="{x:Static properties:Resources.硬件型号}" />
-                    <TextBlock x:Name="State4" Text="---" Margin="2,0,0,0"/>
-                </StackPanel>
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem ToolTip="SN序列号，双击复制" MouseDoubleClick="StatusBarSN_DoubleClick">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="SN: "/>
-                    <TextBlock x:Name="StateSN" Text="{Binding SerialNumber, FallbackValue='---'}"/>
-                </StackPanel>
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="标定: "/>
-                    <TextBlock Text="{Binding ActiveCalibrationGroupName, FallbackValue='Default'}" Foreground="#3498DB"/>
-                </StackPanel>
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Shutter: "/>
-                    <Ellipse Width="8" Height="8" Margin="2,0,0,0">
-                        <Ellipse.Style>
-                            <Style TargetType="Ellipse">
-                                <Setter Property="Fill" Value="#E53935"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ShutterController.IsConnected}" Value="True">
-                                        <Setter Property="Fill" Value="#27AE60"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Ellipse.Style>
-                    </Ellipse>
-                </StackPanel>
-            </StatusBarItem>
-            <Separator/>
-            <StatusBarItem>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="CFW: "/>
-                    <Ellipse Width="8" Height="8" Margin="2,0,0,0">
-                        <Ellipse.Style>
-                            <Style TargetType="Ellipse">
-                                <Setter Property="Fill" Value="#E53935"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsNDConnected}" Value="True">
-                                        <Setter Property="Fill" Value="#27AE60"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Ellipse.Style>
-                    </Ellipse>
-                </StackPanel>
-            </StatusBarItem>
-        </StatusBar>
+        <Grid x:Name="StatusBarGrid" Grid.Row="2"/>
 
     </Grid>
 </Window>

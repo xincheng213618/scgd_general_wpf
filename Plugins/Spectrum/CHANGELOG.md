@@ -1,6 +1,6 @@
 #   CHANGELOG
 
-## [2.1.4.0] 2026.03.29
+## [2.1.7.0] 2026.03.30
 
 1.重构项目架构，采用模块化设计：将 MainWindow 拆分为 Chart、Connection、Measurement、Export、ListView、Eqe 等部分类
 

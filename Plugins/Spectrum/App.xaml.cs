@@ -1,11 +1,15 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Scheduler;
+using ColorVision.SocketProtocol;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
 using log4net;
 using log4net.Config;
 using Spectrum.License;
+using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Windows;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
@@ -50,6 +54,20 @@ namespace Spectrum
                 }
             }
 
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); // 确保 .NET Core 及以上支持 GBK
+                                                                           //加载DLL
+            if (File.Exists("ColorVision.Scheduler.dll"))
+                Assembly.LoadFrom("ColorVision.Scheduler.dll"); 
+            if (File.Exists("ColorVision.SocketProtocol.dll"))
+                Assembly.LoadFrom("ColorVision.SocketProtocol.dll"); 
+            if (File.Exists("ColorVision.Database.dll"))
+                Assembly.LoadFrom("ColorVision.Database.dll"); 
+            if (File.Exists("ColorVision.UI.Desktop.dll"))
+                Assembly.LoadFrom("ColorVision.UI.Desktop.dll"); 
+
+
+
+
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
@@ -57,6 +75,9 @@ namespace Spectrum
             LicenseSync.SyncLicenses();
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
+
+            new SocketInitializer().InitializeAsync();
+
             MainWindow MainWindow = new MainWindow();
             MainWindow.Show();
 

@@ -98,9 +98,132 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="PerformanceTest" xml:space="preserve">
-    <value>性能检测</value>
+    <value>系统监控</value>
   </data>
   <data name="UpdateSpeed" xml:space="preserve">
     <value>更新速度</value>
+  </data>
+  <data name="StorageManagement" xml:space="preserve">
+    <value>存储管理</value>
+  </data>
+  <data name="TotalStorage" xml:space="preserve">
+    <value>总容量</value>
+  </data>
+  <data name="FreeSpace" xml:space="preserve">
+    <value>可用空间</value>
+  </data>
+  <data name="Used" xml:space="preserve">
+    <value>已用</value>
+  </data>
+  <data name="PerformanceMonitor" xml:space="preserve">
+    <value>性能监控</value>
+  </data>
+  <data name="TotalUsage" xml:space="preserve">
+    <value>总体使用率</value>
+  </data>
+  <data name="CurrentApp" xml:space="preserve">
+    <value>当前应用</value>
+  </data>
+  <data name="SystemInfo" xml:space="preserve">
+    <value>系统信息</value>
+  </data>
+  <data name="ComputerName" xml:space="preserve">
+    <value>计算机名</value>
+  </data>
+  <data name="OS" xml:space="preserve">
+    <value>操作系统</value>
+  </data>
+  <data name="CoreCount" xml:space="preserve">
+    <value>核心数</value>
+  </data>
+  <data name="GPUMemory" xml:space="preserve">
+    <value>显存</value>
+  </data>
+  <data name="Uptime" xml:space="preserve">
+    <value>运行时长</value>
+  </data>
+  <data name="TotalRAM" xml:space="preserve">
+    <value>总内存</value>
+  </data>
+  <data name="Network" xml:space="preserve">
+    <value>网络</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>刷新</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="DateFormat" xml:space="preserve">
+    <value>日期格式</value>
+  </data>
+  <data name="ShowTime" xml:space="preserve">
+    <value>显示时间</value>
+  </data>
+  <data name="ShowRAM" xml:space="preserve">
+    <value>显示RAM</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>缓存大小</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>清理缓存</value>
+  </data>
+  <data name="LocalDisk" xml:space="preserve">
+    <value>本地磁盘</value>
+  </data>
+  <data name="NotDetected" xml:space="preserve">
+    <value>未检测到</value>
+  </data>
+  <data name="ShowCPU" xml:space="preserve">
+    <value>显示CPU</value>
+  </data>
+  <data name="ShowUptime" xml:space="preserve">
+    <value>显示运行时长</value>
+  </data>
+  <data name="ShowDisk" xml:space="preserve">
+    <value>显示磁盘</value>
+  </data>
+  <data name="StatusBarSettings" xml:space="preserve">
+    <value>状态栏显示项</value>
+  </data>
+  <data name="ProcessMonitor" xml:space="preserve">
+    <value>进程监控</value>
+  </data>
+  <data name="ProcessName" xml:space="preserve">
+    <value>进程名称</value>
+  </data>
+  <data name="MemoryUsage" xml:space="preserve">
+    <value>内存占用</value>
+  </data>
+  <data name="RuntimeInfo" xml:space="preserve">
+    <value>运行时信息</value>
+  </data>
+  <data name="OSUptime" xml:space="preserve">
+    <value>系统运行时长</value>
+  </data>
+  <data name="OSBootTime" xml:space="preserve">
+    <value>系统启动时间</value>
+  </data>
+  <data name="AppStartTime" xml:space="preserve">
+    <value>应用启动时间</value>
+  </data>
+  <data name="ScreenResolution" xml:space="preserve">
+    <value>屏幕分辨率</value>
+  </data>
+  <data name="Architecture" xml:space="preserve">
+    <value>系统架构</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>用户名</value>
+  </data>
+  <data name="ThreadCount" xml:space="preserve">
+    <value>线程数</value>
+  </data>
+  <data name="HandleCount" xml:space="preserve">
+    <value>句柄数</value>
+  </data>
+  <data name="AvailableMemory" xml:space="preserve">
+    <value>可用内存</value>
   </data>
 </root>

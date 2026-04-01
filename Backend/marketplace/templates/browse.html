@@ -15,6 +15,41 @@
     </ol>
 </nav>
 
+<section class="hero-panel mb-4">
+    <div class="row g-4 align-items-center position-relative">
+        <div class="col-lg-8">
+            <span class="eyebrow mb-3"><i class="bi bi-folder2-open"></i> 文件浏览</span>
+            <h1 class="display-6 fw-semibold mb-3">{{ subpath or 'Storage Root' }}</h1>
+            <p class="page-lead mb-0">保留文件系统视角，适合排障、审计和核对归档路径；当前目录的文件规模会先展示在顶部摘要里。</p>
+        </div>
+        <div class="col-lg-4">
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="metric-card">
+                        <span class="metric-label">目录</span>
+                        <div class="metric-value">{{ summary.directory_count }}</div>
+                        <div class="metric-note">当前层级子目录</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="metric-card">
+                        <span class="metric-label">文件</span>
+                        <div class="metric-value">{{ summary.file_count }}</div>
+                        <div class="metric-note">当前层级文件数</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="metric-card">
+                        <span class="metric-label">当前层级大小</span>
+                        <div class="metric-value">{{ human_size(summary.total_size) }}</div>
+                        <div class="metric-note">共 {{ summary.item_count }} 个项目</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <section class="panel-card p-4 table-shell">
     <div class="section-header">
         <div>

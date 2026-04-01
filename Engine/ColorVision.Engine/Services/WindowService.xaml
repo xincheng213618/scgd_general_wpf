@@ -12,25 +12,86 @@
         mc:Ignorable="d"
         Title="WindowService" Height="700" Width="900" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
     <Window.Resources>
-        
+        <Style x:Key="NavButton" TargetType="Button">
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="50"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid>
+
+        <!-- Top Navigation Bar -->
+        <Border Grid.Row="0" Margin="5,5,5,0" Padding="5,4" CornerRadius="5" BorderBrush="{DynamicResource GlobalTextBrush}" BorderThickness="0,0,0,1">
+            <WrapPanel HorizontalAlignment="Center">
+                <Button Style="{StaticResource NavButton}" Click="ButtonLicenseManager_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE8D7;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.LicenseManagement}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource NavButton}" Click="ButtonPhyCameraManager_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE722;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.PhysicalCameraManager}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource NavButton}" Click="ButtonArchiveManager_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE7B8;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.Archive}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource NavButton}" Click="ButtonFlowManager_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE9D5;" FontFamily="Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock Text="{x:Static properties:Resources.FlowEditor}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </WrapPanel>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Margin="0,2,0,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="230"/>
+                <ColumnDefinition Width="210"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Grid Grid.Row="0" Grid.Column="0">
+            <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <DockPanel>
-                    <Button Grid.Column="0" Command="{Binding WindowServiceConfig.EditCommand}" Padding="2" Height="25" Width="25"  Margin="5,0,5,0" DockPanel.Dock="Right">
+                <DockPanel Margin="3,3,3,0">
+                    <Button Command="{Binding WindowServiceConfig.EditCommand}" Padding="2" Height="22" Width="22" Margin="2,0" DockPanel.Dock="Right">
                         <Button.Triggers>
                             <EventTrigger RoutedEvent="Button.Click">
                                 <BeginStoryboard>
@@ -40,38 +101,36 @@
                                 </BeginStoryboard>
                             </EventTrigger>
                         </Button.Triggers>
-                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                        <TextBlock Text="&#xE713;" HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource GlobalTextBrush}">
                             <TextBlock.RenderTransform>
-                                <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                                <RotateTransform x:Name="rotateTransform2" CenterX="7" CenterY="7"/>
                             </TextBlock.RenderTransform>
                         </TextBlock>
                     </Button>
-                    <Button Content="{x:Static properties:Resources.ToggleList}" Margin="5,0,5,0" Click="Button_Click_2" />
+                    <Button Content="{x:Static properties:Resources.ToggleList}" Margin="3,0" FontSize="12" Click="Button_Click_2" />
                 </DockPanel>
 
-                <TreeView x:Name="TreeView1" Grid.Row="1" Style="{StaticResource TreeView.Small}" Loaded="TreeView1_Loaded"  ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
+                <TreeView x:Name="TreeView1" Grid.Row="1" Style="{StaticResource TreeView.Small}" Loaded="TreeView1_Loaded" 
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged" 
+                          Margin="3,2,3,3" Padding="0" FontSize="12">
                     <TreeView.Resources>
-                        <HierarchicalDataTemplate DataType="{x:Type type:TypeService}" ItemsSource="{Binding VisualChildren}" >
-                            <StackPanel >
-                                <TextBlock Text="{Binding Name}"/>
-                            </StackPanel>
+                        <HierarchicalDataTemplate DataType="{x:Type type:TypeService}" ItemsSource="{Binding VisualChildren}">
+                            <TextBlock Text="{Binding Name}" Margin="0,1"/>
                         </HierarchicalDataTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type terminal:TerminalService}" ItemsSource="{Binding VisualChildren}" >
-                            <DockPanel>
-                                <Image Source="{Binding Icon}" Height="18" HorizontalAlignment="Left"  Margin="0,0,4,0"/>
-                                <TextBlock Text="{Binding Config.Name}"/>
+                        <HierarchicalDataTemplate DataType="{x:Type terminal:TerminalService}" ItemsSource="{Binding VisualChildren}">
+                            <DockPanel Margin="0,1">
+                                <Image Source="{Binding Icon}" Height="16" HorizontalAlignment="Left" Margin="0,0,3,0"/>
+                                <TextBlock Text="{Binding Config.Name}" VerticalAlignment="Center"/>
                             </DockPanel>
                         </HierarchicalDataTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type devices:DeviceService}" >
-                            <DockPanel>
-                                <Image Source="{Binding Icon}" Height="18" HorizontalAlignment="Left"  Margin="0,0,4,0"/>
-                                <TextBlock Text="{Binding Config.Name}"/>
+                        <HierarchicalDataTemplate DataType="{x:Type devices:DeviceService}">
+                            <DockPanel Margin="0,1">
+                                <Image Source="{Binding Icon}" Height="16" HorizontalAlignment="Left" Margin="0,0,3,0"/>
+                                <TextBlock Text="{Binding Config.Name}" VerticalAlignment="Center"/>
                             </DockPanel>
                         </HierarchicalDataTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type core:GroupResource}" ItemsSource="{Binding VisualChildren}" >
-                            <DockPanel>
-                                <TextBlock Text="{Binding Name}"/>
-                            </DockPanel>
+                        <HierarchicalDataTemplate DataType="{x:Type core:GroupResource}" ItemsSource="{Binding VisualChildren}">
+                            <TextBlock Text="{Binding Name}" Margin="0,1"/>
                         </HierarchicalDataTemplate>
                     </TreeView.Resources>
                     <TreeView.ItemContainerStyle>
@@ -79,17 +138,20 @@
                             <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                             <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
                             <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
+                            <Setter Property="Padding" Value="2,1"/>
                         </Style>
                     </TreeView.ItemContainerStyle>
                 </TreeView>
             </Grid>
-            <Border CornerRadius="5" Grid.Column="1" Margin="2,5,5,5">
+            <Border CornerRadius="5" Grid.Column="1" Margin="2,3,5,3">
                 <Grid x:Name="StackPanelShow"/>
             </Border>
         </Grid>
 
-        <Border   Margin="5" Grid.Row="1">
-            <Button x:Name="ButtonOK"  Height="40"   Content="{x:Static properties:Resources.EnterAcquisitionWindow}" Background="{StaticResource PrimaryBrush}" Foreground="White"  FontSize="22"   Click="Button_Click"/>
+        <!-- Bottom Button -->
+        <Border Margin="5,2,5,5" Grid.Row="2">
+            <Button x:Name="ButtonOK" Height="32" Content="{x:Static properties:Resources.EnterAcquisitionWindow}" 
+                    Background="{StaticResource PrimaryBrush}" Foreground="White" FontSize="16" Click="Button_Click"/>
         </Border>
     </Grid>
 

@@ -133,6 +133,28 @@ namespace ColorVision
             layoutManager.RegisterPanel("LogPanel", LogPanelGrid, Properties.Resources.Log, PanelPosition.Bottom);
             WorkspaceManager.LayoutManager = layoutManager;
 
+            // 发现并注册所有 IDockPanelProvider 提供的面板（在 LoadLayout 之前，确保面板能正确持久化）
+            foreach (var provider in AssemblyHandler.GetInstance().GetAssemblies()
+                .SelectMany(a => a.GetTypes())
+                .Where(t => typeof(IDockPanelProvider).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface)
+                .Select(t =>
+                {
+                    try { return Activator.CreateInstance(t) as IDockPanelProvider; }
+                    catch (Exception ex) { log.Debug($"Failed to instantiate IDockPanelProvider {t.Name}: {ex.Message}"); return null; }
+                })
+                .Where(p => p != null)
+                .OrderBy(p => p!.Order))
+            {
+                try
+                {
+                    provider!.RegisterPanels();
+                }
+                catch (Exception ex)
+                {
+                    log.Warn($"IDockPanelProvider {provider!.GetType().Name} failed: {ex.Message}");
+                }
+            }
+
             // 初始化 DockViewManagerHost（设置 AvalonDock 回调）
             DockViewManagerHost.Initialize();
 
@@ -181,7 +203,13 @@ namespace ColorVision
 
             MenuManager.GetInstance().LoadMenuForWindow(MenuItemConstants.MainWindowTarget,Menu1);
             this.LoadHotKeyFromAssembly();
-            StatusBarManager.GetInstance().Init(StatusBarGrid, StatusBarTextDocker);
+            StatusBarManager.GetInstance().Init(StatusBarGrid, MenuItemConstants.MainWindowTarget);
+
+            // 监听 DockingManager 活动文档切换，更新状态栏上下文项
+            DockingManager1.ActiveContentChanged += (s, e) =>
+            {
+                StatusBarManager.GetInstance().OnActiveDocumentChanged(DockingManager1.ActiveContent);
+            };
 
             Application.Current.MainWindow = this;
             Task.Run(() =>

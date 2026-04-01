@@ -1,9 +1,8 @@
 ﻿using ColorVision.Rbac.Dtos;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
-using System.Security.Cryptography;
-using System.Text;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Rbac
 {
@@ -16,7 +15,18 @@ namespace ColorVision.Rbac
         public LoginWindow()
         {
             InitializeComponent();
-            this.ApplyCaption();
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+                DragMove();
+        }
+
+        private void BtnClose_Click(object sender, RoutedEventArgs e)
+        {
+            this.DialogResult = false;
+            this.Close();
         }
 
         private async void Window_Initialized(object sender, EventArgs e)
@@ -24,15 +34,15 @@ namespace ColorVision.Rbac
             // 设置版本信息
             TxtVersion.Text = $"ColorVision RBAC v2.0 - {DateTime.Now.Year}";
             
-            // 尝试自动登录
+            // 尝试自动登录（通过 SessionToken）
             var config = RbacManagerConfig.Instance;
-            if (config.RememberMe && !string.IsNullOrEmpty(config.SavedUsername) && !string.IsNullOrEmpty(config.SavedPasswordHash))
+            if (config.RememberMe && !string.IsNullOrEmpty(config.SessionToken))
             {
                 // 自动填充用户名
-                Account1.Text = config.SavedUsername;
+                if (!string.IsNullOrEmpty(config.SavedUsername))
+                    Account1.Text = config.SavedUsername;
                 ChkRememberMe.IsChecked = true;
                 
-                // 尝试自动登录
                 await TryAutoLogin();
             }
             else
@@ -52,22 +62,34 @@ namespace ColorVision.Rbac
                 var config = RbacManagerConfig.Instance;
                 var rbacManager = RbacManager.GetInstance();
                 
-                // 使用保存的凭据尝试登录
-                LoginResultDto userLoginResult = await rbacManager.AuthService.LoginAndGetDetailAsync(
-                    config.SavedUsername, 
-                    config.SavedPasswordHash);
+                // 使用 SessionToken 验证并恢复登录状态
+                LoginResultDto? userLoginResult = await rbacManager.AuthService.LoginBySessionTokenAsync(config.SessionToken);
                 
                 if (userLoginResult != null)
                 {
-                    await CompleteLogin(userLoginResult, true);
+                    // SessionToken 仍然有效，直接恢复登录状态
+                    RbacManagerConfig.Instance.LoginResult = userLoginResult;
+                    config.SavedUsername = userLoginResult.User.Username;
+                    Authorization.Instance.PermissionMode = userLoginResult.UserDetail.PermissionMode;
+
+                    try
+                    {
+                        await rbacManager.AuditLogService.AddAsync(
+                            userLoginResult.User.Id,
+                            userLoginResult.User.Username,
+                            "user.login",
+                            $"用户自动登录成功（SessionToken），设备: {Environment.MachineName}");
+                    }
+                    catch { }
+
                     this.DialogResult = true;
                     this.Close();
                 }
                 else
                 {
-                    // 自动登录失败，清除保存的凭据
+                    // SessionToken 已失效，清除自动登录凭据
+                    config.SessionToken = string.Empty;
                     config.RememberMe = false;
-                    config.SavedPasswordHash = string.Empty;
                     ChkRememberMe.IsChecked = false;
                     Account1.Focus();
                 }
@@ -102,7 +124,7 @@ namespace ColorVision.Rbac
             try
             {
                 var rbacManager = RbacManager.GetInstance();
-                LoginResultDto userLoginResult = await rbacManager.AuthService.LoginAndGetDetailAsync(username, password);
+                LoginResultDto? userLoginResult = await rbacManager.AuthService.LoginAndGetDetailAsync(username, password);
                 
                 if (userLoginResult == null)
                 {
@@ -110,18 +132,24 @@ namespace ColorVision.Rbac
                     return;
                 }
 
-                // 如果勾选了"记住我"，保存登录凭据
-                if (ChkRememberMe.IsChecked == true)
+                // 检测默认密码（用户名==密码，如 admin/admin），强制修改
+                if (username == password)
                 {
-                    var config = RbacManagerConfig.Instance;
-                    config.RememberMe = true;
-                    config.SavedUsername = username;
-                    // 保存密码的Hash（简化实现，实际应使用更安全的方式）
-                    config.SavedPasswordHash = ComputePasswordHash(password);
+                    var changeWindow = new ChangePasswordWindow(userLoginResult.User.Id, isForceChange: true)
+                    {
+                        Owner = this,
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner
+                    };
+                    if (changeWindow.ShowDialog() != true)
+                    {
+                        // 用户拒绝修改默认密码，不允许登录
+                        MessageBox.Show("首次登录必须修改默认密码。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
                 }
 
-                await CompleteLogin(userLoginResult, false);
-                
+                await CompleteLogin(userLoginResult, ChkRememberMe.IsChecked == true);
+
                 this.DialogResult = true;
                 this.Close();
             }
@@ -137,7 +165,7 @@ namespace ColorVision.Rbac
             }
         }
 
-        private async Task CompleteLogin(LoginResultDto userLoginResult, bool isAutoLogin)
+        private async Task CompleteLogin(LoginResultDto userLoginResult, bool rememberMe)
         {
             var rbacManager = RbacManager.GetInstance();
             
@@ -145,35 +173,34 @@ namespace ColorVision.Rbac
             string sessionToken = await rbacManager.SessionService.CreateSessionAsync(
                 userLoginResult.User.Id,
                 deviceInfo: $"{Environment.MachineName} - {Environment.OSVersion}",
-                ipAddress: "127.0.0.1" // 简化实现，实际应获取真实IP
+                ipAddress: "127.0.0.1"
             );
 
             // 保存登录结果和会话Token
-            RbacManagerConfig.Instance.LoginResult = userLoginResult;
-            RbacManagerConfig.Instance.SessionToken = sessionToken;
+            var config = RbacManagerConfig.Instance;
+            config.LoginResult = userLoginResult;
+            config.SessionToken = sessionToken;
+            config.SavedUsername = userLoginResult.User.Username;
             Authorization.Instance.PermissionMode = userLoginResult.UserDetail.PermissionMode;
 
-            // 安全地记录审计日志
+            // 记住我：只保存 SessionToken，不保存密码
+            config.RememberMe = rememberMe;
+            if (!rememberMe)
+            {
+                config.SavedUsername = string.Empty;
+            }
+
+            // 记录审计日志
             try
             {
-                string loginMethod = isAutoLogin ? "自动登录" : "手动登录";
                 await rbacManager.AuditLogService.AddAsync(
                     userLoginResult.User.Id,
                     userLoginResult.User.Username,
                     "user.login",
-                    $"用户{loginMethod}成功，会话ID: {sessionToken.Substring(0, 8)}..., 设备: {Environment.MachineName}"
+                    $"用户手动登录成功，会话ID: {sessionToken[..Math.Min(8, sessionToken.Length)]}..., 设备: {Environment.MachineName}"
                 );
             }
             catch { }
-        }
-
-        private string ComputePasswordHash(string password)
-        {
-            using (var sha256 = SHA256.Create())
-            {
-                byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(hashBytes);
-            }
         }
 
         // 打开注册窗口
@@ -187,8 +214,6 @@ namespace ColorVision.Rbac
             bool? result = win.ShowDialog();
             if (result == true)
             {
-                // 可在此自动填充刚注册的用户名
-                // Account1.Text = win.RegisteredUsername; // 若将来需要，可在 RegisterWindow 暴露属性
             }
         }
     }

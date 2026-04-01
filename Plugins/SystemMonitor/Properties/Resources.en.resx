@@ -118,9 +118,132 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="PerformanceTest" xml:space="preserve">
-    <value>Performance testing</value>
+    <value>System Monitor</value>
   </data>
   <data name="UpdateSpeed" xml:space="preserve">
     <value>Update Speed</value>
+  </data>
+  <data name="StorageManagement" xml:space="preserve">
+    <value>Storage Management</value>
+  </data>
+  <data name="TotalStorage" xml:space="preserve">
+    <value>Total</value>
+  </data>
+  <data name="FreeSpace" xml:space="preserve">
+    <value>Free</value>
+  </data>
+  <data name="Used" xml:space="preserve">
+    <value>Used</value>
+  </data>
+  <data name="PerformanceMonitor" xml:space="preserve">
+    <value>Performance</value>
+  </data>
+  <data name="TotalUsage" xml:space="preserve">
+    <value>Total Usage</value>
+  </data>
+  <data name="CurrentApp" xml:space="preserve">
+    <value>Current App</value>
+  </data>
+  <data name="SystemInfo" xml:space="preserve">
+    <value>System Info</value>
+  </data>
+  <data name="ComputerName" xml:space="preserve">
+    <value>Computer Name</value>
+  </data>
+  <data name="OS" xml:space="preserve">
+    <value>Operating System</value>
+  </data>
+  <data name="CoreCount" xml:space="preserve">
+    <value>Cores</value>
+  </data>
+  <data name="GPUMemory" xml:space="preserve">
+    <value>VRAM</value>
+  </data>
+  <data name="Uptime" xml:space="preserve">
+    <value>Uptime</value>
+  </data>
+  <data name="TotalRAM" xml:space="preserve">
+    <value>Total RAM</value>
+  </data>
+  <data name="Network" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="DateFormat" xml:space="preserve">
+    <value>Date Format</value>
+  </data>
+  <data name="ShowTime" xml:space="preserve">
+    <value>Show Time</value>
+  </data>
+  <data name="ShowRAM" xml:space="preserve">
+    <value>Show RAM</value>
+  </data>
+  <data name="CacheSize" xml:space="preserve">
+    <value>Cache Size</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>Clear Cache</value>
+  </data>
+  <data name="LocalDisk" xml:space="preserve">
+    <value>Local Disk</value>
+  </data>
+  <data name="NotDetected" xml:space="preserve">
+    <value>Not Detected</value>
+  </data>
+  <data name="ShowCPU" xml:space="preserve">
+    <value>Show CPU</value>
+  </data>
+  <data name="ShowUptime" xml:space="preserve">
+    <value>Show Uptime</value>
+  </data>
+  <data name="ShowDisk" xml:space="preserve">
+    <value>Show Disk</value>
+  </data>
+  <data name="StatusBarSettings" xml:space="preserve">
+    <value>Status Bar Items</value>
+  </data>
+  <data name="ProcessMonitor" xml:space="preserve">
+    <value>Process Monitor</value>
+  </data>
+  <data name="ProcessName" xml:space="preserve">
+    <value>Process Name</value>
+  </data>
+  <data name="MemoryUsage" xml:space="preserve">
+    <value>Memory Usage</value>
+  </data>
+  <data name="RuntimeInfo" xml:space="preserve">
+    <value>Runtime Info</value>
+  </data>
+  <data name="OSUptime" xml:space="preserve">
+    <value>System Uptime</value>
+  </data>
+  <data name="OSBootTime" xml:space="preserve">
+    <value>Boot Time</value>
+  </data>
+  <data name="AppStartTime" xml:space="preserve">
+    <value>App Start Time</value>
+  </data>
+  <data name="ScreenResolution" xml:space="preserve">
+    <value>Screen Resolution</value>
+  </data>
+  <data name="Architecture" xml:space="preserve">
+    <value>Architecture</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>User Name</value>
+  </data>
+  <data name="ThreadCount" xml:space="preserve">
+    <value>Threads</value>
+  </data>
+  <data name="HandleCount" xml:space="preserve">
+    <value>Handles</value>
+  </data>
+  <data name="AvailableMemory" xml:space="preserve">
+    <value>Available Memory</value>
   </data>
 </root>

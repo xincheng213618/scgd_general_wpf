@@ -12,13 +12,26 @@ def parse_version_tuple(version: str) -> tuple[int, ...]:
     return tuple(int(part) for part in version.split("."))
 
 
-def parse_update_package(path: Path, storage: Path | None = None) -> dict[str, Any] | None:
-    match = _UPDATE_PACKAGE_RE.match(path.name)
-    if not match or not path.is_file():
+def parse_update_filename(name: str) -> dict[str, Any] | None:
+    match = _UPDATE_PACKAGE_RE.match(name)
+    if not match:
         return None
-
     version = match.group(1)
     version_parts = parse_version_tuple(version)
+    return {
+        "filename": name,
+        "version": version,
+        "version_tuple": version_parts,
+        "branch": ".".join(str(part) for part in version_parts[:3]),
+        "fix": version_parts[3],
+    }
+
+
+def parse_update_package(path: Path, storage: Path | None = None) -> dict[str, Any] | None:
+    parsed = parse_update_filename(path.name)
+    if not parsed or not path.is_file():
+        return None
+
     try:
         stat = path.stat()
     except OSError:
@@ -32,16 +45,57 @@ def parse_update_package(path: Path, storage: Path | None = None) -> dict[str, A
             relative_path = path.name
 
     return {
-        "filename": path.name,
-        "version": version,
-        "version_tuple": version_parts,
-        "branch": ".".join(str(part) for part in version_parts[:3]),
-        "fix": version_parts[3],
+        **parsed,
         "size": stat.st_size,
         "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
         "relative_path": relative_path,
         "path": path,
     }
+
+
+def scan_update_preview_fast(storage: Path, *, limit: int = 8) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    repair_update_storage_layout(storage)
+    update_dir = storage / "Update"
+    canonical_meta: list[dict[str, Any]] = []
+    if not update_dir.is_dir():
+        return [], build_update_summary([], [])
+
+    for entry in update_dir.iterdir():
+        if entry.name.startswith(".") or not entry.is_file():
+            continue
+        parsed = parse_update_filename(entry.name)
+        if not parsed:
+            continue
+        canonical_meta.append({**parsed, "path": entry})
+
+    canonical_meta.sort(key=lambda item: item["version_tuple"], reverse=True)
+    retained_filenames = determine_retained_update_filenames(canonical_meta)
+    preview_items: list[dict[str, Any]] = []
+    for item in canonical_meta[:limit]:
+        try:
+            stat = item["path"].stat()
+        except OSError:
+            continue
+        preview_items.append(
+            {
+                "filename": item["filename"],
+                "version": item["version"],
+                "version_tuple": item["version_tuple"],
+                "branch": item["branch"],
+                "fix": item["fix"],
+                "size": stat.st_size,
+                "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+                "relative_path": item["path"].relative_to(storage).as_posix(),
+            }
+        )
+
+    summary = {
+        "canonical_count": len(canonical_meta),
+        "retained_count": sum(1 for item in canonical_meta if item["filename"] in retained_filenames),
+        "other_file_count": 0,
+        "latest_version": canonical_meta[0]["version"] if canonical_meta else "",
+    }
+    return preview_items, summary
 
 
 def repair_update_storage_layout(storage: Path) -> list[dict[str, str]]:

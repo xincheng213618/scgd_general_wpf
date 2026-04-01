@@ -1,6 +1,7 @@
 ﻿using ColorVision.Rbac.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.Rbac
@@ -18,6 +19,12 @@ namespace ColorVision.Rbac
         {
             _user = user;
             InitializeComponent();
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+                DragMove();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -126,22 +133,22 @@ namespace ColorVision.Rbac
 
         private void TxtSearch_TextChanged(object sender, TextChangedEventArgs e)
         {
-            string searchText = TxtSearch.Text.ToLower();
+            string searchText = TxtSearch.Text;
             
             for (int i = 0; i < PnlRoles.Children.Count; i++)
             {
                 if (PnlRoles.Children[i] is Border border)
                 {
                     var cb = _roleCheckBoxes[i];
-                    string roleName = cb.Content.ToString().ToLower();
-                    border.Visibility = string.IsNullOrWhiteSpace(searchText) || roleName.Contains(searchText) 
+                    string roleName = cb.Content?.ToString() ?? string.Empty;
+                    border.Visibility = string.IsNullOrWhiteSpace(searchText) || roleName.Contains(searchText, StringComparison.OrdinalIgnoreCase) 
                         ? Visibility.Visible 
                         : Visibility.Collapsed;
                 }
             }
         }
 
-        private void BtnSave_Click(object sender, RoutedEventArgs e)
+        private async void BtnSave_Click(object sender, RoutedEventArgs e)
         {
             BtnSave.IsEnabled = false;
             BtnSave.Content = "保存中...";
@@ -153,7 +160,7 @@ namespace ColorVision.Rbac
                     .Select(c => (int)c.Tag)
                     .ToList();
 
-                if (_rbacManager.UpdateUserRoles(_user.Id, selectedIds))
+                if (await _rbacManager.UpdateUserRolesAsync(_user.Id, selectedIds))
                 {
                     MessageBox.Show("角色更新成功！", "成功", MessageBoxButton.OK, MessageBoxImage.Information);
                     DialogResult = true;

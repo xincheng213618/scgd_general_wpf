@@ -12,53 +12,11 @@
         WindowStartupLocation="CenterOwner"
         Initialized="Window_Initialized">
     <Window.Resources>
-        <!-- 现代化按钮样式 -->
-        <Style x:Key="ModernButton" TargetType="Button">
-            <Setter Property="Background" Value="#0078D4"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="12,8"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
-                                CornerRadius="4"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                BorderBrush="{TemplateBinding BorderBrush}">
-                            <ContentPresenter HorizontalAlignment="Center" 
-                                            VerticalAlignment="Center"
-                                            Margin="{TemplateBinding Padding}"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#106EBE"/>
-                </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#005A9E"/>
-                </Trigger>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Background" Value="#CCCCCC"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-        
-        <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
-            <Setter Property="Background" Value="#F3F3F3"/>
-            <Setter Property="Foreground" Value="#333333"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#E8E8E8"/>
-                </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#D0D0D0"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="RbacStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Window.Resources>
     
     <Grid Margin="15">
@@ -70,7 +28,7 @@
         
         <!-- 标题区域 -->
         <Border Grid.Row="0" 
-                Background="#0078D4" 
+                Background="{DynamicResource StatusBarBackgroundBrush}" 
                 CornerRadius="6" 
                 Padding="15,12"
                 Margin="0,0,0,15">
@@ -88,7 +46,8 @@
                            VerticalAlignment="Center"/>
                 <TextBlock Text="分配和管理角色的系统权限" 
                            FontSize="12" 
-                           Foreground="#E0FFFFFF"
+                           Foreground="White"
+                           Opacity="0.8"
                            VerticalAlignment="Center"
                            Margin="15,0,0,0"/>
             </StackPanel>
@@ -104,7 +63,7 @@
             
             <!-- 左侧：角色列表 -->
             <Border Grid.Column="0" 
-                    Background="White" 
+                    Background="{DynamicResource GlobalBackground}" 
                     CornerRadius="6" 
                     Padding="12"
                     Effect="{DynamicResource EffectShadow1}">
@@ -117,7 +76,7 @@
                     
                     <TextBlock Grid.Row="0"  Text="{x:Static properties:Resources.RoleList}"   FontSize="15"   FontWeight="SemiBold" Margin="0,0,0,10"/>
                     
-                    <Border Grid.Row="1"  BorderBrush="#E0E0E0"  BorderThickness="1"  CornerRadius="4">
+                    <Border Grid.Row="1"  BorderBrush="{DynamicResource GlobalBorderBrush1}"  BorderThickness="1"  CornerRadius="4">
                         <ListBox x:Name="RolesListBox"   SelectionChanged="RolesListBox_SelectionChanged"   DisplayMemberPath="Name"   BorderThickness="0"    Padding="4"/>
                     </Border>
 
@@ -133,7 +92,7 @@
             </Border>
             
             <!-- 右侧：权限树 -->
-            <Border Grid.Column="2"   Background="White"    CornerRadius="6"  Padding="12"  Effect="{DynamicResource EffectShadow1}">
+            <Border Grid.Column="2"   Background="{DynamicResource GlobalBackground}"    CornerRadius="6"  Padding="12"  Effect="{DynamicResource EffectShadow1}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -147,8 +106,8 @@
                     
                     <!-- 操作栏 -->
                     <Border Grid.Row="1" 
-                            Background="#F8F9FA" 
-                            BorderBrush="#E0E0E0"
+                            Background="{DynamicResource ButtonBackground}" 
+                            BorderBrush="{DynamicResource GlobalBorderBrush1}"
                             BorderThickness="1"
                             CornerRadius="4"
                             Padding="10"
@@ -177,21 +136,21 @@
                                 <TextBlock Text="当前角色：" 
                                            VerticalAlignment="Center"
                                            FontSize="13"
-                                           Foreground="#666666"/>
+                                           Opacity="0.6"/>
                                 <TextBlock x:Name="CurrentRoleText" 
                                            Text="未选择" 
                                            FontWeight="Bold" 
                                            VerticalAlignment="Center" 
                                            Margin="5,0,0,0"
                                            FontSize="13"
-                                           Foreground="#0078D4"/>
+                                           Foreground="{DynamicResource StatusBarBackgroundBrush}"/>
                             </StackPanel>
                         </Grid>
                     </Border>
                     
                     <!-- 权限树形视图 -->
                     <Border Grid.Row="2" 
-                            BorderBrush="#E0E0E0" 
+                            BorderBrush="{DynamicResource GlobalBorderBrush1}" 
                             BorderThickness="1"
                             CornerRadius="4">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -201,7 +160,7 @@
                                 <TreeView.Resources>
                                     <!-- 组级别样式 -->
                                     <HierarchicalDataTemplate DataType="{x:Type local:PermissionGroup}" ItemsSource="{Binding Permissions}">
-                                        <Border Background="#F0F7FF" 
+                                        <Border Background="{DynamicResource ButtonBackground}" 
                                                 CornerRadius="4" 
                                                 Padding="8,6"
                                                 Margin="0,2">
@@ -211,10 +170,10 @@
                                                           Content="{Binding GroupName}"
                                                           FontWeight="Bold"
                                                           FontSize="14"
-                                                          Foreground="#0078D4"
+                                                          Foreground="{DynamicResource StatusBarBackgroundBrush}"
                                                           Checked="GroupCheckBox_Checked"
                                                           Unchecked="GroupCheckBox_Unchecked"/>
-                                                <Border Background="#0078D4"
+                                                <Border Background="{DynamicResource StatusBarBackgroundBrush}"
                                                         CornerRadius="10"
                                                         Padding="6,2"
                                                         Margin="8,0,0,0">
@@ -229,7 +188,7 @@
                                     
                                     <!-- 权限级别样式 -->
                                     <DataTemplate DataType="{x:Type local:PermissionItem}">
-                                        <Border Background="White"
+                                        <Border Background="{DynamicResource GlobalBackground}"
                                                 CornerRadius="4"
                                                 Padding="8,6"
                                                 Margin="20,2,0,2">
@@ -240,11 +199,11 @@
                                                                FontSize="13"/>
                                                     <TextBlock Text="{Binding Code}" 
                                                                FontSize="11" 
-                                                               Foreground="#666666"
+                                                               Opacity="0.6"
                                                                Margin="0,2,0,0"/>
                                                     <TextBlock Text="{Binding Remark}" 
                                                                FontSize="11" 
-                                                               Foreground="#999999"
+                                                               Opacity="0.5"
                                                                TextWrapping="Wrap"
                                                                Margin="0,2,0,0"
                                                                Visibility="{Binding HasRemarkVisibility}"/>

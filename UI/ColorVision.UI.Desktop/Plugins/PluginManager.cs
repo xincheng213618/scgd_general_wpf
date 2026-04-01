@@ -195,6 +195,7 @@ namespace ColorVision.UI.Desktop.Plugins
             foreach (var plugin in pluginsNeedingDownload)
             {
                 string url = client.GetDownloadUrl(plugin.PackageName, plugin.LastVersion.ToString());
+                string expectedFileName = $"{plugin.PackageName}-{plugin.LastVersion}.cvxp";
 
                 manager.AddDownload(url, downloadDir, auth, task =>
                 {
@@ -230,7 +231,7 @@ namespace ColorVision.UI.Desktop.Plugins
                             log.Warn("UpdateAll: All downloads failed, no plugins to update.");
                         }
                     }
-                });
+                }, expectedFileName);
             }
         }
 
@@ -306,6 +307,7 @@ namespace ColorVision.UI.Desktop.Plugins
                     }
 
                     string url = client.GetDownloadUrl(SearchName, version.ToString());
+                    string expectedFileName = $"{SearchName}-{version}.cvxp";
 
                     DownloadWindow.ShowInstance();
                     Aria2cDownloadManager.GetInstance().AddDownload(url, downloadDir, DownloadFileConfig.Instance.Authorization, task =>
@@ -321,7 +323,7 @@ namespace ColorVision.UI.Desktop.Plugins
                         {
                             log.Error($"DownloadPackage failed for {SearchName}: {task.ErrorMessage}");
                         }
-                    });
+                    }, expectedFileName);
                 };
             });
         }

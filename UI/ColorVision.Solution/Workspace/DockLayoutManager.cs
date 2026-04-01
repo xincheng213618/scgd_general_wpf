@@ -1,6 +1,7 @@
 using AvalonDock;
 using AvalonDock.Layout;
 using AvalonDock.Layout.Serialization;
+using ColorVision.UI;
 using ColorVision.UI.Views;
 using log4net;
 using System.IO;
@@ -20,8 +21,11 @@ namespace ColorVision.Solution.Workspace
         private const int DefaultBottomPaneHeight = 200;
     private const int DefaultSidePaneWidth = 303;
 
+        /// <summary>
+        /// 布局文件存储在用户 AppData 目录，避免 Program Files 等受保护目录的权限问题。
+        /// </summary>
         private static string LayoutFilePath => Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory, "MainWindowDockLayout.xml");
+            Environments.DirAppData, "MainWindowDockLayout.xml");
 
         private readonly DockingManager _dockingManager;
 
@@ -80,6 +84,7 @@ namespace ColorVision.Solution.Workspace
         {
             try
             {
+                Directory.CreateDirectory(Path.GetDirectoryName(LayoutFilePath)!);
                 var serializer = new XmlLayoutSerializer(_dockingManager);
                 using var stream = new StreamWriter(LayoutFilePath);
                 serializer.Serialize(stream);
@@ -354,6 +359,55 @@ namespace ColorVision.Solution.Workspace
         {
             var anchorable = FindAnchorable(contentId);
             return anchorable != null && !anchorable.IsHidden;
+        }
+
+        /// <summary>
+        /// 显示并激活指定面板。如果面板已隐藏或被关闭，则重新显示。
+        /// </summary>
+        public void ShowPanel(string contentId)
+        {
+            var anchorable = FindAnchorable(contentId);
+            if (anchorable != null)
+            {
+                if (anchorable.IsHidden)
+                    anchorable.Show();
+                anchorable.IsActive = true;
+                return;
+            }
+
+            // Panel was closed and removed from layout tree — re-add from registry
+            if (_contentRegistry.TryGetValue(contentId, out var content))
+            {
+                var title = _panelInfoRegistry.TryGetValue(contentId, out var info) ? info.Title : contentId;
+
+                var newAnchorable = new LayoutAnchorable
+                {
+                    ContentId = contentId,
+                    Title = title,
+                    Content = content,
+                    CanClose = true,
+                    CanAutoHide = true,
+                    CanFloat = true
+                };
+
+                var existingPane = _dockingManager.Layout.Descendents()
+                    .OfType<LayoutAnchorablePane>().FirstOrDefault();
+                if (existingPane != null)
+                {
+                    existingPane.Children.Add(newAnchorable);
+                }
+                else if (_dockingManager.Layout.RootPanel != null)
+                {
+                    var pane = new LayoutAnchorablePane();
+                    pane.Children.Add(newAnchorable);
+                    var group = new LayoutAnchorablePaneGroup { DockHeight = new GridLength(DefaultBottomPaneHeight) };
+                    group.Children.Add(pane);
+                    _dockingManager.Layout.RootPanel.Children.Add(group);
+                }
+
+                newAnchorable.Show();
+                newAnchorable.IsActive = true;
+            }
         }
 
         /// <summary>

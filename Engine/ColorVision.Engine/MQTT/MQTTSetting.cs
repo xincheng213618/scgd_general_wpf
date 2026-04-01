@@ -1,14 +1,23 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace ColorVision.Engine.MQTT
 {
-    public class MQTTSettingProvider : IConfigSettingProvider, IStatusBarProvider
+    public class MQTTSettingProvider : IConfigSettingProvider, IStatusBarProviderUpdatable
     {
+        public event EventHandler StatusBarItemsChanged;
+
+        public MQTTSettingProvider()
+        {
+            MQTTControl.GetInstance().MQTTConnectChanged += (s, e) =>
+                StatusBarItemsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             return new List<ConfigSettingMetadata>
@@ -28,20 +37,20 @@ namespace ColorVision.Engine.MQTT
         }
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
-
+            bool isConnected = MQTTControl.GetInstance().IsConnect;
             RelayCommand relayCommand = new RelayCommand(a => new MQTTConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             return new List<StatusBarMeta>
             {
                 new StatusBarMeta()
                 {
-                    Name = "Start MQTT",
-                    Description = "Start MQTT",
-                    Order =2,
-                    BindingName ="MQTTControl.IsConnect",
-                    VisibilityBindingName = nameof(MQTTSetting.IsUseMQTT),
-                    ButtonStyleName ="ButtonDrawingImageMQTT",
+                    Id = "MQTT",
+                    Name = "MQTT",
+                    Description = isConnected ? "MQTT Connected" : "MQTT Disconnected",
+                    Order = 999,
+                    Type = StatusBarType.Icon,
+                    IconResourceKey = isConnected ? "DrawingImageMQTT" : "DrawingImageMQTTRed",
                     Source = MQTTSetting.Instance,
-                    Command =relayCommand
+                    Command = relayCommand
                 }
             };
         }

@@ -51,6 +51,18 @@ namespace ColorVision.Solution.FolderMeta
         {
             var dirName = directoryInfo.Name.ToLowerInvariant();
             
+            // Check if directory contains .cvproj files → treat as Project folder
+            try
+            {
+                if (directoryInfo.GetFiles("*.cvproj", SearchOption.TopDirectoryOnly).Length > 0)
+                {
+                    // Find the ProjectFolder type from registered patterns
+                    if (_patternTypeMap.TryGetValue("project", out var projectType))
+                        return projectType;
+                }
+            }
+            catch { }
+
             // Check for exact name match first
             if (_patternTypeMap.TryGetValue(dirName, out var type))
                 return type;

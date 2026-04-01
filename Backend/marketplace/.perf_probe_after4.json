@@ -1,0 +1,20 @@
+{
+  "/": {
+    "status_first": 200,
+    "status_second": 200,
+    "cold_ms": 399.59,
+    "warm_ms": 115.75
+  },
+  "/changelog": {
+    "status_first": 200,
+    "status_second": 200,
+    "cold_ms": 22.62,
+    "warm_ms": 20.86
+  },
+  "/releases": {
+    "status_first": 200,
+    "status_second": 200,
+    "cold_ms": 3663.41,
+    "warm_ms": 23.78
+  }
+}

@@ -1,4 +1,6 @@
 using cvColorVision;
+using Newtonsoft.Json;
+using Spectrum.License;
 using System.IO.Ports;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -21,6 +23,9 @@ namespace Spectrum
         {
             try
             {
+                // Sync licenses from DB before connecting
+                LicenseDatabase.Instance.SyncToLocal();
+
                 Manager.Handle = Spectrometer.CM_CreateEmission(0, MyCallback);
 
                 int com = 0;
@@ -83,8 +88,7 @@ namespace Spectrum
                     if (ret != 1)
                         log.Warn($"SP100 参数设置失败: {Spectrometer.GetErrorMessage(ret)}");
 
-                    State2.Text = Spectrum.Properties.Resources.连接成功;
-                    State4.Text = "SP-100";
+                    Manager.HardwareModel = "SP-100";
                     button3.IsEnabled = true;
                     button5.IsEnabled = true;
                     button6.IsEnabled = true;
@@ -94,7 +98,9 @@ namespace Spectrum
                     Manager.IsConnected = false;
                     string errorMsg = Spectrometer.GetErrorMessage(iR);
                     log.Error($"光谱仪连接失败: {errorMsg}");
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"连接失败: {errorMsg}");
+
+                    // Check if device exists - if so, it may be a license issue
+                    CheckDeviceAndPromptLicense(errorMsg);
                 }
             }
             catch(Exception ex)
@@ -112,8 +118,6 @@ namespace Spectrum
             IsRun = false;
             ret = Manager.Disconnect();
             Manager.SerialNumber = string.Empty;
-            State2.Text = Spectrum.Properties.Resources.未连接;
-            State4.Text = "---";
         }
 
         public async Task ReConnet()
@@ -174,6 +178,60 @@ namespace Spectrum
                 log.Error($"SP100 参数设置失败: {errorMsg}");
                 MessageBox.Show($"SP100 设置失败: {errorMsg}");
             }
+        }
+
+        /// <summary>
+        /// On connection failure, detect if a device exists via CM_Emission_GetAllSN.
+        /// If exactly one device is found, it's likely a license issue - open the license manager.
+        /// </summary>
+        private void CheckDeviceAndPromptLicense(string errorMsg)
+        {
+            try
+            {
+                int comPort = 0;
+                if (Manager.Config.IsComPort)
+                {
+                    if (int.TryParse(Manager.Config.SzComName.Replace("COM", ""), out int z))
+                        comPort = z;
+                }
+
+                int bufferLength = 1024;
+                StringBuilder sb = new StringBuilder(bufferLength);
+                Spectrometer.CM_Emission_GetAllSN((int)Manager.Config.SpectrometerType, comPort, sb, bufferLength);
+                string raw = sb.ToString();
+
+                if (!string.IsNullOrWhiteSpace(raw))
+                {
+                    var result = JsonConvert.DeserializeObject<SpectrometerManager.SpectrometerSnResult>(raw);
+                    if (result?.IDs != null && result.IDs.Count == 1)
+                    {
+                        log.Info($"检测到设备 {result.IDs[0]}，连接失败可能是许可证问题");
+
+                        // Sync licenses from DB first
+                        LicenseDatabase.Instance.SyncToLocal();
+
+                        var msgResult = MessageBox.Show(
+                            Application.Current.GetActiveWindow(),
+                            $"连接失败: {errorMsg}\n\n检测到设备: {result.IDs[0]}\n连接失败可能是许可证问题。\n\n是否打开许可证管理器?",
+                            "连接失败 - 许可证检查",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Warning);
+
+                        if (msgResult == MessageBoxResult.Yes)
+                        {
+                            new LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        }
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"设备检测失败: {ex.Message}");
+            }
+
+            // Default: just show the error message
+            MessageBox.Show(Application.Current.GetActiveWindow(), $"连接失败: {errorMsg}");
         }
     }
 }

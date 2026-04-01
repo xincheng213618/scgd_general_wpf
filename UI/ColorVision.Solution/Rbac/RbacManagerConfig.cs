@@ -25,19 +25,10 @@ namespace ColorVision.Rbac
         private bool _RememberMe = false;
 
         /// <summary>
-        /// 保存的用户名（用于自动登录）
+        /// 保存的用户名（用于自动登录时显示）
         /// </summary>
         public string SavedUsername { get => _SavedUsername; set { _SavedUsername = value; OnPropertyChanged(); } }
         private string _SavedUsername = string.Empty;
-
-        /// <summary>
-        /// 保存的密码Hash（用于自动登录）
-        /// </summary>
-        public string SavedPasswordHash { get => _SavedPasswordHash; set { _SavedPasswordHash = value; OnPropertyChanged(); } }
-        private string _SavedPasswordHash = string.Empty;
     }
-
-
-
 }
 

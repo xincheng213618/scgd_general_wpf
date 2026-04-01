@@ -161,10 +161,6 @@ class BuildScriptTests(unittest.TestCase):
         self.assertFalse(result)
 
     def test_publish_primary_release_does_not_update_version_when_upload_fails(self):
-        release_root = self.root / "release"
-        release_root.mkdir()
-        latest_release_path = release_root / "LATEST_RELEASE"
-        latest_release_path.write_text("1.0.0.0", encoding="utf-8")
         changelog_src = self.root / "CHANGELOG.md"
         changelog_src.write_text("hello", encoding="utf-8")
         package_file = self.root / "ColorVision-2.0.0.0.exe"
@@ -178,25 +174,18 @@ class BuildScriptTests(unittest.TestCase):
             enabled=True,
         )
 
-        result = build.publish_primary_release(
-            "2.0.0.0",
-            latest_release_path,
-            package_file,
-            release_root,
-            changelog_src,
-            release_root / "CHANGELOG.md",
-            settings,
-            upload_func=always_fail_upload,
-        )
+        with patch("build.backend_fetch_latest_version", return_value="1.0.0.0"):
+            result = build.publish_primary_release(
+                "2.0.0.0",
+                package_file,
+                changelog_src,
+                settings,
+                upload_func=always_fail_upload,
+            )
 
         self.assertFalse(result)
-        self.assertEqual(latest_release_path.read_text(encoding="utf-8"), "1.0.0.0")
-        self.assertFalse((release_root / "CHANGELOG.md").exists())
 
-    def test_publish_primary_release_copies_locally_when_remote_upload_disabled(self):
-        release_root = self.root / "release"
-        release_root.mkdir()
-        latest_release_path = release_root / "LATEST_RELEASE"
+    def test_publish_primary_release_uploads_all_artifacts(self):
         changelog_src = self.root / "CHANGELOG.md"
         changelog_src.write_text("hello", encoding="utf-8")
         package_file = self.root / "ColorVision-2.0.0.0.exe"
@@ -205,26 +194,33 @@ class BuildScriptTests(unittest.TestCase):
         settings = build.RemoteUploadSettings(
             base_url="http://example.com:9998",
             folder_name="ColorVision",
-            username="",
-            password="",
-            enabled=False,
+            username="tester",
+            password="secret",
+            enabled=True,
         )
 
-        result = build.publish_primary_release(
-            "2.0.0.0",
-            latest_release_path,
-            package_file,
-            release_root,
-            changelog_src,
-            release_root / "CHANGELOG.md",
-            settings,
-            copy_func=lambda src, dst: build.copy_if_exists(src, Path(dst) / Path(src).name) or Path(dst) / Path(src).name,
-        )
+        upload_calls = []
+
+        def fake_upload(file_path, s, **kwargs):
+            upload_calls.append(Path(file_path).name)
+            return True
+
+        with (
+            patch("build.backend_fetch_latest_version", return_value="1.0.0.0"),
+            patch("build.backend_upload_file", side_effect=fake_upload),
+            patch("build.backend_upload_content", return_value=True) as mock_content,
+        ):
+            result = build.publish_primary_release(
+                "2.0.0.0",
+                package_file,
+                changelog_src,
+                settings,
+                upload_func=fake_upload,
+            )
 
         self.assertTrue(result)
-        self.assertEqual(latest_release_path.read_text(encoding="utf-8"), "2.0.0.0")
-        self.assertTrue((release_root / package_file.name).exists())
-        self.assertEqual((release_root / "CHANGELOG.md").read_text(encoding="utf-8"), "hello")
+        self.assertIn("CHANGELOG.md", upload_calls)
+        mock_content.assert_called_once_with("2.0.0.0", "LATEST_RELEASE", settings)
 
     def test_main_aborts_before_build_when_preflight_fails(self):
         args = SimpleNamespace(
@@ -249,10 +245,7 @@ class BuildScriptTests(unittest.TestCase):
             advanced_installer_path=Path("AdvancedInstaller.com"),
             aip_path=Path("ColorVision.aip"),
             setup_files_dir=self.root,
-            latest_release_path=self.root / "LATEST_RELEASE",
-            target_directory=self.root,
             changelog_src=self.root / "CHANGELOG.md",
-            changelog_dst=self.root / "CHANGELOG.md",
             wechat_target_directory=self.root,
             baidu_target_directory=self.root,
         )
@@ -294,10 +287,7 @@ class BuildScriptTests(unittest.TestCase):
             advanced_installer_path=Path("AdvancedInstaller.com"),
             aip_path=Path("ColorVision.aip"),
             setup_files_dir=self.root,
-            latest_release_path=self.root / "LATEST_RELEASE",
-            target_directory=self.root,
             changelog_src=changelog_path,
-            changelog_dst=self.root / "CHANGELOG.out.md",
             wechat_target_directory=self.root,
             baidu_target_directory=self.root,
         )

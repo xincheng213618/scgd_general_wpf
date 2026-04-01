@@ -1,0 +1,75 @@
+<UserControl x:Class="ColorVision.Solution.Terminal.TerminalControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="300" d:DesignWidth="600"
+             Background="#1E1E1E"
+             Loaded="UserControl_Loaded">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <ToolBar Grid.Row="0" Background="Transparent" Band="0" BandIndex="0">
+            <ComboBox x:Name="ShellSelector" Width="120" Margin="2" SelectionChanged="ShellSelector_Changed">
+                <ComboBoxItem Content="PowerShell" IsSelected="True"/>
+                <ComboBoxItem Content="CMD"/>
+            </ComboBox>
+            <Separator/>
+            <Button x:Name="ButtonNewShell" Content="+ 新终端" Click="ButtonNewShell_Click" Padding="6,2" Margin="2"
+                    Foreground="{DynamicResource GlobalTextBrush}" ToolTip="启动新的终端会话"/>
+            <Button x:Name="ButtonClear" Content="清屏" Click="ButtonClear_Click" Padding="6,2" Margin="2"
+                    Foreground="{DynamicResource GlobalTextBrush}"/>
+            <Button x:Name="ButtonKill" Content="终止" Click="ButtonKill_Click" Padding="6,2" Margin="2"
+                    Foreground="{DynamicResource GlobalTextBrush}" ToolTip="终止当前终端进程"/>
+        </ToolBar>
+
+        <!-- Output area -->
+        <TextBox Grid.Row="1" x:Name="OutputTextBox"
+                 FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
+                 FontSize="14"
+                 Background="#1E1E1E"
+                 Foreground="#CCCCCC"
+                 CaretBrush="#CCCCCC"
+                 BorderThickness="0"
+                 IsReadOnly="True"
+                 TextWrapping="NoWrap"
+                 AcceptsReturn="True"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Auto"
+                 Padding="8,4"
+                 PreviewKeyDown="OutputTextBox_PreviewKeyDown"
+                 FocusVisualStyle="{x:Null}"/>
+
+        <!-- Input line with path prompt -->
+        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="#3F3F46" Background="#1E1E1E">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" x:Name="PromptLabel"
+                           FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
+                           FontSize="14"
+                           Foreground="#6A9955"
+                           VerticalAlignment="Center"
+                           Padding="8,6,0,6"
+                           Text="PS>"/>
+                <TextBox Grid.Column="1" x:Name="InputTextBox"
+                         FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
+                         FontSize="14"
+                         Background="#1E1E1E"
+                         Foreground="#CCCCCC"
+                         CaretBrush="#CCCCCC"
+                         BorderThickness="0"
+                         Padding="4,6,8,6"
+                         PreviewKeyDown="InputTextBox_PreviewKeyDown"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

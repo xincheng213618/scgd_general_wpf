@@ -1,0 +1,106 @@
+{% set timeline = timeline_data %}
+<div class="section-header">
+    <div>
+        <h2 class="section-title"><i class="bi bi-graph-up-arrow"></i>{{ timeline_title or '版本时间线' }}</h2>
+        <div class="section-subtitle mt-2">按 `major.minor.patch` 聚合真实历史文件；fix 不单独成点，只决定点大小。悬浮可看对应 changelog，支持滚轮缩放与横向平移。</div>
+    </div>
+    <div class="summary-strip">
+        <div class="summary-chip"><i class="bi bi-archive"></i>历史文件 {{ timeline.history_file_count }}</div>
+        <div class="summary-chip"><i class="bi bi-bezier2"></i>聚合节点 {{ timeline.node_count }}</div>
+        <div class="summary-chip"><i class="bi bi-arrows-angle-expand"></i>最大 fix {{ timeline.max_fix_count }}</div>
+        {% if timeline.current_file_count is defined %}
+        <div class="summary-chip"><i class="bi bi-lightning-charge"></i>当前根目录 {{ timeline.current_file_count }}</div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4 align-items-start">
+    <div class="col-xl-8">
+        <div class="release-timeline-shell js-release-timeline" data-initial-scale="1" data-scale-min="0.6" data-scale-max="4">
+            <div class="release-timeline-toolbar">
+                <div class="release-timeline-toolbar-group text-soft small">
+                    <i class="bi bi-mouse"></i>
+                    <span>滚轮平移，Ctrl + 滚轮缩放</span>
+                </div>
+                <div class="release-timeline-toolbar-group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="zoom-out"><i class="bi bi-zoom-out"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="zoom-in"><i class="bi bi-zoom-in"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="reset">重置</button>
+                    <span class="surface-tag js-release-timeline-scale">100%</span>
+                </div>
+            </div>
+            <div class="release-timeline-viewport" tabindex="0" aria-label="版本时间线，可水平拖动浏览，支持 Ctrl 加滚轮缩放，方向键也可平移。">
+                <div class="release-timeline-stage" data-base-width="{{ timeline.svg.width }}">
+                    <svg class="release-timeline-svg" width="{{ timeline.svg.width }}" height="{{ timeline.svg.height }}" viewBox="0 0 {{ timeline.svg.width }} {{ timeline.svg.height }}" role="img" aria-label="版本历史聚合时间线">
+                        <line class="chart-grid-line" x1="70" y1="{{ timeline.svg.baseline_y }}" x2="{{ timeline.svg.width - 46 }}" y2="{{ timeline.svg.baseline_y }}"></line>
+                        <line class="chart-grid-line" x1="70" y1="{{ timeline.svg.top_y }}" x2="70" y2="{{ timeline.svg.baseline_y }}"></line>
+                        <text x="24" y="{{ timeline.svg.top_y + 4 }}" class="release-timeline-axis-label">fix</text>
+                        <text x="22" y="{{ timeline.svg.baseline_y + 4 }}" class="release-timeline-axis-label">1</text>
+                        {% if timeline.nodes %}
+                        <text x="18" y="{{ timeline.svg.top_y + 26 }}" class="release-timeline-axis-label">{{ timeline.max_fix_count }}</text>
+                        <path class="chart-line" d="{{ timeline.svg.path }}"></path>
+                        {% endif %}
+                        {% for node in timeline.nodes %}
+                        <g class="release-timeline-node {{ 'is-milestone' if node.is_milestone else '' }}" tabindex="0" data-tooltip='{{ node.tooltip | tojson | forceescape }}'>
+                            {% if node.is_milestone %}
+                            <circle class="release-timeline-halo" cx="{{ node.x }}" cy="{{ node.y }}" r="{{ node.radius + 7 }}"></circle>
+                            {% endif %}
+                            <circle class="chart-point {{ 'is-milestone' if node.is_milestone else '' }}" cx="{{ node.x }}" cy="{{ node.y }}" r="{{ node.radius }}"></circle>
+                            <text x="{{ node.x }}" y="{{ node.y - node.radius - 10 }}" class="release-timeline-count">{{ node.fix_count }}</text>
+                            {% if node.show_label %}
+                            <text x="{{ node.x }}" y="{{ timeline.svg.baseline_y + 22 }}" class="release-timeline-label" transform="rotate(-28 {{ node.x }} {{ timeline.svg.baseline_y + 22 }})">{{ node.branch }}</text>
+                            {% endif %}
+                        </g>
+                        {% endfor %}
+                    </svg>
+                </div>
+            </div>
+            <div class="release-timeline-tooltip" role="tooltip" aria-hidden="true" hidden></div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="row g-3">
+            {% for node in timeline.highlighted_nodes %}
+            <div class="col-12">
+                <div class="milestone-card release-highlight-card">
+                    <h5>{{ node.branch }}</h5>
+                    <p>{{ node.file_count }} 个历史文件 · {{ node.fix_count }} 个 fix{% if node.changelog_entry and node.changelog_entry.date_display %} · {{ node.changelog_entry.date_display }}{% endif %}</p>
+                    <div class="summary-strip mb-2">
+                        <div class="summary-chip">{{ node.annotation_label }}</div>
+                        {% if node.major_minor %}
+                        <div class="summary-chip">{{ node.major_minor }}</div>
+                        {% endif %}
+                        <div class="summary-chip">最新 {{ node.latest_version }}</div>
+                    </div>
+                    <div class="text-soft small mb-2">{{ node.annotation_reason }}</div>
+                    {% if node.changelog_entry and node.changelog_entry.highlights %}
+                        {% for highlight in node.changelog_entry.highlights[:2] %}
+                        <div class="text-soft small {% if not loop.first %}mt-2{% endif %}">• {{ highlight }}</div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-soft small">• {{ node.kind_summary }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% if not timeline.highlighted_nodes %}
+            <div class="col-12">
+                <div class="milestone-card release-highlight-card">
+                    <h5>暂无高亮节点</h5>
+                    <p>当前还没有可标注的 milestone，图表仍会按真实历史文件聚合展示。</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if timeline.story %}
+<div class="helper-list mt-4">
+    {% for line in timeline.story %}
+    <div class="helper-list-item"><i class="bi bi-check2-circle"></i><span>{{ line }}</span></div>
+    {% endfor %}
+</div>
+{% endif %}
+
+

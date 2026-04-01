@@ -1,0 +1,101 @@
+<Window x:Class="ColorVision.Solution.Explorer.AddNewItemWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
+        Title="添加新建项" Height="420" Width="600"
+        Background="{DynamicResource GlobalBackground}"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Category filter -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Text="类别:" DockPanel.Dock="Left" Margin="0,0,8,0" FontWeight="Bold"/>
+            <ComboBox x:Name="CategoryComboBox" SelectionChanged="CategoryComboBox_SelectionChanged"
+                      Background="{DynamicResource GlobalBackground}"/>
+        </DockPanel>
+
+        <!-- Search bar -->
+        <hc:SearchBar x:Name="SearchBar" Grid.Row="1" Margin="0,0,0,8"
+                      hc:InfoElement.Placeholder="搜索模板..."
+                      hc:InfoElement.ShowClearButton="True"
+                      Style="{StaticResource SearchBarPlus}"
+                      IsRealTime="True"
+                      TextChanged="SearchBar_TextChanged"/>
+
+        <!-- Template list -->
+        <ListView x:Name="TemplateListView" Grid.Row="2" Margin="0,0,0,10"
+                  Background="Transparent"
+                  SelectionChanged="TemplateListView_SelectionChanged"
+                  MouseDoubleClick="TemplateListView_MouseDoubleClick">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.View>
+                <GridView>
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
+                    <GridViewColumn Header="名称" Width="200">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="类别" Width="100">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Category}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="扩展名" Width="80">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Extension}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <!-- Name input -->
+        <DockPanel Grid.Row="3" Margin="0,0,0,12">
+            <TextBlock Text="名称:" DockPanel.Dock="Left" Margin="0,0,8,0" FontWeight="Bold"/>
+            <TextBox x:Name="FileNameTextBox" Padding="4,3"
+                     Foreground="{DynamicResource GlobalTextBrush}"
+                     Background="{DynamicResource GlobalBackground}"
+                     KeyDown="FileNameTextBox_KeyDown"/>
+        </DockPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="AddButton" Content="添加" Width="80" Height="30" Margin="0,0,8,0"
+                    Click="AddButton_Click" IsDefault="True"/>
+            <Button Content="取消" Width="80" Height="30"
+                    Click="CancelButton_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

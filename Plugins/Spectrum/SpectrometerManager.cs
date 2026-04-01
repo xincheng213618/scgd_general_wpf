@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Spectrum.Calibration;
 using Spectrum.Configs;
 using Spectrum.Data;
+using Spectrum.License;
 using Spectrum.Models;
 using Spectrum.PropertyEditor;
 using System.ComponentModel;
@@ -58,6 +59,15 @@ namespace Spectrum
         public float AutoIntTimeB { get => _AutoIntTimeB; set { _AutoIntTimeB = value; OnPropertyChanged(); } }
         private float _AutoIntTimeB = 1;
 
+        [DisplayName("自动积分阈值(%)")]
+        public double MaxPercent { get => _MaxPercent; set { _MaxPercent = value; OnPropertyChanged(); Max = (int)(_MaxPercent * 655.35); } } // 655.35 = 65535 / 100, converts percentage to 16-bit ADC scale
+        private double _MaxPercent = 76.3;
+
+        [Browsable(false)]
+        public int Max { get => _Max; set { _Max = value; OnPropertyChanged(); } }
+        private int _Max = 50000;
+
+        [DisplayName("旧版本模式")]
         public bool IsOldVersion { get => _IsOldVersion; set { _IsOldVersion = value; OnPropertyChanged(); } }
         private bool _IsOldVersion = false;
     }
@@ -80,11 +90,26 @@ namespace Spectrum
         public int FilterBW { get => _FilterBW; set { _FilterBW = value; OnPropertyChanged(); } }
         private int _FilterBW = 5;
 
+        [DisplayName("起始波长")]
         public float SetWL1 { get => _SetWL1; set { _SetWL1 = value; OnPropertyChanged(); } }
         private float _SetWL1 = 380;
+
+        [DisplayName("结束波长")]
         public float SetWL2 { get => _SetWL2; set { _SetWL2 = value; OnPropertyChanged(); } }
         private float _SetWL2 = 780;
+    }
 
+    [DisplayName("自动积分与数据采集配置")]
+    public class MeasurementDataConfig : ViewModelBase
+    {
+
+        [DisplayName("自动积分时间配置")]
+        public IntTimeConfig IntTimeConfig { get => _IntTimeConfig; set { _IntTimeConfig = value; OnPropertyChanged(); } }
+        private IntTimeConfig _IntTimeConfig = new IntTimeConfig();
+
+        [DisplayName("数据采集配置")]
+        public GetDataConfig GetDataConfig { get => _GetDataConfig; set { _GetDataConfig = value; OnPropertyChanged(); } }
+        private GetDataConfig _GetDataConfig = new GetDataConfig();
     }
 
 
@@ -152,8 +177,22 @@ namespace Spectrum
         public IntPtr Handle { get; set; } = IntPtr.Zero;
         
         [JsonIgnore]
-        public bool IsConnected { get => _IsConnected; set { _IsConnected = value; OnPropertyChanged(); OnPropertyChanged(nameof(ConnectionTypeDisplay)); } }
+        public bool IsConnected { get => _IsConnected; set { _IsConnected = value; OnPropertyChanged(); OnPropertyChanged(nameof(ConnectionTypeDisplay)); OnPropertyChanged(nameof(HardwareModel)); } }
         private bool _IsConnected = false;
+
+        /// <summary>
+        /// 硬件型号，连接后显示
+        /// </summary>
+        [JsonIgnore]
+        public string HardwareModel { get => _IsConnected ? _HardwareModel : "---"; set { _HardwareModel = value; OnPropertyChanged(); } }
+        private string _HardwareModel = "SP-100";
+
+        /// <summary>
+        /// 当前测量模式文本
+        /// </summary>
+        [JsonIgnore]
+        public string MeasurementMode { get => _MeasurementMode; set { _MeasurementMode = value; OnPropertyChanged(); } }
+        private string _MeasurementMode = "亮色度模式";
 
         /// <summary>
         /// The serial number of the currently connected spectrometer.
@@ -353,6 +392,9 @@ namespace Spectrum
         public RelayCommand GenerateAmplitudeCommand { get; set; }
 
         [JsonIgnore]
+        public RelayCommand GenerateAmplitudeFromExistingCommand { get; set; }
+
+        [JsonIgnore]
         public RelayCommand ConnectCommand { get; set; }
 
         [JsonIgnore]
@@ -360,9 +402,6 @@ namespace Spectrum
 
         [JsonIgnore]
         public RelayCommand EditIntTimeConfigCommand { get; set; }
-
-        [JsonIgnore]
-        public RelayCommand EditGetDataConfigCommand { get; set; }
 
         [JsonIgnore]
         public RelayCommand EditAutodarkParamCommand { get; set; }
@@ -375,6 +414,7 @@ namespace Spectrum
             GetDarkDataCommand = new RelayCommand(a => GetDarkData());
             GetLightDataCommand = new RelayCommand(a => GetLightData());
             GenerateAmplitudeCommand = new RelayCommand(a => GenerateAmplitude());
+            GenerateAmplitudeFromExistingCommand = new RelayCommand(a => GenerateAmplitudeFromExisting());
 
             ConnectCommand = new RelayCommand(a => Connect());
             DisconnectCommand = new RelayCommand(a => Disconnect());
@@ -386,9 +426,8 @@ namespace Spectrum
             SetMaguideFileCommand = new RelayCommand(a => SetMaguideFile());
             LoadMaguideFileCommand = new RelayCommand(a => LoadMaguideFile());
             SetMaguideOutputFileCommand = new RelayCommand(a => SetMaguideOutputFile());
-            EditIntTimeConfigCommand = new RelayCommand(a => EditIntTimeConfig());
+            EditIntTimeConfigCommand = new RelayCommand(a => EditMeasurementDataConfig());
 
-            EditGetDataConfigCommand = new RelayCommand(a => EditGetDataConfig());
             EditAutodarkParamCommand = new RelayCommand(a => EditAutodarkParam());
 
             GetSpectrSerialNumberCommand = new RelayCommand(a => GetSpectrSerialNumber());
@@ -582,7 +621,7 @@ namespace Spectrum
         {
             using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
             {
-                saveFileDialog.FileName = "Magiude.dat"; // 默认文件名
+                saveFileDialog.FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
                 saveFileDialog.Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*";
                 saveFileDialog.Title = "选择保存文件路径";
 
@@ -594,21 +633,17 @@ namespace Spectrum
             }
         }
 
-        public void EditIntTimeConfig()
+        public MeasurementDataConfig MeasurementDataConfig { get; set; } = new MeasurementDataConfig();
+        public IntTimeConfig IntTimeConfig => MeasurementDataConfig.IntTimeConfig;
+
+        public GetDataConfig GetDataConfig => MeasurementDataConfig.GetDataConfig;
+
+        public void EditMeasurementDataConfig()
         {
-            new PropertyEditorWindow(IntTimeConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new PropertyEditorWindow(MeasurementDataConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        public IntTimeConfig IntTimeConfig { get => _IntTimeConfig; set { _IntTimeConfig = value; OnPropertyChanged(); } }
-        private IntTimeConfig _IntTimeConfig = new IntTimeConfig();
 
-        public void EditGetDataConfig()
-        {
-            new PropertyEditorWindow(GetDataConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        public GetDataConfig GetDataConfig { get => _GetDataConfig; set { _GetDataConfig = value; OnPropertyChanged(); } }
-        private GetDataConfig _GetDataConfig = new GetDataConfig();
 
         /// <summary>
         /// 连续测试时间
@@ -636,6 +671,9 @@ namespace Spectrum
 
         public void Connect()
         {
+            // Sync licenses from DB before connecting
+            LicenseDatabase.Instance.SyncToLocal();
+
             Handle = Spectrometer.CM_CreateEmission((int)Config.SpectrometerType, MyCallback);
             int ncom = 0;
             if (Config.IsComPort)
@@ -653,8 +691,57 @@ namespace Spectrum
             {
                 string errorMsg = Spectrometer.GetErrorMessage(iR);
                 log.Error($"光谱仪连接失败: {errorMsg}");
-                MessageBox.Show($"连接失败: {errorMsg}");
+                CheckDeviceAndPromptLicense(errorMsg);
             }
+        }
+
+        /// <summary>
+        /// On connection failure, detect if a device exists.
+        /// If exactly one device is found, it's likely a license issue - prompt user.
+        /// </summary>
+        private void CheckDeviceAndPromptLicense(string errorMsg)
+        {
+            try
+            {
+                int comPort = 0;
+                if (Config.IsComPort)
+                {
+                    if (int.TryParse(Config.SzComName.Replace("COM", ""), out int z))
+                        comPort = z;
+                }
+
+                int bufferLength = 1024;
+                StringBuilder sb = new StringBuilder(bufferLength);
+                Spectrometer.CM_Emission_GetAllSN((int)Config.SpectrometerType, comPort, sb, bufferLength);
+                string raw = sb.ToString();
+
+                if (!string.IsNullOrWhiteSpace(raw))
+                {
+                    var result = JsonConvert.DeserializeObject<SpectrometerSnResult>(raw);
+                    if (result?.IDs != null && result.IDs.Count == 1)
+                    {
+                        log.Info($"检测到设备 {result.IDs[0]}，连接失败可能是许可证问题");
+                        var msgResult = MessageBox.Show(
+                            Application.Current.GetActiveWindow(),
+                            $"连接失败: {errorMsg}\n\n检测到设备: {result.IDs[0]}\n连接失败可能是许可证问题。\n\n是否打开许可证管理器?",
+                            "连接失败 - 许可证检查",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Warning);
+
+                        if (msgResult == MessageBoxResult.Yes)
+                        {
+                            new License.LicenseManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        }
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"设备检测失败: {ex.Message}");
+            }
+
+            MessageBox.Show($"连接失败: {errorMsg}");
         }
         public int Disconnect()
         {
@@ -667,8 +754,104 @@ namespace Spectrum
             return -1;
         }
 
+        /// <summary>
+        /// 执行校零操作，自动处理快门控制
+        /// 可被定时任务和Socket指令共享调用
+        /// </summary>
+        /// <returns>校零结果：1=成功，其他=失败</returns>
+        public async Task<int> PerformDarkCalibrationAsync()
+        {
+            if (ShutterController.IsConnected)
+            {
+                log.Debug("开启快门进行校零");
+                await ShutterController.OpenShutter();
+            }
+
+            int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fDarkData);
+
+            if (ShutterController.IsConnected)
+            {
+                log.Debug("关闭快门");
+                await ShutterController.CloseShutter();
+            }
+
+            return ret;
+        }
+
+        /// <summary>
+        /// 获取自动积分时间，自动处理同步频率调整
+        /// 可被定时任务和Socket指令共享调用
+        /// </summary>
+        /// <returns>成功返回积分时间，失败返回null</returns>
+        public float? GetAutoIntegrationTime()
+        {
+            float fIntTime = 0;
+            int ret;
+
+            if (IntTimeConfig.IsOldVersion)
+            {
+                ret = Spectrometer.CM_Emission_GetAutoTime(
+                    Handle, ref fIntTime, IntTimeConfig.IntLimitTime,
+                    IntTimeConfig.AutoIntTimeB, (int)IntTimeConfig.MaxPercent);
+            }
+            else
+            {
+                ret = Spectrometer.CM_Emission_GetAutoTimeEx(
+                    Handle, ref fIntTime, IntTimeConfig.IntLimitTime,
+                    IntTimeConfig.AutoIntTimeB, IntTimeConfig.Max, null);
+            }
+
+            if (ret != 1)
+            {
+                log.Warn($"自动积分时间获取失败: {Spectrometer.GetErrorMessage(ret)}");
+                return null;
+            }
+
+            // Apply sync frequency adjustment if enabled
+            if (GetDataConfig.IsSyncFrequencyEnabled)
+            {
+                float syncIntTime = fIntTime;
+                COLOR_PARA cOLOR_PARA = new COLOR_PARA();
+                int syncRet = Spectrometer.CM_Emission_GetDataSyncfreq(
+                    Handle, 0, GetDataConfig.Syncfreq, GetDataConfig.SyncfreqFactor,
+                    ref syncIntTime, Average, GetDataConfig.FilterBW,
+                    fDarkData, 0, 0, GetDataConfig.SetWL1, GetDataConfig.SetWL2,
+                    ref cOLOR_PARA);
+                if (syncRet == 1)
+                {
+                    log.Info($"同步频率调整积分时间: {fIntTime}ms → {syncIntTime}ms");
+                    fIntTime = syncIntTime;
+                }
+                else
+                {
+                    log.Warn($"同步频率调整积分时间失败: {Spectrometer.GetErrorMessage(syncRet)}");
+                }
+            }
+
+            log.Info($"自动积分时间获取成功: {fIntTime}ms");
+            return fIntTime;
+        }
+
+        /// <summary>
+        /// Event raised when dark data or light data has been acquired, for chart refresh.
+        /// </summary>
+        public event EventHandler DataAcquired;
+
         public void GenerateAmplitude()  
         {
+            string outputPath = MaguideFileOutput;
+            if (string.IsNullOrEmpty(outputPath))
+            {
+                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+                saveFileDialog.FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
+                saveFileDialog.Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*";
+                saveFileDialog.Title = "选择幅值标定文件保存路径";
+                if (saveFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                    return;
+                outputPath = saveFileDialog.FileName;
+                MaguideFileOutput = outputPath;
+            }
+
             int ret = Spectrometer.CM_Emission_DarkStorage(Handle, IntTime, Average, 0, fLightData);
             if (ret != 1)
             {
@@ -677,16 +860,51 @@ namespace Spectrum
                 MessageBox.Show($"获取 LightData 失败: {errorMsg}");
                 return;
             }
-            log.Debug($"生成幅值文件参数: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={MaguideFileOutput}");
-            int ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, MaguideFileOutput);
+            DataAcquired?.Invoke(this, EventArgs.Empty);
+
+            log.Debug($"生成幅值文件参数: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={outputPath}");
+            int ret1 = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, outputPath);
             if (ret1 == 1)
             {
-                log.Info("幅值文件生成成功");
-                MessageBox.Show("生成成功");
+                log.Info($"幅值文件生成成功: {outputPath}");
+                MessageBox.Show($"生成成功\n文件: {outputPath}");
             }
             else
             {
                 string errorMsg = Spectrometer.GetErrorMessage(ret1);
+                log.Error($"幅值文件生成失败: {errorMsg}");
+                MessageBox.Show($"生成失败: {errorMsg}");
+            }
+        }
+
+        /// <summary>
+        /// Generate amplitude file from existing dark/light data (manual mode - no auto-acquire).
+        /// </summary>
+        public void GenerateAmplitudeFromExisting()
+        {
+            string outputPath = MaguideFileOutput;
+            if (string.IsNullOrEmpty(outputPath))
+            {
+                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+                saveFileDialog.FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
+                saveFileDialog.Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*";
+                saveFileDialog.Title = "选择幅值标定文件保存路径";
+                if (saveFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                    return;
+                outputPath = saveFileDialog.FileName;
+                MaguideFileOutput = outputPath;
+            }
+
+            log.Debug($"手动生成幅值文件: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={outputPath}");
+            int ret = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, outputPath);
+            if (ret == 1)
+            {
+                log.Info($"幅值文件生成成功: {outputPath}");
+                MessageBox.Show($"生成成功\n文件: {outputPath}");
+            }
+            else
+            {
+                string errorMsg = Spectrometer.GetErrorMessage(ret);
                 log.Error($"幅值文件生成失败: {errorMsg}");
                 MessageBox.Show($"生成失败: {errorMsg}");
             }
@@ -698,6 +916,7 @@ namespace Spectrum
             if (ret == 1)
             {
                 log.Info("LightData 获取成功");
+                DataAcquired?.Invoke(this, EventArgs.Empty);
                 MessageBox.Show("获取成功");
             }
             else
@@ -714,6 +933,7 @@ namespace Spectrum
             if (ret == 1)
             {
                 log.Info("校零成功");
+                DataAcquired?.Invoke(this, EventArgs.Empty);
                 MessageBox.Show("校零成功");
             }
             else
@@ -785,7 +1005,7 @@ namespace Spectrum
         public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
         private string _MaguideFile;
 
-        public string MaguideFileOutput { get => _MaguideFile; set { _MaguideFile = value; OnPropertyChanged(); } }
+        public string MaguideFileOutput { get => _MaguideFileOutput; set { _MaguideFileOutput = value; OnPropertyChanged(); } }
         private string _MaguideFileOutput;
 
 

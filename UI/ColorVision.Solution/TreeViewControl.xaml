@@ -13,7 +13,7 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/ColorVision.Solution;component/V/TreeView.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Solution;component/Explorer/TreeView.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -99,7 +99,6 @@
                     <Style TargetType="{x:Type TreeViewItem}"  BasedOn="{StaticResource TreeViewItemBaseStyle}">
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                         <Setter Property="Padding" Value="0"/>
                         <Setter Property="Margin" Value="0"/>
                         <Setter Property="MinHeight" Value="19"/>
@@ -136,18 +135,10 @@
                                         <Trigger Property="ItemsControl.HasItems" Value="false">
                                             <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
                                         </Trigger>
-                                        <Trigger Property="TreeViewItem.IsSelected" Value="true">
+                                        <DataTrigger Binding="{Binding IsMultiSelected}" Value="True">
                                             <Setter TargetName="Bd" Value="{DynamicResource PrimaryBrush}" Property="Background" />
                                             <Setter Value="{DynamicResource TextIconBrush}" Property="Foreground" />
-                                        </Trigger>
-                                        <MultiTrigger>
-                                            <MultiTrigger.Conditions>
-                                                <Condition Property="TreeViewItem.IsSelected" Value="true" />
-                                                <Condition Property="TreeViewItem.IsSelectionActive" Value="false" />
-                                            </MultiTrigger.Conditions>
-                                            <Setter TargetName="Bd" Value="{DynamicResource DarkDefaultBrush}" Property="Background" />
-                                            <Setter Value="{DynamicResource PrimaryTextBrush}" Property="Foreground" />
-                                        </MultiTrigger>
+                                        </DataTrigger>
                                         <Trigger Property="IsEnabled" Value="false">
                                             <Setter Property="UIElement.Opacity" Value=".4" />
                                         </Trigger>

@@ -3,6 +3,7 @@
     public enum StatusBarType
     {
         Icon,
-        Text
+        Text,
+        IconText
     }
 }

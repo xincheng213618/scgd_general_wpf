@@ -1,6 +1,7 @@
 using AvalonDock;
 using AvalonDock.Layout;
 using AvalonDock.Layout.Serialization;
+using ColorVision.UI;
 using log4net;
 using System.IO;
 using System.Linq;
@@ -20,8 +21,11 @@ namespace Spectrum.Layout
         private const int DefaultControlPanelWidth = 330;
         private const int DefaultBottomPaneHeight = 250;
 
+        /// <summary>
+        /// 布局文件存储在用户 AppData 目录，避免 Program Files 等受保护目录的权限问题。
+        /// </summary>
         private static string LayoutFilePath => Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory, "DockLayout.xml");
+            Environments.DirAppData, "SpectrumDockLayout.xml");
 
         private readonly DockingManager _dockingManager;
 
@@ -52,6 +56,7 @@ namespace Spectrum.Layout
         {
             try
             {
+                Directory.CreateDirectory(Path.GetDirectoryName(LayoutFilePath)!);
                 var serializer = new XmlLayoutSerializer(_dockingManager);
                 using var stream = new StreamWriter(LayoutFilePath);
                 serializer.Serialize(stream);
@@ -153,6 +158,18 @@ namespace Spectrum.Layout
                     logAnchorable.Content = logContent;
                 bottomPane.Children.Add(logAnchorable);
 
+                var nativeLogAnchorable = new LayoutAnchorable
+                {
+                    Title = "光谱仪原生日志",
+                    ContentId = "NativeLogPanel",
+                    CanClose = true,
+                    CanAutoHide = true,
+                    CanFloat = true
+                };
+                if (_contentRegistry.TryGetValue("NativeLogPanel", out var nativeLogContent))
+                    nativeLogAnchorable.Content = nativeLogContent;
+                bottomPane.Children.Add(nativeLogAnchorable);
+
                 var cieAnchorable = new LayoutAnchorable
                 {
                     Title = "CIE色度图",
@@ -212,6 +229,7 @@ namespace Spectrum.Layout
                 newAnchorable.Title = contentId switch
                 {
                     "LogPanel" => "日志",
+                    "NativeLogPanel" => "光谱仪原生日志",
                     "CIEDiagram" => "CIE色度图",
                     _ => contentId
                 };

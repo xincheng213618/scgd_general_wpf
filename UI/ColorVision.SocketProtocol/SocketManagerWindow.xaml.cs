@@ -12,7 +12,7 @@ namespace ColorVision.SocketProtocol
     /// <summary>
     /// Socket管理窗口菜单项
     /// </summary>
-    public class MenuProjectManager : MenuItemBase
+    public class MenuProjectManager : GlobalMenuBase
     {
         public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 9000;

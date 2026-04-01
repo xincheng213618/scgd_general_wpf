@@ -121,7 +121,9 @@ namespace ColorVision.Engine.Services.RC
         private readonly object _tokenLock = new object();
         private NodeToken? Token; 
 
-        public bool IsConnect { get => _IsConnect; set { if (_IsConnect == value) return;  _IsConnect = value; OnPropertyChanged(); } }
+        public event EventHandler RCServiceConnectChanged;
+
+        public bool IsConnect { get => _IsConnect; set { if (_IsConnect == value) return;  _IsConnect = value; OnPropertyChanged(); RCServiceConnectChanged?.Invoke(this, EventArgs.Empty); } }
         private bool _IsConnect ;
 
         public List<MQTTServiceInfo> ServiceTokens { get; set; } = new List<MQTTServiceInfo>();

@@ -213,6 +213,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             }
         }
 
+        private void Help_Click(object sender, RoutedEventArgs e)
+        {
+            CalibrationHelpWindow.ShowHelp(this);
+        }
+
         private void Export_Click(object sender, RoutedEventArgs e)
         {
             string zipFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "output.zip");

@@ -1,10 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.Rbac
@@ -48,6 +48,24 @@ namespace ColorVision.Rbac
             get
             {
                 return IsAdminUser ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            }
+        }
+
+        public System.Windows.Visibility LoggedInButtonVisibility
+        {
+            get
+            {
+                var rbacManager = RbacManager.GetInstance();
+                return rbacManager.IsUserLoggedIn() ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            }
+        }
+
+        public System.Windows.Visibility LoginButtonVisibility
+        {
+            get
+            {
+                var rbacManager = RbacManager.GetInstance();
+                return rbacManager.IsUserLoggedIn() ? System.Windows.Visibility.Collapsed : System.Windows.Visibility.Visible;
             }
         }
 
@@ -97,22 +115,46 @@ namespace ColorVision.Rbac
         public RbacManagerWindow()
         {
             InitializeComponent();
-            this.ApplyCaption();
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+                DragMove();
+        }
+
+        private void BtnClose_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
         }
         
         private void Window_Initialized(object sender, EventArgs e)
         {
-            
-            // 如果没有登录用户，显示默认管理员信息提示
             var rbacManager = RbacManager.GetInstance();
             this.DataContext = rbacManager;
 
-            if (rbacManager.Config.LoginResult?.User?.Username == null)
+            // 未登录时，先弹出登录窗口
+            if (!rbacManager.IsUserLoggedIn())
             {
-                // 可以在这里设置一个默认的显示状态，提示用户登录
-                // 暂时保留当前逻辑，显示"未登录"
+                var loginWindow = new LoginWindow()
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                bool? loginResult = loginWindow.ShowDialog();
+                if (loginResult != true || !rbacManager.IsUserLoggedIn())
+                {
+                    // 登录取消或失败，关闭管理窗口
+                    this.Loaded += (s, args) => this.Close();
+                    return;
+                }
             }
-            
+
+            SetupPropertyChangeListener(rbacManager);
+        }
+
+        private void SetupPropertyChangeListener(RbacManager rbacManager)
+        {
             // 监听登录状态变化
             if (rbacManager.Config is INotifyPropertyChanged config)
             {
@@ -125,9 +167,25 @@ namespace ColorVision.Rbac
                         OnPropertyChanged(nameof(StatusDisplay));
                         OnPropertyChanged(nameof(IsAdminUser));
                         OnPropertyChanged(nameof(AdminButtonVisibility));
+                        OnPropertyChanged(nameof(LoggedInButtonVisibility));
+                        OnPropertyChanged(nameof(LoginButtonVisibility));
                     }
                 };
             }
+        }
+
+        private void BtnChangePassword_Click(object sender, RoutedEventArgs e)
+        {
+            var rbacManager = RbacManager.GetInstance();
+            if (!rbacManager.IsUserLoggedIn()) return;
+
+            var userId = rbacManager.Config.LoginResult!.User!.Id;
+            var window = new ChangePasswordWindow(userId)
+            {
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            window.ShowDialog();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -140,13 +198,37 @@ namespace ColorVision.Rbac
             this.Close();
         }
 
-        private void BtnLogout_Click(object sender, RoutedEventArgs e)
+        private async void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
             var result = MessageBox.Show("确定要退出登录吗？", "退出登录", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes)
             {
                 var rbacManager = RbacManager.GetInstance();
                 
+                // 撤销当前会话
+                if (!string.IsNullOrEmpty(rbacManager.Config.SessionToken))
+                {
+                    try
+                    {
+                        await rbacManager.SessionService.RevokeSessionAsync(rbacManager.Config.SessionToken);
+                    }
+                    catch { }
+                }
+
+                // 记录审计日志
+                try
+                {
+                    if (rbacManager.Config.LoginResult?.User != null)
+                    {
+                        await rbacManager.AuditLogService.AddAsync(
+                            rbacManager.Config.LoginResult.User.Id,
+                            rbacManager.Config.LoginResult.User.Username,
+                            "user.logout",
+                            $"用户退出登录，设备: {Environment.MachineName}");
+                    }
+                }
+                catch { }
+
                 // 清除登录信息
                 rbacManager.Config.LoginResult = new Dtos.LoginResultDto();
                 rbacManager.Config.SessionToken = string.Empty;
@@ -154,19 +236,32 @@ namespace ColorVision.Rbac
                 // 清除持久化的凭据
                 rbacManager.Config.RememberMe = false;
                 rbacManager.Config.SavedUsername = string.Empty;
-                rbacManager.Config.SavedPasswordHash = string.Empty;
                 
                 // 重置权限
                 Authorization.Instance.PermissionMode = UI.Authorizations.PermissionMode.Guest;
                 
-                // 更新UI
-                OnPropertyChanged(nameof(CurrentUserDisplay));
-                OnPropertyChanged(nameof(UserRoleDisplay));
-                OnPropertyChanged(nameof(StatusDisplay));
-                OnPropertyChanged(nameof(IsAdminUser));
-                OnPropertyChanged(nameof(AdminButtonVisibility));
-                
-                MessageBox.Show("已成功退出登录", "退出", MessageBoxButton.OK, MessageBoxImage.Information);
+                // 退出登录后引导重新登录
+                var loginWindow = new LoginWindow()
+                {
+                    Owner = this,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                if (loginWindow.ShowDialog() == true && rbacManager.IsUserLoggedIn())
+                {
+                    // 重新登录成功，更新 UI
+                    OnPropertyChanged(nameof(CurrentUserDisplay));
+                    OnPropertyChanged(nameof(UserRoleDisplay));
+                    OnPropertyChanged(nameof(StatusDisplay));
+                    OnPropertyChanged(nameof(IsAdminUser));
+                    OnPropertyChanged(nameof(AdminButtonVisibility));
+                    OnPropertyChanged(nameof(LoggedInButtonVisibility));
+                    OnPropertyChanged(nameof(LoginButtonVisibility));
+                }
+                else
+                {
+                    // 未重新登录，关闭管理窗口
+                    this.Close();
+                }
             }
         }
     }

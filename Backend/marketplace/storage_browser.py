@@ -12,44 +12,64 @@ def storage_relative(storage: Path, path: Path) -> str:
         return path.name
 
 
-def build_entry_record(storage: Path, entry: Path, relative_path: str) -> dict[str, Any]:
+def _format_modified_timestamps(timestamp: float) -> tuple[str, str]:
+    dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+    return dt.isoformat(), dt.strftime("%Y-%m-%d %H:%M")
+
+
+def _build_listing_item(entry: Path, relative_path: str) -> dict[str, Any] | None:
+    try:
+        stat = entry.stat()
+    except OSError:
+        return None
+
+    modified_iso, modified_display = _format_modified_timestamps(stat.st_mtime)
     item: dict[str, Any] = {
         "name": entry.name,
         "is_dir": entry.is_dir(),
         "path": relative_path,
         "relative_path": relative_path,
-        "modified": datetime.fromtimestamp(
-            entry.stat().st_mtime, tz=timezone.utc
-        ).isoformat(),
-        "modified_display": datetime.fromtimestamp(
-            entry.stat().st_mtime, tz=timezone.utc
-        ).strftime("%Y-%m-%d %H:%M"),
+        "modified": modified_display,
+        "modified_iso": modified_iso,
     }
-    if entry.is_file():
-        item["size"] = entry.stat().st_size
-    else:
+    if not item["is_dir"]:
+        item["size"] = stat.st_size
+    return item
+
+
+def _fast_directory_file_count(entry: Path) -> int:
+    try:
+        return sum(1 for child in entry.iterdir() if child.is_file())
+    except OSError:
+        return 0
+
+
+def build_entry_record(storage: Path, entry: Path, relative_path: str) -> dict[str, Any]:
+    item = _build_listing_item(entry, relative_path) or {
+        "name": entry.name,
+        "is_dir": entry.is_dir(),
+        "path": relative_path,
+        "relative_path": relative_path,
+        "modified": "",
+        "modified_iso": "",
+    }
+    item["modified_display"] = item["modified"]
+    if item["is_dir"]:
         item["file_count"] = sum(1 for child in entry.rglob("*") if child.is_file())
     return item
 
 
-def list_directory_contents(target: Path, subpath: str) -> list[dict[str, Any]]:
+def list_directory_contents(target: Path, subpath: str, *, limit: int | None = None) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     for entry in sorted(target.iterdir(), key=lambda e: (e.is_file(), e.name.lower())):
         if entry.name.startswith("."):
             continue
         relative_path = f"{subpath}/{entry.name}" if subpath else entry.name
-        info: dict[str, Any] = {
-            "name": entry.name,
-            "is_dir": entry.is_dir(),
-            "path": relative_path,
-            "relative_path": relative_path,
-            "modified": datetime.fromtimestamp(
-                entry.stat().st_mtime, tz=timezone.utc
-            ).strftime("%Y-%m-%d %H:%M"),
-        }
-        if entry.is_file():
-            info["size"] = entry.stat().st_size
-        items.append(info)
+        info = _build_listing_item(entry, relative_path)
+        if info:
+            items.append(info)
+            if limit is not None and len(items) >= limit:
+                break
     return items
 
 
@@ -84,20 +104,18 @@ def scan_storage_overview(
         if entry.is_dir():
             cache_key = f"dir_file_count:{storage_relative(storage, entry)}"
             count_cache = get_cache_entry(cache_key)
+            estimated = False
             if count_cache:
                 file_count = count_cache["value"].get("file_count", 0)
             else:
-                file_count = sum(1 for child in entry.rglob("*") if child.is_file())
-                set_cache_entry(
-                    cache_key,
-                    {"file_count": file_count},
-                    ttl_seconds=directory_count_cache_ttl_seconds,
-                )
+                file_count = _fast_directory_file_count(entry)
+                estimated = True
             items.append(
                 {
                     "name": entry.name,
                     "type": "dir",
                     "file_count": file_count,
+                    "file_count_estimated": estimated,
                     "modified": datetime.fromtimestamp(
                         entry.stat().st_mtime, tz=timezone.utc
                     ).isoformat(),
@@ -135,6 +153,7 @@ def build_storage_summary(overview: list[dict[str, Any]]) -> dict[str, int]:
         "top_level_file_count": top_level_file_count,
         "total_file_count": top_level_file_count + nested_file_count,
         "top_level_size": top_level_size,
+        "estimated_directory_count": sum(1 for item in overview if item.get("file_count_estimated")),
     }
 
 
@@ -197,6 +216,26 @@ def build_storage_page_context(storage: Path, relative_path: str) -> dict[str, A
         "breadcrumbs": build_breadcrumbs(relative_path),
         "exists": target.exists(),
         "parent_subpath": "/".join(relative_path.split("/")[:-1]) if relative_path else "",
+    }
+
+
+def build_storage_preview_context(storage: Path, relative_path: str, *, limit: int = 8) -> dict[str, Any]:
+    target = storage / Path(*[part for part in relative_path.split("/") if part])
+    items = (
+        list_directory_contents(target, relative_path, limit=limit)
+        if target.exists() and target.is_dir()
+        else []
+    )
+    return {
+        "target": target,
+        "items": items,
+        "summary": summarize_directory_items(items),
+        "subpath": relative_path,
+        "breadcrumbs": build_breadcrumbs(relative_path),
+        "exists": target.exists(),
+        "parent_subpath": "/".join(relative_path.split("/")[:-1]) if relative_path else "",
+        "is_preview": True,
+        "preview_limit": limit,
     }
 
 

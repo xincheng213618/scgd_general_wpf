@@ -1,0 +1,83 @@
+<Window x:Class="ColorVision.UI.Desktop.ThirdPartyApps.AddCustomAppWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.UI.Desktop.ThirdPartyApps"
+        mc:Ignorable="d"
+        Title="添加自定义应用" Height="420" Width="500"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="{DynamicResource GlobalBackground}">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="90"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="0" Text="名称" VerticalAlignment="Center" Margin="0,0,0,8"
+                   Foreground="{DynamicResource GlobalTextBrush}"/>
+        <TextBox Grid.Row="0" Grid.Column="1" x:Name="TxtName" Margin="0,0,0,8"/>
+
+        <TextBlock Grid.Row="1" Text="类型" VerticalAlignment="Center" Margin="0,0,0,8"
+                   Foreground="{DynamicResource GlobalTextBrush}"/>
+        <ComboBox Grid.Row="1" Grid.Column="1" x:Name="CmbType" Margin="0,0,0,8"
+                  SelectionChanged="CmbType_SelectionChanged">
+            <ComboBoxItem Content="可执行文件" Tag="Executable" IsSelected="True"/>
+            <ComboBoxItem Content="CMD 脚本" Tag="CmdScript"/>
+            <ComboBoxItem Content="PowerShell 脚本" Tag="PowerShellScript"/>
+        </ComboBox>
+
+        <TextBlock Grid.Row="2" x:Name="LblCommand" Text="路径" VerticalAlignment="Center" Margin="0,0,0,8"
+                   Foreground="{DynamicResource GlobalTextBrush}"/>
+        <Grid Grid.Row="2" Grid.Column="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="TxtCommand"/>
+            <Button Grid.Column="1" x:Name="BtnBrowse" Content="..." Width="30" Margin="4,0,0,0"
+                    Click="BtnBrowse_Click"/>
+        </Grid>
+
+        <TextBlock Grid.Row="3" Text="参数" VerticalAlignment="Center" Margin="0,0,0,8"
+                   Foreground="{DynamicResource GlobalTextBrush}"/>
+        <TextBox Grid.Row="3" Grid.Column="1" x:Name="TxtArguments" Margin="0,0,0,8"/>
+
+        <TextBlock Grid.Row="4" Text="工作目录" VerticalAlignment="Center" Margin="0,0,0,8"
+                   Foreground="{DynamicResource GlobalTextBrush}"/>
+        <Grid Grid.Row="4" Grid.Column="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="TxtWorkingDir"/>
+            <Button Grid.Column="1" Content="..." Width="30" Margin="4,0,0,0"
+                    Click="BtnBrowseDir_Click"/>
+        </Grid>
+
+        <TextBlock Grid.Row="5" Text="分组" VerticalAlignment="Center" Margin="0,0,0,8"
+                   Foreground="{DynamicResource GlobalTextBrush}"/>
+        <TextBox Grid.Row="5" Grid.Column="1" x:Name="TxtGroup" Margin="0,0,0,8"/>
+
+        <TextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2" x:Name="LblHint" FontSize="11"
+                   Foreground="{DynamicResource GlobalTextBrush}" Opacity="0.5" TextWrapping="Wrap" Margin="0,0,0,8"
+                   Text="提示：可执行文件填写 exe 完整路径；脚本类型直接填写要执行的命令内容。分组为空时使用默认分组。"/>
+
+        <StackPanel Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button Content="确定" Width="80" Margin="0,0,8,0" Click="BtnOK_Click" IsDefault="True"/>
+            <Button Content="取消" Width="80" Click="BtnCancel_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

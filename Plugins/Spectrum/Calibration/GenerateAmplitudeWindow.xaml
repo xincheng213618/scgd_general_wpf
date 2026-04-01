@@ -4,9 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Spectrum"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SpectrometerManager}"
-        Title="生成幅值标定文件" Height="400" Width="500"  Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
+        Title="生成幅值标定文件" Height="600" Width="750"  Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
+    <Window.InputBindings>
+        <KeyBinding Key="G" Modifiers="Ctrl" Command="{Binding GenerateAmplitudeFromExistingCommand}" />
+    </Window.InputBindings>
     <Window.Resources>
         <Style TargetType="TextBlock" >
             <Setter Property="VerticalAlignment" Value="Center"/>
@@ -14,25 +18,39 @@
     </Window.Resources>
     <Grid Margin="5">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <StackPanel>
-            <DockPanel Margin="0,0,0,10">
-                <Button  DockPanel.Dock="Right" Content="选择" Margin="5,0,0,0"  Command="{Binding SetCSFileCommand}"/>
-                <TextBlock Text="标准光源绝对光谱文件" VerticalAlignment="Center"  MinWidth="150"/>
-                <TextBox Text="{Binding CSFile}" />
+
+        <!-- Top: File Configuration -->
+        <StackPanel Grid.Row="0">
+            <DockPanel Margin="0,0,0,5">
+                <Button DockPanel.Dock="Right" Content="选择" Margin="5,0,0,0" Command="{Binding SetCSFileCommand}"/>
+                <TextBlock Text="标准光源绝对光谱文件" VerticalAlignment="Center" MinWidth="140"/>
+                <TextBox Text="{Binding CSFile}" ToolTip="{Binding CSFile}" IsReadOnly="True"/>
             </DockPanel>
 
-            <DockPanel Margin="0,0,0,10">
-                <Button  DockPanel.Dock="Right" Content="选择" Margin="5,0,0,0"  Command="{Binding SetMaguideOutputFileCommand}"/>
-                <TextBlock Text="幅值标定文件保存路径" VerticalAlignment="Center"  MinWidth="150"/>
-                <TextBox Text="{Binding MaguideFileOutput}" />
-            </DockPanel>
-            <DockPanel Margin="0,0,0,10">
-                <Button Content="生成幅值标定文件" Height="30" Command="{Binding GenerateAmplitudeCommand}" Margin="150,0,0,0"/>
+            <DockPanel Margin="0,0,0,5">
+                <Button DockPanel.Dock="Right" Content="选择" Margin="5,0,0,0" Command="{Binding SetMaguideOutputFileCommand}"/>
+                <TextBlock Text="幅值标定文件保存路径" VerticalAlignment="Center" MinWidth="140"/>
+                <TextBox Text="{Binding MaguideFileOutput}" ToolTip="{Binding MaguideFileOutput}"/>
             </DockPanel>
 
+            <!-- Manual Data Acquisition -->
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
+                <Button Content="获取暗数据" Command="{Binding GetDarkDataCommand}" Padding="10,4" Margin="0,0,8,0" Background="#3498DB" Foreground="White"/>
+                <Button Content="获取亮数据" Command="{Binding GetLightDataCommand}" Padding="10,4" Margin="0,0,8,0" Background="#E67E22" Foreground="White"/>
+                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
+                <Button Content="从已有数据生成 (Ctrl+G)" Command="{Binding GenerateAmplitudeFromExistingCommand}" Padding="10,4" Margin="0,0,8,0" Background="#27AE60" Foreground="White"/>
+                <Button Content="自动采集并生成" Command="{Binding GenerateAmplitudeCommand}" Padding="10,4" Background="#8E44AD" Foreground="White"/>
+            </StackPanel>
         </StackPanel>
+
+        <!-- Middle: Chart -->
+        <ScottPlot:WpfPlot x:Name="AmplitudePlot" Grid.Row="1" Margin="0,5,0,5"/>
+
+        <!-- Bottom: Status -->
+        <TextBlock x:Name="StatusText" Grid.Row="2" Text="就绪" Foreground="Gray" Margin="0,5,0,0"/>
     </Grid>
 </Window>

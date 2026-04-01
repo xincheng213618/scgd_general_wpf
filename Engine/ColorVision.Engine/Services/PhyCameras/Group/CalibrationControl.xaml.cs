@@ -5,9 +5,14 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.PhyCameras.Group
 {
+    /// <summary>
+    /// 用于缓存校正参数的选中状态，在校正组切换时恢复上一次的选中状态
+    /// </summary>
     sealed class TempCache
     {
         public string Cache { get; set; }
+
+        // 基础校正项选中状态
         public bool DarkNoiseIsSelected { get; set; }
         public bool DefectPointIsSelected { get; set; }
         public bool DSNUIsSelected { get; set; }
@@ -15,19 +20,80 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public bool ColorShiftIsSelected { get; set; }
         public bool ColorDiffIsSelected { get; set; }
         public bool LineArityIsSelected { get; set; }
-
         public bool UniformityIsSelected { get; set; }
+
+        // 色彩校正项选中状态（互斥）
         public bool LumFourColorIsSelected { get; set; }
         public bool LumOneColorIsSelected { get; set; }
         public bool LumMultiColorIsSelected { get; set; }
         public bool LuminanceIsSelected { get; set; }
 
+        /// <summary>
+        /// 从 CalibrationParam 中快照当前选中状态
+        /// </summary>
+        public void SaveFrom(CalibrationParam param)
+        {
+            Cache = param.CalibrationMode;
+            DarkNoiseIsSelected = param.Normal.DarkNoise.IsSelected;
+            DefectPointIsSelected = param.Normal.DefectPoint.IsSelected;
+            DSNUIsSelected = param.Normal.DSNU.IsSelected;
+            DistortionIsSelected = param.Normal.Distortion.IsSelected;
+            ColorShiftIsSelected = param.Normal.ColorShift.IsSelected;
+            UniformityIsSelected = param.Normal.Uniformity.IsSelected;
+            ColorDiffIsSelected = param.Normal.ColorDiff.IsSelected;
+            LineArityIsSelected = param.Normal.LineArity.IsSelected;
 
+            LuminanceIsSelected = param.Color.Luminance.IsSelected;
+            LumFourColorIsSelected = param.Color.LumFourColor.IsSelected;
+            LumMultiColorIsSelected = param.Color.LumMultiColor.IsSelected;
+            LumOneColorIsSelected = param.Color.LumOneColor.IsSelected;
+        }
 
+        /// <summary>
+        /// 将缓存的选中状态恢复到 CalibrationParam
+        /// </summary>
+        public void RestoreTo(CalibrationParam param)
+        {
+            param.Normal.DarkNoise.IsSelected = DarkNoiseIsSelected;
+            param.Normal.DefectPoint.IsSelected = DefectPointIsSelected;
+            param.Normal.DSNU.IsSelected = DSNUIsSelected;
+            param.Normal.Distortion.IsSelected = DistortionIsSelected;
+            param.Normal.ColorShift.IsSelected = ColorShiftIsSelected;
+            param.Normal.Uniformity.IsSelected = UniformityIsSelected;
+            param.Normal.ColorDiff.IsSelected = ColorDiffIsSelected;
+            param.Normal.LineArity.IsSelected = LineArityIsSelected;
+
+            param.Color.Luminance.IsSelected = LuminanceIsSelected;
+            param.Color.LumFourColor.IsSelected = LumFourColorIsSelected;
+            param.Color.LumMultiColor.IsSelected = LumMultiColorIsSelected;
+            param.Color.LumOneColor.IsSelected = LumOneColorIsSelected;
+        }
+
+        /// <summary>
+        /// 将所有选中状态重置为 false
+        /// </summary>
+        public static void ClearSelection(CalibrationParam param)
+        {
+            param.Normal.DarkNoise.IsSelected = false;
+            param.Normal.DefectPoint.IsSelected = false;
+            param.Normal.DSNU.IsSelected = false;
+            param.Normal.Distortion.IsSelected = false;
+            param.Normal.ColorShift.IsSelected = false;
+            param.Normal.Uniformity.IsSelected = false;
+            param.Normal.ColorDiff.IsSelected = false;
+            param.Normal.LineArity.IsSelected = false;
+
+            param.Color.Luminance.IsSelected = false;
+            param.Color.LumFourColor.IsSelected = false;
+            param.Color.LumMultiColor.IsSelected = false;
+            param.Color.LumOneColor.IsSelected = false;
+        }
     }
 
     /// <summary>
-    /// CalibrationControl.xaml 的交互逻辑
+    /// 校正控件：管理物理相机的校正参数组（基础校正 + 色彩校正）。
+    /// 校正流水线按固定顺序执行：DarkNoise → DefectPoint → DSNU → Uniformity → ColorShift → Distortion
+    /// 色彩校正四选一：Luminance / LumOneColor / LumFourColor / LumMultiColor
     /// </summary>
     public partial class CalibrationControl : UserControl
     {
@@ -58,6 +124,75 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public ObservableCollection<GroupResource> groupResources { get; set; } = new ObservableCollection<GroupResource>();
         TempCache TempCache { get; set; } = new TempCache();
 
+        /// <summary>
+        /// 从 GroupResource 同步校正文件的存在状态到 CalibrationParam
+        /// </summary>
+        private static void SyncFileExistence(CalibrationParam param, GroupResource groupResource)
+        {
+            param.Normal.DarkNoise.IsExitFile = groupResource.DarkNoise?.IsValid ?? false;
+            param.Normal.DefectPoint.IsExitFile = groupResource.DefectPoint?.IsValid ?? false;
+            param.Normal.DSNU.IsExitFile = groupResource.DSNU?.IsValid ?? false;
+            param.Normal.Distortion.IsExitFile = groupResource.Distortion?.IsValid ?? false;
+            param.Normal.ColorShift.IsExitFile = groupResource.ColorShift?.IsValid ?? false;
+            param.Normal.Uniformity.IsExitFile = groupResource.Uniformity?.IsValid ?? false;
+            param.Normal.LineArity.IsExitFile = groupResource.LineArity?.IsValid ?? false;
+            param.Normal.ColorDiff.IsExitFile = groupResource.ColorDiff?.IsValid ?? false;
+
+            param.Color.Luminance.IsExitFile = groupResource.Luminance?.IsValid ?? false;
+            param.Color.LumFourColor.IsExitFile = groupResource.LumFourColor?.IsValid ?? false;
+            param.Color.LumMultiColor.IsExitFile = groupResource.LumMultiColor?.IsValid ?? false;
+            param.Color.LumOneColor.IsExitFile = groupResource.LumOneColor?.IsValid ?? false;
+        }
+
+        /// <summary>
+        /// 清空所有校正文件路径
+        /// </summary>
+        private static void ClearAllFilePaths(CalibrationParam param)
+        {
+            param.Normal.DarkNoise.FilePath = string.Empty;
+            param.Normal.DefectPoint.FilePath = string.Empty;
+            param.Normal.DSNU.FilePath = string.Empty;
+            param.Normal.Distortion.FilePath = string.Empty;
+            param.Normal.ColorShift.FilePath = string.Empty;
+            param.Normal.Uniformity.FilePath = string.Empty;
+            param.Normal.ColorDiff.FilePath = string.Empty;
+            param.Normal.LineArity.FilePath = string.Empty;
+
+            param.Color.Luminance.FilePath = string.Empty;
+            param.Color.LumFourColor.FilePath = string.Empty;
+            param.Color.LumMultiColor.FilePath = string.Empty;
+            param.Color.LumOneColor.FilePath = string.Empty;
+        }
+
+        /// <summary>
+        /// 从 GroupResource 同步校正文件路径和 ID 到 CalibrationParam
+        /// </summary>
+        private static void SyncFilePathsAndIds(CalibrationParam param, GroupResource groupResource)
+        {
+            SetCalibrationFile(param.Normal.DarkNoise, groupResource.DarkNoise);
+            SetCalibrationFile(param.Normal.DefectPoint, groupResource.DefectPoint);
+            SetCalibrationFile(param.Normal.DSNU, groupResource.DSNU);
+            SetCalibrationFile(param.Normal.Distortion, groupResource.Distortion);
+            SetCalibrationFile(param.Normal.ColorShift, groupResource.ColorShift);
+            SetCalibrationFile(param.Normal.Uniformity, groupResource.Uniformity);
+            SetCalibrationFile(param.Normal.LineArity, groupResource.LineArity);
+            SetCalibrationFile(param.Normal.ColorDiff, groupResource.ColorDiff);
+
+            SetCalibrationFile(param.Color.Luminance, groupResource.Luminance);
+            SetCalibrationFile(param.Color.LumOneColor, groupResource.LumOneColor);
+            SetCalibrationFile(param.Color.LumFourColor, groupResource.LumFourColor);
+            SetCalibrationFile(param.Color.LumMultiColor, groupResource.LumMultiColor);
+        }
+
+        /// <summary>
+        /// 将单个 CalibrationResource 的文件名和 ID 赋值到 CalibrationBase
+        /// </summary>
+        private static void SetCalibrationFile(CalibrationBase calibBase, CalibrationResource resource)
+        {
+            calibBase.FilePath = resource?.Name ?? string.Empty;
+            calibBase.Id = resource?.Id ?? 0;
+        }
+
         public void Initializedsss(CalibrationParam calibrationParam)
         {
             ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
@@ -65,54 +200,25 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             CalibrationParam = calibrationParam;
             DataContext = CalibrationParam;
 
-            TempCache.Cache = calibrationParam.CalibrationMode;
-            TempCache.DarkNoiseIsSelected = calibrationParam.Normal.DarkNoise.IsSelected;
-            TempCache.DefectPointIsSelected = calibrationParam.Normal.DefectPoint.IsSelected;
-            TempCache.DSNUIsSelected = calibrationParam.Normal.DSNU.IsSelected;
-            TempCache.DistortionIsSelected = calibrationParam.Normal.Distortion.IsSelected;
-            TempCache.ColorShiftIsSelected = calibrationParam.Normal.ColorShift.IsSelected;
-            TempCache.UniformityIsSelected = calibrationParam.Normal.Uniformity.IsSelected;
-            TempCache.ColorDiffIsSelected = calibrationParam.Normal.ColorDiff.IsSelected;
-            TempCache.LineArityIsSelected = calibrationParam.Normal.LineArity.IsSelected;
+            TempCache.SaveFrom(calibrationParam);
 
-            TempCache.UniformityIsSelected = calibrationParam.Normal.Uniformity.IsSelected;
-            TempCache.LuminanceIsSelected = calibrationParam.Color.Luminance.IsSelected;
-            TempCache.LumFourColorIsSelected = calibrationParam.Color.LumFourColor.IsSelected;
-            TempCache.LumMultiColorIsSelected = calibrationParam.Color.LumMultiColor.IsSelected;
-            TempCache.LumOneColorIsSelected = calibrationParam.Color.LumOneColor.IsSelected;
-
-            string CalibrationMode = calibrationParam.CalibrationMode;
-
-            ComboBoxList.Text = CalibrationMode;
+            ComboBoxList.Text = calibrationParam.CalibrationMode;
             ComboBoxList.SelectionChanged += ComboBox_SelectionChanged;
 
-            if (string.IsNullOrWhiteSpace(CalibrationMode)&& groupResources.Count > 0)
+            if (string.IsNullOrWhiteSpace(calibrationParam.CalibrationMode) && groupResources.Count > 0)
             {
                 ComboBoxList.SelectedIndex = 0;
             }
 
             if (ComboBoxList.SelectedValue is GroupResource groupResource)
             {
-                CalibrationParam.Normal.DarkNoise.IsExitFile = groupResource.DarkNoise?.IsValid ?? false;
-                CalibrationParam.Normal.DefectPoint.IsExitFile = groupResource.DefectPoint?.IsValid ?? false;
-                CalibrationParam.Normal.DSNU.IsExitFile = groupResource.DSNU?.IsValid ?? false;
-                CalibrationParam.Normal.Distortion.IsExitFile = groupResource.Distortion?.IsValid ?? false;
-                CalibrationParam.Normal.ColorShift.IsExitFile = groupResource.ColorShift?.IsValid ?? false;
-                CalibrationParam.Normal.Uniformity.IsExitFile = groupResource.Uniformity?.IsValid ?? false;
-                CalibrationParam.Normal.LineArity.IsExitFile = groupResource.LineArity?.IsValid ?? false;
-                CalibrationParam.Normal.ColorDiff.IsExitFile = groupResource.ColorDiff?.IsValid ?? false;
-
-                CalibrationParam.Color.Luminance.IsExitFile = groupResource.Luminance?.IsValid ?? false;
-                CalibrationParam.Color.LumFourColor.IsExitFile = groupResource.LumFourColor?.IsValid ?? false;
-                CalibrationParam.Color.LumMultiColor.IsExitFile = groupResource.LumMultiColor?.IsValid ?? false;
-                CalibrationParam.Color.LumOneColor.IsExitFile = groupResource.LumOneColor?.IsValid ?? false;
+                SyncFileExistence(CalibrationParam, groupResource);
             }
         }
 
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
-            uploadbutton.DataContext = PhyCamera;
             uploadbutton.DataContext = PhyCamera;
 
             void UpdateDefaultStyle()   
@@ -147,98 +253,22 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             if (sender is ComboBox comboBox)
             {
-                CalibrationParam.Normal.DarkNoise.FilePath = string.Empty;
-                CalibrationParam.Normal.DefectPoint.FilePath = string.Empty;
-                CalibrationParam.Normal.DSNU.FilePath = string.Empty;
-                CalibrationParam.Normal.Distortion.FilePath = string.Empty;
-                CalibrationParam.Normal.ColorShift.FilePath = string.Empty;
-                CalibrationParam.Normal.Uniformity.FilePath = string.Empty;
-                CalibrationParam.Normal.ColorDiff.FilePath = string.Empty;
-                CalibrationParam.Normal.LineArity.FilePath = string.Empty;
-
-                CalibrationParam.Color.Luminance.FilePath = string.Empty;
-                CalibrationParam.Color.LumFourColor.FilePath = string.Empty;
-                CalibrationParam.Color.LumMultiColor.FilePath = string.Empty;
-                CalibrationParam.Color.LumOneColor.FilePath = string.Empty;
+                ClearAllFilePaths(CalibrationParam);
 
                 if (comboBox.SelectedValue is GroupResource groupResource)
                 {
                     if (groupResource.Name == TempCache.Cache)
                     {
-                        CalibrationParam.Normal.DarkNoise.IsSelected = TempCache.DarkNoiseIsSelected;
-                        CalibrationParam.Normal.DefectPoint.IsSelected = TempCache.DefectPointIsSelected;
-                        CalibrationParam.Normal.DSNU.IsSelected = TempCache.DSNUIsSelected;
-                        CalibrationParam.Normal.Distortion.IsSelected = TempCache.DistortionIsSelected;
-                        CalibrationParam.Normal.ColorShift.IsSelected = TempCache.ColorShiftIsSelected;
-                        CalibrationParam.Normal.Uniformity.IsSelected = TempCache.UniformityIsSelected;
-                        CalibrationParam.Normal.ColorDiff.IsSelected = TempCache.ColorDiffIsSelected;
-                        CalibrationParam.Normal.LineArity.IsSelected = TempCache.LineArityIsSelected;
-
-
-                        CalibrationParam.Color.Luminance.IsSelected = TempCache.LuminanceIsSelected;
-                        CalibrationParam.Color.LumFourColor.IsSelected = TempCache.LumFourColorIsSelected;
-                        CalibrationParam.Color.LumMultiColor.IsSelected = TempCache.LumMultiColorIsSelected;
-                        CalibrationParam.Color.LumOneColor.IsSelected = TempCache.LumOneColorIsSelected;
+                        TempCache.RestoreTo(CalibrationParam);
                     }
                     else
                     {
-                        CalibrationParam.Normal.DarkNoise.IsSelected = false;
-                        CalibrationParam.Normal.DefectPoint.IsSelected = false;
-                        CalibrationParam.Normal.DSNU.IsSelected = false;
-                        CalibrationParam.Normal.Distortion.IsSelected = false;
-                        CalibrationParam.Normal.ColorShift.IsSelected = false;
-                        CalibrationParam.Normal.Uniformity.IsSelected = false;
-                        CalibrationParam.Normal.ColorShift.IsSelected = false;
-                        CalibrationParam.Normal.LineArity.IsSelected = false;
-                        CalibrationParam.Color.Luminance.IsSelected = false;
-                        CalibrationParam.Color.LumFourColor.IsSelected = false;
-                        CalibrationParam.Color.LumMultiColor.IsSelected = false;
-                        CalibrationParam.Color.LumOneColor.IsSelected = false;
+                        TempCache.ClearSelection(CalibrationParam);
                     }
 
-                    CalibrationParam.Normal.DarkNoise.IsExitFile = groupResource.DarkNoise?.IsValid ?? false;
-                    CalibrationParam.Normal.DefectPoint.IsExitFile = groupResource.DefectPoint?.IsValid ?? false;
-                    CalibrationParam.Normal.DSNU.IsExitFile = groupResource.DSNU?.IsValid ?? false;
-                    CalibrationParam.Normal.Distortion.IsExitFile = groupResource.Distortion?.IsValid ?? false;
-                    CalibrationParam.Normal.ColorShift.IsExitFile = groupResource.ColorShift?.IsValid ?? false;
-                    CalibrationParam.Normal.Uniformity.IsExitFile = groupResource.Uniformity?.IsValid ?? false;
-                    CalibrationParam.Normal.LineArity.IsExitFile = groupResource.LineArity?.IsValid ?? false;
-                    CalibrationParam.Normal.ColorDiff.IsExitFile = groupResource.ColorDiff?.IsValid ?? false;
-
-                    CalibrationParam.Color.Luminance.IsExitFile = groupResource.Luminance?.IsValid ?? false;
-                    CalibrationParam.Color.LumFourColor.IsExitFile = groupResource.LumFourColor?.IsValid ?? false;
-                    CalibrationParam.Color.LumMultiColor.IsExitFile = groupResource.LumMultiColor?.IsValid ?? false;
-                    CalibrationParam.Color.LumOneColor.IsExitFile = groupResource.LumOneColor?.IsValid ?? false;
-
-                    CalibrationParam.Normal.DarkNoise.FilePath = groupResource.DarkNoise?.Name ?? string.Empty;
-                    CalibrationParam.Normal.DarkNoise.Id = groupResource.DarkNoise?.Id ??0;
-
-                    CalibrationParam.Normal.DefectPoint.FilePath = groupResource.DefectPoint?.Name ?? string.Empty;
-                    CalibrationParam.Normal.DefectPoint.Id = groupResource.DefectPoint?.Id ?? 0;
-                    CalibrationParam.Normal.DSNU.FilePath = groupResource.DSNU?.Name ?? string.Empty;
-                    CalibrationParam.Normal.DSNU.Id = groupResource.DSNU?.Id ?? 0;
-                    CalibrationParam.Normal.Distortion.FilePath = groupResource.Distortion?.Name ?? string.Empty;
-                    CalibrationParam.Normal.Distortion.Id = groupResource.Distortion?.Id ?? 0;
-                    CalibrationParam.Normal.ColorShift.FilePath = groupResource.ColorShift?.Name ?? string.Empty;
-                    CalibrationParam.Normal.ColorShift.Id = groupResource.ColorShift?.Id ?? 0;
-                    CalibrationParam.Normal.Uniformity.FilePath = groupResource.Uniformity?.Name ?? string.Empty;
-                    CalibrationParam.Normal.Uniformity.Id = groupResource.Uniformity?.Id ?? 0;
-                    CalibrationParam.Color.Luminance.FilePath = groupResource.Luminance?.Name ?? string.Empty;
-                    CalibrationParam.Color.Luminance.Id = groupResource.Luminance?.Id ?? 0;
-                    CalibrationParam.Color.LumFourColor.FilePath = groupResource.LumFourColor?.Name ?? string.Empty;
-                    CalibrationParam.Color.LumFourColor.Id = groupResource.LumFourColor?.Id ?? 0;
-                    CalibrationParam.Color.LumMultiColor.FilePath = groupResource.LumMultiColor?.Name ?? string.Empty;
-                    CalibrationParam.Color.LumMultiColor.Id = groupResource.LumMultiColor?.Id ?? 0;
-                    CalibrationParam.Color.LumOneColor.FilePath = groupResource.LumOneColor?.Name ?? string.Empty;
-                    CalibrationParam.Color.LumOneColor.Id = groupResource.LumOneColor?.Id ?? 0;
-
-                    CalibrationParam.Normal.ColorDiff.Id = groupResource.ColorDiff?.Id ?? 0;
-                    CalibrationParam.Normal.ColorDiff.FilePath = groupResource.ColorDiff?.Name ?? string.Empty;
-
-                    CalibrationParam.Normal.LineArity.Id = groupResource.LineArity?.Id ?? 0;
-                    CalibrationParam.Normal.LineArity.FilePath = groupResource.LineArity?.Name ?? string.Empty;
+                    SyncFileExistence(CalibrationParam, groupResource);
+                    SyncFilePathsAndIds(CalibrationParam, groupResource);
                 }
-
             }
         }
 
@@ -246,6 +276,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             CalibrationEdit CalibrationEdit = new CalibrationEdit(PhyCamera, ComboBoxList.SelectedIndex);
             CalibrationEdit.Show();
+        }
+
+        private void Help_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            CalibrationHelpWindow.ShowHelp(System.Windows.Window.GetWindow(this));
         }
 
 

@@ -15,9 +15,11 @@ from backend_client import (
     DEFAULT_UPLOAD_FOLDER,
     DEFAULT_UPLOAD_RETRIES,
     RemoteUploadSettings,
+    fetch_latest_version as backend_fetch_latest_version,
     preflight_remote_upload as backend_preflight_remote_upload,
     resolve_upload_base_url,
     resolve_upload_credentials,
+    upload_content as backend_upload_content,
     upload_file as backend_upload_file,
 )
 from tqdm import tqdm
@@ -38,10 +40,7 @@ class ProjectConfig:
     advanced_installer_path: Path
     aip_path: Path
     setup_files_dir: Path
-    latest_release_path: Path
-    target_directory: Path
     changelog_src: Path
-    changelog_dst: Path
     wechat_target_directory: Path
     baidu_target_directory: Path
 
@@ -200,44 +199,32 @@ def preflight_remote_upload(
 
 def publish_primary_release(
     latest_version: str,
-    latest_release_path: str | Path,
     latest_file: str | Path,
-    target_directory: str | Path,
     changelog_src: str | Path,
-    changelog_dst: str | Path,
     remote_settings: RemoteUploadSettings,
     *,
     upload_func: Callable[[str | Path, RemoteUploadSettings], bool] = upload_file,
-    copy_func: Callable[[str | Path, str | Path], Path] = copy_with_progress,
 ) -> bool:
-    latest_release_path = Path(latest_release_path)
     latest_file = Path(latest_file)
-    target_directory = Path(target_directory)
     changelog_src = Path(changelog_src)
-    changelog_dst = Path(changelog_dst)
 
-    current_version = read_version_file(latest_release_path)
+    current_version = backend_fetch_latest_version(remote_settings)
     if not should_update_version(latest_version, current_version):
         print(f"The current version ({current_version}) is up to date.")
         return False
 
-    publish_ok = False
-    if remote_settings.enabled:
-        publish_ok = upload_func(latest_file, remote_settings)
-    else:
-        try:
-            copy_func(latest_file, target_directory)
-            publish_ok = True
-        except OSError as exc:
-            print(f"Upload {latest_file}: {exc}")
-            publish_ok = False
-
-    if not publish_ok:
+    if not upload_func(latest_file, remote_settings):
         print("Primary release publish failed; LATEST_RELEASE will not be updated.")
         return False
 
-    copy_if_exists(changelog_src, changelog_dst)
-    write_version_file(latest_release_path, latest_version)
+    if changelog_src.exists():
+        if not backend_upload_file(changelog_src, remote_settings):
+            print("Warning: CHANGELOG.md upload failed.")
+
+    if not backend_upload_content(latest_version, "LATEST_RELEASE", remote_settings):
+        print("Warning: LATEST_RELEASE upload failed.")
+        return False
+
     print(f"Updated the release version to {latest_version}")
     print(f"Upload {latest_file}")
     return True
@@ -281,21 +268,15 @@ def sync_local_release_copy(
 
 def compare_and_write_version(
     latest_version: str,
-    latest_release_path: str | Path,
     latest_file: str | Path,
     changelog_src: str | Path,
-    changelog_dst: str | Path,
     *,
-    target_directory: str | Path,
     remote_settings: RemoteUploadSettings,
 ) -> bool:
     return publish_primary_release(
         latest_version,
-        latest_release_path,
         latest_file,
-        target_directory,
         changelog_src,
-        changelog_dst,
         remote_settings,
     )
 
@@ -338,10 +319,7 @@ def build_projects(base_path: Path) -> dict[str, ProjectConfig]:
             advanced_installer_path=base_path.parent / "AdvancedInstaller v19.7.1" / "App" / "ProgramFiles" / "bin" / "x86" / "AdvancedInstaller.com",
             aip_path=ai_project_dir / "ColorVision.aip",
             setup_files_dir=ai_project_dir / "Setup Files",
-            latest_release_path=Path(r"H:\ColorVision\LATEST_RELEASE"),
-            target_directory=Path(r"H:\ColorVision"),
             changelog_src=base_path / "CHANGELOG.md",
-            changelog_dst=Path(r"H:\ColorVision\CHANGELOG.md"),
             wechat_target_directory=Path(r"C:\Users\Xin\Documents\WXWork\1688854819471931\WeDrive\视彩光电\视彩（上海）光电技术有限公司\视彩软件及工具简易教程\新版软件安装包\ColorVision"),
             baidu_target_directory=Path(r"D:\BaiduSyncdisk\ColorVision"),
         )
@@ -399,9 +377,12 @@ def main() -> int:
         print(
             "Remote upload requires Basic Auth credentials. "
             "Set COLORVISION_UPLOAD_USERNAME and COLORVISION_UPLOAD_PASSWORD, "
-            "or pass --skip-remote-upload to fall back to local copy."
+            "or pass --skip-remote-upload to only publish local copies."
         )
         return 2
+
+    if not remote_upload_enabled:
+        print("Remote upload is disabled; primary release will be skipped (local WeChat/Baidu copies only).")
 
     if remote_upload_enabled and not preflight_remote_upload(remote_settings):
         print("Remote upload preflight failed; aborting before build/upload.")
@@ -447,11 +428,8 @@ def main() -> int:
     )
     compare_and_write_version(
         latest_version,
-        project.latest_release_path,
         latest_file,
         project.changelog_src,
-        project.changelog_dst,
-        target_directory=project.target_directory,
         remote_settings=remote_settings,
     )
     return 0

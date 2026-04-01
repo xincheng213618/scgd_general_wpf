@@ -1,6 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -112,6 +115,38 @@ namespace ColorVision.Engine.Services
                 default:
                     break;
             }
+        }
+
+        private void ButtonLicenseManager_Click(object sender, RoutedEventArgs e)
+        {
+            new LicenseManagerWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void ButtonPhyCameraManager_Click(object sender, RoutedEventArgs e)
+        {
+            new PhyCameraManagerWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void ButtonArchiveManager_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new Window
+            {
+                Title = Properties.Resources.Archive,
+                Width = 800,
+                Height = 600,
+                Owner = this,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Background = (System.Windows.Media.Brush)FindResource("GlobalBackground")
+            };
+            var frame = new System.Windows.Controls.Frame();
+            window.Content = frame;
+            frame.Navigate(new Archive.Dao.ArchivePage(frame));
+            window.ShowDialog();
+        }
+
+        private void ButtonFlowManager_Click(object sender, RoutedEventArgs e)
+        {
+            new FlowEngineToolWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 }

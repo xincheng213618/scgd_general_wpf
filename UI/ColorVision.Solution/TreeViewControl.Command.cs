@@ -1,7 +1,6 @@
-﻿using ColorVision.Solution.V;
+﻿using ColorVision.Solution.Explorer;
 using ColorVision.UI;
 using System.IO;
-using System.Runtime.Serialization;
 using System.Windows;
 using System.Windows.Input;
 
@@ -9,66 +8,61 @@ namespace ColorVision.Solution
 {
     public partial class TreeViewControl
     {
+        private const string ClipboardFormat = "SolutionNodePath";
+        private bool _isCutOperation;
+
         private void IniCommand()
         {
-            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand));
-            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand));
-            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
+            // Add command bindings to both the TreeView and the UserControl
+            // so keyboard shortcuts work regardless of internal focus state
+            var copyBinding = new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand);
+            var cutBinding = new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand);
+            var pasteBinding = new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand);
 
-            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete,   (s,e)=>
+            SolutionTreeView.CommandBindings.Add(copyBinding);
+            SolutionTreeView.CommandBindings.Add(cutBinding);
+            SolutionTreeView.CommandBindings.Add(pasteBinding);
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
+
+            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) =>
             {
-                if (SelectedTreeViewItem?.DataContext is VObject baseObject) baseObject.Delete();
+                // Multi-select delete
+                var toDelete = _selectedNodes.Where(n => n.CanDelete).ToList();
+                foreach (var node in toDelete)
+                    node.Delete();
             }
-            , (s, e) => e.CanExecute = SelectedTreeViewItem != null && SelectedTreeViewItem.DataContext is VObject baseObject && baseObject.CanDelete));
-
+            , (s, e) => e.CanExecute = _selectedNodes.Any(n => n.CanDelete)));
 
             SolutionTreeView.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) =>
             {
-                if (SelectedTreeViewItem != null && SelectedTreeViewItem.DataContext is VObject baseObject)
-                    baseObject.IsEditMode = true;
-            }, (s, e) => e.CanExecute = SelectedTreeViewItem != null && SelectedTreeViewItem.DataContext is VObject baseObject && baseObject.CanReName));
+                // Rename only works on single selection
+                if (_selectedNodes.Count == 1 && _selectedNodes[0].CanReName)
+                    _selectedNodes[0].IsEditMode = true;
+            }, (s, e) => e.CanExecute = _selectedNodes.Count == 1 && _selectedNodes[0].CanReName));
         }
 
-        #region 通用命令执行函数
+        #region Command Handlers
+
         private void CanExecuteCommand(object sender, CanExecuteRoutedEventArgs e)
         {
-            if (e.Parameter is VObject baseObject)
+            if (_selectedNodes.Count == 0)
+                return;
+
+            if (e.Command == ApplicationCommands.Copy)
             {
-                if (e.Command == ApplicationCommands.SelectAll)
-                {
-                    e.CanExecute = false;
-                }   
-                else if (e.Command == ApplicationCommands.Copy)
-                {
-                    e.CanExecute = true;
-                }
-                else if (e.Command == ApplicationCommands.Cut)
-                {
-                    e.CanExecute = true;
-                }
-                else if (e.Command == ApplicationCommands.Paste)
-                {
-                    e.CanExecute = true;
-                }
+                e.CanExecute = _selectedNodes.All(n => n.CanCopy && !string.IsNullOrEmpty(n.FullPath));
             }
-            else if (SelectedTreeViewItem != null && SelectedTreeViewItem.DataContext is VObject baseObject1)
+            else if (e.Command == ApplicationCommands.Cut)
             {
-                if (e.Command == ApplicationCommands.SelectAll)
-                {
-                    e.CanExecute = false;
-                }
-                else if (e.Command == ApplicationCommands.Copy)
-                {
-                    e.CanExecute = baseObject1.CanCopy;
-                }
-                else if (e.Command == ApplicationCommands.Cut)
-                {
-                    e.CanExecute = false;
-                }
-                else if (e.Command == ApplicationCommands.Paste)
-                {
-                    e.CanExecute = Clipboard.ContainsData("VObjectFormat");
-                }
+                e.CanExecute = _selectedNodes.All(n => n.CanCut && !string.IsNullOrEmpty(n.FullPath));
+            }
+            else if (e.Command == ApplicationCommands.Paste)
+            {
+                e.CanExecute = _selectedNodes.Count == 1
+                    && _selectedNodes[0].CanPaste
+                    && Clipboard.ContainsData(ClipboardFormat);
             }
         }
 
@@ -76,38 +70,91 @@ namespace ColorVision.Solution
         {
             if (e.Command == ApplicationCommands.Copy)
             {
-                if (e.Parameter is VObject baseObject)
+                var paths = _selectedNodes
+                    .Where(n => !string.IsNullOrEmpty(n.FullPath))
+                    .Select(n => n.FullPath)
+                    .ToArray();
+                if (paths.Length > 0)
                 {
-                    DataContractSerializer serializer = new DataContractSerializer(typeof(VObject));
-
-                    using (MemoryStream memoryStream = new MemoryStream())
-                    {
-                        serializer.WriteObject(memoryStream, baseObject);
-                        byte[] objectData = memoryStream.ToArray();
-
-                        // 将字节数组放入剪贴板
-                        Clipboard.SetData("VObjectFormat", objectData);
-                    }
+                    Clipboard.SetData(ClipboardFormat, paths);
+                    _isCutOperation = false;
                 }
-                //this.DoCopy();
             }
             else if (e.Command == ApplicationCommands.Cut)
             {
-                //this.DoCut();
+                var paths = _selectedNodes
+                    .Where(n => !string.IsNullOrEmpty(n.FullPath))
+                    .Select(n => n.FullPath)
+                    .ToArray();
+                if (paths.Length > 0)
+                {
+                    Clipboard.SetData(ClipboardFormat, paths);
+                    _isCutOperation = true;
+                }
             }
             else if (e.Command == ApplicationCommands.Paste)
             {
-                if (Clipboard.ContainsData("VObjectFormat"))
+                if (!Clipboard.ContainsData(ClipboardFormat) || _selectedNodes.Count == 0)
+                    return;
+
+                var data = Clipboard.GetData(ClipboardFormat);
+                string[] sourcePaths;
+                if (data is string singlePath)
+                    sourcePaths = new[] { singlePath };
+                else if (data is string[] paths)
+                    sourcePaths = paths;
+                else
+                    return;
+
+                var targetNode = _selectedNodes[0];
+                string targetDir = targetNode.FullPath;
+                if (targetNode is FileNode)
+                    targetDir = Path.GetDirectoryName(targetNode.FullPath) ?? targetDir;
+
+                if (string.IsNullOrEmpty(targetDir) || !Directory.Exists(targetDir))
+                    return;
+
+                foreach (var sourcePath in sourcePaths)
                 {
-                    byte[] objectData = (byte[])Clipboard.GetData("VObjectFormat");
-                    using (MemoryStream memoryStream = new MemoryStream(objectData))
+                    if (File.Exists(sourcePath))
                     {
-                        DataContractSerializer serializer = new DataContractSerializer(typeof(VObject));
-                        VObject baseObject = (VObject)serializer.ReadObject(memoryStream);
+                        var destPath = Path.Combine(targetDir, Path.GetFileName(sourcePath));
+                        if (!File.Exists(destPath))
+                        {
+                            if (_isCutOperation)
+                                File.Move(sourcePath, destPath);
+                            else
+                                File.Copy(sourcePath, destPath);
+                        }
+                    }
+                    else if (Directory.Exists(sourcePath))
+                    {
+                        var destPath = Path.Combine(targetDir, Path.GetFileName(sourcePath));
+                        if (!Directory.Exists(destPath))
+                        {
+                            if (_isCutOperation)
+                                Directory.Move(sourcePath, destPath);
+                            else
+                                CopyDirectory(sourcePath, destPath);
+                        }
                     }
                 }
-            }
 
+                if (_isCutOperation)
+                {
+                    Clipboard.Clear();
+                    _isCutOperation = false;
+                }
+            }
+        }
+
+        private static void CopyDirectory(string sourceDir, string destinationDir)
+        {
+            Directory.CreateDirectory(destinationDir);
+            foreach (var file in Directory.GetFiles(sourceDir))
+                File.Copy(file, Path.Combine(destinationDir, Path.GetFileName(file)));
+            foreach (var dir in Directory.GetDirectories(sourceDir))
+                CopyDirectory(dir, Path.Combine(destinationDir, Path.GetFileName(dir)));
         }
 
         #endregion

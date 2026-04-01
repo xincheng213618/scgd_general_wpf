@@ -28,6 +28,12 @@
 	</div>
 </section>
 
+<section class="panel-card p-4 mb-4">
+	{% set timeline_data = app_info.release_timeline %}
+	{% set timeline_title = '真实发布历史时间线' %}
+	{% include '_release_timeline.html' %}
+</section>
+
 <section class="panel-card p-4">
 	<div class="section-header">
 		<div>
@@ -46,5 +52,9 @@
 	</div>
 	{% endif %}
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='release-timeline.js') }}"></script>
 {% endblock %}
 
