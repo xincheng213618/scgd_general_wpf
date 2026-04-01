@@ -194,12 +194,16 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void EditFlow()
         {
+            if (TemplateFlowParamsIndex < 0 || TemplateFlowParamsIndex >= FlowParams.Count)
+                return;
             new FlowEngineToolWindow(FlowParams[TemplateFlowParamsIndex].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
             _=View.DisplayFlow.Refresh();
         }
 
         public void EditTemplateFlow()
         {
+            if (TemplateFlowParamsIndex < 0 || TemplateFlowParamsIndex >= FlowParams.Count)
+                return;
             new TemplateEditorWindow(new TemplateFlow(), TemplateFlowParamsIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
             _ = View.DisplayFlow.Refresh();
         }

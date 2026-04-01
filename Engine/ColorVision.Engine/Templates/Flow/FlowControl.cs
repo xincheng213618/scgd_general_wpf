@@ -99,7 +99,6 @@ namespace ColorVision.Engine.Templates.Flow
         }
         public void Stop()
         {
-            FlowCompleted = null;
             flowEngine.Finished -= FinishedAsync;
             if (!string.IsNullOrWhiteSpace(SerialNumber))
             {
