@@ -29,6 +29,7 @@
             <Button Content="{x:Static properties:Resources.Upload}" Command="{Binding UploadCalibrationCommand}" Margin="0,0,5,0"  />
             <Button Content="{x:Static properties:Resources.ExportCalibration}" Click="Export_Click" Margin="0,0,5,0" />
             <Button Content="{x:Static properties:Resources.CreateCalibration}" Command="{Binding OepnCalibrationToolCommand}" Margin="0,0,5,0" />
+            <Button Content="校正手册 &#x2753;" Click="Help_Click" Margin="0,0,5,0" ToolTip="打开校正系统参考手册，查看各校正步骤的算法原理和配置说明" />
         </StackPanel>
         <Grid  Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -103,105 +104,163 @@
                                 </DockPanel>
                             </UniformGrid>
                         </StackPanel>
-                        <StackPanel Margin="5">
-                            <DockPanel  Margin="0,0,0,5">
-                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding DarkNoise.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0"/>
-                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.DarkNoise}"  Width="80" />
-                                <hc:ComboBox x:Name="ComboBoxDarkNoise" SelectedValue="{Binding DarkNoise}"  hc:InfoElement.ShowClearButton="True"   DisplayMemberPath="Name"  />
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding DSNU.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
 
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding DSNU.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
-                                <hc:ComboBox x:Name="ComboBoxDSNU" SelectedValue="{Binding DSNU}"  DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True"  />
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding DefectPoint.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding DefectPoint.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.DefectPoint}" Width="80"  />
-                                <hc:ComboBox x:Name="ComboBoxDefectPoint"  SelectedValue="{Binding DefectPoint}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding ColorShift.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.ColorShift}" Width="80"  />
-                                <hc:ComboBox x:Name="ComboBoxColorShift" SelectedValue="{Binding ColorShift}"  DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True"  />
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding Distortion.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Distortion}" Width="80"  />
-                                <hc:ComboBox x:Name="ComboBoxDistortion" SelectedValue="{Binding Distortion}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding Uniformity.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding Uniformity.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Uniformity}" Width="80"  />
-                                <hc:ComboBox  x:Name="ComboBoxUniformity"  SelectedValue="{Binding Uniformity}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LineArity.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="LineArity" Width="80"  />
-                                <hc:ComboBox  x:Name="ComboBoxLineArity" SelectedValue="{Binding LineArity}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
-                            </DockPanel>
-                            <DockPanel>
-                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding ColorDiff.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.ColorDiff}" Width="80"  />
-                                <hc:ComboBox  x:Name="ComboBoxColorDiff"  SelectedValue="{Binding ColorDiff}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
-                            </DockPanel>
-                        </StackPanel>
+                        <!-- 基础校正项：按固定顺序依次执行 DarkNoise → DefectPoint → DSNU → Uniformity → ColorShift → Distortion -->
+                        <GroupBox Header="基础校正（按顺序依次执行）" Margin="5,5,5,0" Foreground="{DynamicResource GlobalTextBrush}">
+                            <StackPanel Margin="5">
+                                <TextBlock Text="校正流水线：原始图像 → 暗电流 → 坏点 → DSNU → 均匀性 → 色偏 → 畸变 → 校正后图像" 
+                                           FontSize="11" Opacity="0.7" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                                <DockPanel  Margin="0,0,0,5" ToolTip="暗电流校正（DarkNoise）：消除传感器在无光照条件下产生的暗电流噪声&#x0a;算法：pixel_out = pixel_in × DarkNoiseRatio&#x0a;配置文件：JSON 格式（含 bpp 和 DarkNoiseRatio）">
+                                    <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding DarkNoise.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                    <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0"/>
+                                    <TextBlock DockPanel.Dock="Left" Width="120" ToolTip="消除传感器固有暗电流信号，通过预标定比率逐像素补偿">
+                                        <Run Text="{x:Static properties:Resources.DarkNoise}"/>
+                                        <LineBreak/>
+                                        <Run Text="消除暗电流噪声" FontSize="10" Foreground="Gray"/>
+                                    </TextBlock>
+                                    <hc:ComboBox x:Name="ComboBoxDarkNoise" SelectedValue="{Binding DarkNoise}"  hc:InfoElement.ShowClearButton="True"   DisplayMemberPath="Name"  />
+                                </DockPanel>
+                                <DockPanel  Margin="0,0,0,5" ToolTip="DSNU校正（Dark Signal Non-Uniformity）：暗信号非均匀性补偿&#x0a;算法：pixel_out = max(pixel_in - DSNU_ref, 0)&#x0a;配置文件：二进制格式（V0/V1 头 + ushort 暗帧基准数据）">
+                                    <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding DSNU.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                    <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DSNU.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding DSNU.OpenCommand}"/>
+                                    <TextBlock DockPanel.Dock="Left" Width="120" ToolTip="暗信号非均匀性补偿，通过预采集暗帧逐像素减法消除像素级暗电流差异">
+                                        <Run Text="DSNU"/>
+                                        <LineBreak/>
+                                        <Run Text="暗信号非均匀性补偿" FontSize="10" Foreground="Gray"/>
+                                    </TextBlock>
+                                    <hc:ComboBox x:Name="ComboBoxDSNU" SelectedValue="{Binding DSNU}"  DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True"  />
+                                </DockPanel>
+                                <DockPanel  Margin="0,0,0,5" ToolTip="坏点校正（DefectPoint）：检测并修复缺陷像素&#x0a;算法：对预标定坏点坐标使用 7×7 邻域中值滤波替代&#x0a;配置文件：二进制格式（4字节坏点数量 + 坐标列表）">
+                                    <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding DefectPoint.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                    <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DefectPoint.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding DefectPoint.OpenCommand}"/>
+                                    <TextBlock DockPanel.Dock="Left" Width="120" ToolTip="检测并插值修复缺陷像素，7×7 邻域中值滤波">
+                                        <Run Text="{x:Static properties:Resources.DefectPoint}"/>
+                                        <LineBreak/>
+                                        <Run Text="缺陷像素中值修复" FontSize="10" Foreground="Gray"/>
+                                    </TextBlock>
+                                    <hc:ComboBox x:Name="ComboBoxDefectPoint"  SelectedValue="{Binding DefectPoint}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
+                                </DockPanel>
+                                <DockPanel  Margin="0,0,0,5" ToolTip="色偏校正（ColorShift）：通道间空间偏移补偿&#x0a;算法：通过 OpenCV 仿射变换进行亚像素级通道平移&#x0a;配置文件：JSON 格式（含 fillOffset 和 offset/offsets 参数）">
+                                    <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding ColorShift.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                    <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.OpenCommand}"/>
+                                    <TextBlock DockPanel.Dock="Left" Width="120" ToolTip="补偿多通道光学系统中不同色彩通道的空间偏移">
+                                        <Run Text="{x:Static properties:Resources.ColorShift}"/>
+                                        <LineBreak/>
+                                        <Run Text="通道空间偏移补偿" FontSize="10" Foreground="Gray"/>
+                                    </TextBlock>
+                                    <hc:ComboBox x:Name="ComboBoxColorShift" SelectedValue="{Binding ColorShift}"  DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True"  />
+                                </DockPanel>
+                                <DockPanel  Margin="0,0,0,5" ToolTip="畸变校正（Distortion）：镜头径向/切向畸变矫正&#x0a;算法：支持标准针孔模型(k1,k2,p1,p2,k3)和鱼眼模型&#x0a;配置文件：JSON 格式（含相机内参矩阵 fx,fy,cx,cy 和畸变系数）">
+                                    <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding Distortion.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                    <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.OpenCommand}"/>
+                                    <TextBlock DockPanel.Dock="Left" Width="120" ToolTip="使用 OpenCV 相机标定模型矫正镜头畸变，支持标准针孔与鱼眼模型">
+                                        <Run Text="{x:Static properties:Resources.Distortion}"/>
+                                        <LineBreak/>
+                                        <Run Text="镜头畸变矫正" FontSize="10" Foreground="Gray"/>
+                                    </TextBlock>
+                                    <hc:ComboBox x:Name="ComboBoxDistortion" SelectedValue="{Binding Distortion}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
+                                </DockPanel>
+                                <DockPanel  Margin="0,0,0,5" ToolTip="均匀性校正（Uniformity）：补偿镜头渐晕和传感器灵敏度空间差异&#x0a;算法：pixel_out = pixel_in × Uniformity_factor&#x0a;配置文件：二进制格式（V0/V1 头 + float 因子矩阵）">
+                                    <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding Uniformity.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                    <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding Uniformity.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding Uniformity.OpenCommand}"/>
+                                    <TextBlock DockPanel.Dock="Left" Width="120" ToolTip="使用预标定乘法因子矩阵补偿镜头渐晕和传感器响应不均">
+                                        <Run Text="{x:Static properties:Resources.Uniformity}"/>
+                                        <LineBreak/>
+                                        <Run Text="镜头渐晕/响应补偿" FontSize="10" Foreground="Gray"/>
+                                    </TextBlock>
+                                    <hc:ComboBox  x:Name="ComboBoxUniformity"  SelectedValue="{Binding Uniformity}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
+                                </DockPanel>
+                                <DockPanel  Margin="0,0,0,5" ToolTip="线性度校正（LineArity）：校正传感器的非线性响应特性&#x0a;确保输出灰度值与实际光照强度成线性关系">
+                                    <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LineArity.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                    <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.OpenCommand}"/>
+                                    <TextBlock DockPanel.Dock="Left" Width="120" ToolTip="校正传感器输出灰度值与实际光照强度之间的非线性关系">
+                                        <Run Text="LineArity"/>
+                                        <LineBreak/>
+                                        <Run Text="传感器线性度校正" FontSize="10" Foreground="Gray"/>
+                                    </TextBlock>
+                                    <hc:ComboBox  x:Name="ComboBoxLineArity" SelectedValue="{Binding LineArity}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
+                                </DockPanel>
+                                <DockPanel ToolTip="色差校正（ColorDiff）：校正不同色彩通道间的色差偏移">
+                                    <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding ColorDiff.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                    <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.OpenCommand}"/>
+                                    <TextBlock DockPanel.Dock="Left" Width="120" ToolTip="消除不同色彩通道间的色差偏移">
+                                        <Run Text="{x:Static properties:Resources.ColorDiff}"/>
+                                        <LineBreak/>
+                                        <Run Text="通道色差消除" FontSize="10" Foreground="Gray"/>
+                                    </TextBlock>
+                                    <hc:ComboBox  x:Name="ComboBoxColorDiff"  SelectedValue="{Binding ColorDiff}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
+                                </DockPanel>
+                            </StackPanel>
+                        </GroupBox>
 
-                        <StackPanel Margin="5">
-                            <DockPanel  Margin="0,0,0,5">
-                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding Luminance.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.Brightness}" Width="80"  />
-                                <hc:ComboBox x:Name="ComboBoxLuminance" SelectedValue="{Binding Luminance}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LumOneColor.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.OneColor}" Width="80"/>
-                                <hc:ComboBox x:Name="ComboBoxLumOneColor" SelectedValue="{Binding LumOneColor}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LumFourColor.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.FourColor}" Width="80"  />
-                                <hc:ComboBox  x:Name="ComboBoxLumFourColor" SelectedValue="{Binding LumFourColor}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
-                            </DockPanel>
-                            <DockPanel >
-                                <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LumMultiColor.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
-                                <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.EditCommand}"/>
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.OpenCommand}"/>
-                                <TextBlock DockPanel.Dock="Left" Text="{x:Static properties:Resources.MultiColor}" Width="80"  />
-                                <hc:ComboBox x:Name="ComboBoxLumMultiColor"  SelectedValue="{Binding LumMultiColor}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
-                            </DockPanel>
-                        </StackPanel>
+                        <!-- 色彩校正项：将灰度值转换为 CIE XYZ 色彩空间（四种模式互斥，仅可选其一） -->
+                        <GroupBox Header="色彩校正（四选一，互斥）" Margin="5,5,5,0" Foreground="{DynamicResource GlobalTextBrush}">
+                            <StackPanel Margin="5">
+                                <TextBlock Text="将传感器灰度/RGB 值转换为 CIE XYZ 三刺激值或绝对亮度值 Lv(cd/m²)，以下四种模式互斥" 
+                                           FontSize="11" Opacity="0.7" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                                <DockPanel  Margin="0,0,0,5" ToolTip="亮度校正（Luminance）：灰度值到绝对亮度值 Lv(cd/m²) 的线性转换&#x0a;算法：Lv = (a / Texp) × pixel&#x0a;配置文件：JSON 格式（含 bpp、曝光时间和系数 a,b,c,d）&#x0a;输出：单通道 32 位浮点亮度图">
+                                    <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding Luminance.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                    <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.OpenCommand}"/>
+                                    <TextBlock DockPanel.Dock="Left" Width="120" ToolTip="Lv = (a / Texp) × pixel，仅输出单通道亮度值">
+                                        <Run Text="{x:Static properties:Resources.Brightness}"/>
+                                        <LineBreak/>
+                                        <Run Text="灰度→亮度 Lv(cd/m²)" FontSize="10" Foreground="Gray"/>
+                                    </TextBlock>
+                                    <hc:ComboBox x:Name="ComboBoxLuminance" SelectedValue="{Binding Luminance}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
+                                </DockPanel>
+                                <DockPanel  Margin="0,0,0,5" ToolTip="单色校正（LumOneColor）：4 系数线性模型&#x0a;算法：X = aR+dB, Y = bG, Z = cB（经曝光/增益归一化）&#x0a;配置文件：JSON 格式（含 a,b,c,d 系数和 Texp/Gain）&#x0a;支持多线程加速">
+                                    <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LumOneColor.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                    <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.OpenCommand}"/>
+                                    <TextBlock DockPanel.Dock="Left" Width="120" ToolTip="4 系数模型：X=aR+dB, Y=bG, Z=cB">
+                                        <Run Text="{x:Static properties:Resources.OneColor}"/>
+                                        <LineBreak/>
+                                        <Run Text="4系数→CIE XYZ" FontSize="10" Foreground="Gray"/>
+                                    </TextBlock>
+                                    <hc:ComboBox x:Name="ComboBoxLumOneColor" SelectedValue="{Binding LumOneColor}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
+                                </DockPanel>
+                                <DockPanel  Margin="0,0,0,5" ToolTip="四色校正（LumFourColor）：3×3 矩阵（9 系数 a-i）&#x0a;算法：[X,Y,Z] = 3×3矩阵 × [R,G,B]（每通道经 Texp/Gain 归一化）&#x0a;配置文件：JSON 格式（含 a-i 共 9 个系数）&#x0a;精度高于单色校正">
+                                    <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LumFourColor.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                    <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.OpenCommand}"/>
+                                    <TextBlock DockPanel.Dock="Left" Width="120" ToolTip="3×3 矩阵完整通道混合，精度高于单色">
+                                        <Run Text="{x:Static properties:Resources.FourColor}"/>
+                                        <LineBreak/>
+                                        <Run Text="9系数3×3→CIE XYZ" FontSize="10" Foreground="Gray"/>
+                                    </TextBlock>
+                                    <hc:ComboBox  x:Name="ComboBoxLumFourColor" SelectedValue="{Binding LumFourColor}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
+                                </DockPanel>
+                                <DockPanel ToolTip="多色校正（LumMultiColor）：动态 N/3×3 系数矩阵&#x0a;算法：支持高阶色彩转换拟合，系数数组长度动态&#x0a;配置文件：JSON 格式（含动态系数和增益数组）&#x0a;适用于需要更高精度的场景">
+                                    <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding LumMultiColor.IsValid,Mode=OneWay}" Margin="5,0,0,0"/>
+                                    <Button DockPanel.Dock="Right" Content="上传" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Edit}" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.EditCommand}"/>
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Selected}" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.OpenCommand}"/>
+                                    <TextBlock DockPanel.Dock="Left" Width="120" ToolTip="动态大小系数矩阵，支持高阶色彩拟合">
+                                        <Run Text="{x:Static properties:Resources.MultiColor}"/>
+                                        <LineBreak/>
+                                        <Run Text="N系数高阶→CIE XYZ" FontSize="10" Foreground="Gray"/>
+                                    </TextBlock>
+                                    <hc:ComboBox x:Name="ComboBoxLumMultiColor"  SelectedValue="{Binding LumMultiColor}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
+                                </DockPanel>
+                            </StackPanel>
+                        </GroupBox>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
