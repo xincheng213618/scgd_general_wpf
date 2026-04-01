@@ -16,7 +16,7 @@ import re
 import shutil
 import subprocess
 import sys
-import time
+import tempfile
 import zipfile
 
 from file_manager import FileManager
@@ -30,8 +30,6 @@ PROJECT_DIR = os.path.join(REPO_ROOT, "Plugins", PROJECT_NAME)
 PROJECT_PATH = os.path.join(PROJECT_DIR, f"{PROJECT_NAME}.csproj")
 BUILD_DIR = os.path.join(REPO_ROOT, "Release", PROJECT_NAME)
 
-# 插件服务器目录 (本地映射盘)
-PLUGIN_SERVER_DIR = os.path.join("H:\\", "ColorVision", "Plugins")
 FILE_MANAGER = FileManager()
 
 # cvxp 需要额外打入的文件名
@@ -215,68 +213,21 @@ def build_cvxp(src_dir: str, ref_dir: str, cvxp_path: str) -> bool:
 
 
 # ── 上传 ──────────────────────────────────────────────────────────
-def _version_tuple(v: str):
-    return tuple(map(int, v.split(".")))
-
-
-def copy_with_progress(src: str, dst: str) -> None:
-    """带进度显示的文件复制。"""
-    if os.path.isdir(dst):
-        dst = os.path.join(dst, os.path.basename(src))
-    size = os.path.getsize(src)
-    copied = 0
-    chunk = 1024 * 1024
-    with open(src, "rb") as fi, open(dst, "wb") as fo:
-        start = time.time()
-        while True:
-            data = fi.read(chunk)
-            if not data:
-                break
-            fo.write(data)
-            copied += len(data)
-            elapsed = time.time() - start
-            speed = copied / elapsed if elapsed > 0 else 0
-            pct = copied / size * 100
-            eta = (size - copied) / speed if speed > 0 else 0
-            print(
-                f"\r{copied / 1048576:.1f}/{size / 1048576:.1f} MB "
-                f"({pct:.1f}%) {speed / 1048576:.1f} MB/s "
-                f"ETA {time.strftime('%H:%M:%S', time.gmtime(eta))}",
-                end="",
-            )
-        print()
-
-
 def upload_file_http(file_path: str, folder: str) -> bool:
     """通过 HTTP PUT 上传文件到服务器。"""
     return FILE_MANAGER.upload_file(file_path, folder)
 
 
-def upload_cvxp_to_server(cvxp_path: str, version: str) -> None:
-    """将 cvxp 复制到插件服务器目录并更新 LATEST_RELEASE。"""
-    target_dir = os.path.join(PLUGIN_SERVER_DIR, PROJECT_NAME)
-    release_file = os.path.join(target_dir, "LATEST_RELEASE")
-
-    if not os.path.isdir(os.path.dirname(PLUGIN_SERVER_DIR)):
-        print(f"插件服务器目录不可访问: {PLUGIN_SERVER_DIR}")
-        return
-
-    os.makedirs(target_dir, exist_ok=True)
-
-    # 读取当前版本
+def upload_latest_release(version: str, folder: str) -> bool:
+    """生成临时 LATEST_RELEASE 文件并上传到服务器。"""
+    tmp_dir = tempfile.mkdtemp()
     try:
-        with open(release_file, "r") as f:
-            current = f.read().strip()
-    except FileNotFoundError:
-        current = "0.0.0.0"
-
-    if _version_tuple(version) >= _version_tuple(current):
-        with open(release_file, "w") as f:
+        release_file = os.path.join(tmp_dir, "LATEST_RELEASE")
+        with open(release_file, "w", encoding="utf-8") as f:
             f.write(version)
-        print(f"已更新 LATEST_RELEASE → {version}")
-        copy_with_progress(cvxp_path, target_dir)
-    else:
-        print(f"服务器版本 ({current}) 已是最新，跳过上传。")
+        return upload_file_http(release_file, folder)
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 # ── 入口 ──────────────────────────────────────────────────────────
@@ -334,10 +285,12 @@ def main() -> None:
 
     # Step 6: 上传
     if args.upload:
+        plugin_folder = f"Plugins/{PROJECT_NAME}"
         if zip_path and os.path.isfile(zip_path):
             upload_file_http(zip_path, PROJECT_NAME)
         if cvxp_path and os.path.isfile(cvxp_path):
-            upload_cvxp_to_server(cvxp_path, version)
+            upload_file_http(cvxp_path, plugin_folder)
+            upload_latest_release(version, plugin_folder)
             # cvxp 仅用于服务器分发，上传后删除本地副本
             os.remove(cvxp_path)
             print(f"已删除本地 cvxp: {cvxp_path}")
