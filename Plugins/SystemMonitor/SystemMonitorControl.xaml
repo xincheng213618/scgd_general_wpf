@@ -1,15 +1,14 @@
-﻿<UserControl x:Class="ColorVision.Settings.SystemMonitorControl"
+﻿<UserControl x:Class="SystemMonitor.SystemMonitorControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:local="clr-namespace:ColorVision.Settings"
+             xmlns:local="clr-namespace:SystemMonitor"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:properties="clr-namespace:SystemMonitor.Properties"
-             xmlns:u="clr-namespace:ColorVision.UI.Configs;assembly=ColorVision.UI"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d"
-             d:DataContext="{d:DesignInstance u:SystemMonitors}"
+             d:DataContext="{d:DesignInstance local:SystemMonitors}"
              d:DesignHeight="700" d:DesignWidth="850" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style x:Key="CardBorder" TargetType="{x:Type Border}">

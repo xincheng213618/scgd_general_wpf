@@ -3,6 +3,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Batch;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
 using ColorVision.SocketProtocol;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
@@ -63,6 +64,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
+        private int _pendingUiUpdate;
 
         public DisplayFlow(FlowEngineManager flowEngineManager)
         {
@@ -145,20 +147,29 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (IsRefresh) return;
             IsRefresh = true;
-            MqttRCService.GetInstance().QueryServices();
-            FlowParam flowParam = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Value;
-
-            if (View == null) return;
-
-            if (string.IsNullOrEmpty(flowParam.DataBase64))
-            {
-                MessageBox.Show("再选择之前请先创建对映的模板");
-                View.FlowEngineControl.LoadFromBase64(string.Empty);
-                return;
-            }
-
             try
             {
+                MqttRCService.GetInstance().QueryServices();
+
+                if (View == null)
+                    return;
+
+                var selectedTemplate = GetSelectedFlowTemplate();
+                if (selectedTemplate == null)
+                {
+                    View.FlowEngineControl.LoadFromBase64(string.Empty);
+                    return;
+                }
+
+                FlowParam flowParam = selectedTemplate.Value;
+
+                if (string.IsNullOrEmpty(flowParam.DataBase64))
+                {
+                    MessageBox.Show("再选择之前请先创建对映的模板");
+                    View.FlowEngineControl.LoadFromBase64(string.Empty);
+                    return;
+                }
+
                 var CVBaseServerNodes = FlowEngineManager.CVBaseServerNodes;
                 CVBaseServerNodes.Clear();
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
@@ -199,7 +210,25 @@ namespace ColorVision.Engine.Templates.Flow
                 });
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
             }
-            IsRefresh = false;
+            finally
+            {
+                IsRefresh = false;
+            }
+        }
+
+        private TemplateModel<FlowParam> GetSelectedFlowTemplate()
+        {
+            if (ComboBoxFlow.SelectedItem is TemplateModel<FlowParam> selectedTemplate)
+                return selectedTemplate;
+
+            if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
+                return TemplateFlow.Params.FirstOrDefault(a => a.Value?.Id == flowParam.Id);
+
+            int selectedIndex = ComboBoxFlow.SelectedIndex;
+            if (selectedIndex >= 0 && selectedIndex < TemplateFlow.Params.Count)
+                return TemplateFlow.Params[selectedIndex];
+
+            return null;
         }
 
         public event RoutedEventHandler Selected;

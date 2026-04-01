@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using SystemMonitor.Properties;
 
-namespace ColorVision.Settings
+namespace SystemMonitor
 {
     public class SystemMonitorProvider : IConfigSettingProvider, IMenuItemProvider
     {
@@ -36,7 +36,7 @@ namespace ColorVision.Settings
                     GuidId = "SystemMonitor",
                     Header = Resources.PerformanceTest,
                     Order = 500,
-                    Command = new Common.MVVM.RelayCommand(a =>
+                    Command = new ColorVision.Common.MVVM.RelayCommand(a =>
                     {
                         Window window = new Window()
                         {
