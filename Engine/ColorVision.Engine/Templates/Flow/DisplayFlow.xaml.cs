@@ -254,7 +254,9 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
             FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
 
-            string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{Msg1}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
+            string lastNodes = _runningNodeNames.IsEmpty ? Msg1 : string.Join(", ", _runningNodeNames.Values);
+            _runningNodeNames.Clear();
+            string msg = $"{FlowName} {FlowControlData.EventName}{Environment.NewLine}节点:{lastNodes}{Environment.NewLine}{FlowControlData.Params}{Environment.NewLine}{stopwatch.ElapsedMilliseconds}ms";
             View.logTextBox.Text = msg;
             FlowEngineManager.BatchProgress = 100;
             log.Info(msg);
@@ -392,13 +394,18 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (FlowControl.IsFlowRun)
             {
+                // Throttle: skip if a previous UI update is still pending
+                if (Interlocked.CompareExchange(ref _pendingUiUpdate, 1, 0) != 0)
+                    return;
+
                 long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
                 TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                 string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                string runningNodes = _runningNodeNames.IsEmpty ? Msg1 : string.Join(", ", _runningNodeNames.Values);
                 string msg;
                 if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                 {
-                    msg = $"{FlowName}{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
+                    msg = $"{FlowName}{Environment.NewLine}正在执行节点:{runningNodes}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}";
                 }
                 else
                 {
@@ -406,10 +413,11 @@ namespace ColorVision.Engine.Templates.Flow
                     TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                     string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                    msg = $"{FlowName}上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{Msg1}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
+                    msg = $"{FlowName}上次执行：{LastFlowTime} ms{Environment.NewLine}正在执行节点:{runningNodes}{Environment.NewLine}已经执行：{elapsedTime} {Environment.NewLine}预计还需要：{remainingTime}";
                 }
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
+                    Interlocked.Exchange(ref _pendingUiUpdate, 0);
                     if (LastFlowTime != 0)
                     {
                         double perfect = (double) elapsedMilliseconds / (double)LastFlowTime * 100;
@@ -423,6 +431,7 @@ namespace ColorVision.Engine.Templates.Flow
         public CVCommonNode LastNode { get; set; }
 
         private readonly ConcurrentDictionary<string, FlowNodeRecord> _nodeRecords = new ConcurrentDictionary<string, FlowNodeRecord>();
+        private readonly ConcurrentDictionary<string, string> _runningNodeNames = new ConcurrentDictionary<string, string>();
 
         PropertyInfo MarkColorProperty { get; set; }
         private void nodeEndEvent(object sender, FlowEngineNodeEndEventArgs e)
@@ -434,6 +443,8 @@ namespace ColorVision.Engine.Templates.Flow
                     algorithmNode.IsSelected = false;
                     MarkColorProperty.SetValue(algorithmNode, System.Drawing.Color.Green);
                 }
+
+                _runningNodeNames.TryRemove(algorithmNode.NodeID, out _);
 
                 string nodeKey = algorithmNode.NodeID;
                 if (_nodeRecords.TryRemove(nodeKey, out FlowNodeRecord record))
@@ -453,6 +464,7 @@ namespace ColorVision.Engine.Templates.Flow
                 LastNode = algorithmNode;
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
+                _runningNodeNames[algorithmNode.NodeID] = algorithmNode.Title;
                 UpdateMsg(sender);
 
                 int batchId = FlowEngineManager.Batch?.Id ?? 0;
@@ -544,6 +556,7 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineManager.BatchProgress = 0;
 
             _nodeRecords.Clear();
+            _runningNodeNames.Clear();
             FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
             FlowControl.FlowCompleted += FlowControl_FlowCompleted;
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
