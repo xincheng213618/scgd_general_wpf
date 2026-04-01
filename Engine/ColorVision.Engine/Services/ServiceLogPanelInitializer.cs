@@ -71,11 +71,9 @@ namespace ColorVision.Engine.Services
                             continue;
                         }
 
-                        var grid = new Grid();
                         var logOutput = new LogLocalOutput(logPath, Encoding.GetEncoding("GB2312"));
-                        grid.Children.Add(logOutput);
 
-                        layoutManager.RegisterPanel(panelId, grid, title, PanelPosition.Bottom);
+                        layoutManager.RegisterPanel(panelId, logOutput, title, PanelPosition.Bottom);
                         log.Info($"Registered service log panel: {title} -> {logPath}");
                     }
                     catch (Exception ex)
