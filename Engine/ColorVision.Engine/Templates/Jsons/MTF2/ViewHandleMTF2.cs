@@ -161,7 +161,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                 List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
                 log.Info($"查询到 {detailCommonModels.Count} 条 DetailCommonModel 记录，Pid={result.Id}");
 
-                if (detailCommonModels.Count > 1)
+                if (detailCommonModels.Count > 0)
                 {
                     MTFDetailViewReslut mtfresult = new MTFDetailViewReslut(detailCommonModels[0]);
                     result.ViewResults.Add(mtfresult);
@@ -250,8 +250,8 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                         }
                     }
 
-                    List<string> header = new() { "name", "x","y","w","h","mtfvalue" };
-                    List<string> bdHeader = new() { "name", "x", "y", "w", "h", "mtfValue" };
+                    List<string> header = new() {"mtfvalue", "name", "x","y","w","h" };
+                    List<string> bdHeader = new() { "mtfValue" ,"name", "x", "y", "w", "h"};
 
                     if (ctx.ListView.View is GridView gridView)
                     {
