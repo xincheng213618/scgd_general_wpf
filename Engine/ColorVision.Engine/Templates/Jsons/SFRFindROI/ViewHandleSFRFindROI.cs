@@ -74,6 +74,8 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 
     public class ViewHandleSFRFindROI : IResultHandleBase
     {
+        public override string Name => "SFRFindROI";
+
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.ARVR_SFR_FindROI };
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
@@ -166,10 +168,11 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                             Circle.Attribute.Center = new Point((double)poiResultData.PoiX, (double)poiResultData.PoiY);
                             Circle.Attribute.Radius = (double)poiResultData.PoiHeight / 2;
                             Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            Circle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
                             Circle.Attribute.Id = poiResultData.Id;
                             Circle.Attribute.Text = poiResultData.PoiName;
-                            Circle.Attribute.Msg = $"Angle:{poiResultData.Value.Angle}{Environment.NewLine}";
+                            Circle.Attribute.FontSize = RenderConfig.FontSize;
+                            Circle.Attribute.Msg = $"Angle:{RenderConfig.FormatNumber(poiResultData.Value.Angle)}{Environment.NewLine}";
                             Circle.Render();
                             ctx.ImageView.AddVisual(Circle);
                             break;
@@ -177,10 +180,11 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                             DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect((double)poiResultData.PoiX - (double)poiResultData.PoiWidth / 2, (double)poiResultData.PoiY - (double)poiResultData.PoiHeight / 2, (double)poiResultData.PoiWidth, (double)poiResultData.PoiHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
                             Rectangle.Attribute.Id = poiResultData.Id;
                             Rectangle.Attribute.Text = poiResultData.PoiName;
-                            Rectangle.Attribute.Msg = $"Angle:{poiResultData.Value.Angle}{Environment.NewLine}";
+                            Rectangle.Attribute.FontSize = RenderConfig.FontSize;
+                            Rectangle.Attribute.Msg = $"Angle:{RenderConfig.FormatNumber(poiResultData.Value.Angle)}{Environment.NewLine}";
                             Rectangle.Render();
                             ctx.ImageView.AddVisual(Rectangle);
                             break;

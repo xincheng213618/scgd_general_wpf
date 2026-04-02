@@ -518,6 +518,12 @@ namespace ColorVision.ImageEditor.Draw
         private Point MouseDownP;
         Point LastMouseMove;
 
+        // 双击检测
+        private DateTime _lastClickTime;
+        private Point _lastClickPosition;
+        private const int DoubleClickTime = 300; // ms
+        private const double DoubleClickDistance = 5; // 像素
+
         private void DrawCanvas_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             DrawCanvas.CaptureMouse();
@@ -526,6 +532,23 @@ namespace ColorVision.ImageEditor.Draw
 
             if (!ImageViewModel.ImageEditMode || EditorContext.DrawEditorManager.Current !=null)
                 return;
+
+            // 双击检测
+            DateTime now = DateTime.Now;
+            double distance = Math.Sqrt(Math.Pow(MouseDownP.X - _lastClickPosition.X, 2) +
+                                       Math.Pow(MouseDownP.Y - _lastClickPosition.Y, 2));
+
+            if ((now - _lastClickTime).TotalMilliseconds <= DoubleClickTime && distance <= DoubleClickDistance)
+            {
+                // 处理双击
+                HandleDoubleClick(MouseDownP);
+                _lastClickTime = DateTime.MinValue; // 重置，防止连续触发
+                e.Handled = true;
+                return;
+            }
+
+            _lastClickTime = now;
+            _lastClickPosition = MouseDownP;
 
             var MouseVisual = DrawCanvas.GetVisual<Visual>(MouseDownP);
             if (MouseVisual == this)
@@ -560,6 +583,30 @@ namespace ColorVision.ImageEditor.Draw
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), new Rect(MouseDownP, MouseDownP));
             DrawCanvas.AddVisual(SelectRect);
 
+        }
+
+        /// <summary>
+        /// 处理双击事件
+        /// </summary>
+        private void HandleDoubleClick(Point point)
+        {
+            // 检查当前选中的视觉元素
+            foreach (var visual in SelectVisuals)
+            {
+                if (visual is IEditableDrawingVisual editableVisual && visual.GetRect().Contains(point))
+                {
+                    editableVisual.HandleDoubleClick(DrawCanvas, point);
+                    return;
+                }
+            }
+
+            // 如果没有选中，检查点击位置的视觉元素
+            var clickedVisual = DrawCanvas.GetVisual<Visual>(point);
+            if (clickedVisual is IEditableDrawingVisual editable && clickedVisual is ISelectVisual selectVisual)
+            {
+                SetRender(selectVisual);
+                editable.HandleDoubleClick(DrawCanvas, point);
+            }
         }
         private void DrawCanvas_MouseMove(object sender, MouseEventArgs e)
         {

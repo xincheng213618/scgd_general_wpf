@@ -19,6 +19,8 @@ namespace ColorVision.Engine.Templates.SFR
 {
     public class ViewHandleSFR : IResultHandleBase
     {
+        public override string Name => "SFR(ARVR)";
+
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.SFR };
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
@@ -140,8 +142,9 @@ namespace ColorVision.Engine.Templates.SFR
                 DVRectangleText Rectangle = new();
                 Rectangle.Attribute.Rect = new Rect((double)item.RoiX, (double)item.RoiY, (double)item.RoiWidth, (double)item.RoiHeight);
                 Rectangle.Attribute.Brush = Brushes.Transparent;
-                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                Rectangle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
                 Rectangle.Attribute.Id = item.Id;
+                Rectangle.Attribute.FontSize = RenderConfig.FontSize;
                 Rectangle.Render();
                 ctx.ImageView.AddVisual(Rectangle);
             }

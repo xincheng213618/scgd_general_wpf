@@ -49,6 +49,16 @@
                         <Button Margin="2,0,0,0" Click="SearchAdvanced_Click" Content="{x:Static properties:Resources.AdvanceSearch}" />
 
                         <Button x:Name="Button222" Click="SideSave_Click" Content="{x:Static properties:Resources.SaveDataColumn}" />
+
+                        <Separator />
+                        <TextBlock x:Name="TextBlockHandlerName" Margin="4,0" VerticalAlignment="Center" FontWeight="Bold" />
+                        <TextBlock Margin="4,0" VerticalAlignment="Center" Text="小数位:" />
+                        <hc:NumericUpDown x:Name="NumDecimalPlaces" Width="70" Minimum="0" Maximum="10" Value="3" ValueChanged="NumDecimalPlaces_ValueChanged" />
+                        <TextBlock Margin="4,0" VerticalAlignment="Center" Text="字号:" />
+                        <hc:NumericUpDown x:Name="NumFontSize" Width="80" Minimum="1" Maximum="200" Increment="1" Value="10" ValueChanged="NumFontSize_ValueChanged" />
+                        <TextBlock Margin="4,0" VerticalAlignment="Center" Text="线宽:" />
+                        <hc:NumericUpDown x:Name="NumPenThickness" Width="80" Minimum="0.1" Maximum="20" Increment="0.5" Value="1" ValueChanged="NumPenThickness_ValueChanged" />
+                        <Button Margin="2,0,0,0" x:Name="ButtonReRender" Click="ReRender_Click" Content="重新渲染" />
                     </ToolBar>
                 </ToolBarTray>
                 <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">

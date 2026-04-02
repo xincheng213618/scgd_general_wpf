@@ -83,6 +83,8 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleBlackMura));
 
+        public override string Name => "BlackMura";
+
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.BlackMura_Calc};
 
         private static string EscapeCsvField(string field)
