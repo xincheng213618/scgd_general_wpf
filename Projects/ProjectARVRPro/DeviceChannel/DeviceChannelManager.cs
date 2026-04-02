@@ -1,5 +1,4 @@
 using ColorVision.Common.MVVM;
-using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
@@ -49,12 +48,11 @@ namespace ProjectARVRPro.DeviceChannel
 
         private void Edit()
         {
-            new PropertyEditorWindow(this)
+            new DeviceChannelEditWindow(this)
             {
                 Owner = System.Windows.Application.Current.GetActiveWindow(),
                 WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner
             }.ShowDialog();
-            Save();
         }
 
         /// <summary>
@@ -72,7 +70,7 @@ namespace ProjectARVRPro.DeviceChannel
                 _channels.Remove(config.Name);
             }
 
-            var channel = CreateChannel(config);
+            var channel = CreateChannelFromConfig(config);
             await channel.ConnectAsync();
             _channels[config.Name] = channel;
             log.Info($"通道已创建并连接: {config.Name} ({config.ChannelType})");
@@ -141,9 +139,9 @@ namespace ProjectARVRPro.DeviceChannel
         }
 
         /// <summary>
-        /// 根据配置创建通道实例
+        /// 根据配置创建通道实例（也用于编辑窗口的连接测试）
         /// </summary>
-        private static IDeviceChannel CreateChannel(DeviceChannelConfig config)
+        internal static IDeviceChannel CreateChannelFromConfig(DeviceChannelConfig config)
         {
             return config.ChannelType switch
             {

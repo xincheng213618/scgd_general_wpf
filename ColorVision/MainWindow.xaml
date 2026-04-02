@@ -1,44 +1,46 @@
 ﻿<Window x:Class="ColorVision.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision"
-        xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
-        xmlns:input ="clr-namespace:System.Windows.Input;assembly=netstandard"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:input="clr-namespace:System.Windows.Input;assembly=netstandard"
+        xmlns:local="clr-namespace:ColorVision"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
-        Title="" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="" Width="1280" Height="720"
+        Background="{DynamicResource GlobalBackground}"
+        Initialized="Window_Initialized">
     <Window.Resources>
         <DataTemplate x:Key="DocumentHeaderTemplate">
             <StackPanel Orientation="Horizontal">
-                <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding Title}" Foreground="{DynamicResource GlobalTextBrush}" />
+                <TextBlock Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
             </StackPanel>
         </DataTemplate>
     </Window.Resources>
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
-        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" WindowChrome.IsHitTestVisibleInChrome="True" Background="{DynamicResource GlobalBackground}" >
-            <DockPanel >
-                <StackPanel x:Name="RightMenuItemPanel" Orientation="Horizontal" DockPanel.Dock="Right"/>
-                
-                <Menu x:Name="Menu1" Background="Transparent" HorizontalAlignment="Left" Padding="2"/>
-                <Grid x:Name="SearchGrid" Margin="10,1" Width="210" HorizontalAlignment="Left" VerticalAlignment="Center" >
-                    <hc:TextBox x:Name="Searchbox"  Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1"  BorderThickness="1" GotFocus="Searchbox_GotFocus" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
-                    <Viewbox Width="12 " Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
-                        <Rectangle Width="16 " Height="16" >
+        <Border Grid.Row="0" Background="{DynamicResource GlobalBackground}" BorderBrush="{DynamicResource BorderBrush}" WindowChrome.IsHitTestVisibleInChrome="True">
+            <DockPanel>
+                <StackPanel x:Name="RightMenuItemPanel" DockPanel.Dock="Right" Orientation="Horizontal" />
+
+                <Menu x:Name="Menu1" Padding="2" HorizontalAlignment="Left" Background="Transparent" />
+                <Grid x:Name="SearchGrid" Width="210" Margin="10,1" HorizontalAlignment="Left" VerticalAlignment="Center">
+                    <hc:TextBox x:Name="Searchbox" Padding="20,1,2,1" VerticalContentAlignment="Center" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" BorderThickness="1" GotFocus="Searchbox_GotFocus" MaxLength="15" PreviewKeyDown="Searchbox_PreviewKeyDown" Style="{DynamicResource TextBoxPlus.Small}" TextChanged="Searchbox_TextChanged" />
+                    <Viewbox Width="12 " Height="12" Margin="4,0,0,0" HorizontalAlignment="Left">
+                        <Rectangle Width="16 " Height="16">
                             <Rectangle.Resources>
                                 <SolidColorBrush x:Key="canvas" Opacity="0" />
-                                <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity=" 0.1" />
-                                <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
+                                <SolidColorBrush x:Key="light-defaultgrey-10" Opacity=" 0.1" Color="{DynamicResource defaultgreyColor}" />
+                                <SolidColorBrush x:Key="light-defaultgrey" Opacity="1" Color="{DynamicResource defaultgreyColor}" />
                             </Rectangle.Resources>
                             <Rectangle.Fill>
                                 <DrawingBrush Stretch="None">
@@ -58,28 +60,28 @@
                         </Rectangle>
                     </Viewbox>
                 </Grid>
-                <Popup x:Name="SearchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Searchbox}">
-                    <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="210" Height="500">
-                        <ListView  x:Name="ListViewSearch" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListViewSearch_SelectionChanged" MouseDoubleClick="ListViewSearch_MouseDoubleClick">
+                <Popup x:Name="SearchPopup" AllowsTransparency="true" Focusable="false" Placement="Bottom" PlacementTarget="{Binding ElementName=Searchbox}" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" StaysOpen="false">
+                    <Border Width="210" Height="500" Margin="5" Style="{StaticResource BorderModuleArea}">
+                        <ListView x:Name="ListViewSearch" Background="Transparent" BorderThickness="0" MouseDoubleClick="ListViewSearch_MouseDoubleClick" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListViewSearch_SelectionChanged">
                             <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                                    <Setter Property="Background" Value="Transparent"/>
+                                <Style BasedOn="{StaticResource ListViewItemBaseStyle.Small}" TargetType="ListViewItem">
+                                    <Setter Property="Background" Value="Transparent" />
                                 </Style>
                             </ListView.ItemContainerStyle>
                             <ListView.View>
                                 <GridView>
                                     <GridView.ColumnHeaderContainerStyle>
-                                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Setter Property="Background" Value="Transparent"/>
-                                            <Setter Property="BorderThickness" Value="0"/>
+                                        <Style BasedOn="{StaticResource InputElementBaseStyle}" TargetType="{x:Type GridViewColumnHeader}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Setter Property="BorderThickness" Value="0" />
                                         </Style>
                                     </GridView.ColumnHeaderContainerStyle>
                                     <GridViewColumn Width="240">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding Header}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                                                    <TextBlock Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource Foreground}" Text="{Binding Header}" />
                                                 </StackPanel>
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
@@ -93,39 +95,31 @@
             </DockPanel>
         </Border>
 
-        <xcad:DockingManager Grid.Row="1" x:Name="DockingManager1" Margin="-6,-6" BorderThickness="0" Background="Transparent" Padding="0"
-                            DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
+        <xcad:DockingManager x:Name="DockingManager1" Grid.Row="1" Margin="-6,-6" Padding="0" Background="Transparent" BorderThickness="0" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
-                    <xcad:LayoutAnchorablePaneGroup DockWidth="303" x:Name="LeftPaneGroup">
+                    <xcad:LayoutAnchorablePaneGroup x:Name="LeftPaneGroup" DockWidth="303">
                         <xcad:LayoutAnchorablePane x:Name="LeftPane">
-                            <xcad:LayoutAnchorable Title="{x:Static properties:Resources.SolutionExplorer}" ContentId="ProjectPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
-                                <Grid x:Name="ProjectPanelGrid"/>
+                            <xcad:LayoutAnchorable Title="{x:Static properties:Resources.SolutionExplorer}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="ProjectPanel">
+                                <Grid x:Name="ProjectPanelGrid" />
                             </xcad:LayoutAnchorable>
-                            <xcad:LayoutAnchorable Title="{x:Static properties:Resources.DeviceControl}" ContentId="AcquirePanel" CanClose="True" CanAutoHide="True" CanFloat="True">
-                                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"  Background="{DynamicResource GlobalBorderBrush1}">
-                                    <StackPanel x:Name="StackPanelSPD" Margin="-2,5,0,0"/>
+                            <xcad:LayoutAnchorable Title="{x:Static properties:Resources.DeviceControl}" CanAutoHide="True" CanClose="True" CanFloat="True" ContentId="AcquirePanel">
+                                <ScrollViewer Background="{DynamicResource GlobalBorderBrush1}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                    <StackPanel x:Name="StackPanelSPD" Margin="-2,5,0,0" />
                                 </ScrollViewer>
                             </xcad:LayoutAnchorable>
                         </xcad:LayoutAnchorablePane>
                     </xcad:LayoutAnchorablePaneGroup>
                     <xcad:LayoutPanel Orientation="Vertical">
                         <xcad:LayoutDocumentPaneGroup>
-                            <xcad:LayoutDocumentPane x:Name="LayoutDocumentPane">
-                            </xcad:LayoutDocumentPane>
+                            <xcad:LayoutDocumentPane x:Name="LayoutDocumentPane" />
                         </xcad:LayoutDocumentPaneGroup>
-                        <xcad:LayoutAnchorablePaneGroup DockHeight="200" x:Name="BottomPaneGroup">
-                            <xcad:LayoutAnchorablePane x:Name="BottomPane">
-                                <xcad:LayoutAnchorable Title="{x:Static properties:Resources.Log}" ContentId="LogPanel" CanClose="True" CanAutoHide="True" CanFloat="True">
-                                    <Grid x:Name="LogPanelGrid"/>
-                                </xcad:LayoutAnchorable>
-                            </xcad:LayoutAnchorablePane>
-                        </xcad:LayoutAnchorablePaneGroup>
+
                     </xcad:LayoutPanel>
                 </xcad:LayoutPanel>
             </xcad:LayoutRoot>
         </xcad:DockingManager>
-        <Grid x:Name="StatusBarGrid" Grid.Row="2" Visibility="{Binding IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}"/>
+        <Grid x:Name="StatusBarGrid" Grid.Row="2" Visibility="{Binding IsOpenStatusBar, Converter={StaticResource bool2VisibilityConverter}}" />
 
     </Grid>
 </Window>

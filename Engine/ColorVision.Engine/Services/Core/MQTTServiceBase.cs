@@ -21,8 +21,6 @@ namespace ColorVision.Engine.Services
         public MQTTControl MQTTControl { get; set; }
 
         public virtual DeviceStatusType DeviceStatus { get; set; }
-        public event EventHandler Connected;
-        public event EventHandler DisConnected;
 
         private Timer _heartbeatTimer;
 
@@ -56,74 +54,26 @@ namespace ColorVision.Engine.Services
                     if (json.EventName == "Heartbeat")
                     {
                         LastAliveTime = DateTime.Now;
-                        if (!IsAlive)
-                        {
-                            Connected?.Invoke(this, new EventArgs());
-                        }
                         IsAlive = true;
                         return Task.CompletedTask;
                     }
-                    //Token unavailable
-                    if (json.Code == -10)
-                    {
-                        log.Warn("token 失效，正在重新获取");
-                        MqttRCService.GetInstance().QueryServices();
-                        return Task.CompletedTask;
-                    }
-                    //if (json.Code == 102)
-                    //{
-                    //    return Task.CompletedTask;
-                    //}
-
-                    if (json.Code != 0 && json.Code != 1 && json.Code != -1&& json.Code != -401)
-                    {
-                        MsgReturnReceived?.Invoke(json);
-                        return Task.CompletedTask;
-                    }
-
-                    bool msgee = false;
                     lock (_locker)
                     {
                         if (_msgTimers.TryGetValue(json.MsgID, out var value))
                         {
                             value.Enabled = false;
                             _msgTimers.Remove(json.MsgID);
-                            msgee = true;
-                            try
-                            {
-                                MsgReturnReceived?.Invoke(json);
-                            }
-                            catch(Exception ex)
-                            {
-                                MsgRecord foundMsgRecord1 = _msgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
-                                if (foundMsgRecord1 != null)
-                                {
-                                    foundMsgRecord1.ReciveTime = DateTime.Now;
-                                    foundMsgRecord1.MsgReturn = json;
-                                    foundMsgRecord1.ErrorMsg = ex.Message;
-                                    foundMsgRecord1.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
-                                    _msgRecords.Remove(foundMsgRecord1);
-                                }
-                            }
                         }
-                        Application.Current?.Dispatcher.BeginInvoke(() =>
+                        MsgRecord foundMsgRecord = _msgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
+                        if (foundMsgRecord != null)
                         {
-                            lock (_locker) // 保持一致的锁策略
-                            {
-                                MsgRecord foundMsgRecord = _msgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
-                                if (foundMsgRecord != null)
-                                {
-                                    foundMsgRecord.ReciveTime = DateTime.Now;
-                                    foundMsgRecord.MsgReturn = json;
-                                    foundMsgRecord.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
-                                    _msgRecords.Remove(foundMsgRecord);
-                                }
-                            }
-                        });
+                            foundMsgRecord.ReciveTime = DateTime.Now;
+                            foundMsgRecord.MsgReturn = json;
+                            foundMsgRecord.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
+                            _msgRecords.Remove(foundMsgRecord);
+                        }
                     }
-                    ///这里是因为这里先加载相机上，所以加在这里
-                    if (!msgee)
-                        MsgReturnReceived?.Invoke(json);
+                    MsgReturnReceived?.Invoke(json);
                 }
                 catch (Exception ex)
                 {
@@ -143,7 +93,6 @@ namespace ColorVision.Engine.Services
             long overTime = 2* HeartbeatTime;
             if (sp > TimeSpan.FromMilliseconds(overTime))
             {
-                DisConnected?.Invoke(sender, new EventArgs());
                 IsAlive = false;
             }
             else
@@ -197,18 +146,11 @@ namespace ColorVision.Engine.Services
 
 
             MsgRecord msgRecord = new() { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic, MsgID = msg.MsgID, SendTime = DateTime.Now, MsgSend = msg, MsgRecordState = MsgRecordState.Sended };
+            _msgRecords.Add(msgRecord);
 
             Task.Run(() =>
             {
                 MsgRecordDataBaseHelper.Insert(msgRecord);
-
-                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    lock (_locker) // 仅在更新内存集合时极短地加锁
-                    {
-                        _msgRecords.Add(msgRecord);
-                    }
-                }));
             });
 
             var timer = new Timer(timeout)

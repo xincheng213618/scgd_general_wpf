@@ -1,3 +1,4 @@
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
@@ -5,6 +6,8 @@ using ColorVision.UI.Sorts;
 using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,6 +15,33 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine
 {
+    /// <summary>
+    /// 结果渲染配置 - 控制图像叠加层的文字格式与外观
+    /// </summary>
+    public class ResultRenderConfig : ViewModelBase
+    {
+        [DisplayName("小数位数"), Category("渲染")]
+        public int DecimalPlaces { get => _DecimalPlaces; set { _DecimalPlaces = value; OnPropertyChanged(); } }
+        private int _DecimalPlaces = 3;
+
+        [DisplayName("字体大小"), Category("渲染")]
+        public double FontSize { get => _FontSize; set { _FontSize = value; OnPropertyChanged(); } }
+        private double _FontSize = 10;
+
+        [DisplayName("线条粗细"), Category("渲染")]
+        public double PenThickness { get => _PenThickness; set { _PenThickness = value; OnPropertyChanged(); } }
+        private double _PenThickness = 1;
+
+        /// <summary>
+        /// 格式化数值，使用当前配置的小数位数
+        /// </summary>
+        public string FormatNumber(double? value)
+        {
+            if (value == null) return string.Empty;
+            return value.Value.ToString($"F{DecimalPlaces}", CultureInfo.InvariantCulture);
+        }
+    }
+
     /// <summary>
     /// 视图图像接口 - 定义图像查看器的基本功能
     /// </summary>
@@ -49,6 +79,16 @@ namespace ColorVision.Engine
     /// </summary>
     public abstract class IResultHandleBase : IResultHandle
     {
+        /// <summary>
+        /// 处理器显示名称
+        /// </summary>
+        public virtual string Name => GetType().Name;
+
+        /// <summary>
+        /// 渲染配置
+        /// </summary>
+        public ResultRenderConfig RenderConfig { get; set; } = new ResultRenderConfig();
+
         /// <summary>
         /// 可以处理的算法类型列表
         /// </summary>

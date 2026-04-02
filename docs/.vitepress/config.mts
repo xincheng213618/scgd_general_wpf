@@ -176,6 +176,20 @@ export default withMermaid(
                 { text: '部署概览', link: '/02-developer-guide/deployment/overview' },
                 { text: '自动更新系统', link: '/02-developer-guide/deployment/auto-update' }
               ]
+            },
+            {
+              text: '后端服务',
+              collapsed: true,
+              items: [
+                { text: '插件市场后端', link: '/02-developer-guide/backend/README' }
+              ]
+            },
+            {
+              text: '构建脚本',
+              collapsed: true,
+              items: [
+                { text: '构建与发布脚本', link: '/02-developer-guide/scripts/README' }
+              ]
             }
           ]
         },

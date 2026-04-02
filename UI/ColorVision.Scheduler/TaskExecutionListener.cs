@@ -1,4 +1,5 @@
 ﻿
+using ColorVision.Scheduler.Data;
 using log4net;
 using log4net.Repository.Hierarchy;
 using Quartz;
@@ -12,6 +13,7 @@ namespace ColorVision.Scheduler
         private readonly QuartzSchedulerManager _schedulerManager;
         private static readonly ILog _logger = LogManager.GetLogger(typeof(TaskExecutionListener));
         private readonly Dictionary<string, Stopwatch> _executionTimers = new();
+        private readonly Dictionary<string, DateTime> _executionStartTimes = new();
 
         public TaskExecutionListener(QuartzSchedulerManager schedulerManager)
         {
@@ -38,6 +40,7 @@ namespace ColorVision.Scheduler
                 lock (_executionTimers)
                 {
                     _executionTimers[timerKey] = stopwatch;
+                    _executionStartTimes[timerKey] = DateTime.Now;
                 }
             }
             return base.JobToBeExecuted(context, cancellationToken);
@@ -60,6 +63,7 @@ namespace ColorVision.Scheduler
                 // 停止计时器并更新统计信息
                 var timerKey = $"{jobKey.Name}_{jobKey.Group}";
                 long executionTimeMs = 0;
+                DateTime startTime = DateTime.Now;
                 lock (_executionTimers)
                 {
                     if (_executionTimers.TryGetValue(timerKey, out var stopwatch))
@@ -67,6 +71,11 @@ namespace ColorVision.Scheduler
                         stopwatch.Stop();
                         executionTimeMs = stopwatch.ElapsedMilliseconds;
                         _executionTimers.Remove(timerKey);
+                    }
+                    if (_executionStartTimes.TryGetValue(timerKey, out var st))
+                    {
+                        startTime = st;
+                        _executionStartTimes.Remove(timerKey);
                     }
                 }
 
@@ -87,31 +96,72 @@ namespace ColorVision.Scheduler
                         taskInfo.MaxExecutionTimeMs = executionTimeMs;
                 }
                 
-                // 更新平均执行时间
+                // 更新平均执行时间（基于所有执行次数）
                 if (taskInfo.RunCount > 0)
                 {
-                    var totalSuccessCount = taskInfo.SuccessCount + (jobException == null ? 1 : 0);
-                    if (totalSuccessCount > 0)
-                    {
-                        taskInfo.AverageExecutionTimeMs = 
-                            (taskInfo.AverageExecutionTimeMs * (totalSuccessCount - 1) + executionTimeMs) / totalSuccessCount;
-                    }
+                    taskInfo.AverageExecutionTimeMs = 
+                        (taskInfo.AverageExecutionTimeMs * (taskInfo.RunCount - 1) + executionTimeMs) / taskInfo.RunCount;
                 }
 
                 if (jobException != null)
                 {
                     taskInfo.FailureCount++;
+                    taskInfo.LastExecutionResult = "失败";
+                    taskInfo.LastExecutionMessage = jobException.InnerException?.Message ?? jobException.Message;
                     _logger.Error($"Job execution failed: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms", jobException);
+                }
+                else if (IsJobResultFailure(context.Result))
+                {
+                    taskInfo.FailureCount++;
+                    taskInfo.LastExecutionResult = "失败";
+                    taskInfo.LastExecutionMessage = context.Result?.ToString() ?? string.Empty;
+                    _logger.Warn($"Job reported failure: {jobKey.Name}({jobKey.Group}), Duration: {executionTimeMs}ms, Result: {context.Result}");
                 }
                 else
                 {
                     taskInfo.SuccessCount++;
+                    taskInfo.LastExecutionResult = "成功";
+                    taskInfo.LastExecutionMessage = context.Result?.ToString() ?? string.Empty;
                     _logger.Info($"Job completed: {jobKey.Name}({jobKey.Group}), RunCount: {taskInfo.RunCount}, Duration: {executionTimeMs}ms");
                 }
+
+                // 保存执行记录到 SQLite
+                Task.Run(() =>
+                {
+                    var record = new JobExecutionRecord
+                    {
+                        JobName = jobKey.Name,
+                        GroupName = jobKey.Group,
+                        StartTime = startTime,
+                        EndTime = DateTime.Now,
+                        ExecutionTimeMs = executionTimeMs,
+                        Success = taskInfo.LastExecutionResult == "成功",
+                        Result = taskInfo.LastExecutionResult,
+                        Message = taskInfo.LastExecutionMessage
+                    };
+                    SchedulerDbManager.GetInstance().InsertRecord(record);
+                });
             }
             
             JobExecutedEvent?.Invoke(context);
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 判断 Job 返回的结果是否表示失败。
+        /// 约定：如果 context.Result 是一个含 Success 属性的对象且 Success == false，则视为失败。
+        /// </summary>
+        private static bool IsJobResultFailure(object? result)
+        {
+            if (result == null) return false;
+
+            // 通过反射检查是否有 bool Success 属性（避免 Scheduler 层直接引用 Engine 层类型）
+            var successProp = result.GetType().GetProperty("Success");
+            if (successProp != null && successProp.PropertyType == typeof(bool))
+            {
+                return !(bool)successProp.GetValue(result)!;
+            }
+            return false;
         }
     }
 }

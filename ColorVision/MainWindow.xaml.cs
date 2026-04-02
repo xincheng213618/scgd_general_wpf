@@ -122,15 +122,14 @@ namespace ColorVision
             WorkspaceManager.layoutRoot = _layoutRoot;
             WorkspaceManager.LayoutDocumentPane = LayoutDocumentPane;
 
-            // 初始化日志面板
-            var logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
-            LogPanelGrid.Children.Add(logOutput);
 
             // 初始化停靠布局管理器
             var layoutManager = new DockLayoutManager(DockingManager1);
             layoutManager.RegisterPanel("ProjectPanel", ProjectPanelGrid, Properties.Resources.SolutionExplorer, PanelPosition.Left);
             layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.DeviceControl, PanelPosition.Left);
-            layoutManager.RegisterPanel("LogPanel", LogPanelGrid, Properties.Resources.Log, PanelPosition.Bottom);
+
+            var logOutput = new LogOutput("%date{HH:mm:ss} [%thread] %-5level %message%newline");
+            layoutManager.RegisterPanel("LogPanel", logOutput, Properties.Resources.Log, PanelPosition.Bottom);
             WorkspaceManager.LayoutManager = layoutManager;
 
             // 发现并注册所有 IDockPanelProvider 提供的面板（在 LoadLayout 之前，确保面板能正确持久化）
@@ -174,11 +173,6 @@ namespace ColorVision
 
             // 将所有已注册的视图创建为文档标签页
             DockViewManager.ShowAllViews();
-
-            // 激活第一个 Flow 视图（如果有的话）
-            var firstFlowView = DockViewManager.Views.OfType<ColorVision.Engine.Services.Flow.ViewFlow>().FirstOrDefault();
-            if (firstFlowView != null)
-                DockViewManager.ActiveView(firstFlowView);
 
             // 切换到 DeviceControl 面板时，跳转到上次显示的视图
             HookAcquirePanelActivation();

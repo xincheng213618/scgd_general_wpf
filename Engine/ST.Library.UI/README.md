@@ -1,101 +1,76 @@
 # ST.Library.UI
 
-> 专业的可视化节点编辑器UI库 - ColorVision 系统核心组件
+> 版本: 1.2.0.2410 | 目标框架: .NET 8.0 / .NET Framework 4.7.2
 
-[![.NET Version](https://img.shields.io/badge/.NET-8.0%20%7C%204.7.2-blue)](https://dotnet.microsoft.com/)
-[![Version](https://img.shields.io/badge/version-1.2.0.2410-green)](https://github.com/xincheng213618/scgd_general_wpf)
-[![License](https://img.shields.io/badge/license-Custom-orange)](../../docs/Software%20License%20Agreement.md)
-
-## 📋 简介
+## 🎯 功能定位
 
 ST.Library.UI 是一个功能强大的可视化节点编辑器UI库，为 ColorVision 系统提供完整的流程图编辑和可视化编程能力。该库基于 Windows Forms 构建，提供了专业级的节点编辑、连接管理、属性编辑等功能。
 
-## ✨ 核心特性
+## 主要功能点
 
-### 🎨 可视化编辑
-- **无限画布**: 支持缩放、平移的无限编辑空间
-- **拖拽操作**: 直观的拖拽式节点连接
-- **网格对齐**: 智能磁吸对齐和网格显示
-- **框选多选**: 支持框选、多选节点操作
+### 可视化编辑
+- **无限画布** - 支持缩放、平移的无限编辑空间
+- **拖拽操作** - 直观的拖拽式节点连接
+- **网格对齐** - 智能磁吸对齐和网格显示
+- **框选多选** - 支持框选、多选节点操作
 
-### 🔗 连接管理
-- **类型安全**: 基于数据类型的连接验证
-- **循环检测**: 自动检测和防止循环依赖
-- **可视化反馈**: 连接状态的实时视觉反馈
-- **单/多连接**: 灵活的单连接和多连接模式
+### 连接管理
+- **类型安全** - 基于数据类型的连接验证
+- **循环检测** - 自动检测和防止循环依赖
+- **可视化反馈** - 连接状态的实时视觉反馈
+- **单/多连接** - 灵活的单连接和多连接模式
 
-### ⚙️ 属性编辑
-- **反射式编辑**: 自动识别和编辑节点属性
-- **多类型支持**: 支持多种数据类型的编辑器
-- **实时更新**: 属性更改即时生效
-- **描述提示**: 详细的属性说明和错误提示
+### 属性编辑
+- **反射式编辑** - 自动识别和编辑节点属性
+- **多类型支持** - 支持多种数据类型的编辑器
+- **实时更新** - 属性更改即时生效
+- **描述提示** - 详细的属性说明和错误提示
 
-### 📚 节点库管理
-- **层次分类**: 树形结构的节点组织
-- **动态加载**: 支持程序集动态加载
-- **搜索功能**: 快速查找节点类型
-- **拖放创建**: 从库中拖放创建节点
+### 节点库管理
+- **层次分类** - 树形结构的节点组织
+- **动态加载** - 支持程序集动态加载
+- **搜索功能** - 快速查找节点类型
+- **拖放创建** - 从库中拖放创建节点
 
-### 🌍 多语言支持
-- **中英文**: 内置中文和英文支持
-- **资源化**: 基于资源文件的国际化
-- **动态切换**: 运行时语言切换
+### 多语言支持
+- **中英文** - 内置中文和英文支持
+- **资源化** - 基于资源文件的国际化
+- **动态切换** - 运行时语言切换
 
-### 🔄 撤销/重做
-- **完整历史**: 支持多步撤销重做
-- **智能记录**: 自动记录操作历史
-- **状态恢复**: 准确的状态恢复
+### 撤销/重做
+- **完整历史** - 支持多步撤销重做
+- **智能记录** - 自动记录操作历史
+- **状态恢复** - 准确的状态恢复
 
-## 🏗️ 架构概览
-
-### 核心组件
+## 技术架构
 
 ```
-ST.Library.UI/
-├── NodeEditor/                    # 节点编辑器核心
-│   ├── STNodeEditor              # 主编辑器控件
-│   ├── STNode                    # 节点基类
-│   ├── STNodeOption              # 节点选项/端口
-│   ├── STNodeControl             # 节点控件
-│   ├── STNodePropertyGrid        # 属性编辑器
-│   ├── STNodeTreeView            # 节点库视图
-│   ├── STNodeHub                 # 中继节点
-│   └── ...                       # 辅助类
-│
-├── NodeContainer/                # 节点容器扩展
-│   ├── CVNode                    # ColorVision节点基类
-│   ├── CVNodeCollection          # 节点集合
-│   └── CVNodeContainer           # 节点容器
-│
-└── Lang                          # 多语言支持
+┌─────────────────────────────────────────────────────────────┐
+│                      ST.Library.UI                            │
+│                                                              │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
+│  │ STNodeEditor│    │   STNode    │    │ STNodeOption│      │
+│  │             │    │             │    │             │      │
+│  │ • 画布编辑  │    │ • 节点基类  │    │ • 输入输出  │      │
+│  │ • 缩放平移  │    │ • 绘制逻辑  │    │ • 连接管理  │      │
+│  │ • 框选操作  │    │ • 属性定义  │    │ • 数据传递  │      │
+│  └─────────────┘    └─────────────┘    └─────────────┘      │
+│                                                              │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
+│  │STNodeProperty│   │STNodeTreeView│   │  STNodeHub  │      │
+│  │    Grid     │    │             │    │             │      │
+│  │             │    │             │    │             │      │
+│  │ • 属性编辑  │    │ • 节点库    │    │ • 中继节点  │      │
+│  │ • 反射绑定  │    │ • 分类显示  │    │ • 数据转发  │      │
+│  │ • 实时更新  │    │ • 搜索筛选  │    │ • 连接聚合  │      │
+│  └─────────────┘    └─────────────┘    └─────────────┘      │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 类层次结构
+## 使用方式
 
-```
-Control (System.Windows.Forms)
-    ├── STNodeEditor              # 节点编辑器
-    ├── STNodeTreeView            # 节点库视图  
-    ├── STNodePropertyGrid        # 属性编辑器
-    └── STNodeEditorPannel        # 编辑器面板
-
-STNode (Abstract)                  # 节点基类
-    ├── STNodeHub                 # 中继节点
-    │   ├── STNodeInHub           # 输入中继
-    │   └── STNodeOutHub          # 输出中继
-    └── CVNode                    # ColorVision节点
-
-STNodeOption                       # 节点选项
-    └── STNodeHubOption           # 中继选项
-
-STNodeControl                      # 节点控件基类
-```
-
-## 🚀 快速开始
-
-### 安装
-
-项目作为 ColorVision 系统的一部分，通过引用项目方式使用：
+### 引用方式
 
 ```xml
 <ProjectReference Include="..\Engine\ST.Library.UI\ST.Library.UI.csproj" />
@@ -228,162 +203,142 @@ nodeTree.AddNode(typeof(AddNode));
 nodeTree.LoadAssembly("CustomNodes.dll");
 ```
 
-## 📦 主要类说明
+## 主要组件
 
-### STNodeEditor - 节点编辑器
-
+### STNodeEditor
 主编辑器控件，提供完整的编辑功能。
 
-**关键属性**:
-- `Nodes`: 节点集合
-- `CanvasOffsetX/Y`: 画布偏移
-- `CanvasScale`: 缩放比例
-- `ShowGrid`: 显示网格
-- `ShowMagnet`: 磁吸对齐
+```csharp
+public class STNodeEditor : Control
+{
+    // 节点集合
+    public STNodeCollection Nodes { get; }
+    
+    // 画布属性
+    public float CanvasScale { get; set; }
+    public int CanvasOffsetX { get; set; }
+    public int CanvasOffsetY { get; set; }
+    
+    // 显示选项
+    public bool ShowGrid { get; set; }
+    public bool ShowMagnet { get; set; }
+    
+    // 方法
+    public void LoadCanvas(string filePath);
+    public void SaveCanvas(string filePath);
+    public IEnumerable<STNode> GetSelectedNodes();
+    
+    // 事件
+    public event EventHandler<STNodeSelectedEventArgs> NodeSelected;
+    public event EventHandler<STNodeConnectionEventArgs> NodeConnected;
+}
+```
 
-**关键方法**:
-- `LoadCanvas(string)`: 加载画布
-- `SaveCanvas(string)`: 保存画布
-- `StartUndo()/EndUndo()`: 撤销管理
-- `GetSelectedNode()`: 获取选中节点
-
-### STNode - 节点基类
-
+### STNode
 所有节点的基类，定义节点行为。
 
-**关键属性**:
-- `Title`: 节点标题
-- `Left/Top/Width/Height`: 位置和大小
-- `InputOptions`: 输入选项集合
-- `OutputOptions`: 输出选项集合
-- `Controls`: 控件集合
+```csharp
+public abstract class STNode
+{
+    // 基本属性
+    public string Title { get; set; }
+    public Color TitleColor { get; set; }
+    public int Left { get; set; }
+    public int Top { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
+    
+    // 选项集合
+    public STNodeOptionCollection InputOptions { get; }
+    public STNodeOptionCollection OutputOptions { get; }
+    
+    // 控件集合
+    public STNodeControlCollection Controls { get; }
+    
+    // 生命周期
+    protected virtual void OnCreate();
+    protected virtual void OnOwnerChanged();
+    protected virtual void OnDrawTitle(DrawingTools dt);
+    protected virtual void OnDrawBody(DrawingTools dt);
+}
+```
 
-**生命周期方法**:
-- `OnCreate()`: 节点创建
-- `OnOwnerChanged()`: 所有者改变
-- `OnDrawTitle/Body()`: 自定义绘制
-
-### STNodeOption - 节点选项
-
+### STNodeOption
 表示节点的输入/输出端口。
 
-**关键属性**:
-- `DataType`: 数据类型
-- `IsInput`: 是否为输入
-- `IsSingle`: 是否单连接
-- `ConnectionCount`: 连接数量
+```csharp
+public class STNodeOption
+{
+    // 基本属性
+    public string Text { get; set; }
+    public Type DataType { get; set; }
+    public bool IsInput { get; set; }
+    public bool IsSingle { get; set; }
+    
+    // 数据
+    public object Data { get; set; }
+    
+    // 连接
+    public int ConnectionCount { get; }
+    public IEnumerable<STNodeOption> ConnectedOptions { get; }
+    
+    // 方法
+    public ConnectionStatus ConnectTo(STNodeOption target);
+    public void DisConnectionAll();
+    public bool CanConnect(STNodeOption target);
+    
+    // 事件
+    public event EventHandler<STNodeOptionEventArgs> DataTransfer;
+}
+```
 
-**关键方法**:
-- `ConnectTo(STNodeOption)`: 连接到选项
-- `DisConnectionAll()`: 断开所有连接
-- `CanConnect(STNodeOption)`: 检查能否连接
-
-### STNodePropertyGrid - 属性编辑器
-
+### STNodePropertyGrid
 属性编辑控件，支持反射编辑。
 
-**关键属性**:
-- `STNode`: 目标节点
-- `ShowTitle`: 显示标题
-- `AutoColor`: 自动着色
-- `ReadOnlyModel`: 只读模式
-
-## 🔧 高级功能
-
-### 自定义绘制
-
 ```csharp
-protected override void OnDrawBody(DrawingTools dt)
+public class STNodePropertyGrid : Control
 {
-    base.OnDrawBody(dt);
+    // 目标节点
+    public STNode STNode { get; set; }
     
-    // 自定义绘制逻辑
-    dt.Graphics.FillRectangle(
-        new SolidBrush(Color.Blue),
-        new Rectangle(Left, Top, Width, Height)
-    );
+    // 显示选项
+    public bool ShowTitle { get; set; }
+    public bool AutoColor { get; set; }
+    public bool ReadOnlyModel { get; set; }
+    
+    // 方法
+    public void RefreshProperties();
+    public void ExpandAll();
+    public void CollapseAll();
 }
 ```
 
-### 嵌入控件
+## 目录说明
 
-```csharp
-protected override void OnCreate()
-{
-    base.OnCreate();
-    
-    var ctrl = new STNodeControl
-    {
-        Left = 10,
-        Top = TitleHeight + 10,
-        Width = Width - 20,
-        Height = 30
-    };
-    
-    Controls.Add(ctrl);
-}
+- `NodeEditor/` - 节点编辑器核心
+  - `STNodeEditor.cs` - 主编辑器控件
+  - `STNode.cs` - 节点基类
+  - `STNodeOption.cs` - 节点选项/端口
+  - `STNodeControl.cs` - 节点控件
+  - `STNodePropertyGrid.cs` - 属性编辑器
+  - `STNodeTreeView.cs` - 节点库视图
+  - `STNodeHub.cs` - 中继节点
+- `NodeContainer/` - 节点容器扩展
+- `Lang/` - 多语言支持
+
+## 开发调试
+
+```bash
+# 构建项目
+dotnet build Engine/ST.Library.UI/ST.Library.UI.csproj
+
+# 清理项目
+dotnet clean Engine/ST.Library.UI/ST.Library.UI.csproj
 ```
 
-### 数据验证
+## 最佳实践
 
-```csharp
-protected override ConnectionStatus OnCheckConnectable(STNodeOption optionIn, STNodeOption optionOut)
-{
-    // 自定义连接验证逻辑
-    if (optionIn.DataType != optionOut.DataType)
-        return ConnectionStatus.ErrorType;
-        
-    return base.OnCheckConnectable(optionIn, optionOut);
-}
-```
-
-### 序列化支持
-
-```csharp
-// 保存画布
-editor.SaveCanvas("workflow.stn");
-
-// 加载画布
-editor.LoadCanvas("workflow.stn");
-```
-
-## 🌍 多语言配置
-
-```csharp
-// 设置语言
-Lang.SetLanguage("zh-CN");  // 中文
-Lang.SetLanguage("en-US");  // 英文
-
-// 使用翻译
-string text = Lang.Get("KeyName");
-
-// 在节点中使用
-Title = Lang.Get("AddNode");
-```
-
-## 📊 技术规格
-
-- **框架**: .NET 8.0 / .NET Framework 4.7.2
-- **UI技术**: Windows Forms
-- **语言**: C# 11.0
-- **版本**: 1.2.0.2410
-- **代码行数**: ~10,500
-- **文件数**: 41 个 C# 文件
-
-## 📚 文档资源
-
-### 详细文档
-- [完整技术文档](../../docs/engine-components/ST.Library.UI.md) - 详细的API和使用指南
-- [Engine组件概览](../../docs/engine-components/Engine组件概览.md) - 引擎组件总览
-- [改进建议](./改进建议.md) - 项目改进建议和优化方向
-
-### 相关组件
-- [FlowEngineLib](../../docs/04-api-reference/engine-components/FlowEngineLib.md) - 流程引擎库
-- [ColorVision.Engine](../../docs/04-api-reference/engine-components/ColorVision.Engine.md) - 主引擎
-
-## 🤝 开发指南
-
-### 节点开发规范
+### 1. 节点开发规范
 
 1. **使用 STNodeAttribute 标记节点**
    ```csharp
@@ -405,7 +360,7 @@ Title = Lang.Get("AddNode");
    - 处理输入数据
    - 更新输出数据
 
-### 最佳实践
+### 2. 推荐做法
 
 ✅ **推荐做法**:
 - 保持节点功能单一
@@ -420,33 +375,104 @@ Title = Lang.Get("AddNode");
 - 未验证的数据处理
 - 过于复杂的节点逻辑
 
-## 📝 示例项目
+### 3. 自定义绘制
 
-完整示例请参考:
-- ColorVision 主项目中的节点使用
-- FlowEngineLib 中的流程节点实现
+```csharp
+protected override void OnDrawBody(DrawingTools dt)
+{
+    base.OnDrawBody(dt);
+    
+    // 自定义绘制逻辑
+    dt.Graphics.FillRectangle(
+        new SolidBrush(Color.Blue),
+        new Rectangle(Left, Top, Width, Height)
+    );
+}
+```
 
-## 🐛 问题反馈
+### 4. 嵌入控件
 
-如遇到问题或有改进建议:
-1. 查看 [改进建议文档](./改进建议.md)
-2. 参考详细技术文档
-3. 提交 Issue 到项目仓库
+```csharp
+protected override void OnCreate()
+{
+    base.OnCreate();
+    
+    var ctrl = new STNodeControl
+    {
+        Left = 10,
+        Top = TitleHeight + 10,
+        Width = Width - 20,
+        Height = 30
+    };
+    
+    Controls.Add(ctrl);
+}
+```
 
-## 📄 许可证
+### 5. 数据验证
 
-Copyright © Crystal_lz
+```csharp
+protected override ConnectionStatus OnCheckConnectable(STNodeOption optionIn, STNodeOption optionOut)
+{
+    // 自定义连接验证逻辑
+    if (optionIn.DataType != optionOut.DataType)
+        return ConnectionStatus.ErrorType;
+        
+    return base.OnCheckConnectable(optionIn, optionOut);
+}
+```
 
-详见 [软件许可协议](../../docs/Software%20License%20Agreement.md)
+### 6. 序列化支持
 
-## 🔄 版本历史
+```csharp
+// 保存画布
+editor.SaveCanvas("workflow.stn");
+
+// 加载画布
+editor.LoadCanvas("workflow.stn");
+```
+
+### 7. 多语言配置
+
+```csharp
+// 设置语言
+Lang.SetLanguage("zh-CN");  // 中文
+Lang.SetLanguage("en-US");  // 英文
+
+// 使用翻译
+string text = Lang.Get("KeyName");
+
+// 在节点中使用
+Title = Lang.Get("AddNode");
+```
+
+## 相关文档链接
+
+- [详细技术文档](../../docs/04-api-reference/engine-components/ST.Library.UI.md)
+- [Engine组件概览](../../docs/04-api-reference/engine-components/README.md)
+- [FlowEngineLib](../FlowEngineLib/README.md)
+
+## 技术规格
+
+- **框架**: .NET 8.0 / .NET Framework 4.7.2
+- **UI技术**: Windows Forms
+- **语言**: C# 11.0
+- **版本**: 1.2.0.2410
+- **代码行数**: ~10,500
+- **文件数**: 41 个 C# 文件
+
+## 版本历史
 
 ### v1.2.0.2410 (当前版本)
-- ✨ 完善的节点编辑功能
-- 🌍 多语言支持
-- ⚡ 属性编辑器优化  
-- 🚀 性能改进
-- 🐛 Bug 修复
+- 完善的节点编辑功能
+- 多语言支持
+- 属性编辑器优化
+- 性能改进
+- Bug 修复
+
+## 维护者
+
+ColorVision 开发团队
 
 ---
 

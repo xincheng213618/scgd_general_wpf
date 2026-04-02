@@ -41,9 +41,6 @@ namespace ColorVision.Engine.Messages
         [SugarColumn(ColumnName = "MsgReturnJson", IsNullable = true)]
         public string MsgReturnJson { get => JsonConvert.SerializeObject(MsgReturn); set { if (!string.IsNullOrEmpty(value)) MsgReturn = JsonConvert.DeserializeObject<MsgReturn>(value); } }
 
-        [SugarColumn(ColumnName = "ErrorMsg", IsNullable = true)]
-        public string ErrorMsg { get; set; }
-
         [SugarColumn(ColumnName = "MsgRecordState", IsNullable = true)]
         public MsgRecordState MsgRecordState
         {

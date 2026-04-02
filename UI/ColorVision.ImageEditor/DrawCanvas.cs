@@ -163,6 +163,39 @@ namespace ColorVision.ImageEditor
             RemoveVisualTree(visual);
         }
 
+        /// <summary>
+        /// 在指定位置插入 Visual（用于 Undo/Redo 恢复时保持顺序）
+        /// </summary>
+        public void InsertVisual(int index, Visual visual)
+        {
+            if (visual == null || visuals.Contains(visual)) return;
+            if (index < 0) index = 0;
+            if (index > visuals.Count) index = visuals.Count;
+
+            if (IsLayoutUpdated && visual is IDrawingVisual drawingVisual)
+            {
+                bool isRender = false;
+                if (drawingVisual.BaseAttribute is ITextProperties textProperties && textProperties.TextAttribute.FontSize != 10 * Sacle)
+                {
+                    isRender = true;
+                    textProperties.TextAttribute.FontSize = 10 * Sacle;
+                }
+                if (drawingVisual.Pen.Thickness != Sacle)
+                {
+                    isRender = true;
+                    drawingVisual.Pen.Thickness = Sacle;
+                }
+                if (isRender)
+                    drawingVisual.Render();
+            }
+
+            visuals.Insert(index, visual);
+            AddVisualTree(visual);
+
+            VisualsAdd?.Invoke(this, new VisualChangedEventArgs(visual, VisualChangeType.Add));
+            VisualsChanged?.Invoke(this, new VisualChangedEventArgs(visual, VisualChangeType.Add));
+        }
+
 
         public void AddVisualCommand(Visual visual)
         {

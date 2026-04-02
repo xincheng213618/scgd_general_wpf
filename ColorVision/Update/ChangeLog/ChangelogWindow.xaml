@@ -2,32 +2,35 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision.Update"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:properties="clr-namespace:ColorVision.Properties"
-        xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ChangelogWindowConfig}"
-        Title="{x:Static properties:Resources.ChangeLog}" Background="{StaticResource GlobalBackground}" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.ChangeLog}"
+        Width="800" Height="450"
+        Background="{StaticResource GlobalBackground}"
+        Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
         </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid>
-            <Grid Margin="5,5,0,5" Width="200"  HorizontalAlignment="Left" VerticalAlignment="Center">
-                <hc:TextBox x:Name="Searchbox"  Padding="20,1,2,1"  BorderThickness="1"  hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
-                <Viewbox Width="12 " Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
-                    <Rectangle Width="16 " Height="16" >
+            <Grid Width="200" Margin="5,5,0,5" HorizontalAlignment="Left" VerticalAlignment="Center">
+                <hc:TextBox x:Name="Searchbox" Padding="20,1,2,1" VerticalContentAlignment="Center" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" BorderThickness="1" MaxLength="15" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged" />
+                <Viewbox Width="12 " Height="12" Margin="4,0,0,0" HorizontalAlignment="Left">
+                    <Rectangle Width="16 " Height="16">
                         <Rectangle.Resources>
                             <SolidColorBrush x:Key="canvas" Opacity="0" />
-                            <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity="0.1" />
-                            <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
+                            <SolidColorBrush x:Key="light-defaultgrey-10" Opacity="0.1" Color="{DynamicResource defaultgreyColor}" />
+                            <SolidColorBrush x:Key="light-defaultgrey" Opacity="1" Color="{DynamicResource defaultgreyColor}" />
                         </Rectangle.Resources>
                         <Rectangle.Fill>
                             <DrawingBrush Stretch="None">
@@ -50,19 +53,19 @@
 
             </Grid>
             <StackPanel Grid.Column="1" Margin="5,5,10,5" HorizontalAlignment="Right" Orientation="Horizontal">
-                <Button Content="打开" Command="{Binding OpenInWeview2Command}"  Margin="0,0,5,0" />
-                <Button Content="系统默认打开" Command="{Binding OpenInExplorerCommand}"  Margin="0,0,5,0" />
-                <Button  Command="{Binding EditCommand}" Padding="2" Height="27" Width="27" >
-                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5"  FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">
+                <Button Margin="0,0,5,0" Command="{Binding OpenInWeview2Command}" Content="打开" />
+                <Button Margin="0,0,5,0" Command="{Binding OpenInExplorerCommand}" Content="系统默认打开" />
+                <Button Width="27" Height="27" Padding="2" Command="{Binding EditCommand}">
+                    <TextBlock HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}" RenderTransformOrigin="0.5,0.5" Text="&#xE713;">
                         <TextBlock.RenderTransform>
-                            <RotateTransform x:Name="rotateTransform21"/>
+                            <RotateTransform x:Name="rotateTransform21" />
                         </TextBlock.RenderTransform>
                     </TextBlock>
                     <Button.Triggers>
                         <EventTrigger RoutedEvent="Button.Click">
                             <BeginStoryboard>
                                 <Storyboard>
-                                    <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                    <DoubleAnimation FillBehavior="Stop" Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" />
                                 </Storyboard>
                             </BeginStoryboard>
                         </EventTrigger>
@@ -75,63 +78,51 @@
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="270"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="270" />
+                <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            
-            <TreeView x:Name="ChangeLogTreeView" Background="Transparent" Grid.Column="0" Padding="2" Margin="5,0,5,5" SelectedItemChanged="ChangeLogListView_SelectedItemChanged">
+
+            <TreeView x:Name="ChangeLogTreeView" Grid.Column="0" Margin="5,0,5,5" Padding="2" Background="Transparent" SelectedItemChanged="ChangeLogListView_SelectedItemChanged">
                 <TreeView.Resources>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                     <HierarchicalDataTemplate DataType="{x:Type local:MajorVersionNode}" ItemsSource="{Binding MinorVersions}">
-                        <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <TextBlock FontWeight="Bold" Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding DisplayName}" />
                     </HierarchicalDataTemplate>
                     <HierarchicalDataTemplate DataType="{x:Type local:MinorVersionNode}" ItemsSource="{Binding Entries}">
-                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding DisplayName}" />
                     </HierarchicalDataTemplate>
                     <DataTemplate DataType="{x:Type local:ChangeLogEntry}">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding Version}" Width="80" Foreground="{DynamicResource GlobalTextBrush}"/>
-                            <TextBlock Text="{Binding ReleaseDate, StringFormat='yyyy/MM/dd'}" Width="100" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <TextBlock Width="80" Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding Version}" />
+                            <TextBlock Width="100" Foreground="{DynamicResource GlobalTextBrush}" Text="{Binding ReleaseDate, StringFormat='yyyy/MM/dd'}" />
                         </StackPanel>
                     </DataTemplate>
                 </TreeView.Resources>
                 <TreeView.ItemContainerStyle>
-                    <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource TreeViewItemBaseStyle}">
-                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
-                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                    <Style BasedOn="{StaticResource TreeViewItemBaseStyle}" TargetType="{x:Type TreeViewItem}">
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}" />
                     </Style>
                 </TreeView.ItemContainerStyle>
             </TreeView>
-            
-            <ListView x:Name="ChangeLogDetailsPanel" Grid.Column="1" Margin="5,0,5,5" 
-                      Background="Transparent" BorderThickness="0"
-                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                      SelectionChanged="ChangeLogDetailsPanel_SelectionChanged">
+
+            <ListView x:Name="ChangeLogDetailsPanel" Grid.Column="1" Margin="5,0,5,5" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="ChangeLogDetailsPanel_SelectionChanged">
                 <ListView.View>
                     <GridView>
                         <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Setter Property="Background" Value="Transparent"/>
+                            <Style BasedOn="{StaticResource GridViewColumnHeaderBase}" TargetType="{x:Type GridViewColumnHeader}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Setter Property="Background" Value="Transparent" />
                             </Style>
                         </GridView.ColumnHeaderContainerStyle>
                         <GridViewColumn>
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:ChangeLogEntry}">
-                                    <StackPanel Background="Transparent" Margin="0,0,0,20" >
-                                        <TextBox Background="Transparent" PreviewMouseDown="TextBox_PreviewMouseDown" Tag="{Binding .}" Text="{Binding Version, StringFormat='## {0}'}" 
-                                       FontSize="18" 
-                                       FontWeight="Bold"
-                                       BorderThickness="0" IsReadOnly="True" Padding="0"
-                                       Margin="0,10,0,5"/>
-                                        <TextBox Background="Transparent" PreviewMouseDown="TextBox_PreviewMouseDown" Tag="{Binding .}"  Text="{Binding ReleaseDate, StringFormat='yyyy/MM/dd',Mode=OneWay}" 
-                                       FontSize="12" 
-                                       Foreground="Gray" 
-                                       BorderThickness="0" IsReadOnly="True" Padding="0"
-                                       Margin="0,0,0,10"/>
-                                        <TextBox Background="Transparent" PreviewMouseDown="TextBox_PreviewMouseDown" Tag="{Binding .}"  Text="{Binding ChangeLog ,Mode=OneWay}" BorderThickness="0" IsReadOnly="True" Padding="0"
-                                       TextWrapping="Wrap"/>
+                                    <StackPanel Margin="0,0,0,20" Background="Transparent">
+                                        <TextBox Margin="0,10,0,5" Padding="0" Background="Transparent" BorderThickness="0" FontSize="18" FontWeight="Bold" IsReadOnly="True" PreviewMouseDown="TextBox_PreviewMouseDown" Tag="{Binding .}" Text="{Binding Version, StringFormat='## {0}'}" />
+                                        <TextBox Margin="0,0,0,10" Padding="0" Background="Transparent" BorderThickness="0" FontSize="12" Foreground="Gray" IsReadOnly="True" PreviewMouseDown="TextBox_PreviewMouseDown" Tag="{Binding .}" Text="{Binding ReleaseDate, StringFormat='yyyy/MM/dd', Mode=OneWay}" />
+                                        <TextBox Padding="0" Background="Transparent" BorderThickness="0" IsReadOnly="True" PreviewMouseDown="TextBox_PreviewMouseDown" Tag="{Binding .}" Text="{Binding ChangeLog, Mode=OneWay}" TextWrapping="Wrap" />
                                     </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>

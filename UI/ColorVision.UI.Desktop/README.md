@@ -1,40 +1,62 @@
 # ColorVision.UI.Desktop
 
-> 版本: 1.5.1.1 | 目标框架: .NET 8.0 / .NET 10.0 Windows | UI框架: WPF
+> 版本: 1.5.1.5 | 目标框架: .NET 8.0 / .NET 10.0 Windows | UI框架: WPF
 
 ## 🎯 功能定位
 
-ColorVision 系统的桌面应用程序入口模块，提供主窗口、WebView 服务和配置管理窗口。这是整个应用程序的启动点和桌面端特定功能的实现层。
+ColorVision 系统的桌面应用程序入口模块，提供主窗口、菜单定制、设置管理、配置向导、插件管理和第三方应用集成等功能。它是整个应用程序的启动点和桌面端特定功能的实现层。
 
 ## 作用范围
 
-桌面应用程序层，负责应用程序的启动、主窗口管理、Web 内容显示和桌面端配置管理。
+桌面应用程序层，负责应用程序的启动、主窗口管理、菜单定制、系统设置、配置向导和桌面端特定功能。
 
 ## 主要功能点
 
-### 主窗口 (MainWindow)
-- **应用程序主界面** - 提供主窗口容器
-- **模块集成** - 承载各功能模块的 UI
-- **生命周期管理** - 管理应用程序的启动和关闭流程
-
-### WebView 服务 (WebViewService)
-- **Web 内容显示** - 基于 WebView2 的 Web 内容渲染
-- **脚本交互** - 支持 JavaScript 与 C# 的双向调用
-- **导航控制** - URL 导航、前进、后退、刷新
-- **下载管理** - 文件下载处理
-
-### 配置管理窗口 (ConfigManagerWindow)
-- **可视化配置** - 图形化配置管理界面
-- **配置项编辑** - 支持各类配置项的编辑
-- **配置验证** - 配置项的合法性验证
-- **配置导入导出** - 配置的备份和恢复
-
-### 应用程序生命周期
-- **启动初始化** - 应用程序启动时的初始化流程
-- **配置加载** - 自动加载应用程序配置
-- **模块初始化** - 初始化各功能模块
+### 应用程序入口 (App.xaml.cs)
+- **应用启动** - 应用程序入口点，初始化全局资源
 - **异常处理** - 全局异常捕获和处理
-- **优雅退出** - 应用程序关闭时的资源释放
+- **单实例** - 确保应用程序单实例运行
+- **启动参数** - 支持命令行参数处理
+
+### 主窗口 (MainWindow)
+- **主界面容器** - 应用程序主窗口容器
+- **停靠布局** - 基于 AvalonDock 的停靠面板系统
+- **视图管理** - 文档视图和面板视图管理
+- **状态栏** - 应用程序状态信息显示
+
+### 菜单管理 (MenuItemManager)
+- **菜单定制** - 自定义菜单项的可见性和排序
+- **持久化设置** - 保存和恢复菜单配置
+- **树形编辑** - 可视化菜单结构编辑
+- **导入导出** - 菜单配置的导入导出
+
+### 设置管理 (Settings)
+- **统一设置界面** - SettingWindow 从所有已注册的配置提供者加载设置
+- **分类管理** - 按类别分组显示配置项
+- **三种类型** - 支持 TabItem、Class、Property 三种设置类型
+- **自动发现** - 通过反射自动发现 IConfigSettingProvider 实现
+
+### 配置向导 (Wizards)
+- **多步引导** - WizardWindow 提供分步骤的初始化配置向导
+- **自动发现** - WizardManager 通过反射自动发现 IWizardStep 实现
+- **进度跟踪** - 可视化的完成进度指示
+- **完成验证** - 验证所有步骤配置是否完成
+
+### 插件更新 (PluginsUpdate)
+- **版本检查** - 检查插件更新
+- **DLL版本查看** - ViewDllVersionsWindow 查看DLL版本信息
+
+### 第三方应用 (ThirdPartyApps)
+- **应用浏览** - SystemAppProvider 提供 Windows 系统工具集合
+- **快速启动** - 一键启动系统工具和外部应用
+
+### 系统初始化 (SystemInitializer)
+- **CUDA初始化** - SystemInitializer 初始化 CUDA 环境
+- **系统信息** - 启动时记录操作系统、.NET 版本、CPU 和内存信息
+- **调试支持** - 记录调试模式状态和应用程序版本
+
+### 原生方法 (NativeMethods)
+- **快捷方式创建** - ShortcutCreator 创建 Windows 快捷方式
 
 ## 技术架构
 
@@ -43,19 +65,29 @@ ColorVision 系统的桌面应用程序入口模块，提供主窗口、WebView 
 │                   ColorVision.UI.Desktop                      │
 │                                                              │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
-│  │ MainWindow  │    │WebViewService│   │ConfigManager│      │
-│  │             │    │             │    │   Window    │      │
-│  │ • 主界面    │    │ • Web显示   │    │ • 配置编辑  │      │
-│  │ • 模块容器  │    │ • 脚本交互  │    │ • 配置验证  │      │
-│  │ • 生命周期  │    │ • 下载管理  │    │ • 导入导出  │      │
+│  │    App      │    │ MainWindow  │    │ MenuItemMgr │      │
+│  │             │    │             │    │             │      │
+│  │ • 启动流程  │    │ • 停靠布局  │    │ • 菜单定制  │      │
+│  │ • 异常处理  │    │ • 视图管理  │    │ • 持久化    │      │
+│  │ • 单实例    │    │ • 状态栏    │    │ • 导入导出  │      │
 │  └─────────────┘    └─────────────┘    └─────────────┘      │
-│         │                   │                   │            │
-│         └───────────────────┼───────────────────┘            │
-│                             ▼                                │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │              ColorVision.UI / ColorVision.Solution       │ │
-│  │                    上层功能模块                          │ │
-│  └────────────────────────────────────────────────────────┘ │
+│                                                              │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
+│  │   Settings  │    │   Wizards   │    │   Plugins   │      │
+│  │             │    │             │    │             │      │
+│  │ • 统一设置  │    │ • 配置向导  │    │ • 版本检查  │      │
+│  │ • 自动发现  │    │ • 自动发现  │    │ • DLL查看   │      │
+│  │ • 三种类型  │    │ • 进度跟踪  │    │ • 更新管理  │      │
+│  └─────────────┘    └─────────────┘    └─────────────┘      │
+│                                                              │
+│  ┌─────────────┐    ┌─────────────┐                          │
+│  │ ThirdParty  │    │  SystemInit │                          │
+│  │             │    │             │                          │
+│  │ • 系统工具  │    │ • CUDA初始化│                          │
+│  │ • 快速启动  │    │ • 系统信息  │                          │
+│  │ • 应用浏览  │    │ • 调试支持  │                          │
+│  └─────────────┘    └─────────────┘                          │
+│                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -71,7 +103,8 @@ ColorVision 系统的桌面应用程序入口模块，提供主窗口、WebView 
 - `ColorVision.ImageEditor` - 图像编辑器
 - `ColorVision.Database` - 数据库模块
 - `ColorVision.Themes` - 主题支持
-- `Microsoft.Web.WebView2` - WebView2 控件
+- `ColorVision.Scheduler` - 任务调度
+- `ColorVision.SocketProtocol` - 网络通信
 
 ## 使用方式
 
@@ -92,15 +125,25 @@ public partial class App : Application
     {
         base.OnStartup(e);
         
-        // 初始化配置
-        ConfigHandler.GetInstance();
+        // 初始化插件
+        PluginLoader.LoadPlugins();
         
-        // 加载主题
+        // 应用主题
         this.ApplyTheme(ThemeConfig.Instance.Theme);
         
-        // 设置语言
-        Thread.CurrentThread.CurrentUICulture = 
-            new CultureInfo(LanguageConfig.Instance.UICulture);
+        // 检查是否首次运行
+        if (!WizardWindowConfig.Instance.WizardCompletionKey)
+        {
+            // 显示配置向导
+            var wizard = new WizardWindow();
+            wizard.ShowDialog();
+            
+            if (!WizardWindowConfig.Instance.WizardCompletionKey)
+            {
+                Shutdown();
+                return;
+            }
+        }
         
         // 显示主窗口
         var mainWindow = new MainWindow();
@@ -109,36 +152,71 @@ public partial class App : Application
 }
 ```
 
-### WebView 使用
+### 菜单项配置
 ```csharp
-// 获取 WebView 服务
-var webViewService = WebViewService.Instance;
-
-// 导航到 URL
-webViewService.Navigate("https://example.com");
-
-// 执行 JavaScript
-var result = await webViewService.ExecuteScriptAsync("document.title");
-
-// 注册脚本回调
-webViewService.RegisterScriptCallback("CSharpMethod", (args) =>
+// 添加菜单项设置
+var config = MenuItemManagerConfig.Instance;
+config.Settings.Add(new MenuItemSetting
 {
-    Console.WriteLine($"收到 JS 调用: {args}");
-    return "返回值";
+    Id = "menuFileOpen",
+    Header = "打开",
+    IsVisible = true,
+    Order = 1,
+    Hotkey = "Ctrl+O"
 });
+
+// 保存配置
+ConfigHandler.GetInstance().SaveConfigs();
 ```
 
-### 配置管理窗口
+### 创建设置提供者
 ```csharp
-// 显示配置管理窗口
-var configWindow = new ConfigManagerWindow();
-configWindow.ShowDialog();
+public class MySettingProvider : IConfigSettingProvider
+{
+    public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+    {
+        return new List<ConfigSettingMetadata>
+        {
+            new ConfigSettingMetadata
+            {
+                Type = ConfigSettingType.TabItem,
+                Name = "我的设置",
+                Order = 100,
+                UserControl = new MySettingsControl()
+            },
+            new ConfigSettingMetadata
+            {
+                Type = ConfigSettingType.Class,
+                Name = "高级设置",
+                Order = 200,
+                Source = MyConfig.Instance
+            }
+        };
+    }
+}
+```
+
+### 创建向导步骤
+```csharp
+public class DatabaseWizardStep : IWizardStep
+{
+    public int Order => 1;
+    public string Title => "数据库配置";
+    public string Description => "配置数据库连接参数";
+    public bool ConfigurationStatus => MySQLConfig.Instance.TestConnection();
+    public UserControl StepContent => new DatabaseConfigControl();
+    
+    public bool Validate()
+    {
+        return MySQLConfig.Instance.TestConnection();
+    }
+}
 ```
 
 ## 主要组件
 
 ### MainWindow
-应用程序主窗口，提供模块容器和生命周期管理。
+主窗口类，应用程序的主界面容器。
 
 ```csharp
 public partial class MainWindow : Window
@@ -146,102 +224,115 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        
-        // 窗口拖拽支持
-        this.MouseLeftButtonDown += (s, e) =>
-        {
-            if (e.ButtonState == MouseButtonState.Pressed)
-                this.DragMove();
-        };
     }
+    
+    // 停靠布局管理
+    public DockLayoutManager LayoutManager { get; }
+    
+    // 文档视图宿主
+    public DockViewManagerHost ViewManagerHost { get; }
 }
 ```
 
-### WebViewService
-WebView2 封装服务，提供 Web 内容显示和交互功能。
+### MenuItemManagerConfig
+菜单项管理配置类，存储菜单的自定义配置。
 
 ```csharp
-public class WebViewService
+public class MenuItemManagerConfig : IConfig
 {
-    public static WebViewService Instance { get; } = new WebViewService();
+    public static MenuItemManagerConfig Instance => 
+        ConfigService.Instance.GetRequiredService<MenuItemManagerConfig>();
     
-    public WebView2 WebView { get; private set; }
+    // 菜单项设置集合
+    public ObservableCollection<MenuItemSetting> Settings { get; set; } = new();
     
-    public void Initialize(WebView2 webView);
-    public void Navigate(string url);
-    public void NavigateToString(string html);
-    public Task<string> ExecuteScriptAsync(string script);
-    public void RegisterScriptCallback(string name, Func<string, string> callback);
-    public void GoBack();
-    public void GoForward();
-    public void Reload();
-    
-    public event EventHandler<NavigationStartingEventArgs> NavigationStarting;
-    public event EventHandler<NavigationCompletedEventArgs> NavigationCompleted;
+    // 最后选中的树节点
+    public string? LastSelectedTreeNode { get; set; }
 }
 ```
 
-### ConfigManagerWindow
-配置管理窗口，提供可视化的配置编辑功能。
+### SettingWindow
+统一设置窗口，自动发现并加载所有已注册配置提供者的设置项。
 
 ```csharp
-public partial class ConfigManagerWindow : Window
+public partial class SettingWindow : Window
 {
-    public ConfigManagerWindow()
+    public SettingWindow()
     {
         InitializeComponent();
-        
-        // 加载配置项
-        LoadConfigurations();
+        this.ApplyCaption();
     }
     
-    private void LoadConfigurations()
+    // 加载配置设置
+    public void LoadIConfigSetting()
     {
-        // 显示所有可配置项
-    }
-    
-    private void SaveButton_Click(object sender, RoutedEventArgs e)
-    {
-        // 保存配置
-        ConfigHandler.Instance.Save();
-        DialogResult = true;
+        // 自动发现所有 IConfigSettingProvider 实现
+        // 支持三种设置类型: TabItem, Class, Property
+        // 按类别分组、按优先级排序
     }
 }
 ```
 
-### App
-应用程序类，管理应用程序生命周期。
+### WizardWindow
+配置向导窗口，引导用户完成初始化配置。
 
 ```csharp
-public partial class App : Application
+public partial class WizardWindow : Window
 {
-    protected override void OnStartup(StartupEventArgs e)
-    {
-        base.OnStartup(e);
-        
-        // 注册全局异常处理
-        AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
-        DispatcherUnhandledException += OnDispatcherUnhandledException;
-        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
-        
-        // 初始化各模块
-        InitializeModules();
-        
-        // 显示主窗口
-        MainWindow = new MainWindow();
-        MainWindow.Show();
-    }
+    public static WizardWindowConfig WindowConfig => WizardWindowConfig.Instance;
     
-    protected override void OnExit(ExitEventArgs e)
+    public WizardWindow()
     {
-        // 保存配置
-        ConfigHandler.Instance.Save();
-        
-        // 清理资源
-        Cleanup();
-        
-        base.OnExit(e);
+        InitializeComponent();
+        this.ApplyCaption();
+        WindowConfig.SetWindow(this);
     }
+}
+```
+
+### WizardManager
+向导管理器，负责发现和管理所有向导步骤。
+
+```csharp
+public class WizardManager : ViewModelBase
+{
+    public static WizardManager GetInstance()
+    
+    // 所有向导步骤
+    public List<IWizardStep> IWizardSteps { get; private set; } = new();
+    
+    // 初始化，自动发现所有 IWizardStep 实现
+    public void Initialized()
+}
+```
+
+### SystemInitializer
+系统初始化器，负责应用程序启动时的系统初始化和信息记录。
+
+```csharp
+public class SystemInitializer : IInitializer
+{
+    public int Order => 8;
+    
+    public async Task InitializeAsync()
+    {
+        // 记录系统信息
+        // 初始化 CUDA
+        // 记录 .NET 版本
+        // 记录 CPU 和内存信息
+    }
+}
+```
+
+### ShortcutCreator
+快捷方式创建工具，使用 WScript.Shell COM 对象创建 `.lnk` 文件。
+
+```csharp
+public static class ShortcutCreator
+{
+    // 创建快捷方式
+    public static void CreateShortcut(string name, string path, 
+        string target, string arguments)
 }
 ```
 
@@ -249,9 +340,24 @@ public partial class App : Application
 
 - `App.xaml/cs` - 应用程序定义和启动逻辑
 - `MainWindow.xaml/cs` - 主窗口
-- `ConfigManagerWindow.xaml/cs` - 配置管理窗口
-- `WebViewService.cs` - WebView2 服务
-- `AssemblyInfo.cs` - 程序集信息
+- `MenuItemManager/` - 菜单项管理
+  - `MenuItemManagerConfig.cs` - 菜单配置
+  - `MenuItemSetting.cs` - 菜单项设置
+- `Settings/` - 设置管理
+  - `SettingWindow.xaml/cs` - 设置窗口
+- `Wizards/` - 配置向导
+  - `WizardWindow.xaml/cs` - 向导窗口
+  - `WizardWindowConfig.cs` - 向导配置
+  - `WizardManager.cs` - 向导管理器
+- `Plugins/` - 插件更新
+  - `PluginsUpdate.cs` - 插件更新
+  - `ViewDllVersionsWindow.xaml/cs` - DLL版本查看
+- `ThirdPartyApps/` - 第三方应用
+  - `SystemAppProvider.cs` - 系统应用提供者
+- `CUDA/` - 系统初始化
+  - `SystemInitializer.cs` - 系统初始化器
+- `NativeMethods/` - 原生方法
+  - `ShortcutCreator.cs` - 快捷方式创建
 
 ## 开发调试
 
@@ -268,45 +374,59 @@ dotnet publish UI/ColorVision.UI.Desktop/ColorVision.UI.Desktop.csproj -c Releas
 
 ## 最佳实践
 
-### 1. 启动优化
-- 延迟加载非核心模块
-- 使用 SplashScreen 显示启动进度
-- 异步初始化避免 UI 卡顿
+### 1. 应用程序启动
+- 在 `OnStartup` 中按正确顺序初始化各子系统
+- 首先加载插件，然后应用主题
+- 首次运行时显示配置向导
+- 处理启动参数
 
-### 2. 异常处理
-- 注册全局异常处理器
-- 记录异常日志
-- 提供用户友好的错误提示
+### 2. 菜单定制
+- 使用 `MenuItemManagerConfig` 持久化菜单配置
+- 提供菜单配置的导入导出功能
+- 支持快捷键绑定
 
-### 3. 资源管理
-- 及时释放 WebView 资源
-- 关闭时取消所有异步操作
-- 保存用户配置和状态
+### 3. 设置管理
+- 实现 `IConfigSettingProvider` 提供设置项
+- 合理使用三种设置类型（TabItem/Class/Property）
+- 设置项按逻辑分组
+- 提供设置项的排序
 
-### 4. WebView 使用
-- 预加载常用页面
-- 缓存优化
-- 处理脚本注入安全
+### 4. 配置向导
+- 实现 `IWizardStep` 接口创建向导步骤
+- 设置合适的 `Order` 值控制步骤顺序
+- 提供配置验证
+- 显示配置进度
+
+### 5. 系统初始化
+- 设置合适的 `Order` 值确保初始化顺序
+- 记录必要的系统信息
+- 处理初始化失败的情况
+- 异步初始化避免阻塞UI
 
 ## 相关文档链接
 
+- [详细技术文档](../../docs/04-api-reference/ui-components/ColorVision.UI.Desktop.md)
+- [ColorVision.UI README](./../ColorVision.UI/README.md)
 - [WPF 应用程序开发指南](https://docs.microsoft.com/zh-cn/dotnet/desktop/wpf/)
-- [WebView2 文档](https://docs.microsoft.com/zh-cn/microsoft-edge/webview2/)
-- [解决方案管理](../../UI/ColorVision.Solution/README.md)
 
 ## 更新日志
 
-### v1.5.1.1 (2025-02)
+### v1.5.1.5 (2026-02)
 - 支持 .NET 10.0
-- 优化 WebView2 初始化流程
+- 重构菜单项管理系统
+- 优化配置向导界面
+- 增强设置窗口功能
+- 改进系统初始化流程
 
-### v1.4.1.1 (2025-02)
-- 改进配置管理窗口
-- 增加全局异常处理
+### v1.4.1.1 (2026-02)
+- 停靠布局管理
+- 多图像查看器
+- 工作区管理
 
 ### v1.3.18.1 (2025-02)
-- 增加 WebView 服务
-- 优化启动性能
+- 基础应用程序框架
+- 配置向导
+- 系统初始化
 
 ## 维护者
 

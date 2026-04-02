@@ -49,8 +49,11 @@ namespace ColorVision.Engine.Services
         public ServiceManager()
         {
             if (MySqlControl.GetInstance().IsConnect)
-                LoadServices();
-            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadServices();
+            {
+                Application.Current.Dispatcher.Invoke(() => LoadServices());
+            }
+            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) =>
+                Application.Current.Dispatcher.Invoke(() => LoadServices());
         }
 
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
@@ -238,8 +241,8 @@ namespace ColorVision.Engine.Services
                 {
                     GroupResource groupResource1 = new(sysResourceModel);
                     LoadgroupResource(groupResource1);
-                    groupResource.AddChild(groupResource);
-                    GroupResources.Add(groupResource);
+                    groupResource.AddChild(groupResource1);
+                    GroupResources.Add(groupResource1);
                 }
                 else if (30<=sysResourceModel.Type && sysResourceModel.Type <= 50)
                 {

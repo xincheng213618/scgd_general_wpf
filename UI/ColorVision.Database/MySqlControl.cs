@@ -37,7 +37,27 @@ namespace ColorVision.Database
 
         public event EventHandler MySqlConnectChanged;
 
-        public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; OnPropertyChanged(); MySqlConnectChanged?.Invoke(this, EventArgs.Empty); } }
+        public bool IsConnect
+        {
+            get => _IsConnect;
+            private set
+            {
+                _IsConnect = value;
+                if (Application.Current?.Dispatcher.CheckAccess() == true)
+                {
+                    OnPropertyChanged();
+                    MySqlConnectChanged?.Invoke(this, EventArgs.Empty);
+                }
+                else
+                {
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        OnPropertyChanged();
+                        MySqlConnectChanged?.Invoke(this, EventArgs.Empty);
+                    });
+                }
+            }
+        }
         private bool _IsConnect;
 
         private static readonly char[] separator = new[] { ';' };

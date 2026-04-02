@@ -288,7 +288,7 @@ namespace ColorVision.Engine.Services.RC
             }
         private void DoUpdateServiceTokens(Dictionary<CVServiceType, List<MQTTNodeService>> services)
         {
-            log.Info("Refresh Token");
+            logger.Info("Refresh Token");
             var tokens = ServiceTokens;
             tokens.Clear();
             foreach (var itemService in services.Values)

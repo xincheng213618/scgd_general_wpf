@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Scheduler.Data;
 using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;
@@ -54,6 +55,7 @@ namespace ColorVision.Scheduler
         public QuartzSchedulerManager()
         {
             Load();
+            RestoreStatsFromDb();
             Task.Run(() => Start());
         }
 
@@ -486,6 +488,37 @@ namespace ColorVision.Scheduler
         public void LoadTasks()
         {
             Load();
+        }
+
+        /// <summary>
+        /// 从 SQLite 数据库恢复每个任务的聚合统计数据
+        /// </summary>
+        private void RestoreStatsFromDb()
+        {
+            try
+            {
+                var dbManager = SchedulerDbManager.GetInstance();
+                foreach (var task in TaskInfos)
+                {
+                    var stats = dbManager.GetTaskStats(task.JobName, task.GroupName);
+                    if (stats.RunCount > 0)
+                    {
+                        task.RunCount = stats.RunCount;
+                        task.SuccessCount = stats.SuccessCount;
+                        task.FailureCount = stats.FailureCount;
+                        task.AverageExecutionTimeMs = stats.AvgMs;
+                        task.MinExecutionTimeMs = stats.MinMs;
+                        task.MaxExecutionTimeMs = stats.MaxMs;
+                        task.LastExecutionResult = stats.LastResult ?? string.Empty;
+                        task.LastExecutionMessage = stats.LastMessage ?? string.Empty;
+                    }
+                }
+                _logger.Info($"Restored stats for {TaskInfos.Count} tasks from database");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Failed to restore stats from database", ex);
+            }
         }
 
         public async Task Shutdown()

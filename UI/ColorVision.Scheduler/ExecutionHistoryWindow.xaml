@@ -1,0 +1,107 @@
+<Window x:Class="ColorVision.Scheduler.ExecutionHistoryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Scheduler"
+        mc:Ignorable="d"
+        Title="执行历史记录" Height="600" Width="900" Background="{StaticResource GlobalBackground}">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 标题和筛选 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="任务:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <TextBlock x:Name="TextBlockTaskName" Text="全部任务" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
+            <TextBlock Text="筛选:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <ComboBox x:Name="ComboBoxFilter" Width="100" SelectionChanged="ComboBoxFilter_SelectionChanged">
+                <ComboBoxItem Content="全部" IsSelected="True"/>
+                <ComboBoxItem Content="成功"/>
+                <ComboBoxItem Content="失败"/>
+            </ComboBox>
+            <Button Content="刷新" Click="Refresh_Click" Margin="10,0,0,0" Padding="10,3"/>
+            <Button Content="清理90天前记录" Click="Cleanup_Click" Margin="10,0,0,0" Padding="10,3"/>
+        </StackPanel>
+
+        <!-- 统计摘要 -->
+        <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" CornerRadius="3" Padding="10" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="总执行: " />
+                <TextBlock x:Name="TextBlockTotal" Text="0" FontWeight="Bold" Margin="0,0,15,0"/>
+                <TextBlock Text="成功: " />
+                <TextBlock x:Name="TextBlockSuccess" Text="0" FontWeight="Bold" Foreground="Green" Margin="0,0,15,0"/>
+                <TextBlock Text="失败: " />
+                <TextBlock x:Name="TextBlockFailure" Text="0" FontWeight="Bold" Foreground="Red" Margin="0,0,15,0"/>
+                <TextBlock Text="平均耗时: " />
+                <TextBlock x:Name="TextBlockAvgTime" Text="0ms" FontWeight="Bold" Margin="0,0,15,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 历史记录列表 -->
+        <ListView x:Name="ListViewHistory" Grid.Row="2" Background="Transparent" Margin="0,0,0,5">
+            <ListView.View>
+                <GridView>
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
+                    <GridViewColumn Header="开始时间" Width="160">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding StartTime, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="任务名称" Width="120">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding JobName}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="分组" Width="80">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding GroupName}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="耗时(ms)" Width="80">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding ExecutionTimeMs}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="结果" Width="60">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Result}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="详情" Width="300">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Message}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Message}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <!-- 分页 -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5,0,0">
+            <Button Content="上一页" Click="PreviousPage_Click" Padding="10,3" Margin="5,0"/>
+            <TextBlock x:Name="TextBlockPage" Text="第 1 页" VerticalAlignment="Center" Margin="10,0"/>
+            <Button Content="下一页" Click="NextPage_Click" Padding="10,3" Margin="5,0"/>
+        </StackPanel>
+    </Grid>
+</Window>

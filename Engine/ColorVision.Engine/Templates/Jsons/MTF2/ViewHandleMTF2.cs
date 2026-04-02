@@ -98,6 +98,8 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleMTF2));
 
+        public override string Name => "MTF";
+
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.MTF};
         public override bool CanHandle1(ViewResultAlg result)
         {
@@ -161,7 +163,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                 List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
                 log.Info($"查询到 {detailCommonModels.Count} 条 DetailCommonModel 记录，Pid={result.Id}");
 
-                if (detailCommonModels.Count > 1)
+                if (detailCommonModels.Count > 0)
                 {
                     MTFDetailViewReslut mtfresult = new MTFDetailViewReslut(detailCommonModels[0]);
                     result.ViewResults.Add(mtfresult);
@@ -241,17 +243,18 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                             DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(item.x,item.y,item.w,item.h);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
                             Rectangle.Attribute.Id = id;
                             Rectangle.Attribute.Text = item.name;
-                            Rectangle.Attribute.Msg = item.mtfValue.ToString();
+                            Rectangle.Attribute.FontSize = RenderConfig.FontSize;
+                            Rectangle.Attribute.Msg = RenderConfig.FormatNumber(item.mtfValue);
                             Rectangle.Render();
                             ctx.ImageView.AddVisual(Rectangle);
                         }
                     }
 
-                    List<string> header = new() { "name", "x","y","w","h","mtfvalue" };
-                    List<string> bdHeader = new() { "name", "x", "y", "w", "h", "mtfValue" };
+                    List<string> header = new() {"mtfvalue", "name", "x","y","w","h" };
+                    List<string> bdHeader = new() { "mtfValue" ,"name", "x", "y", "w", "h"};
 
                     if (ctx.ListView.View is GridView gridView)
                     {

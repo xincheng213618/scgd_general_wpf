@@ -75,6 +75,8 @@ namespace ColorVision.Engine.Templates.Jsons.SFR2
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleSFR2));
 
+        public override string Name => "SFR";
+
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.SFR };
         public override bool CanHandle1(ViewResultAlg result)
         {

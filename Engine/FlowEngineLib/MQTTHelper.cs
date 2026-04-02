@@ -54,8 +54,39 @@ public class MQTTHelper
 
     public async Task<ResultData_MQTT> CreateMQTTClientAndStart(string mqttServerUrl, int port, string userName, string userPassword, Action<ResultData_MQTT> callback)
     {
+        _Callback = callback;
+
+        // Try to reuse a pooled connection first
+        var pooledClient = MQTTClientPool.Acquire(mqttServerUrl, port, userName);
+        if (pooledClient != null)
+        {
+            _MqttClient = pooledClient;
+            // Attach our handlers to the shared client
+            _MqttClient.ConnectedAsync += ConnectedHandle;
+            _MqttClient.DisconnectedAsync += DisconnectedHandle;
+            _MqttClient.ApplicationMessageReceivedAsync += ApplicationMessageReceivedHandle;
+
+            var result = new ResultData_MQTT
+            {
+                ResultCode = 1,
+                EventType = EventTypeEnum.ClientConnected,
+                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>复用MQTT连接_成功！[{mqttServerUrl}:{port}]"
+            };
+            _Callback?.Invoke(result);
+            return result;
+        }
+
+        // No pooled connection available – create a new one
         var optionsBuilder = BuildClientOptions(mqttServerUrl, port, userName, userPassword);
-        return await CreateMQTTClientAndStart(optionsBuilder, callback);
+        var createResult = await CreateMQTTClientAndStart(optionsBuilder, callback);
+
+        // Register the newly created client in the pool
+        if (_MqttClient != null && _MqttClient.IsConnected)
+        {
+            MQTTClientPool.Register(_MqttClient, mqttServerUrl, port, userName);
+        }
+
+        return createResult;
     }
 
     private MqttClientOptionsBuilder BuildClientOptions(string mqttServerUrl, int port, string userName, string userPassword)
@@ -127,23 +158,28 @@ public class MQTTHelper
         return _MqttClient != null && _MqttClient.IsConnected;
     }
 
-    public async Task DisconnectAsync_Client()
+    public Task DisconnectAsync_Client()
     {
         ResultData_MQTT obj;
         try
         {
-            if (_MqttClient != null && _MqttClient.IsConnected)
+            if (_MqttClient != null)
             {
-                // v5 发送 Disconnect 包
-                await _MqttClient.DisconnectAsync(new MqttClientDisconnectOptionsBuilder().WithReason(MqttClientDisconnectOptionsReason.NormalDisconnection).Build());
-                _MqttClient.Dispose();
+                // Remove our event handlers from the shared client
+                _MqttClient.ConnectedAsync -= ConnectedHandle;
+                _MqttClient.DisconnectedAsync -= DisconnectedHandle;
+                _MqttClient.ApplicationMessageReceivedAsync -= ApplicationMessageReceivedHandle;
+
+                // Release to pool – actual disconnect happens after grace period
+                // if no one else re-acquires the connection
+                MQTTClientPool.Release(_MqttClient);
                 _MqttClient = null;
 
                 obj = new ResultData_MQTT
                 {
                     ResultCode = 1,
                     EventType = EventTypeEnum.ClientDisconnected,
-                    ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了关闭MQTTClient_成功！"
+                    ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>释放MQTT连接到连接池_成功！"
                 };
             }
             else
@@ -152,7 +188,7 @@ public class MQTTHelper
                 {
                     ResultCode = -1,
                     EventType = EventTypeEnum.ClientDisconnected,
-                    ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了关闭MQTTClient_失败！MQTTClient未开启连接！"
+                    ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>释放MQTT连接_失败！MQTTClient未开启连接！"
                 };
             }
         }
@@ -162,10 +198,11 @@ public class MQTTHelper
             {
                 ResultCode = -1,
                 EventType = EventTypeEnum.ClientDisconnected,
-                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>执行了关闭MQTTClient_失败！错误信息：{ex.Message}"
+                ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>释放MQTT连接_失败！错误信息：{ex.Message}"
             };
         }
         _Callback?.Invoke(obj);
+        return Task.CompletedTask;
     }
 
     public async Task ReconnectAsync_Client()
@@ -330,7 +367,7 @@ public class MQTTHelper
         return Task.CompletedTask;
     }
 
-    private Task DisconnectedHandle(MqttClientDisconnectedEventArgs arg)
+    private async Task DisconnectedHandle(MqttClientDisconnectedEventArgs arg)
     {
         _Callback?.Invoke(new ResultData_MQTT
         {
@@ -339,15 +376,20 @@ public class MQTTHelper
             ResultMsg = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}>>>已断开与MQTT服务器连接！"
         });
 
-        // 自动重连逻辑建议由外部控制或使用 Reconnect 策略，这里简单保留原逻辑
-        // 注意：v5 中如果在 DisconnectedHandle 直接调用 Reconnect 可能引发死锁或异常，建议使用 Task.Run
+        // 延迟重连，避免频繁重连浪费资源
         if (_MqttClient != null)
         {
-            Task.Run(async () => {
-                try { await _MqttClient.ReconnectAsync(); } catch { /* log error */ }
-            });
+            try
+            {
+                await Task.Delay(2000);
+                if (_MqttClient != null)
+                    await _MqttClient.ReconnectAsync();
+            }
+            catch (Exception ex)
+            {
+                logger.WarnFormat("MQTT重连失败：{0}", ex.Message);
+            }
         }
-        return Task.CompletedTask;
     }
 
     private Task ApplicationMessageReceivedHandle(MqttApplicationMessageReceivedEventArgs arg)
@@ -364,7 +406,8 @@ public class MQTTHelper
             ResultObject2 = payload
         };
 
-        _Callback?.Invoke(resultData);
+        // 将回调分发到线程池，避免阻塞 MQTTnet 内部消息分发线程
+        Task.Run(() => _Callback?.Invoke(resultData));
         return Task.CompletedTask;
     }
 

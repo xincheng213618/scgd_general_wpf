@@ -35,6 +35,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public TextBox SideTextBox { get; set; }
 
+        private IResultHandleBase _currentResultHandle;
+
         public AlgorithmView()
         {
             InitializeComponent();
@@ -183,6 +185,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             if (ResultHandle != null)
             {
+                _currentResultHandle = ResultHandle;
+                UpdateConfigUI(ResultHandle);
+
                 ImageView.ImageShow.Clear();
                 SideTextBox.Visibility = Visibility.Collapsed;
                 SideTextBox.Clear();
@@ -190,7 +195,51 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 ResultHandle.Handle(ViewResultContext, result);
                 return;
             }
+            else
+            {
+                _currentResultHandle = null;
+                TextBlockHandlerName.Text = string.Empty;
+            }
 
+        }
+
+        private void UpdateConfigUI(IResultHandleBase handler)
+        {
+            TextBlockHandlerName.Text = handler.Name;
+            _isUpdatingConfig = true;
+            NumDecimalPlaces.Value = handler.RenderConfig.DecimalPlaces;
+            NumFontSize.Value = handler.RenderConfig.FontSize;
+            NumPenThickness.Value = handler.RenderConfig.PenThickness;
+            _isUpdatingConfig = false;
+        }
+
+        private bool _isUpdatingConfig;
+
+        private void NumDecimalPlaces_ValueChanged(object sender, global::HandyControl.Data.FunctionEventArgs<double> e)
+        {
+            if (_isUpdatingConfig || _currentResultHandle == null) return;
+            _currentResultHandle.RenderConfig.DecimalPlaces = (int)e.Info;
+        }
+
+        private void NumFontSize_ValueChanged(object sender, global::HandyControl.Data.FunctionEventArgs<double> e)
+        {
+            if (_isUpdatingConfig || _currentResultHandle == null) return;
+            _currentResultHandle.RenderConfig.FontSize = e.Info;
+        }
+
+        private void NumPenThickness_ValueChanged(object sender, global::HandyControl.Data.FunctionEventArgs<double> e)
+        {
+            if (_isUpdatingConfig || _currentResultHandle == null) return;
+            _currentResultHandle.RenderConfig.PenThickness = e.Info;
+        }
+
+        private void ReRender_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.SelectedIndex < 0 || _currentResultHandle == null) return;
+            if (ViewResults[listView1.SelectedIndex] is not ViewResultAlg result) return;
+
+            ImageView.ImageShow.Clear();
+            _currentResultHandle.Handle(ViewResultContext, result);
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)

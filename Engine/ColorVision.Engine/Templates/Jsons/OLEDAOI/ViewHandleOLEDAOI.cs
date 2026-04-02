@@ -91,6 +91,8 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleOLEDAOI));
 
+        public override string Name => "OLEDAOI";
+
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.OLEDAOI};
         public override bool CanHandle1(ViewResultAlg result)
         {
@@ -232,10 +234,11 @@ namespace ColorVision.Engine.Templates.Jsons.OLEDAOI
                             DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(item.x,item.y,item.w,item.h);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
                             Rectangle.Attribute.Id = id;
                             Rectangle.Attribute.Text = item.name;
-                            Rectangle.Attribute.Msg = item.mtfValue.ToString();
+                            Rectangle.Attribute.FontSize = RenderConfig.FontSize;
+                            Rectangle.Attribute.Msg = RenderConfig.FormatNumber(item.mtfValue);
                             Rectangle.Render();
                             ctx.ImageView.AddVisual(Rectangle);
                         }

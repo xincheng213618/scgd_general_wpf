@@ -79,8 +79,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Job
                     }
                     else
                     {
-                        // 任务失败，抛出异常让 TaskCompletionSource 知道
-                        tcs.TrySetException(new JobExecutionException($"相机采集失败，状态: {state}"));
+                        tcs.TrySetResult(false);
+
                     }
                 }
             }
@@ -102,7 +102,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Job
             if (completedTask == timeoutTask)
             {
                 msgRecord.MsgRecordStateChanged -= Handler; // 超时解绑
-                throw new JobExecutionException($"相机采集超时 ({timeoutSeconds}s)");
             }
 
             await tcs.Task;

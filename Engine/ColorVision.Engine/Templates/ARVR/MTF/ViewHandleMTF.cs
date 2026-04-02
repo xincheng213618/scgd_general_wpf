@@ -20,6 +20,8 @@ namespace ColorVision.Engine.Templates.MTF
 {
     public class ViewHandleMTF : IResultHandleBase
     {
+        public override string Name => "MTF(ARVR)";
+
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.MTF };
 
         public override void SideSave(ViewResultAlg result, string selectedPath)
@@ -155,10 +157,11 @@ namespace ColorVision.Engine.Templates.MTF
                             Circle.Attribute.Center = new Point(poiResultData.Point.PixelX, poiResultData.Point.PixelY);
                             Circle.Attribute.Radius = poiResultData.Point.Height / 2;
                             Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            Circle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
                             Circle.Attribute.Id = poiResultData.Id;
                             Circle.Attribute.Text = poiResultData.Name;
-                            Circle.Attribute.Msg = poiResultData.Articulation.ToString();
+                            Circle.Attribute.FontSize = RenderConfig.FontSize;
+                            Circle.Attribute.Msg = RenderConfig.FormatNumber(poiResultData.Articulation);
                             Circle.Render();
                             ctx.ImageView.AddVisual(Circle);
                             break;
@@ -166,10 +169,11 @@ namespace ColorVision.Engine.Templates.MTF
                             DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(poiResultData.Point.PixelX - poiResultData.Point.Width / 2, poiResultData.Point.PixelY - poiResultData.Point.Height / 2, poiResultData.Point.Width, poiResultData.Point.Height);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
                             Rectangle.Attribute.Id = poiResultData.Id;
                             Rectangle.Attribute.Text = poiResultData.Name;
-                            Rectangle.Attribute.Msg = poiResultData.Articulation.ToString();
+                            Rectangle.Attribute.FontSize = RenderConfig.FontSize;
+                            Rectangle.Attribute.Msg = RenderConfig.FormatNumber(poiResultData.Articulation);
                             Rectangle.Render();
                             ctx.ImageView.AddVisual(Rectangle);
                             break;

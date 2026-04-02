@@ -10,350 +10,574 @@
 
 ## 概述
 
-**ColorVision.UI.Desktop** 是 ColorVision 系统的桌面应用程序入口模块，提供主窗口、下载管理、插件管理、菜单定制、设置管理、第三方应用集成和配置向导等功能。它是整个应用程序的启动点和桌面端特定功能的实现层。
+**ColorVision.UI.Desktop** 是 ColorVision 系统的桌面应用程序入口模块，提供主窗口、菜单定制、设置管理、配置向导、插件管理和第三方应用集成等功能。它是整个应用程序的启动点和桌面端特定功能的实现层。
 
 ### 基本信息
 
-- **主要功能**: 桌面应用程序入口、下载管理、插件管理、菜单定制、系统设置
+- **主要功能**: 桌面应用程序入口、菜单管理、设置管理、配置向导、系统初始化
 - **UI 框架**: WPF
-- **特色功能**: Aria2c 下载管理、插件热加载与更新、菜单自定义、配置向导
+- **特色功能**: 菜单自定义、统一设置界面、多步配置向导、系统初始化
 - **版本**: 1.5.1.5
 - **目标框架**: .NET 8.0 / .NET 10.0
 
 ## 核心功能
 
-### 1. 下载管理 (Download)
-- **Aria2c 集成** - 基于 Aria2c 的高性能下载引擎
-- **多协议支持** - 支持 HTTP/HTTPS、BitTorrent、磁力链接
-- **并发下载** - 可配置的最大并发任务数和速度限制
-- **断点续传** - 自动恢复未完成的下载任务
-- **下载窗口** - 可视化的下载进度管理界面
+### 1. 应用程序入口 (App.xaml.cs)
+- **应用启动** - 应用程序入口点，初始化全局资源
+- **异常处理** - 全局异常捕获和处理
+- **单实例** - 确保应用程序单实例运行
+- **启动参数** - 支持命令行参数处理
 
-### 2. 插件管理 (Plugins)
-- **插件发现** - 自动扫描和加载插件程序集
-- **在线更新** - 检查并更新已安装的插件
-- **插件商店** - 浏览和下载可用的插件包
-- **版本管理** - DLL 版本查看和依赖关系追踪
+### 2. 主窗口 (MainWindow)
+- **主界面容器** - 应用程序主窗口容器
+- **停靠布局** - 基于 AvalonDock 的停靠面板系统
+- **视图管理** - 文档视图和面板视图管理
+- **状态栏** - 应用程序状态信息显示
 
 ### 3. 菜单管理 (MenuItemManager)
 - **菜单定制** - 自定义菜单项的可见性和排序
-- **快捷键配置** - 为菜单项分配自定义快捷键
 - **持久化设置** - 保存和恢复菜单配置
+- **树形编辑** - 可视化菜单结构编辑
+- **导入导出** - 菜单配置的导入导出
 
 ### 4. 设置管理 (Settings)
-- **统一设置界面** - 从所有已注册的配置提供者加载设置
+- **统一设置界面** - SettingWindow 从所有已注册的配置提供者加载设置
 - **分类管理** - 按类别分组显示配置项
-- **配置导入导出** - 支持配置备份和恢复
+- **三种类型** - 支持 TabItem、Class、Property 三种设置类型
+- **自动发现** - 通过反射自动发现 IConfigSettingProvider 实现
 
-### 5. 第三方应用 (ThirdPartyApps)
-- **应用浏览** - 按分类浏览和搜索已注册的第三方应用
-- **快速启动** - 一键启动系统工具和外部应用
-- **系统工具** - 内置 Windows 系统工具集合
-
-### 6. 配置向导 (Wizards)
-- **多步引导** - 分步骤的初始化配置向导
+### 5. 配置向导 (Wizards)
+- **多步引导** - WizardWindow 提供分步骤的初始化配置向导
+- **自动发现** - WizardManager 通过反射自动发现 IWizardStep 实现
 - **进度跟踪** - 可视化的完成进度指示
-- **自动发现** - 通过反射自动发现向导步骤
+- **完成验证** - 验证所有步骤配置是否完成
 
-### 7. 系统初始化 (SystemInitializer)
+### 6. 插件更新 (PluginsUpdate)
+- **版本检查** - 检查插件更新
+- **DLL版本查看** - ViewDllVersionsWindow 查看DLL版本信息
+
+### 7. 第三方应用 (ThirdPartyApps)
+- **应用浏览** - SystemAppProvider 提供 Windows 系统工具集合
+- **快速启动** - 一键启动系统工具和外部应用
+
+### 8. 系统初始化 (SystemInitializer)
+- **CUDA初始化** - SystemInitializer 初始化 CUDA 环境
 - **系统信息** - 启动时记录操作系统、.NET 版本、CPU 和内存信息
 - **调试支持** - 记录调试模式状态和应用程序版本
+
+### 9. 原生方法 (NativeMethods)
+- **快捷方式创建** - ShortcutCreator 创建 Windows 快捷方式
 
 ## 架构设计
 
 ```mermaid
 graph TD
-    A[ColorVision.UI.Desktop] --> B[Download]
-    A --> C[Plugins]
+    A[ColorVision.UI.Desktop] --> B[App]
+    A --> C[MainWindow]
     A --> D[MenuItemManager]
     A --> E[Settings]
-    A --> F[ThirdPartyApps]
-    A --> G[Wizards]
-    A --> H[CUDA/SystemInitializer]
-    A --> I[NativeMethods]
+    A --> F[Wizards]
+    A --> G[Plugins]
+    A --> H[ThirdPartyApps]
+    A --> I[SystemInitializer]
+    A --> J[NativeMethods]
 
-    B --> B1[Aria2cDownloadManager]
-    B --> B2[DownloadWindow]
-    B --> B3[Aria2cDownloadService]
+    B --> B1[启动流程]
+    B --> B2[异常处理]
+    B --> B3[单实例]
 
-    C --> C1[PluginManager]
-    C --> C2[PluginManagerWindow]
+    C --> C1[停靠布局]
+    C --> C2[视图管理]
+    C --> C3[状态栏]
 
-    D --> D1[MenuItemManagerService]
-    D --> D2[MenuItemManagerWindow]
+    D --> D1[MenuItemManagerConfig]
+    D --> D2[MenuItemSetting]
+    D --> D3[菜单编辑]
 
     E --> E1[SettingWindow]
-    E --> E2[ExportAndImport]
+    E --> E2[IConfigSettingProvider]
+    E --> E3[PropertyEditorHelper]
 
-    A -.-> J[ColorVision.UI]
-    A -.-> K[ColorVision.Database]
+    F --> F1[WizardWindow]
+    F --> F2[WizardManager]
+    F --> F3[IWizardStep]
+
+    G --> G1[PluginsUpdate]
+    G --> G2[ViewDllVersionsWindow]
+
+    H --> H1[SystemAppProvider]
+
+    I --> I1[CUDA初始化]
+    I --> I2[系统信息]
+
+    J --> J1[ShortcutCreator]
 ```
 
 ## 主要组件
 
-### 下载管理
+### App
 
-#### Aria2cDownloadManager
-
-下载任务管理核心类，封装 Aria2c JSON-RPC 接口，提供下载任务的生命周期管理。
+应用程序类，定义应用程序的入口点和全局行为。
 
 ```csharp
-public class Aria2cDownloadManager
+public partial class App : Application
 {
-    // 下载任务集合
-    public ObservableCollection<DownloadTask> Downloads { get; }
-
-    // 状态消息
-    public string StatusMessage { get; }
-    public event Action<string> StatusMessageChanged;
-
-    // 下载操作
-    public Task<DownloadTask> AddDownload(string url, string saveDir,
-        string authorization = null, Action<DownloadTask> onCompleted = null);
-    public Task PauseDownload(DownloadTask task);
-    public Task ResumeDownload(DownloadTask task);
-    public void CancelDownload(DownloadTask task);
-    public void DeleteRecords(IEnumerable<DownloadTask> tasks,
-        bool? deleteFiles = null);
-
-    // 服务管理
-    public Task PreloadAria2cAsync();
-    public void StopAria2cDaemon();
-    public void AutoRestartIncompleteDownloads();
-
-    // 配置
-    public DownloadManagerConfig Config { get; }
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        // 初始化插件系统
+        PluginLoader.LoadPlugins();
+        
+        // 应用主题
+        this.ApplyTheme(ThemeConfig.Instance.Theme);
+        
+        // 显示主窗口
+        base.OnStartup(e);
+    }
 }
 ```
 
-#### DownloadTask
+### MainWindow
 
-下载任务数据模型，支持 MVVM 绑定。
+主窗口类，应用程序的主界面容器。
 
 ```csharp
-public class DownloadTask : ViewModelBase
+public partial class MainWindow : Window
 {
-    public int Id { get; set; }
-    public string Url { get; set; }
-    public string FileName { get; set; }
-    public string SavePath { get; set; }
-    public string Gid { get; set; }
-    public string Status { get; set; }
-    public double ProgressValue { get; set; }
-    public long DownloadedBytes { get; set; }
-    public long TotalBytes { get; set; }
-    public string SpeedText { get; set; }
-    public Action<DownloadTask> OnCompletedCallback { get; set; }
-
-    // 状态属性
-    public bool IsDownloading { get; }
-    public bool IsCompleted { get; }
-    public bool IsPaused { get; }
-    public string FileSizeDisplayText { get; }
+    public MainWindow()
+    {
+        InitializeComponent();
+    }
+    
+    // 停靠布局管理
+    public DockLayoutManager LayoutManager { get; }
+    
+    // 文档视图宿主
+    public DockViewManagerHost ViewManagerHost { get; }
 }
 ```
 
-#### Aria2cDownloadService
+### MenuItemManagerConfig
 
-`IDownloadService` 的实现，提供跨程序集的下载 API。
+菜单项管理配置类，存储菜单的自定义配置。
 
 ```csharp
-public class Aria2cDownloadService : IDownloadService
+public class MenuItemManagerConfig : IConfig
 {
-    public void Download(string url, string saveDir,
-        string authorization = null,
-        Action<DownloadTask> onCompleted = null);
-    public void ShowDownloadWindow();
+    public static MenuItemManagerConfig Instance => 
+        ConfigService.Instance.GetRequiredService<MenuItemManagerConfig>();
+    
+    // 菜单项设置集合
+    public ObservableCollection<MenuItemSetting> Settings { get; set; } = new();
+    
+    // 最后选中的树节点
+    public string? LastSelectedTreeNode { get; set; }
 }
 ```
 
-### 插件管理
+### MenuItemSetting
 
-#### PluginManager
-
-插件生命周期管理类，支持插件的发现、安装、更新和卸载。
+菜单项设置类，定义单个菜单项的配置。
 
 ```csharp
-public class PluginManager : ViewModelBase
+public class MenuItemSetting
 {
-    public static PluginManager GetInstance();
-
-    public ObservableCollection<PluginInfoVM> Plugins { get; }
-    public int UpdateAvailableCount { get; }
-
-    public void UpdateAll();
-    public void DownloadPackage();
-    public void InstallPackage();
-    public void OpenStore();
-    public void OpenViewDllVersion();
-    public void Restart();
+    public string Id { get; set; }
+    public string? Header { get; set; }
+    public bool IsVisible { get; set; } = true;
+    public int Order { get; set; }
+    public string? Hotkey { get; set; }
 }
 ```
 
-#### PluginManagerWindow
+### SettingWindow
 
-插件管理窗口，提供可视化的插件浏览、安装和配置界面。支持多标签页查看插件文档、变更日志、详情和依赖关系。
-
-### 菜单管理
-
-#### MenuItemManagerService
-
-菜单自定义服务，管理菜单项的可见性、排序和快捷键绑定。
-
-```csharp
-public class MenuItemManagerService
-{
-    public static MenuItemManagerService GetInstance();
-
-    public void ApplySettings();
-    public void ApplyHotkeys();
-    public void SyncSettingsFromMenuItems();
-    public void SetMenuItemVisibility(string id, bool visible);
-    public void SetMenuItemOrder(string id, int order);
-    public void SetMenuItemHotkey(string id, string hotkey);
-    public void RebuildMenu();
-}
-```
-
-### 设置管理
-
-#### SettingWindow
-
-统一设置界面，自动发现并加载所有已注册配置提供者的设置项。
+统一设置窗口，自动发现并加载所有已注册配置提供者的设置项。
 
 ```csharp
 public partial class SettingWindow : Window
 {
-    // 自动发现并加载设置
-    // 支持三种设置类型: TabItem, Class, Property
-    // 按类别分组、按优先级排序
+    public SettingWindow()
+    {
+        InitializeComponent();
+        this.ApplyCaption();
+    }
+    
+    // 加载配置设置
+    public void LoadIConfigSetting()
+    {
+        // 自动发现所有 IConfigSettingProvider 实现
+        // 支持三种设置类型: TabItem, Class, Property
+        // 按类别分组、按优先级排序
+    }
 }
 ```
 
-### 第三方应用
+### WizardWindow
 
-#### ThirdPartyAppsWindow
+配置向导窗口，引导用户完成初始化配置。
 
-第三方应用浏览窗口，支持分组过滤、搜索和快速启动。
+```csharp
+public partial class WizardWindow : Window
+{
+    public static WizardWindowConfig WindowConfig => WizardWindowConfig.Instance;
+    
+    public WizardWindow()
+    {
+        InitializeComponent();
+        this.ApplyCaption();
+        WindowConfig.SetWindow(this);
+    }
+    
+    // 显示当前步骤
+    private void ShowCurrentStep()
+    
+    // 上一步
+    private void Previous_Click(object sender, RoutedEventArgs e)
+    
+    // 下一步
+    private void Next_Click(object sender, RoutedEventArgs e)
+    
+    // 完成配置
+    private void ConfigurationComplete_Click(object sender, RoutedEventArgs e)
+}
+```
 
-#### SystemAppProvider
+### WizardManager
 
-Windows 系统工具提供者，内置常用系统工具：命令提示符、PowerShell、控制面板、注册表编辑器、组策略、系统信息、远程桌面、事件查看器、任务计划程序、服务管理和网络连接。
+向导管理器，负责发现和管理所有向导步骤。
 
-### 配置向导
+```csharp
+public class WizardManager : ViewModelBase
+{
+    public static WizardManager GetInstance()
+    
+    // 所有向导步骤
+    public List<IWizardStep> IWizardSteps { get; private set; } = new();
+    
+    // 初始化，自动发现所有 IWizardStep 实现
+    public void Initialized()
+}
+```
 
-#### WizardWindow
+### WizardWindowConfig
 
-多步骤配置向导窗口，通过反射自动发现 `IWizardStep` 实现，引导用户完成初始化配置。
+向导窗口配置类。
 
-### 系统初始化
+```csharp
+public class WizardWindowConfig : IConfig
+{
+    public static WizardWindowConfig Instance => 
+        ConfigService.Instance.GetRequiredService<WizardWindowConfig>();
+    
+    // 向导完成标识
+    public bool WizardCompletionKey { get; set; }
+}
+```
 
-#### SystemInitializer
+### SystemInitializer
 
-应用程序启动时的系统信息记录器，记录操作系统版本、.NET 运行时、CPU 信息、内存状态等。
+系统初始化器，负责应用程序启动时的系统初始化和信息记录。
 
-### 本地方法
+```csharp
+public class SystemInitializer : IInitializer
+{
+    public int Order => 8;
+    
+    public async Task InitializeAsync()
+    {
+        // 记录系统信息
+        // 初始化 CUDA
+        // 记录 .NET 版本
+        // 记录 CPU 和内存信息
+    }
+}
+```
 
-#### ShortcutCreator
+### ShortcutCreator
 
-Windows 快捷方式创建工具，使用 WScript.Shell COM 对象创建 `.lnk` 文件。
+快捷方式创建工具，使用 WScript.Shell COM 对象创建 `.lnk` 文件。
 
 ```csharp
 public static class ShortcutCreator
 {
-    public static void CreateShortcut(string name, string path,
-        string target, string arguments);
-    public static string GetShortcutTargetFile(string filename);
+    // 创建快捷方式
+    public static void CreateShortcut(string name, string path, 
+        string target, string arguments)
+    
+    // 获取快捷方式目标文件
+    public static string GetShortcutTargetFile(string filename)
+}
+```
+
+### PluginsUpdate
+
+插件更新类，负责检查和管理插件更新。
+
+```csharp
+public static class PluginsUpdate
+{
+    // 检查插件更新
+    public static void CheckForUpdates()
+    
+    // 更新插件
+    public static void UpdatePlugin(string pluginId)
+}
+```
+
+### ViewDllVersionsWindow
+
+DLL版本查看窗口，显示已加载DLL的版本信息。
+
+```csharp
+public partial class ViewDllVersionsWindow : Window
+{
+    public ViewDllVersionsWindow()
+    {
+        InitializeComponent();
+    }
+    
+    // 加载DLL版本信息
+    public void LoadDllVersions()
+}
+```
+
+### SystemAppProvider
+
+Windows 系统应用提供者，提供常用系统工具的快捷访问。
+
+```csharp
+public class SystemAppProvider : IThirdPartyAppProvider
+{
+    // 获取系统应用列表
+    public List<ThirdPartyAppInfo> GetApps()
+    
+    // 内置系统工具:
+    // - 命令提示符
+    // - PowerShell
+    // - 控制面板
+    // - 注册表编辑器
+    // - 组策略编辑器
+    // - 系统信息
+    // - 远程桌面
+    // - 事件查看器
+    // - 任务计划程序
+    // - 服务管理
+    // - 网络连接
 }
 ```
 
 ## 使用示例
 
-### 添加下载任务
+### 1. 应用程序启动
 
 ```csharp
-// 通过 IDownloadService 接口下载文件
-var downloadService = AssemblyHandler.GetInstance()
-    .LoadImplementations<IDownloadService>().FirstOrDefault();
-
-if (downloadService != null)
+public partial class App : Application
 {
-    // 打开下载窗口
-    downloadService.ShowDownloadWindow();
-
-    // 添加下载任务（支持完成回调）
-    downloadService.Download(
-        "https://example.com/file.zip",
-        @"C:\Downloads",
-        authorization: null,
-        onCompleted: task =>
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        // 加载插件
+        PluginLoader.LoadPlugins();
+        
+        // 应用主题
+        this.ApplyTheme(ThemeConfig.Instance.Theme);
+        
+        // 检查是否首次运行
+        if (!WizardWindowConfig.Instance.WizardCompletionKey)
         {
-            Console.WriteLine($"下载完成: {task.FileName}");
-        });
+            // 显示配置向导
+            var wizard = new WizardWindow();
+            wizard.ShowDialog();
+            
+            if (!WizardWindowConfig.Instance.WizardCompletionKey)
+            {
+                Shutdown();
+                return;
+            }
+        }
+        
+        // 显示主窗口
+        var mainWindow = new MainWindow();
+        mainWindow.Show();
+        
+        base.OnStartup(e);
+    }
 }
 ```
 
-### 管理插件
+### 2. 菜单项配置
 
 ```csharp
-// 获取插件管理器
-var pluginManager = PluginManager.GetInstance();
+// 添加菜单项设置
+var config = MenuItemManagerConfig.Instance;
+config.Settings.Add(new MenuItemSetting
+{
+    Id = "menuFileOpen",
+    Header = "打开",
+    IsVisible = true,
+    Order = 1,
+    Hotkey = "Ctrl+O"
+});
 
-// 检查更新
-int updateCount = pluginManager.UpdateAvailableCount;
-
-// 批量更新
-pluginManager.UpdateAll();
-
-// 安装指定插件
-pluginManager.InstallPackage();
+// 保存配置
+ConfigHandler.GetInstance().SaveConfigs();
 ```
 
-### 自定义菜单
+### 3. 创建设置提供者
 
 ```csharp
-// 获取菜单管理服务
-var menuService = MenuItemManagerService.GetInstance();
-
-// 设置菜单项可见性
-menuService.SetMenuItemVisibility("menuItem1", false);
-
-// 设置快捷键
-menuService.SetMenuItemHotkey("menuItem1", "Ctrl+Shift+S");
-
-// 重建菜单
-menuService.RebuildMenu();
+public class MySettingProvider : IConfigSettingProvider
+{
+    public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+    {
+        return new List<ConfigSettingMetadata>
+        {
+            // TabItem 类型
+            new ConfigSettingMetadata
+            {
+                Type = ConfigSettingType.TabItem,
+                Name = "我的设置",
+                Order = 100,
+                UserControl = new MySettingsControl()
+            },
+            
+            // Class 类型
+            new ConfigSettingMetadata
+            {
+                Type = ConfigSettingType.Class,
+                Name = "高级设置",
+                Order = 200,
+                Source = MyConfig.Instance
+            },
+            
+            // Property 类型
+            new ConfigSettingMetadata
+            {
+                Type = ConfigSettingType.Property,
+                Name = "启用功能",
+                Group = "通用",
+                Order = 1,
+                Source = MyConfig.Instance,
+                BindingName = nameof(MyConfig.EnableFeature)
+            }
+        };
+    }
+}
 ```
 
-### 创建桌面快捷方式
+### 4. 创建向导步骤
+
+```csharp
+public class DatabaseWizardStep : IWizardStep
+{
+    public int Order => 1;
+    
+    public string Title => "数据库配置";
+    
+    public string Description => "配置数据库连接参数";
+    
+    // 配置状态
+    public bool ConfigurationStatus => MySQLConfig.Instance.TestConnection();
+    
+    // 步骤内容控件
+    public UserControl StepContent => new DatabaseConfigControl();
+    
+    public void Initialize()
+    {
+        // 初始化步骤
+    }
+    
+    public bool Validate()
+    {
+        // 验证配置
+        return MySQLConfig.Instance.TestConnection();
+    }
+}
+```
+
+### 5. 创建桌面快捷方式
 
 ```csharp
 // 创建桌面快捷方式
 ShortcutCreator.CreateShortcut(
     "ColorVision",
     Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-    Application.ResourceAssembly.Location,
-    "--startup");
+    Application.ResourceAssembly.Location.Replace(".dll", ".exe"),
+    "--startup"
+);
+```
+
+### 6. 使用系统应用提供者
+
+```csharp
+// 获取系统应用列表
+var provider = new SystemAppProvider();
+var apps = provider.GetApps();
+
+// 显示系统应用菜单
+foreach (var app in apps)
+{
+    Console.WriteLine($"{app.Name}: {app.ExecutablePath}");
+}
 ```
 
 ## 最佳实践
 
-### 1. 下载管理
-- 使用 `IDownloadService` 接口而非直接引用 `Aria2cDownloadManager`
-- 设置 `OnCompletedCallback` 处理下载完成后的逻辑
-- 通过 `DownloadManagerConfig` 配置并发数和速度限制
+### 1. 应用程序启动
+- 在 `OnStartup` 中按正确顺序初始化各子系统
+- 首先加载插件，然后应用主题
+- 首次运行时显示配置向导
+- 处理启动参数
 
-### 2. 插件管理
-- 插件程序集放置在 `Plugins/<Name>/` 目录下自动发现
-- 使用 `PluginManagerWindow` 查看插件详情和依赖关系
-- 定期检查插件更新以获取最新功能和修复
+### 2. 菜单定制
+- 使用 `MenuItemManagerConfig` 持久化菜单配置
+- 提供菜单配置的导入导出功能
+- 支持快捷键绑定
 
-### 3. 菜单定制
-- 使用 `MenuItemManagerService` 而非直接修改菜单结构
-- 快捷键格式示例: `"Ctrl+S"`, `"Ctrl+Shift+N"`, `"Alt+F4"`
-- 修改后调用 `RebuildMenu()` 刷新菜单
+### 3. 设置管理
+- 实现 `IConfigSettingProvider` 提供设置项
+- 合理使用三种设置类型（TabItem/Class/Property）
+- 设置项按逻辑分组
+- 提供设置项的排序
 
-### 4. 启动优化
-- `SystemInitializer` 的 `Order` 值为 8，确保在其他初始化步骤之后运行
-- 使用 `WizardWindow` 引导首次配置，避免启动时加载过多内容
-- 利用 `DownloadInitializer` 自动恢复未完成的下载
+### 4. 配置向导
+- 实现 `IWizardStep` 接口创建向导步骤
+- 设置合适的 `Order` 值控制步骤顺序
+- 提供配置验证
+- 显示配置进度
+
+### 5. 系统初始化
+- 设置合适的 `Order` 值确保初始化顺序
+- 记录必要的系统信息
+- 处理初始化失败的情况
+- 异步初始化避免阻塞UI
+
+### 6. 快捷方式
+- 验证目标路径存在
+- 提供图标设置
+- 支持命令行参数
+
+## 更新日志
+
+### v1.5.1.5 (2026-02)
+- ✅ 升级目标框架至 .NET 8.0 / .NET 10.0
+- ✅ 重构菜单项管理系统
+- ✅ 优化配置向导界面
+- ✅ 增强设置窗口功能
+- ✅ 改进系统初始化流程
+
+### v1.4.x
+- 停靠布局管理
+- 多图像查看器
+- 工作区管理
+
+### v1.3.x 及更早
+- 基础应用程序框架
+- 配置向导
+- 系统初始化
+
+## 相关资源
+
+- [ColorVision.UI 文档](./ColorVision.UI.md)
+- [ColorVision.Common 文档](./ColorVision.Common.md)
+- [开发者指南](../developer-guide/)
+- [配置管理指南](../getting-started/)

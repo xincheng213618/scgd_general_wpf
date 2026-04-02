@@ -78,6 +78,9 @@ namespace ColorVision.UI.Views
         /// </summary>
         public void ActiveView(Control control)
         {
+            if (LastActiveView == control)
+                return;
+
             if (!Views.Contains(control))
                 AddView(control);
             ActiveViewHandler?.Invoke(control);

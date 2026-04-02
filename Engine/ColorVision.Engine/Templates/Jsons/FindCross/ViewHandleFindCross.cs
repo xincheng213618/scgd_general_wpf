@@ -96,6 +96,8 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleFindCross));
 
+        public override string Name => "FindCross";
+
         public override List<ViewResultAlgType> CanHandle { get; } = new List<ViewResultAlgType>() { ViewResultAlgType.FindCross };
         public override bool CanHandle1(ViewResultAlg result)
         {
@@ -213,10 +215,11 @@ namespace ColorVision.Engine.Templates.Jsons.FindCross
                                 cricle.Attribute.Center = new Point(item.center.x,item.center.y);
                                 cricle.Attribute.Radius = 10;
                                 cricle.Attribute.Brush = Brushes.Red;
-                                cricle.Attribute.Pen = new Pen(Brushes.Red, 10);
+                                cricle.Attribute.Pen = new Pen(Brushes.Red, RenderConfig.PenThickness);
                                 cricle.Attribute.Id = id;
                                 cricle.Attribute.Text = id.ToString();
-                                cricle.Attribute.Msg =  $"({item.center.x},{item.center.y}){Environment.NewLine}xtilt:{item.tilt.tilt_x}{Environment.NewLine}ytilt:{item.tilt.tilt_y}{Environment.NewLine}rotation:{item.rotationAngle}"  ;
+                                cricle.Attribute.FontSize = RenderConfig.FontSize;
+                                cricle.Attribute.Msg =  $"({RenderConfig.FormatNumber(item.center.x)},{RenderConfig.FormatNumber(item.center.y)}){Environment.NewLine}xtilt:{RenderConfig.FormatNumber(item.tilt.tilt_x)}{Environment.NewLine}ytilt:{RenderConfig.FormatNumber(item.tilt.tilt_y)}{Environment.NewLine}rotation:{RenderConfig.FormatNumber(item.rotationAngle)}"  ;
                                 cricle.Render();
                                 view.ImageView.AddVisual(cricle);
                             }

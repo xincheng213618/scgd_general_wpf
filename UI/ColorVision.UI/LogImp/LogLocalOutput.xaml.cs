@@ -85,6 +85,9 @@ namespace ColorVision.UI.LogImp
                 _refreshTimer.Start();
                 EnableFileWatcher(true);
             }
+
+            _refreshTimer?.Stop();
+            EnableFileWatcher(false);
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)

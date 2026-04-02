@@ -94,12 +94,11 @@ namespace ColorVision.Engine.Templates.Flow
             set
             {
                 _IsFlowRun = value;
-                Application.Current.Dispatcher.Invoke(() => OnPropertyChanged());
+                Application.Current?.Dispatcher.Invoke(() => OnPropertyChanged());
             }
         }
         public void Stop()
         {
-            FlowCompleted = null;
             flowEngine.Finished -= FinishedAsync;
             if (!string.IsNullOrWhiteSpace(SerialNumber))
             {

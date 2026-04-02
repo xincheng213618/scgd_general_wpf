@@ -51,7 +51,8 @@ namespace ColorVision.Engine.Templates
         public TemplateControl()
         {
             Init();
-            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Init();
+            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) =>
+                Application.Current.Dispatcher.Invoke(() => Init());
         }
 
         private static async void Init()

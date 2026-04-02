@@ -1,15 +1,17 @@
 import os
 import zipfile
 import shutil
-import filecmp
-import re
 import json
+import tempfile
 
 import pefile
-import time
 import argparse
 
+from file_manager import FileManager
+
 EXTRA_FILES = ["README.md", "CHANGELOG.md", "manifest.json","PackageIcon.png"]
+
+FILE_MANAGER = FileManager()
 
 def get_file_version(file_path):
     """获取可执行文件的版本信息"""
@@ -103,53 +105,20 @@ def compare_and_zip(src_dir, ref_dir, output_zip, project_name, base_path, type_
 
     shutil.rmtree(temp_dir)
 
-def copy_with_progress(src, dst):
-    if os.path.isdir(dst):
-        dst = os.path.join(dst, os.path.basename(src))
-    file_size = os.path.getsize(src)
-    copied = 0
-    chunk_size = 1024 * 1024
+def upload_file_http(file_path, folder):
+    """通过 HTTP PUT 上传文件到服务器。"""
+    return FILE_MANAGER.upload_file(file_path, folder)
 
-    with open(src, 'rb') as fsrc, open(dst, 'wb') as fdst:
-        start_time = time.time()
-        while True:
-            chunk = fsrc.read(chunk_size)
-            if not chunk:
-                break
-            fdst.write(chunk)
-            copied += len(chunk)
-
-            elapsed_time = time.time() - start_time
-            speed = copied / elapsed_time if elapsed_time > 0 else 0
-            progress = copied / file_size * 100
-            remaining_bytes = file_size - copied
-            remaining_time = remaining_bytes / speed if speed > 0 else 0
-            remaining_time_hms = time.strftime('%H:%M:%S', time.gmtime(remaining_time))
-            print(f"\rCopied {copied / (1024 * 1024):.2f} MB of {file_size / (1024 * 1024):.2f} MB "
-                  f"({progress:.2f}%) at {speed / (1024 * 1024):.2f} MB/s, "
-                  f"remaining time {remaining_time_hms}", end='')
-        print()
-
-def version_tuple(version_string):
-    return tuple(map(int, version_string.split('.')))
-
-def compare_and_write_version(latest_version, latest_release_path, latest_file, target_directory):
+def upload_latest_release(version, folder):
+    """生成临时 LATEST_RELEASE 文件并上传到服务器。"""
+    tmp_dir = tempfile.mkdtemp()
     try:
-        with open(latest_release_path, 'r') as file:
-            current_version = file.read().strip()
-    except FileNotFoundError:
-        current_version = '0.0.0.0'
-    if version_tuple(latest_version) >= version_tuple(current_version):
-        with open(latest_release_path, 'w') as file:
-            file.write(latest_version)
-        print(f"Updated the release version to {latest_version}")
-        try:
-            copy_with_progress(latest_file, target_directory)
-            print(f"Copied {latest_file} to {target_directory}")
-        except IOError as e:
-            print(f"Could not copy file to {target_directory}: {e}")
-    else:
-        print(f"The current version ({current_version}) is up to date.")
+        release_file = os.path.join(tmp_dir, "LATEST_RELEASE")
+        with open(release_file, "w", encoding="utf-8") as f:
+            f.write(version)
+        return upload_file_http(release_file, folder)
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
         
 def update_manifest_requires(manifest_path, required_version):
     """Updates the 'requires' field in the manifest.json file."""
@@ -176,7 +145,6 @@ def build_project(project_name, type_name):
     print("1" +type_name)
     src_dir = os.path.join(base_path, type_name, project_name, 'bin', 'x64', 'Release', 'net10.0-windows')
     ref_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net10.0-windows')
-    target_dir = os.path.join("H:\\", 'ColorVision', 'Plugins')
     
         # --- Start: Update manifest.json ---
     # 1. Get version from ColorVision.Engine.dll
@@ -205,12 +173,10 @@ def build_project(project_name, type_name):
     # 执行比较和打包
     compare_and_zip(src_dir, ref_dir, output_zip, project_name, base_path, type_name)
 
-    # 定义目标目录和版本文件路径
-    project_target_dir = os.path.join(target_dir, project_name)
-    latest_release_path = os.path.join(project_target_dir, 'LATEST_RELEASE')
-    # 创建目标目录（如果不存在）
-    os.makedirs(project_target_dir, exist_ok=True)
-    compare_and_write_version(version, latest_release_path, output_zip, project_target_dir)
+    # 上传到服务器
+    plugin_folder = f"Plugins/{project_name}"
+    upload_file_http(output_zip, plugin_folder)
+    upload_latest_release(version, plugin_folder)
     print(f'打包完成: {output_zip}')
     os.remove(output_zip)
     print(f'删除: {output_zip}')

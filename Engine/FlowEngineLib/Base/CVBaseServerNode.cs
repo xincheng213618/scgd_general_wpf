@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.MQTT;
@@ -32,7 +34,7 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected STNodeOption m_in_act_status;
 
-	protected Dictionary<string, CVTransAction> m_trans_action;
+	protected ConcurrentDictionary<string, CVTransAction> m_trans_action;
 
 	protected bool m_is_out_release;
 
@@ -172,7 +174,7 @@ public class CVBaseServerNode : CVCommonNode
 		}
 		m_in_start.Connected += m_in_op_Connected;
 		m_in_start.DataTransfer += m_in_start_DataTransfer;
-		m_trans_action = new Dictionary<string, CVTransAction>();
+		m_trans_action = new ConcurrentDictionary<string, CVTransAction>();
 	}
 
 	public STNodeEditText<string> CreateTempControl(Rectangle rect, string text = "模板:")
@@ -287,13 +289,12 @@ public class CVBaseServerNode : CVCommonNode
 
 	private CVTransAction RemoveTrans(string serialNumber, string svrEventId)
 	{
-		if (m_trans_action.ContainsKey(serialNumber))
+		if (m_trans_action.TryGetValue(serialNumber, out var cVTransAction))
 		{
-			CVTransAction cVTransAction = m_trans_action[serialNumber];
 			if (cVTransAction.m_sever_actionEvent.ContainsKey(svrEventId))
 			{
 				logger.DebugFormat("[{0}]RemoveTrans => {1}/{2}", ToShortString(), serialNumber, svrEventId);
-				m_trans_action.Remove(serialNumber);
+				m_trans_action.TryRemove(serialNumber, out _);
 				return cVTransAction;
 			}
 		}
@@ -358,15 +359,14 @@ public class CVBaseServerNode : CVCommonNode
 	protected void DoTransferToServer(CVStartCFC action, STNodeOptionEventArgs e)
 	{
 		CVTransAction cVTransAction = null;
-		if (m_trans_action.ContainsKey(action.SerialNumber))
+		if (m_trans_action.TryGetValue(action.SerialNumber, out cVTransAction))
 		{
-			cVTransAction = m_trans_action[action.SerialNumber];
 			cVTransAction.trans_action = action;
 		}
 		else if (action.IsRunning)
 		{
 			cVTransAction = new CVTransAction(action);
-			m_trans_action.Add(action.SerialNumber, cVTransAction);
+			m_trans_action.TryAdd(action.SerialNumber, cVTransAction);
 		}
 		if (cVTransAction != null)
 		{
@@ -478,9 +478,8 @@ public class CVBaseServerNode : CVCommonNode
 
 	private CVTransAction GetCVTransByEvent(string serialNumber, string eventName)
 	{
-		if (!string.IsNullOrEmpty(serialNumber) && m_trans_action.ContainsKey(serialNumber))
+		if (!string.IsNullOrEmpty(serialNumber) && m_trans_action.TryGetValue(serialNumber, out var result))
 		{
-			CVTransAction result = m_trans_action[serialNumber];
 			if (string.IsNullOrEmpty(eventName))
 			{
 				return result;
@@ -610,9 +609,9 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected bool HasTransAction(string serialNumber, ref CVTransAction trans)
 	{
-		if (m_trans_action.ContainsKey(serialNumber))
+		if (m_trans_action.TryGetValue(serialNumber, out var found))
 		{
-			trans = m_trans_action[serialNumber];
+			trans = found;
 			return true;
 		}
 		return false;
@@ -660,15 +659,13 @@ public class CVBaseServerNode : CVCommonNode
 
 	protected virtual void release(string serialNumber)
 	{
-		CVTransAction cVTransAction = null;
-		if (m_trans_action.ContainsKey(serialNumber))
+		m_trans_action.TryRemove(serialNumber, out var cVTransAction);
+		if (cVTransAction != null)
 		{
-			cVTransAction = m_trans_action[serialNumber];
 			if (logger.IsDebugEnabled)
 			{
 				logger.DebugFormat("{0} release => {1}", ToShortString(), cVTransAction.trans_action.SerialNumber);
 			}
-			m_trans_action.Remove(serialNumber);
 		}
 		if (m_op_svr_out_act != null)
 		{
@@ -749,7 +746,7 @@ public class CVBaseServerNode : CVCommonNode
 		if (m_is_out_release)
 		{
 			logger.DebugFormat("[{0}]Remove request => {1}/{2}", ToShortString(), trans.trans_action.SerialNumber, cmd.cmd.MsgID);
-			m_trans_action.Remove(trans.trans_action.SerialNumber);
+			m_trans_action.TryRemove(trans.trans_action.SerialNumber, out _);
 		}
 		else
 		{
@@ -761,12 +758,12 @@ public class CVBaseServerNode : CVCommonNode
 		});
 	}
 
-	private void DoNodeCompleted(CVTransAction trans, CVBaseEventCmd cmd)
+	private async void DoNodeCompleted(CVTransAction trans, CVBaseEventCmd cmd)
 	{
 		CVServerResponse resp = cmd.resp;
 		if (_MinTime > 0 && resp.Status == ActionStatusEnum.Finish)
 		{
-			new LockFreeMessageWaiter().WaitForMessage(_MinTime);
+			await Task.Delay(_MinTime);
 		}
 		DoTransNodeEndOut(trans, cmd);
 		if (m_op_svr_out_act != null)
