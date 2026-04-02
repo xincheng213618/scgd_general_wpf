@@ -21,6 +21,11 @@ namespace ColorVision.Solution.Terminal
         private bool _isShellRunning;
         private string _currentShell = "powershell";
 
+        // Input tracking for command history
+        private readonly CommandHistory _commandHistory = new();
+        private StringBuilder _currentInput = new();
+        private int _inputCursorPos;
+
         public TerminalControl()
         {
             InitializeComponent();
@@ -248,16 +253,64 @@ namespace ColorVision.Solution.Terminal
             return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         }
 
+        #region Input Tracking & History
+
+        private void ResetInputTracking()
+        {
+            _currentInput.Clear();
+            _inputCursorPos = 0;
+            _commandHistory.ResetNavigation();
+        }
+
+        /// <summary>
+        /// Detect shell context (python/node/shell) from the current prompt line
+        /// and update the command history context accordingly.
+        /// </summary>
+        private void UpdateHistoryContext()
+        {
+            string promptLine = _screenBuffer.GetCurrentLineText();
+            _commandHistory.DetectContext(promptLine);
+        }
+
+        /// <summary>
+        /// Erase the current input on the ConPTY side and type a replacement.
+        /// Moves cursor to end, backspaces all, then types newText.
+        /// </summary>
+        private void ReplaceCurrentInput(string newText)
+        {
+            if (_terminal == null) return;
+
+            var sb = new StringBuilder();
+            // Move cursor to end of current input
+            int movesRight = _currentInput.Length - _inputCursorPos;
+            for (int i = 0; i < movesRight; i++)
+                sb.Append("\x1b[C");
+            // Backspace all characters
+            for (int i = 0; i < _currentInput.Length; i++)
+                sb.Append("\x7f");
+            // Type the new text
+            sb.Append(newText);
+            _terminal.Write(sb.ToString());
+
+            _currentInput.Clear();
+            _currentInput.Append(newText);
+            _inputCursorPos = newText.Length;
+        }
+
+        #endregion
+
         #region UI Event Handlers
 
         /// <summary>
-        /// Forward printable text input directly to ConPTY.
+        /// Forward printable text input directly to ConPTY and track it.
         /// </summary>
         private void OutputTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             if (_terminal != null && _isShellRunning && !string.IsNullOrEmpty(e.Text))
             {
                 _terminal.Write(e.Text);
+                _currentInput.Insert(_inputCursorPos, e.Text);
+                _inputCursorPos += e.Text.Length;
                 e.Handled = true;
             }
         }
@@ -267,23 +320,26 @@ namespace ColorVision.Solution.Terminal
             if (_terminal != null && _isShellRunning && !string.IsNullOrEmpty(e.Text))
             {
                 _terminal.Write(e.Text);
+                _currentInput.Insert(_inputCursorPos, e.Text);
+                _inputCursorPos += e.Text.Length;
                 e.Handled = true;
             }
         }
 
         /// <summary>
-        /// Handle special keys: Enter, Backspace, Tab, arrows, Ctrl+C, Ctrl+L, etc.
+        /// Handle special keys: Enter, Backspace, Tab, arrows, Ctrl+C, Ctrl+L, history nav, etc.
         /// </summary>
         private void OutputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (_terminal == null || !_isShellRunning) return;
 
+            // --- Ctrl combos ---
             if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control)
             {
-                // If text selected, let default copy work; otherwise send Ctrl+C to shell
                 if (string.IsNullOrEmpty(OutputTextBox.SelectedText))
                 {
                     _terminal.Write("\x03");
+                    ResetInputTracking();
                     e.Handled = true;
                 }
                 return;
@@ -293,7 +349,10 @@ namespace ColorVision.Solution.Terminal
             {
                 if (Clipboard.ContainsText())
                 {
-                    _terminal.Write(Clipboard.GetText());
+                    var text = Clipboard.GetText();
+                    _terminal.Write(text);
+                    _currentInput.Insert(_inputCursorPos, text);
+                    _inputCursorPos += text.Length;
                     e.Handled = true;
                 }
                 return;
@@ -302,12 +361,130 @@ namespace ColorVision.Solution.Terminal
             if (e.Key == Key.L && Keyboard.Modifiers == ModifierKeys.Control)
             {
                 ClearOutput();
-                _terminal.Write("\x0C"); // form feed
+                _terminal.Write("\x0C");
                 e.Handled = true;
                 return;
             }
 
-            string? seq = KeyToVTSequence(e.Key, Keyboard.Modifiers);
+            // --- History navigation: Up / Down ---
+            if (e.Key == Key.Up && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                UpdateHistoryContext();
+                var entry = _commandHistory.NavigateUp(_currentInput.ToString());
+                if (entry != null)
+                    ReplaceCurrentInput(entry);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Down && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                UpdateHistoryContext();
+                var entry = _commandHistory.NavigateDown();
+                if (entry != null)
+                    ReplaceCurrentInput(entry);
+                e.Handled = true;
+                return;
+            }
+
+            // --- Enter: execute and save to history ---
+            if (e.Key == Key.Enter)
+            {
+                var cmd = _currentInput.ToString();
+                UpdateHistoryContext();
+                _commandHistory.Add(cmd);
+                _terminal.Write("\r");
+                ResetInputTracking();
+                e.Handled = true;
+                return;
+            }
+
+            // --- Space ---
+            if (e.Key == Key.Space)
+            {
+                _terminal.Write(" ");
+                _currentInput.Insert(_inputCursorPos, ' ');
+                _inputCursorPos++;
+                e.Handled = true;
+                return;
+            }
+
+            // --- Backspace ---
+            if (e.Key == Key.Back)
+            {
+                _terminal.Write("\x7f");
+                if (_inputCursorPos > 0)
+                {
+                    _inputCursorPos--;
+                    _currentInput.Remove(_inputCursorPos, 1);
+                }
+                e.Handled = true;
+                return;
+            }
+
+            // --- Delete ---
+            if (e.Key == Key.Delete)
+            {
+                _terminal.Write("\x1b[3~");
+                if (_inputCursorPos < _currentInput.Length)
+                    _currentInput.Remove(_inputCursorPos, 1);
+                e.Handled = true;
+                return;
+            }
+
+            // --- Cursor movement (track position) ---
+            if (e.Key == Key.Left && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                _terminal.Write("\x1b[D");
+                if (_inputCursorPos > 0) _inputCursorPos--;
+                e.Handled = true;
+                return;
+            }
+            if (e.Key == Key.Right && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                _terminal.Write("\x1b[C");
+                if (_inputCursorPos < _currentInput.Length) _inputCursorPos++;
+                e.Handled = true;
+                return;
+            }
+            if (e.Key == Key.Home && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                _terminal.Write("\x1b[H");
+                _inputCursorPos = 0;
+                e.Handled = true;
+                return;
+            }
+            if (e.Key == Key.End && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                _terminal.Write("\x1b[F");
+                _inputCursorPos = _currentInput.Length;
+                e.Handled = true;
+                return;
+            }
+
+            // --- Other special keys: Tab, Escape, function keys, etc. ---
+            if (e.Key == Key.Tab)
+            {
+                _terminal.Write("\t");
+                // Tab completion changes input unpredictably; reset tracking
+                ResetInputTracking();
+                e.Handled = true;
+                return;
+            }
+
+            // Ctrl + letter (except C, V, L already handled above)
+            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key >= Key.A && e.Key <= Key.Z)
+            {
+                char c = (char)(e.Key - Key.A + 1);
+                _terminal.Write(c.ToString());
+                if (e.Key == Key.U) // Ctrl+U clears line
+                    ResetInputTracking();
+                e.Handled = true;
+                return;
+            }
+
+            // Remaining keys via VT sequence mapping
+            string? seq = KeyToVTSequence(e.Key);
             if (seq != null)
             {
                 _terminal.Write(seq);
@@ -317,7 +494,6 @@ namespace ColorVision.Solution.Terminal
 
         private void TerminalScrollViewer_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            // Let the OutputTextBox handle it if focused
             if (OutputTextBox.IsFocused) return;
 
             if (_terminal == null || !_isShellRunning) return;
@@ -326,49 +502,29 @@ namespace ColorVision.Solution.Terminal
             {
                 if (Clipboard.ContainsText())
                 {
-                    _terminal.Write(Clipboard.GetText());
+                    var text = Clipboard.GetText();
+                    _terminal.Write(text);
+                    _currentInput.Insert(_inputCursorPos, text);
+                    _inputCursorPos += text.Length;
                     e.Handled = true;
                 }
                 return;
             }
 
-            string? seq = KeyToVTSequence(e.Key, Keyboard.Modifiers);
-            if (seq != null)
-            {
-                _terminal.Write(seq);
-                e.Handled = true;
-            }
+            // Redirect to OutputTextBox for consistent handling
+            OutputTextBox.Focus();
         }
 
         /// <summary>
-        /// Map WPF key events to VT100/xterm escape sequences for ConPTY.
+        /// Map remaining special keys to VT100 sequences (non-input keys only).
+        /// Keys handled explicitly in PreviewKeyDown are not included here.
         /// </summary>
-        private static string? KeyToVTSequence(Key key, ModifierKeys modifiers)
+        private static string? KeyToVTSequence(Key key)
         {
-            bool ctrl = modifiers.HasFlag(ModifierKeys.Control);
-
-            // Ctrl + letter → send control character
-            if (ctrl && key >= Key.A && key <= Key.Z)
-            {
-                char c = (char)(key - Key.A + 1);
-                return c.ToString();
-            }
-
             return key switch
             {
-                Key.Enter => "\r",
-                Key.Space => " ",
-                Key.Back => "\x7f",
-                Key.Tab => "\t",
                 Key.Escape => "\x1b",
-                Key.Up => "\x1b[A",
-                Key.Down => "\x1b[B",
-                Key.Right => "\x1b[C",
-                Key.Left => "\x1b[D",
-                Key.Home => "\x1b[H",
-                Key.End => "\x1b[F",
                 Key.Insert => "\x1b[2~",
-                Key.Delete => "\x1b[3~",
                 Key.PageUp => "\x1b[5~",
                 Key.PageDown => "\x1b[6~",
                 Key.F1 => "\x1bOP",

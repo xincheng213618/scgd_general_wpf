@@ -391,6 +391,15 @@ namespace ColorVision.Solution.Terminal
             return offset;
         }
 
+        /// <summary>
+        /// Get the text content of the current cursor line (trimmed of trailing spaces).
+        /// Useful for prompt detection (e.g., ">>> " for Python, "PS C:\> " for PowerShell).
+        /// </summary>
+        public string GetCurrentLineText()
+        {
+            return LineTrimEnd(_screen[_curRow]);
+        }
+
         public void Clear()
         {
             _scrollbackLines.Clear();

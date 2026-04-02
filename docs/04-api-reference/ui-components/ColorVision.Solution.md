@@ -10,8 +10,9 @@
 7. [编辑器系统](#编辑器系统)
 8. [权限控制](#权限控制)
 9. [多图像查看器](#多图像查看器)
-10. [使用示例](#使用示例)
-11. [最佳实践](#最佳实践)
+10. [终端集成](#终端集成)
+11. [使用示例](#使用示例)
+12. [最佳实践](#最佳实践)
 
 ## 概述
 
@@ -199,31 +200,38 @@ graph TD
     A --> E[权限控制层]
     A --> F[多图像查看器]
     A --> G[工作区停靠管理]
-    
+    A --> H[终端集成]
+
     B --> B1[SolutionManager]
     B --> B2[WorkspaceManager]
     B --> B3[RecentFileList]
-    
+
     C --> C1[VObject]
     C --> C2[VFolder]
     C --> C3[VFile]
     C --> C4[TreeViewControl]
-    
+
     D --> D1[EditorManager]
     D --> D2[TextEditor]
     D --> D3[ImageEditor]
     D --> D4[AvalonEdit]
-    
+
     E --> E1[RbacManager]
     E --> E2[AuthService]
     E --> E3[PermissionService]
-    
+
     F --> F1[MultiImageViewer]
     F --> F2[ThumbnailCacheManager]
-    
+
     G --> G1[DockLayoutManager]
     G --> G2[DockViewManagerHost]
     G --> G3[LayoutMenuItems]
+
+    H --> H1[TerminalControl]
+    H --> H2[ConPtyTerminal]
+    H --> H3[TerminalScreenBuffer]
+    H --> H4[CommandHistory]
+    H --> H5[TerminalService]
 ```
 
 ## 主要组件
@@ -482,6 +490,102 @@ await ThumbnailCacheManager.Instance.PreloadFolderAsync(folderPath);
 // 清除缓存
 ThumbnailCacheManager.Instance.ClearCache();
 ```
+
+## 终端集成
+
+> 用户使用指南：[终端面板](../../01-user-guide/interface/terminal.md)
+
+`ColorVision.Solution` 内置了基于 Windows **ConPTY（Pseudo Console）API** 的交互式终端，位于 `Terminal/` 子目录下。
+
+### 目录结构
+
+```
+Terminal/
+├── ConPtyTerminal.cs        # Win32 ConPTY 封装
+├── TerminalScreenBuffer.cs  # VT100 屏幕缓冲区
+├── TerminalControl.xaml     # WPF 终端控件
+├── TerminalControl.xaml.cs
+└── TerminalService.cs       # 单例服务 + 停靠面板注册
+```
+
+### 核心类
+
+#### `ConPtyTerminal`
+
+封装 Windows ConPTY API（`kernel32.dll`），提供真实 PTY 环境。
+
+```csharp
+internal sealed class ConPtyTerminal : IDisposable
+{
+    public bool IsRunning { get; }
+    public event Action<string>? OutputReceived;  // 后台线程触发
+    public event Action<int>?   ProcessExited;    // 后台线程触发
+
+    public void Start(string commandLine, string workingDirectory,
+                      short cols = 120, short rows = 30);
+    public void Write(string text);   // 向 Shell stdin 写入
+    public void Resize(short cols, short rows);
+    public void Kill();
+}
+```
+
+#### `TerminalScreenBuffer`
+
+VT100/xterm 兼容屏幕缓冲区，解析转义序列后维护字符矩阵（默认 120×30，3000 行历史）。
+
+```csharp
+internal class TerminalScreenBuffer
+{
+    public void   Write(string text);      // 写入原始 ConPTY 输出
+    public string Render();                // 渲染为字符串（历史 + 视口）
+    public int    GetCursorOffset();       // 光标在渲染字符串中的偏移
+    public void   Clear();
+}
+```
+
+**支持的转义序列**：CSI 光标移动（A/B/C/D/E/F/G/H/f/d）、CSI 擦除（J/K）、CSI 编辑（P/@/X/L/M）、OSC（跳过）、SGR 颜色（解析但忽略）。
+
+#### `TerminalService`
+
+对外单例服务：
+
+```csharp
+public class TerminalService
+{
+    public static TerminalService GetInstance();
+    public void RunScript(string filePath);    // 运行脚本并激活面板
+    public void SendCommand(string command);   // 发送命令到 Shell
+}
+```
+
+#### `CommandHistory`
+
+持久化命令历史管理，保存到 `%AppData%\ColorVision\terminal_history.txt`。
+
+```csharp
+internal class CommandHistory
+{
+    public CommandHistory();
+    public void Add(string command);           // 添加命令（去重、持久化）
+    public string? NavigateUp(string currentInput);   // 上一条历史
+    public string? NavigateDown();             // 下一条历史
+    public void ResetNavigation();
+}
+```
+
+**注意**：当前 `CommandHistory` 类已实例化但未与 UI 集成（历史导航由 Shell 的 PSReadLine 处理）。
+
+#### `TerminalPanelProvider`
+
+实现 `IDockPanelProvider`，程序集扫描时自动注册为底部停靠面板（`PanelId = "TerminalPanel"`，`Order = 50`）。
+
+### 输出刷新策略
+
+后台线程收到输出后入队，UI 线程通过 30ms `DispatcherTimer` 批量合并后写入 `TerminalScreenBuffer` 并刷新 `TextBox`，避免高频输出阻塞 UI。
+
+### 系统要求
+
+Windows 10 1809（Build 17763）以上，依赖 `kernel32.dll` 中的 `CreatePseudoConsole` 等 API。
 
 ## 使用示例
 

@@ -24,7 +24,7 @@
 - **插件系统** - 支持插件动态加载和管理
 - **最近文件** - 记录和管理最近打开的解决方案
 - **文件监控** - 实时监控文件系统变化并自动更新视图
-- **终端集成** - 内置终端管理窗口
+- **终端集成** - 内置基于 ConPTY 的交互式终端，支持 PowerShell/CMD 和脚本运行
 
 ### 新增功能 (v1.5+)
 - **多图像查看器** (`MultiImageViewer`) - 支持文件夹内多张图片的预览和缩略图缓存
@@ -118,12 +118,52 @@ ColorVision.Solution/
 │   ├── WorkspaceManager.cs     # 工作区管理器
 │   ├── WorkspaceMainView       # 工作区主视图
 │   └── SoloutionEditorControl  # 解决方案编辑控件
+├── Terminal/                   # 内置终端 (v1.5+)
+│   ├── ConPtyTerminal.cs       # Windows ConPTY API 封装
+│   ├── TerminalScreenBuffer.cs # VT100 屏幕缓冲区解析
+│   ├── CommandHistory.cs       # 持久化命令历史管理
+│   ├── TerminalControl.xaml    # 终端 UI 控件
+│   └── TerminalService.cs      # 终端单例服务 + 停靠面板注册
 ├── TreeViewControl             # 树视图控件
 ├── SolutionManager             # 解决方案管理器
 ├── NewCreatWindow              # 新建解决方案窗口
 ├── OpenSolutionWindow          # 打开解决方案窗口
 └── MarkdownViewWindow          # Markdown查看窗口
 ```
+
+## 终端集成 (Terminal)
+
+基于 Windows **ConPTY（Pseudo Console）** API 实现的内置交互式终端，要求 Windows 10 1809+。
+
+### 组件职责
+
+| 类 | 职责 |
+|----|------|
+| `ConPtyTerminal` | Win32 ConPTY 封装：管道创建、进程启动、读线程、Resize/Kill |
+| `TerminalScreenBuffer` | VT100/xterm 屏幕缓冲区：解析 CSI/OSC 转义序列，维护光标位置和滚动历史（3000行） |
+| `CommandHistory` | 持久化命令历史：保存到 `%AppData%\ColorVision\terminal_history.txt`，最大 1000 条 |
+| `TerminalControl` | WPF UserControl：键盘映射（VT序列）、输出批量刷新（30ms Timer）、滚动控制 |
+| `TerminalService` | 单例服务：对外暴露 `RunScript()` / `SendCommand()` API |
+| `TerminalPanelProvider` | `IDockPanelProvider` 实现，自动注册为工作区底部停靠面板 |
+
+### 快速使用
+
+```csharp
+// 在终端中运行脚本文件
+TerminalService.GetInstance().RunScript(@"C:\Projects\train.py");
+
+// 发送任意命令
+TerminalService.GetInstance().SendCommand("git status");
+```
+
+### 当前限制与优化方向
+
+- **无动态尺寸调整**：终端固定 120×30，PSReadLine 换行可能错位；应监听 `SizeChanged` 调用 `ConPtyTerminal.Resize()`
+- **无颜色渲染**：SGR 颜色序列被忽略，文本单色显示；可改用 `FlowDocument` 支持彩色
+- **单会话**："+ 新终端"会终止当前会话；可扩展为多标签页
+- **CommandHistory 未使用**：历史导航由 Shell 处理，`CommandHistory` 类目前未被 UI 调用
+
+> 详细文档：[终端面板用户指南](../../docs/01-user-guide/interface/terminal.md)
 
 ## 与主程序的依赖关系
 
