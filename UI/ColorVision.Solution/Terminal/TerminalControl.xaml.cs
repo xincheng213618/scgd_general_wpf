@@ -1,11 +1,10 @@
 using log4net;
-using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace ColorVision.Solution.Terminal
 {
@@ -13,116 +12,71 @@ namespace ColorVision.Solution.Terminal
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(TerminalControl));
 
-        private Process? _shellProcess;
-        private StreamWriter? _shellInput;
-        private readonly StringBuilder _outputBuffer = new();
+        private ConPtyTerminal? _terminal;
+        private TerminalScreenBuffer _screenBuffer = new();
+        private string _lastRendered = "";
         private readonly object _outputLock = new();
-        private readonly List<string> _commandHistory = new();
-        private int _historyIndex = -1;
+        private readonly Queue<string> _pendingOutput = new();
+        private DispatcherTimer? _flushTimer;
         private bool _isShellRunning;
         private string _currentShell = "powershell";
-
-        private const int MaxOutputLength = 500_000;
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool GenerateConsoleCtrlEvent(uint dwCtrlEvent, uint dwProcessGroupId);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool AttachConsole(uint dwProcessId);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool FreeConsole();
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool SetConsoleCtrlHandler(IntPtr handlerRoutine, bool add);
-        private const uint CTRL_C_EVENT = 0;
 
         public TerminalControl()
         {
             InitializeComponent();
+            _flushTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+            _flushTimer.Tick += FlushOutput;
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             if (!_isShellRunning)
                 StartShell();
-            InputTextBox.Focus();
+            OutputTextBox.Focus();
         }
 
         public void StartShell(string? workingDirectory = null)
         {
             KillShell();
             ClearOutput();
+            _screenBuffer = new TerminalScreenBuffer();
+            _lastRendered = "";
 
             workingDirectory ??= GetDefaultWorkingDirectory();
 
-            string shellExe;
-            string shellArgs;
-
+            string commandLine;
             if (_currentShell == "cmd")
-            {
-                shellExe = "cmd.exe";
-                shellArgs = "";
-            }
+                commandLine = "cmd.exe";
             else
-            {
-                shellExe = "powershell.exe";
-                shellArgs = "-NoLogo -NoExit";
-            }
+                commandLine = "powershell.exe -NoLogo -NoExit";
 
             try
             {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = shellExe,
-                    Arguments = shellArgs,
-                    WorkingDirectory = workingDirectory,
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    RedirectStandardInput = true,
-                    StandardOutputEncoding = Encoding.UTF8,
-                    StandardErrorEncoding = Encoding.UTF8,
-                };
-
-                _shellProcess = new Process { StartInfo = psi, EnableRaisingEvents = true };
-                _shellProcess.OutputDataReceived += OnOutputDataReceived;
-                _shellProcess.ErrorDataReceived += OnErrorDataReceived;
-                _shellProcess.Exited += OnProcessExited;
-
-                _shellProcess.Start();
-                _shellProcess.BeginOutputReadLine();
-                _shellProcess.BeginErrorReadLine();
-
-                _shellInput = _shellProcess.StandardInput;
-                _shellInput.AutoFlush = true;
+                _terminal = new ConPtyTerminal();
+                _terminal.OutputReceived += OnConPtyOutput;
+                _terminal.ProcessExited += OnConPtyExited;
+                _terminal.Start(commandLine, workingDirectory);
                 _isShellRunning = true;
 
-                // Force shell to use UTF-8 output encoding
-                if (_currentShell == "cmd")
-                    _shellInput.WriteLine("chcp 65001 >nul");
-                else
-                    _shellInput.WriteLine("[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $OutputEncoding = [System.Text.Encoding]::UTF8");
-
-                UpdatePrompt(workingDirectory);
-
-                log.Info($"Terminal: shell started ({shellExe}) in {workingDirectory}");
+                log.Info($"Terminal: ConPTY started ({commandLine}) in {workingDirectory}");
             }
             catch (Exception ex)
             {
                 AppendOutput($"启动终端失败: {ex.Message}\r\n");
-                log.Error("Terminal: failed to start shell", ex);
+                log.Error("Terminal: failed to start ConPTY shell", ex);
             }
         }
 
         public void SendCommand(string command)
         {
-            if (!_isShellRunning || _shellInput == null)
+            if (!_isShellRunning || _terminal == null)
             {
                 StartShell();
                 Task.Delay(500).ContinueWith(_ =>
-                    Dispatcher.BeginInvoke(() => WriteToShell(command)));
+                    Dispatcher.BeginInvoke(() => _terminal?.Write(command + "\r\n")));
                 return;
             }
-            WriteToShell(command);
+            _terminal.Write(command + "\r\n");
         }
 
         public void RunScript(string filePath)
@@ -167,133 +121,123 @@ namespace ColorVision.Solution.Terminal
 
         public void SendCtrlC()
         {
-            if (_shellProcess == null || _shellProcess.HasExited) return;
+            _terminal?.Write("\x03");
+        }
 
-            uint pid = (uint)_shellProcess.Id;
-            Task.Run(() =>
+        private void OnConPtyOutput(string text)
+        {
+            // Queue raw VT100 output for processing by TerminalScreenBuffer
+            lock (_outputLock)
             {
-                try
-                {
-                    // Detach from any previous console first
-                    FreeConsole();
-                    if (AttachConsole(pid))
-                    {
-                        SetConsoleCtrlHandler(IntPtr.Zero, true);
-                        GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
-                        Thread.Sleep(200);
-                        FreeConsole();
-                        SetConsoleCtrlHandler(IntPtr.Zero, false);
-                    }
-                    else
-                    {
-                        _shellInput?.Write('\x03');
-                        _shellInput?.Flush();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log.Warn($"Terminal: Ctrl+C failed: {ex.Message}");
-                    try { _shellInput?.Write('\x03'); _shellInput?.Flush(); } catch { }
-                }
+                _pendingOutput.Enqueue(text);
+            }
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (_flushTimer != null && !_flushTimer.IsEnabled)
+                    _flushTimer.Start();
             });
         }
 
-        private void WriteToShell(string command)
-        {
-            if (_shellInput == null) return;
-            try
-            {
-                _shellInput.WriteLine(command);
-            }
-            catch (Exception ex)
-            {
-                AppendOutput($"发送命令失败: {ex.Message}\r\n");
-            }
-        }
-
-        private void OnOutputDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            if (e.Data != null)
-                AppendOutput(e.Data + Environment.NewLine);
-        }
-
-        private void OnErrorDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            if (e.Data != null)
-                AppendOutput(e.Data + Environment.NewLine);
-        }
-
-        private void OnProcessExited(object? sender, EventArgs e)
+        private void OnConPtyExited(int exitCode)
         {
             _isShellRunning = false;
-            int exitCode = 0;
-            try { exitCode = _shellProcess?.ExitCode ?? -1; } catch { }
-            AppendOutput($"\r\n[终端已退出, 退出代码: {exitCode}]\r\n");
+            // Write exit message directly into the screen buffer on UI thread
+            Dispatcher.BeginInvoke(() =>
+            {
+                _screenBuffer.Write($"\r\n[终端已退出, 退出代码: {exitCode}]\r\n");
+                RenderBuffer();
+            });
         }
 
         private void AppendOutput(string text)
         {
-            lock (_outputLock)
-            {
-                _outputBuffer.Append(text);
-                if (_outputBuffer.Length > MaxOutputLength)
-                    _outputBuffer.Remove(0, _outputBuffer.Length - MaxOutputLength);
-            }
-
+            // For locally-generated messages (not from ConPTY)
             Dispatcher.BeginInvoke(() =>
             {
-                string content;
-                lock (_outputLock)
-                {
-                    content = _outputBuffer.ToString();
-                }
-                OutputTextBox.Text = content;
-                OutputTextBox.ScrollToEnd();
+                _screenBuffer.Write(text);
+                RenderBuffer();
             });
+        }
+
+        private void FlushOutput(object? sender, EventArgs e)
+        {
+            _flushTimer?.Stop();
+
+            string rawText;
+            lock (_outputLock)
+            {
+                if (_pendingOutput.Count == 0) return;
+                var sb = new StringBuilder();
+                while (_pendingOutput.Count > 0)
+                    sb.Append(_pendingOutput.Dequeue());
+                rawText = sb.ToString();
+            }
+
+            _screenBuffer.Write(rawText);
+            RenderBuffer();
+        }
+
+        private void RenderBuffer()
+        {
+            bool wasAtBottom = TerminalScrollViewer.VerticalOffset >=
+                               TerminalScrollViewer.ScrollableHeight - 20;
+
+            string rendered = _screenBuffer.Render();
+            int caretPos = _screenBuffer.GetCursorOffset();
+            int clampedCaret = Math.Min(caretPos, rendered.Length);
+
+            if (rendered != _lastRendered)
+            {
+                double savedOffset = TerminalScrollViewer.VerticalOffset;
+                _lastRendered = rendered;
+                OutputTextBox.Text = rendered;
+                OutputTextBox.CaretIndex = clampedCaret;
+
+                if (wasAtBottom)
+                    TerminalScrollViewer.ScrollToEnd();
+                else
+                    TerminalScrollViewer.ScrollToVerticalOffset(savedOffset);
+            }
+            else
+            {
+                // Text unchanged but cursor may have moved (e.g. arrow keys)
+                OutputTextBox.CaretIndex = clampedCaret;
+            }
         }
 
         private void ClearOutput()
         {
             lock (_outputLock)
             {
-                _outputBuffer.Clear();
+                _pendingOutput.Clear();
             }
-            Dispatcher.BeginInvoke(() => OutputTextBox.Clear());
+            _screenBuffer.Clear();
+            _lastRendered = "";
+            Dispatcher.BeginInvoke(() =>
+            {
+                OutputTextBox.Clear();
+                TerminalScrollViewer.ScrollToHome();
+            });
         }
 
         private void KillShell()
         {
-            if (_shellProcess != null)
+            if (_terminal != null)
             {
                 _isShellRunning = false;
                 try
                 {
-                    if (!_shellProcess.HasExited)
-                        _shellProcess.Kill(entireProcessTree: true);
+                    _terminal.Kill();
                 }
                 catch (Exception ex)
                 {
                     log.Warn($"Terminal: kill shell failed: {ex.Message}");
                 }
-
-                _shellProcess.OutputDataReceived -= OnOutputDataReceived;
-                _shellProcess.ErrorDataReceived -= OnErrorDataReceived;
-                _shellProcess.Exited -= OnProcessExited;
-                _shellProcess.Dispose();
-                _shellProcess = null;
-                _shellInput = null;
+                _terminal.OutputReceived -= OnConPtyOutput;
+                _terminal.ProcessExited -= OnConPtyExited;
+                _terminal.Dispose();
+                _terminal = null;
             }
-        }
-
-        private void UpdatePrompt(string path)
-        {
-            Dispatcher.BeginInvoke(() =>
-            {
-                if (_currentShell == "cmd")
-                    PromptLabel.Text = $"{path}>";
-                else
-                    PromptLabel.Text = $"PS {path}>";
-            });
         }
 
         private string GetDefaultWorkingDirectory()
@@ -306,86 +250,158 @@ namespace ColorVision.Solution.Terminal
 
         #region UI Event Handlers
 
-        private void InputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        /// <summary>
+        /// Forward printable text input directly to ConPTY.
+        /// </summary>
+        private void OutputTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            if (e.Key == Key.Enter)
+            if (_terminal != null && _isShellRunning && !string.IsNullOrEmpty(e.Text))
             {
-                var command = InputTextBox.Text;
-                InputTextBox.Clear();
-
-                if (!string.IsNullOrWhiteSpace(command))
-                {
-                    _commandHistory.Add(command);
-                    _historyIndex = _commandHistory.Count;
-                }
-
-                SendCommand(command);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Up)
-            {
-                if (_commandHistory.Count > 0 && _historyIndex > 0)
-                {
-                    _historyIndex--;
-                    InputTextBox.Text = _commandHistory[_historyIndex];
-                    InputTextBox.CaretIndex = InputTextBox.Text.Length;
-                }
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Down)
-            {
-                if (_historyIndex < _commandHistory.Count - 1)
-                {
-                    _historyIndex++;
-                    InputTextBox.Text = _commandHistory[_historyIndex];
-                    InputTextBox.CaretIndex = InputTextBox.Text.Length;
-                }
-                else
-                {
-                    _historyIndex = _commandHistory.Count;
-                    InputTextBox.Clear();
-                }
-                e.Handled = true;
-            }
-            else if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control)
-            {
-                SendCtrlC();
-                e.Handled = true;
-            }
-            else if (e.Key == Key.L && Keyboard.Modifiers == ModifierKeys.Control)
-            {
-                ClearOutput();
+                _terminal.Write(e.Text);
                 e.Handled = true;
             }
         }
 
+        private void TerminalScrollViewer_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (_terminal != null && _isShellRunning && !string.IsNullOrEmpty(e.Text))
+            {
+                _terminal.Write(e.Text);
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// Handle special keys: Enter, Backspace, Tab, arrows, Ctrl+C, Ctrl+L, etc.
+        /// </summary>
         private void OutputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (_terminal == null || !_isShellRunning) return;
+
             if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control)
             {
-                // Allow Ctrl+C to copy selected text from output, or send SIGINT if nothing selected
+                // If text selected, let default copy work; otherwise send Ctrl+C to shell
                 if (string.IsNullOrEmpty(OutputTextBox.SelectedText))
                 {
-                    SendCtrlC();
+                    _terminal.Write("\x03");
                     e.Handled = true;
                 }
                 return;
             }
 
-            // Redirect typing to input box
-            if (!Keyboard.Modifiers.HasFlag(ModifierKeys.Control) &&
-                !Keyboard.Modifiers.HasFlag(ModifierKeys.Alt) &&
-                e.Key != Key.Tab &&
-                e.Key >= Key.A && e.Key <= Key.OemClear)
+            if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
             {
-                InputTextBox.Focus();
+                if (Clipboard.ContainsText())
+                {
+                    _terminal.Write(Clipboard.GetText());
+                    e.Handled = true;
+                }
+                return;
             }
+
+            if (e.Key == Key.L && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                ClearOutput();
+                _terminal.Write("\x0C"); // form feed
+                e.Handled = true;
+                return;
+            }
+
+            string? seq = KeyToVTSequence(e.Key, Keyboard.Modifiers);
+            if (seq != null)
+            {
+                _terminal.Write(seq);
+                e.Handled = true;
+            }
+        }
+
+        private void TerminalScrollViewer_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Let the OutputTextBox handle it if focused
+            if (OutputTextBox.IsFocused) return;
+
+            if (_terminal == null || !_isShellRunning) return;
+
+            if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                if (Clipboard.ContainsText())
+                {
+                    _terminal.Write(Clipboard.GetText());
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            string? seq = KeyToVTSequence(e.Key, Keyboard.Modifiers);
+            if (seq != null)
+            {
+                _terminal.Write(seq);
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>
+        /// Map WPF key events to VT100/xterm escape sequences for ConPTY.
+        /// </summary>
+        private static string? KeyToVTSequence(Key key, ModifierKeys modifiers)
+        {
+            bool ctrl = modifiers.HasFlag(ModifierKeys.Control);
+
+            // Ctrl + letter → send control character
+            if (ctrl && key >= Key.A && key <= Key.Z)
+            {
+                char c = (char)(key - Key.A + 1);
+                return c.ToString();
+            }
+
+            return key switch
+            {
+                Key.Enter => "\r",
+                Key.Space => " ",
+                Key.Back => "\x7f",
+                Key.Tab => "\t",
+                Key.Escape => "\x1b",
+                Key.Up => "\x1b[A",
+                Key.Down => "\x1b[B",
+                Key.Right => "\x1b[C",
+                Key.Left => "\x1b[D",
+                Key.Home => "\x1b[H",
+                Key.End => "\x1b[F",
+                Key.Insert => "\x1b[2~",
+                Key.Delete => "\x1b[3~",
+                Key.PageUp => "\x1b[5~",
+                Key.PageDown => "\x1b[6~",
+                Key.F1 => "\x1bOP",
+                Key.F2 => "\x1bOQ",
+                Key.F3 => "\x1bOR",
+                Key.F4 => "\x1bOS",
+                Key.F5 => "\x1b[15~",
+                Key.F6 => "\x1b[17~",
+                Key.F7 => "\x1b[18~",
+                Key.F8 => "\x1b[19~",
+                Key.F9 => "\x1b[20~",
+                Key.F10 => "\x1b[21~",
+                Key.F11 => "\x1b[23~",
+                Key.F12 => "\x1b[24~",
+                _ => null
+            };
+        }
+
+        private void TerminalScrollViewer_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            OutputTextBox.Focus();
+        }
+
+        private void TerminalScrollViewer_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (!OutputTextBox.IsFocused)
+                OutputTextBox.Focus();
         }
 
         private void ButtonNewShell_Click(object sender, RoutedEventArgs e)
         {
             StartShell();
-            InputTextBox.Focus();
+            OutputTextBox.Focus();
         }
 
         private void ButtonClear_Click(object sender, RoutedEventArgs e)

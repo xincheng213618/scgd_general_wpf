@@ -11,7 +11,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
@@ -29,47 +28,33 @@
                     Foreground="{DynamicResource GlobalTextBrush}" ToolTip="终止当前终端进程"/>
         </ToolBar>
 
-        <!-- Output area -->
-        <TextBox Grid.Row="1" x:Name="OutputTextBox"
-                 FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
-                 FontSize="14"
-                 Background="#1E1E1E"
-                 Foreground="#CCCCCC"
-                 CaretBrush="#CCCCCC"
-                 BorderThickness="0"
-                 IsReadOnly="True"
-                 TextWrapping="NoWrap"
-                 AcceptsReturn="True"
-                 VerticalScrollBarVisibility="Auto"
-                 HorizontalScrollBarVisibility="Auto"
-                 Padding="8,4"
-                 PreviewKeyDown="OutputTextBox_PreviewKeyDown"
-                 FocusVisualStyle="{x:Null}"/>
-
-        <!-- Input line with path prompt -->
-        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="#3F3F46" Background="#1E1E1E">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" x:Name="PromptLabel"
-                           FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
-                           FontSize="14"
-                           Foreground="#6A9955"
-                           VerticalAlignment="Center"
-                           Padding="8,6,0,6"
-                           Text="PS>"/>
-                <TextBox Grid.Column="1" x:Name="InputTextBox"
-                         FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
-                         FontSize="14"
-                         Background="#1E1E1E"
-                         Foreground="#CCCCCC"
-                         CaretBrush="#CCCCCC"
-                         BorderThickness="0"
-                         Padding="4,6,8,6"
-                         PreviewKeyDown="InputTextBox_PreviewKeyDown"/>
-            </Grid>
-        </Border>
+        <!-- Terminal area: single output with direct keyboard input to ConPTY -->
+        <ScrollViewer Grid.Row="1" x:Name="TerminalScrollViewer"
+                      Background="#1E1E1E"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Focusable="True"
+                      PreviewKeyDown="TerminalScrollViewer_PreviewKeyDown"
+                      PreviewTextInput="TerminalScrollViewer_PreviewTextInput"
+                      MouseDown="TerminalScrollViewer_MouseDown"
+                      GotFocus="TerminalScrollViewer_GotFocus">
+            <TextBox x:Name="OutputTextBox"
+                     FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
+                     FontSize="14"
+                     Background="Transparent"
+                     Foreground="#CCCCCC"
+                     CaretBrush="#CCCCCC"
+                     BorderThickness="0"
+                     IsReadOnly="True"
+                     IsReadOnlyCaretVisible="True"
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Disabled"
+                     HorizontalScrollBarVisibility="Disabled"
+                     Padding="8,4"
+                     PreviewKeyDown="OutputTextBox_PreviewKeyDown"
+                     PreviewTextInput="OutputTextBox_PreviewTextInput"
+                     FocusVisualStyle="{x:Null}"/>
+        </ScrollViewer>
     </Grid>
 </UserControl>
