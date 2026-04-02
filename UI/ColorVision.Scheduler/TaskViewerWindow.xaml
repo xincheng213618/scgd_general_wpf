@@ -19,6 +19,7 @@
         <DockPanel Grid.Row="0">
             <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.CreateTask}" FontWeight="Bold" Click="CreateTaskButton_Click" Padding="10,5" Margin="5"/>
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                <Button Content="执行历史" Click="ViewAllHistory_Click" Margin="5" ToolTip="查看所有任务的执行历史记录"/>
                 <Button Content="导出CSV" Click="ExportCSV_Click" Margin="5" ToolTip="导出任务列表到CSV文件"/>
                 <Button Content="导出JSON" Click="ExportJSON_Click" Margin="5" ToolTip="导出任务配置到JSON文件"/>
                 <Button Content="导出报告" Click="ExportReport_Click" Margin="5" ToolTip="导出执行统计报告"/>
@@ -83,6 +84,13 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding LastExecutionTimeMs}" ToolTip="{Binding AverageExecutionTimeMs, StringFormat='平均: {0}ms'}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="最后结果">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
+                                <TextBlock Text="{Binding LastExecutionResult}" ToolTip="{Binding LastExecutionMessage}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

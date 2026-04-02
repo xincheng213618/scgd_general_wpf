@@ -163,5 +163,17 @@ namespace ColorVision.Scheduler
         /// </summary>
         public long MinExecutionTimeMs { get => _MinExecutionTimeMs; set { _MinExecutionTimeMs = value; OnPropertyChanged(); } }
         private long _MinExecutionTimeMs;
+
+        /// <summary>
+        /// 最后执行结果（如：Completed, Failed, OverTime, 流程未能启动）
+        /// </summary>
+        public string LastExecutionResult { get => _LastExecutionResult; set { _LastExecutionResult = value; OnPropertyChanged(); } }
+        private string _LastExecutionResult = string.Empty;
+
+        /// <summary>
+        /// 最后执行结果详情信息
+        /// </summary>
+        public string LastExecutionMessage { get => _LastExecutionMessage; set { _LastExecutionMessage = value; OnPropertyChanged(); } }
+        private string _LastExecutionMessage = string.Empty;
     }
 }

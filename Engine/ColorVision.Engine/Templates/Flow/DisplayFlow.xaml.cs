@@ -254,7 +254,39 @@ namespace ColorVision.Engine.Templates.Flow
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
+        /// <summary>
+        /// 流程执行完成事件，外部（如定时任务）可订阅此事件以获取流程执行结果
+        /// </summary>
+        public event EventHandler<FlowControlData>? FlowExecutionCompleted;
 
+        /// <summary>
+        /// 启动流程并等待执行完成，返回流程执行结果。
+        /// 如果流程未能启动（验证失败、已在运行等），返回 null。
+        /// </summary>
+        public async Task<FlowControlData?> RunFlowAndWaitAsync()
+        {
+            var tcs = new TaskCompletionSource<FlowControlData?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            EventHandler<FlowControlData>? handler = null;
+            handler = (sender, data) =>
+            {
+                FlowExecutionCompleted -= handler;
+                tcs.TrySetResult(data);
+            };
+
+            FlowExecutionCompleted += handler;
+
+            await RunFlow();
+
+            // 如果流程未能启动（验证失败、正在运行、无模板等），事件不会触发
+            if (!FlowControl.IsFlowRun)
+            {
+                FlowExecutionCompleted -= handler;
+                return null;
+            }
+
+            return await tcs.Task;
+        }
 
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
@@ -285,6 +317,9 @@ namespace ColorVision.Engine.Templates.Flow
                     MarkColorProperty.SetValue(LastNode, System.Drawing.Color.Red);
                 }
             }
+
+            // 通知外部监听者流程执行结果
+            FlowExecutionCompleted?.Invoke(this, FlowControlData);
 
             Application.Current.Dispatcher.BeginInvoke(() =>
             {

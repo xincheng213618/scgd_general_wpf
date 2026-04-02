@@ -60,6 +60,8 @@ namespace ColorVision.Scheduler
             menuDelete.Click += MenuDelete_Click;
             var menuTrigger = new MenuItem { Header = "立即执行" };
             menuTrigger.Click += MenuTrigger_Click;
+            var menuHistory = new MenuItem { Header = "执行历史" };
+            menuHistory.Click += MenuHistory_Click;
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(menuEdit);
             contextMenu.Items.Add(menuView);
@@ -67,6 +69,8 @@ namespace ColorVision.Scheduler
             contextMenu.Items.Add(menuPause);
             contextMenu.Items.Add(menuResume);
             contextMenu.Items.Add(menuTrigger);
+            contextMenu.Items.Add(new Separator());
+            contextMenu.Items.Add(menuHistory);
             contextMenu.Items.Add(menuDelete);
             ListViewTask.ContextMenu = contextMenu;
         }
@@ -260,6 +264,21 @@ namespace ColorVision.Scheduler
             return true;
         }
 
+        private void ViewAllHistory_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new ExecutionHistoryWindow { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            win.Show();
+        }
+
+        private void MenuHistory_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListViewTask.SelectedItem is SchedulerInfo info)
+            {
+                var win = new ExecutionHistoryWindow(info.JobName, info.GroupName) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                win.Show();
+            }
+        }
+
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             _taskInfosView?.Refresh();
@@ -290,12 +309,12 @@ namespace ColorVision.Scheduler
                 {
                     var sb = new StringBuilder();
                     // CSV 头部
-                    sb.AppendLine("任务名称,分组名称,优先级,运行次数,成功次数,失败次数,状态,最后执行时间(ms),平均执行时间(ms),最大执行时间(ms),最小执行时间(ms),下次执行时间,上次执行时间,创建时间");
+                    sb.AppendLine("任务名称,分组名称,优先级,运行次数,成功次数,失败次数,状态,最后执行时间(ms),平均执行时间(ms),最大执行时间(ms),最小执行时间(ms),最后执行结果,结果详情,下次执行时间,上次执行时间,创建时间");
 
                     // 数据行
                     foreach (var task in TaskInfos)
                     {
-                        sb.AppendLine($"\"{task.JobName}\",\"{task.GroupName}\",{task.Priority},{task.RunCount},{task.SuccessCount},{task.FailureCount},\"{task.Status}\",{task.LastExecutionTimeMs},{task.AverageExecutionTimeMs},{task.MaxExecutionTimeMs},{task.MinExecutionTimeMs},\"{task.NextFireTime}\",\"{task.PreviousFireTime}\",\"{task.CreateTime:yyyy-MM-dd HH:mm:ss}\"");
+                        sb.AppendLine($"\"{task.JobName}\",\"{task.GroupName}\",{task.Priority},{task.RunCount},{task.SuccessCount},{task.FailureCount},\"{task.Status}\",{task.LastExecutionTimeMs},{task.AverageExecutionTimeMs},{task.MaxExecutionTimeMs},{task.MinExecutionTimeMs},\"{task.LastExecutionResult}\",\"{task.LastExecutionMessage}\",\"{task.NextFireTime}\",\"{task.PreviousFireTime}\",\"{task.CreateTime:yyyy-MM-dd HH:mm:ss}\"");
                     }
 
                     File.WriteAllText(dialog.FileName, sb.ToString(), Encoding.UTF8);
@@ -399,6 +418,14 @@ namespace ColorVision.Scheduler
                         if (task.RunCount > 0)
                         {
                             sb.AppendLine($"  执行时间: 最后 {task.LastExecutionTimeMs}ms, 平均 {task.AverageExecutionTimeMs}ms, 最大 {task.MaxExecutionTimeMs}ms, 最小 {task.MinExecutionTimeMs}ms");
+                        }
+                        if (!string.IsNullOrEmpty(task.LastExecutionResult))
+                        {
+                            sb.AppendLine($"  最后执行结果: {task.LastExecutionResult}");
+                        }
+                        if (!string.IsNullOrEmpty(task.LastExecutionMessage))
+                        {
+                            sb.AppendLine($"  结果详情: {task.LastExecutionMessage}");
                         }
                         if (!string.IsNullOrEmpty(task.NextFireTime) && task.NextFireTime != "N/A")
                         {

@@ -49,7 +49,9 @@ namespace ColorVision.Engine.Services
         public ServiceManager()
         {
             if (MySqlControl.GetInstance().IsConnect)
-                LoadServices();
+            {
+                Application.Current.Dispatcher.Invoke(() => LoadServices());
+            }
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) =>
                 Application.Current.Dispatcher.Invoke(() => LoadServices());
         }
