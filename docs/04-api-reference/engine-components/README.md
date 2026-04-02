@@ -1,13 +1,5 @@
 # Engine组件概览
 
-## 目录
-1. [概述](#概述)
-2. [核心组件列表](#核心组件列表)
-3. [组件架构](#组件架构)
-4. [组件依赖关系](#组件依赖关系)
-5. [使用指南](#使用指南)
-6. [开发建议](#开发建议)
-
 ## 概述
 
 Engine 目录包含了 ColorVision 系统的核心算法引擎和处理组件，负责图像处理、设备管理、流程控制和数据处理等核心功能。Engine 层是整个系统的数据处理和逻辑控制中心。
@@ -15,7 +7,7 @@ Engine 目录包含了 ColorVision 系统的核心算法引擎和处理组件，
 ### 基本信息
 
 - **主要功能**: 核心算法引擎、流程管理、设备服务、数据处理
-- **技术栈**: .NET、OpenCV、MQTT、数据库访问
+- **技术栈**: .NET 8.0/10.0、OpenCV、MQTT、SqlSugar
 - **架构模式**: 模块化、服务化、插件化
 - **扩展性**: 支持自定义算法模块和设备驱动
 
@@ -35,6 +27,7 @@ Engine 目录包含了 ColorVision 系统的核心算法引擎和处理组件，
   - 设备服务自动发现
   - 模板参数化配置
   - 实时状态监控
+- **版本**: 1.4.2.1
 
 #### 2. [cvColorVision](./cvColorVision.md)
 **视觉处理核心模块（C# 封装库）**
@@ -47,24 +40,21 @@ Engine 目录包含了 ColorVision 系统的核心算法引擎和处理组件，
   - C# P/Invoke 封装
   - 底层 C++ DLL（cvCamera.dll、cvOled.dll）
   - OpenCV 基础（底层实现）
-  - CUDA 加速支持（底层）
-- **技术架构**:
-  - 封装层：C# (.NET)
-  - 底层库：C++ (OpenCV 4.x)
-  - 接口方式：P/Invoke (DllImport)
+- **版本**: 2025.8.9.0
 
 #### 3. [ColorVision.FileIO](./ColorVision.FileIO.md)
 **文件输入输出处理模块**
 - **主要功能**:
-  - 各种图像格式支持
-  - 数据文件读写
-  - 配置文件管理
+  - CVRaw/CVCIE 文件读写
+  - 标准图像格式支持
   - 批量文件处理
+  - 异步IO操作
 - **关键特性**:
   - 多格式支持
   - 异步IO操作
   - 数据验证
   - 错误恢复机制
+- **版本**: 1.3.12.24
 
 ### 支撑组件
 
@@ -74,12 +64,13 @@ Engine 目录包含了 ColorVision 系统的核心算法引擎和处理组件，
   - 流程节点管理
   - 执行引擎
   - 数据流控制
-  - 异常处理
+  - MQTT通信集成
 - **关键特性**:
   - 动态节点加载
   - 并行执行支持
   - 流程调试功能
   - 状态持久化
+- **版本**: 1.6.1
 
 #### 5. [ST.Library.UI](./ST.Library.UI.md)
 **专业可视化节点编辑器UI库**
@@ -88,22 +79,13 @@ Engine 目录包含了 ColorVision 系统的核心算法引擎和处理组件，
   - 节点系统（STNode 基类）
   - 属性编辑器（STNodePropertyGrid）
   - 节点库管理（STNodeTreeView）
-  - 连接管理与验证
-  - 节点容器扩展（CVNode）
 - **关键特性**:
   - 拖拽式节点连接
   - 类型安全的数据流
   - 实时属性编辑
   - 撤销/重做支持
   - 多语言支持（中/英）
-  - 程序集动态加载
-  - 自定义节点扩展
-  - 画布缩放平移
-- **技术规格**:
-  - 框架版本: .NET 8.0 / .NET Framework 4.7.2
-  - UI技术: Windows Forms
-  - 代码规模: ~10,500 行代码
-  - 版本号: 1.2.0.2410
+- **版本**: 1.2.0.2410
 
 ## 组件架构
 
@@ -150,7 +132,7 @@ graph TB
 ### 外部依赖
 - **OpenCV**: 图像处理算法支持
 - **MQTT**: 设备通信协议
-- **Entity Framework**: 数据库ORM
+- **SqlSugar**: 数据库ORM
 - **Newtonsoft.Json**: JSON数据序列化
 
 ## 使用指南
@@ -163,8 +145,8 @@ var engineService = new ColorVisionEngineService();
 await engineService.InitializeAsync();
 
 // 注册设备服务
-engineService.RegisterDeviceService\\<CameraService\>();
-engineService.RegisterDeviceService\\<SpectrometerService\>();
+engineService.RegisterDeviceService<CameraService>();
+engineService.RegisterDeviceService<SpectrometerService>();
 
 // 加载流程模板
 var flowTemplate = await engineService.LoadFlowTemplateAsync("template_name");
@@ -181,10 +163,10 @@ public class CustomAlgorithmNode : IFlowNode
     public string Name => "Custom Algorithm";
     public string Description => "自定义算法处理节点";
     
-    public async Task\<NodeResult\> ExecuteAsync(NodeContext context)
+    public async Task<NodeResult> ExecuteAsync(NodeContext context)
     {
         // 实现自定义算法逻辑
-        var inputImage = context.GetInput\<Mat\>("image");
+        var inputImage = context.GetInput<Mat>("image");
         var result = ProcessImage(inputImage);
         return NodeResult.Success(result);
     }
@@ -198,13 +180,13 @@ public class CustomDeviceService : BaseDeviceService
 {
     public override string ServiceType => "CustomDevice";
     
-    public override async Task\<bool\> ConnectAsync()
+    public override async Task<bool> ConnectAsync()
     {
         // 实现设备连接逻辑
         return true;
     }
     
-    public override async Task\<object\> ExecuteCommandAsync(string command, object parameters)
+    public override async Task<object> ExecuteCommandAsync(string command, object parameters)
     {
         // 实现设备命令执行
         return await ProcessCommandAsync(command, parameters);
@@ -241,8 +223,8 @@ public class CustomDeviceService : BaseDeviceService
 ## 版本兼容性
 
 ### 当前版本
-- **稳定版本**: 与UI组件同步版本 1.3.8.1
-- **目标框架**: .NET 8.0 / .NET 6.0
+- **稳定版本**: 1.4.2.1
+- **目标框架**: .NET 8.0 / .NET 10.0 Windows
 - **最低系统要求**: Windows 10, OpenCV 4.x
 
 ### 升级指南
@@ -254,8 +236,22 @@ public class CustomDeviceService : BaseDeviceService
 
 ## 相关资源
 
-- [流程引擎详细文档](../algorithm-engine-templates/flow-engine/流程引擎.md)
-- [算法引擎与模板](../algorithm-engine-templates/算法引擎与模板.md)
-- [设备管理指南](../device-management/)
-- [开发者指南](../developer-guide/)
-- [API 参考文档](../developer-guide/api-reference/)
+- [流程引擎详细文档](../02-developer-guide/algorithm-engine-templates/flow-engine/流程引擎.md)
+- [算法引擎与模板](../02-developer-guide/algorithm-engine-templates/)
+- [设备管理指南](../01-user-guide/devices/overview.md)
+- [开发者指南](../02-developer-guide/)
+
+## 目录索引
+
+| 组件 | 内部README | API文档 |
+|------|-----------|---------|
+| ColorVision.Engine | [README](../../Engine/ColorVision.Engine/README.md) | [API Doc](./ColorVision.Engine.md) |
+| cvColorVision | [README](../../Engine/cvColorVision/README.md) | [API Doc](./cvColorVision.md) |
+| ColorVision.FileIO | [README](../../Engine/ColorVision.FileIO/README.md) | [API Doc](./ColorVision.FileIO.md) |
+| FlowEngineLib | [README](../../Engine/FlowEngineLib/README.md) | [API Doc](./FlowEngineLib.md) |
+| ST.Library.UI | [README](../../Engine/ST.Library.UI/README.md) | [API Doc](./ST.Library.UI.md) |
+
+---
+
+*最后更新: 2026-04-02*  
+*文档版本: 1.0*
