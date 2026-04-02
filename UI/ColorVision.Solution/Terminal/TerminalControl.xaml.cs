@@ -1,4 +1,5 @@
 using log4net;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -31,13 +32,27 @@ namespace ColorVision.Solution.Terminal
             InitializeComponent();
             _flushTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
             _flushTimer.Tick += FlushOutput;
+
+            TerminalDisplay.UrlClicked += OnUrlClicked;
+        }
+
+        private void OnUrlClicked(string url)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                log.Warn($"Terminal: failed to open URL '{url}': {ex.Message}");
+            }
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             if (!_isShellRunning)
                 StartShell();
-            OutputTextBox.Focus();
+            ImeProxy.Focus();
         }
 
         public void StartShell(string? workingDirectory = null)
@@ -184,30 +199,29 @@ namespace ColorVision.Solution.Terminal
 
         private void RenderBuffer()
         {
-            bool wasAtBottom = TerminalScrollViewer.VerticalOffset >=
-                               TerminalScrollViewer.ScrollableHeight - 20;
+            var (lines, cursorLine, cursorCol) = _screenBuffer.RenderLines();
+            TerminalDisplay.UpdateContent(lines, cursorLine, cursorCol);
 
-            string rendered = _screenBuffer.Render();
-            int caretPos = _screenBuffer.GetCursorOffset();
-            int clampedCaret = Math.Min(caretPos, rendered.Length);
-
-            if (rendered != _lastRendered)
+            // Scroll to cursor after layout completes (Loaded priority runs after Render/Layout)
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
             {
-                double savedOffset = TerminalScrollViewer.VerticalOffset;
-                _lastRendered = rendered;
-                OutputTextBox.Text = rendered;
-                OutputTextBox.CaretIndex = clampedCaret;
+                ScrollToCursor();
+                UpdateImeProxyPosition();
+            });
+        }
 
-                if (wasAtBottom)
-                    TerminalScrollViewer.ScrollToEnd();
-                else
-                    TerminalScrollViewer.ScrollToVerticalOffset(savedOffset);
-            }
-            else
-            {
-                // Text unchanged but cursor may have moved (e.g. arrow keys)
-                OutputTextBox.CaretIndex = clampedCaret;
-            }
+        private void ScrollToCursor()
+        {
+            double viewportHeight = TerminalScrollViewer.ViewportHeight;
+            if (viewportHeight <= 0) return;
+
+            double cursorY = TerminalDisplay.CursorY;
+            double currentOffset = TerminalScrollViewer.VerticalOffset;
+
+            if (cursorY < currentOffset)
+                TerminalScrollViewer.ScrollToVerticalOffset(cursorY);
+            else if (cursorY + TerminalDisplay.LineHeight > currentOffset + viewportHeight)
+                TerminalScrollViewer.ScrollToVerticalOffset(cursorY + TerminalDisplay.LineHeight - viewportHeight);
         }
 
         private void ClearOutput()
@@ -220,7 +234,7 @@ namespace ColorVision.Solution.Terminal
             _lastRendered = "";
             Dispatcher.BeginInvoke(() =>
             {
-                OutputTextBox.Clear();
+                TerminalDisplay.UpdateContent(new List<TerminalLine>(), 0, 0);
                 TerminalScrollViewer.ScrollToHome();
             });
         }
@@ -315,6 +329,36 @@ namespace ColorVision.Solution.Terminal
             }
         }
 
+        /// <summary>
+        /// Forward printable text input from IME proxy to ConPTY.
+        /// The hidden TextBox handles IME composition natively; we intercept committed text.
+        /// </summary>
+        private void ImeProxy_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (_terminal != null && _isShellRunning && !string.IsNullOrEmpty(e.Text))
+            {
+                _terminal.Write(e.Text);
+                _currentInput.Insert(_inputCursorPos, e.Text);
+                _inputCursorPos += e.Text.Length;
+                e.Handled = true;
+                // Clear residual composition text from the proxy TextBox
+                Dispatcher.BeginInvoke(DispatcherPriority.Input, () => ImeProxy.Clear());
+            }
+        }
+
+        /// <summary>
+        /// Position the invisible IME proxy TextBox at the terminal cursor location
+        /// so the OS IME candidate window appears at the correct position.
+        /// </summary>
+        private void UpdateImeProxyPosition()
+        {
+            double cursorX = TerminalDisplay.CursorCol * TerminalDisplay.CharWidth;
+            double cursorY = TerminalDisplay.CursorLine * TerminalDisplay.LineHeight
+                             - TerminalScrollViewer.VerticalOffset;
+            Canvas.SetLeft(ImeProxy, cursorX);
+            Canvas.SetTop(ImeProxy, Math.Max(0, cursorY));
+        }
+
         private void TerminalScrollViewer_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             if (_terminal != null && _isShellRunning && !string.IsNullOrEmpty(e.Text))
@@ -333,13 +377,22 @@ namespace ColorVision.Solution.Terminal
         {
             if (_terminal == null || !_isShellRunning) return;
 
+            // Let IME framework handle composition keys (Chinese/Japanese input)
+            if (e.Key == Key.ImeProcessed) return;
+
             // --- Ctrl combos ---
             if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control)
             {
-                if (string.IsNullOrEmpty(OutputTextBox.SelectedText))
+                var selectedText = TerminalDisplay.GetSelectedText();
+                if (string.IsNullOrEmpty(selectedText))
                 {
                     _terminal.Write("\x03");
                     ResetInputTracking();
+                    e.Handled = true;
+                }
+                else
+                {
+                    Clipboard.SetText(selectedText);
                     e.Handled = true;
                 }
                 return;
@@ -494,7 +547,7 @@ namespace ColorVision.Solution.Terminal
 
         private void TerminalScrollViewer_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (OutputTextBox.IsFocused) return;
+            if (ImeProxy.IsFocused) return;
 
             if (_terminal == null || !_isShellRunning) return;
 
@@ -511,8 +564,8 @@ namespace ColorVision.Solution.Terminal
                 return;
             }
 
-            // Redirect to OutputTextBox for consistent handling
-            OutputTextBox.Focus();
+            // Redirect to ImeProxy for consistent handling
+            ImeProxy.Focus();
         }
 
         /// <summary>
@@ -545,19 +598,19 @@ namespace ColorVision.Solution.Terminal
 
         private void TerminalScrollViewer_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            OutputTextBox.Focus();
+            ImeProxy.Focus();
         }
 
         private void TerminalScrollViewer_GotFocus(object sender, RoutedEventArgs e)
         {
-            if (!OutputTextBox.IsFocused)
-                OutputTextBox.Focus();
+            if (!ImeProxy.IsFocused)
+                ImeProxy.Focus();
         }
 
         private void ButtonNewShell_Click(object sender, RoutedEventArgs e)
         {
             StartShell();
-            OutputTextBox.Focus();
+            ImeProxy.Focus();
         }
 
         private void ButtonClear_Click(object sender, RoutedEventArgs e)

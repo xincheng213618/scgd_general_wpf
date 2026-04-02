@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:ColorVision.Solution.Terminal"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="600"
              Background="#1E1E1E"
@@ -28,33 +29,35 @@
                     Foreground="{DynamicResource GlobalTextBrush}" ToolTip="终止当前终端进程"/>
         </ToolBar>
 
-        <!-- Terminal area: single output with direct keyboard input to ConPTY -->
-        <ScrollViewer Grid.Row="1" x:Name="TerminalScrollViewer"
-                      Background="#1E1E1E"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled"
-                      Focusable="True"
-                      PreviewKeyDown="TerminalScrollViewer_PreviewKeyDown"
-                      PreviewTextInput="TerminalScrollViewer_PreviewTextInput"
-                      MouseDown="TerminalScrollViewer_MouseDown"
-                      GotFocus="TerminalScrollViewer_GotFocus">
-            <TextBox x:Name="OutputTextBox"
-                     FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
-                     FontSize="14"
-                     Background="Transparent"
-                     Foreground="#CCCCCC"
-                     CaretBrush="#CCCCCC"
-                     BorderThickness="0"
-                     IsReadOnly="True"
-                     IsReadOnlyCaretVisible="True"
-                     TextWrapping="Wrap"
-                     AcceptsReturn="True"
-                     VerticalScrollBarVisibility="Disabled"
-                     HorizontalScrollBarVisibility="Disabled"
-                     Padding="8,4"
-                     PreviewKeyDown="OutputTextBox_PreviewKeyDown"
-                     PreviewTextInput="OutputTextBox_PreviewTextInput"
-                     FocusVisualStyle="{x:Null}"/>
-        </ScrollViewer>
+        <!-- Terminal area: custom drawn terminal view with IME proxy overlay -->
+        <Grid Grid.Row="1">
+            <ScrollViewer x:Name="TerminalScrollViewer"
+                          Background="#1E1E1E"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Focusable="True"
+                          PreviewKeyDown="TerminalScrollViewer_PreviewKeyDown"
+                          PreviewTextInput="TerminalScrollViewer_PreviewTextInput"
+                          MouseDown="TerminalScrollViewer_MouseDown"
+                          GotFocus="TerminalScrollViewer_GotFocus">
+                <local:TerminalView x:Name="TerminalDisplay"
+                                    Focusable="False"/>
+            </ScrollViewer>
+            <!-- Invisible TextBox positioned at cursor for correct IME candidate window placement -->
+            <Canvas x:Name="ImeCanvas" IsHitTestVisible="False">
+                <TextBox x:Name="ImeProxy"
+                         Width="2" Height="20"
+                         Background="Transparent"
+                         Foreground="Transparent"
+                         CaretBrush="Transparent"
+                         BorderThickness="0"
+                         FontFamily="Cascadia Mono, Consolas, Courier New"
+                         FontSize="14"
+                         Focusable="True"
+                         AcceptsReturn="False"
+                         PreviewKeyDown="OutputTextBox_PreviewKeyDown"
+                         PreviewTextInput="ImeProxy_PreviewTextInput"/>
+            </Canvas>
+        </Grid>
     </Grid>
 </UserControl>
