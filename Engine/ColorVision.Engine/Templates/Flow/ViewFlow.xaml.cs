@@ -213,6 +213,9 @@ namespace ColorVision.Engine.Services.Flow
             manager.ViewTitles[this] = ColorVision.Engine.Properties.Resources.Workflow;
 
             STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
+
+            // Use AvalonDock panel for node property editing
+            STNodeEditorHelper.UseDockPanel = true;
         }
 
 
@@ -395,7 +398,6 @@ namespace ColorVision.Engine.Services.Flow
         {
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
 
-            STNodeEditorHelper?.PropertyEditorWindow?.CloseWindow();
             STNodeEditorMain?.Dispose();
             winf1?.Dispose();
             GC.SuppressFinalize(this);
@@ -426,6 +428,7 @@ namespace ColorVision.Engine.Services.Flow
                 window.Show();
             }
         }
+
     }
 
 

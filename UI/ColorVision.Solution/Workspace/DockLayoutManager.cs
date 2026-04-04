@@ -321,6 +321,7 @@ namespace ColorVision.Solution.Workspace
             if (_contentRegistry.TryGetValue(contentId, out var content))
             {
                 var title = _panelInfoRegistry.TryGetValue(contentId, out var info) ? info.Title : contentId;
+                var position = info?.Position ?? PanelPosition.Bottom;
 
                 var newAnchorable = new LayoutAnchorable
                 {
@@ -332,22 +333,7 @@ namespace ColorVision.Solution.Workspace
                     CanFloat = true
                 };
 
-                // 找到已有的可停靠面板或创建新的底部面板
-                var existingPane = _dockingManager.Layout.Descendents()
-                    .OfType<LayoutAnchorablePane>().FirstOrDefault();
-                if (existingPane != null)
-                {
-                    existingPane.Children.Add(newAnchorable);
-                }
-                else if (_dockingManager.Layout.RootPanel != null)
-                {
-                    var pane = new LayoutAnchorablePane();
-                    pane.Children.Add(newAnchorable);
-                    var group = new LayoutAnchorablePaneGroup { DockHeight = new GridLength(DefaultBottomPaneHeight) };
-                    group.Children.Add(pane);
-                    _dockingManager.Layout.RootPanel.Children.Add(group);
-                }
-
+                AddAnchorableToPosition(newAnchorable, position);
                 newAnchorable.Show();
             }
         }
@@ -379,6 +365,7 @@ namespace ColorVision.Solution.Workspace
             if (_contentRegistry.TryGetValue(contentId, out var content))
             {
                 var title = _panelInfoRegistry.TryGetValue(contentId, out var info) ? info.Title : contentId;
+                var position = info?.Position ?? PanelPosition.Bottom;
 
                 var newAnchorable = new LayoutAnchorable
                 {
@@ -390,21 +377,7 @@ namespace ColorVision.Solution.Workspace
                     CanFloat = true
                 };
 
-                var existingPane = _dockingManager.Layout.Descendents()
-                    .OfType<LayoutAnchorablePane>().FirstOrDefault();
-                if (existingPane != null)
-                {
-                    existingPane.Children.Add(newAnchorable);
-                }
-                else if (_dockingManager.Layout.RootPanel != null)
-                {
-                    var pane = new LayoutAnchorablePane();
-                    pane.Children.Add(newAnchorable);
-                    var group = new LayoutAnchorablePaneGroup { DockHeight = new GridLength(DefaultBottomPaneHeight) };
-                    group.Children.Add(pane);
-                    _dockingManager.Layout.RootPanel.Children.Add(group);
-                }
-
+                AddAnchorableToPosition(newAnchorable, position);
                 newAnchorable.Show();
                 newAnchorable.IsActive = true;
             }
@@ -454,7 +427,76 @@ namespace ColorVision.Solution.Workspace
         /// <summary>
         /// 在布局树中按 ContentId 查找可停靠面板（包括隐藏的）
         /// </summary>
+        /// <summary>
+        /// 根据注册的位置信息，将面板添加到布局树中正确的位置。
+        /// 优先查找同位置的已有面板组，否则创建新的面板组。
+        /// </summary>
+        private void AddAnchorableToPosition(LayoutAnchorable anchorable, PanelPosition position)
+        {
+            if (_dockingManager.Layout.RootPanel == null) return;
+
+            // 查找同位置的已有面板，将新面板添加到同一个 Pane 中
+            var samePosPane = FindPaneForPosition(position);
+            if (samePosPane != null)
+            {
+                samePosPane.Children.Add(anchorable);
+                return;
+            }
+
+            // 没有找到同位置的面板，创建新的 PaneGroup
+            var pane = new LayoutAnchorablePane();
+            pane.Children.Add(anchorable);
+            var group = new LayoutAnchorablePaneGroup();
+
+            switch (position)
+            {
+                case PanelPosition.Left:
+                    group.DockWidth = new GridLength(DefaultSidePaneWidth);
+                    _dockingManager.Layout.RootPanel.Children.Insert(0, group);
+                    break;
+                case PanelPosition.Right:
+                    group.DockWidth = new GridLength(DefaultSidePaneWidth);
+                    _dockingManager.Layout.RootPanel.Children.Add(group);
+                    break;
+                case PanelPosition.Bottom:
+                default:
+                    group.DockHeight = new GridLength(DefaultBottomPaneHeight);
+                    // 底部面板插入到中央面板的 Vertical 容器中
+                    var verticalPanel = _dockingManager.Layout.RootPanel.Descendents()
+                        .OfType<LayoutPanel>()
+                        .FirstOrDefault(p => p.Orientation == System.Windows.Controls.Orientation.Vertical);
+                    if (verticalPanel != null)
+                        verticalPanel.Children.Add(group);
+                    else
+                        _dockingManager.Layout.RootPanel.Children.Add(group);
+                    break;
+            }
+
+            group.Children.Add(pane);
+        }
+
+        /// <summary>
+        /// 根据位置信息查找已有的、包含同位置面板的 LayoutAnchorablePane。
+        /// </summary>
+        private LayoutAnchorablePane? FindPaneForPosition(PanelPosition position)
+        {
+            foreach (var existingAnchorable in _dockingManager.Layout.Descendents().OfType<LayoutAnchorable>())
+            {
+                if (existingAnchorable.ContentId != null &&
+                    _panelInfoRegistry.TryGetValue(existingAnchorable.ContentId, out var existingInfo) &&
+                    existingInfo.Position == position)
+                {
+                    return existingAnchorable.Parent as LayoutAnchorablePane;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 在布局树中按 ContentId 查找可停靠面板（包括隐藏的）
+        /// </summary>
         private LayoutAnchorable? FindAnchorable(string contentId)
+
         {
             // 在可见布局树中搜索
             var found = _dockingManager.Layout.Descendents()

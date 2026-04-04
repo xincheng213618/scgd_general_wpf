@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow.NodeConfigurator;
+using ColorVision.Solution.Workspace;
 using ColorVision.UI;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
@@ -14,6 +15,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Forms.Integration;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.Flow
@@ -23,9 +25,22 @@ namespace ColorVision.Engine.Templates.Flow
     {
         public STNodeEditor STNodeEditor { get; set; }
 
-        public STNodePropertyGrid STNodePropertyGrid1 => PropertyEditorWindow?.PropertyGrid;
-        public StackPanel SignStackPanel => PropertyEditorWindow?.SignStackPanel;
-        public NodePropertyEditorWindow PropertyEditorWindow { get; set; }
+        /// <summary>
+        /// Direct panel references for standalone windows (FlowEngineToolWindow).
+        /// When set, embedded mode is used. When null, dock panel mode is used.
+        /// </summary>
+        public STNodePropertyGrid STNodePropertyGrid1 { get; set; }
+        public StackPanel SignStackPanel { get; set; }
+        public System.Windows.Controls.Grid PropertyEditorPanel { get; set; }
+        public WindowsFormsHost PropertyGridHost { get; set; }
+        public ScrollViewer SignStackScrollViewer { get; set; }
+
+        /// <summary>
+        /// Whether to use the AvalonDock panel (true) or embedded panel references (false).
+        /// </summary>
+        public bool UseDockPanel { get; set; }
+
+        private bool _isPropertyGridMode = true;
 
 
         public static STNodeTreeView STNodeTreeView { get 
@@ -141,36 +156,57 @@ namespace ColorVision.Engine.Templates.Flow
         #region Activate
         private void STNodeEditorMain_ActiveChanged(object? sender, EventArgs e)
         {
-            if (PropertyEditorWindow == null)
+            STNodePropertyGrid propertyGrid;
+            StackPanel signPanel;
+
+            if (UseDockPanel)
             {
-                PropertyEditorWindow = new NodePropertyEditorWindow() { Owner = Application.Current.GetActiveWindow() };
-                PropertyEditorWindow.SetTargetControl(STNodeEditor);
-                PropertyEditorWindow?.ShowPropertyEditor();
+                var dockPanel = FlowNodePropertyPanel.Instance;
+                if (dockPanel == null) return;
+                propertyGrid = dockPanel.NodePropertyGrid;
+                signPanel = dockPanel.SignStackPanel;
+            }
+            else
+            {
+                if (STNodePropertyGrid1 == null || SignStackPanel == null || PropertyEditorPanel == null)
+                    return;
+                propertyGrid = STNodePropertyGrid1;
+                signPanel = SignStackPanel;
             }
 
-            STNodePropertyGrid1.SetNode(STNodeEditor.ActiveNode);
-            SignStackPanel.Children.Clear();
-
-
+            propertyGrid.SetNode(STNodeEditor.ActiveNode);
+            signPanel.Children.Clear();
 
             if (STNodeEditor.ActiveNode == null)
             {
-                PropertyEditorWindow?.Hide();
+                if (UseDockPanel)
+                {
+                    // Don't hide the dock panel — let the user manage its visibility
+                }
+                else
+                {
+                    PropertyEditorPanel.Visibility = Visibility.Collapsed;
+                }
                 return;
             }
 
-            // Show the popup window when a node is activated
-            PropertyEditorWindow?.ShowPropertyEditor();
-
-            // Use registry to find and apply the appropriate node configurator
+            // Show the property editor
+            if (UseDockPanel)
+            {
+                WorkspaceManager.LayoutManager?.ShowPanel(FlowNodePropertyPanel.PanelId);
+            }
+            else
+            {
+                PropertyEditorPanel.Visibility = Visibility.Visible;
+            }
             var configurator = NodeConfiguratorRegistry.GetConfigurator(STNodeEditor.ActiveNode.GetType());
             if (configurator != null)
             {
                 var context = new NodeConfiguratorContext
                 {
                     Node = STNodeEditor.ActiveNode,
-                    SignStackPanel = SignStackPanel,
-                    STNodePropertyGrid = STNodePropertyGrid1,
+                    SignStackPanel = signPanel,
+                    STNodePropertyGrid = propertyGrid,
                     STNodeEditor = STNodeEditor,
                     PropertyStackPanel = StackPanel,
                     OnActiveChanged = () => STNodeEditorMain_ActiveChanged(this, new EventArgs())
@@ -178,15 +214,36 @@ namespace ColorVision.Engine.Templates.Flow
                 configurator.Configure(context);
             }
 
-            SignStackPanel.Children.Add(StackPanel);
+            signPanel.Children.Add(StackPanel);
             StackPanel.Children.Clear();
 
             StackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(STNodeEditor.ActiveNode, ST.Library.UI.Properties.Resources.ResourceManager));
-            SignStackPanel.Visibility = SignStackPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            signPanel.Visibility = signPanel.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
         public StackPanel StackPanel { get; set; } = new StackPanel();
 
+        public void TogglePropertyEditorMode()
+        {
+            if (UseDockPanel) return; // Dock panel handles its own toggle
+            _isPropertyGridMode = !_isPropertyGridMode;
+            if (PropertyGridHost != null)
+                PropertyGridHost.Visibility = _isPropertyGridMode ? Visibility.Visible : Visibility.Collapsed;
+            if (SignStackScrollViewer != null)
+                SignStackScrollViewer.Visibility = _isPropertyGridMode ? Visibility.Collapsed : Visibility.Visible;
+        }
 
+        public void HidePropertyEditor()
+        {
+            if (UseDockPanel)
+            {
+                // Don't hide the dock panel automatically
+            }
+            else
+            {
+                if (PropertyEditorPanel != null)
+                    PropertyEditorPanel.Visibility = Visibility.Collapsed;
+            }
+        }
 
         #endregion
 

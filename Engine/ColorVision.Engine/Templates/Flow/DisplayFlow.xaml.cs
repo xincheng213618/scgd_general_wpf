@@ -97,7 +97,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             Unselected += (s, e) =>
             {
-                View.STNodeEditorHelper.PropertyEditorWindow?.Hide();
+                View.STNodeEditorHelper.HidePropertyEditor();
             };
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
