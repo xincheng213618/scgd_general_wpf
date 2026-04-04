@@ -199,10 +199,15 @@ namespace ColorVision
             this.LoadHotKeyFromAssembly();
             StatusBarManager.GetInstance().Init(StatusBarGrid, MenuItemConstants.MainWindowTarget);
 
-            // 监听 DockingManager 活动文档切换，更新状态栏上下文项
+            // 监听 DockingManager 活动文档切换，更新状态栏上下文项，并通知视图管理器
             DockingManager1.ActiveContentChanged += (s, e) =>
             {
                 StatusBarManager.GetInstance().OnActiveDocumentChanged(DockingManager1.ActiveContent);
+
+                var viewManager = DockViewManager.GetInstance();
+                var activeControl = DockingManager1.ActiveContent as System.Windows.Controls.Control;
+                var activeView = activeControl != null && viewManager.Views.Contains(activeControl) ? activeControl : null;
+                viewManager.RaiseActiveViewChanged(activeView);
             };
 
             Application.Current.MainWindow = this;
