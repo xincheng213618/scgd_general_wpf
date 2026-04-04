@@ -457,11 +457,10 @@ namespace ColorVision.Engine.Templates.Flow
             STNodeEditor.ScaleCanvas(CanvasScale, STNodeEditor.CanvasValidBounds.X + STNodeEditor.CanvasValidBounds.Width / 2, STNodeEditor.CanvasValidBounds.Y + STNodeEditor.CanvasValidBounds.Height / 2);
 
             var validBoundsCenterX = STNodeEditor.CanvasValidBounds.Width / 2;
-            var validBoundsCenterY = STNodeEditor.CanvasValidBounds.Height / 2;
 
-            // Calculate the offsets to move CanvasValidBounds to the center of Bounds
-            var offsetX = boundsCenterX - validBoundsCenterX * CanvasScale - 50 * CanvasScale;
-            var offsetY = boundsCenterY - validBoundsCenterY * CanvasScale - 50 * CanvasScale;
+            // Align to top-left with a small margin
+            var offsetX = 10 - STNodeEditor.CanvasValidBounds.X * CanvasScale;
+            var offsetY = 10 - STNodeEditor.CanvasValidBounds.Y * CanvasScale;
 
 
             // Move the canvas
@@ -477,6 +476,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             var layout = new SugiyamaLayout(ConnectionInfo, startX, startY, horizontalSpacing, verticalSpacing);
             layout.Execute(rootNode);
+            AutoSize();
         }
 
         List<STNode> GetChildren(STNode node)
