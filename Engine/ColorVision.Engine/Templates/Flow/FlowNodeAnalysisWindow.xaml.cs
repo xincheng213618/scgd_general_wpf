@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using ScottPlot;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,8 @@ namespace ColorVision.Engine.Templates.Flow
         private const long TimeoutThresholdMs = 30000;
 
         public ObservableCollection<FlowNodeRecord> NodeRecords { get; set; } = new ObservableCollection<FlowNodeRecord>();
+        public ObservableCollection<FlowNodeMessage> NodeMessages { get; set; } = new ObservableCollection<FlowNodeMessage>();
+        private List<FlowNodeMessage> _allMessages = new List<FlowNodeMessage>();
 
         public FlowNodeAnalysisWindow()
         {
@@ -31,6 +34,7 @@ namespace ColorVision.Engine.Templates.Flow
         private void Window_Initialized(object sender, EventArgs e)
         {
             NodeRecordListView.ItemsSource = NodeRecords;
+            MessageListView.ItemsSource = NodeMessages;
 
             var batchIds = FlowNodeRecordDataBaseHelper.GetDistinctBatchIds(100);
             BatchListView.ItemsSource = batchIds;
@@ -96,6 +100,31 @@ namespace ColorVision.Engine.Templates.Flow
                 csvBuilder.AppendLine();
             }
 
+            // Export MQTT messages
+            if (_allMessages.Count > 0)
+            {
+                csvBuilder.AppendLine();
+                csvBuilder.AppendLine("MQTT消息追踪");
+                csvBuilder.AppendLine("BatchId,节点,NodeId,EventName,MsgId,发送Topic,发送时间,接收Topic,接收时间,耗时(ms),状态码,状态消息,状态");
+                foreach (var msg in _allMessages)
+                {
+                    csvBuilder.Append(msg.BatchId).Append(',');
+                    csvBuilder.Append(CsvEscape(msg.NodeName)).Append(',');
+                    csvBuilder.Append(CsvEscape(msg.NodeId)).Append(',');
+                    csvBuilder.Append(CsvEscape(msg.EventName)).Append(',');
+                    csvBuilder.Append(CsvEscape(msg.MsgId)).Append(',');
+                    csvBuilder.Append(CsvEscape(msg.SendTopic)).Append(',');
+                    csvBuilder.Append(msg.SendTime.ToString("yyyy/MM/dd HH:mm:ss.fff")).Append(',');
+                    csvBuilder.Append(CsvEscape(msg.RecvTopic)).Append(',');
+                    csvBuilder.Append(msg.RecvTime?.ToString("yyyy/MM/dd HH:mm:ss.fff") ?? string.Empty).Append(',');
+                    csvBuilder.Append(msg.ElapsedMs).Append(',');
+                    csvBuilder.Append(msg.StatusCode?.ToString() ?? string.Empty).Append(',');
+                    csvBuilder.Append(CsvEscape(msg.StatusMessage)).Append(',');
+                    csvBuilder.Append(msg.State);
+                    csvBuilder.AppendLine();
+                }
+            }
+
             File.WriteAllText(dialog.FileName, csvBuilder.ToString(), new UTF8Encoding(true));
             MessageBox.Show("导出成功", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -115,7 +144,92 @@ namespace ColorVision.Engine.Templates.Flow
             foreach (var record in records)
                 NodeRecords.Add(record);
 
+            // Load MQTT messages
+            _allMessages = FlowNodeRecordDataBaseHelper.GetMessagesByBatchIds(batchIds);
+            RefreshMessageFilter();
+
             DrawGanttChart(records, batchIds);
+        }
+
+        private void RefreshMessageFilter()
+        {
+            // Update node filter combo
+            var nodeNames = _allMessages.Select(m => m.NodeName).Where(n => !string.IsNullOrEmpty(n)).Distinct().ToList();
+            MessageNodeFilter.Items.Clear();
+            MessageNodeFilter.Items.Add(new ComboBoxItem { Content = "全部", IsSelected = true });
+            foreach (var name in nodeNames)
+                MessageNodeFilter.Items.Add(new ComboBoxItem { Content = name });
+            MessageNodeFilter.SelectedIndex = 0;
+
+            ApplyMessageFilter();
+        }
+
+        private void ApplyMessageFilter()
+        {
+            NodeMessages.Clear();
+            string selectedNode = null;
+            if (MessageNodeFilter.SelectedItem is ComboBoxItem item && item.Content?.ToString() != "全部")
+                selectedNode = item.Content?.ToString();
+
+            string selectedState = null;
+            if (MessageStateFilter?.SelectedItem is ComboBoxItem stateItem && stateItem.Content?.ToString() != "全部")
+                selectedState = stateItem.Content?.ToString();
+
+            var filtered = _allMessages.AsEnumerable();
+            if (!string.IsNullOrEmpty(selectedNode))
+                filtered = filtered.Where(m => m.NodeName == selectedNode);
+
+            if (!string.IsNullOrEmpty(selectedState) && Enum.TryParse<FlowMessageState>(selectedState, out var state))
+                filtered = filtered.Where(m => m.State == state);
+
+            foreach (var msg in filtered)
+                NodeMessages.Add(msg);
+        }
+
+        private void MessageNodeFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_allMessages != null)
+                ApplyMessageFilter();
+        }
+
+        private void MessageStateFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_allMessages != null)
+                ApplyMessageFilter();
+        }
+
+        private void MessageListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (MessageListView.SelectedItem is FlowNodeMessage msg)
+            {
+                var settings = new JsonSerializerSettings { Formatting = Formatting.Indented };
+                SendPayloadTextBox.Text = FormatJsonSafe(msg.SendPayload);
+                RecvPayloadTextBox.Text = FormatJsonSafe(msg.RecvPayload);
+            }
+            else
+            {
+                SendPayloadTextBox.Text = string.Empty;
+                RecvPayloadTextBox.Text = string.Empty;
+            }
+        }
+
+        private static string FormatJsonSafe(string json)
+        {
+            if (string.IsNullOrEmpty(json)) return string.Empty;
+            try
+            {
+                var obj = JsonConvert.DeserializeObject(json);
+                return JsonConvert.SerializeObject(obj, Formatting.Indented);
+            }
+            catch
+            {
+                return json;
+            }
+        }
+
+        private void OpenMessageListWindow_Click(object sender, RoutedEventArgs e)
+        {
+            new FlowMessageListWindow { Owner = this }.Show();
         }
 
         private static string DetectChineseFont()

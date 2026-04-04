@@ -262,6 +262,13 @@ public class CVBaseServerNode : CVCommonNode
 			cVTransAction.NodeOverTime(GetFullNodeName());
 			Reset(cVTransAction);
 			m_op_end.TransferData(cVTransAction.trans_action);
+			base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs
+			{
+				RecvTopic = GetRecvTopic(),
+				RecvMsgId = cmd2.MsgID,
+				RecvStatusCode = -2,
+				RecvStatusMessage = $"OverTime {maxDelay}ms"
+			});
 		}
 		else
 		{
@@ -389,7 +396,13 @@ public class CVBaseServerNode : CVCommonNode
 	protected void DoTransferToServer(CVTransAction trans, MQActionEvent act, CVBaseEventCmd cmd)
 	{
 		svrRecvResp = null;
-		base.nodeRunEvent?.Invoke(this, new FlowEngineNodeRunEventArgs());
+		base.nodeRunEvent?.Invoke(this, new FlowEngineNodeRunEventArgs
+		{
+			SendTopic = act.Topic,
+			SendMsgId = act.MsgID,
+			SendEventName = act.EventName,
+			SendPayload = act.Message
+		});
 		if (m_in_act_status == null || m_in_act_status.ConnectionCount == 0)
 		{
 			trans.trans_action.GetStartNode().DoSubscribe(GetRecvTopic(), this);
@@ -654,7 +667,15 @@ public class CVBaseServerNode : CVCommonNode
 			logger.InfoFormat("[{0}]Node completed. Transfer to the next node. TotalTime={1}/{2}", ToShortString(), timeSpan.ToString(), trans.startTime.ToString("O"));
 		}
 		m_op_end.TransferData(trans.trans_action);
-		base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs());
+		base.nodeEndEvent?.Invoke(this, new FlowEngineNodeEndEventArgs
+		{
+			RecvTopic = GetRecvTopic(),
+			RecvMsgId = cmd.cmd?.MsgID,
+			RecvEventName = cmd.resp?.EventName,
+			RecvStatusCode = cmd.resp?.Status == ActionStatusEnum.Finish ? 0 : (cmd.resp?.Status == ActionStatusEnum.Failed ? -1 : null),
+			RecvStatusMessage = cmd.resp?.Message,
+			RecvPayload = cmd.resp?.Data != null ? JsonConvert.SerializeObject(cmd.resp.Data) : null
+		});
 	}
 
 	protected virtual void release(string serialNumber)

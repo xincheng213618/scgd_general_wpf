@@ -41,6 +41,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     _sharedDb = CreateDb();
                     _sharedDb.CodeFirst.InitTables<FlowNodeRecord>();
+                    _sharedDb.CodeFirst.InitTables<FlowNodeMessage>();
 
                     _writerThread = new Thread(WriteLoop)
                     {
@@ -176,6 +177,108 @@ namespace ColorVision.Engine.Templates.Flow
                 log.Error("查询BatchId列表失败", ex);
                 return new List<int>();
             }
+        }
+
+        // ===== FlowNodeMessage methods =====
+
+        public static int InsertMessage(FlowNodeMessage item)
+        {
+            EnsureInitialized();
+            if (item == null) return -1;
+            var tcs = new TaskCompletionSource<int>();
+            _writeQueue.Add(db =>
+            {
+                try
+                {
+                    int id = db.Insertable(item).ExecuteReturnIdentity();
+                    item.Id = id;
+                    tcs.TrySetResult(id);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("插入FlowNodeMessage失败", ex);
+                    tcs.TrySetResult(-1);
+                }
+            });
+            return tcs.Task.Result;
+        }
+
+        public static void UpdateMessage(FlowNodeMessage item)
+        {
+            EnsureInitialized();
+            if (item == null) return;
+            _writeQueue.Add(db =>
+            {
+                try
+                {
+                    db.Updateable(item).ExecuteCommand();
+                }
+                catch (Exception ex)
+                {
+                    log.Error("更新FlowNodeMessage失败", ex);
+                }
+            });
+        }
+
+        public static List<FlowNodeMessage> GetMessagesByBatchIds(List<int> batchIds)
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                return db.Queryable<FlowNodeMessage>().Where(x => batchIds.Contains(x.BatchId)).OrderBy(x => x.SendTime).ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询FlowNodeMessage失败", ex);
+                return new List<FlowNodeMessage>();
+            }
+        }
+
+        public static List<FlowNodeMessage> GetMessagesByNodeId(int batchId, string nodeId)
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                return db.Queryable<FlowNodeMessage>().Where(x => x.BatchId == batchId && x.NodeId == nodeId).OrderBy(x => x.SendTime).ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询FlowNodeMessage失败", ex);
+                return new List<FlowNodeMessage>();
+            }
+        }
+
+        public static List<FlowNodeMessage> GetAllMessages(int limit = 500)
+        {
+            EnsureInitialized();
+            try
+            {
+                using var db = CreateReadDb();
+                return db.Queryable<FlowNodeMessage>().OrderByDescending(x => x.SendTime).Take(limit).ToList();
+            }
+            catch (Exception ex)
+            {
+                log.Error("查询FlowNodeMessage失败", ex);
+                return new List<FlowNodeMessage>();
+            }
+        }
+
+        public static void DeleteAllMessages()
+        {
+            EnsureInitialized();
+            _writeQueue.Add(db =>
+            {
+                try
+                {
+                    db.Deleteable<FlowNodeMessage>().ExecuteCommand();
+                }
+                catch (Exception ex)
+                {
+                    log.Error("删除FlowNodeMessage失败", ex);
+                }
+            });
         }
     }
 }
