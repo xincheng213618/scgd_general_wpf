@@ -474,7 +474,8 @@ namespace ColorVision.Engine.Templates.Flow
             STNode rootNode = GetRootNode();
             if (rootNode == null) return;
 
-            var layout = new SugiyamaLayout(ConnectionInfo, startX, startY, horizontalSpacing, verticalSpacing);
+            var layout = new SugiyamaLayout(ConnectionInfo, startX, startY, horizontalSpacing, verticalSpacing,
+                STNodeEditor.Width, STNodeEditor.Height);
             layout.Execute(rootNode);
             AutoSize();
         }
