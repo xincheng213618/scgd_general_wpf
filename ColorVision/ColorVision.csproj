@@ -116,6 +116,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
+    <ProjectReference Include="..\Engine\ColorVision.ShellExtension\ColorVision.ShellExtension.csproj" />
     <ProjectReference Include="..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" />
     <ProjectReference Include="..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>

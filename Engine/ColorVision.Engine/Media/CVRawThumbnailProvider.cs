@@ -185,17 +185,20 @@ namespace ColorVision.Engine.Media
                         int len = (int)(fileInfo.Rows * fileInfo.Cols * (fileInfo.Bpp / 8));
                         if (fileInfo.Channels == 3)
                         {
-                            // For 3-channel CIE, use first channel (Y component)
-                            src = Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, MatType.MakeType(fileInfo.Depth, 1), fileInfo.Data);
+                            // For 3-channel CIE (XYZ), data is stored as 3 separate planes
+                            // Extract the first channel for thumbnail display
+                            byte[] channelData = new byte[len];
+                            Buffer.BlockCopy(fileInfo.Data, 0, channelData, 0, len);
+                            src = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, 1), channelData);
                         }
                         else
                         {
-                            src = Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
+                            src = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
                         }
                     }
                     else
                     {
-                        src = Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
+                        src = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
                     }
 
                     // Normalize 32-bit float images to 8-bit for display

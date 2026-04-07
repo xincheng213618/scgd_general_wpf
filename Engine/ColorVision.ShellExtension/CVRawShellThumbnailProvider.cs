@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using ColorVision.FileIO;
 using ColorVision.ShellExtension.Interop;
 using OpenCvSharp;
@@ -10,34 +11,56 @@ namespace ColorVision.ShellExtension
     /// <summary>
     /// Windows Shell Thumbnail Provider for .cvraw and .cvcie files.
     /// This COM class is loaded by Windows Explorer to generate file thumbnails.
-    /// It reads the custom image format using ColorVision.FileIO and OpenCvSharp,
-    /// then returns an HBITMAP that Explorer displays as the file thumbnail.
+    /// Implements IInitializeWithStream (preferred by Win11 process isolation)
+    /// and IInitializeWithFile (fallback when process isolation is disabled).
     /// </summary>
     [ComVisible(true)]
     [Guid("7B5E2A3C-8F1D-4E6A-B9C2-1D3E5F7A8B9C")]
     [ClassInterface(ClassInterfaceType.None)]
-    public class CVRawShellThumbnailProvider : IShellThumbnailProvider, IInitializeWithFile
+    public class CVRawShellThumbnailProvider : IShellThumbnailProvider, IInitializeWithStream, IInitializeWithFile
     {
         private const int S_OK = 0;
         private const int E_FAIL = unchecked((int)0x80004005);
         private const int E_INVALIDARG = unchecked((int)0x80070057);
 
         private string? _filePath;
+        private byte[]? _streamData;
 
         /// <summary>
-        /// Called by Explorer to provide the file path before requesting a thumbnail.
+        /// Called by Explorer (with process isolation) to provide file data as a stream.
+        /// This is preferred on Windows 11.
+        /// </summary>
+        public int Initialize(IStream pstream, uint grfMode)
+        {
+            try
+            {
+                ShellLog.Log($"IInitializeWithStream.Initialize called, grfMode={grfMode}");
+                _streamData = ReadAllBytesFromStream(pstream);
+                ShellLog.Log($"IInitializeWithStream.Initialize: read {_streamData?.Length ?? 0} bytes");
+                return _streamData != null ? S_OK : E_FAIL;
+            }
+            catch (Exception ex)
+            {
+                ShellLog.Log($"IInitializeWithStream.Initialize exception: {ex}");
+                return E_FAIL;
+            }
+        }
+
+        /// <summary>
+        /// Called by Explorer (without process isolation) to provide the file path.
         /// </summary>
         public int Initialize(string pszFilePath, uint grfMode)
         {
             if (string.IsNullOrEmpty(pszFilePath))
                 return E_INVALIDARG;
             _filePath = pszFilePath;
-            ShellLog.Log($"Initialize: {pszFilePath}");
+            ShellLog.Log($"IInitializeWithFile.Initialize: {pszFilePath}");
             return S_OK;
         }
 
         /// <summary>
         /// Called by Explorer to get the thumbnail bitmap.
+        /// Handles both stream-based (Win11 process isolation) and file-based initialization.
         /// </summary>
         public int GetThumbnail(uint cx, out IntPtr phbmp, out uint pdwAlpha)
         {
@@ -46,24 +69,52 @@ namespace ColorVision.ShellExtension
 
             try
             {
-                if (string.IsNullOrEmpty(_filePath) || !File.Exists(_filePath))
-                {
-                    ShellLog.Log($"GetThumbnail: file not found or empty path: {_filePath}");
-                    return E_FAIL;
-                }
-
                 if (cx == 0)
                     return E_INVALIDARG;
 
-                ShellLog.Log($"GetThumbnail: start, file={_filePath}, cx={cx}");
+                CVCIEFile fileInfo;
+                int index;
 
-                // Read file into memory to avoid file locking issues
-                byte[] fileData = File.ReadAllBytes(_filePath);
-
-                int index = CVFileUtil.ReadCIEFileHeader(fileData, out CVCIEFile fileInfo);
-                if (index <= 0)
+                // Prefer stream data (from IInitializeWithStream), fall back to file path
+                if (_streamData != null)
                 {
-                    ShellLog.Log($"GetThumbnail: ReadCIEFileHeader returned {index} for {_filePath}");
+                    ShellLog.Log($"GetThumbnail: using stream data ({_streamData.Length} bytes), cx={cx}");
+                    index = CVFileUtil.ReadCIEFileHeader(_streamData, out fileInfo);
+                    if (index <= 0)
+                    {
+                        ShellLog.Log($"GetThumbnail: ReadCIEFileHeader(bytes) returned {index}");
+                        return E_FAIL;
+                    }
+                    // Infer file type from channels: 3-channel data is CIE, otherwise Raw
+                    if (fileInfo.Channels == 3)
+                        fileInfo.FileExtType = CVType.CIE;
+                    else
+                        fileInfo.FileExtType = CVType.Raw;
+
+                    // Override with file path extension if available
+                    if (!string.IsNullOrEmpty(_filePath))
+                    {
+                        if (_filePath.Contains(".cvcie", StringComparison.OrdinalIgnoreCase))
+                            fileInfo.FileExtType = CVType.CIE;
+                        else if (_filePath.Contains(".cvraw", StringComparison.OrdinalIgnoreCase))
+                            fileInfo.FileExtType = CVType.Raw;
+                        else if (_filePath.Contains(".cvsrc", StringComparison.OrdinalIgnoreCase))
+                            fileInfo.FileExtType = CVType.Src;
+                    }
+                }
+                else if (!string.IsNullOrEmpty(_filePath) && File.Exists(_filePath))
+                {
+                    ShellLog.Log($"GetThumbnail: using file path={_filePath}, cx={cx}");
+                    index = CVFileUtil.ReadCIEFileHeader(_filePath, out fileInfo);
+                    if (index <= 0)
+                    {
+                        ShellLog.Log($"GetThumbnail: ReadCIEFileHeader(path) returned {index} for {_filePath}");
+                        return E_FAIL;
+                    }
+                }
+                else
+                {
+                    ShellLog.Log($"GetThumbnail: no data available (stream={_streamData != null}, path={_filePath})");
                     return E_FAIL;
                 }
 
@@ -72,19 +123,24 @@ namespace ColorVision.ShellExtension
 
                 try
                 {
-                    bool ret = CVFileUtil.ReadCIEFileData(fileData, ref fileInfo, index);
+                    bool ret;
+                    if (_streamData != null)
+                        ret = CVFileUtil.ReadCIEFileData(_streamData, ref fileInfo, index);
+                    else
+                        ret = CVFileUtil.ReadCIEFileData(_filePath!, ref fileInfo, index);
+
                     if (!ret || fileInfo.Data == null)
                     {
-                        ShellLog.Log($"GetThumbnail: ReadCIEFileData failed for {_filePath}");
+                        ShellLog.Log($"GetThumbnail: ReadCIEFileData failed");
                         return E_FAIL;
                     }
 
-                    ShellLog.Log($"GetThumbnail: file read OK, type={fileInfo.FileExtType}, {fileInfo.Cols}x{fileInfo.Rows}, bpp={fileInfo.Bpp}, ch={fileInfo.Channels}");
+                    ShellLog.Log($"GetThumbnail: data read OK, type={fileInfo.FileExtType}, {fileInfo.Cols}x{fileInfo.Rows}, bpp={fileInfo.Bpp}, ch={fileInfo.Channels}");
 
                     mat = CreateMatFromCVCIEFile(fileInfo);
                     if (mat == null || mat.Empty())
                     {
-                        ShellLog.Log($"GetThumbnail: CreateMatFromCVCIEFile returned null for {_filePath}");
+                        ShellLog.Log($"GetThumbnail: CreateMatFromCVCIEFile returned null/empty");
                         return E_FAIL;
                     }
 
@@ -103,11 +159,11 @@ namespace ColorVision.ShellExtension
                     phbmp = MatToHBitmap(thumbnail);
                     if (phbmp == IntPtr.Zero)
                     {
-                        ShellLog.Log($"GetThumbnail: MatToHBitmap returned null for {_filePath}");
+                        ShellLog.Log($"GetThumbnail: MatToHBitmap returned null");
                         return E_FAIL;
                     }
 
-                    ShellLog.Log($"GetThumbnail: success, {thumbWidth}x{thumbHeight} for {_filePath}");
+                    ShellLog.Log($"GetThumbnail: success, {thumbWidth}x{thumbHeight}");
                     return S_OK;
                 }
                 finally
@@ -120,8 +176,58 @@ namespace ColorVision.ShellExtension
             catch (Exception ex)
             {
                 // Shell extensions must never throw - return error HRESULT
-                ShellLog.Log($"GetThumbnail: exception for {_filePath}: {ex}");
+                ShellLog.Log($"GetThumbnail: exception: {ex}");
                 return E_FAIL;
+            }
+        }
+
+        /// <summary>
+        /// Reads all bytes from a COM IStream.
+        /// </summary>
+        private static byte[]? ReadAllBytesFromStream(IStream stream)
+        {
+            try
+            {
+                // Get stream size via Stat
+                stream.Stat(out STATSTG stat, 1); // STATFLAG_NONAME = 1
+                long size = stat.cbSize;
+
+                if (size <= 0 || size > int.MaxValue)
+                    return null;
+
+                // Seek to beginning
+                stream.Seek(0, 0, IntPtr.Zero); // STREAM_SEEK_SET = 0
+
+                byte[] buffer = new byte[size];
+                IntPtr bytesReadPtr = Marshal.AllocCoTaskMem(sizeof(long));
+                try
+                {
+                    Marshal.WriteInt64(bytesReadPtr, 0);
+                    stream.Read(buffer, (int)size, bytesReadPtr);
+                    long bytesRead = Marshal.ReadInt64(bytesReadPtr);
+                    if (bytesRead != size)
+                    {
+                        // Partial read - resize buffer
+                        if (bytesRead > 0)
+                        {
+                            byte[] partial = new byte[bytesRead];
+                            Buffer.BlockCopy(buffer, 0, partial, 0, (int)bytesRead);
+                            return partial;
+                        }
+                        return null;
+                    }
+                }
+                finally
+                {
+                    Marshal.FreeCoTaskMem(bytesReadPtr);
+                }
+
+                return buffer;
+            }
+            catch (Exception ex)
+            {
+                ShellLog.Log($"ReadAllBytesFromStream error: {ex.Message}");
+                return null;
             }
         }
 
@@ -145,17 +251,21 @@ namespace ColorVision.ShellExtension
                     {
                         if (fileInfo.Channels == 3)
                         {
-                            // For 3-channel CIE, use first channel (Y component)
-                            src = Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, MatType.MakeType(fileInfo.Depth, 1), fileInfo.Data);
+                            // For 3-channel CIE (XYZ), data is stored as 3 separate planes
+                            // Extract the first channel (X) for thumbnail display
+                            int singleChannelLen = fileInfo.Rows * fileInfo.Cols * (fileInfo.Bpp / 8);
+                            byte[] channelData = new byte[singleChannelLen];
+                            Buffer.BlockCopy(fileInfo.Data, 0, channelData, 0, singleChannelLen);
+                            src = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, 1), channelData);
                         }
                         else
                         {
-                            src = Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
+                            src = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
                         }
                     }
                     else
                     {
-                        src = Mat.FromPixelData(fileInfo.Cols, fileInfo.Rows, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
+                        src = Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, MatType.MakeType(fileInfo.Depth, fileInfo.Channels), fileInfo.Data);
                     }
 
                     // Normalize 32-bit float images to 8-bit for display
@@ -240,7 +350,7 @@ namespace ColorVision.ShellExtension
                 if (matStride == dibStride)
                 {
                     // Strides match - copy entire image in one call
-                    Buffer.MemoryCopy(src, dst, dibStride * height, copyLen * height);
+                    Buffer.MemoryCopy(src, dst, (long)dibStride * height, (long)dibStride * height);
                 }
                 else
                 {
