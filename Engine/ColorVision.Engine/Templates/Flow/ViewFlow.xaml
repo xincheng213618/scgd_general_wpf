@@ -7,8 +7,6 @@
              xmlns:st ="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
              mc:Ignorable="d" 
              PreviewKeyDown="UserControl_PreviewKeyDown"
-             xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
-             xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
              xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
              d:DataContext="{d:DesignInstance local:ViewFlow}"
              
@@ -19,7 +17,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Column="0" Grid.ColumnSpan="1" x:Name="Grid1">
+        <Grid Grid.Column="0" x:Name="Grid1">
             <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch" >
                 <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
             </WindowsFormsHost>

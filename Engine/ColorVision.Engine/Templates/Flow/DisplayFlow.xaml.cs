@@ -97,7 +97,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             Unselected += (s, e) =>
             {
-                View.STNodeEditorHelper.PropertyEditorWindow?.Hide();
+                View.STNodeEditorHelper.HidePropertyEditor();
             };
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
@@ -484,6 +484,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private readonly ConcurrentDictionary<string, FlowNodeRecord> _nodeRecords = new ConcurrentDictionary<string, FlowNodeRecord>();
         private readonly ConcurrentDictionary<string, string> _runningNodeNames = new ConcurrentDictionary<string, string>();
+        private readonly ConcurrentDictionary<string, FlowNodeMessage> _nodeMessages = new ConcurrentDictionary<string, FlowNodeMessage>();
 
         PropertyInfo MarkColorProperty { get; set; }
         private void nodeEndEvent(object sender, FlowEngineNodeEndEventArgs e)
@@ -504,6 +505,26 @@ namespace ColorVision.Engine.Templates.Flow
                     record.EndTime = DateTime.Now;
                     record.ElapsedMs = (long)(record.EndTime.Value - record.StartTime).TotalMilliseconds;
                     Task.Run(() => FlowNodeRecordDataBaseHelper.Update(record));
+                }
+
+                // Update the existing message with received MQTT response
+                if (_nodeMessages.TryRemove(algorithmNode.NodeID, out FlowNodeMessage nodeMsg))
+                {
+                    nodeMsg.RecvTime = DateTime.Now;
+                    if (e != null && !string.IsNullOrEmpty(e.RecvMsgId))
+                    {
+                        nodeMsg.RecvTopic = e.RecvTopic;
+                        nodeMsg.RecvPayload = e.RecvPayload;
+                        nodeMsg.StatusCode = e.RecvStatusCode;
+                        nodeMsg.StatusMessage = e.RecvStatusMessage;
+                        nodeMsg.State = (e.RecvStatusCode.HasValue && e.RecvStatusCode.Value == 0)
+                            ? FlowMessageState.Success : FlowMessageState.Fail;
+                    }
+                    else
+                    {
+                        nodeMsg.State = FlowMessageState.Timeout;
+                    }
+                    Task.Run(() => FlowNodeRecordDataBaseHelper.UpdateMessage(nodeMsg));
                 }
             }
         }
@@ -535,6 +556,30 @@ namespace ColorVision.Engine.Templates.Flow
                     if (insertId <= 0)
                         _nodeRecords.TryRemove(algorithmNode.NodeID, out _);
                 });
+
+                // Record sent MQTT message (combined send/recv record)
+                if (e != null && !string.IsNullOrEmpty(e.SendMsgId))
+                {
+                    var msg = new FlowNodeMessage
+                    {
+                        BatchId = batchId,
+                        SerialNumber = FlowControl.SerialNumber,
+                        NodeId = algorithmNode.NodeID,
+                        NodeName = algorithmNode.OnGetDrawTitle(),
+                        MsgId = e.SendMsgId,
+                        EventName = e.SendEventName,
+                        SendTopic = e.SendTopic,
+                        SendPayload = e.SendPayload,
+                        SendTime = DateTime.Now,
+                        State = FlowMessageState.Sended
+                    };
+                    Task.Run(() =>
+                    {
+                        int id = FlowNodeRecordDataBaseHelper.InsertMessage(msg);
+                        if (id > 0)
+                            _nodeMessages[algorithmNode.NodeID] = msg;
+                    });
+                }
             }
         }
 
@@ -612,6 +657,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             _nodeRecords.Clear();
             _runningNodeNames.Clear();
+            _nodeMessages.Clear();
             FlowControl.FlowCompleted -= FlowControl_FlowCompleted;
             FlowControl.FlowCompleted += FlowControl_FlowCompleted;
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

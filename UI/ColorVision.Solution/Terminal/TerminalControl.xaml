@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:ColorVision.Solution.Terminal"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="600"
              Background="#1E1E1E"
@@ -11,7 +12,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
@@ -29,47 +29,35 @@
                     Foreground="{DynamicResource GlobalTextBrush}" ToolTip="终止当前终端进程"/>
         </ToolBar>
 
-        <!-- Output area -->
-        <TextBox Grid.Row="1" x:Name="OutputTextBox"
-                 FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
-                 FontSize="14"
-                 Background="#1E1E1E"
-                 Foreground="#CCCCCC"
-                 CaretBrush="#CCCCCC"
-                 BorderThickness="0"
-                 IsReadOnly="True"
-                 TextWrapping="NoWrap"
-                 AcceptsReturn="True"
-                 VerticalScrollBarVisibility="Auto"
-                 HorizontalScrollBarVisibility="Auto"
-                 Padding="8,4"
-                 PreviewKeyDown="OutputTextBox_PreviewKeyDown"
-                 FocusVisualStyle="{x:Null}"/>
-
-        <!-- Input line with path prompt -->
-        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="#3F3F46" Background="#1E1E1E">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" x:Name="PromptLabel"
-                           FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
-                           FontSize="14"
-                           Foreground="#6A9955"
-                           VerticalAlignment="Center"
-                           Padding="8,6,0,6"
-                           Text="PS>"/>
-                <TextBox Grid.Column="1" x:Name="InputTextBox"
-                         FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
-                         FontSize="14"
-                         Background="#1E1E1E"
-                         Foreground="#CCCCCC"
-                         CaretBrush="#CCCCCC"
+        <!-- Terminal area: custom drawn terminal view with IME proxy overlay -->
+        <Grid Grid.Row="1">
+            <ScrollViewer x:Name="TerminalScrollViewer"
+                          Background="#1E1E1E"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Focusable="True"
+                          PreviewKeyDown="TerminalScrollViewer_PreviewKeyDown"
+                          PreviewTextInput="TerminalScrollViewer_PreviewTextInput"
+                          MouseDown="TerminalScrollViewer_MouseDown"
+                          GotFocus="TerminalScrollViewer_GotFocus">
+                <local:TerminalView x:Name="TerminalDisplay"
+                                    Focusable="False"/>
+            </ScrollViewer>
+            <!-- Invisible TextBox positioned at cursor for correct IME candidate window placement -->
+            <Canvas x:Name="ImeCanvas" IsHitTestVisible="False">
+                <TextBox x:Name="ImeProxy"
+                         Width="2" Height="20"
+                         Background="Transparent"
+                         Foreground="Transparent"
+                         CaretBrush="Transparent"
                          BorderThickness="0"
-                         Padding="4,6,8,6"
-                         PreviewKeyDown="InputTextBox_PreviewKeyDown"/>
-            </Grid>
-        </Border>
+                         FontFamily="Cascadia Mono, Consolas, Courier New"
+                         FontSize="14"
+                         Focusable="True"
+                         AcceptsReturn="False"
+                         PreviewKeyDown="OutputTextBox_PreviewKeyDown"
+                         PreviewTextInput="ImeProxy_PreviewTextInput"/>
+            </Canvas>
+        </Grid>
     </Grid>
 </UserControl>

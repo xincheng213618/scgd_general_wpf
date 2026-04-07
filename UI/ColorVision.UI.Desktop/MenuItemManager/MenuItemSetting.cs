@@ -34,5 +34,13 @@ namespace ColorVision.UI.Desktop.MenuItemManager
         [DisplayName("OwnerGuid Override")]
         public string? OwnerGuidOverride { get => _ownerGuidOverride; set => SetProperty(ref _ownerGuidOverride, value); }
         private string? _ownerGuidOverride;
+
+        [Browsable(false)]
+        public string? SourceType { get => _sourceType; set => SetProperty(ref _sourceType, value); }
+        private string? _sourceType;
+
+        [Browsable(false)]
+        public string? SourceAssembly { get => _sourceAssembly; set => SetProperty(ref _sourceAssembly, value); }
+        private string? _sourceAssembly;
     }
 }

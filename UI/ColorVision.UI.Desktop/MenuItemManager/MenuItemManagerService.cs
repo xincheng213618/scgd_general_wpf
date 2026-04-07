@@ -87,6 +87,7 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                 if (string.IsNullOrEmpty(mi.GuidId)) continue;
                 if (existingGuids.Contains(mi.GuidId)) continue;
 
+                var type = mi.GetType();
                 config.Settings.Add(new MenuItemSetting
                 {
                     GuidId = mi.GuidId,
@@ -94,6 +95,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                     Header = mi.Header,
                     DefaultOrder = mi.Order,
                     IsVisible = true,
+                    SourceType = type.FullName,
+                    SourceAssembly = type.Assembly.GetName().Name,
                 });
             }
 
@@ -111,6 +114,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
                     setting.Header = mi.Header;
                     setting.OwnerGuid = mi.OwnerGuid;
                     setting.DefaultOrder = mi.Order;
+                    setting.SourceType = mi.GetType().FullName;
+                    setting.SourceAssembly = mi.GetType().Assembly.GetName().Name;
                 }
             }
         }

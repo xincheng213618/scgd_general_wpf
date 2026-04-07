@@ -28,6 +28,11 @@
 			<Pack>true</Pack>
 			<PackagePath>runtimes/win-x64/native</PackagePath>
 		</Content>
+		<Content Include="..\..\x64\Release\opencv_cuda.dll" Link="runtimes\win-x64\native\opencv_cuda.dll" Condition="Exists('..\..\x64\Release\opencv_cuda.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</Content>
 		<Content Include="..\..\packages\opencv\x64\vc18\bin\opencv_core4130.dll" Link="runtimes\win-x64\native\opencv_core4130.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Pack>true</Pack>

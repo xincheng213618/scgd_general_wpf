@@ -205,6 +205,9 @@ namespace ColorVision.UI.Menus
                 IsChecked = mi.IsChecked ?? false,
                 Visibility = mi.Visibility,
             };
+#if DEBUG
+            menuItem.ToolTip = $"Class: {mi.GetType().Name}\nAssembly: {mi.GetType().Assembly.GetName().Name}";
+#endif
             return menuItem;
         }
 

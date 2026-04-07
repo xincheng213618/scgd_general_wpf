@@ -67,6 +67,8 @@
                 <RowDefinition Height="2*" MinHeight="200"/>
                 <RowDefinition Height="5"/>
                 <RowDefinition Height="*" MinHeight="120"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="*" MinHeight="120"/>
             </Grid.RowDefinitions>
 
             <!-- Top: Gantt chart (primary) -->
@@ -74,7 +76,7 @@
 
             <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="Transparent"/>
 
-            <!-- Bottom: Node records list (secondary) -->
+            <!-- Middle: Node records list -->
             <ListView x:Name="NodeRecordListView" Grid.Row="2"
                       Background="Transparent" BorderThickness="0">
                 <ListView.ItemContainerStyle>
@@ -141,6 +143,139 @@
                     </GridView>
                 </ListView.View>
             </ListView>
+
+            <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+            <!-- Bottom: MQTT Message records (master-detail like MessagesListWindow) -->
+            <Grid Grid.Row="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="0,2,0,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="MQTT消息追踪" FontWeight="Bold" Margin="0,0,10,0"/>
+                    <TextBlock Grid.Column="2" Text="节点筛选:" Margin="10,0,5,0"/>
+                    <ComboBox x:Name="MessageNodeFilter" Grid.Column="3" SelectionChanged="MessageNodeFilter_SelectionChanged">
+                        <ComboBoxItem Content="全部" IsSelected="True"/>
+                    </ComboBox>
+                    <TextBlock Grid.Column="4" Text="状态筛选:" Margin="10,0,5,0"/>
+                    <ComboBox x:Name="MessageStateFilter" Grid.Column="5" SelectionChanged="MessageStateFilter_SelectionChanged">
+                        <ComboBoxItem Content="全部" IsSelected="True"/>
+                        <ComboBoxItem Content="Sended"/>
+                        <ComboBoxItem Content="Success"/>
+                        <ComboBoxItem Content="Fail"/>
+                        <ComboBoxItem Content="Timeout"/>
+                    </ComboBox>
+                    <Button Grid.Column="7" Content="消息查询窗口" Click="OpenMessageListWindow_Click" Margin="5,0,0,0" Width="100" Height="24"/>
+                </Grid>
+
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="200"/>
+                        <ColumnDefinition Width="5"/>
+                        <ColumnDefinition Width="*" MinWidth="200"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left: Message list -->
+                    <ListView x:Name="MessageListView" Grid.Column="0"
+                              Background="Transparent" BorderThickness="0"
+                              SelectionChanged="MessageListView_SelectionChanged">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}"/>
+                        </ListView.ItemContainerStyle>
+                        <ListView.View>
+                            <GridView>
+                                <GridView.ColumnHeaderContainerStyle>
+                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource GridViewColumnHeaderBase}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                    </Style>
+                                </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn Header="节点" Width="120">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding NodeName}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="EventName" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding EventName}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="发送时间" Width="130">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding SendTime, StringFormat=HH:mm:ss.fff}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="接收时间" Width="130">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding RecvTime, StringFormat=HH:mm:ss.fff}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="耗时(ms)" Width="70">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ElapsedMs}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="状态" Width="70">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding State}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                    <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent"/>
+
+                    <!-- Right: Send/Recv detail panels -->
+                    <Grid x:Name="MessageDetailGrid" Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="发送数据 (Send)" FontWeight="Bold" Margin="2"/>
+                        <TextBox x:Name="SendPayloadTextBox" Grid.Row="1" IsReadOnly="True"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 TextWrapping="Wrap" BorderThickness="1"
+                                 FontFamily="Consolas" FontSize="12"/>
+
+                        <TextBlock Grid.Row="2" Text="接收数据 (Receive)" FontWeight="Bold" Margin="2"/>
+                        <TextBox x:Name="RecvPayloadTextBox" Grid.Row="3" IsReadOnly="True"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                 TextWrapping="Wrap" BorderThickness="1"
+                                 FontFamily="Consolas" FontSize="12"/>
+                    </Grid>
+                </Grid>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

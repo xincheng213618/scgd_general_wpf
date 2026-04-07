@@ -96,6 +96,13 @@ namespace ColorVision.UI.Views
         }
 
         /// <summary>
+        /// 当前活动视图控件变更时触发。参数为当前激活的控件，若无已注册视图处于活动状态则为 null。
+        /// </summary>
+        public event Action<Control?>? ActiveViewChanged;
+
+        public void RaiseActiveViewChanged(Control? control) => ActiveViewChanged?.Invoke(control);
+
+        /// <summary>
         /// 激活上一次显示的视图
         /// </summary>
         public void ActivateLastView()

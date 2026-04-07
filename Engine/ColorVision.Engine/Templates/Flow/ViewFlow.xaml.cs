@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Batch;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Solution.Workspace;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
@@ -213,8 +214,27 @@ namespace ColorVision.Engine.Services.Flow
             manager.ViewTitles[this] = ColorVision.Engine.Properties.Resources.Workflow;
 
             STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
+
+            // Use AvalonDock panel for node property editing
+            STNodeEditorHelper.UseDockPanel = true;
+
+            // Hide the property panel when this view loses focus to another view
+            this.Loaded += (s, e) => DockViewManager.GetInstance().ActiveViewChanged += OnActiveViewChanged;
+            this.Unloaded += (s, e) => DockViewManager.GetInstance().ActiveViewChanged -= OnActiveViewChanged;
         }
 
+        private void OnActiveViewChanged(System.Windows.Controls.Control? activeView)
+        {
+            // Only hide when another registered view becomes active.
+            // If activeView is null it means focus moved to a non-view control
+            // (e.g. the embedded WinForms STNodeEditor) — don't hide in that case.
+            if (activeView != null && activeView != this)
+            {
+                // Hide the property panel when another view becomes active
+                if (WorkspaceManager.LayoutManager?.IsPanelVisible(FlowNodePropertyPanel.PanelId) == true)
+                    WorkspaceManager.LayoutManager?.TogglePanel(FlowNodePropertyPanel.PanelId);
+            }
+        }
 
         public void AutoSize()
         {
@@ -395,7 +415,6 @@ namespace ColorVision.Engine.Services.Flow
         {
             ThemeManager.Current.CurrentUIThemeChanged -= ThemeChanged;
 
-            STNodeEditorHelper?.PropertyEditorWindow?.CloseWindow();
             STNodeEditorMain?.Dispose();
             winf1?.Dispose();
             GC.SuppressFinalize(this);
@@ -426,6 +445,7 @@ namespace ColorVision.Engine.Services.Flow
                 window.Show();
             }
         }
+
     }
 
 

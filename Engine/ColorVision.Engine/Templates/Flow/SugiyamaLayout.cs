@@ -13,6 +13,7 @@ namespace ColorVision.Engine.Templates.Flow
     /// 1. Layer Assignment   – Assign each node to a layer using longest-path-from-root (BFS).
     /// 2. Crossing Reduction – Reorder nodes within each layer using the barycenter heuristic.
     /// 3. Coordinate Assignment – Position nodes, center parents relative to children, fix overlaps.
+    /// 4. Fold – If AutoSize would shrink nodes below a readable threshold, fold into multiple rows.
     /// </summary>
     public class SugiyamaLayout
     {
@@ -21,6 +22,8 @@ namespace ColorVision.Engine.Templates.Flow
         private readonly int _verticalSpacing;
         private readonly int _startX;
         private readonly int _startY;
+        private readonly int _viewportWidth;
+        private readonly int _viewportHeight;
 
         // Graph adjacency (only reachable nodes)
         private Dictionary<STNode, List<STNode>> _children;
@@ -40,13 +43,16 @@ namespace ColorVision.Engine.Templates.Flow
         private const int CrossingReductionIterations = 24;
 
         public SugiyamaLayout(ConnectionInfo[] connections,
-            int startX, int startY, int horizontalSpacing, int verticalSpacing)
+            int startX, int startY, int horizontalSpacing, int verticalSpacing,
+            int viewportWidth = 0, int viewportHeight = 0)
         {
             _connections = connections;
             _horizontalSpacing = horizontalSpacing;
             _verticalSpacing = verticalSpacing;
             _startX = startX;
             _startY = startY;
+            _viewportWidth = viewportWidth;
+            _viewportHeight = viewportHeight;
         }
 
         /// <summary>
@@ -61,6 +67,7 @@ namespace ColorVision.Engine.Templates.Flow
             AssignLayers(rootNode);
             ReduceCrossings();
             AssignCoordinates();
+            FoldIfNeeded();
         }
 
         /// <summary>
@@ -314,6 +321,155 @@ namespace ColorVision.Engine.Templates.Flow
                     }
                 }
                 FixOverlaps(_layers[li]);
+            }
+        }
+
+        /// <summary>
+        /// Phase 4: If AutoSize would scale nodes below a readable size, fold the layout
+        /// into multiple rows. All rows run left-to-right. The number of rows is chosen
+        /// so the resulting scale factor stays above <see cref="MinReadableScale"/>.
+        /// When the viewport is large enough that the unfolded layout scales fine, no
+        /// folding happens at all.
+        /// </summary>
+        private const float MinReadableScale = 0.35f;
+
+        private void FoldIfNeeded()
+        {
+            if (_layers.Count <= 2) return;
+            if (_viewportWidth <= 0 || _viewportHeight <= 0) return;
+
+            // Measure the current (unfolded) bounding box
+            var (canvasW, canvasH) = GetBoundingBox();
+            if (canvasW <= 0 || canvasH <= 0) return;
+
+            // Simulate what AutoSize would compute
+            float scale = Math.Min((float)_viewportWidth / canvasW, (float)_viewportHeight / canvasH);
+            if (scale > 1f) scale = 1f;
+
+            // If unfolded layout fits at a readable scale, nothing to do
+            if (scale >= MinReadableScale) return;
+
+            // Try increasing row counts until we find one that gives a good scale,
+            // or stop when we can't improve further.
+            int bestRows = 1;
+            float bestScale = scale;
+
+            for (int numRows = 2; numRows <= _layers.Count; numRows++)
+            {
+                int layersPerRow = (int)Math.Ceiling((double)_layers.Count / numRows);
+                if (layersPerRow < 2) break;
+
+                // Estimate folded dimensions
+                var (foldedW, foldedH) = EstimateFoldedSize(numRows, layersPerRow);
+                float foldedScale = Math.Min((float)_viewportWidth / foldedW, (float)_viewportHeight / foldedH);
+                if (foldedScale > 1f) foldedScale = 1f;
+
+                if (foldedScale > bestScale)
+                {
+                    bestScale = foldedScale;
+                    bestRows = numRows;
+                }
+
+                // Good enough — stop searching
+                if (foldedScale >= MinReadableScale) break;
+            }
+
+            if (bestRows <= 1) return;
+
+            // Apply the fold
+            int finalLayersPerRow = (int)Math.Ceiling((double)_layers.Count / bestRows);
+            ApplyFold(bestRows, finalLayersPerRow);
+        }
+
+        private (int width, int height) GetBoundingBox()
+        {
+            int minX = int.MaxValue, maxX = int.MinValue;
+            int minY = int.MaxValue, maxY = int.MinValue;
+            foreach (var node in _reachable)
+            {
+                minX = Math.Min(minX, node.Left);
+                maxX = Math.Max(maxX, node.Left + node.Width);
+                minY = Math.Min(minY, node.Top);
+                maxY = Math.Max(maxY, node.Top + node.Height);
+            }
+            return (maxX - minX, maxY - minY);
+        }
+
+        private (float width, float height) EstimateFoldedSize(int numRows, int layersPerRow)
+        {
+            float rowWidth = layersPerRow * _horizontalSpacing;
+            int rowGap = _verticalSpacing * 3;
+
+            float totalHeight = 0;
+            for (int r = 0; r < numRows; r++)
+            {
+                int start = r * layersPerRow;
+                int end = Math.Min(start + layersPerRow, _layers.Count);
+
+                int rMin = int.MaxValue, rMax = int.MinValue;
+                for (int li = start; li < end; li++)
+                {
+                    foreach (var node in _layers[li])
+                    {
+                        rMin = Math.Min(rMin, node.Top);
+                        rMax = Math.Max(rMax, node.Top + node.Height);
+                    }
+                }
+                if (rMin > rMax) { rMin = 0; rMax = 100; }
+                totalHeight += (rMax - rMin);
+                if (r < numRows - 1) totalHeight += rowGap;
+            }
+
+            return (rowWidth, totalHeight);
+        }
+
+        private void ApplyFold(int numRows, int layersPerRow)
+        {
+            // Compute per-row vertical extent
+            var rowMinY = new int[numRows];
+            var rowMaxY = new int[numRows];
+
+            for (int r = 0; r < numRows; r++)
+            {
+                int start = r * layersPerRow;
+                int end = Math.Min(start + layersPerRow, _layers.Count);
+
+                int rMin = int.MaxValue, rMax = int.MinValue;
+                for (int li = start; li < end; li++)
+                {
+                    foreach (var node in _layers[li])
+                    {
+                        rMin = Math.Min(rMin, node.Top);
+                        rMax = Math.Max(rMax, node.Top + node.Height);
+                    }
+                }
+                if (rMin > rMax) { rMin = 0; rMax = 0; }
+                rowMinY[r] = rMin;
+                rowMaxY[r] = rMax;
+            }
+
+            // Reposition: all rows left-to-right, stacked vertically
+            int accumulatedY = _startY;
+            int rowGap = _verticalSpacing * 3;
+
+            for (int r = 0; r < numRows; r++)
+            {
+                int start = r * layersPerRow;
+                int end = Math.Min(start + layersPerRow, _layers.Count);
+
+                for (int li = start; li < end; li++)
+                {
+                    int col = li - start;
+                    int x = _startX + col * _horizontalSpacing;
+
+                    foreach (var node in _layers[li])
+                    {
+                        node.Left = x;
+                        node.Top = accumulatedY + (node.Top - rowMinY[r]);
+                    }
+                }
+
+                accumulatedY += (rowMaxY[r] - rowMinY[r]) + rowGap;
             }
         }
 

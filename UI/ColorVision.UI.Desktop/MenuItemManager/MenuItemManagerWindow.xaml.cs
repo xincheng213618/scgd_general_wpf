@@ -367,6 +367,8 @@ namespace ColorVision.UI.Desktop.MenuItemManager
             AddDetailRow("Order Override", setting.OrderOverride?.ToString() ?? "(default)");
             AddDetailRow("Visible", setting.IsVisible ? "Yes" : "No");
             AddDetailRow("Hotkey Override", setting.HotkeyOverride ?? "(none)");
+            AddDetailRow("Source Class", setting.SourceType ?? "Unknown");
+            AddDetailRow("Assembly/Plugin", setting.SourceAssembly ?? "Unknown");
 
             // Add editable OwnerGuid override section
             DetailPanel.Children.Add(new Separator { Margin = new Thickness(0, 8, 0, 8) });

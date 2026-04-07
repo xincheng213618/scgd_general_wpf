@@ -229,11 +229,18 @@ namespace ColorVision.Engine.Templates.Flow
                         }
                     }
                 }
-                STNodeEditorHelper?.PropertyEditorWindow?.CloseWindow();
+                STNodeEditorHelper?.HidePropertyEditor();
 
             };
 
             STNodeEditorHelper = new STNodeEditorHelper(this, STNodeEditorMain);
+
+            // Wire up embedded property editor panel
+            STNodeEditorHelper.STNodePropertyGrid1 = STNodePropertyGrid1;
+            STNodeEditorHelper.SignStackPanel = SignStackPanelContainer;
+            STNodeEditorHelper.PropertyEditorPanel = PropertyEditorPanel;
+            STNodeEditorHelper.PropertyGridHost = PropertyGridHost;
+            STNodeEditorHelper.SignStackScrollViewer = SignStackScrollViewer;
         }
         public void AutoAlignment()
         {
@@ -449,6 +456,15 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
+        private void PropertyEditorClose_Click(object sender, RoutedEventArgs e)
+        {
+            STNodeEditorHelper.HidePropertyEditor();
+        }
+
+        private void TogglePropertyEditorMode_Click(object sender, RoutedEventArgs e)
+        {
+            STNodeEditorHelper.TogglePropertyEditorMode();
+        }
 
 
     }
