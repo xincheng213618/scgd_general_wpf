@@ -15,7 +15,7 @@ namespace ColorVision.UI.HotKey
                                 Description = Resources.HotKeys,
                                 Type = ConfigSettingType.TabItem,
                                 Source = HotKeyConfig.Instance,
-                                UserControl = new HotKeysSetting()
+                                ViewType = typeof(HotKeysSetting)
                             }
             };
         }

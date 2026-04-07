@@ -33,6 +33,18 @@ namespace ColorVision.UI.Desktop.Settings
             SettingStackPanels.Add(ConfigSettingConstants.Universal, UniversalStackPanel);
 
 
+            static UserControl TryCreateControl(Type viewType)
+            {
+                try
+                {
+                    return Activator.CreateInstance(viewType) as UserControl;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
             void Add(ConfigSettingMetadata configSetting)
             {
 
@@ -41,7 +53,12 @@ namespace ColorVision.UI.Desktop.Settings
                     TabItem tabItem = new TabItem() { Header = configSetting.Name, Background = Brushes.Transparent };
                     Grid grid = new Grid();
                     grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
-                    grid.Children.Add(configSetting.UserControl);
+                    if (configSetting.ViewType != null)
+                    {
+                        var lazyControl = TryCreateControl(configSetting.ViewType);
+                        if (lazyControl != null)
+                            grid.Children.Add(lazyControl);
+                    }
                     tabItem.Content = grid;
                     TabControlSetting.Items.Add(tabItem);
                 }
@@ -50,7 +67,13 @@ namespace ColorVision.UI.Desktop.Settings
                     TabItem tabItem = new TabItem() { Header = configSetting.Name, Background = Brushes.Transparent };
                     Grid grid = new Grid();
                     grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
-                    if (configSetting.Source is ViewModelBase obj)
+                    if (configSetting.ViewType != null)
+                    {
+                        var lazyControl = TryCreateControl(configSetting.ViewType);
+                        if (lazyControl != null)
+                            grid.Children.Add(lazyControl);
+                    }
+                    else if (configSetting.Source is ViewModelBase obj)
                     {
                         grid.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(obj));
                     }
@@ -81,6 +104,49 @@ namespace ColorVision.UI.Desktop.Settings
                     }
                 }
             }
+
+            // Attribute-based discovery: scan types decorated with [ConfigSetting]
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                Type[] types;
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    types = ex.Types.Where(t => t != null).ToArray();
+                }
+                catch
+                {
+                    continue;
+                }
+
+                foreach (var type in types)
+                {
+                    var attr = type.GetCustomAttribute<ConfigSettingAttribute>();
+                    if (attr != null)
+                    {
+                        object source = null;
+                        if (attr.Type != ConfigSettingType.TabItem)
+                        {
+                            try { source = Activator.CreateInstance(type); }
+                            catch { }
+                        }
+                        allSettings.Add(new ConfigSettingMetadata
+                        {
+                            Name = attr.Name ?? type.Name,
+                            Group = attr.Group,
+                            Order = attr.Order,
+                            Description = attr.Description,
+                            Type = attr.Type,
+                            ViewType = attr.ViewType,
+                            Source = source,
+                        });
+                    }
+                }
+            }
+
             // 先按 ConfigSettingType 分组，再在每个组内按 Order 排序
             var sortedSettings = allSettings
                 .GroupBy(setting => setting.Type)
