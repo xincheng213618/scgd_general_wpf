@@ -213,6 +213,29 @@ namespace ColorVision.ImageEditor
         private int _Cols = -1;
     }
 
+    public class DetectKeyRegionsConfig : Common.MVVM.ViewModelBase
+    {
+        [DisplayName("Threshold")]
+        [Description("二值化阈值，-1表示自动(OTSU)")]
+        public int Threshold { get => _Threshold; set { _Threshold = value; OnPropertyChanged(); } }
+        private int _Threshold = -1;
+
+        [DisplayName("MinArea")]
+        [Description("最小按键面积(像素)")]
+        public int MinArea { get => _MinArea; set { if (value < 1) value = 1; _MinArea = value; OnPropertyChanged(); } }
+        private int _MinArea = 500;
+
+        [DisplayName("MaxArea")]
+        [Description("最大按键面积(像素), 0表示不限制")]
+        public int MaxArea { get => _MaxArea; set { if (value < 0) value = 0; _MaxArea = value; OnPropertyChanged(); } }
+        private int _MaxArea = 0;
+
+        [DisplayName("MarginRatio")]
+        [Description("边距缩进比例(0~0.45)，缩小检测框以更贴合按键")]
+        public double MarginRatio { get => _MarginRatio; set { if (value < 0) value = 0; if (value > 0.45) value = 0.45; _MarginRatio = value; OnPropertyChanged(); } }
+        private double _MarginRatio = 0.05;
+    }
+
     public enum GraphicTypes
     {
         Circle = 0,

@@ -161,3 +161,23 @@ int findLightBeads(
     int rows = 650,
     int cols = 850
 );
+
+/// <summary>
+/// 自动检测键盘按键区域 (Detect Keyboard Key Regions)
+/// 使用自适应阈值+形态学+轮廓检测，识别键盘图像中每个发光按键的矩形区域
+/// </summary>
+/// <param name="src">输入图像</param>
+/// <param name="keyRects">输出：检测到的按键矩形区域</param>
+/// <param name="threshold">二值化阈值，-1表示自动(OTSU)</param>
+/// <param name="minArea">最小按键面积(像素)</param>
+/// <param name="maxArea">最大按键面积(像素), 0表示不限制</param>
+/// <param name="marginRatio">边距缩进比例(0~0.5)，用于缩小检测框</param>
+/// <returns>0表示成功，负数表示错误</returns>
+int detectKeyRegions(
+    cv::Mat& src,
+    std::vector<cv::Rect>& keyRects,
+    int threshold = -1,
+    int minArea = 500,
+    int maxArea = 0,
+    double marginRatio = 0.05
+);

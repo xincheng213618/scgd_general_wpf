@@ -137,4 +137,17 @@
     <Resource Include="Assets\png\PowerToy.png" />
   </ItemGroup>
 
+  <Target Name="CopyShellExtensionRuntimeFiles" AfterTargets="Build">
+    <ItemGroup>
+      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.comhost.dll" Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.comhost.dll')" />
+      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.deps.json" Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.deps.json')" />
+      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.runtimeconfig.json" Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.runtimeconfig.json')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(ShellExtensionRuntimeFiles)"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true"
+          Condition="'@(ShellExtensionRuntimeFiles)' != ''" />
+  </Target>
+
 </Project>

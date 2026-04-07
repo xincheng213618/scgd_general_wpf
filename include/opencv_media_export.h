@@ -82,6 +82,8 @@ extern "C" COLORVISIONCORE_API int M_ApplyHistogramEqualization(HImage img, HIma
 
 extern "C" COLORVISIONCORE_API int M_FindLightBeads(HImage img, RoiRect roi, const char* config, char** result);
 
+extern "C" COLORVISIONCORE_API int M_DetectKeyRegions(HImage img, RoiRect roi, const char* config, char** result);
+
 extern "C" COLORVISIONCORE_API int FreeResult(char* result);
 
 extern "C" COLORVISIONCORE_API int M_CalSFR(

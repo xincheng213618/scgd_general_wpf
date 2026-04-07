@@ -60,6 +60,9 @@ namespace ColorVision.Engine.Templates.POI
         public RelayCommand FindLuminousAreaEditCommand { get; set; }
         [JsonIgnore]
         public RelayCommand FindLuminousAreaCornerEditCommand { get; set; }
+
+        [JsonIgnore]
+        public RelayCommand DetectKeyRegionsEditCommand { get; set; }
         
         [JsonIgnore]
         public RelayCommand EditCalibrationTemplateCommand { get; set; }
@@ -74,6 +77,7 @@ namespace ColorVision.Engine.Templates.POI
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
             FindLuminousAreaEditCommand = new RelayCommand(a => new PropertyEditorWindow(FindLuminousArea) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             FindLuminousAreaCornerEditCommand = new RelayCommand(a => new PropertyEditorWindow(FindLuminousAreaCorner) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            DetectKeyRegionsEditCommand = new RelayCommand(a => new PropertyEditorWindow(DetectKeyRegionsConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             EditCalibrationTemplateCommand = new RelayCommand(a => OpenCalibrationTemplate());
 
             SelectBackgroundFilePathCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(BackgroundFilePath));
@@ -125,6 +129,8 @@ namespace ColorVision.Engine.Templates.POI
         public FindLuminousArea FindLuminousArea { get; set; } = new FindLuminousArea();
 
         public FindLuminousAreaCorner FindLuminousAreaCorner { get; set; } = new FindLuminousAreaCorner();
+
+        public DetectKeyRegionsConfig DetectKeyRegionsConfig { get; set; } = new DetectKeyRegionsConfig();
 
 
 
