@@ -1,4 +1,5 @@
 ﻿#pragma warning disable
+using ColorVision.Core;
 using System.Runtime.InteropServices;
 using log4net;
 
@@ -36,6 +37,7 @@ namespace ColorVision.UI.CUDA
         {
             await Task.Delay(0);
             Config.IsCudaSupported = CheckCudaSupport();
+            ImageCompute.UseCuda = Config.IsCudaSupported && Config.IsEnabled;
             if (Config.IsCudaSupported)
             {
                 log.Info(Properties.Resources.CheckingCUDASupport);

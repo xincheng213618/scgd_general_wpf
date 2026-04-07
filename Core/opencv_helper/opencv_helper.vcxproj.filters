@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="源文件">
@@ -24,6 +24,12 @@
     </Filter>
     <Filter Include="算法\SFR">
       <UniqueIdentifier>{243f40ec-483e-4b6a-9fc9-c5d8e005f3a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="导出">
+      <UniqueIdentifier>{a1b2c3d4-1234-5678-9abc-def012345678}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="接口">
+      <UniqueIdentifier>{b2c3d4e5-2345-6789-abcd-ef0123456789}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -57,6 +63,18 @@
     <ClInclude Include="..\..\include\video_export.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="algorithm\sfr\sfr_base.h">
+      <Filter>算法\SFR</Filter>
+    </ClInclude>
+    <ClInclude Include="algorithm\sfr\sfr_slanted.h">
+      <Filter>算法\SFR</Filter>
+    </ClInclude>
+    <ClInclude Include="algorithm\sfr\sfr_cylinder.h">
+      <Filter>算法\SFR</Filter>
+    </ClInclude>
+    <ClInclude Include="include\cvcore\sfr.h">
+      <Filter>接口</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -86,14 +104,17 @@
     <ClCompile Include="custom_file.cpp">
       <Filter>自定义文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\packages\sfr\src\cylinder.cpp">
+    <ClCompile Include="algorithm\sfr\sfr_base.cpp">
       <Filter>算法\SFR</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\packages\sfr\src\general.cpp">
+    <ClCompile Include="algorithm\sfr\sfr_slanted.cpp">
       <Filter>算法\SFR</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\packages\sfr\src\slanted.cpp">
+    <ClCompile Include="algorithm\sfr\sfr_cylinder.cpp">
       <Filter>算法\SFR</Filter>
+    </ClCompile>
+    <ClCompile Include="exports\sfr_export.cpp">
+      <Filter>导出</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

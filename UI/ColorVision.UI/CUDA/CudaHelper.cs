@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Core;
 
 namespace ColorVision.UI.CUDA
 {
@@ -6,10 +7,35 @@ namespace ColorVision.UI.CUDA
     {
         public static ConfigCuda Instance => ConfigService.Instance.GetRequiredService<ConfigCuda>();
 
-        public bool IsEnabled { get => _IsEnabled; set { if (!IsCudaSupported) return;  _IsEnabled = value; OnPropertyChanged(); } }
+        public bool IsEnabled
+        {
+            get => _IsEnabled;
+            set
+            {
+                if (!IsCudaSupported && value) return;
+                _IsEnabled = value;
+                ImageCompute.UseCuda = _IsEnabled && IsCudaSupported;
+                OnPropertyChanged();
+            }
+        }
         private bool _IsEnabled = true;
 
-        public bool IsCudaSupported { get => _IsCudaSupported; set { _IsCudaSupported = value; OnPropertyChanged(); if (!value) IsEnabled = false; } }
+        public bool IsCudaSupported
+        {
+            get => _IsCudaSupported;
+            set
+            {
+                _IsCudaSupported = value;
+                if (!value)
+                {
+                    _IsEnabled = false;
+                    OnPropertyChanged(nameof(IsEnabled));
+                }
+
+                ImageCompute.UseCuda = _IsEnabled && _IsCudaSupported;
+                OnPropertyChanged();
+            }
+        }
         private bool _IsCudaSupported;
 
         public int DeviceCount { get => _DeviceCount; set { _DeviceCount = value; OnPropertyChanged(); } }

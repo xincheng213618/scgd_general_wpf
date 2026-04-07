@@ -375,22 +375,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     else
                     {
                         var newPhyCamera = new PhyCamera(item);
-                        if (Authorization.Instance.PermissionMode == PermissionMode.SuperAdministrator)
-                        {
-                            if (newPhyCamera.LicenseState != LicenseState.Licensed)
-                                Task.Run(async () =>
-                                {
-                                    await newPhyCamera.UploadLicenseNet();
-                                    Application.Current.Dispatcher.Invoke(() =>
-                                    {
-                                        ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList().ForEach(a => a.Save());
-                                    });
-                                }
-                                );
-                        }
-
                         LoadPhyCameraResources(newPhyCamera);
-                        // 添加新的 PhyCamera 对象到集合中
                         PhyCameras.Add(newPhyCamera);
                     }
                 }
