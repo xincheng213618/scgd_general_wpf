@@ -18,6 +18,7 @@ namespace ColorVision.Themes
         /// <summary>
         /// 主题
         /// </summary>
+        [ConfigSetting]
         [PropertyEditorType(typeof(ThemePropertiesEditor))]
         public Theme Theme { get; set; } = Theme.UseSystem;
 

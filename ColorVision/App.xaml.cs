@@ -19,24 +19,12 @@ using System.Windows;
 namespace ColorVision
 {
 
-    public class APPConfig : ViewModelBase,IConfig, IConfigSettingProvider
+    public class APPConfig : ViewModelBase,IConfig
     {
+        [ConfigSetting]
         [DisplayName("允许程序多开")]
         public bool IsMute { get => _IsMute; set { _IsMute = value; OnPropertyChanged(); } }
         private bool _IsMute = true;
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            var Instance = ConfigHandler.GetInstance().GetRequiredService<APPConfig>();
-            var list = new List<ConfigSettingMetadata>
-            {
-                new ConfigSettingMetadata
-                {
-                    BindingName =nameof(IsMute),
-                    Source = Instance,
-                }
-            };
-            return list;
-        }
     }
 
     /// <summary>

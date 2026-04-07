@@ -23,12 +23,14 @@ namespace ColorVision.Update
     {
         public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();
 
+        [ConfigSetting(Order = 500)]
         public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; OnPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision";
 
         /// <summary>
         /// 是否自动更新
         /// </summary>
+        [ConfigSetting(Order = 500)]
         [DisplayName("CheckUpdatesOnStartup")]
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;

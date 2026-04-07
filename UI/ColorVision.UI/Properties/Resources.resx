@@ -529,4 +529,16 @@
   <data name="Theme" xml:space="preserve">
     <value>主题</value>
   </data>
+  <data name="SearchEngine" xml:space="preserve">
+    <value>搜索引擎</value>
+  </data>
+  <data name="EnableBrowserSearch" xml:space="preserve">
+    <value>启用浏览器搜索</value>
+  </data>
+  <data name="EnableEverythingSearch" xml:space="preserve">
+    <value>启用Everything搜索</value>
+  </data>
+  <data name="EverythingPath" xml:space="preserve">
+    <value>Everything路径</value>
+  </data>
 </root>

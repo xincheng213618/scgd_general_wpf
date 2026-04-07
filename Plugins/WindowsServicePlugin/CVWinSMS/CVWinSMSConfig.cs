@@ -8,10 +8,11 @@ using System.Xml.Linq;
 
 namespace WindowsServicePlugin.CVWinSMS
 {
-    public class CVWinSMSConfig : ViewModelBase, IConfig,IConfigSettingProvider   
+    public class CVWinSMSConfig : ViewModelBase, IConfig
     {
         public static CVWinSMSConfig Instance => ConfigService.Instance.GetRequiredService<CVWinSMSConfig>();
 
+        [ConfigSetting(Order = 521)]
         [PropertyEditorType(typeof(TextSelectFilePropertiesEditor))]
         public string CVWinSMSPath { get => _CVWinSMSPath; set  { _CVWinSMSPath = value; } }
         private string _CVWinSMSPath = string.Empty;
@@ -67,28 +68,9 @@ namespace WindowsServicePlugin.CVWinSMS
         public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; OnPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool";
 
+        [ConfigSetting(Order = 520)]
         [DisplayName("CVWinSMSIsAutoUpdate")]
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
-
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata>()
-            {
-                new ConfigSettingMetadata()
-                {
-                    Order = 521,
-                    BindingName = nameof(CVWinSMSPath),
-                    Source =Instance
-                },
-                new ConfigSettingMetadata
-                {
-                    Order = 520,
-                    BindingName =nameof(IsAutoUpdate),
-                    Source = Instance,
-                }
-            };
-
-        }
     }
 }

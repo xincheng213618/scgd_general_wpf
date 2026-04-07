@@ -14,18 +14,22 @@ namespace ColorVision.UI.Serach
     {
         public static SearchConfig Instance => ConfigService.Instance.GetRequiredService<SearchConfig>();
 
+        [ConfigSetting(Order = 20)]
         [DisplayName("SearchEngine")]
         public SearchEngine SearchEngine { get => _SearchEngine; set { _SearchEngine = value; OnPropertyChanged(); } }
         private SearchEngine _SearchEngine = SearchEngine.Google;
 
+        [ConfigSetting(Order = 23)]
         [DisplayName("EverythingPath")]
         public string EverythingPath { get => _EverythingPath; set { _EverythingPath = value; OnPropertyChanged(); } }
         private string _EverythingPath = @"C:\Program Files\Everything\Everything.exe";
 
+        [ConfigSetting(Order = 22)]
         [DisplayName("EnableEverythingSearch")]
         public bool EnableEverythingSearch { get => _EnableEverythingSearch; set { _EnableEverythingSearch = value; OnPropertyChanged(); } }
         private bool _EnableEverythingSearch = true;
 
+        [ConfigSetting(Order = 21)]
         [DisplayName("EnableBrowserSearch")]
         public bool EnableBrowserSearch { get => _EnableBrowserSearch; set { _EnableBrowserSearch = value; OnPropertyChanged(); } }
         private bool _EnableBrowserSearch = true;

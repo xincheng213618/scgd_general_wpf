@@ -3,37 +3,44 @@ using System;
 namespace ColorVision.UI
 {
     /// <summary>
-    /// Marks a class or property as a configuration setting entry that will be
-    /// automatically discovered and shown in the settings window.
+    /// 标注在 <see cref="IConfig"/> 类的属性上，使其自动出现在设置窗口中。
     /// <para>
-    /// When applied to a <b>class</b>, the class itself is registered as a settings panel
-    /// (using <see cref="ViewType"/> for lazy UI instantiation, or auto-generated property editor
-    /// when <see cref="ViewType"/> is null).
+    /// 适用于简单的属性级设置（bool 开关、enum 选择、string 输入等）。
+    /// <see cref="ConfigSettingManager"/> 会自动扫描所有 <see cref="IConfig"/> 实现类，
+    /// 发现带有此特性的属性后，通过 <see cref="ConfigService"/> 获取持久化单例作为数据源，
+    /// 自动生成 <see cref="ConfigSettingMetadata"/>。
     /// </para>
     /// <para>
-    /// When applied to a <b>property</b>, the property is intended to be picked up by
-    /// future property-level discovery logic (reserved for extensibility).
+    /// 对于需要自定义 UserControl 或条件逻辑的复杂设置，请改用 <see cref="IConfigSettingProvider"/> 接口。
     /// </para>
+    /// <example>
+    /// <code>
+    /// public class SearchConfig : ViewModelBase, IConfig
+    /// {
+    ///     public static SearchConfig Instance => ConfigService.Instance.GetRequiredService&lt;SearchConfig&gt;();
+    ///
+    ///     [ConfigSetting(Order = 20)]
+    ///     [DisplayName("搜索引擎")]
+    ///     public SearchEngine SearchEngine { get; set; }
+    ///
+    ///     [ConfigSetting(Order = 21)]
+    ///     public bool EnableBrowserSearch { get; set; }
+    /// }
+    /// </code>
+    /// </example>
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public class ConfigSettingAttribute : Attribute
     {
-        public string Name { get; set; }
-        public string Group { get; set; } = ConfigSettingConstants.Universal;
+        /// <summary>
+        /// 在设置面板中的排列顺序，数值越小越靠前。默认 999。
+        /// </summary>
         public int Order { get; set; } = 999;
-        public string Description { get; set; }
-        public ConfigSettingType Type { get; set; } = ConfigSettingType.Property;
 
         /// <summary>
-        /// The type of the UserControl to be lazily instantiated when the setting is displayed.
-        /// Must be a type that derives from <see cref="System.Windows.Controls.UserControl"/>.
+        /// 设置所属分组（对应设置窗口中的 TabItem）。默认 <see cref="ConfigSettingConstants.Universal"/>。
         /// </summary>
-        public Type ViewType { get; set; }
-
-        public ConfigSettingAttribute(string name)
-        {
-            Name = name;
-        }
+        public string Group { get; set; } = ConfigSettingConstants.Universal;
 
         public ConfigSettingAttribute() { }
     }

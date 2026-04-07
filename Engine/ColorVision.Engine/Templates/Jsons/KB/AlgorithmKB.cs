@@ -11,24 +11,13 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.KB
 {
-    public class AlgorithmKBConfig : ViewModelBase, IConfig,IConfigSettingProvider
+    public class AlgorithmKBConfig : ViewModelBase, IConfig
     {
         public static AlgorithmKBConfig Instance =>ConfigService.Instance.GetRequiredService<AlgorithmKBConfig>();
+
+        [ConfigSetting(Order = 2, Group = "Engine")]
         public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; OnPropertyChanged(); } }
         private double _KBLVSacle = 0.006583904;
-
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata> {
-                            new ConfigSettingMetadata
-                            {
-                                Order = 2,
-                                Group ="Engine",
-                                BindingName =nameof(KBLVSacle),
-                                Source = Instance,
-                            }
-            };
-        }
     }
     [DisplayAlgorithm(98, "键盘检测1", "数据提取算法")]
     public class AlgorithmKB : DisplayAlgorithmBase
