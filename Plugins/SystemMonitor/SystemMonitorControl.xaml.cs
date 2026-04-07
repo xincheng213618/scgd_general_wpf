@@ -21,7 +21,7 @@ namespace SystemMonitor
                     Order = 10,
                     Type = ConfigSettingType.TabItem,
                     Source = SystemMonitors.GetInstance(),
-                    UserControl = new SystemMonitorControl(),
+                    ViewType = typeof(SystemMonitorControl),
                 }
             };
         }

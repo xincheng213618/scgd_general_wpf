@@ -1,4 +1,4 @@
-﻿using System.Windows.Controls;
+﻿using System;
 namespace ColorVision.UI
 {
     public static class ConfigSettingConstants
@@ -34,8 +34,8 @@ namespace ColorVision.UI
         public object Source { get; set; }
 
         /// <summary>
-        /// UserControl,TabItem
+        /// The type of the UserControl to lazily instantiate when the setting panel is displayed.
         /// </summary>
-        public UserControl UserControl { get; set; }
+        public Type ViewType { get; set; }
     }
 }
