@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Reflection;
 
 namespace ColorVision.UI.Menus
@@ -32,6 +33,10 @@ namespace ColorVision.UI.Menus
         private bool _typeCacheBuilt;
         private readonly List<Type> _menuItemTypeCache = new();
         private readonly List<Type> _menuItemProviderTypeCache = new();
+        /// <summary>Types decorated with <see cref="MenuItemAttribute"/> that do NOT
+        /// already implement <see cref="IMenuItem"/> or <see cref="IMenuItemProvider"/>.
+        /// These are handled via the lazy-loading path.</summary>
+        private readonly List<Type> _menuItemAttributeTypeCache = new();
         // ----------------------------------------------------------------
 
         private MenuManager()
@@ -228,12 +233,22 @@ namespace ColorVision.UI.Menus
 
                 foreach (var t in types)
                 {
-                    if (t == null || t.IsAbstract) continue;
+                    if (t == null || t.IsAbstract || t.IsInterface) continue;
 
                     if (typeof(IMenuItem).IsAssignableFrom(t))
+                    {
                         _menuItemTypeCache.Add(t);
+                    }
                     else if (typeof(IMenuItemProvider).IsAssignableFrom(t))
+                    {
                         _menuItemProviderTypeCache.Add(t);
+                    }
+                    else if (t.IsDefined(typeof(MenuItemAttribute), false))
+                    {
+                        // Attribute-only path: class has [MenuItem] but does not implement
+                        // IMenuItem or IMenuItemProvider — handled via lazy loading.
+                        _menuItemAttributeTypeCache.Add(t);
+                    }
                 }
             }
             _typeCacheBuilt = true;
@@ -287,6 +302,14 @@ namespace ColorVision.UI.Menus
                 {
                     log.Warn($"Create IMenuItemProvider failed: {t.FullName}: {ex.Message}");
                 }
+            }
+
+            // Attribute-based lazy path: no instantiation until command execution.
+            foreach (var t in _menuItemAttributeTypeCache)
+            {
+                var attr = t.GetCustomAttribute<MenuItemAttribute>(false);
+                if (attr?.Header != null)
+                    allMenuItems.Add(new LazyMenuItemAdapter(attr, t));
             }
 
             var allFilteredGuids = GetAllFilteredGuids(allMenuItems, FilteredGuids);
@@ -358,6 +381,14 @@ namespace ColorVision.UI.Menus
                 }
             }
 
+            // Attribute-based lazy path (unfiltered, for configuration UI).
+            foreach (var t in _menuItemAttributeTypeCache)
+            {
+                var attr = t.GetCustomAttribute<MenuItemAttribute>(false);
+                if (attr?.Header != null)
+                    allMenuItems.Add(new LazyMenuItemAdapter(attr, t));
+            }
+
             return allMenuItems;
         }
 
@@ -373,6 +404,62 @@ namespace ColorVision.UI.Menus
                 var targetMenuControl = kvp.Value;
 
                 LoadMenuForWindow(targetName, targetMenuControl);
+            }
+        }
+
+        /// <summary>
+        /// Adapts a <see cref="MenuItemAttribute"/>-decorated class to <see cref="IMenuItem"/>.
+        /// All display metadata comes from the attribute; the underlying class is instantiated
+        /// only when the menu item's command is executed (lazy loading).
+        /// </summary>
+        private sealed class LazyMenuItemAdapter : IMenuItem
+        {
+            private readonly MenuItemAttribute _attr;
+            private readonly Type _type;
+            private ICommand? _lazyCommand;
+
+            internal LazyMenuItemAdapter(MenuItemAttribute attr, Type type)
+            {
+                _attr = attr;
+                _type = type;
+            }
+
+            public string TargetName => _attr.TargetName;
+            public string? OwnerGuid => _attr.OwnerGuid;
+            public string? GuidId => _attr.GuidId ?? _type.FullName;
+            public int Order => _attr.Order;
+            public string? Header => _attr.Header;
+            public string? InputGestureText => _attr.InputGestureText;
+            public object? Icon => null;
+            public Visibility Visibility => Visibility.Visible;
+            public bool? IsChecked => null;
+
+            public ICommand? Command => _lazyCommand ??= new RelayCommand(_ => ExecuteUnderlying());
+
+            private void ExecuteUnderlying()
+            {
+                try
+                {
+                    var instance = Activator.CreateInstance(_type);
+                    if (instance is IMenuItem mi)
+                    {
+                        mi.Command?.Execute(null);
+                    }
+                    else
+                    {
+                        var method = _type.GetMethod("Execute",
+                            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                            null, Type.EmptyTypes, null);
+                        if (method != null)
+                            method.Invoke(instance, null);
+                        else
+                            log.Warn($"[MenuItem] class {_type.FullName} has no parameterless Execute() method and does not implement IMenuItem.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log.Warn($"Execute [MenuItem] class failed: {_type.FullName}: {ex.Message}");
+                }
             }
         }
     }
