@@ -391,8 +391,6 @@ namespace Spectrum
         [JsonIgnore]
         public RelayCommand GenerateAmplitudeCommand { get; set; }
 
-        [JsonIgnore]
-        public RelayCommand GenerateAmplitudeFromExistingCommand { get; set; }
 
         [JsonIgnore]
         public RelayCommand ConnectCommand { get; set; }
@@ -414,7 +412,6 @@ namespace Spectrum
             GetDarkDataCommand = new RelayCommand(a => GetDarkData());
             GetLightDataCommand = new RelayCommand(a => GetLightData());
             GenerateAmplitudeCommand = new RelayCommand(a => GenerateAmplitude());
-            GenerateAmplitudeFromExistingCommand = new RelayCommand(a => GenerateAmplitudeFromExisting());
 
             ConnectCommand = new RelayCommand(a => Connect());
             DisconnectCommand = new RelayCommand(a => Disconnect());
@@ -877,38 +874,6 @@ namespace Spectrum
             }
         }
 
-        /// <summary>
-        /// Generate amplitude file from existing dark/light data (manual mode - no auto-acquire).
-        /// </summary>
-        public void GenerateAmplitudeFromExisting()
-        {
-            string outputPath = MaguideFileOutput;
-            if (string.IsNullOrEmpty(outputPath))
-            {
-                using var saveFileDialog = new System.Windows.Forms.SaveFileDialog();
-                saveFileDialog.FileName = $"Magiude_{DateTime.Now:yyyyMMdd_HHmmss}.dat";
-                saveFileDialog.Filter = "DAT files (*.dat)|*.dat|All files (*.*)|*.*";
-                saveFileDialog.Title = "选择幅值标定文件保存路径";
-                if (saveFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                    return;
-                outputPath = saveFileDialog.FileName;
-                MaguideFileOutput = outputPath;
-            }
-
-            log.Debug($"手动生成幅值文件: IntTime={IntTime}, CSFile={CSFile}, WavelengthFile={WavelengthFile}, MaguideFileOutput={outputPath}");
-            int ret = Spectrometer.CM_Emission_CreateMagiude(IntTime, fDarkData, fLightData, CSFile, WavelengthFile, outputPath);
-            if (ret == 1)
-            {
-                log.Info($"幅值文件生成成功: {outputPath}");
-                MessageBox.Show($"生成成功\n文件: {outputPath}");
-            }
-            else
-            {
-                string errorMsg = Spectrometer.GetErrorMessage(ret);
-                log.Error($"幅值文件生成失败: {errorMsg}");
-                MessageBox.Show($"生成失败: {errorMsg}");
-            }
-        }
 
         public void GetLightData()
         {
