@@ -7,7 +7,6 @@ using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.LogImp;
 using ColorVision.UI.Menus;
-using ColorVision.UI.Serach;
 using ColorVision.UI.Shell;
 using ColorVision.UI.Views;
 using AvalonDock.Layout;
@@ -16,7 +15,6 @@ using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -100,16 +98,16 @@ namespace ColorVision
         {
             this.SizeChanged += (s, e) =>
             {
-                SearchGrid.Visibility = this.ActualWidth < 700 ? Visibility.Collapsed : Visibility.Visible;
+                SearchControl1.Visibility = this.ActualWidth < 700 ? Visibility.Collapsed : Visibility.Visible;
                 RightMenuItemPanel.Visibility = this.ActualWidth < Menu1.ActualWidth + RightMenuItemPanel.ActualWidth + 100 ? Visibility.Collapsed : Visibility.Visible;
             };
 
             this.DataContext = Config;
 
-            // 初始化 AvalonDock 主题
+            // ��ʼ�� AvalonDock ����
             void ApplyAvalonDockTheme(Theme theme)
             {
-                // 先重置为 null 以强制 AvalonDock 重新加载主题资源
+                // ������Ϊ null ��ǿ�� AvalonDock ���¼���������Դ
                 DockingManager1.Theme = null;
                 if (theme == Theme.Dark)
                     DockingManager1.Theme = new AvalonDock.Themes.Vs2013DarkTheme();
@@ -118,12 +116,12 @@ namespace ColorVision
             }
             ThemeManager.Current.CurrentUIThemeChanged += ApplyAvalonDockTheme;
 
-            // 设置 WorkspaceManager 指向主窗口的 DockingManager
+            // ���� WorkspaceManager ָ�������ڵ� DockingManager
             WorkspaceManager.layoutRoot = _layoutRoot;
             WorkspaceManager.LayoutDocumentPane = LayoutDocumentPane;
 
 
-            // 初始化停靠布局管理器
+            // ��ʼ��ͣ�����ֹ�����
             var layoutManager = new DockLayoutManager(DockingManager1);
             layoutManager.RegisterPanel("ProjectPanel", ProjectPanelGrid, Properties.Resources.SolutionExplorer, PanelPosition.Left);
             layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.DeviceControl, PanelPosition.Left);
@@ -132,7 +130,7 @@ namespace ColorVision
             layoutManager.RegisterPanel("LogPanel", logOutput, Properties.Resources.Log, PanelPosition.Bottom);
             WorkspaceManager.LayoutManager = layoutManager;
 
-            // 发现并注册所有 IDockPanelProvider 提供的面板（在 LoadLayout 之前，确保面板能正确持久化）
+            // ���ֲ�ע������ IDockPanelProvider �ṩ�����壨�� LoadLayout ֮ǰ��ȷ����������ȷ�־û���
             foreach (var provider in AssemblyHandler.GetInstance().GetAssemblies()
                 .SelectMany(a => a.GetTypes())
                 .Where(t => typeof(IDockPanelProvider).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface)
@@ -154,40 +152,40 @@ namespace ColorVision
                 }
             }
 
-            // 初始化 DockViewManagerHost（设置 AvalonDock 回调）
+            // ��ʼ�� DockViewManagerHost������ AvalonDock �ص���
             DockViewManagerHost.Initialize();
 
-            // 初始化左侧项目面板
+            // ��ʼ��������Ŀ����
             ProjectPanelGrid.Children.Add(new TreeViewControl());
 
-            // 初始化左侧采集面板
+            // ��ʼ�������ɼ�����
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
-            // 尝试加载已保存的布局
+            // ���Լ����ѱ����Ĳ���
             layoutManager.LoadLayout();
 
-            // 布局加载后（重新）应用 AvalonDock 主题，确保反序列化的元素使用正确主题
+            // ���ּ��غ������£�Ӧ�� AvalonDock ���⣬ȷ�������л���Ԫ��ʹ����ȷ����
             ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
 
-            // 将所有已注册的视图创建为文档标签页
+            // ��������ע������ͼ����Ϊ�ĵ���ǩҳ
             DockViewManager.ShowAllViews();
 
-            // 切换到 DeviceControl 面板时，跳转到上次显示的视图
+            // �л��� DeviceControl ����ʱ����ת���ϴ���ʾ����ͼ
             HookAcquirePanelActivation();
 
-            // 执行延迟加载的操作
+            // ִ���ӳټ��صĲ���
             foreach (var action in WorkspaceManager.DealyLoad)
             {
                 action();
             }
             WorkspaceManager.DealyLoad.Clear();
 
-            // 更新后首次启动时显示变更日志
+            // ���º��״�����ʱ��ʾ������־
             ShowChangelogIfUpdated();
 
-            // Ctrl+W 关闭当前活动文档
+            // Ctrl+W �رյ�ǰ��ĵ�
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) =>
             {
                 var doc = WorkspaceManager.FindDocumentActive(WorkspaceManager.LayoutDocumentPane);
@@ -199,7 +197,7 @@ namespace ColorVision
             this.LoadHotKeyFromAssembly();
             StatusBarManager.GetInstance().Init(StatusBarGrid, MenuItemConstants.MainWindowTarget);
 
-            // 监听 DockingManager 活动文档切换，更新状态栏上下文项，并通知视图管理器
+            // ���� DockingManager ��ĵ��л�������״̬�����������֪ͨ��ͼ������
             DockingManager1.ActiveContentChanged += (s, e) =>
             {
                 StatusBarManager.GetInstance().OnActiveDocumentChanged(DockingManager1.ActiveContent);
@@ -227,7 +225,7 @@ namespace ColorVision
             });
             ProgramTimer.StopAndReport();
 
-            // 设置快捷键 Ctrl + F
+            // ���ÿ��ݼ� Ctrl + F
             var gesture = new KeyGesture(Key.F, ModifierKeys.Control);
             var command = new RoutedCommand();
             command.InputGestures.Add(gesture);
@@ -239,7 +237,7 @@ namespace ColorVision
             this.AllowDrop = true;
             this.Drop += MainWindow_Drop;
 
-            // 窗口关闭时自动保存布局
+            // ���ڹر�ʱ�Զ����沼��
             this.Closing += (s, e) =>
             {
                 WorkspaceManager.LayoutManager?.SaveLayout();
@@ -247,8 +245,8 @@ namespace ColorVision
         }
 
         /// <summary>
-        /// 当 AcquirePanel (DeviceControl) 变为活动状态时，
-        /// 激活上次显示的视图文档，实现面板切换时恢复。
+        /// �� AcquirePanel (DeviceControl) ��Ϊ�״̬ʱ��
+        /// �����ϴ���ʾ����ͼ�ĵ���ʵ�������л�ʱ�ָ���
         /// </summary>
         private void HookAcquirePanelActivation()
         {
@@ -266,8 +264,8 @@ namespace ColorVision
         }
 
         /// <summary>
-        /// 更新后首次启动时显示变更日志。
-        /// 对比当前版本与上次记录的版本，仅在版本变更时打开 CHANGELOG.md。
+        /// ���º��״�����ʱ��ʾ������־��
+        /// �Աȵ�ǰ�汾���ϴμ�¼�İ汾�����ڰ汾����ʱ���� CHANGELOG.md��
         /// </summary>
         private void ShowChangelogIfUpdated()
         {
@@ -290,7 +288,7 @@ namespace ColorVision
             }
             catch (Exception ex)
             {
-                log.Warn("显示变更日志失败", ex);
+                log.Warn("��ʾ������־ʧ��", ex);
             }
         }
 
@@ -342,7 +340,7 @@ namespace ColorVision
 
         private void FocusSearchBox(object sender, ExecutedRoutedEventArgs e)
         {
-            Searchbox.Focus();
+            SearchControl1.FocusSearchBox();
         }
 
         public static async void LoadIMainWindowInitialized() 
@@ -373,139 +371,5 @@ namespace ColorVision
             }
         }
 
-
-        public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();
-        public List<ISearch> filteredResults { get; set; } = new List<ISearch>();
-
-        private readonly char[] Chars = new[] { ' ' };
-        private void Searchbox_GotFocus(object sender, RoutedEventArgs e)
-        {
-            Searches = new ObservableCollection<ISearch>(SearchManager.GetInstance().GetISearches());
-        }
-
-        private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (sender is TextBox textBox)
-            {
-                string searchtext = textBox.Text;
-                if (string.IsNullOrWhiteSpace(searchtext))
-                {
-                    SearchPopup.IsOpen = false;
-                }
-                else
-                {
-                    SearchPopup.IsOpen = true;
-                    var keywords = searchtext.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
-
-                    filteredResults = Searches
-                        .OfType<ISearch>()
-                        .Where(template => keywords.All(keyword =>
-                            (!string.IsNullOrEmpty(template.Header) && template.Header.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
-                            (template.GuidId != null && template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                        ))
-                        .ToList();
-
-
-                    string everythingpath = "C:\\Program Files\\Everything\\Everything.exe";
-
-                    if (File.Exists(everythingpath))
-                    {
-                        void Search()
-                        {
-                            ProcessStartInfo startInfo = new();
-                            startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
-                            startInfo.WorkingDirectory = Environment.CurrentDirectory;
-                            startInfo.FileName = everythingpath;
-                            startInfo.Arguments = $"-s {searchtext}";
-                            try
-                            {
-                                Process p = Process.Start(startInfo);
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
-                            }
-                        }
-
-                        SearchMeta search = new SearchMeta
-                        {
-                            GuidId = Guid.NewGuid().ToString(),
-                            Header = $"{Properties.Resources.Search} {searchtext}",
-                            Command = new Common.MVVM.RelayCommand(a => Search())
-                        };
-                        filteredResults.Add(search);
-                    }
-
-
-                    // 添加“在浏览器中搜索”选项
-                    void SearchInBrowser()
-                    {
-                        string url = $"https://www.baidu.com/s?wd={Uri.EscapeDataString(searchtext)}";
-                        try
-                        {
-                            Process.Start(new ProcessStartInfo
-                            {
-                                FileName = url,
-                                UseShellExecute = true
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
-                        }
-                    }
-
-                    SearchMeta browserSearch = new SearchMeta
-                    {
-                        GuidId = Guid.NewGuid().ToString(),
-                        Header = $"{Properties.Resources.Search} {searchtext}（百度搜索）",
-                        Command = new Common.MVVM.RelayCommand(a => SearchInBrowser())
-                    };
-                    filteredResults.Add(browserSearch);
-
-                    ListViewSearch.ItemsSource = filteredResults;
-                    if (filteredResults.Count > 0)
-                    {
-                        ListViewSearch.SelectedIndex = 0;
-                    }
-                }
-            }
-        }
-
-        private void ListViewSearch_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
-        }
-
-        private void Searchbox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == System.Windows.Input.Key.Enter)
-            {
-                if (ListViewSearch.SelectedIndex > -1)
-                {
-                    Searchbox.Text = string.Empty;
-                    filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
-                }
-            }
-            if (e.Key == System.Windows.Input.Key.Up)
-            {
-                if (ListViewSearch.SelectedIndex > 0)
-                    ListViewSearch.SelectedIndex -= 1;
-            }
-            if (e.Key == System.Windows.Input.Key.Down)
-            {
-                if (ListViewSearch.SelectedIndex < filteredResults.Count - 1)
-                    ListViewSearch.SelectedIndex += 1;
-            }
-        }
-
-        private void ListViewSearch_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            if (ListViewSearch.SelectedIndex > -1)
-            {
-                Searchbox.Text = string.Empty;
-                filteredResults[ListViewSearch.SelectedIndex].Command?.Execute(this);
-            }
-        }
     }
 }

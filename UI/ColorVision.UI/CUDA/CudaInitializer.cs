@@ -1,29 +1,13 @@
 ﻿#pragma warning disable
-using ColorVision.Core;
-using System.Runtime.InteropServices;
+using ColorVision.Common.NativeMethods;
 using log4net;
+using System.Runtime.InteropServices;
 
 namespace ColorVision.UI.CUDA
 {
     public class CudaInitializer : InitializerBase
     {
-        [DllImport("nvcuda.dll")]
-        private static extern int cuInit(uint Flags);
 
-        [DllImport("nvcuda.dll")]
-        private static extern int cuDeviceGetCount(out int count);
-
-        [DllImport("nvcuda.dll")]
-        private static extern int cuDeviceGetName(byte[] name, int len, int dev);
-
-        [DllImport("nvcuda.dll")]
-        private static extern int cuDeviceComputeCapability(out int major, out int minor, int dev);
-
-        [DllImport("nvcuda.dll")]
-        private static extern int cuDeviceTotalMem(out ulong bytes, int dev);
-
-        [DllImport("nvcuda.dll", EntryPoint = "cuDeviceTotalMem_v2")]
-        private static extern int cuDeviceTotalMem_v2(out ulong bytes, int device);
         public static ConfigCuda Config => ConfigCuda.Instance;
 
         public override int Order => 7;
@@ -37,7 +21,6 @@ namespace ColorVision.UI.CUDA
         {
             await Task.Delay(0);
             Config.IsCudaSupported = CheckCudaSupport();
-            ImageCompute.UseCuda = Config.IsCudaSupported && Config.IsEnabled;
             if (Config.IsCudaSupported)
             {
                 log.Info(Properties.Resources.CheckingCUDASupport);
@@ -49,13 +32,13 @@ namespace ColorVision.UI.CUDA
                 for (int i = 0; i < Config.DeviceCount; i++)
                 {
                     byte[] name = new byte[100];
-                    cuDeviceGetName(name, name.Length, i);
+                    Nvcuda.cuDeviceGetName(name, name.Length, i);
                     Config.DeviceNames[i] = System.Text.Encoding.ASCII.GetString(name).TrimEnd('\0');
 
-                    cuDeviceComputeCapability(out int major, out int minor, i);
+                    Nvcuda.cuDeviceComputeCapability(out int major, out int minor, i);
                     Config.ComputeCapabilities[i] = (major, minor);
 
-                    cuDeviceTotalMem_v2(out ulong totalMem, i);
+                    Nvcuda.cuDeviceTotalMem_v2(out ulong totalMem, i);
                     Config.TotalMemories[i] = totalMem;
                 }
 
@@ -81,13 +64,13 @@ namespace ColorVision.UI.CUDA
         {
             try
             {
-                int result = cuInit(0);
+                int result = Nvcuda.cuInit(0);
                 if (result != 0)
                 {
                     return false;
                 }
 
-                result = cuDeviceGetCount(out int deviceCount);
+                result = Nvcuda.cuDeviceGetCount(out int deviceCount);
                 if (result != 0 || deviceCount == 0)
                 {
                     return false;

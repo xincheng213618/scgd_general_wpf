@@ -1,11 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Core;
 
 namespace ColorVision.UI.CUDA
 {
-    public class ConfigCuda:ViewModelBase,IConfig
+    public class ConfigCuda:ViewModelBase
     {
-        public static ConfigCuda Instance => ConfigService.Instance.GetRequiredService<ConfigCuda>();
+        public static ConfigCuda Instance = new ConfigCuda();
 
         public bool IsEnabled
         {
@@ -14,7 +13,6 @@ namespace ColorVision.UI.CUDA
             {
                 if (!IsCudaSupported && value) return;
                 _IsEnabled = value;
-                ImageCompute.UseCuda = _IsEnabled && IsCudaSupported;
                 OnPropertyChanged();
             }
         }
@@ -32,7 +30,6 @@ namespace ColorVision.UI.CUDA
                     OnPropertyChanged(nameof(IsEnabled));
                 }
 
-                ImageCompute.UseCuda = _IsEnabled && _IsCudaSupported;
                 OnPropertyChanged();
             }
         }
