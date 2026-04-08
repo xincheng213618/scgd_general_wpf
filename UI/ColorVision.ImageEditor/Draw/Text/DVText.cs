@@ -77,14 +77,22 @@ namespace ColorVision.ImageEditor.Draw
             Attribute = new TextProperties();
             Attribute.Text = "请在这里输入";
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10; // 与其它图元保持一致缩放策略
-            Attribute.PropertyChanged += (s,e)=> Render();
+            Attribute.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName != nameof(TextProperties.Rect))
+                    Render();
+            };
         }
         public DVText(TextProperties textProperties)
         {
             Attribute = textProperties;
             if (Attribute.FontSize <= 0)
                 TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
-            Attribute.PropertyChanged += (s,e)=> Render();
+            Attribute.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName != nameof(TextProperties.Rect))
+                    Render();
+            };
         }
 
         public override void Render()
