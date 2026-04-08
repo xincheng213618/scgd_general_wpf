@@ -20,13 +20,7 @@ namespace ColorVision.UI
         /// 控件只需是 UserControl，标题通过 title 参数传入。
         /// 当 IDisPlayControl 选中时，自动切换到对应视图标签。
         /// </summary>
-        public static void AddViewConfig(this UserControl userControl, UserControl viewControl, string title)
-        {
-            var manager = DockViewManager.GetInstance();
-            manager.AddView(viewControl);
-            if (!string.IsNullOrEmpty(title))
-                manager.ViewTitles[viewControl] = title;
-        }
+ 
 
 
         public static void ApplyChangedSelectedColor(this IDisPlayControl disPlayControl, Border border)
@@ -70,11 +64,20 @@ namespace ColorVision.UI
                 };
             }
         }
+
+        public static void AddViewConfig(this UserControl userControl, UserControl viewControl, string title)
+        {
+            var manager = DockViewManager.GetInstance();
+            manager.AddView(viewControl);
+            if (!string.IsNullOrEmpty(title))
+                manager.ViewTitles[viewControl] = title;
+
+            userControl.PreviewMouseDown += (s, e) =>
+            {
+                manager.SelectView(viewControl);
+            };
+        }
     }
-
-
-
-
 
     public class DisPlayManagerConfig : ViewModelBase,IConfig
     {

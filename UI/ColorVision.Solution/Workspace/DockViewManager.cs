@@ -40,6 +40,12 @@ namespace ColorVision.Solution.Workspace
                 ShowDocument(doc);
             };
 
+            manager.SelectViewHandler = control =>
+            {
+                var doc = EnsureDocument(control);
+                SelectDocument(doc);
+            };
+
             manager.ShowAllViewsHandler = () =>
             {
                 foreach (var control in manager.Views)
@@ -118,6 +124,17 @@ namespace ColorVision.Solution.Workspace
             if (doc.Parent == null)
                 DocumentPane.Children.Add(doc);
             doc.IsActive = true;
+        }
+
+        /// <summary>
+        /// 仅切换可见标签页，不激活（不抢焦点）
+        /// </summary>
+        private static void SelectDocument(LayoutDocument doc)
+        {
+            if (doc.Parent == null)
+                DocumentPane.Children.Add(doc);
+            if (doc.Parent is LayoutDocumentPane pane)
+                pane.SelectedContentIndex = pane.IndexOf(doc);
         }
 
         /// <summary>
