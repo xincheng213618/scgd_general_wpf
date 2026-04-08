@@ -35,6 +35,7 @@ namespace ColorVision.ShellExtension
             try
             {
                 ShellLog.Log($"IInitializeWithStream.Initialize called, grfMode={grfMode}");
+                _filePath = null;
                 _streamData = ReadAllBytesFromStream(pstream);
                 ShellLog.Log($"IInitializeWithStream.Initialize: read {_streamData?.Length ?? 0} bytes");
                 return _streamData != null ? S_OK : E_FAIL;
@@ -53,6 +54,7 @@ namespace ColorVision.ShellExtension
         {
             if (string.IsNullOrEmpty(pszFilePath))
                 return E_INVALIDARG;
+            _streamData = null;
             _filePath = pszFilePath;
             ShellLog.Log($"IInitializeWithFile.Initialize: {pszFilePath}");
             return S_OK;
@@ -85,22 +87,11 @@ namespace ColorVision.ShellExtension
                         ShellLog.Log($"GetThumbnail: ReadCIEFileHeader(bytes) returned {index}");
                         return E_FAIL;
                     }
-                    // Infer file type from channels: 3-channel data is CIE, otherwise Raw
-                    if (fileInfo.Channels == 3)
-                        fileInfo.FileExtType = CVType.CIE;
-                    else
-                        fileInfo.FileExtType = CVType.Raw;
 
-                    // Override with file path extension if available
-                    if (!string.IsNullOrEmpty(_filePath))
-                    {
-                        if (_filePath.Contains(".cvcie", StringComparison.OrdinalIgnoreCase))
-                            fileInfo.FileExtType = CVType.CIE;
-                        else if (_filePath.Contains(".cvraw", StringComparison.OrdinalIgnoreCase))
-                            fileInfo.FileExtType = CVType.Raw;
-                        else if (_filePath.Contains(".cvsrc", StringComparison.OrdinalIgnoreCase))
-                            fileInfo.FileExtType = CVType.Src;
-                    }
+                    // Resolve file type from path/name metadata first.
+                    // Do not infer by channel count: 3-channel RAW can be misclassified as CIE,
+                    // which causes wrong planar interpretation and scrambled thumbnails.
+                    fileInfo.FileExtType = ResolveFileType(fileInfo, _filePath);
                 }
                 else if (!string.IsNullOrEmpty(_filePath) && File.Exists(_filePath))
                 {
@@ -179,6 +170,40 @@ namespace ColorVision.ShellExtension
                 ShellLog.Log($"GetThumbnail: exception: {ex}");
                 return E_FAIL;
             }
+        }
+
+        /// <summary>
+        /// Resolves ColorVision file type from available path/name metadata.
+        /// Falls back to RAW (safer than CIE for thumbnail interpretation).
+        /// </summary>
+        private static CVType ResolveFileType(CVCIEFile fileInfo, string? filePath)
+        {
+            static CVType FromPath(string path)
+            {
+                if (path.Contains(".cvcie", StringComparison.OrdinalIgnoreCase))
+                    return CVType.CIE;
+                if (path.Contains(".cvraw", StringComparison.OrdinalIgnoreCase))
+                    return CVType.Raw;
+                if (path.Contains(".cvsrc", StringComparison.OrdinalIgnoreCase))
+                    return CVType.Src;
+                if (path.Contains(".tif", StringComparison.OrdinalIgnoreCase) || path.Contains(".tiff", StringComparison.OrdinalIgnoreCase))
+                    return CVType.Tif;
+                return CVType.None;
+            }
+
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                var fromFullPath = FromPath(filePath);
+                if (fromFullPath != CVType.None)
+                    return fromFullPath;
+            }
+
+            if (!string.IsNullOrEmpty(fileInfo.SrcFileName))
+            {
+                return CVType.CIE;
+            }
+
+            return CVType.Raw;
         }
 
         /// <summary>
@@ -269,7 +294,7 @@ namespace ColorVision.ShellExtension
                     }
 
                     // Normalize 32-bit float images to 8-bit for display
-                    if (fileInfo.Bpp == 32 && src != null)
+                    if (fileInfo.Bpp != 8 && src != null)
                     {
                         Cv2.Normalize(src, src, 0, 255, NormTypes.MinMax);
                         src.ConvertTo(src, MatType.CV_8U);
