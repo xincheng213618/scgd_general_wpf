@@ -3,6 +3,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -18,6 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     /// </summary>
     public partial class DisplaySpectrum : UserControl, IDisPlayControl,IDisposable
     {
+        private static readonly ILog logger = LogManager.GetLogger(typeof(MQTTServiceBase));
         public DeviceSpectrum Device { get; set; }
         public MQTTSpectrum DService { get => Device.DService; }
 
@@ -178,7 +180,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 {
                     if (e == MsgRecordState.Fail)
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), $"Fail,{msgRecord.MsgReturn.Message}", "ColorVision");
+                        logger.Info(msgRecord.MsgReturn.Message);
                     }
                 };
             }
