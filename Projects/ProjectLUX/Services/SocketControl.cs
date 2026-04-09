@@ -1,15 +1,23 @@
-﻿using ColorVision.Engine.Messages;
+﻿using ColorVision.Database;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.SocketProtocol;
 using Dm.util;
 using log4net;
 using ProjectLUX.PluginConfig;
+using ProjectLUX.Process.Sprectrum;
 using ProjectLUX.Process.VID;
+using SqlSugar;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Windows;
+using System.Windows.Interop;
 
 namespace ProjectLUX.Services
 {
@@ -49,6 +57,82 @@ namespace ProjectLUX.Services
                     strings.Add("00");
 
                     ProjectLUXConfig.Instance.SN = sn;
+
+                    if (lastTwo == "31")
+                    {
+                        log.Info("VID虚像距执行");
+                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"D_{sn}.csv");
+                        var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
+                        SprectrumTestResult vIDTestResult = new SprectrumTestResult();
+                        DeviceSpectrum deviceCamera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();
+                        DisplayCameraConfig displayCameraConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(deviceCamera.Config.Code);
+
+                        MsgRecord msgRecord = deviceCamera.DService.GetData();
+
+                        //MsgRecord msgRecord = deviceCamera.DService.GetPosition();
+                        msgRecord.MsgRecordStateChanged += (s, e) =>
+                        {
+                            log.Info("msgRecord");
+
+                            if (e == MsgRecordState.Success)
+                            { 
+                                var msg =  msgRecord.MsgReturn;
+                                if (msg != null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
+                                {
+                                    int masterId = msg.Data?.MasterId;
+
+                                    var DB = new SqlSugarClient(new ConnectionConfig
+                                    {
+                                        ConnectionString = MySqlControl.GetConnectionString(),
+                                        DbType = SqlSugar.DbType.MySql,
+                                        IsAutoCloseConnection = true
+                                    });
+                                    SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().Where(x => x.Id == masterId).First();
+                                    DB.Dispose();
+                                    log.Info($"GetData MasterId:{masterId} ");
+                                    if (model != null)
+                                    {
+                                        Application.Current.Dispatcher.Invoke(() =>
+                                        {
+                                            try
+                                            {
+                                                ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
+                                                vIDTestResult.LuminousFlux.Value = (double)(viewResultSpectrum.LuminousFlux ?? 0);
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                log.Error(ex);
+                                            }
+                                        });
+                                    }
+                                }
+                                SprectrumFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<SprectrumFixConfig>();
+                                SprectrumRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<SprectrumRecipeConfig>();
+
+                                vIDTestResult.LuminousFlux.Value = vIDTestResult.LuminousFlux.Value * fixConfig.LuminousFlux;
+                                vIDTestResult.LuminousFlux.TestValue = vIDTestResult.LuminousFlux.Value.ToString();
+                                vIDTestResult.LuminousFlux.LowLimit = recipeConfig.LuminousFlux.Min;
+                                vIDTestResult.LuminousFlux.UpLimit = recipeConfig.LuminousFlux.Max;
+                                ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "Spectrum", rows);
+                                File.WriteAllLines(path, rows);
+                                stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + $";{vIDTestResult.LuminousFlux.Value}"));
+                            }
+                            else
+                            {
+                                SprectrumFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<SprectrumFixConfig>();
+                                SprectrumRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<SprectrumRecipeConfig>();
+
+                                vIDTestResult.LuminousFlux.Value = vIDTestResult.LuminousFlux.Value * fixConfig.LuminousFlux;
+                                vIDTestResult.LuminousFlux.TestValue = vIDTestResult.LuminousFlux.Value.ToString();
+                                vIDTestResult.LuminousFlux.LowLimit = recipeConfig.LuminousFlux.Min;
+                                vIDTestResult.LuminousFlux.UpLimit = recipeConfig.LuminousFlux.Max;
+                                ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "Spectrum", rows);
+                                File.WriteAllLines(path, rows);
+                                stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + ";0"));
+                            }
+                        };
+                        return null;
+                    }
 
                     if (SummaryManager.GetInstance().Summary.MachineNO == "H02")
                     {

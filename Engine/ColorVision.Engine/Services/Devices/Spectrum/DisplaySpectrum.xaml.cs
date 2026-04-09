@@ -181,6 +181,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     if (e == MsgRecordState.Fail)
                     {
                         logger.Info(msgRecord.MsgReturn.Message);
+
                     }
                 };
             }
