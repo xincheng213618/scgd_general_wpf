@@ -298,6 +298,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public void Dispose()
         {
             DService.DeviceStatusChanged -= DService_DeviceStatusChanged;
+            GC.SuppressFinalize(this);
         }
     }
 }

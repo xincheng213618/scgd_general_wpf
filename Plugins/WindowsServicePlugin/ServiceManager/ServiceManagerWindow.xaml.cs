@@ -1,4 +1,5 @@
 using ColorVision.Themes;
+using ColorVision.UI;
 using System.ComponentModel;
 using System.Windows;
 
