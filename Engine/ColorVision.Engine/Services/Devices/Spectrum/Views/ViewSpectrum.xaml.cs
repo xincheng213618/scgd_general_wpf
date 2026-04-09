@@ -218,190 +218,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 return;
             }
 
+            List<ViewResultSpectrum> selectedResults = listView1.SelectedItems.Cast<ViewResultSpectrum>().ToList();
 
-            var selectedItemsCopy = new List<object>();
-            foreach (var item in listView1.SelectedItems)
-            {
-                selectedItemsCopy.Add(item);
-            }
+            using var dialog = new System.Windows.Forms.SaveFileDialog();
+            dialog.Filter = "CSV files (*.csv) | *.csv";
+            dialog.FileName = (DisplayConfig.IsLuminousFluxMode ? "EQE" : "SpectrometerExport") + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            dialog.RestoreDirectory = true;
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            if (!DisplayConfig.IsLuminousFluxMode)
-            {
-                using var dialog = new System.Windows.Forms.SaveFileDialog();
-                dialog.Filter = "CSV files (*.csv) | *.csv";
-                dialog.FileName = "SpectrometerExport" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
-                dialog.RestoreDirectory = true;
-                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
-                var csvBuilder = new StringBuilder();
-
-                List<string> properties = new();
-                properties.Add("No");
-                properties.Add("Lot");
-                properties.Add("IP");
-                properties.Add("Luminace（Lv）(cd/m²)");
-                properties.Add("Blue Light Intensity");
-                properties.Add("Cx");
-                properties.Add("Cy");
-                properties.Add("u'");
-                properties.Add("v'");
-                properties.Add("Correlated Color Temperature(CCT)（K）");
-                properties.Add("DW（λd）（nm）");
-                properties.Add("Color Purity(%)");
-                properties.Add("Peak Wavelength(λp)(nm)");
-                properties.Add("Color Rendering (Ra)");
-                properties.Add("FWHM");
-                properties.Add("Excitation Purity");
-                properties.Add("Dominant Wavelength Color");
-                properties.Add("Voltgage(V) (V)");
-                properties.Add("Current(I) (mA)");
-
-                for (int i = 380; i <= 780; i++)
-                {
-                    properties.Add(i.ToString());
-                }
-                for (int i = 380; i <= 780; i++)
-                {
-                    properties.Add("sp" + i.ToString());
-                }
-                // 写入列头
-                for (int i = 0; i < properties.Count; i++)
-                {
-                    // 添加列名
-                    csvBuilder.Append(properties[i]);
-
-                    // 如果不是最后一列，则添加逗号
-                    if (i < properties.Count - 1)
-                        csvBuilder.Append(',');
-                }
-                // 添加换行符
-                csvBuilder.AppendLine();
-
-
-                foreach (var item in selectedItemsCopy)
-                {
-                    if (item is ViewResultSpectrum result)
-                    {
-                        csvBuilder.Append(result.Id + ",");
-                        csvBuilder.Append(result.BatchID + ",");
-                        csvBuilder.Append(result.IP + ",");
-                        csvBuilder.Append(result.Lv + ",");
-                        csvBuilder.Append(result.Blue + ",");
-                        csvBuilder.Append(result.fx + ",");
-                        csvBuilder.Append(result.fy + ",");
-                        csvBuilder.Append(result.fu + ",");
-                        csvBuilder.Append(result.fv + ",");
-                        csvBuilder.Append(result.fCCT + ",");
-                        csvBuilder.Append(result.fLd + ",");
-                        csvBuilder.Append(result.fPur + ",");
-                        csvBuilder.Append(result.fLp + ",");
-                        csvBuilder.Append(result.fRa + ",");
-                        csvBuilder.Append(result.fHW + ",");
-                        csvBuilder.Append(result.ExcitationPurity + ",");
-                        csvBuilder.Append(result.DominantWavelengthHex + ",");
-                        csvBuilder.Append(result.V + ",");
-                        csvBuilder.Append(result.I + ",");
-
-                        for (int i = 0; i < result.SpectralDatas.Count; i++)
-                        {
-                            csvBuilder.Append(result.SpectralDatas[i].AbsoluteSpectrum);
-                            csvBuilder.Append(',');
-                        }
-                        for (int i = 0; i < result.SpectralDatas.Count; i++)
-                        {
-                            csvBuilder.Append(result.SpectralDatas[i].RelativeSpectrum);
-                            if (i < result.SpectralDatas.Count - 1)
-                                csvBuilder.Append(',');
-                        }
-                        csvBuilder.AppendLine();
-                    }
-                }
-                File.WriteAllText(dialog.FileName, csvBuilder.ToString(), Encoding.UTF8);
-            }
+            if (DisplayConfig.IsLuminousFluxMode)
+                SpectrumCsvExportHelper.ExportLuminousFluxMode(dialog.FileName, selectedResults);
             else
-            {
-                using var dialog = new System.Windows.Forms.SaveFileDialog();
-                dialog.Filter = "CSV files (*.csv) | *.csv";
-                dialog.FileName = "EQE" + DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
-                dialog.RestoreDirectory = true;
-                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
-                var csvBuilder = new StringBuilder();
-
-                List<string> properties = new();
-                properties.Add("No");
-                properties.Add("Lot");
-                properties.Add("IP");
-                properties.Add("EQE");
-                properties.Add("LuminousFlux(lm)");
-                properties.Add("RadiantFlux(W)");
-                properties.Add("LuminousEfficacy(lm/W)");
-                properties.Add("Cx");
-                properties.Add("Cy");
-                properties.Add("Correlated Color Temperature(CCT)（K）");
-                properties.Add("Peak Wavelength(λp)(nm)");
-                properties.Add("Excitation Purity");
-                properties.Add("Dominant Wavelength Color");
-                properties.Add("Voltgage(V) (V)");
-                properties.Add("Current(I) (mA)");
-
-                for (int i = 380; i <= 780; i++)
-                {
-                    properties.Add(i.ToString());
-                }
-                for (int i = 380; i <= 780; i++)
-                {
-                    properties.Add("sp" + i.ToString());
-                }
-
-                // 写入列头
-                for (int i = 0; i < properties.Count; i++)
-                {
-                    csvBuilder.Append(properties[i]);
-                    if (i < properties.Count - 1)
-                        csvBuilder.Append(',');
-                }
-                csvBuilder.AppendLine();
-
-                foreach (var item in selectedItemsCopy)
-                {
-                    if (item is ViewResultSpectrum result)
-                    {
-                        csvBuilder.Append(result.Id + ",");
-                        csvBuilder.Append(result.BatchID + ",");
-                        csvBuilder.Append(result.IP + ",");
-                        csvBuilder.Append(result.Eqe + ",");
-                        csvBuilder.Append(result.LuminousFlux + ",");
-                        csvBuilder.Append(result.RadiantFlux + ",");
-                        csvBuilder.Append(result.LuminousEfficacy + ",");
-                        csvBuilder.Append(result.fx + ",");
-                        csvBuilder.Append(result.fy + ",");
-                        csvBuilder.Append(result.fCCT + ",");
-                        csvBuilder.Append(result.fLp + ",");
-                        csvBuilder.Append(result.ExcitationPurity + ",");
-                        csvBuilder.Append(result.DominantWavelengthHex + ",");
-                        csvBuilder.Append(result.V + ",");
-                        csvBuilder.Append(result.I + ",");
-
-                        for (int i = 0; i < result.SpectralDatas.Count; i++)
-                        {
-                            csvBuilder.Append(result.SpectralDatas[i].AbsoluteSpectrum);
-                            csvBuilder.Append(',');
-                        }
-                        for (int i = 0; i < result.SpectralDatas.Count; i++)
-                        {
-                            csvBuilder.Append(result.SpectralDatas[i].RelativeSpectrum);
-                            if (i < result.SpectralDatas.Count - 1)
-                                csvBuilder.Append(',');
-                        }
-                        csvBuilder.AppendLine();
-                    }
-                }
-                File.WriteAllText(dialog.FileName, csvBuilder.ToString(), Encoding.UTF8);
-
-            }
-
-
+                SpectrumCsvExportHelper.ExportLuminanceMode(dialog.FileName, selectedResults);
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -860,6 +688,214 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                     }
                 }
             }
+        }
+    }
+
+    public static class SpectrumCsvExportHelper
+    {
+        private const int StartWavelength = 380;
+        private const int EndWavelength = 780;
+
+        public static void ExportLuminanceMode(string filePath, IEnumerable<ViewResultSpectrum> results)
+        {
+            List<string> headers = new()
+            {
+                "No",
+                "Lot",
+                "IP",
+                "Luminace（Lv）(cd/m²)",
+                "Blue Light Intensity",
+                "Cx",
+                "Cy",
+                "u'",
+                "v'",
+                "Correlated Color Temperature(CCT)（K）",
+                "DW（λd）（nm）",
+                "Color Purity(%)",
+                "Peak Wavelength(λp)(nm)",
+                "Color Rendering (Ra)",
+                "FWHM",
+                "Excitation Purity",
+                "Dominant Wavelength Color",
+                "Voltgage(V) (V)",
+                "Current(I) (mA)"
+            };
+
+            AddSpectrumHeaders(headers);
+
+            StringBuilder csvBuilder = new();
+            AppendCsvLine(csvBuilder, headers);
+
+            foreach (ViewResultSpectrum result in results)
+            {
+                List<string> row = new()
+                {
+                    result.Id.ToString(),
+                    result.BatchID?.ToString() ?? string.Empty,
+                    result.IP ?? string.Empty,
+                    result.Lv ?? string.Empty,
+                    result.Blue ?? string.Empty,
+                    result.fx.ToString(),
+                    result.fy.ToString(),
+                    result.fu.ToString(),
+                    result.fv.ToString(),
+                    result.fCCT.ToString(),
+                    result.fLd.ToString(),
+                    result.fPur.ToString(),
+                    result.fLp.ToString(),
+                    result.fRa.ToString(),
+                    result.fHW.ToString(),
+                    result.ExcitationPurity.ToString(),
+                    result.DominantWavelengthHex ?? string.Empty,
+                    result.V?.ToString() ?? string.Empty,
+                    result.I?.ToString() ?? string.Empty,
+                };
+
+                AddSpectrumValues(row, result.SpectralDatas);
+                AppendCsvLine(csvBuilder, row);
+            }
+
+            File.WriteAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
+        }
+
+        public static void ExportLuminousFluxMode(string filePath, IEnumerable<ViewResultSpectrum> results)
+        {
+            List<string> headers = new()
+            {
+                "No",
+                "Lot",
+                "IP",
+                "EQE",
+                "LuminousFlux(lm)",
+                "RadiantFlux(W)",
+                "LuminousEfficacy(lm/W)",
+                "Cx",
+                "Cy",
+                "Correlated Color Temperature(CCT)（K）",
+                "Peak Wavelength(λp)(nm)",
+                "Excitation Purity",
+                "Dominant Wavelength Color",
+                "Voltgage(V) (V)",
+                "Current(I) (mA)"
+            };
+
+            AddSpectrumHeaders(headers);
+
+            StringBuilder csvBuilder = new();
+            AppendCsvLine(csvBuilder, headers);
+
+            foreach (ViewResultSpectrum result in results)
+            {
+                List<string> row = new()
+                {
+                    result.Id.ToString(),
+                    result.BatchID?.ToString() ?? string.Empty,
+                    result.IP ?? string.Empty,
+                    result.Eqe?.ToString() ?? string.Empty,
+                    result.LuminousFlux?.ToString() ?? string.Empty,
+                    result.RadiantFlux?.ToString() ?? string.Empty,
+                    result.LuminousEfficacy?.ToString() ?? string.Empty,
+                    result.fx.ToString(),
+                    result.fy.ToString(),
+                    result.fCCT.ToString(),
+                    result.fLp.ToString(),
+                    result.ExcitationPurity.ToString(),
+                    result.DominantWavelengthHex ?? string.Empty,
+                    result.V?.ToString() ?? string.Empty,
+                    result.I?.ToString() ?? string.Empty,
+                };
+
+                AddSpectrumValues(row, result.SpectralDatas);
+                AppendCsvLine(csvBuilder, row);
+            }
+
+            File.WriteAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
+        }
+
+        public static void ExportLuminousFluxMode(string filePath, IEnumerable<ViewResultEqe> results)
+        {
+            List<string> headers = new()
+            {
+                "No",
+                "Lot",
+                "IP",
+                "EQE",
+                "LuminousFlux(lm)",
+                "RadiantFlux(W)",
+                "LuminousEfficacy(lm/W)",
+                "Cx",
+                "Cy",
+                "Correlated Color Temperature(CCT)（K）",
+                "Peak Wavelength(λp)(nm)",
+                "Voltgage(V) (V)",
+                "Current(I) (mA)"
+            };
+
+            AddSpectrumHeaders(headers);
+
+            StringBuilder csvBuilder = new();
+            AppendCsvLine(csvBuilder, headers);
+
+            foreach (ViewResultEqe result in results)
+            {
+                List<string> row = new()
+                {
+                    result.Id.ToString(),
+                    result.BatchID?.ToString() ?? string.Empty,
+                    result.IP ?? string.Empty,
+                    result.Eqe.ToString(),
+                    result.LuminousFlux.ToString(),
+                    result.RadiantFlux.ToString(),
+                    result.LuminousEfficacy.ToString(),
+                    result.fx.ToString(),
+                    result.fy.ToString(),
+                    result.fCCT.ToString(),
+                    result.fLp.ToString(),
+                    result.V?.ToString() ?? string.Empty,
+                    result.I?.ToString() ?? string.Empty,
+                };
+
+                AddSpectrumValues(row, result.SpectralDatas);
+                AppendCsvLine(csvBuilder, row);
+            }
+
+            File.WriteAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
+        }
+
+        private static void AddSpectrumHeaders(List<string> headers)
+        {
+            for (int wl = StartWavelength; wl <= EndWavelength; wl++)
+            {
+                headers.Add(wl.ToString());
+            }
+
+            for (int wl = StartWavelength; wl <= EndWavelength; wl++)
+            {
+                headers.Add("sp" + wl);
+            }
+        }
+
+        private static void AddSpectrumValues(List<string> row, IList<SpectralData> spectralDatas)
+        {
+            int spectralCount = spectralDatas?.Count ?? 0;
+            IList<SpectralData> safeSpectralDatas = spectralDatas ?? new List<SpectralData>();
+
+            for (int wl = StartWavelength; wl <= EndWavelength; wl++)
+            {
+                int index = wl - StartWavelength;
+                row.Add(index < spectralCount ? safeSpectralDatas[index].AbsoluteSpectrum.ToString() : string.Empty);
+            }
+
+            for (int wl = StartWavelength; wl <= EndWavelength; wl++)
+            {
+                int index = wl - StartWavelength;
+                row.Add(index < spectralCount ? safeSpectralDatas[index].RelativeSpectrum.ToString() : string.Empty);
+            }
+        }
+
+        private static void AppendCsvLine(StringBuilder csvBuilder, List<string> values)
+        {
+            csvBuilder.AppendLine(string.Join(",", values));
         }
     }
 }

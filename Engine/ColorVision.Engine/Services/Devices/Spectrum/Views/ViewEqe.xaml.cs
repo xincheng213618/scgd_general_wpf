@@ -137,11 +137,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 return;
             }
 
-            var selectedItemsCopy = new List<object>();
-            foreach (var item in listView1.SelectedItems)
-            {
-                selectedItemsCopy.Add(item);
-            }
+            List<ViewResultEqe> selectedResults = listView1.SelectedItems.Cast<ViewResultEqe>().ToList();
 
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
@@ -149,76 +145,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            var csvBuilder = new StringBuilder();
-
-            List<string> properties = new();
-            properties.Add("No");
-            properties.Add("Lot");
-            properties.Add("IP");
-            properties.Add("EQE");
-            properties.Add("LuminousFlux(lm)");
-            properties.Add("RadiantFlux(W)");
-            properties.Add("LuminousEfficacy(lm/W)");
-            properties.Add("Cx");
-            properties.Add("Cy");
-            properties.Add("Correlated Color Temperature(CCT)（K）");
-            properties.Add("Peak Wavelength(λp)(nm)");
-            properties.Add("Voltgage(V) (V)");
-            properties.Add("Current(I) (mA)");
-
-            for (int i = 380; i <= 780; i++)
-            {
-                properties.Add(i.ToString());
-            }
-            for (int i = 380; i <= 780; i++)
-            {
-                properties.Add("sp" + i.ToString());
-            }
-            
-            // 写入列头
-            for (int i = 0; i < properties.Count; i++)
-            {
-                csvBuilder.Append(properties[i]);
-                if (i < properties.Count - 1)
-                    csvBuilder.Append(',');
-            }
-            csvBuilder.AppendLine();
-
-
-
-            foreach (var item in selectedItemsCopy)
-            {
-                if (item is ViewResultEqe result)
-                {
-                    csvBuilder.Append(result.Id + ",");
-                    csvBuilder.Append(result.BatchID + ",");
-                    csvBuilder.Append(result.IP + ",");
-                    csvBuilder.Append(result.Eqe + ",");
-                    csvBuilder.Append(result.LuminousFlux + ",");
-                    csvBuilder.Append(result.RadiantFlux + ",");
-                    csvBuilder.Append(result.LuminousEfficacy + ",");
-                    csvBuilder.Append(result.fx + ",");
-                    csvBuilder.Append(result.fy + ",");
-                    csvBuilder.Append(result.fCCT + ",");
-                    csvBuilder.Append(result.fLp + ",");
-                    csvBuilder.Append(result.V + ",");
-                    csvBuilder.Append(result.I + ",");
-
-                    for (int i = 0; i < result.SpectralDatas.Count; i++)
-                    {
-                        csvBuilder.Append(result.SpectralDatas[i].AbsoluteSpectrum);
-                        csvBuilder.Append(',');
-                    }
-                    for (int i = 0; i < result.SpectralDatas.Count; i++)
-                    {
-                        csvBuilder.Append(result.SpectralDatas[i].RelativeSpectrum);
-                        if (i < result.SpectralDatas.Count - 1)
-                            csvBuilder.Append(',');
-                    }
-                    csvBuilder.AppendLine();
-                }
-            }
-            File.WriteAllText(dialog.FileName, csvBuilder.ToString(), Encoding.UTF8);
+            SpectrumCsvExportHelper.ExportLuminousFluxMode(dialog.FileName, selectedResults);
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -327,7 +254,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         private List<Scatter> ScatterPlots { get; set; } = new List<Scatter>();
         private List<Scatter> AbsoluteScatterPlots { get; set; } = new List<Scatter>();
-        private bool IsShowingAbsoluteSpectrum { get; set; } = false;
+        private bool IsShowingAbsoluteSpectrum { get; set; }
 
         private void Button1_Click(object sender, RoutedEventArgs e)
         {

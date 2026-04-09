@@ -66,7 +66,6 @@ namespace ProjectLUX.Services
                             Directory.CreateDirectory(ProjectLUXConfig.Instance.ResultSavePath);
 
                         string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"D_{sn}.csv");
-                        var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
                         SprectrumTestResult vIDTestResult = new SprectrumTestResult();
                         DeviceSpectrum deviceSprectrm = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();
                         MsgRecord msgRecord = deviceSprectrm.DService.GetData();
@@ -79,6 +78,7 @@ namespace ProjectLUX.Services
                             if (e == MsgRecordState.Success)
                             { 
                                 var msg =  msgRecord.MsgReturn;
+                                ViewResultSpectrum viewResultSpectrum = null;
                                 if (msg != null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
                                 {
                                     int masterId = msg.Data?.MasterId;
@@ -98,8 +98,7 @@ namespace ProjectLUX.Services
                                         {
                                             try
                                             {
-                                                ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
-                                                vIDTestResult.LuminousFlux.Value = (double)(viewResultSpectrum.LuminousFlux ?? 0);
+                                                viewResultSpectrum = new ViewResultSpectrum(model);
                                             }
                                             catch (Exception ex)
                                             {
@@ -108,21 +107,18 @@ namespace ProjectLUX.Services
                                         });
                                     }
                                 }
-                                SprectrumFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<SprectrumFixConfig>();
-                                SprectrumRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<SprectrumRecipeConfig>();
 
-                                vIDTestResult.LuminousFlux.Value = vIDTestResult.LuminousFlux.Value * fixConfig.LuminousFlux;
-                                vIDTestResult.LuminousFlux.TestValue = vIDTestResult.LuminousFlux.Value.ToString();
-                                vIDTestResult.LuminousFlux.LowLimit = recipeConfig.LuminousFlux.Min;
-                                vIDTestResult.LuminousFlux.UpLimit = recipeConfig.LuminousFlux.Max;
-                                ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "White255", rows);
-                                File.WriteAllLines(path, rows);
+                                if (viewResultSpectrum != null)
+                                {
+                                    SpectrumCsvExportHelper.ExportLuminousFluxMode(path, new[] { viewResultSpectrum });
+                                }
                                 stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + $";{vIDTestResult.LuminousFlux.Value}"));
                             }
                             else
                             {
                                 SprectrumFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<SprectrumFixConfig>();
                                 SprectrumRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<SprectrumRecipeConfig>();
+                                var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
 
                                 vIDTestResult.LuminousFlux.Value = vIDTestResult.LuminousFlux.Value * fixConfig.LuminousFlux;
                                 vIDTestResult.LuminousFlux.TestValue = vIDTestResult.LuminousFlux.Value.ToString();
