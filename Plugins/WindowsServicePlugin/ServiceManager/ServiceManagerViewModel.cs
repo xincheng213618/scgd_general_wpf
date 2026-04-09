@@ -87,6 +87,7 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand IncrementalUpgradeCommand { get; }
         public RelayCommand FreshInstallCommand { get; }
         public RelayCommand CheckUpdateCommand { get; }
+        public RelayCommand OpenInstallManagerCommand { get; }
         public RelayCommand RefreshCommand { get; }
         public RelayCommand ClearLogCommand { get; }
         public RelayCommand SetBasePathCommand { get; }
@@ -121,6 +122,7 @@ namespace WindowsServicePlugin.ServiceManager
             IncrementalUpgradeCommand = new RelayCommand(a => _ = IncrementalUpgradeAsync(), a => !IsBusy);
             FreshInstallCommand = new RelayCommand(a => _ = FreshInstallAsync(), a => !IsBusy);
             CheckUpdateCommand = new RelayCommand(a => _ = CheckForUpdateAsync(), a => !IsBusy);
+            OpenInstallManagerCommand = new RelayCommand(a => OpenInstallManager());
             RefreshCommand = new RelayCommand(a => RefreshAll());
             ClearLogCommand = new RelayCommand(a => LogText = string.Empty);
             SetBasePathCommand = new RelayCommand(a => SetBasePath());
@@ -1588,6 +1590,25 @@ namespace WindowsServicePlugin.ServiceManager
                 string destDir = Path.Combine(targetDir, Path.GetDirectoryName(dir) is null ? Path.GetFileName(dir) : Path.GetFileName(dir));
                 CopyDirectory(dir, destDir);
             }
+        }
+
+        #endregion
+
+        #region Install Manager
+
+        /// <summary>
+        /// 打开服务安装管理器窗口
+        /// </summary>
+        private void OpenInstallManager()
+        {
+            var installWindow = new ServiceInstallWindow
+            {
+                Owner = Application.Current.MainWindow
+            };
+            installWindow.ShowDialog();
+
+            // 刷新状态
+            RefreshAll();
         }
 
         #endregion

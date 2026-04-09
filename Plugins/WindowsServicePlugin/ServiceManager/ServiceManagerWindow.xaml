@@ -55,10 +55,8 @@
                         <Button Content="旧版App.config" Command="{Binding OpenLegacyConfigCommand}" Margin="0,0,8,0" Padding="12,6"
                             Visibility="{Binding HasLegacyConfig, Converter={StaticResource BoolToVis}}"/>
                         <Button Content="管理员模式" Command="{Binding RestartElevatedCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                    <Button Content="在线下载" Command="{Binding CheckUpdateCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                    <Button Content="增量升级" Command="{Binding IncrementalUpgradeCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                    <Button Content="全新安装" Command="{Binding FreshInstallCommand}" Margin="0,0,0,0" Padding="12,6"
-                            Foreground="Red" ToolTip="注：全新安装会重置数据库，请慎用"/>
+                    <Button Content="检查更新" Command="{Binding OpenInstallManagerCommand}" Margin="0,0,8,0" Padding="12,6"
+                            Style="{StaticResource ButtonPrimary}" ToolTip="打开服务安装管理器，检查更新并安装"/>
                 </WrapPanel>
             </StackPanel>
         </Border>

@@ -64,8 +64,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public double IntTime { get => _IntTime; set { _IntTime = value; OnPropertyChanged(); } }
         private double _IntTime = 100;
 
+        [DisplayName("积分时间最大值")]
+        public double MaxIntTime { get => _MaxIntTime; set { _MaxIntTime = value; OnPropertyChanged(); } }
+        private double _MaxIntTime = 6000;
+
         public int AveNum { get => _AveNum; set { _AveNum = value; OnPropertyChanged(); } }
         private int _AveNum = 1;
+
+        [DisplayName("平均次数最大值")]
+        public int MaxAveNum { get => _MaxAveNum; set { _MaxAveNum = value; OnPropertyChanged(); } }
+        private int _MaxAveNum = 10;
 
         public int PortNum { get => _PortNum; set { _PortNum = value; OnPropertyChanged(); } }
         private int _PortNum = 1;
@@ -157,9 +165,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         [CommandDisplay("SpectrumLog")]
         public RelayCommand OpenSpectrumLogCommand { get; set; }
-        public void OpenSpectrumLog()
+        public static void OpenSpectrumLog()
         {
-            string baseDir = Directory.GetParent(ServiceConfig.Instance.CVMainService_x64).FullName;
+            string? mainServicePath = ServiceConfig.Instance.CVMainService_x64;
+            string? baseDir = string.IsNullOrWhiteSpace(mainServicePath) ? null : Directory.GetParent(mainServicePath)?.FullName;
+            if (string.IsNullOrWhiteSpace(baseDir))
+                return;
+
             string latestLogPath = LogFileHelper.GetMostRecentLogFile(Path.Combine(baseDir, "log"), "CVMainWindowsService_x64_Spectrum");
             if (!string.IsNullOrEmpty(latestLogPath))
             {
@@ -175,9 +187,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             new PropertyEditorWindow(DisplayConfig) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        public int MyCallback(IntPtr strText, int nLen)
+        public static int MyCallback(IntPtr strText, int nLen)
         {
-            string text = Marshal.PtrToStringAnsi(strText, nLen);
+            _ = Marshal.PtrToStringAnsi(strText, nLen);
             return 0;
         }
 

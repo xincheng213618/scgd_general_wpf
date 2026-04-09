@@ -24,6 +24,7 @@ Run:
 import argparse
 import hmac
 import json
+import re
 import sqlite3
 from datetime import datetime, timezone
 from functools import wraps
@@ -885,6 +886,107 @@ def api_app_latest_version():
     """Return the current LATEST_RELEASE version string for build scripts."""
     version = SERVICES._read_text_file(STORAGE / "LATEST_RELEASE") or ""
     return jsonify({"version": version.strip()})
+
+
+# ===================================================================
+# CVWindowsService Tool API
+# ===================================================================
+
+_CVWS_DIR = "Tool/CVWindowsService"
+_CVWS_PACKAGE_RE = re.compile(
+    r"^CVWindowsService\[(?P<version>\d+\.\d+\.\d+\.\d+)\](?:-(?P<suffix>\d+))?\.zip$",
+    re.IGNORECASE,
+)
+
+
+def _scan_cvwindowsservice_packages() -> list[dict[str, Any]]:
+    """Scan Tool/CVWindowsService for release zip packages."""
+    tool_dir = STORAGE / "Tool" / "CVWindowsService"
+    if not tool_dir.is_dir():
+        return []
+
+    packages: list[dict[str, Any]] = []
+    for entry in tool_dir.iterdir():
+        if not entry.is_file():
+            continue
+        m = _CVWS_PACKAGE_RE.match(entry.name)
+        if not m:
+            continue
+        version = m.group("version")
+        suffix = m.group("suffix") or ""
+        try:
+            stat = entry.stat()
+            size = stat.st_size
+            modified_ts = stat.st_mtime
+            dt = datetime.fromtimestamp(modified_ts, tz=timezone.utc)
+            modified_iso = dt.isoformat()
+            modified_display = dt.strftime("%Y-%m-%d %H:%M")
+        except OSError:
+            size = 0
+            modified_iso = ""
+            modified_display = ""
+
+        packages.append({
+            "fileName": entry.name,
+            "version": version,
+            "suffix": suffix,
+            "size": size,
+            "sizeText": human_size(size),
+            "modified": modified_iso,
+            "modifiedDisplay": modified_display,
+            "downloadUrl": f"/download/{_CVWS_DIR}/{entry.name}",
+        })
+
+    # Sort by version descending
+    packages.sort(key=lambda p: tuple(int(x) for x in p["version"].split(".")), reverse=True)
+    return packages
+
+
+@app.route("/api/tool/cvwindowsservice/latest-version", methods=["GET"])
+def api_cvwindowsservice_latest_version():
+    """Return the latest CVWindowsService version from Tool/CVWindowsService/LATEST_RELEASE."""
+    version = read_text_file(STORAGE / "Tool" / "CVWindowsService" / "LATEST_RELEASE")
+    if not version:
+        return jsonify({"error": "LATEST_RELEASE not found"}), 404
+    return jsonify({"version": version.strip()})
+
+
+@app.route("/api/tool/cvwindowsservice/releases", methods=["GET"])
+def api_cvwindowsservice_releases():
+    """List all CVWindowsService release packages with version and download info."""
+    latest = read_text_file(STORAGE / "Tool" / "CVWindowsService" / "LATEST_RELEASE") or ""
+    packages = _scan_cvwindowsservice_packages()
+    return jsonify({
+        "latestVersion": latest.strip(),
+        "packages": packages,
+        "count": len(packages),
+    })
+
+
+@app.route("/api/tool/cvwindowsservice/download/<version>", methods=["GET"])
+def api_cvwindowsservice_download(version):
+    """Download a specific CVWindowsService version zip by version string."""
+    if not _is_safe_version(version):
+        return jsonify({"error": "Invalid version format"}), 400
+
+    tool_dir = STORAGE / "Tool" / "CVWindowsService"
+    if not tool_dir.is_dir():
+        return jsonify({"error": "CVWindowsService directory not found"}), 404
+
+    # Find the matching package (prefer exact version, then version with suffix)
+    best_match: Path | None = None
+    for entry in tool_dir.iterdir():
+        if not entry.is_file():
+            continue
+        m = _CVWS_PACKAGE_RE.match(entry.name)
+        if m and m.group("version") == version:
+            best_match = entry
+            break
+
+    if best_match is None:
+        return jsonify({"error": f"Package for version {version} not found"}), 404
+
+    return send_from_directory(str(best_match.parent), best_match.name, as_attachment=True)
 
 
 @app.route("/api/health", methods=["GET"])
