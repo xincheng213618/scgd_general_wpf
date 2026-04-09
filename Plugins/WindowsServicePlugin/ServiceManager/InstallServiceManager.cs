@@ -1,14 +1,12 @@
-using ColorVision.UI.Menus;
+using ColorVision.UI;
 
 namespace WindowsServicePlugin.ServiceManager
 {
-    public class MenuServiceManager : MenuItemBase
+    public class InstallServiceManager : WizardStepBase
     {
-        public override string OwnerGuid => MenuItemConstants.Help;
-        public override string GuidId => "ServiceManager";
         public override int Order => 0;
         public override string Header => "服务管理器";
-
+        public override string Description => "服务管理器";
         public override void Execute()
         {
             var window = new ServiceManagerWindow();

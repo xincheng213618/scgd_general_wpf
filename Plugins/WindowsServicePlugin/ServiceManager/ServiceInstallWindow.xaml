@@ -48,11 +48,14 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <CheckBox Grid.Column="0" Content="服务包" IsChecked="{Binding InstallServiceChecked}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="80"/>
                     <TextBox Grid.Column="1" Text="{Binding ServicePackagePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,8,0"/>
-                    <Button Grid.Column="2" Content="更新" Command="{Binding CheckUpdateCommand}" Padding="12,4" Margin="0,0,4,0" Style="{StaticResource ButtonPrimary}"/>
-                    <Button Grid.Column="3" Content="选择" Command="{Binding SelectServicePackageCommand}" Padding="12,4"/>
+                    <TextBlock Grid.Column="2" Text="{Binding ServicePackageTypeDescription}" VerticalAlignment="Center"
+                               Foreground="{DynamicResource PrimaryBrush}" FontSize="11" Margin="0,0,8,0"/>
+                    <Button Grid.Column="3" Content="更新" Command="{Binding CheckUpdateCommand}" Padding="12,4" Margin="0,0,4,0" Style="{StaticResource ButtonPrimary}"/>
+                    <Button Grid.Column="4" Content="选择" Command="{Binding SelectServicePackageCommand}" Padding="12,4"/>
                 </Grid>
 
                 <!-- MySQL -->

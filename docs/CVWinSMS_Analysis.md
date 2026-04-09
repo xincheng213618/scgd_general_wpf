@@ -45,6 +45,70 @@
 - **增量升级** (`button_update_increment`) - 解压更新包，复制文件，重启服务
 - **全新安装** - 卸载服务、备份数据库、重新安装、执行SQL
 
+---
+
+## 服务包格式说明（ColorVision 重写版）
+
+### 完整安装包
+文件名示例：`CVWindowsService.zip`、`CVWindowsService_4.0.x.zip`
+
+特征：
+- 解压后根目录为 `CVWindowsService/`（或直接含服务目录）
+- 包含全量文件：cfg/、plugin/、log4net.config 等
+- 安装流程：停止服务 → 全量解压到 BaseLocation → DeleteCommonDll → 重新注册 Windows 服务 → 启动
+
+### 增量更新包
+文件名示例：`4.0.3.318.zip`（文件名即版本号）
+
+**识别条件**：zip 根目录下只有一个名称符合 `X.X.X.X` 正则的文件夹。
+
+**目录结构**：
+```
+4.0.3.318/
+  CommonDll/                    ← 共享 DLL，复制到所有服务目录根层
+    CV.DBEntities.dll
+    CVCommCore.dll
+    ...
+  CVMainWindowsService_dev/
+    CVMainWindowsService_dev.exe
+    plugin/
+      Sensor/*.dll
+      SMU/*.dll
+  CVMainWindowsService_x64/
+    CVMainWindowsService_x64.exe
+    cfg_files/                  ← 静态设备配置（IKap、mil-dcf），允许覆盖
+      IKap/510.vlcf
+      mil-dcf/ConfigDCF.ini
+    plugin/
+      Algorithm/、Camera/、Flow/、Spectrum/、FileServer/
+  RegWindowsService/
+    RegWindowsService.exe
+    ArchivedWindowsService.exe
+    *.dll
+```
+
+**与完整包的关键差异**：
+
+| 项目 | 完整包 | 增量更新包 |
+|------|--------|------------|
+| 根目录名 | `CVWindowsService` | 版本号（如 `4.0.3.318`） |
+| 内容 | 全量文件含 cfg/ | 仅变更文件，无 cfg/ |
+| cfg/ 处理 | 全量覆盖 | **跳过**，保留现有 MySql.config/MQTT.config 等 |
+| cfg_files/ | 不含 | 含（静态设备配置，允许覆盖） |
+| MySQL/MQTT | 视大包决定 | **不含**，只更新服务 exe 和 DLL |
+| 服务注册 | 重新 sc create/delete | **不重新注册**（服务已安装） |
+
+**安装流程**（代码路径：`ServiceInstallViewModel.IncrementalUpdate.cs`）：
+1. 停止所有受管服务
+2. 解压到临时目录
+3. 将 `CommonDll/` 内容复制到每个已存在的服务目录
+4. 逐个复制服务目录文件，**跳过 cfg/ 子目录**
+5. 清理临时目录
+6. 执行 `ApplyConfigAndRefreshAfterInstall`（同步配置到 cfg/）
+7. 按需启动服务
+
+**UI 显示**：选择文件后，服务包路径旁自动显示"增量更新包 (4.0.3.318)"或"完整安装包"。
+
 ### 7. 日志功能
 - 实时日志输出 (`richTextBox_output`)
 - 日志收集打包
