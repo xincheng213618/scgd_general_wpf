@@ -60,16 +60,18 @@ namespace ProjectLUX.Services
 
                     if (lastTwo == "31")
                     {
-                        log.Info("VID虚像距执行");
+                        log.Info("光谱测量执行");
+
+                        if (!Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
+                            Directory.CreateDirectory(ProjectLUXConfig.Instance.ResultSavePath);
+
                         string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"D_{sn}.csv");
                         var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
                         SprectrumTestResult vIDTestResult = new SprectrumTestResult();
-                        DeviceSpectrum deviceCamera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();
-                        DisplayCameraConfig displayCameraConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(deviceCamera.Config.Code);
+                        DeviceSpectrum deviceSprectrm = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();
+                        MsgRecord msgRecord = deviceSprectrm.DService.GetData();
 
-                        MsgRecord msgRecord = deviceCamera.DService.GetData();
-
-                        //MsgRecord msgRecord = deviceCamera.DService.GetPosition();
+                        //MsgRecord msgRecord = deviceSprectrm.DService.GetPosition();
                         msgRecord.MsgRecordStateChanged += (s, e) =>
                         {
                             log.Info("msgRecord");
@@ -113,7 +115,7 @@ namespace ProjectLUX.Services
                                 vIDTestResult.LuminousFlux.TestValue = vIDTestResult.LuminousFlux.Value.ToString();
                                 vIDTestResult.LuminousFlux.LowLimit = recipeConfig.LuminousFlux.Min;
                                 vIDTestResult.LuminousFlux.UpLimit = recipeConfig.LuminousFlux.Max;
-                                ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "Spectrum", rows);
+                                ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "White255", rows);
                                 File.WriteAllLines(path, rows);
                                 stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + $";{vIDTestResult.LuminousFlux.Value}"));
                             }
@@ -126,7 +128,7 @@ namespace ProjectLUX.Services
                                 vIDTestResult.LuminousFlux.TestValue = vIDTestResult.LuminousFlux.Value.ToString();
                                 vIDTestResult.LuminousFlux.LowLimit = recipeConfig.LuminousFlux.Min;
                                 vIDTestResult.LuminousFlux.UpLimit = recipeConfig.LuminousFlux.Max;
-                                ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "Spectrum", rows);
+                                ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "White255", rows);
                                 File.WriteAllLines(path, rows);
                                 stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + ";0"));
                             }
@@ -153,7 +155,7 @@ namespace ProjectLUX.Services
                             //这俩值还不一样，看看后面怎么优化一下
                             MsgRecord msgRecord = deviceCamera.DService.AutoFocus(TemplateAutoFocus.Params[displayCameraConfig.AutoFocusTemplateIndex].Value);
    
-                            //MsgRecord msgRecord = deviceCamera.DService.GetPosition();
+                            //MsgRecord msgRecord = deviceSprectrm.DService.GetPosition();
                             msgRecord.MsgRecordStateChanged += (s,e) =>
                             {
                                 log.Info("msgRecord");
