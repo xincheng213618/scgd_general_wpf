@@ -13,7 +13,6 @@ namespace WindowsServicePlugin.ServiceManager
         {
             InitializeComponent();
             ViewModel = new ServiceInstallViewModel();
-            ViewModel.CloseAction = () => Close();
             DataContext = ViewModel;
         }
     }
