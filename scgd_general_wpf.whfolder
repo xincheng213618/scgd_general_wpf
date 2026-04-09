@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "rootPath": ".",
+  "name": "scgd_general_wpf",
+  "excludePatterns": [
+    "obj",
+    "bin",
+    ".git",
+    ".vs",
+    "node_modules",
+    "__pycache__",
+    ".idea"
+  ],
+  "includeHidden": false,
+  "useGitIgnore": true,
+  "created": "2026-04-08T15:11:01.6680186+00:00",
+  "lastOpened": "2026-04-08T15:11:15.5504771+00:00"
+}
