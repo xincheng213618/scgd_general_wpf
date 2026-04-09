@@ -6,7 +6,7 @@ namespace ProjectARVRPro.Process.W255
 {
     public class W255ViewTestResult : W255TestResult
     {
-        public List<AlgResultLightAreaModel> AlgResultLightAreaModels { get; set; }
+        public List<AlgResultLightAreaModel> AlgResultLightAreaModels { get; set; } = new List<AlgResultLightAreaModel>();
 
         public List<PoiResultCIExyuvData> ViewPoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
     }

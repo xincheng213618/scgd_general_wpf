@@ -5,7 +5,7 @@ namespace ProjectARVRPro.Process.W51
 {
     public class W51ViewTestResult : W51TestResult
     {
-        public List<AlgResultLightAreaModel> AlgResultLightAreaModels { get; set; }
+        public List<AlgResultLightAreaModel> AlgResultLightAreaModels { get; set; } = new List<AlgResultLightAreaModel>();
     }
 
     public class W51TestResult : ViewModelBase
