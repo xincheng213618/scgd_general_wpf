@@ -35,8 +35,6 @@
 
                 <!-- 版本和操作 -->
                 <WrapPanel>
-                    <Button Content="一键安装" Command="{Binding OneKeyInstallCommand}" Margin="0,0,8,0" Padding="16,6"
-                            Style="{StaticResource ButtonPrimary}" ToolTip="选择FullPackage.zip进行全新一键安装"/>
                     <Button Content="一键启动" Command="{Binding OneKeyStartCommand}" Margin="0,0,8,0" Padding="16,6"
                             Style="{StaticResource ButtonPrimary}"/>
                     <Button Content="一键停止" Command="{Binding OneKeyStopCommand}" Margin="0,0,8,0" Padding="16,6"

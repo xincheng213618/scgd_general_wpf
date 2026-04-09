@@ -88,14 +88,10 @@ namespace WindowsServicePlugin.ServiceManager
         public string LegacyConfigPath => GetLegacyAppConfigPath() ?? string.Empty;
         public bool HasLegacyConfig => !string.IsNullOrWhiteSpace(LegacyConfigPath) && File.Exists(LegacyConfigPath);
 
-        // Commands
-        public RelayCommand OneKeyInstallCommand { get; }
+
         public RelayCommand OneKeyStartCommand { get; }
         public RelayCommand OneKeyStopCommand { get; }
         public RelayCommand UpdateConfigCommand { get; }
-        public RelayCommand IncrementalUpgradeCommand { get; }
-        public RelayCommand FreshInstallCommand { get; }
-        public RelayCommand CheckUpdateCommand { get; }
         public RelayCommand OpenInstallManagerCommand { get; }
         public RelayCommand RefreshCommand { get; }
         public RelayCommand ClearLogCommand { get; }
@@ -125,13 +121,9 @@ namespace WindowsServicePlugin.ServiceManager
         public ServiceManagerViewModel()
         {
             // Commands
-            OneKeyInstallCommand = new RelayCommand(a => _ = OneKeyInstallAsync(), a => !IsBusy);
             OneKeyStartCommand = new RelayCommand(a => _ = OneKeyStartAsync(), a => !IsBusy);
             OneKeyStopCommand = new RelayCommand(a => _ = OneKeyStopAsync(), a => !IsBusy);
             UpdateConfigCommand = new RelayCommand(a => UpdateConfig(), a => !IsBusy);
-            IncrementalUpgradeCommand = new RelayCommand(a => _ = IncrementalUpgradeAsync(), a => !IsBusy);
-            FreshInstallCommand = new RelayCommand(a => _ = FreshInstallAsync(), a => !IsBusy);
-            CheckUpdateCommand = new RelayCommand(a => _ = CheckForUpdateAsync(), a => !IsBusy);
             OpenInstallManagerCommand = new RelayCommand(a => OpenInstallManager());
             RefreshCommand = new RelayCommand(a => RefreshAll());
             ClearLogCommand = new RelayCommand(a => LogText = string.Empty);
@@ -166,6 +158,7 @@ namespace WindowsServicePlugin.ServiceManager
             foreach (var svc in ServiceManagerConfig.GetDefaultServiceEntries())
                 Services.Add(svc);
 
+            Services.Add(ServiceManagerConfig.MQTTServiceEntries);
             // 自动检测路径
             if (string.IsNullOrEmpty(Config.BaseLocation))
             {
@@ -283,134 +276,6 @@ namespace WindowsServicePlugin.ServiceManager
         #region One-Key Operations
 
         /// <summary>
-        /// 一键安装 - 选择FullPackage.zip，解压并安装所有服务
-        /// </summary>
-        private async Task OneKeyInstallAsync()
-        {
-            if (!EnsureElevatedOrRestart("一键安装")) return;
-
-            string? basePath = Config.BaseLocation;
-            if (string.IsNullOrEmpty(basePath))
-            {
-                MessageBox.Show("请先设置服务安装根目录", "一键安装", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (Directory.Exists(basePath) && Directory.GetFileSystemEntries(basePath).Length > 0)
-            {
-                if (MessageBox.Show($"{basePath} 目录不为空，一键安装需要空目录。是否继续？", "一键安装", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-                    return;
-            }
-
-            // 选择安装包
-            var dlg = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "安装包 (*.zip)|*.zip",
-                Title = "选择 FullPackage.zip"
-            };
-            if (dlg.ShowDialog() != true) return;
-
-            string zipFile = dlg.FileName;
-
-            SetBusy(true, "正在一键安装...");
-            await Task.Run(() =>
-            {
-                try
-                {
-                    AddLog("开始一键安装...");
-
-                    // 1. 解压到pack子目录
-                    string packDir = Path.Combine(basePath, "pack");
-                    SetProgress(5, "正在解压安装包...");
-                    AddLog($"解压 {zipFile} → {packDir}");
-                    ZipFile.ExtractToDirectory(zipFile, packDir, true);
-                    SetProgress(20, "解压完成");
-
-                    // 2. 安装MySQL (如果包中有mysql zip)
-                    string mysqlZip = Path.Combine(packDir, "mysql-5.7.37-winx64.zip");
-                    string mysqlTarget = Path.Combine(basePath, "Mysql");
-                    if (File.Exists(mysqlZip))
-                    {
-                        SetProgress(25, "正在安装 MySQL...");
-                        MySqlHelper.InstallFromZipAsync(mysqlZip, mysqlTarget, AddLog).Wait();
-                    }
-
-                    // 3. 安装MQTT (如果包中有mosquitto)
-                    string mqttInstaller = Path.Combine(packDir, "mosquitto-2.0.18-install-windows-x64.exe");
-                    if (File.Exists(mqttInstaller))
-                    {
-                        SetProgress(50, "正在安装 MQTT...");
-                        AddLog("安装 Mosquitto MQTT...");
-                        var psi = new ProcessStartInfo
-                        {
-                            FileName = mqttInstaller,
-                            UseShellExecute = true,
-                            Verb = "runas"
-                        };
-                        var proc = Process.Start(psi);
-                        proc?.WaitForExit();
-                        Tool.ExecuteCommandAsAdmin("net start mosquitto");
-                    }
-
-                    // 4. 解压和安装CV服务
-                    string svcZip = Path.Combine(packDir, "CVWindowsService.zip");
-                    string svcTarget = Path.Combine(basePath, "CVWindowsService");
-                    if (File.Exists(svcZip))
-                    {
-                        SetProgress(60, "正在安装CV服务...");
-                        AddLog($"解压 CVWindowsService → {svcTarget}");
-                        ZipFile.ExtractToDirectory(svcZip, svcTarget, true);
-
-                        // Copy CommonDll
-                        CopyCommonDllToAllServices(svcTarget);
-
-                        // 安装各服务
-                        int idx = 0;
-                        foreach (var svc in Services)
-                        {
-                            string exePath = svc.GetExpectedExePath(svcTarget);
-                            if (File.Exists(exePath))
-                            {
-                                SetProgress(70 + idx * 5, $"安装服务 {svc.DisplayName}...");
-                                AddLog($"安装服务 {svc.ServiceName}...");
-                                if (WinServiceHelper.InstallService(svc.ServiceName, exePath))
-                                    AddLog($"服务 {svc.ServiceName} 安装成功");
-                                else
-                                    AddLog($"服务 {svc.ServiceName} 安装失败");
-                            }
-                            idx++;
-                        }
-                    }
-
-                    // 5. 执行初始化SQL
-                    string sqlFile = FindSqlFile(basePath);
-                    if (!string.IsNullOrEmpty(sqlFile))
-                    {
-                        SetProgress(90, "执行初始化 SQL...");
-                        var mySqlConfig = MySqlSetting.Instance.MySqlConfig;
-                        MySqlHelper.ExecuteSqlFile(mySqlConfig.UserPwd, mySqlConfig.Database, sqlFile, AddLog);
-                    }
-
-                    // 6. 启动注册中心
-                    SyncAllConfigs(false);
-                    SetProgress(95, "启动所有服务...");
-                    StartAllServicesAfterInstall();
-
-                    SetProgress(100, "一键安装完成");
-                    AddLog("一键安装完成!");
-
-                    Application.Current?.Dispatcher.Invoke(() => RefreshAll());
-                }
-                catch (Exception ex)
-                {
-                    AddLog($"一键安装失败: {ex.Message}");
-                    log.Error("一键安装失败", ex);
-                }
-            });
-            SetBusy(false);
-        }
-
-        /// <summary>
         /// 一键启动所有服务
         /// </summary>
         private async Task OneKeyStartAsync()
@@ -481,13 +346,6 @@ namespace WindowsServicePlugin.ServiceManager
                             commands.Add($"net stop {svc.ServiceName}");
                         }
                     }
-
-                    if (MySqlHelper.IsInstalled && MySqlHelper.IsRunning)
-                    {
-                        AddLog("停止 MySQL 服务...");
-                        commands.Add($"net stop {MySqlHelper.ServiceName}");
-                    }
-
                     if (commands.Count > 0)
                     {
                         ExecuteShellCommand(string.Join(" && ", commands), true);
@@ -680,326 +538,6 @@ namespace WindowsServicePlugin.ServiceManager
         #region Upgrade
 
         private sealed record ServicePackageInfo(Version Version, string FileName, string DownloadUrl);
-
-        /// <summary>
-        /// 增量升级 - 只替换变更文件，不重置数据库
-        /// </summary>
-        private async Task IncrementalUpgradeAsync()
-        {
-            if (!EnsureElevatedOrRestart("增量升级")) return;
-
-            var dlg = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "升级包 (*.zip)|*.zip",
-                Title = "选择增量升级包"
-            };
-            if (dlg.ShowDialog() != true) return;
-
-            await IncrementalUpgradeFromZipAsync(dlg.FileName);
-        }
-
-        private async Task IncrementalUpgradeFromZipAsync(string zipFile)
-        {
-            if (string.IsNullOrWhiteSpace(zipFile) || !File.Exists(zipFile))
-            {
-                AddLog("增量升级包不存在");
-                return;
-            }
-
-            string basePath = Config.BaseLocation;
-            if (string.IsNullOrEmpty(basePath) || !Directory.Exists(basePath))
-            {
-                MessageBox.Show("安装根目录不存在，请先设置", "增量升级", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (MessageBox.Show($"确认升级 {Path.GetFileName(zipFile)} 到\n{basePath} 吗?", "增量升级", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel)
-                return;
-
-            SetBusy(true, "正在增量升级...");
-            await Task.Run(() =>
-            {
-                try
-                {
-                    AddLog("开始增量升级...");
-                    string subFolder = Path.GetFileNameWithoutExtension(zipFile);
-
-                    // 1. 停止已打包的服务
-                    SetProgress(10, "停止服务...");
-                    foreach (var svc in Services)
-                    {
-                        if (svc.IsPackaged && svc.IsInstalled && svc.IsRunning)
-                        {
-                            AddLog($"停止 {svc.DisplayName}...");
-                            Tool.ExecuteCommandAsAdmin($"net stop {svc.ServiceName}");
-                            Thread.Sleep(1000);
-                            string processName = Path.GetFileNameWithoutExtension(svc.ExePath);
-                            if (!string.IsNullOrEmpty(processName))
-                                WinServiceHelper.KillProcessByName(processName);
-                        }
-                    }
-
-                    // 2. 解压
-                    SetProgress(30, "解压升级包...");
-                    AddLog($"解压 {zipFile} → {basePath}");
-                    ZipFile.ExtractToDirectory(zipFile, basePath, true);
-
-                    // 3. 复制更新文件
-                    SetProgress(50, "复制更新文件...");
-                    foreach (var svc in Services)
-                    {
-                        if (!svc.IsPackaged) continue;
-                        string svcDir = Path.Combine(basePath, svc.FolderName);
-                        if (!Directory.Exists(svcDir)) continue;
-
-                        // 复制 CommonDll
-                        string commonDir = Path.Combine(basePath, subFolder, "CommonDll");
-                        if (Directory.Exists(commonDir))
-                        {
-                            CopyDirectory(commonDir, svcDir);
-                            AddLog($"CommonDll → {svc.FolderName}");
-                        }
-
-                        // 复制服务特定文件
-                        string svcUpdateDir = Path.Combine(basePath, subFolder, svc.FolderName);
-                        if (Directory.Exists(svcUpdateDir))
-                        {
-                            CopyDirectory(svcUpdateDir, svcDir);
-                            AddLog($"{svc.FolderName} 更新文件已复制");
-                        }
-                    }
-
-                    // 4. 复制SQL
-                    string sqlUpdateDir = Path.Combine(basePath, subFolder, "SQL");
-                    string sqlDir = Path.Combine(basePath, "SQL");
-                    if (Directory.Exists(sqlUpdateDir))
-                    {
-                        CopyDirectory(sqlUpdateDir, sqlDir);
-                        AddLog("SQL 更新文件已复制");
-                    }
-
-                    SyncAllConfigs(false);
-
-                    // 5. 重启服务
-                    SetProgress(80, "重启服务...");
-                    ExecuteShellCommand("net start RegistrationCenterService", true);
-                    Thread.Sleep(2000);
-
-                    foreach (var svc in Services)
-                    {
-                        if (svc.ServiceName == "RegistrationCenterService") continue;
-                        if (svc.IsPackaged && svc.IsInstalled)
-                        {
-                            ExecuteShellCommand($"net start {svc.ServiceName}", true);
-                            Thread.Sleep(1000);
-                        }
-                    }
-
-                    SetProgress(100, "增量升级完成");
-                    AddLog("增量升级完成!");
-                    Application.Current?.Dispatcher.Invoke(() => RefreshAll());
-                }
-                catch (Exception ex)
-                {
-                    AddLog($"增量升级失败: {ex.Message}");
-                    log.Error("增量升级失败", ex);
-                }
-            });
-            SetBusy(false);
-        }
-
-        /// <summary>
-        /// 全新安装 - 卸载所有服务，备份数据库，重新安装
-        /// </summary>
-        private async Task FreshInstallAsync()
-        {
-            if (!EnsureElevatedOrRestart("全新安装")) return;
-
-            var result = MessageBox.Show("全新安装会重置数据库，请确认是否继续？\n注：会自动备份数据库", "全新安装", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (result != MessageBoxResult.Yes) return;
-
-            var dlg = new Microsoft.Win32.OpenFileDialog
-            {
-                Filter = "服务安装包 (*.zip)|*.zip",
-                Title = "选择 CVWindowsService.zip"
-            };
-            if (dlg.ShowDialog() != true) return;
-
-            await FreshInstallFromZipAsync(dlg.FileName);
-        }
-
-        private async Task FreshInstallFromZipAsync(string zipFile)
-        {
-            if (string.IsNullOrWhiteSpace(zipFile) || !File.Exists(zipFile))
-            {
-                AddLog("全新安装包不存在");
-                return;
-            }
-
-            string basePath = Config.BaseLocation;
-            if (string.IsNullOrEmpty(basePath))
-            {
-                MessageBox.Show("请先设置安装根目录", "全新安装", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            SetBusy(true, "正在全新安装...");
-            await Task.Run(() =>
-            {
-                try
-                {
-                    AddLog("开始全新安装...");
-
-                    // 1. 卸载已有服务
-                    SetProgress(5, "卸载现有服务...");
-                    foreach (var svc in Services)
-                    {
-                        if (svc.IsPackaged && svc.IsInstalled)
-                        {
-                            AddLog($"卸载 {svc.DisplayName}...");
-                            if (svc.IsRunning)
-                            {
-                                ExecuteShellCommand($"net stop {svc.ServiceName}", true);
-                                RefreshServiceEntryStatus(svc);
-                            }
-                            Thread.Sleep(1000);
-                            WinServiceHelper.UninstallService(svc.ServiceName);
-                            RefreshServiceEntryStatus(svc);
-                        }
-                    }
-
-                    // 2. 备份数据库
-                    SetProgress(15, "备份数据库...");
-                    if (IsMySqlRunning)
-                    {
-                        var mySqlConfig = MySqlSetting.Instance.MySqlConfig;
-                        string timestamp = DateTime.Now.ToString("yyyyMMdd'T'HHmmss");
-                        string bakDir = Path.Combine(basePath, "SQL.BAK");
-                        string bakFile = Path.Combine(bakDir, $"color_vision.bak_{timestamp}.sql");
-                        MySqlHelper.BackupDatabase(mySqlConfig.UserName, mySqlConfig.UserPwd, mySqlConfig.Database, bakFile, AddLog);
-                    }
-
-                    // 3. 解压
-                    SetProgress(30, "解压安装包...");
-                    AddLog($"解压 {zipFile} → {basePath}");
-                    ZipFile.ExtractToDirectory(zipFile, basePath, true);
-
-                    // 4. Copy CommonDll
-                    CopyCommonDllToAllServices(basePath);
-
-                    // 5. 安装服务
-                    SetProgress(50, "安装服务...");
-                    int idx = 0;
-                    foreach (var svc in Services)
-                    {
-                        string exePath = svc.GetExpectedExePath(basePath);
-                        if (File.Exists(exePath))
-                        {
-                            SetProgress(50 + idx * 10, $"安装 {svc.DisplayName}...");
-                            AddLog($"安装服务 {svc.ServiceName}...");
-                            if (WinServiceHelper.InstallService(svc.ServiceName, exePath))
-                                AddLog($"服务 {svc.ServiceName} 安装成功");
-                            else
-                                AddLog($"服务 {svc.ServiceName} 安装失败");
-                        }
-                        idx++;
-                    }
-
-                    // 6. 执行初始化SQL
-                    string sqlFile = FindSqlFile(basePath);
-                    if (!string.IsNullOrEmpty(sqlFile))
-                    {
-                        SetProgress(80, "执行初始化 SQL...");
-                        var mySqlConfig = MySqlSetting.Instance.MySqlConfig;
-                        MySqlHelper.ExecuteSqlFile(mySqlConfig.UserPwd, mySqlConfig.Database, sqlFile, AddLog);
-                    }
-
-                    SyncAllConfigs(false);
-
-                    // 7. 自动启动全部服务
-                    SetProgress(90, "启动所有服务...");
-                    StartAllServicesAfterInstall();
-
-                    SetProgress(100, "全新安装完成");
-                    AddLog("全新安装完成!");
-                    Application.Current?.Dispatcher.Invoke(() => RefreshAll());
-                }
-                catch (Exception ex)
-                {
-                    AddLog($"全新安装失败: {ex.Message}");
-                    log.Error("全新安装失败", ex);
-                }
-            });
-            SetBusy(false);
-        }
-
-        /// <summary>
-        /// 在线检查更新
-        /// </summary>
-        private async Task CheckForUpdateAsync()
-        {
-            try
-            {
-                if (!EnsureElevatedOrRestart("在线更新")) return;
-
-                AddLog("正在检查更新...");
-
-                var latestPackage = await FindLatestServicePackageAsync();
-                if (latestPackage == null)
-                {
-                    AddLog("未在更新目录中找到可用的 CVWindowsService 安装包");
-                    MessageBox.Show("未找到可用的服务安装包");
-                    return;
-                }
-
-                AvailableVersion = latestPackage.Version.ToString();
-
-                Version current = new();
-                if (!string.IsNullOrWhiteSpace(CurrentVersion))
-                {
-                    _ = Version.TryParse(CurrentVersion, out current);
-                }
-
-                if (latestPackage.Version <= current)
-                {
-                    AddLog("当前已是最新版本");
-                    MessageBox.Show("当前已是最新版本");
-                    return;
-                }
-
-                AddLog($"发现新版本: {latestPackage.Version} (当前: {CurrentVersion})");
-                if (MessageBox.Show($"发现新版本 {latestPackage.Version}，是否下载并更新？", "在线更新", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
-                {
-                    return;
-                }
-
-                string? downloadedPath = await DownloadAndUpgrade(latestPackage);
-                if (string.IsNullOrWhiteSpace(downloadedPath) || !File.Exists(downloadedPath))
-                {
-                    AddLog("下载未完成或已取消");
-                    return;
-                }
-
-                var doFreshInstallNow = MessageBox.Show(
-                    $"安装包已下载完成:\n{downloadedPath}\n\n是否立即执行全新安装并自动启动服务？",
-                    "在线更新",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (doFreshInstallNow == MessageBoxResult.Yes)
-                {
-                    await FreshInstallFromZipAsync(downloadedPath);
-                }
-                else
-                {
-                    AddLog("已下载完成，可稍后手动执行全新安装或增量升级");
-                }
-            }
-            catch (Exception ex)
-            {
-                AddLog($"检查更新失败: {ex.Message}");
-            }
-        }
 
         private async Task<string?> DownloadAndUpgrade(ServicePackageInfo package)
         {
@@ -1343,42 +881,6 @@ namespace WindowsServicePlugin.ServiceManager
             Application.Current?.Dispatcher.Invoke(() => entry.RefreshStatus());
         }
 
-        private void StartAllServicesAfterInstall()
-        {
-            AddLog("安装完成，正在自动启动所有服务...");
-
-            List<string> commands = [];
-            if (WinServiceHelper.IsServiceExisted(MySqlHelper.ServiceName))
-            {
-                commands.Add($"net start {MySqlHelper.ServiceName}");
-            }
-
-            if (WinServiceHelper.IsServiceExisted("mosquitto"))
-            {
-                commands.Add("net start mosquitto");
-            }
-
-            if (WinServiceHelper.IsServiceExisted("RegistrationCenterService"))
-            {
-                commands.Add("net start RegistrationCenterService");
-            }
-
-            foreach (var svc in Services)
-            {
-                if (svc.ServiceName == "RegistrationCenterService") continue;
-                if (WinServiceHelper.IsServiceExisted(svc.ServiceName))
-                {
-                    commands.Add($"net start {svc.ServiceName}");
-                }
-            }
-
-            if (commands.Count > 0)
-            {
-                ExecuteShellCommand(string.Join(" && ", commands.Distinct(StringComparer.OrdinalIgnoreCase)), true);
-            }
-
-            Application.Current?.Dispatcher.Invoke(() => RefreshAll());
-        }
 
         private void SyncAllConfigs(bool restartRegistrationCenter)
         {

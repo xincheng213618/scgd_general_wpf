@@ -110,6 +110,36 @@ namespace WindowsServicePlugin.ServiceManager
         public string UpdateServerUrl { get => _UpdateServerUrl; set { _UpdateServerUrl = value; OnPropertyChanged(); } }
         private string _UpdateServerUrl = "http://xc213618.ddns.me:9998";
 
+        [ConfigSetting(Order = 525)]
+        [DisplayName("下载目录")]
+        [Description("服务包、MySQL、MQTT 等在线下载的保存目录")]
+        public string DownloadLocation
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(_DownloadLocation))
+                    _DownloadLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision", "Downloads");
+                return _DownloadLocation;
+            }
+            set { _DownloadLocation = value; OnPropertyChanged(); }
+        }
+        private string _DownloadLocation = string.Empty;
+
+        [ConfigSetting(Order = 526)]
+        [DisplayName("默认勾选安装服务包")]
+        public bool InstallServiceChecked { get => _InstallServiceChecked; set { _InstallServiceChecked = value; OnPropertyChanged(); } }
+        private bool _InstallServiceChecked = true;
+
+        [ConfigSetting(Order = 527)]
+        [DisplayName("默认勾选安装MySQL")]
+        public bool InstallMySqlChecked { get => _InstallMySqlChecked; set { _InstallMySqlChecked = value; OnPropertyChanged(); } }
+        private bool _InstallMySqlChecked;
+
+        [ConfigSetting(Order = 528)]
+        [DisplayName("默认勾选安装MQTT")]
+        public bool InstallMqttChecked { get => _InstallMqttChecked; set { _InstallMqttChecked = value; OnPropertyChanged(); } }
+        private bool _InstallMqttChecked;
+
         [JsonIgnore]
         public string LatestReleaseUrl
         {
@@ -123,6 +153,16 @@ namespace WindowsServicePlugin.ServiceManager
                 return url + "/LATEST_RELEASE";
             }
         }
+
+        public static ServiceEntry MQTTServiceEntries { get; set; } = new ServiceEntry
+        {
+            ServiceName = "mosquitto",
+            DisplayName = "MQTT服务",
+            FolderName = "mosquitto",
+            ExecutableName = "mosquitto.exe",
+            IsPackaged = false
+        };
+
 
         /// <summary>
         /// 默认的服务定义列表
@@ -161,14 +201,7 @@ namespace WindowsServicePlugin.ServiceManager
                     ExecutableName = "ArchivedWindowsService.exe",
                     IsPackaged = true
                 },
-                new ServiceEntry
-                {
-                    ServiceName = "mosquitto",
-                    DisplayName = "MQTT服务",
-                    FolderName = "mosquitto",
-                    ExecutableName = "mosquitto.exe",
-                    IsPackaged = false
-                },
+
             ];
         }
 
