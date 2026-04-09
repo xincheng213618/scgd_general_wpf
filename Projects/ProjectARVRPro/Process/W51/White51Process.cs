@@ -1,9 +1,14 @@
+using ColorVision.Common.Algorithms;
 using ColorVision.Database;
 using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
+using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.FOV2;
+using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
+using System.Windows;
+using System.Windows.Media;
 
 namespace ProjectARVRPro.Process.W51
 {
@@ -26,6 +31,12 @@ namespace ProjectARVRPro.Process.W51
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 foreach (var master in masters)
                 {
+                    if (master.ImgFileType == ColorVision.Engine.ViewResultAlgType.FindLightArea)
+                    {
+                        testResult.AlgResultLightAreaModels = AlgResultLightAreaDao.Instance.GetAllByPid(master.Id);
+                    }
+
+
                     if (master.ImgFileType == ViewResultAlgType.FOV)
                     {
                         var algResultModels = DeatilCommonDao.Instance.GetAllByPid(master.Id);
@@ -80,7 +91,26 @@ namespace ProjectARVRPro.Process.W51
             W51ViewTestResult testResult = JsonConvert.DeserializeObject<W51ViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return;
 
+            if (testResult.AlgResultLightAreaModels.Count>0)
+            {
+                DVPolygon polygon = new DVPolygon();
+                List<System.Windows.Point> point1s = new List<System.Windows.Point>();
 
+                foreach (var item in testResult.AlgResultLightAreaModels)
+                {
+                    point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
+                }
+                foreach (var item in GrahamScan.ComputeConvexHull(point1s))
+                {
+                    polygon.Attribute.Points.Add(new Point(item.X, item.Y));
+                }
+                polygon.Attribute.Brush = Brushes.Transparent;
+                polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
+                polygon.Attribute.Id = -1;
+                polygon.IsComple = true;
+                polygon.Render();
+                ctx.ImageView.AddVisual(polygon);
+            }
         }
 
         public override string GenText(IProcessExecutionContext ctx)
@@ -92,6 +122,8 @@ namespace ProjectARVRPro.Process.W51
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             W51ViewTestResult testResult = JsonConvert.DeserializeObject<W51ViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return outtext;
+
+
 
 
             outtext += $"HorizontalFieldOfViewAngle:{testResult.HorizontalFieldOfViewAngle.TestValue} LowLimit:{testResult.HorizontalFieldOfViewAngle.LowLimit} UpLimit:{testResult.HorizontalFieldOfViewAngle.UpLimit} ,Rsult{(testResult.HorizontalFieldOfViewAngle.TestResult ? "PASS" : "Fail")}{Environment.NewLine}";
