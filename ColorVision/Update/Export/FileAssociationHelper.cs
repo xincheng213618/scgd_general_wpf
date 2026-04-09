@@ -35,7 +35,7 @@ namespace ColorVision.Update.Export
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(RegInitialized));
 
-        public static Version Version { get; set; } = new Version(1, 0, 2, 0);
+        public static Version Version { get; set; } = new Version(1, 0, 3, 0);
 
         public override Task Initialize()
         {
@@ -80,8 +80,9 @@ namespace ColorVision.Update.Export
                 string escapedAppPath = appPath.Replace("\\", "\\\\");
                 string escapedIconPath = iconPath.Replace("\\", "\\\\");
 
-                // Thumbnail handler COM class GUID (must match CVRawShellThumbnailProvider)
-                string thumbnailClsid = "{7B5E2A3C-8F1D-4E6A-B9C2-1D3E5F7A8B9C}";
+                // Thumbnail handler COM class GUIDs
+                string cvrawThumbnailClsid = "{7B5E2A3C-8F1D-4E6A-B9C2-1D3E5F7A8B9C}"; // CVRawShellThumbnailProvider
+                string cvcieThumbnailClsid = "{8C6F3B4D-9E2A-5F7B-C3D4-2E4F6A8B9C0D}"; // CVCieShellThumbnailProvider
                 string comHostPath = Path.Combine(appDir, "ColorVision.ShellExtension.comhost.dll");
                 string escapedComHostPath = comHostPath.Replace("\\", "\\\\");
 
@@ -242,14 +243,26 @@ namespace ColorVision.Update.Export
 
 
                 // ------------------------------------------------------
-                //  Register COM Thumbnail Handler for .cvraw/.cvcie
+                //  Register COM Thumbnail Handlers for .cvraw/.cvcie
                 //  This enables Windows Explorer to show dynamic thumbnails
                 // ------------------------------------------------------
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{thumbnailClsid}]");
-                sb.AppendLine($"@=\"ColorVision CVRaw/CVCie Thumbnail Handler\"");
+
+                // CVRaw Thumbnail Provider
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{cvrawThumbnailClsid}]");
+                sb.AppendLine($"@=\"ColorVision CVRaw Thumbnail Handler\"");
                 sb.AppendLine();
 
-                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{thumbnailClsid}\\InprocServer32]");
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{cvrawThumbnailClsid}\\InprocServer32]");
+                sb.AppendLine($"@=\"{escapedComHostPath}\"");
+                sb.AppendLine($"\"ThreadingModel\"=\"Both\"");
+                sb.AppendLine();
+
+                // CVCie Thumbnail Provider
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{cvcieThumbnailClsid}]");
+                sb.AppendLine($"@=\"ColorVision CVCie Thumbnail Handler\"");
+                sb.AppendLine();
+
+                sb.AppendLine($"[HKEY_CLASSES_ROOT\\CLSID\\{cvcieThumbnailClsid}\\InprocServer32]");
                 sb.AppendLine($"@=\"{escapedComHostPath}\"");
                 sb.AppendLine($"\"ThreadingModel\"=\"Both\"");
                 sb.AppendLine();
@@ -278,7 +291,7 @@ namespace ColorVision.Update.Export
 
                 // Register thumbnail handler for .cvraw (Shell extension GUID for IThumbnailProvider)
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvraw\\ShellEx\\{{e357fccd-a995-4576-b01f-234630154e96}}]");
-                sb.AppendLine($"@=\"{thumbnailClsid}\"");
+                sb.AppendLine($"@=\"{cvrawThumbnailClsid}\"");
                 sb.AppendLine();
 
                 // ------------------------------------------------------
@@ -305,7 +318,7 @@ namespace ColorVision.Update.Export
 
                 // Register thumbnail handler for .cvcie (Shell extension GUID for IThumbnailProvider)
                 sb.AppendLine($"[HKEY_CLASSES_ROOT\\.cvcie\\ShellEx\\{{e357fccd-a995-4576-b01f-234630154e96}}]");
-                sb.AppendLine($"@=\"{thumbnailClsid}\"");
+                sb.AppendLine($"@=\"{cvcieThumbnailClsid}\"");
                 sb.AppendLine();
 
                 // ------------------------------------------------------
