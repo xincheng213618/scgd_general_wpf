@@ -10,7 +10,6 @@ using ColorVision.SocketProtocol;
 using Dm.util;
 using log4net;
 using ProjectLUX.PluginConfig;
-using ProjectLUX.Process.Sprectrum;
 using ProjectLUX.Process.VID;
 using SqlSugar;
 using System.IO;
@@ -66,7 +65,6 @@ namespace ProjectLUX.Services
                             Directory.CreateDirectory(ProjectLUXConfig.Instance.ResultSavePath);
 
                         string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"D_{sn}.csv");
-                        SprectrumTestResult vIDTestResult = new SprectrumTestResult();
                         DeviceSpectrum deviceSprectrm = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();
                         MsgRecord msgRecord = deviceSprectrm.DService.GetData();
 
@@ -112,20 +110,10 @@ namespace ProjectLUX.Services
                                 {
                                     SpectrumCsvExportHelper.ExportLuminousFluxMode(path, new[] { viewResultSpectrum });
                                 }
-                                stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + $";{vIDTestResult.LuminousFlux.Value}"));
+                                stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + $";{viewResultSpectrum?.LuminousFlux}"));
                             }
                             else
                             {
-                                SprectrumFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<SprectrumFixConfig>();
-                                SprectrumRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<SprectrumRecipeConfig>();
-                                var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
-
-                                vIDTestResult.LuminousFlux.Value = vIDTestResult.LuminousFlux.Value * fixConfig.LuminousFlux;
-                                vIDTestResult.LuminousFlux.TestValue = vIDTestResult.LuminousFlux.Value.ToString();
-                                vIDTestResult.LuminousFlux.LowLimit = recipeConfig.LuminousFlux.Min;
-                                vIDTestResult.LuminousFlux.UpLimit = recipeConfig.LuminousFlux.Max;
-                                ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "White255", rows);
-                                File.WriteAllLines(path, rows);
                                 stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + ";0"));
                             }
                         };
