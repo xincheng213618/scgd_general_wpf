@@ -27,48 +27,6 @@ using System.Windows.Media;
 
 namespace ColorVision
 {
-    public class CommadnInitialized : MainWindowInitializedBase
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(CommadnInitialized));
-
-        public override Task Initialize()
-        {
-            log.Info("CommadnInitialized");
-            try
-            {
-                var parser = ArgumentParser.GetInstance();
-                parser.AddArgument("cmd", false, "c");
-                parser.Parse();
-
-                string cmd = parser.GetValue("cmd");
-                if (cmd != null)
-                {
-                    List<IMenuItem> IMenuItems = new List<IMenuItem>();
-                    foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-                    {
-                        foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
-                        {
-                            if (Activator.CreateInstance(type) is IMenuItem menuitem)
-                            {
-                                IMenuItems.Add(menuitem);
-                            }
-                        }
-                    }
-                    if (IMenuItems.Find(a => a.GuidId == cmd) is IMenuItem menuitem1)
-                    {
-                        log.Info($"Execute{menuitem1.Header}");
-                        menuitem1.Command?.Execute(this);
-                    }
-                }
-            }
-            catch(Exception ex)
-            {
-                log.Error(ex);
-            }
-
-            return Task.CompletedTask;  
-        }
-    }
 
 
         /// <summary>
@@ -104,10 +62,10 @@ namespace ColorVision
 
             this.DataContext = Config;
 
-            // ��ʼ�� AvalonDock ����
+            // 初始化 AvalonDock 主题
             void ApplyAvalonDockTheme(Theme theme)
             {
-                // ������Ϊ null ��ǿ�� AvalonDock ���¼���������Դ
+                // 先设置为 null 以强制 AvalonDock 重新加载资源
                 DockingManager1.Theme = null;
                 if (theme == Theme.Dark)
                     DockingManager1.Theme = new AvalonDock.Themes.Vs2013DarkTheme();
@@ -116,12 +74,12 @@ namespace ColorVision
             }
             ThemeManager.Current.CurrentUIThemeChanged += ApplyAvalonDockTheme;
 
-            // ���� WorkspaceManager ָ�������ڵ� DockingManager
+            // 设置 WorkspaceManager 指向当前的 DockingManager
             WorkspaceManager.layoutRoot = _layoutRoot;
             WorkspaceManager.LayoutDocumentPane = LayoutDocumentPane;
 
 
-            // ��ʼ��ͣ�����ֹ�����
+            // 初始化停靠面板管理器
             var layoutManager = new DockLayoutManager(DockingManager1);
             layoutManager.RegisterPanel("ProjectPanel", ProjectPanelGrid, Properties.Resources.SolutionExplorer, PanelPosition.Left);
             layoutManager.RegisterPanel("AcquirePanel", StackPanelSPD.Parent, Properties.Resources.DeviceControl, PanelPosition.Left);
@@ -130,7 +88,7 @@ namespace ColorVision
             layoutManager.RegisterPanel("LogPanel", logOutput, Properties.Resources.Log, PanelPosition.Bottom);
             WorkspaceManager.LayoutManager = layoutManager;
 
-            // ���ֲ�ע������ IDockPanelProvider �ṩ�����壨�� LoadLayout ֮ǰ��ȷ����������ȷ�־û���
+            // 扫描并注册所有 IDockPanelProvider 提供的面板（在 LoadLayout 之前确保所有面板正确注册）
             foreach (var provider in AssemblyHandler.GetInstance().GetAssemblies()
                 .SelectMany(a => a.GetTypes())
                 .Where(t => typeof(IDockPanelProvider).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface)
@@ -152,40 +110,40 @@ namespace ColorVision
                 }
             }
 
-            // ��ʼ�� DockViewManagerHost������ AvalonDock �ص���
+            // 初始化 DockViewManagerHost，注册 AvalonDock 回调等
             DockViewManagerHost.Initialize();
 
-            // ��ʼ��������Ŀ����
+            // 初始化解决方案项目面板
             ProjectPanelGrid.Children.Add(new TreeViewControl());
 
-            // ��ʼ�������ɼ�����
+            // 初始化显示控件管理器
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
-            // ���Լ����ѱ����Ĳ���
+            // 加载已保存的布局
             layoutManager.LoadLayout();
 
-            // ���ּ��غ������£�Ӧ�� AvalonDock ���⣬ȷ�������л���Ԫ��ʹ����ȷ����
+            // 重新应用主题以修复 AvalonDock 问题，确保所有切换元素使用正确的主题
             ApplyAvalonDockTheme(ThemeManager.Current.CurrentUITheme);
 
-            // ��������ע������ͼ����Ϊ�ĵ���ǩҳ
+            // 将所有已注册的视图显示为文档标签页
             DockViewManager.ShowAllViews();
 
-            // �л��� DeviceControl ����ʱ����ת���ϴ���ʾ����ͼ
+            // 切换到 DeviceControl 面板时，跳转回上次显示的视图
             HookAcquirePanelActivation();
 
-            // ִ���ӳټ��صĲ���
+            // 执行延迟加载的操作
             foreach (var action in WorkspaceManager.DealyLoad)
             {
                 action();
             }
             WorkspaceManager.DealyLoad.Clear();
 
-            // ���º��״�����ʱ��ʾ������־
+            // 更新后首次打开时显示更新日志
             ShowChangelogIfUpdated();
 
-            // Ctrl+W �رյ�ǰ��ĵ�
+            // Ctrl+W 关闭当前活动的文档
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) =>
             {
                 var doc = WorkspaceManager.FindDocumentActive(WorkspaceManager.LayoutDocumentPane);
@@ -197,7 +155,7 @@ namespace ColorVision
             this.LoadHotKeyFromAssembly();
             StatusBarManager.GetInstance().Init(StatusBarGrid, MenuItemConstants.MainWindowTarget);
 
-            // ���� DockingManager ��ĵ��л�������״̬�����������֪ͨ��ͼ������
+            // 监听 DockingManager 活动文档切换和状态变化，更新视图管理器并通知视图变更
             DockingManager1.ActiveContentChanged += (s, e) =>
             {
                 StatusBarManager.GetInstance().OnActiveDocumentChanged(DockingManager1.ActiveContent);
@@ -225,7 +183,7 @@ namespace ColorVision
             });
             ProgramTimer.StopAndReport();
 
-            // ���ÿ��ݼ� Ctrl + F
+            // 设置快捷键 Ctrl + F
             var gesture = new KeyGesture(Key.F, ModifierKeys.Control);
             var command = new RoutedCommand();
             command.InputGestures.Add(gesture);
@@ -237,7 +195,7 @@ namespace ColorVision
             this.AllowDrop = true;
             this.Drop += MainWindow_Drop;
 
-            // ���ڹر�ʱ�Զ����沼��
+            // 窗口关闭时自动保存布局
             this.Closing += (s, e) =>
             {
                 WorkspaceManager.LayoutManager?.SaveLayout();
@@ -245,8 +203,8 @@ namespace ColorVision
         }
 
         /// <summary>
-        /// �� AcquirePanel (DeviceControl) ��Ϊ�״̬ʱ��
-        /// �����ϴ���ʾ����ͼ�ĵ���ʵ�������л�ʱ�ָ���
+        /// 当 AcquirePanel (DeviceControl) 变为活动状态时
+        /// 自动跳转到上次显示的视图，实现临时切换后恢复
         /// </summary>
         private void HookAcquirePanelActivation()
         {
@@ -264,8 +222,8 @@ namespace ColorVision
         }
 
         /// <summary>
-        /// ���º��״�����ʱ��ʾ������־��
-        /// �Աȵ�ǰ�汾���ϴμ�¼�İ汾�����ڰ汾����ʱ���� CHANGELOG.md��
+        /// 更新后首次打开时显示更新日志。
+        /// 对比当前版本与上次记录的版本，若版本变更则显示 CHANGELOG.md。
         /// </summary>
         private void ShowChangelogIfUpdated()
         {
@@ -288,7 +246,7 @@ namespace ColorVision
             }
             catch (Exception ex)
             {
-                log.Warn("��ʾ������־ʧ��", ex);
+                log.Warn("显示更新日志失败", ex);
             }
         }
 
