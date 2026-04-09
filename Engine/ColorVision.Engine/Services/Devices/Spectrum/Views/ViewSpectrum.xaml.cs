@@ -812,56 +812,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             File.WriteAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
         }
 
-        public static void ExportLuminousFluxMode(string filePath, IEnumerable<ViewResultEqe> results)
-        {
-            List<string> headers = new()
-            {
-                "No",
-                "Lot",
-                "IP",
-                "EQE",
-                "LuminousFlux(lm)",
-                "RadiantFlux(W)",
-                "LuminousEfficacy(lm/W)",
-                "Cx",
-                "Cy",
-                "Correlated Color Temperature(CCT)（K）",
-                "Peak Wavelength(λp)(nm)",
-                "Voltgage(V) (V)",
-                "Current(I) (mA)"
-            };
-
-            AddSpectrumHeaders(headers);
-
-            StringBuilder csvBuilder = new();
-            AppendCsvLine(csvBuilder, headers);
-
-            foreach (ViewResultEqe result in results)
-            {
-                List<string> row = new()
-                {
-                    result.Id.ToString(),
-                    result.BatchID?.ToString() ?? string.Empty,
-                    result.IP ?? string.Empty,
-                    result.Eqe.ToString(),
-                    result.LuminousFlux.ToString(),
-                    result.RadiantFlux.ToString(),
-                    result.LuminousEfficacy.ToString(),
-                    result.fx.ToString(),
-                    result.fy.ToString(),
-                    result.fCCT.ToString(),
-                    result.fLp.ToString(),
-                    result.V?.ToString() ?? string.Empty,
-                    result.I?.ToString() ?? string.Empty,
-                };
-
-                AddSpectrumValues(row, result.SpectralDatas);
-                AppendCsvLine(csvBuilder, row);
-            }
-
-            File.WriteAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
-        }
-
         private static void AddSpectrumHeaders(List<string> headers)
         {
             for (int wl = StartWavelength; wl <= EndWavelength; wl++)
