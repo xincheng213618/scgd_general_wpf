@@ -54,8 +54,7 @@
                     <Button Content="更新配置" Command="{Binding UpdateConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="旧版App.config" Command="{Binding OpenLegacyConfigCommand}" Margin="0,0,8,0" Padding="12,6"
                             Visibility="{Binding HasLegacyConfig, Converter={StaticResource BoolToVis}}"/>
-                        <Button Content="管理员模式" Command="{Binding RestartElevatedCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                    <Button Content="检查更新" Command="{Binding OpenInstallManagerCommand}" Margin="0,0,8,0" Padding="12,6"
+                    <Button Content="更新" Command="{Binding OpenInstallManagerCommand}" Margin="0,0,8,0" Padding="12,6"
                             Style="{StaticResource ButtonPrimary}" ToolTip="打开服务安装管理器，检查更新并安装"/>
                 </WrapPanel>
             </StackPanel>
@@ -64,7 +63,7 @@
         <!-- 中间：TabControl -->
         <TabControl Grid.Row="1" Margin="8">
             <!-- 服务列表 Tab -->
-            <TabItem Header="CVWinService_Main">
+            <TabItem Header="CVWindowsService">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding Services}">
                         <ItemsControl.ItemTemplate>
@@ -186,8 +185,51 @@
                         <Button Content="脚本执行" Command="{Binding MySqlRunScriptCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="设置root密码" Command="{Binding MySqlSetRootPasswordCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="重置root密码" Command="{Binding MySqlForceResetRootPasswordCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"/>
-                        <Button Content="管理员模式" Command="{Binding RestartElevatedCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="创建/更新用户" Command="{Binding MySqlCreateOrUpdateUserCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                    </WrapPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- MQTT Tab -->
+            <TabItem Header="MQTT">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <GroupBox Header="MQTT 服务信息" Grid.Row="0" Margin="0,0,0,8" Padding="8">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock Text="服务名" Width="80" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding MqttServiceName}" Width="180" Margin="4,0" IsReadOnly="True"/>
+                                <TextBlock Text="状态" Width="40" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                                <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="{Binding MqttStatus}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsMqttRunning}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsMqttRunning}" Value="False">
+                                                    <Setter Property="Foreground" Value="Red"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="路径" Width="80" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding MqttExePath}" IsReadOnly="True"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <WrapPanel Grid.Row="1" Margin="0,0,0,8">
+                        <Button Content="启动" Command="{Binding MqttStartCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="停止" Command="{Binding MqttStopCommand}" Margin="0,0,8,0" Padding="12,6"/>
                     </WrapPanel>
                 </Grid>
             </TabItem>

@@ -897,6 +897,8 @@ _CVWS_PACKAGE_RE = re.compile(
     r"^CVWindowsService\[(?P<version>\d+\.\d+\.\d+\.\d+)\](?:-(?P<suffix>\d+))?\.zip$",
     re.IGNORECASE,
 )
+CVWS_RELEASES_CACHE_KEY = "cvws_releases:v1"
+CVWS_RELEASES_CACHE_TTL_SECONDS = 180
 
 
 def _scan_cvwindowsservice_packages() -> list[dict[str, Any]]:
@@ -942,25 +944,55 @@ def _scan_cvwindowsservice_packages() -> list[dict[str, Any]]:
     return packages
 
 
+def _cvws_cache_signature(tool_dir: Path, latest_version: str) -> str:
+    """Build a light signature for CVWindowsService cache invalidation."""
+    try:
+        dir_mtime = int(tool_dir.stat().st_mtime)
+    except OSError:
+        dir_mtime = 0
+    return f"{latest_version.strip()}|{dir_mtime}"
+
+
+def _get_cvwindowsservice_releases_payload() -> dict[str, Any]:
+    tool_dir = STORAGE / "Tool" / "CVWindowsService"
+    latest = read_text_file(tool_dir / "LATEST_RELEASE") or ""
+    signature = _cvws_cache_signature(tool_dir, latest)
+
+    cached = _get_cache_entry(CVWS_RELEASES_CACHE_KEY, signature=signature)
+    if cached:
+        value = cached.get("value")
+        if isinstance(value, dict):
+            return value
+
+    packages = _scan_cvwindowsservice_packages()
+    payload = {
+        "latestVersion": latest.strip(),
+        "packages": packages,
+        "count": len(packages),
+    }
+    _set_cache_entry(
+        CVWS_RELEASES_CACHE_KEY,
+        payload,
+        ttl_seconds=CVWS_RELEASES_CACHE_TTL_SECONDS,
+        signature=signature,
+    )
+    return payload
+
+
 @app.route("/api/tool/cvwindowsservice/latest-version", methods=["GET"])
 def api_cvwindowsservice_latest_version():
     """Return the latest CVWindowsService version from Tool/CVWindowsService/LATEST_RELEASE."""
-    version = read_text_file(STORAGE / "Tool" / "CVWindowsService" / "LATEST_RELEASE")
+    payload = _get_cvwindowsservice_releases_payload()
+    version = str(payload.get("latestVersion", "")).strip()
     if not version:
         return jsonify({"error": "LATEST_RELEASE not found"}), 404
-    return jsonify({"version": version.strip()})
+    return jsonify({"version": version})
 
 
 @app.route("/api/tool/cvwindowsservice/releases", methods=["GET"])
 def api_cvwindowsservice_releases():
     """List all CVWindowsService release packages with version and download info."""
-    latest = read_text_file(STORAGE / "Tool" / "CVWindowsService" / "LATEST_RELEASE") or ""
-    packages = _scan_cvwindowsservice_packages()
-    return jsonify({
-        "latestVersion": latest.strip(),
-        "packages": packages,
-        "count": len(packages),
-    })
+    return jsonify(_get_cvwindowsservice_releases_payload())
 
 
 @app.route("/api/tool/cvwindowsservice/download/<version>", methods=["GET"])
@@ -973,15 +1005,21 @@ def api_cvwindowsservice_download(version):
     if not tool_dir.is_dir():
         return jsonify({"error": "CVWindowsService directory not found"}), 404
 
-    # Find the matching package (prefer exact version, then version with suffix)
-    best_match: Path | None = None
+    # Find deterministic best match: same version with largest numeric suffix.
+    matches: list[tuple[int, Path]] = []
     for entry in tool_dir.iterdir():
         if not entry.is_file():
             continue
         m = _CVWS_PACKAGE_RE.match(entry.name)
         if m and m.group("version") == version:
-            best_match = entry
-            break
+            suffix_raw = m.group("suffix") or "0"
+            try:
+                suffix = int(suffix_raw)
+            except ValueError:
+                suffix = 0
+            matches.append((suffix, entry))
+
+    best_match = max(matches, key=lambda item: item[0])[1] if matches else None
 
     if best_match is None:
         return jsonify({"error": f"Package for version {version} not found"}), 404

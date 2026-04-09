@@ -8,9 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Xml.Linq;
 using WindowsServicePlugin.CVWinSMS;
@@ -61,6 +58,18 @@ namespace WindowsServicePlugin.ServiceManager
         public string MySqlExePath { get => _MySqlExePath; set { _MySqlExePath = value; OnPropertyChanged(); } }
         private string _MySqlExePath = string.Empty;
 
+        // MQTT状态
+        public string MqttServiceName { get => _MqttServiceName; set { _MqttServiceName = value; OnPropertyChanged(); } }
+        private string _MqttServiceName = "mosquitto";
+        public string MqttStatus { get => _MqttStatus; set { _MqttStatus = value; OnPropertyChanged(); } }
+        private string _MqttStatus = "未知";
+        public bool IsMqttInstalled { get => _IsMqttInstalled; set { _IsMqttInstalled = value; OnPropertyChanged(); } }
+        private bool _IsMqttInstalled;
+        public bool IsMqttRunning { get => _IsMqttRunning; set { _IsMqttRunning = value; OnPropertyChanged(); } }
+        private bool _IsMqttRunning;
+        public string MqttExePath { get => _MqttExePath; set { _MqttExePath = value; OnPropertyChanged(); } }
+        private string _MqttExePath = string.Empty;
+
         public string MySqlRootPassword { get => _MySqlRootPassword; set { _MySqlRootPassword = value; OnPropertyChanged(); } }
         private string _MySqlRootPassword = string.Empty;
 
@@ -97,7 +106,8 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand OpenMqttConfigCommand { get; }
         public RelayCommand OpenLog4NetConfigCommand { get; }
         public RelayCommand OpenLegacyConfigCommand { get; }
-        public RelayCommand RestartElevatedCommand { get; }
+        public RelayCommand MqttStartCommand { get; }
+        public RelayCommand MqttStopCommand { get; }
 
         // MySQL commands
         public RelayCommand MySqlInstallZipCommand { get; }
@@ -132,7 +142,8 @@ namespace WindowsServicePlugin.ServiceManager
             OpenMqttConfigCommand = new RelayCommand(a => OpenServiceFile(a as ServiceEntry, "MQTT.config"));
             OpenLog4NetConfigCommand = new RelayCommand(a => OpenServiceLog4Net(a as ServiceEntry));
             OpenLegacyConfigCommand = new RelayCommand(a => OpenLegacyConfigFile(), a => HasLegacyConfig);
-            RestartElevatedCommand = new RelayCommand(a => RestartAsAdministratorToServiceManager());
+            MqttStartCommand = new RelayCommand(a => _ = Task.Run(() => { ExecuteShellCommand("net start mosquitto", true); RefreshMqttStatus(); }), a => !IsBusy && IsMqttInstalled && !IsMqttRunning);
+            MqttStopCommand = new RelayCommand(a => _ = Task.Run(() => { ExecuteShellCommand("net stop mosquitto", true); RefreshMqttStatus(); }), a => !IsBusy && IsMqttRunning);
 
             MySqlInstallZipCommand = new RelayCommand(a => _ = MySqlInstallZipAsync(), a => !IsBusy);
             MySqlStartCommand = new RelayCommand(a => _ = Task.Run(() => { MySqlHelper.Start(AddLog); RefreshMySqlStatus(); }), a => !IsBusy && IsMySqlInstalled && !IsMySqlRunning);
@@ -201,6 +212,7 @@ namespace WindowsServicePlugin.ServiceManager
                 }
             }
             RefreshMySqlStatus();
+            RefreshMqttStatus();
 
             // 获取当前版本
             var rcService = Services.FirstOrDefault(s => s.ServiceName == "RegistrationCenterService");
@@ -222,6 +234,20 @@ namespace WindowsServicePlugin.ServiceManager
                     var ver = WinServiceHelper.GetFileVersion(MySqlHelper.MysqldExePath);
                     MySqlVersion = ver?.ToString() ?? "";
                 }
+            });
+        }
+
+        private void RefreshMqttStatus()
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                MqttServiceName = "mosquitto";
+                IsMqttInstalled = WinServiceHelper.IsServiceExisted(MqttServiceName);
+                IsMqttRunning = IsMqttInstalled && WinServiceHelper.IsServiceRunning(MqttServiceName);
+                MqttStatus = IsMqttRunning ? "运行中" : (IsMqttInstalled ? "已停止" : "未安装");
+
+                var mqttEntry = Services.FirstOrDefault(s => s.ServiceName == MqttServiceName);
+                MqttExePath = mqttEntry?.ExePath ?? string.Empty;
             });
         }
 
@@ -389,8 +415,6 @@ namespace WindowsServicePlugin.ServiceManager
         /// </summary>
         private async Task OneKeyStartAsync()
         {
-            if (!EnsureElevatedOrRestart("一键启动")) return;
-
             SetBusy(true, "正在启动所有服务...");
             await Task.Run(() =>
             {
@@ -442,8 +466,6 @@ namespace WindowsServicePlugin.ServiceManager
         /// </summary>
         private async Task OneKeyStopAsync()
         {
-            if (!EnsureElevatedOrRestart("一键停止")) return;
-
             SetBusy(true, "正在停止所有服务...");
             await Task.Run(() =>
             {
@@ -503,10 +525,7 @@ namespace WindowsServicePlugin.ServiceManager
         {
             try
             {
-                if (!EnsureElevatedOrRestart("更新配置")) return;
-
                 AddLog("开始更新配置...");
-
                 string baseLocation = Config.BaseLocation;
                 if (string.IsNullOrEmpty(baseLocation) || !Directory.Exists(baseLocation))
                 {
@@ -518,7 +537,6 @@ namespace WindowsServicePlugin.ServiceManager
 
                 AddLog("配置更新完成");
 
-                // 重启注册中心
                 if (MessageBox.Show("配置已更新，是否重启注册中心服务？", "更新配置", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     Task.Run(() =>
@@ -533,6 +551,24 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 AddLog($"配置更新失败: {ex.Message}");
                 log.Error("配置更新失败", ex);
+            }
+        }
+
+        public void ApplyConfigAndRefreshAfterInstall()
+        {
+            try
+            {
+                string baseLocation = Config.BaseLocation;
+                if (string.IsNullOrEmpty(baseLocation) || !Directory.Exists(baseLocation))
+                    return;
+
+                SyncAllConfigs(false);
+                AddLog("已执行安装后配置同步(UpdateConfig)");
+                Application.Current?.Dispatcher.Invoke(() => RefreshAll());
+            }
+            catch (Exception ex)
+            {
+                AddLog($"安装后配置同步失败: {ex.Message}");
             }
         }
 
@@ -997,64 +1033,72 @@ namespace WindowsServicePlugin.ServiceManager
 
         private async Task<ServicePackageInfo?> FindLatestServicePackageAsync()
         {
-            string browseUrl = GetBrowseUrl(Config.UpdateServerUrl);
-            if (string.IsNullOrWhiteSpace(browseUrl))
-                return null;
-
-            using HttpClient httpClient = CreateAuthorizedHttpClient();
-            string html = await httpClient.GetStringAsync(browseUrl);
-
-            var hrefRegex = new Regex(@"href\s*=\s*[""'](?<href>/download/Tool/CVWindowsService/(?<file>[^""'#?<>]+\.zip))[""']", RegexOptions.IgnoreCase);
-            var fileRegex = new Regex(@"^CVWindowsService\[(?<version>\d+\.\d+\.\d+\.\d+)\](?:-(?<suffix>\d+))?\.zip$", RegexOptions.IgnoreCase);
-
-            var candidates = new List<ServicePackageInfo>();
-            foreach (Match match in hrefRegex.Matches(html))
+            using HttpClient httpClient = new();
+            foreach (var apiBaseUrl in GetApiBaseCandidates(Config.UpdateServerUrl))
             {
-                string href = match.Groups["href"].Value;
-                string fileName = Uri.UnescapeDataString(match.Groups["file"].Value);
+                try
+                {
+                    string releasesUrl = apiBaseUrl.TrimEnd('/') + "/api/tool/cvwindowsservice/releases";
+                    using var response = await httpClient.GetAsync(releasesUrl);
+                    if (!response.IsSuccessStatusCode)
+                        continue;
 
-                Match fileMatch = fileRegex.Match(fileName);
-                if (!fileMatch.Success)
-                    continue;
+                    string json = await response.Content.ReadAsStringAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(json);
+                    var root = doc.RootElement;
+                    string latestVersion = root.TryGetProperty("latestVersion", out var lv) ? lv.GetString() ?? "" : "";
+                    if (string.IsNullOrWhiteSpace(latestVersion))
+                        continue;
 
-                if (!Version.TryParse(fileMatch.Groups["version"].Value, out var version))
-                    continue;
+                    if (!Version.TryParse(latestVersion, out var version))
+                        continue;
 
-                string downloadUrl = new Uri(new Uri(browseUrl), href).ToString();
-                candidates.Add(new ServicePackageInfo(version, fileName, downloadUrl));
+                    string fileName = $"FullPackage[{latestVersion}].zip";
+                    if (root.TryGetProperty("packages", out var packagesArray))
+                    {
+                        foreach (var pkg in packagesArray.EnumerateArray())
+                        {
+                            string pkgVersion = pkg.TryGetProperty("version", out var pv) ? pv.GetString() ?? "" : "";
+                            if (pkgVersion == latestVersion)
+                            {
+                                fileName = pkg.TryGetProperty("fileName", out var fn) ? fn.GetString() ?? fileName : fileName;
+                                break;
+                            }
+                        }
+                    }
+
+                    string downloadUrl = apiBaseUrl.TrimEnd('/') + "/api/tool/cvwindowsservice/download/" + latestVersion;
+                    return new ServicePackageInfo(version, fileName, downloadUrl);
+                }
+                catch
+                {
+                }
             }
 
-            return candidates
-                .OrderByDescending(c => c.Version)
-                .ThenByDescending(c => c.FileName, StringComparer.OrdinalIgnoreCase)
-                .FirstOrDefault();
+            return null;
         }
 
-        private static HttpClient CreateAuthorizedHttpClient()
+        private static IEnumerable<string> GetApiBaseCandidates(string configuredUrl)
         {
-            HttpClient httpClient = new();
-            var byteArray = Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-            return httpClient;
-        }
-
-        private static string GetBrowseUrl(string configuredUrl)
-        {
-            if (string.IsNullOrWhiteSpace(configuredUrl))
-                return string.Empty;
-
-            string url = configuredUrl.TrimEnd('/');
-            if (url.Contains("/download/", StringComparison.OrdinalIgnoreCase))
+            var candidates = new List<string>();
+            if (!string.IsNullOrWhiteSpace(configuredUrl))
             {
-                return url.Replace("/download/", "/browse/", StringComparison.OrdinalIgnoreCase);
+                try
+                {
+                    var uri = new Uri(configuredUrl.TrimEnd('/'));
+                    candidates.Add(uri.GetLeftPart(UriPartial.Authority));
+                    if (uri.Port == 9999)
+                    {
+                        candidates.Add($"{uri.Scheme}://{uri.Host}:9998");
+                    }
+                }
+                catch
+                {
+                }
             }
 
-            if (url.Contains("/browse/", StringComparison.OrdinalIgnoreCase))
-            {
-                return url;
-            }
-
-            return url + "/browse/Tool/CVWindowsService";
+            candidates.Add("http://xc213618.ddns.me:9998");
+            return candidates.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase);
         }
 
         #endregion
@@ -1159,8 +1203,8 @@ namespace WindowsServicePlugin.ServiceManager
         {
             if (!Tool.IsAdministrator())
             {
-                AddLog("当前不是管理员，正在以管理员模式重开服务管理器...");
-                RestartAsAdministratorToServiceManager();
+                AddLog("重置 root 密码需要管理员权限，请使用管理员身份启动程序后重试");
+                MessageBox.Show("重置 root 密码需要管理员权限，请使用管理员身份启动程序后重试。", "需要管理员权限", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -1287,7 +1331,6 @@ namespace WindowsServicePlugin.ServiceManager
                 AddLog($"管理员模式重开失败: {ex.Message}");
             }
         }
-
         private bool ExecuteShellCommand(string command, bool requireAdmin)
         {
             return requireAdmin
@@ -1601,15 +1644,17 @@ namespace WindowsServicePlugin.ServiceManager
         /// </summary>
         private void OpenInstallManager()
         {
+            EnsureElevatedOrRestart("更新");
             var installWindow = new ServiceInstallWindow
             {
-                Owner = Application.Current.MainWindow
+                Owner = Application.Current.GetActiveWindow()
             };
-            installWindow.ShowDialog();
+            installWindow.Show();
 
             // 刷新状态
             RefreshAll();
         }
+
 
         #endregion
     }

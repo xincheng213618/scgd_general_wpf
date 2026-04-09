@@ -108,7 +108,7 @@ namespace WindowsServicePlugin.ServiceManager
         [ConfigSetting(Order = 524)]
         [DisplayName("服务更新地址")]
         public string UpdateServerUrl { get => _UpdateServerUrl; set { _UpdateServerUrl = value; OnPropertyChanged(); } }
-        private string _UpdateServerUrl = "http://xc213618.ddns.me:9998/browse/Tool/CVWindowsService";
+        private string _UpdateServerUrl = "http://xc213618.ddns.me:9998";
 
         [JsonIgnore]
         public string LatestReleaseUrl

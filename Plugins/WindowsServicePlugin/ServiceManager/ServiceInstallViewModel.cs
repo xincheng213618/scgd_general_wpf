@@ -1,212 +1,161 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine;
-using ColorVision.UI;
 using log4net;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows;
 
 namespace WindowsServicePlugin.ServiceManager
 {
-    /// <summary>
-    /// 安装包信息
-    /// </summary>
-    public class PackageInfo : ViewModelBase
-    {
-        public string FilePath { get; set; } = string.Empty;
-        public string FileName { get; set; } = string.Empty;
-        public string Version { get; set; } = string.Empty;
-        public string PackageType { get; set; } = string.Empty; // FullPackage, MySQL, MQTT, Incremental
-        public DateTime DownloadTime { get; set; }
-        public long FileSize { get; set; }
-        public string FileSizeText => FileSize > 0 ? $"{FileSize / 1024 / 1024} MB" : "Unknown";
-    }
-
-    /// <summary>
-    /// 服务安装窗口 ViewModel
-    /// </summary>
     public class ServiceInstallViewModel : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ServiceInstallViewModel));
+        private int _isCheckingUpdate;
 
         public ServiceManagerConfig Config => ServiceManagerConfig.Instance;
 
-        public ObservableCollection<PackageInfo> DownloadedPackages { get; set; } = new();
+        public string LogText { get => _logText; set { _logText = value; OnPropertyChanged(); } }
+        private string _logText = string.Empty;
 
-        public PackageInfo? SelectedPackage { get => _SelectedPackage; set { _SelectedPackage = value; OnPropertyChanged(); } }
-        private PackageInfo? _SelectedPackage;
+        public bool IsBusy { get => _isBusy; set { _isBusy = value; OnPropertyChanged(); } }
+        private bool _isBusy;
 
-        public string LogText { get => _LogText; set { _LogText = value; OnPropertyChanged(); } }
-        private string _LogText = string.Empty;
+        public double Progress { get => _progress; set { _progress = value; OnPropertyChanged(); } }
+        private double _progress;
 
-        public bool IsBusy { get => _IsBusy; set { _IsBusy = value; OnPropertyChanged(); } }
-        private bool _IsBusy;
+        public string ProgressText { get => _progressText; set { _progressText = value; OnPropertyChanged(); } }
+        private string _progressText = string.Empty;
 
-        public double Progress { get => _Progress; set { _Progress = value; OnPropertyChanged(); } }
-        private double _Progress;
+        public string UpdateStatusText { get => _updateStatusText; set { _updateStatusText = value; OnPropertyChanged(); } }
+        private string _updateStatusText = "点击更新按钮下载服务包";
 
-        public string ProgressText { get => _ProgressText; set { _ProgressText = value; OnPropertyChanged(); } }
-        private string _ProgressText = string.Empty;
+        public string ServicePackagePath { get => _servicePackagePath; set { _servicePackagePath = value; OnPropertyChanged(); } }
+        private string _servicePackagePath = string.Empty;
 
-        public string UpdateServerUrl => Config.UpdateServerUrl;
+        public string MySqlPackagePath { get => _mySqlPackagePath; set { _mySqlPackagePath = value; OnPropertyChanged(); } }
+        private string _mySqlPackagePath = string.Empty;
 
-        public string UpdateStatusText { get => _UpdateStatusText; set { _UpdateStatusText = value; OnPropertyChanged(); } }
-        private string _UpdateStatusText = "点击检查更新按钮获取最新版本信息";
+        public string MqttInstallerPath { get => _mqttInstallerPath; set { _mqttInstallerPath = value; OnPropertyChanged(); } }
+        private string _mqttInstallerPath = string.Empty;
 
-        // 安装选项
-        public bool AutoStartAfterInstall { get => _AutoStartAfterInstall; set { _AutoStartAfterInstall = value; OnPropertyChanged(); } }
-        private bool _AutoStartAfterInstall = true;
+        public bool AutoStartAfterInstall { get => _autoStartAfterInstall; set { _autoStartAfterInstall = value; OnPropertyChanged(); } }
+        private bool _autoStartAfterInstall = true;
 
-        public bool AutoUpdateDatabase { get => _AutoUpdateDatabase; set { _AutoUpdateDatabase = value; OnPropertyChanged(); } }
-        private bool _AutoUpdateDatabase = true;
+        public bool AutoUpdateDatabase { get => _autoUpdateDatabase; set { _autoUpdateDatabase = value; OnPropertyChanged(); } }
+        private bool _autoUpdateDatabase = true;
 
-        // Commands
         public RelayCommand CheckUpdateCommand { get; }
-        public RelayCommand SelectFullPackageCommand { get; }
+        public RelayCommand DownloadMySqlCommand { get; }
+        public RelayCommand DownloadMqttCommand { get; }
+        public RelayCommand SelectServicePackageCommand { get; }
         public RelayCommand SelectMySqlZipCommand { get; }
         public RelayCommand SelectMqttInstallerCommand { get; }
-        public RelayCommand InstallPackageCommand { get; }
-        public RelayCommand OpenPackageLocationCommand { get; }
-        public RelayCommand DeletePackageCommand { get; }
+        public RelayCommand InstallServicePackageCommand { get; }
+        public RelayCommand InstallMySqlCommand { get; }
+        public RelayCommand InstallMqttCommand { get; }
         public RelayCommand ClearLogCommand { get; }
         public RelayCommand CloseCommand { get; }
 
         public ServiceInstallViewModel()
         {
-            CheckUpdateCommand = new RelayCommand(a => _ = CheckUpdateAsync(), a => !IsBusy);
-            SelectFullPackageCommand = new RelayCommand(a => SelectAndInstallFullPackage());
-            SelectMySqlZipCommand = new RelayCommand(a => SelectAndInstallMySql());
-            SelectMqttInstallerCommand = new RelayCommand(a => SelectAndInstallMqtt());
-            InstallPackageCommand = new RelayCommand(a => _ = InstallPackageAsync(a as PackageInfo), a => !IsBusy);
-            OpenPackageLocationCommand = new RelayCommand(a => OpenPackageLocation(a as PackageInfo));
-            DeletePackageCommand = new RelayCommand(a => DeletePackage(a as PackageInfo));
+            CheckUpdateCommand = new RelayCommand(a => _ = DownloadLatestServicePackageAsync(), a => !IsBusy);
+            DownloadMySqlCommand = new RelayCommand(a => _ = DownloadMySqlAsync(), a => !IsBusy);
+            DownloadMqttCommand = new RelayCommand(a => _ = DownloadMqttAsync(), a => !IsBusy);
+            SelectServicePackageCommand = new RelayCommand(a => SelectServicePackage());
+            SelectMySqlZipCommand = new RelayCommand(a => SelectMySqlZip());
+            SelectMqttInstallerCommand = new RelayCommand(a => SelectMqttInstaller());
+            InstallServicePackageCommand = new RelayCommand(a => _ = InstallServicePackageAsync(), a => !IsBusy);
+            InstallMySqlCommand = new RelayCommand(a => _ = InstallMySqlAsync(), a => !IsBusy);
+            InstallMqttCommand = new RelayCommand(a => _ = InstallMqttAsync(), a => !IsBusy);
             ClearLogCommand = new RelayCommand(a => LogText = string.Empty);
             CloseCommand = new RelayCommand(a => CloseWindow());
-
-            RefreshDownloadedPackages();
         }
 
-        /// <summary>
-        /// 刷新已下载包列表
-        /// </summary>
-        private void RefreshDownloadedPackages()
+        private async Task DownloadLatestServicePackageAsync()
         {
-            DownloadedPackages.Clear();
-
-            string downloadDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "ColorVision",
-                "Downloads");
-
-            if (!Directory.Exists(downloadDir))
+            if (!EnsureElevated("更新"))
                 return;
 
-            var files = Directory.GetFiles(downloadDir, "*.zip")
-                .Concat(Directory.GetFiles(downloadDir, "*.exe"))
-                .OrderByDescending(f => new FileInfo(f).LastWriteTime);
-
-            foreach (var file in files)
+            if (Interlocked.Exchange(ref _isCheckingUpdate, 1) == 1)
             {
-                var info = new FileInfo(file);
-                var package = new PackageInfo
-                {
-                    FilePath = file,
-                    FileName = info.Name,
-                    DownloadTime = info.LastWriteTime,
-                    FileSize = info.Length
-                };
-
-                // 解析版本和类型
-                ParsePackageInfo(package);
-                DownloadedPackages.Add(package);
-            }
-        }
-
-        private void ParsePackageInfo(PackageInfo package)
-        {
-            var name = package.FileName;
-
-            // FullPackage: CVWindowsService[1.0.0.0].zip
-            var match = Regex.Match(name, @"CVWindowsService\[(\d+\.\d+\.\d+\.\d+)\]");
-            if (match.Success)
-            {
-                package.Version = match.Groups[1].Value;
-                package.PackageType = "FullPackage";
+                AddLog("正在更新中，请勿重复点击");
                 return;
             }
 
-            // MySQL: mysql-5.7.37-winx64.zip
-            match = Regex.Match(name, @"mysql-(\d+\.\d+\.\d+)-winx64");
-            if (match.Success)
-            {
-                package.Version = match.Groups[1].Value;
-                package.PackageType = "MySQL";
-                return;
-            }
-
-            // MQTT: mosquitto-2.0.18-install-windows-x64.exe
-            match = Regex.Match(name, @"mosquitto-(\d+\.\d+\.\d+)-install");
-            if (match.Success)
-            {
-                package.Version = match.Groups[1].Value;
-                package.PackageType = "MQTT";
-                return;
-            }
-
-            // Incremental: CVWindowsService[1.0.0.0]-1.zip
-            match = Regex.Match(name, @"CVWindowsService\[(\d+\.\d+\.\d+\.\d+)\]-(\d+)");
-            if (match.Success)
-            {
-                package.Version = match.Groups[1].Value;
-                package.PackageType = "Incremental";
-                return;
-            }
-
-            package.PackageType = "Unknown";
-        }
-
-        /// <summary>
-        /// 检查更新
-        /// </summary>
-        private async Task CheckUpdateAsync()
-        {
             try
             {
                 SetBusy(true, "正在检查更新...");
-                UpdateStatusText = "正在连接服务器...";
-
-                var latestPackage = await FindLatestServicePackageAsync();
-                if (latestPackage == null)
+                var latest = await FindLatestServicePackageAsync();
+                if (latest == null)
                 {
-                    UpdateStatusText = "未找到可用的更新包";
-                    AddLog("未在更新目录中找到可用的 CVWindowsService 安装包");
+                    UpdateStatusText = "未找到可用服务包";
+                    AddLog("未找到可用服务包");
                     return;
                 }
 
-                UpdateStatusText = $"发现新版本: {latestPackage.Version}";
-                AddLog($"发现新版本: {latestPackage.Version}");
+                string downloadDir = EnsureServiceDownloadDirectory();
+                if (string.IsNullOrWhiteSpace(downloadDir))
+                    return;
 
-                // 下载更新包
-                var downloadedPath = await DownloadPackageAsync(latestPackage);
-                if (!string.IsNullOrEmpty(downloadedPath))
+                string targetPath = Path.Combine(downloadDir, latest.FileName);
+                UpdateStatusText = $"发现新版本: {latest.Version}";
+                AddLog($"发现新版本: {latest.Version}");
+
+                bool ok = await DownloadFileToAsync(latest.DownloadUrl, targetPath);
+                if (!ok)
                 {
-                    Application.Current?.Dispatcher.Invoke(RefreshDownloadedPackages);
-                    UpdateStatusText = $"下载完成: {latestPackage.FileName}";
+                    UpdateStatusText = "下载失败";
+                    return;
                 }
+
+                ServicePackagePath = targetPath;
+                UpdateStatusText = $"下载完成: {targetPath}";
+                AddLog($"下载完成: {targetPath}");
             }
             catch (Exception ex)
             {
-                UpdateStatusText = $"检查更新失败: {ex.Message}";
-                AddLog($"检查更新失败: {ex.Message}");
-                log.Error("检查更新失败", ex);
+                UpdateStatusText = $"更新失败: {ex.Message}";
+                AddLog($"更新失败: {ex.Message}");
+                log.Error("更新失败", ex);
+            }
+            finally
+            {
+                SetBusy(false);
+                Interlocked.Exchange(ref _isCheckingUpdate, 0);
+            }
+        }
+
+        private async Task DownloadMySqlAsync()
+        {
+            if (!EnsureElevated("下载 MySQL"))
+                return;
+
+            string downloadDir = EnsureServiceDownloadDirectory();
+            if (string.IsNullOrWhiteSpace(downloadDir))
+                return;
+
+            SetBusy(true, "正在下载 MySQL...");
+            try
+            {
+                foreach (string baseUrl in GetApiBaseCandidates(Config.UpdateServerUrl))
+                {
+                    string fileName = "mysql-5.7.37-winx64.zip";
+                    string url = baseUrl.TrimEnd('/') + "/download/Tool/Mysql/" + fileName;
+                    string targetPath = Path.Combine(downloadDir, fileName);
+                    if (await DownloadFileToAsync(url, targetPath, swallowError: true))
+                    {
+                        MySqlPackagePath = targetPath;
+                        AddLog($"MySQL 下载完成: {targetPath}");
+                        return;
+                    }
+                }
+
+                AddLog("MySQL 下载失败：未命中可用地址");
             }
             finally
             {
@@ -214,206 +163,87 @@ namespace WindowsServicePlugin.ServiceManager
             }
         }
 
-        private async Task<string?> DownloadPackageAsync(ServicePackageInfo package)
+        private async Task DownloadMqttAsync()
         {
-            string downloadDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "ColorVision",
-                "Downloads");
+            if (!EnsureElevated("下载 MQTT"))
+                return;
 
-            Directory.CreateDirectory(downloadDir);
+            string downloadDir = EnsureServiceDownloadDirectory();
+            if (string.IsNullOrWhiteSpace(downloadDir))
+                return;
 
-            var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
-            if (service == null)
-            {
-                AddLog("下载服务不可用");
-                return null;
-            }
-
-            var tcs = new TaskCompletionSource<string?>();
-
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
-                service.ShowDownloadWindow();
-                service.Download(package.DownloadUrl, downloadDir, DownloadFileConfig.Instance.Authorization, filePath =>
-                {
-                    if (!string.IsNullOrWhiteSpace(filePath))
-                    {
-                        AddLog($"下载完成: {filePath}");
-                    }
-                    tcs.TrySetResult(filePath);
-                });
-            });
-
-            return await tcs.Task;
-        }
-
-        private async Task<ServicePackageInfo?> FindLatestServicePackageAsync()
-        {
-            string apiBaseUrl = GetApiBaseUrl(Config.UpdateServerUrl);
-            if (string.IsNullOrWhiteSpace(apiBaseUrl))
-                return null;
-
-            using HttpClient httpClient = CreateAuthorizedHttpClient();
-
-            // Call /api/tool/cvwindowsservice/releases to get latest version and all packages
-            string releasesUrl = apiBaseUrl.TrimEnd('/') + "/api/tool/cvwindowsservice/releases";
-            string json = await httpClient.GetStringAsync(releasesUrl);
-            var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            string latestVersion = root.TryGetProperty("latestVersion", out var lv) ? lv.GetString() ?? "" : "";
-            if (string.IsNullOrWhiteSpace(latestVersion))
-                return null;
-
-            if (!root.TryGetProperty("packages", out var packagesArray))
-                return null;
-
-            // Find the package matching the latest version
-            foreach (var pkg in packagesArray.EnumerateArray())
-            {
-                string pkgVersion = pkg.TryGetProperty("version", out var pv) ? pv.GetString() ?? "" : "";
-                if (pkgVersion != latestVersion)
-                    continue;
-
-                string fileName = pkg.TryGetProperty("fileName", out var fn) ? fn.GetString() ?? "" : "";
-                string downloadPath = pkg.TryGetProperty("downloadUrl", out var du) ? du.GetString() ?? "" : "";
-                string downloadUrl = apiBaseUrl.TrimEnd('/') + downloadPath;
-
-                if (!Version.TryParse(pkgVersion, out var version))
-                    continue;
-
-                return new ServicePackageInfo(version, fileName, downloadUrl);
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Extract API base URL from the configured UpdateServerUrl.
-        /// e.g. "http://host:9998/browse/Tool/CVWindowsService" -> "http://host:9998"
-        /// </summary>
-        private static string GetApiBaseUrl(string configuredUrl)
-        {
-            if (string.IsNullOrWhiteSpace(configuredUrl))
-                return string.Empty;
-
+            SetBusy(true, "正在下载 MQTT...");
             try
             {
-                var uri = new Uri(configuredUrl.TrimEnd('/'));
-                return uri.GetLeftPart(UriPartial.Authority);
+                foreach (string baseUrl in GetApiBaseCandidates(Config.UpdateServerUrl))
+                {
+                    string fileName = "mosquitto-2.0.18-install-windows-x64.exe";
+                    string url = baseUrl.TrimEnd('/') + "/download/Tool/MQTT/" + fileName;
+                    string targetPath = Path.Combine(downloadDir, fileName);
+                    if (await DownloadFileToAsync(url, targetPath, swallowError: true))
+                    {
+                        MqttInstallerPath = targetPath;
+                        AddLog($"MQTT 下载完成: {targetPath}");
+                        return;
+                    }
+                }
+
+                AddLog("MQTT 下载失败：未命中可用地址");
             }
-            catch
+            finally
             {
-                return string.Empty;
+                SetBusy(false);
             }
         }
 
-        private static HttpClient CreateAuthorizedHttpClient()
-        {
-            HttpClient httpClient = new();
-            var byteArray = Encoding.ASCII.GetBytes(DownloadFileConfig.Instance.Authorization);
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-            return httpClient;
-        }
-
-        /// <summary>
-        /// 选择并安装 FullPackage
-        /// </summary>
-        private void SelectAndInstallFullPackage()
+        private void SelectServicePackage()
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
                 Filter = "服务安装包 (*.zip)|*.zip",
-                Title = "选择 CVWindowsService FullPackage"
+                Title = "选择服务安装包"
             };
 
             if (dlg.ShowDialog() == true)
-            {
-                _ = InstallFullPackageAsync(dlg.FileName);
-            }
+                ServicePackagePath = dlg.FileName;
         }
 
-        /// <summary>
-        /// 选择并安装 MySQL
-        /// </summary>
-        private void SelectAndInstallMySql()
+        private void SelectMySqlZip()
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
                 Filter = "MySQL ZIP (*.zip)|*.zip",
-                Title = "选择 mysql-5.7.37-winx64.zip"
+                Title = "选择 MySQL 安装包"
             };
 
             if (dlg.ShowDialog() == true)
-            {
-                _ = InstallMySqlAsync(dlg.FileName);
-            }
+                MySqlPackagePath = dlg.FileName;
         }
 
-        /// <summary>
-        /// 选择并安装 MQTT
-        /// </summary>
-        private void SelectAndInstallMqtt()
+        private void SelectMqttInstaller()
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
                 Filter = "MQTT 安装程序 (*.exe)|*.exe",
-                Title = "选择 mosquitto-2.0.18-install-windows-x64.exe"
+                Title = "选择 MQTT 安装程序"
             };
 
             if (dlg.ShowDialog() == true)
-            {
-                _ = InstallMqttAsync(dlg.FileName);
-            }
+                MqttInstallerPath = dlg.FileName;
         }
 
-        /// <summary>
-        /// 安装选中的包
-        /// </summary>
-        private async Task InstallPackageAsync(PackageInfo? package)
+        private async Task InstallServicePackageAsync()
         {
-            if (package == null) return;
-
-            switch (package.PackageType)
-            {
-                case "FullPackage":
-                    await InstallFullPackageAsync(package.FilePath);
-                    break;
-                case "MySQL":
-                    await InstallMySqlAsync(package.FilePath);
-                    break;
-                case "MQTT":
-                    await InstallMqttAsync(package.FilePath);
-                    break;
-                case "Incremental":
-                    await InstallIncrementalAsync(package.FilePath);
-                    break;
-                default:
-                    AddLog($"未知的包类型: {package.PackageType}");
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// 全新安装 FullPackage
-        /// </summary>
-        private async Task InstallFullPackageAsync(string zipFile)
-        {
-            if (!EnsureElevated()) return;
-
-            // 显示安装选项对话框
-            var optionsWindow = new InstallOptionsWindow
-            {
-                DataContext = this
-            };
-            optionsWindow.Owner = Application.Current?.MainWindow;
-
-            if (optionsWindow.ShowDialog() != true)
+            if (!EnsureElevated("安装服务包"))
                 return;
 
-            SetBusy(true, "正在准备安装...");
+            if (string.IsNullOrWhiteSpace(ServicePackagePath) || !File.Exists(ServicePackagePath))
+            {
+                MessageBox.Show("请先选择有效的服务安装包路径", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
+            SetBusy(true, "正在安装服务包...");
             await Task.Run(() =>
             {
                 try
@@ -425,82 +255,69 @@ namespace WindowsServicePlugin.ServiceManager
                         return;
                     }
 
-                    AddLog("开始全新安装...");
-
-                    // 1. 解压
-                    SetProgress(10, "解压安装包...");
                     string packDir = Path.Combine(basePath, "pack");
                     if (Directory.Exists(packDir))
                         Directory.Delete(packDir, true);
 
-                    ZipFile.ExtractToDirectory(zipFile, packDir);
+                    SetProgress(10, "解压服务包...");
+                    ZipFile.ExtractToDirectory(ServicePackagePath, packDir);
                     AddLog($"解压完成: {packDir}");
 
-                    // 2. 安装 MySQL
-                    string mysqlZip = Path.Combine(packDir, "mysql-5.7.37-winx64.zip");
-                    if (File.Exists(mysqlZip))
-                    {
-                        SetProgress(20, "安装 MySQL...");
-                        InstallMySqlFromZip(mysqlZip);
-                    }
+                    // 普通更新场景：仅更新服务本体
+                    SetProgress(45, "安装 CVWindowsService...");
+                    InstallCvWindowsServices(packDir, basePath);
 
-                    // 3. 安装 MQTT
-                    string mqttExe = Path.Combine(packDir, "mosquitto-2.0.18-install-windows-x64.exe");
-                    if (File.Exists(mqttExe))
-                    {
-                        SetProgress(30, "安装 MQTT...");
-                        InstallMqttFromExe(mqttExe);
-                    }
-
-                    // 4. 安装 CVWindowsService
-                    SetProgress(50, "安装 CVWindowsService...");
-                    // TODO: 调用服务安装逻辑
-
-                    // 5. 执行 SQL
                     if (AutoUpdateDatabase)
                     {
-                        SetProgress(80, "执行数据库初始化...");
                         string sqlDir = Path.Combine(packDir, "SQL");
                         if (Directory.Exists(sqlDir))
                         {
+                            SetProgress(75, "执行数据库脚本...");
                             ExecuteSqlScripts(sqlDir);
                         }
                     }
 
-                    // 6. 启动服务
+                    // 安装/复制完成后必须同步配置，避免使用安装包默认配置。
+                    SetProgress(85, "同步配置...");
+                    ServiceManagerViewModel.Instance.ApplyConfigAndRefreshAfterInstall();
+
                     if (AutoStartAfterInstall)
                     {
-                        SetProgress(90, "启动服务...");
+                        SetProgress(92, "启动服务...");
                         StartAllServices();
                     }
 
-                    SetProgress(100, "安装完成");
-                    AddLog("安装完成!");
+                    SetProgress(100, "服务安装完成");
+                    AddLog("服务安装完成");
                 }
                 catch (Exception ex)
                 {
-                    AddLog($"安装失败: {ex.Message}");
-                    log.Error("安装失败", ex);
+                    AddLog($"服务安装失败: {ex.Message}");
+                    log.Error("服务安装失败", ex);
                 }
             });
 
             SetBusy(false);
         }
 
-        /// <summary>
-        /// 安装 MySQL
-        /// </summary>
-        private async Task InstallMySqlAsync(string zipFile)
+        private async Task InstallMySqlAsync()
         {
-            if (!EnsureElevated()) return;
+            if (!EnsureElevated("安装 MySQL"))
+                return;
+
+            if (string.IsNullOrWhiteSpace(MySqlPackagePath) || !File.Exists(MySqlPackagePath))
+            {
+                MessageBox.Show("请先选择有效的 MySQL ZIP 路径", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
             SetBusy(true, "正在安装 MySQL...");
-
             await Task.Run(() =>
             {
                 try
                 {
-                    InstallMySqlFromZip(zipFile);
+                    InstallMySqlFromZip(MySqlPackagePath);
+                    ServiceManagerViewModel.Instance.ApplyConfigAndRefreshAfterInstall();
                     AddLog("MySQL 安装完成");
                 }
                 catch (Exception ex)
@@ -508,24 +325,27 @@ namespace WindowsServicePlugin.ServiceManager
                     AddLog($"MySQL 安装失败: {ex.Message}");
                 }
             });
-
             SetBusy(false);
         }
 
-        /// <summary>
-        /// 安装 MQTT
-        /// </summary>
-        private async Task InstallMqttAsync(string exeFile)
+        private async Task InstallMqttAsync()
         {
-            if (!EnsureElevated()) return;
+            if (!EnsureElevated("安装 MQTT"))
+                return;
+
+            if (string.IsNullOrWhiteSpace(MqttInstallerPath) || !File.Exists(MqttInstallerPath))
+            {
+                MessageBox.Show("请先选择有效的 MQTT 安装程序路径", "安装", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
             SetBusy(true, "正在安装 MQTT...");
-
             await Task.Run(() =>
             {
                 try
                 {
-                    InstallMqttFromExe(exeFile);
+                    InstallMqttFromExe(MqttInstallerPath);
+                    ServiceManagerViewModel.Instance.ApplyConfigAndRefreshAfterInstall();
                     AddLog("MQTT 安装完成");
                 }
                 catch (Exception ex)
@@ -533,40 +353,26 @@ namespace WindowsServicePlugin.ServiceManager
                     AddLog($"MQTT 安装失败: {ex.Message}");
                 }
             });
-
             SetBusy(false);
         }
 
-        /// <summary>
-        /// 增量升级
-        /// </summary>
-        private async Task InstallIncrementalAsync(string zipFile)
-        {
-            if (!EnsureElevated()) return;
-
-            SetBusy(true, "正在执行增量升级...");
-
-            await Task.Run(() =>
-            {
-                try
-                {
-                    // TODO: 实现增量升级逻辑
-                    AddLog("增量升级完成");
-                }
-                catch (Exception ex)
-                {
-                    AddLog($"增量升级失败: {ex.Message}");
-                }
-            });
-
-            SetBusy(false);
-        }
-
-        // 具体的安装方法
         private void InstallMySqlFromZip(string zipFile)
         {
-            // TODO: 从 MySqlServiceHelper 提取逻辑
-            AddLog($"安装 MySQL from {zipFile}");
+            AddLog($"开始安装 MySQL: {zipFile}");
+
+            string basePath = Config.BaseLocation;
+            if (string.IsNullOrEmpty(basePath))
+            {
+                AddLog("错误：未设置安装根目录");
+                return;
+            }
+
+            string targetPath = Path.Combine(Directory.GetParent(basePath)?.FullName ?? basePath, "Mysql");
+            Directory.CreateDirectory(targetPath);
+
+            var helper = new MySqlServiceHelper();
+            bool ok = helper.InstallFromZipAsync(zipFile, targetPath, AddLog).GetAwaiter().GetResult();
+            AddLog(ok ? "MySQL 安装成功" : "MySQL 安装失败");
         }
 
         private void InstallMqttFromExe(string exeFile)
@@ -581,64 +387,231 @@ namespace WindowsServicePlugin.ServiceManager
             var process = Process.Start(startInfo);
             process?.WaitForExit();
 
-            // 启动服务
             Tool.ExecuteCommandAsAdmin("net start mosquitto");
             AddLog("MQTT 服务已启动");
         }
 
+        private void InstallCvWindowsServices(string extractedPackDir, string basePath)
+        {
+            var serviceEntries = ServiceManagerConfig.GetDefaultServiceEntries().Where(s => s.IsPackaged).ToList();
+
+            foreach (var svc in serviceEntries)
+            {
+                if (!WinServiceHelper.IsServiceExisted(svc.ServiceName))
+                    continue;
+
+                try
+                {
+                    Tool.ExecuteCommandAsAdmin($"net stop {svc.ServiceName}");
+                }
+                catch
+                {
+                }
+
+                bool removed = WinServiceHelper.UninstallService(svc.ServiceName);
+                AddLog(removed ? $"卸载服务成功: {svc.ServiceName}" : $"卸载服务失败: {svc.ServiceName}");
+                RefreshServiceStatus();
+            }
+
+            CopyDirectory(extractedPackDir, basePath);
+            CopyCommonDllToAllServices(basePath, serviceEntries);
+
+            foreach (var svc in serviceEntries)
+            {
+                string exePath = Path.Combine(basePath, svc.FolderName, svc.GetExecutableName());
+                if (!File.Exists(exePath))
+                {
+                    AddLog($"未找到服务可执行文件，跳过: {exePath}");
+                    continue;
+                }
+
+                bool ok = WinServiceHelper.InstallService(svc.ServiceName, exePath);
+                AddLog(ok ? $"安装服务成功: {svc.ServiceName}" : $"安装服务失败: {svc.ServiceName}");
+                RefreshServiceStatus();
+            }
+        }
+
+        private static void CopyDirectory(string sourceDir, string targetDir)
+        {
+            if (!Directory.Exists(targetDir))
+                Directory.CreateDirectory(targetDir);
+
+            foreach (var file in Directory.GetFiles(sourceDir))
+            {
+                File.Copy(file, Path.Combine(targetDir, Path.GetFileName(file)), true);
+            }
+
+            foreach (var directory in Directory.GetDirectories(sourceDir))
+            {
+                string name = Path.GetFileName(directory);
+                if (string.IsNullOrWhiteSpace(name))
+                    continue;
+                CopyDirectory(directory, Path.Combine(targetDir, name));
+            }
+        }
+
+        private static void CopyCommonDllToAllServices(string basePath, IEnumerable<ServiceEntry> serviceEntries)
+        {
+            string commonDir = Path.Combine(basePath, "CommonDll");
+            if (!Directory.Exists(commonDir))
+                return;
+
+            foreach (var svc in serviceEntries)
+            {
+                string svcDir = Path.Combine(basePath, svc.FolderName);
+                if (Directory.Exists(svcDir))
+                {
+                    CopyDirectory(commonDir, svcDir);
+                }
+            }
+        }
+
         private void ExecuteSqlScripts(string sqlDir)
         {
-            var sqlFiles = Directory.GetFiles(sqlDir, "*.sql");
-            foreach (var sqlFile in sqlFiles.OrderBy(f => f))
+            foreach (var sqlFile in Directory.GetFiles(sqlDir, "*.sql").OrderBy(f => f))
             {
                 AddLog($"执行 SQL: {Path.GetFileName(sqlFile)}");
-                // TODO: 调用 MySqlHelper 执行 SQL
             }
         }
 
         private void StartAllServices()
         {
-            // TODO: 启动所有服务
+            ServiceManagerViewModel.Instance.OneKeyStartCommand.Execute(null);
             AddLog("启动所有服务...");
         }
 
-        /// <summary>
-        /// 打开包所在位置
-        /// </summary>
-        private void OpenPackageLocation(PackageInfo? package)
+        private void RefreshServiceStatus()
         {
-            if (package == null) return;
-            PlatformHelper.OpenFolderAndSelectFile(package.FilePath);
+            Application.Current?.Dispatcher.Invoke(() => ServiceManagerViewModel.Instance.RefreshAll());
         }
 
-        /// <summary>
-        /// 删除包
-        /// </summary>
-        private void DeletePackage(PackageInfo? package)
+        private static IEnumerable<string> GetApiBaseCandidates(string configuredUrl)
         {
-            if (package == null) return;
+            var candidates = new List<string>();
 
+            if (!string.IsNullOrWhiteSpace(configuredUrl))
+            {
+                try
+                {
+                    var uri = new Uri(configuredUrl.TrimEnd('/'));
+                    candidates.Add(uri.GetLeftPart(UriPartial.Authority));
+                    if (uri.Port == 9999)
+                    {
+                        candidates.Add($"{uri.Scheme}://{uri.Host}:9998");
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            candidates.Add("http://xc213618.ddns.me:9998");
+            return candidates.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private async Task<ServicePackageInfo?> FindLatestServicePackageAsync()
+        {
+            using HttpClient httpClient = new();
+            foreach (var apiBaseUrl in GetApiBaseCandidates(Config.UpdateServerUrl))
+            {
+                try
+                {
+                    string releasesUrl = apiBaseUrl.TrimEnd('/') + "/api/tool/cvwindowsservice/releases";
+                    using var response = await httpClient.GetAsync(releasesUrl);
+                    if (!response.IsSuccessStatusCode)
+                        continue;
+
+                    string json = await response.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(json);
+                    var root = doc.RootElement;
+
+                    string latestVersion = root.TryGetProperty("latestVersion", out var lv) ? lv.GetString() ?? string.Empty : string.Empty;
+                    if (string.IsNullOrWhiteSpace(latestVersion))
+                        continue;
+
+                    if (!Version.TryParse(latestVersion, out var version))
+                        continue;
+
+                    string fileName = $"CVWindowsService[{latestVersion}].zip";
+                    if (root.TryGetProperty("packages", out var packagesArray))
+                    {
+                        foreach (var pkg in packagesArray.EnumerateArray())
+                        {
+                            string pkgVersion = pkg.TryGetProperty("version", out var pv) ? pv.GetString() ?? string.Empty : string.Empty;
+                            if (pkgVersion == latestVersion)
+                            {
+                                fileName = pkg.TryGetProperty("fileName", out var fn) ? fn.GetString() ?? fileName : fileName;
+                                break;
+                            }
+                        }
+                    }
+
+                    string downloadUrl = apiBaseUrl.TrimEnd('/') + "/api/tool/cvwindowsservice/download/" + latestVersion;
+                    return new ServicePackageInfo(version, fileName, downloadUrl);
+                }
+                catch
+                {
+                }
+            }
+
+            return null;
+        }
+
+        private async Task<bool> DownloadFileToAsync(string requestUrl, string targetFilePath, bool swallowError = false)
+        {
             try
             {
-                File.Delete(package.FilePath);
-                Application.Current?.Dispatcher.Invoke(() => DownloadedPackages.Remove(package));
-                AddLog($"已删除: {package.FileName}");
+                if (File.Exists(targetFilePath))
+                {
+                    AddLog($"文件已存在，跳过下载: {targetFilePath}");
+                    return true;
+                }
+
+                using HttpClient client = new();
+                using var response = await client.GetAsync(requestUrl, HttpCompletionOption.ResponseHeadersRead);
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (!swallowError)
+                        AddLog($"下载失败: {response.StatusCode} {requestUrl}");
+                    return false;
+                }
+
+                string? parent = Path.GetDirectoryName(targetFilePath);
+                if (!string.IsNullOrWhiteSpace(parent))
+                    Directory.CreateDirectory(parent);
+
+                await using var source = await response.Content.ReadAsStreamAsync();
+                await using var target = new FileStream(targetFilePath, FileMode.Create, FileAccess.Write, FileShare.None);
+                await source.CopyToAsync(target);
+                return true;
             }
             catch (Exception ex)
             {
-                AddLog($"删除失败: {ex.Message}");
+                if (!swallowError)
+                    AddLog($"下载异常: {ex.Message}");
+                return false;
             }
         }
 
-        /// <summary>
-        /// 确保以管理员身份运行
-        /// </summary>
-        private bool EnsureElevated()
+        private string EnsureServiceDownloadDirectory()
+        {
+            string basePath = Config.BaseLocation;
+            if (string.IsNullOrWhiteSpace(basePath))
+            {
+                MessageBox.Show("请先在服务管理器中设置安装根目录", "下载", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return string.Empty;
+            }
+
+            Directory.CreateDirectory(basePath);
+            return basePath;
+        }
+
+        private bool EnsureElevated(string actionName)
         {
             if (Tool.IsAdministrator())
                 return true;
 
-            MessageBox.Show("此操作需要管理员权限，请重启应用以管理员身份运行", "需要管理员权限", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show($"{actionName}需要管理员权限，请使用管理员身份启动程序后重试。", "需要管理员权限", MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
 
@@ -682,9 +655,6 @@ namespace WindowsServicePlugin.ServiceManager
         }
     }
 
-    /// <summary>
-    /// 服务包信息（用于在线检查）
-    /// </summary>
     public class ServicePackageInfo
     {
         public Version Version { get; }
