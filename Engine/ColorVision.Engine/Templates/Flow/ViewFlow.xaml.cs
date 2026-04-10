@@ -8,6 +8,7 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using FlowEngineLib;
+using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
@@ -29,6 +30,8 @@ namespace ColorVision.Engine.Services.Flow
     /// </summary>
     public partial class ViewFlow : System.Windows.Controls.UserControl, IDisposable
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ViewFlow));
+
         public FlowEngineManager FlowEngineManager { get; set; }
         public FlowEngineControl FlowEngineControl { get; set; }
         public FlowEngineConfig Config { get; set; }
@@ -64,7 +67,7 @@ namespace ColorVision.Engine.Services.Flow
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
             OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
 
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = STNodeEditorHelper.CheckFlow(); }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = STNodeEditorHelper != null; }));
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
@@ -162,9 +165,53 @@ namespace ColorVision.Engine.Services.Flow
 
         public void Save()
         {
-            if (!STNodeEditorHelper.CheckFlow()) return;
-            FlowEngineManager.GetInstance().SlectFlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData());
-            TemplateFlow.Save2DB(FlowEngineManager.GetInstance().SlectFlowParam);
+            log.Info("Save: 开始保存流程");
+
+            // 强制将焦点从WinForms控件转移到WPF, 确保属性编辑器中的值已提交
+            var focusedElement = Keyboard.FocusedElement;
+            log.Debug($"Save: 当前焦点元素: {focusedElement?.GetType().Name ?? "null"}");
+            if (focusedElement == null || focusedElement is System.Windows.Forms.Integration.WindowsFormsHost)
+            {
+                log.Debug("Save: 焦点在WinForms控件上, 先转移焦点以提交待保存的属性修改");
+                this.Focus();
+                // 处理WinForms的Leave等事件
+                System.Windows.Forms.Application.DoEvents();
+            }
+
+            try
+            {
+                if (!STNodeEditorHelper.CheckFlow())
+                {
+                    log.Warn("Save: CheckFlow验证失败, 取消保存");
+                    return;
+                }
+
+                var flowParam = FlowEngineManager.GetInstance().SlectFlowParam;
+                if (flowParam == null)
+                {
+                    log.Error("Save: SlectFlowParam 为 null, 无法保存");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "当前未选择流程参数, 无法保存");
+                    return;
+                }
+
+                byte[] canvasData = STNodeEditorMain.GetCanvasData();
+                if (canvasData == null || canvasData.Length == 0)
+                {
+                    log.Error("Save: GetCanvasData 返回空数据");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "获取画布数据失败");
+                    return;
+                }
+
+                log.Info($"Save: 画布数据大小={canvasData.Length} bytes, FlowParam.Id={flowParam.Id}, Name={flowParam.Name}");
+                flowParam.DataBase64 = Convert.ToBase64String(canvasData);
+                TemplateFlow.Save2DB(flowParam);
+                log.Info("Save: 流程保存成功");
+            }
+            catch (Exception ex)
+            {
+                log.Error("Save: 保存流程时发生异常", ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"保存失败: {ex.Message}");
+            }
         }
 
 

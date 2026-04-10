@@ -3,6 +3,7 @@ using ColorVision.Database;
 using ColorVision.Engine.Templates.Menus;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
+using log4net;
 using Newtonsoft.Json;
 using SqlSugar;
 using System;
@@ -28,6 +29,8 @@ namespace ColorVision.Engine.Templates.Flow
 
     public class TemplateFlow : ITemplate<FlowParam>, IITemplateLoad
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(TemplateFlow));
+
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
 
 
@@ -144,54 +147,74 @@ namespace ColorVision.Engine.Templates.Flow
 
         public static void Save2DB(FlowParam flowParam)
         {
-            using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-            flowParam.ModMaster.Name = flowParam.Name;
-            Db.Updateable(flowParam.ModMaster).ExecuteCommand();
-
-            List<ModDetailModel> details = new();
-            flowParam.GetDetail(details);
-            if (details.Count > 0)
+            log.Info($"Save2DB: 开始保存, FlowParam.Id={flowParam.Id}, Name={flowParam.Name}, DataBase64长度={flowParam.DataBase64?.Length ?? 0}");
+            try
             {
-                var model = details[0];
-                SysResourceModel res = null;
-                int id = 0;
-                bool hasId = int.TryParse(model.ValueA, out id);
-                if (hasId)
-                {
-                    res = Db.Queryable<SysResourceModel>().InSingle(id);
-                }
+                using var Db = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
 
-                if (res != null)
+                flowParam.ModMaster.Name = flowParam.Name;
+                int masterResult = Db.Updateable(flowParam.ModMaster).ExecuteCommand();
+                log.Debug($"Save2DB: 更新ModMaster结果={masterResult}");
+
+                List<ModDetailModel> details = new();
+                flowParam.GetDetail(details);
+                log.Debug($"Save2DB: details数量={details.Count}");
+                if (details.Count > 0)
                 {
-                    // 资源已存在，更新
-                    res.Code = flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64);
-                    res.Name = flowParam.Name;
-                    res.Value = flowParam.DataBase64;
-                    Db.Updateable(res).ExecuteCommand();
-                    model.ValueA = res.Id.ToString();
+                    var model = details[0];
+                    SysResourceModel res = null;
+                    int id = 0;
+                    bool hasId = int.TryParse(model.ValueA, out id);
+                    log.Debug($"Save2DB: model.ValueA={model.ValueA}, hasId={hasId}, id={id}");
+                    if (hasId)
+                    {
+                        res = Db.Queryable<SysResourceModel>().InSingle(id);
+                    }
+
+                    if (res != null)
+                    {
+                        // 资源已存在，更新
+                        res.Code = flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64);
+                        res.Name = flowParam.Name;
+                        res.Value = flowParam.DataBase64;
+                        int updateResult = Db.Updateable(res).ExecuteCommand();
+                        model.ValueA = res.Id.ToString();
+                        log.Info($"Save2DB: 更新资源成功, ResId={res.Id}, updateResult={updateResult}");
+                    }
+                    else
+                    {
+                        // 新建资源
+                        res = new SysResourceModel
+                        {
+                            Name = flowParam.Name,
+                            Type = 101,
+                            Value = flowParam.DataBase64,
+                            Code = hasId
+                                ? (flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64))
+                                : Cryptography.GetMd5Hash(flowParam.DataBase64)
+                        };
+                        Db.Insertable(res).ExecuteCommand();
+                        // 获取新资源id（SqlSugar自动回写Id）
+                        model.ValueA = res.Id.ToString();
+                        log.Info($"Save2DB: 新建资源成功, ResId={res.Id}");
+                    }
+
+                    // 3. 更新明细表
+                    int detailResult = Db.Updateable(details)
+                        .Where(md => md.Pid == flowParam.Id)
+                        .ExecuteCommand();
+                    log.Debug($"Save2DB: 更新明细表结果={detailResult}");
                 }
                 else
                 {
-                    // 新建资源
-                    res = new SysResourceModel
-                    {
-                        Name = flowParam.Name,
-                        Type = 101,
-                        Value = flowParam.DataBase64,
-                        Code = hasId
-                            ? (flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64))
-                            : Cryptography.GetMd5Hash(flowParam.DataBase64)
-                    };
-                    Db.Insertable(res).ExecuteCommand();
-                    // 获取新资源id（SqlSugar自动回写Id）
-                    model.ValueA = res.Id.ToString();
+                    log.Warn("Save2DB: details为空, 没有明细数据需要保存");
                 }
-
-                // 3. 更新明细表
-                Db.Updateable(details)
-                    .Where(md => md.Pid == flowParam.Id)
-                    .ExecuteCommand();
+                log.Info("Save2DB: 保存完成");
+            }
+            catch (Exception ex)
+            {
+                log.Error("Save2DB: 保存流程到数据库时发生异常", ex);
+                throw;
             }
         }
 
