@@ -16,6 +16,10 @@ namespace WindowsServicePlugin.ServiceManager
 
         public string ServiceName { get; set; } = "MySQL";
         public string BasePath { get; set; } = string.Empty;
+        public int Port { get; set; } = 3306;
+
+        /// <summary>最近一次全新安装时自动生成的 root 密码，由调用方持久化</summary>
+        public string LastGeneratedRootPassword { get; private set; } = string.Empty;
 
         public string MysqldExePath => Path.Combine(BasePath, "bin", "mysqld.exe");
         public string MysqlExePath => Path.Combine(BasePath, "bin", "mysql.exe");
@@ -71,27 +75,53 @@ namespace WindowsServicePlugin.ServiceManager
         public bool IsRunning => WinServiceHelper.IsServiceRunning(ServiceName);
 
         /// <summary>
-        /// ZIP全安装: 解压、初始化、安装服务、启动、创建用户
+        /// ZIP全安装: 停止/删除旧服务 → 解压 → 初始化 → 安装服务 → 启动 → 创建业务用户 → 设置随机 root 密码
+        /// 参考 CVWinSMS.CVMysqlServiceManager.DoMysqlInstallZip
         /// </summary>
-        public async Task<bool> InstallFromZipAsync(string zipFilePath, string targetPath, Action<string> logCallback)
+        public async Task<bool> InstallFromZipAsync(
+            string zipFilePath,
+            string targetPath,
+            Action<string> logCallback,
+            string appUser = "",
+            string appPassword = "",
+            string database = "color_vision")
         {
             return await Task.Run(() =>
             {
                 try
                 {
+                    // 1. 若旧服务存在，先停止并移除
+                    if (WinServiceHelper.IsServiceExisted(ServiceName))
+                    {
+                        logCallback($"停止并删除已有 MySQL 服务 ({ServiceName})...");
+                        WinServiceHelper.StopService(ServiceName, 30);
+                        for (int w = 0; w < 15; w++)
+                        {
+                            Thread.Sleep(1000);
+                            if (!WinServiceHelper.IsServiceRunning(ServiceName)) break;
+                        }
+                        // 优先用现有 exe 卸载，否则用 sc delete
+                        if (File.Exists(MysqldExePath))
+                            RunProcessAdmin(MysqldExePath, $"--remove {ServiceName}", Path.GetDirectoryName(MysqldExePath)!);
+                        else
+                            WinServiceHelper.UninstallService(ServiceName);
+                    }
+
+                    // 2. 解压
                     logCallback("正在解压 MySQL...");
                     System.IO.Compression.ZipFile.ExtractToDirectory(zipFilePath, targetPath, true);
-                    
-                    // 查找解压后的mysql目录
+
+                    // 3. 查找解压后的 mysql 目录（如 mysql-5.7.37-winx64）
                     var mysqlDirs = Directory.GetDirectories(targetPath, "mysql-*");
                     if (mysqlDirs.Length == 0)
                     {
-                        logCallback("解压完成但未找到 MySQL 目录");
+                        logCallback("解压完成但未找到 MySQL 目录 (mysql-*)");
                         return false;
                     }
                     BasePath = mysqlDirs[0];
+                    logCallback($"MySQL 目录: {BasePath}");
 
-                    return DoFullInstall(logCallback);
+                    return DoFullInstall(logCallback, appUser, appPassword, database);
                 }
                 catch (Exception ex)
                 {
@@ -103,9 +133,14 @@ namespace WindowsServicePlugin.ServiceManager
         }
 
         /// <summary>
-        /// 完整安装流程：初始化 → 安装服务 → 启动 → 设置密码 → 创建用户
+        /// 完整安装流程：初始化 → 安装服务 → 启动 → 创建业务用户 → 设置随机 root 密码
+        /// 参考 CVWinSMS.CVMysqlServiceManager.DoMysqlInitInstall
         /// </summary>
-        public bool DoFullInstall(Action<string> logCallback)
+        public bool DoFullInstall(
+            Action<string> logCallback,
+            string appUser = "",
+            string appPassword = "",
+            string database = "color_vision")
         {
             if (!File.Exists(MysqldExePath))
             {
@@ -113,51 +148,71 @@ namespace WindowsServicePlugin.ServiceManager
                 return false;
             }
 
-            // 1. 初始化(insecure模式，即空密码)
-            logCallback("正在初始化 MySQL (--initialize-insecure)...");
-            RunProcess(MysqldExePath, "--initialize-insecure", BasePath);
+            string binDir = Path.GetDirectoryName(MysqldExePath)!;
 
-            // 2. 安装Windows服务
+            // 1. 初始化 (--initialize-insecure → root初始密码为空)
+            logCallback("正在初始化 MySQL (--initialize-insecure)...");
+            RunProcessAdmin(MysqldExePath, "--initialize-insecure", binDir);
+
+            // 2. 安装 Windows 服务 (需要管理员)
             logCallback($"正在安装 MySQL 服务 ({ServiceName})...");
-            RunProcess(MysqldExePath, $"--install {ServiceName}", BasePath);
+            RunProcessAdmin(MysqldExePath, $"--install {ServiceName}", binDir);
 
             // 3. 启动服务
             logCallback("正在启动 MySQL 服务...");
             Tool.ExecuteCommandAsAdmin($"net start {ServiceName}");
 
             // 等待启动
+            bool started = false;
             for (int i = 0; i < 30; i++)
             {
                 Thread.Sleep(1000);
                 if (WinServiceHelper.IsServiceRunning(ServiceName))
                 {
                     logCallback("MySQL 服务已启动");
-                    return true;
+                    started = true;
+                    break;
                 }
             }
+            if (!started)
+            {
+                logCallback("MySQL 服务启动超时");
+                return false;
+            }
 
-            logCallback("MySQL 服务启动超时");
-            return false;
+            // 4. 创建业务用户 (此时 root 密码为空)
+            if (!string.IsNullOrWhiteSpace(appUser) && !string.IsNullOrWhiteSpace(appPassword))
+            {
+                logCallback($"正在创建业务用户 {appUser}...");
+                CreateAppUser("", appUser, appPassword, database, logCallback);
+            }
+
+            // 5. 为 root 生成随机密码并设置 (使用 mysqladmin，参考 CVWinSMS.doMysqlRootPwdset)
+            string newRootPwd = GenerateRandomPassword();
+            logCallback($"正在设置随机 root 密码...");
+            bool pwdOk = SetRootPasswordViaAdmin("", newRootPwd);
+            if (pwdOk)
+            {
+                LastGeneratedRootPassword = newRootPwd;
+                logCallback($"root 密码已设置 (请保存): {newRootPwd}");
+            }
+            else
+            {
+                logCallback("root 密码设置失败，当前 root 密码为空，请手动设置");
+            }
+
+            return true;
         }
 
         /// <summary>
-        /// 设置 root 密码
+        /// 使用 mysqladmin 设置/更改 root 密码（参考 CVWinSMS.doMysqlRootPwdset）
         /// </summary>
-        public bool SetRootPassword(string newPassword, Action<string> logCallback)
+        public bool SetRootPasswordViaAdmin(string oldPassword, string newPassword)
         {
-            try
-            {
-                logCallback("正在设置 root 密码...");
-                string args = $"-u root password \"{newPassword}\"";
-                var result = RunProcess(MysqladminExePath, args, BasePath);
-                logCallback(result ? "root 密码设置成功" : "root 密码设置失败");
-                return result;
-            }
-            catch (Exception ex)
-            {
-                logCallback($"设置密码失败: {ex.Message}");
-                return false;
-            }
+            // mysqladmin -P {port} -u root [-p"old"] password "new"
+            string oldPart = string.IsNullOrEmpty(oldPassword) ? "" : $" -p\"{EscapeSqlLiteral(oldPassword)}\"";
+            string args = $"-P {Port} -u root{oldPart} password \"{EscapeSqlLiteral(newPassword)}\"";
+            return RunProcess(MysqladminExePath, args, Path.GetDirectoryName(MysqladminExePath)!);
         }
 
         /// <summary>
@@ -179,14 +234,41 @@ namespace WindowsServicePlugin.ServiceManager
                     $"ALTER USER '{safeUser}'@'%' IDENTIFIED BY '{safePwd}'; " +
                     $"GRANT ALL PRIVILEGES ON `{safeDb}`.* TO '{safeUser}'@'%'; " +
                     $"FLUSH PRIVILEGES;";
-                string args = $"-u root -p\"{rootPwd}\" -e \"{sql}\"";
-                var result = RunProcess(MysqlExePath, args, BasePath);
+                string userArgs = string.IsNullOrEmpty(rootPwd)
+                    ? $"-P {Port} -u root -e \"{sql}\""
+                    : $"-P {Port} -u root -p\"{EscapeSqlLiteral(rootPwd)}\" -e \"{sql}\"";
+                var result = RunProcess(MysqlExePath, userArgs, Path.GetDirectoryName(MysqlExePath)!);
                 logCallback(result ? $"用户 {userName} 创建成功" : $"用户 {userName} 创建失败");
                 return result;
             }
             catch (Exception ex)
             {
                 logCallback($"创建用户失败: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 删除业务用户（localhost 和 % 两个主机）
+        /// 参考 CVWinSMS.CVMysqlServiceManager.DoMysqlDelUser
+        /// </summary>
+        public bool DeleteAppUser(string rootPwd, string userName, Action<string> logCallback)
+        {
+            try
+            {
+                logCallback($"正在删除用户 {userName}...");
+                string safeUser = EscapeSqlLiteral(userName);
+                string sql = $"DROP USER IF EXISTS '{safeUser}'@'localhost'; DROP USER IF EXISTS '{safeUser}'@'%'; FLUSH PRIVILEGES;";
+                string args = string.IsNullOrEmpty(rootPwd)
+                    ? $"-P {Port} -u root -e \"{sql}\""
+                    : $"-P {Port} -u root -p\"{EscapeSqlLiteral(rootPwd)}\" -e \"{sql}\"";
+                bool ok = RunProcess(MysqlExePath, args, Path.GetDirectoryName(MysqlExePath)!);
+                logCallback(ok ? $"用户 {userName} 已删除" : $"用户 {userName} 删除失败");
+                return ok;
+            }
+            catch (Exception ex)
+            {
+                logCallback($"删除用户失败: {ex.Message}");
                 return false;
             }
         }
@@ -321,22 +403,21 @@ namespace WindowsServicePlugin.ServiceManager
             return true;
         }
 
+        /// <summary>
+        /// 通过 mysqladmin 更新 root 密码（MySQL 5.7 兼容）
+        /// </summary>
         public bool TrySetRootPassword(string oldPassword, string newPassword, Action<string> logCallback)
         {
             try
             {
-                string safePwd = EscapeSqlLiteral(newPassword);
-                string sql = $"ALTER USER 'root'@'localhost' IDENTIFIED BY '{safePwd}'; FLUSH PRIVILEGES;";
-                string args = string.IsNullOrWhiteSpace(oldPassword)
-                    ? $"-u root -e \"{sql}\""
-                    : $"-u root -p\"{oldPassword}\" -e \"{sql}\"";
-                bool ok = RunProcess(MysqlExePath, args, BasePath);
-                logCallback(ok ? "root 密码更新成功" : "root 密码更新失败");
+                logCallback("正在设置 root 密码...");
+                bool ok = SetRootPasswordViaAdmin(oldPassword, newPassword);
+                logCallback(ok ? "root 密码设置成功" : "root 密码设置失败");
                 return ok;
             }
             catch (Exception ex)
             {
-                logCallback($"更新 root 密码失败: {ex.Message}");
+                logCallback($"设置 root 密码失败: {ex.Message}");
                 return false;
             }
         }
@@ -483,6 +564,46 @@ namespace WindowsServicePlugin.ServiceManager
         private bool TryRunRootResetSql(string sql)
         {
             return RunProcess(MysqlExePath, $"-u root -e \"{sql}\"", BasePath, 10000);
+        }
+
+        /// <summary>
+        /// 生成随机密码（参考 CVWinSMS.MySqlTools.GenerateRandomPassword）
+        /// </summary>
+        public static string GenerateRandomPassword(int length = 12)
+        {
+            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#&";
+            using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+            var buf = new byte[length];
+            rng.GetBytes(buf);
+            return new string(buf.Select(b => chars[b % chars.Length]).ToArray());
+        }
+
+        /// <summary>
+        /// 以管理员权限运行进程（若当前已是管理员则直接运行，否则请求 UAC）
+        /// </summary>
+        private static bool RunProcessAdmin(string fileName, string arguments, string workingDir)
+        {
+            try
+            {
+                bool isAdmin = Tool.IsAdministrator();
+                var psi = new ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = arguments,
+                    WorkingDirectory = workingDir,
+                    UseShellExecute = !isAdmin,
+                    CreateNoWindow = isAdmin,
+                    Verb = isAdmin ? "" : "runas"
+                };
+                using var p = Process.Start(psi);
+                p?.WaitForExit(60000);
+                return p?.ExitCode == 0;
+            }
+            catch (Exception ex)
+            {
+                log.Error($"RunProcessAdmin {Path.GetFileName(fileName)} {arguments} failed", ex);
+                return false;
+            }
         }
 
         private static string EscapeSqlLiteral(string value)

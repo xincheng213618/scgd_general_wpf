@@ -154,9 +154,10 @@
                             </DockPanel>
                             <DockPanel Margin="0,0,0,4">
                                 <TextBlock Text="root旧密码" Width="80" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding MySqlRootPassword, UpdateSourceTrigger=PropertyChanged}" Width="220" Margin="4,0,0,0"/>
+                                <TextBox Text="{Binding MySqlRootPassword, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="4,0,0,0"/>
                                 <TextBlock Text="root新密码" Width="80" VerticalAlignment="Center" Margin="12,0,0,0"/>
-                                <TextBox Text="{Binding MySqlRootNewPassword, UpdateSourceTrigger=PropertyChanged}" Width="220" Margin="4,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="随机生成" Command="{Binding MySqlGenerateRandomRootPasswordCommand}" Padding="8,2" Margin="4,0,0,0"/>
+                                <TextBox Text="{Binding MySqlRootNewPassword, UpdateSourceTrigger=PropertyChanged}" Width="180" Margin="4,0,0,0"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,4">
                                 <TextBlock Text="业务用户" Width="80" VerticalAlignment="Center"/>
@@ -184,6 +185,7 @@
                         <Button Content="设置root密码" Command="{Binding MySqlSetRootPasswordCommand}" Margin="0,0,8,0" Padding="12,6"/>
                         <Button Content="重置root密码" Command="{Binding MySqlForceResetRootPasswordCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"/>
                         <Button Content="创建/更新用户" Command="{Binding MySqlCreateOrUpdateUserCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="删除用户" Command="{Binding MySqlDeleteUserCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"/>
                     </WrapPanel>
                 </Grid>
             </TabItem>

@@ -27,11 +27,36 @@ namespace WindowsServicePlugin.ServiceManager
             }
 
             string targetDir = Path.Combine(Directory.GetParent(basePath)?.FullName ?? basePath, "Mysql");
+
+            // 读取当前业务用户配置
+            var dbCfg = MySqlSetting.Instance.MySqlConfig;
+            string appUser = string.IsNullOrWhiteSpace(MySqlAppUser) ? dbCfg.UserName : MySqlAppUser;
+            string appPassword = string.IsNullOrWhiteSpace(MySqlAppPassword) ? dbCfg.UserPwd : MySqlAppPassword;
+            string database = string.IsNullOrWhiteSpace(MySqlDatabaseName) ? dbCfg.Database : MySqlDatabaseName;
+
             SetBusy(true, "正在安装 MySQL...");
-            bool result = await MySqlHelper.InstallFromZipAsync(dlg.FileName, targetDir, AddLog);
+            bool result = await MySqlHelper.InstallFromZipAsync(dlg.FileName, targetDir, AddLog, appUser, appPassword, database);
             if (result)
             {
                 AddLog("MySQL 安装成功");
+
+                // 持久化自动生成的 root 密码
+                if (!string.IsNullOrWhiteSpace(MySqlHelper.LastGeneratedRootPassword))
+                {
+                    MySqlRootPassword = MySqlHelper.LastGeneratedRootPassword;
+                    PersistRootConfig(MySqlRootPassword);
+                    AddLog($"请保存 root 密码: {MySqlRootPassword}");
+                }
+
+                // 更新业务用户配置
+                dbCfg.UserName = appUser;
+                dbCfg.UserPwd = appPassword;
+                dbCfg.Database = database;
+                MySqlAppUser = appUser;
+                MySqlAppPassword = appPassword;
+                MySqlDatabaseName = database;
+
+                SyncLegacyAppConfig();
                 RefreshMySqlStatus();
             }
             SetBusy(false);
@@ -171,6 +196,24 @@ namespace WindowsServicePlugin.ServiceManager
             {
                 rootCfg.UserPwd = rootPassword;
             }
+        }
+
+        private void DoDeleteUser()
+        {
+            if (string.IsNullOrWhiteSpace(MySqlAppUser))
+            {
+                AddLog("请先填写要删除的用户名");
+                return;
+            }
+            bool ok = MySqlHelper.DeleteAppUser(MySqlRootPassword, MySqlAppUser, AddLog);
+            if (ok)
+                AddLog($"用户 {MySqlAppUser} 已删除");
+        }
+
+        private void GenerateRandomRootPassword()
+        {
+            MySqlRootNewPassword = MySqlServiceHelper.GenerateRandomPassword();
+            AddLog($"已生成随机 root 密码: {MySqlRootNewPassword}");
         }
 
         private void BrowseMySqlPath()

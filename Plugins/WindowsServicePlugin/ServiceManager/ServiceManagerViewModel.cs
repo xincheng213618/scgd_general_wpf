@@ -121,6 +121,8 @@ namespace WindowsServicePlugin.ServiceManager
         public RelayCommand MySqlSetRootPasswordCommand { get; }
         public RelayCommand MySqlForceResetRootPasswordCommand { get; }
         public RelayCommand MySqlCreateOrUpdateUserCommand { get; }
+        public RelayCommand MySqlDeleteUserCommand { get; }
+        public RelayCommand MySqlGenerateRandomRootPasswordCommand { get; }
 
         public ServiceManagerViewModel()
         {
@@ -152,6 +154,8 @@ namespace WindowsServicePlugin.ServiceManager
             MySqlSetRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoSetRootPassword()), a => !IsBusy && IsMySqlRunning);
             MySqlForceResetRootPasswordCommand = new RelayCommand(a => _ = Task.Run(() => DoForceResetRootPassword()), a => !IsBusy);
             MySqlCreateOrUpdateUserCommand = new RelayCommand(a => _ = Task.Run(() => DoCreateOrUpdateUser()), a => !IsBusy && IsMySqlRunning);
+            MySqlDeleteUserCommand = new RelayCommand(a => _ = Task.Run(() => DoDeleteUser()), a => !IsBusy && IsMySqlRunning);
+            MySqlGenerateRandomRootPasswordCommand = new RelayCommand(a => GenerateRandomRootPassword());
 
             Initialize();
         }
