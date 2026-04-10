@@ -28,8 +28,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Configs
         public bool IsSrcA { get => _IsSrcA; set { _IsSrcA = value; OnPropertyChanged(); } }
         private bool _IsSrcA;
 
-
-
-
+        [DisplayName("DelayTime")]
+        public double DelayTime { get => _DelayTime; set { _DelayTime = value; OnPropertyChanged(); } }
+        private double _DelayTime;
     }
 }
