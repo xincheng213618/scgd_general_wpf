@@ -17,6 +17,8 @@ namespace Spectrum.Data
 {
     public class ViewResultManagerConfig : ViewModelBase, IConfig
     {
+        public static ViewResultManagerConfig Instance => ConfigService.Instance.GetRequiredService<ViewResultManagerConfig>();
+
         [DisplayName("查询数量"), Category("View")]
         public int Count { get => _Count; set { _Count = value; OnPropertyChanged(); } }
         private int _Count = 50;
@@ -40,6 +42,14 @@ namespace Spectrum.Data
         [DisplayName("Csv保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("Spectrum")]
         public string SavePathCsv { get => _SavePathCsv; set { _SavePathCsv = value; OnPropertyChanged(); } }
         private string _SavePathCsv = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Spectrum");
+
+        [DisplayName("防负亮度"), Category("Spectrum")]
+        public bool EnableNegativeLuminanceGuard { get => _EnableNegativeLuminanceGuard; set { _EnableNegativeLuminanceGuard = value; OnPropertyChanged(); } }
+        private bool _EnableNegativeLuminanceGuard = true;
+
+        [DisplayName("亮度最小值"), Category("Spectrum")]
+        public double MinLuminanceValue { get => _MinLuminanceValue; set { _MinLuminanceValue = value; OnPropertyChanged(); } }
+        private double _MinLuminanceValue = 0.0001;
 
     }
 
