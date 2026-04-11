@@ -51,7 +51,7 @@ namespace ProjectLUX
         public static RecipeConfig RecipeConfig => RecipeManager.RecipeConfig;
 
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
-        public ObservableCollection<ProcessMeta> ProcessMetas { get; } = ProcessManager.ProcessMetas;
+        public ObservableCollection<ProcessMeta> ProcessMetas => ProcessManager.ProcessMetas;
 
         public LUXWindow()
         {
@@ -133,6 +133,38 @@ namespace ProjectLUX
             {
                 log.Info("超出范围");
             }
+        }
+
+        /// <summary>
+        /// 根据 SocketCode 查找对应的 ProcessMeta 并执行流程。
+        /// </summary>
+        public void RunTemplateBySocketCode(string socketCode)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var processMeta = ProcessMetas.FirstOrDefault(m => m.SocketCode == socketCode);
+                if (processMeta == null)
+                {
+                    log.Error($"未找到 SocketCode={socketCode} 对应的流程");
+                    if (SocketControl.Current.Stream != null)
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                    return;
+                }
+                int index = ProcessMetas.IndexOf(processMeta);
+                ProjectConfig.StepIndex = index;
+                var temp = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(processMeta.FlowTemplate));
+                if (temp != null)
+                {
+                    FlowTemplate.SelectedValue = temp.Value;
+                    RunTemplate();
+                }
+                else
+                {
+                    log.Error($"未找到 FlowTemplate={processMeta.FlowTemplate} 对应的模板");
+                    if (SocketControl.Current.Stream != null)
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(ReturnCode));
+                }
+            });
         }
 
         public string ReturnCode { get; set; }
