@@ -160,6 +160,11 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
     // --- 1. Pre-processing and Focus Measure (gfocus) on GPU ---
     Mat gray_mat(M, N, CV_64FC1, h_pinned_gray);
 
+    // Event to track DMA completion — we must wait for the GPU to finish
+    // reading h_pinned_gray before the CPU overwrites it in the next iteration
+    cudaEvent_t dmaComplete;
+    CUDA_CHECK(cudaEventCreate(&dmaComplete));
+
     for (int i = 0; i < P; ++i) {
         Mat temp_gray;
         if (channels == 3) {
@@ -172,6 +177,9 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
 
         CUDA_CHECK(cudaMemcpyAsync(d_all_gray + i * M * N, h_pinned_gray,
                                    img_size_bytes, cudaMemcpyHostToDevice, stream));
+        // Record event right after DMA — the event fires once the DMA finishes
+        // reading from h_pinned_gray, so the CPU can safely overwrite it
+        CUDA_CHECK(cudaEventRecord(dmaComplete, stream));
 
         dim3 block(16, 16);
         dim3 grid((N + block.x - 1) / block.x, (M + block.y - 1) / block.y);
@@ -180,7 +188,13 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
             d_all_gray + i * M * N, d_gfocus_buffer, M, N, 5);
         gfocus_fm_kernel<<<grid, block, 0, stream>>>(
             d_all_gray + i * M * N, d_gfocus_buffer, d_all_fms + i * M * N, M, N, 5);
+
+        // Wait for DMA to complete before next iteration overwrites h_pinned_gray.
+        // Kernels may still be running (they read d_all_gray, not h_pinned_gray),
+        // so CPU can overlap cvtColor/convertTo with kernel execution.
+        CUDA_CHECK(cudaEventSynchronize(dmaComplete));
     }
+    cudaEventDestroy(dmaComplete);
     CUDA_CHECK(cudaStreamSynchronize(stream));
     print_time("GPU Pre-processing & Focus Measure: ", start_time);
     start_time = std::chrono::steady_clock::now();
@@ -425,16 +439,33 @@ Mat FusionMultiStream(std::vector<Mat> imgs, int STEP, int num_streams = 2) {
 
     // Allocate GPU memory
     double *d_all_gray = nullptr, *d_all_fms = nullptr;
-    double *d_gfocus_buffer = nullptr;
+    // Each stream needs its own gfocus buffer to avoid cross-stream races
+    std::vector<double*> d_gfocus_buffers(num_streams, nullptr);
     cudaMalloc(&d_all_gray, P * img_size_bytes);
     cudaMalloc(&d_all_fms, P * img_size_bytes);
-    cudaMalloc(&d_gfocus_buffer, img_size_bytes);
+    for (int i = 0; i < num_streams; ++i) {
+        cudaMalloc(&d_gfocus_buffers[i], img_size_bytes);
+    }
+
+    // Create per-stream DMA events to sync pinned buffer reuse
+    std::vector<cudaEvent_t> dmaEvents(num_streams);
+    for (int i = 0; i < num_streams; ++i) {
+        cudaEventCreate(&dmaEvents[i]);
+    }
 
     // Process images in parallel using multiple streams
+    // Track how many images each stream has processed, so we know when to sync
+    std::vector<int> stream_image_count(num_streams, 0);
+
     for (int i = 0; i < P; ++i) {
         int stream_id = i % num_streams;
         cudaStream_t stream = streams[stream_id];
         double* pinned = h_pinned[stream_id];
+
+        // Wait for previous DMA on this stream to finish reading from pinned buffer
+        if (stream_image_count[stream_id] > 0) {
+            cudaEventSynchronize(dmaEvents[stream_id]);
+        }
 
         Mat temp_gray;
         if (channels == 3) {
@@ -449,14 +480,17 @@ Mat FusionMultiStream(std::vector<Mat> imgs, int STEP, int num_streams = 2) {
 
         cudaMemcpyAsync(d_all_gray + i * M * N, pinned, img_size_bytes,
                         cudaMemcpyHostToDevice, stream);
+        cudaEventRecord(dmaEvents[stream_id], stream);
 
         dim3 block(16, 16);
         dim3 grid((N + block.x - 1) / block.x, (M + block.y - 1) / block.y);
         // Two-pass gfocus: first compute average into buffer, then compute FM
         gfocus_average_kernel<<<grid, block, 0, stream>>>(
-            d_all_gray + i * M * N, d_gfocus_buffer, M, N, 5);
+            d_all_gray + i * M * N, d_gfocus_buffers[stream_id], M, N, 5);
         gfocus_fm_kernel<<<grid, block, 0, stream>>>(
-            d_all_gray + i * M * N, d_gfocus_buffer, d_all_fms + i * M * N, M, N, 5);
+            d_all_gray + i * M * N, d_gfocus_buffers[stream_id], d_all_fms + i * M * N, M, N, 5);
+
+        stream_image_count[stream_id]++;
     }
 
     // Synchronize all streams
@@ -469,12 +503,13 @@ Mat FusionMultiStream(std::vector<Mat> imgs, int STEP, int num_streams = 2) {
 
     // Cleanup
     for (int i = 0; i < num_streams; ++i) {
+        cudaEventDestroy(dmaEvents[i]);
         cudaFreeHost(h_pinned[i]);
         cudaStreamDestroy(streams[i]);
+        cudaFree(d_gfocus_buffers[i]);
     }
     cudaFree(d_all_gray);
     cudaFree(d_all_fms);
-    cudaFree(d_gfocus_buffer);
 
     // For now, fall back to single-stream version for remaining steps
     return Fusion(imgs, STEP);
