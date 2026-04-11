@@ -15,6 +15,7 @@
 		<NoWarn>CS8002</NoWarn>
 	    <VersionPrefix>1.4.4.16</VersionPrefix> 
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
+		<CETCompat>false</CETCompat>
 	</PropertyGroup>
 	<PropertyGroup>
 		<Copyright>Copyright (C) 2026 ColorVision Corporation</Copyright>
