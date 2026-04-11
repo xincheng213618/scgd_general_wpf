@@ -19,6 +19,7 @@ namespace ColorVision.Database.SqliteLog
     {
         private static SqliteLogManager _instance;
         private static readonly object _locker = new();
+        private readonly object _rotateLocker = new();
         public static SqliteLogManager GetInstance()
         {
             lock (_locker)
@@ -77,6 +78,7 @@ namespace ColorVision.Database.SqliteLog
 
         private const int BatchSize = 200;
         private const int FlushIntervalMs = 2000;
+        private const int DefaultQueueCapacity = 10000;
 
         Hierarchy _hierarchy;
 
@@ -104,7 +106,7 @@ namespace ColorVision.Database.SqliteLog
                 Directory.CreateDirectory(DirectoryPath);
 
                 // 初始化队列
-                _logQueue = new BlockingCollection<LogEntry>(new ConcurrentQueue<LogEntry>());
+                _logQueue = new BlockingCollection<LogEntry>(new ConcurrentQueue<LogEntry>(), DefaultQueueCapacity);
                 _cts = new CancellationTokenSource();
 
                 // 注册 log4net appender
@@ -134,11 +136,20 @@ namespace ColorVision.Database.SqliteLog
                 _logQueue?.CompleteAdding();
                 try
                 {
-                    _writeTask?.Wait(3000);
+                    _writeTask?.Wait(5000);
                 }
                 catch { /* 忽略取消异常 */ }
 
-                _cts?.Cancel();
+                if (_writeTask != null && !_writeTask.IsCompleted)
+                {
+                    _cts?.Cancel();
+                    try
+                    {
+                        _writeTask.Wait(2000);
+                    }
+                    catch { }
+                }
+
                 _cts?.Dispose();
                 _logQueue?.Dispose();
             }
@@ -165,7 +176,7 @@ namespace ColorVision.Database.SqliteLog
         {
             var buffer = new List<LogEntry>(BatchSize);
 
-            while (!_cts.Token.IsCancellationRequested && !_logQueue.IsCompleted)
+            while (!_cts.Token.IsCancellationRequested)
             {
                 try
                 {
@@ -173,6 +184,16 @@ namespace ColorVision.Database.SqliteLog
                     if (_logQueue.TryTake(out entry, FlushIntervalMs, _cts.Token))
                     {
                         buffer.Add(entry);
+                    }
+                    else if (_logQueue.IsCompleted)
+                    {
+                        if (buffer.Count > 0)
+                        {
+                            WriteBatchToDb(buffer);
+                            buffer.Clear();
+                            CheckAndRotateDb();
+                        }
+                        break;
                     }
 
                     if (buffer.Count >= BatchSize || (buffer.Count > 0 && _logQueue.Count == 0))
@@ -186,7 +207,11 @@ namespace ColorVision.Database.SqliteLog
                 }
                 catch (OperationCanceledException)
                 {
-                    if (buffer.Count > 0) WriteBatchToDb(buffer);
+                    if (buffer.Count > 0)
+                    {
+                        WriteBatchToDb(buffer);
+                        buffer.Clear();
+                    }
                     break;
                 }
                 catch (Exception ex)
@@ -220,10 +245,10 @@ namespace ColorVision.Database.SqliteLog
                     db.Insertable(logs).ExecuteCommand();
                     db.CommitTran();
                 }
-                catch
+                catch (Exception ex)
                 {
                     db.RollbackTran();
-                    // 这里可以记录错误，或者尝试写入到备用文本文件
+                    System.Diagnostics.Debug.WriteLine($"[WriteBatchToDb] Insert failed: {ex.Message}");
                 }
 
                 // 关键点：在准备检查文件大小前，强制将 WAL 文件的内容 Checkpoint 回主数据库文件
@@ -239,47 +264,37 @@ namespace ColorVision.Database.SqliteLog
         /// </summary>
         private void CheckAndRotateDb()
         {
-            try
+            lock (_rotateLocker)
             {
-                var fileInfo = new FileInfo(SqliteDbPath);
-                if (!fileInfo.Exists) return;
+                try
+                {
+                    var fileInfo = new FileInfo(SqliteDbPath);
+                    if (!fileInfo.Exists) return;
 
                 // 配置中的 MB 转为 Byte
                 long limitBytes = Config.MaxFileSizeInMB * 1024L * 1024L;
 
-                if (fileInfo.Length > limitBytes)
-                {
+                    if (fileInfo.Length > limitBytes)
+                    {
                     // 1. 确定备份文件名 (例如: SqliteLogs_Backup_20231027_103001.db)
                     string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                     string archiveDbPath = Path.Combine(DirectoryPath, $"SqliteLogs_Backup_{timestamp}.db");
 
-                    // 2. 使用 Copy + Delete 代替 File.Move
-                    //    File.Copy 不需要独占源文件，更安全；即使 Delete 失败也不会丢失归档
-                    const int maxRetries = 3;
-                    for (int i = 0; i < maxRetries; i++)
+                    bool copyOk = TryCopyWithRetry(SqliteDbPath, archiveDbPath, 3);
+                    if (!copyOk)
                     {
-                        try
-                        {
-                            File.Copy(SqliteDbPath, archiveDbPath, overwrite: false);
-                            break;
-                        }
-                        catch (IOException) when (i < maxRetries - 1)
-                        {
-                            Thread.Sleep(200 * (i + 1));
-                        }
+                        System.Diagnostics.Debug.WriteLine("[Rotate] Copy failed, skip current rotation.");
+                        return;
                     }
 
-                    // 3. 删除原始文件（带重试），如果失败则下次轮转时再处理
-                    for (int i = 0; i < maxRetries; i++)
+                    // 3. 优先删除活跃库，失败时做兜底缩容，保证主库体积下降
+                    bool deleted = TryDeleteWithRetry(SqliteDbPath, 3);
+                    if (!deleted)
                     {
-                        try
+                        bool compacted = TruncateAndVacuumActiveDb();
+                        if (!compacted)
                         {
-                            File.Delete(SqliteDbPath);
-                            break;
-                        }
-                        catch (IOException) when (i < maxRetries - 1)
-                        {
-                            Thread.Sleep(200 * (i + 1));
+                            System.Diagnostics.Debug.WriteLine("[Rotate] Delete and compact both failed; active db size may remain large.");
                         }
                     }
 
@@ -291,12 +306,76 @@ namespace ColorVision.Database.SqliteLog
 
                     // 5. 启动后台任务处理旧文件（压缩或删除），不阻塞当前的写入流程
                     // 必须传参进去，因为 archiveDbPath 是局部变量
-                    Task.Run(() => ProcessRotatedFile(archiveDbPath));
+                        Task.Run(() => ProcessRotatedFile(archiveDbPath));
+                    }
                 }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Rotate] Failed: {ex.Message}");
+                }
+            }
+        }
+
+        private static bool TryCopyWithRetry(string sourcePath, string targetPath, int maxRetries)
+        {
+            for (int i = 0; i < maxRetries; i++)
+            {
+                try
+                {
+                    File.Copy(sourcePath, targetPath, overwrite: false);
+                    return true;
+                }
+                catch (IOException) when (i < maxRetries - 1)
+                {
+                    Thread.Sleep(200 * (i + 1));
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryDeleteWithRetry(string path, int maxRetries)
+        {
+            for (int i = 0; i < maxRetries; i++)
+            {
+                try
+                {
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                    }
+
+                    return !File.Exists(path);
+                }
+                catch (IOException) when (i < maxRetries - 1)
+                {
+                    Thread.Sleep(200 * (i + 1));
+                }
+                catch (UnauthorizedAccessException) when (i < maxRetries - 1)
+                {
+                    Thread.Sleep(200 * (i + 1));
+                }
+            }
+
+            return !File.Exists(path);
+        }
+
+        private static bool TruncateAndVacuumActiveDb()
+        {
+            try
+            {
+                using var db = CreateDbClient();
+                db.CodeFirst.InitTables<LogEntry>();
+                db.Ado.ExecuteCommand("PRAGMA busy_timeout=3000;");
+                db.Ado.ExecuteCommand("PRAGMA wal_checkpoint(TRUNCATE);");
+                db.Ado.ExecuteCommand("DELETE FROM LogEntry;");
+                db.Ado.ExecuteCommand("VACUUM;");
+                return true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Rotate] Failed: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[Rotate] Truncate+VACUUM failed: {ex.Message}");
+                return false;
             }
         }
 
@@ -337,10 +416,41 @@ namespace ColorVision.Database.SqliteLog
                         File.Delete(filePath);
                     }
                 }
+
+                CleanupOverflowArchives();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[ProcessRotatedFile] Failed: {ex.Message}");
+            }
+        }
+
+        private static void CleanupOverflowArchives()
+        {
+            try
+            {
+                int keepCount = Math.Max(1, Config.MaxArchiveFiles);
+                var archives = GetArchiveFiles();
+                if (archives.Count <= keepCount) return;
+
+                for (int i = keepCount; i < archives.Count; i++)
+                {
+                    try
+                    {
+                        if (File.Exists(archives[i]))
+                        {
+                            File.Delete(archives[i]);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[CleanupOverflowArchives] Delete failed: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[CleanupOverflowArchives] Failed: {ex.Message}");
             }
         }
 
