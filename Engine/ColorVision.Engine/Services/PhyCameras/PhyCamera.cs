@@ -96,14 +96,13 @@ namespace ColorVision.Engine.Services.PhyCameras
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
         {            
             Config = ServiceObjectBaseExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
-            DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
+            DeleteCommand = new RelayCommand(a => Delete());
             EditCommand = new RelayCommand(a =>
             {
-                EditPhyCamera window = new EditPhyCamera(this);
-                window.Owner = Application.Current.GetActiveWindow();
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowDialog();
-            },a => AccessControl.Check(PermissionMode.Administrator));
+                var propertyEditorWindow = new PropertyEditorWindow(Config, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                propertyEditorWindow.Submited += (s, e) => Save();
+                propertyEditorWindow.ShowDialog();
+            });
 
 
             CopyConfigCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(Config.ToJsonN()));
@@ -113,7 +112,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id);
 
-            ResetCommand = new RelayCommand(a => Reset(), a => AccessControl.Check(PermissionMode.Administrator));
+            ResetCommand = new RelayCommand(a => Reset());
 
             CalibrationEditCommand = new RelayCommand(a =>
             {
