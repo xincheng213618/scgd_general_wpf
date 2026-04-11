@@ -51,6 +51,14 @@ namespace ProjectARVRPro.Services
             }
 
             //现在先切换PG
+
+            //如果开启了UseLegacyARVROutput，则说明第一个ProcessMeta是LegacyARVROutput，不参与测试流程，所以需要+1
+            if (ViewResultManager.GetInstance().Config.UseLegacyARVROutput)
+            {
+                firstEnabledIndex = firstEnabledIndex + 1;
+            }
+            
+
             return new SocketResponse() { MsgID = request.MsgID, EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = firstEnabledIndex } };
         }
     }

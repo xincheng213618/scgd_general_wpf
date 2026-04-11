@@ -58,6 +58,11 @@ namespace ProjectARVRPro
         [DisplayName("Text保存路径"), PropertyEditorType(typeof(TextSelectFolderPropertiesEditor)), Category("ARVR")]
         public string TextSavePath { get => _TextSavePath; set { _TextSavePath = value; OnPropertyChanged(); } }
         private string _TextSavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ARVR");
+
+        [DisplayName("输出旧版ARVR格式"), Category("ARVR")]
+        [Description("启用后，CSV和Socket输出将使用旧版ProjectARVR扁平格式，保持对方系统兼容")]
+        public bool UseLegacyARVROutput { get => _UseLegacyARVROutput; set { _UseLegacyARVROutput = value; OnPropertyChanged(); } }
+        private bool _UseLegacyARVROutput;
     }
 
     public class ViewResultManager : ViewModelBase,IDisposable
