@@ -177,11 +177,13 @@
     <ClInclude Include="cudamath.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Fusion.h" />
+    <ClInclude Include="native_log.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="cuda_export.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="native_log.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
