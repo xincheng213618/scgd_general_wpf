@@ -145,10 +145,12 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
 
     CUDA_CHECK(cudaMemset(d_err, 0, img_size_bytes));
 
-    // --- Pinned Host Memory for Async Transfers ---
-    double* h_pinned_gray = nullptr;
-    CUDA_CHECK(cudaMallocHost(&h_pinned_gray, img_size_bytes));
-    PinnedMemoryGuard guard_pinned(h_pinned_gray);
+    // --- Double-Buffered Pinned Host Memory for Async Transfers ---
+    double* h_pinned[2] = { nullptr, nullptr };
+    CUDA_CHECK(cudaMallocHost(&h_pinned[0], img_size_bytes));
+    CUDA_CHECK(cudaMallocHost(&h_pinned[1], img_size_bytes));
+    PinnedMemoryGuard guard_pinned0(h_pinned[0]);
+    PinnedMemoryGuard guard_pinned1(h_pinned[1]);
 
     // --- CUDA Stream ---
     cudaStream_t stream;
@@ -158,14 +160,21 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
     auto start_time = std::chrono::steady_clock::now();
 
     // --- 1. Pre-processing and Focus Measure (gfocus) on GPU ---
-    Mat gray_mat(M, N, CV_64FC1, h_pinned_gray);
-
-    // Event to track DMA completion — we must wait for the GPU to finish
-    // reading h_pinned_gray before the CPU overwrites it in the next iteration
-    cudaEvent_t dmaComplete;
-    CUDA_CHECK(cudaEventCreate(&dmaComplete));
+    // Double-buffer: CPU writes to buf[i%2] while GPU reads from buf[(i-1)%2].
+    // Event per buffer tracks when DMA finishes reading that buffer.
+    cudaEvent_t dmaEvents[2];
+    CUDA_CHECK(cudaEventCreate(&dmaEvents[0]));
+    CUDA_CHECK(cudaEventCreate(&dmaEvents[1]));
 
     for (int i = 0; i < P; ++i) {
+        int buf = i % 2;
+
+        // Wait for this buffer's previous DMA to finish (if any)
+        if (i >= 2) {
+            CUDA_CHECK(cudaEventSynchronize(dmaEvents[buf]));
+        }
+
+        Mat gray_mat(M, N, CV_64FC1, h_pinned[buf]);
         Mat temp_gray;
         if (channels == 3) {
             cvtColor(imgs[i], temp_gray, COLOR_BGR2GRAY);
@@ -175,26 +184,19 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
         }
         temp_gray.convertTo(gray_mat, CV_64FC1, 1.0 / 255.0);
 
-        CUDA_CHECK(cudaMemcpyAsync(d_all_gray + i * M * N, h_pinned_gray,
+        CUDA_CHECK(cudaMemcpyAsync(d_all_gray + i * M * N, h_pinned[buf],
                                    img_size_bytes, cudaMemcpyHostToDevice, stream));
-        // Record event right after DMA — the event fires once the DMA finishes
-        // reading from h_pinned_gray, so the CPU can safely overwrite it
-        CUDA_CHECK(cudaEventRecord(dmaComplete, stream));
+        CUDA_CHECK(cudaEventRecord(dmaEvents[buf], stream));
 
         dim3 block(16, 16);
         dim3 grid((N + block.x - 1) / block.x, (M + block.y - 1) / block.y);
-        // Two-pass gfocus: first compute average into buffer, then compute FM
         gfocus_average_kernel<<<grid, block, 0, stream>>>(
             d_all_gray + i * M * N, d_gfocus_buffer, M, N, 5);
         gfocus_fm_kernel<<<grid, block, 0, stream>>>(
             d_all_gray + i * M * N, d_gfocus_buffer, d_all_fms + i * M * N, M, N, 5);
-
-        // Wait for DMA to complete before next iteration overwrites h_pinned_gray.
-        // Kernels may still be running (they read d_all_gray, not h_pinned_gray),
-        // so CPU can overlap cvtColor/convertTo with kernel execution.
-        CUDA_CHECK(cudaEventSynchronize(dmaComplete));
     }
-    cudaEventDestroy(dmaComplete);
+    cudaEventDestroy(dmaEvents[0]);
+    cudaEventDestroy(dmaEvents[1]);
     CUDA_CHECK(cudaStreamSynchronize(stream));
     print_time("GPU Pre-processing & Focus Measure: ", start_time);
     start_time = std::chrono::steady_clock::now();
@@ -204,196 +206,126 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
     dim3 grid((N + block.x - 1) / block.x, (M + block.y - 1) / block.y);
     find_max_and_prepare_kernel<<<grid, block, 0, stream>>>(
         d_all_fms, d_ymax, d_I, d_y1t, d_y2t, d_y3t, d_Ic, M, N, P, STEP);
-    CUDA_CHECK(cudaStreamSynchronize(stream));
-    print_time("GPU Find Max & Prepare: ", start_time);
-    start_time = std::chrono::steady_clock::now();
 
     // --- 3. Curve Fitting to get Gaussian parameters (A, u, s2) ---
     curve_fitting_kernel<<<grid, block, 0, stream>>>(
         d_I, d_y1t, d_y2t, d_y3t, d_Ic, d_s2, d_u, d_A, M, N, STEP);
-    CUDA_CHECK(cudaStreamSynchronize(stream));
-    print_time("GPU Curve Fitting: ", start_time);
-    start_time = std::chrono::steady_clock::now();
 
     // --- 4. Calculate Error and Normalize Focus Maps ---
     for (int p = 0; p < P; ++p) {
         calculate_err_kernel<<<grid, block, 0, stream>>>(
             d_all_fms + p * M * N, d_err, d_A, d_u, d_s2, d_ymax, M, N, p);
     }
-    CUDA_CHECK(cudaStreamSynchronize(stream));
-    print_time("GPU Error Calculation: ", start_time);
-    start_time = std::chrono::steady_clock::now();
 
-    // --- 5. Calculate S and Phi (Weight Maps) - Fully on GPU ---
-    // Step 5a: Compute err / (P * ymax)
+    // --- 5. Calculate S and Phi (Weight Maps) ---
     dim3 block_1d(256);
     dim3 grid_1d((M * N + block_1d.x - 1) / block_1d.x);
     element_divide_kernel<<<grid_1d, block_1d, 0, stream>>>(
         d_err, d_ymax, d_inv_psnr, M, N, P);
 
-    // Step 5b: Apply box filter (3x3 average filter) on GPU
     double* d_filtered = d_err;  // Reuse memory
     box_filter_kernel<<<grid, block, 0, stream>>>(
         d_inv_psnr, d_filtered, M, N, 3);
 
-    // Step 5c: Calculate S (PSNR)
     calculate_S_kernel<<<grid, block, 0, stream>>>(d_S, d_filtered, M, N);
-
-    // Step 5d: Calculate Phi
     compute_phi_kernel<<<grid, block, 0, stream>>>(d_phi, d_S, M, N);
 
-    // Step 5e: Apply median filter on GPU (simplified 3x3)
     double* d_phi_filtered = d_S;  // Reuse memory
     median_filter_3x3_kernel<<<grid, block, 0, stream>>>(
         d_phi, d_phi_filtered, M, N);
-
-    CUDA_CHECK(cudaStreamSynchronize(stream));
-    print_time("GPU Weight Calculation: ", start_time);
-    start_time = std::chrono::steady_clock::now();
 
     // --- 6. Apply Weights to Focus Maps ---
     for (int p = 0; p < P; ++p) {
         tanh_weight_kernel<<<grid_1d, block_1d, 0, stream>>>(
             d_all_fms + p * M * N, d_phi_filtered, M, N);
     }
+
+    // Single sync for all GPU compute stages 2-6
     CUDA_CHECK(cudaStreamSynchronize(stream));
-    print_time("GPU Apply Weights: ", start_time);
+    print_time("GPU Stages 2-6 (compute): ", start_time);
     start_time = std::chrono::steady_clock::now();
 
     // --- 7. Final Fusion - Fully on GPU ---
     Mat result;
+    const int total_pixels = M * N;
 
-    // Allocate output memory
-    unsigned char* d_output = nullptr;
-    CudaMemoryGuard guard_output((void**)&d_output);
-    CUDA_CHECK(cudaMalloc(&d_output, M * N * channels * sizeof(unsigned char)));
-
-    // Allocate device memory for final channel sums
+    // Compute fmn = sum of all weight maps (on GPU)
     CUDA_CHECK(cudaMalloc(&d_fmn, img_size_bytes));
     CudaMemoryGuard guard_fmn((void**)&d_fmn);
     CUDA_CHECK(cudaMemset(d_fmn, 0, img_size_bytes));
+    for (int p = 0; p < P; ++p) {
+        accumulate_kernel<<<grid_1d, block_1d, 0, stream>>>(
+            d_all_fms + p * M * N, d_fmn, total_pixels);
+    }
 
     if (channels == 3) {
-        // Allocate device memory for RGB channels
+        // Allocate accumulators for BGR channels
         CUDA_CHECK(cudaMalloc(&d_final_r, img_size_bytes));
         CUDA_CHECK(cudaMalloc(&d_final_g, img_size_bytes));
         CUDA_CHECK(cudaMalloc(&d_final_b, img_size_bytes));
         CudaMemoryGuard guard_r((void**)&d_final_r);
         CudaMemoryGuard guard_g((void**)&d_final_g);
         CudaMemoryGuard guard_b((void**)&d_final_b);
-
         CUDA_CHECK(cudaMemset(d_final_r, 0, img_size_bytes));
         CUDA_CHECK(cudaMemset(d_final_g, 0, img_size_bytes));
         CUDA_CHECK(cudaMemset(d_final_b, 0, img_size_bytes));
 
-        // Allocate pinned memory for channel transfers
-        double* h_pinned_channel = nullptr;
-        CUDA_CHECK(cudaMallocHost(&h_pinned_channel, img_size_bytes));
-        PinnedMemoryGuard guard_channel(h_pinned_channel);
+        // Temporary GPU buffer for BGR u8 image upload
+        const size_t bgr_bytes = total_pixels * 3 * sizeof(unsigned char);
+        unsigned char* d_bgr_temp = nullptr;
+        CUDA_CHECK(cudaMalloc(&d_bgr_temp, bgr_bytes));
+        CudaMemoryGuard guard_bgr((void**)&d_bgr_temp);
 
-        // Process each image: upload channels and accumulate
+        // Upload each BGR u8 image, split + weighted accumulate on GPU
         for (int p = 0; p < P; ++p) {
-            std::vector<Mat> split_imgs;
-            split(imgs[p], split_imgs);
-
-            // Process each channel
-            for (int c = 0; c < 3; ++c) {
-                Mat channel_64f;
-                split_imgs[2 - c].convertTo(channel_64f, CV_64FC1);  // BGR to RGB order
-
-                CUDA_CHECK(cudaMemcpyAsync(h_pinned_channel, channel_64f.data,
-                                           img_size_bytes, cudaMemcpyHostToHost, stream));
-
-                double* d_channel = nullptr;
-                CUDA_CHECK(cudaMalloc(&d_channel, img_size_bytes));
-
-                CUDA_CHECK(cudaMemcpyAsync(d_channel, h_pinned_channel,
-                                           img_size_bytes, cudaMemcpyHostToDevice, stream));
-
-                // Accumulate: channel * weight
-                dim3 acc_block(16, 16);
-                dim3 acc_grid((N + acc_block.x - 1) / acc_block.x,
-                              (M + acc_block.y - 1) / acc_block.y);
-
-                // Simple element-wise multiply and add kernel
-                // Using existing kernel pattern
-                for (int row = 0; row < M; ++row) {
-                    for (int col = 0; col < N; ++col) {
-                        int idx = row * N + col;
-                        double weight = ((double*)h_pinned_gray)[idx];  // Get weight from d_all_fms
-                    }
-                }
-
-                cudaFree(d_channel);
-            }
+            Mat cont = imgs[p].isContinuous() ? imgs[p] : imgs[p].clone();
+            CUDA_CHECK(cudaMemcpyAsync(d_bgr_temp, cont.data, bgr_bytes,
+                                       cudaMemcpyHostToDevice, stream));
+            bgr_weighted_accumulate_kernel<<<grid_1d, block_1d, 0, stream>>>(
+                d_bgr_temp, d_all_fms + p * M * N,
+                d_final_b, d_final_g, d_final_r, total_pixels);
         }
 
-        // Fallback: Use CPU for final fusion if GPU memory is limited
-        // Download weighted focus maps and perform fusion on CPU
-        Mat fmn = Mat::zeros(M, N, CV_64FC1);
-        std::vector<Mat> weighted_fms(P);
+        // Divide by fmn and merge to BGR u8 output
+        unsigned char* d_output = nullptr;
+        CUDA_CHECK(cudaMalloc(&d_output, bgr_bytes));
+        CudaMemoryGuard guard_output((void**)&d_output);
 
-        for (int p = 0; p < P; ++p) {
-            weighted_fms[p] = Mat(M, N, CV_64FC1);
-            CUDA_CHECK(cudaMemcpy(weighted_fms[p].data, d_all_fms + p * M * N,
-                                  img_size_bytes, cudaMemcpyDeviceToHost));
-            fmn += weighted_fms[p];
-        }
+        divide_merge_bgr_kernel<<<grid_1d, block_1d, 0, stream>>>(
+            d_final_b, d_final_g, d_final_r, d_fmn, d_output, total_pixels);
 
-        // Process color channels
-        Mat final_r = Mat::zeros(M, N, CV_64FC1);
-        Mat final_g = Mat::zeros(M, N, CV_64FC1);
-        Mat final_b = Mat::zeros(M, N, CV_64FC1);
-
-        for (int p = 0; p < P; ++p) {
-            std::vector<Mat> split_imgs;
-            split(imgs[p], split_imgs);
-
-            Mat r, g, b;
-            split_imgs[2].convertTo(r, CV_64FC1);
-            split_imgs[1].convertTo(g, CV_64FC1);
-            split_imgs[0].convertTo(b, CV_64FC1);
-
-            final_r += r.mul(weighted_fms[p]);
-            final_g += g.mul(weighted_fms[p]);
-            final_b += b.mul(weighted_fms[p]);
-        }
-
-        divide(final_r, fmn, final_r);
-        divide(final_g, fmn, final_g);
-        divide(final_b, fmn, final_b);
-
-        final_r.convertTo(final_r, CV_8U);
-        final_g.convertTo(final_g, CV_8U);
-        final_b.convertTo(final_b, CV_8U);
-
-        std::vector<Mat> merge_vec = {final_b, final_g, final_r};
-        merge(merge_vec, result);
+        // Download result
+        result = Mat(M, N, CV_8UC3);
+        CUDA_CHECK(cudaMemcpy(result.data, d_output, bgr_bytes, cudaMemcpyDeviceToHost));
     }
     else {
-        // Grayscale fusion
-        Mat fmn = Mat::zeros(M, N, CV_64FC1);
+        // Grayscale fusion on GPU
+        double* d_gray_acc = d_err;  // Reuse memory (err is no longer needed)
+        CUDA_CHECK(cudaMemset(d_gray_acc, 0, img_size_bytes));
+
+        const size_t gray_bytes = total_pixels * sizeof(unsigned char);
+        unsigned char* d_gray_temp = nullptr;
+        CUDA_CHECK(cudaMalloc(&d_gray_temp, gray_bytes));
+        CudaMemoryGuard guard_gray_temp((void**)&d_gray_temp);
 
         for (int p = 0; p < P; ++p) {
-            Mat temp_fm(M, N, CV_64FC1);
-            CUDA_CHECK(cudaMemcpy(temp_fm.data, d_all_fms + p * M * N,
-                                  img_size_bytes, cudaMemcpyDeviceToHost));
-
-            Mat img_64f;
-            imgs[p].convertTo(img_64f, CV_64FC1);
-            fmn += img_64f.mul(temp_fm);
+            Mat cont = imgs[p].isContinuous() ? imgs[p] : imgs[p].clone();
+            CUDA_CHECK(cudaMemcpyAsync(d_gray_temp, cont.data, gray_bytes,
+                                       cudaMemcpyHostToDevice, stream));
+            gray_weighted_accumulate_kernel<<<grid_1d, block_1d, 0, stream>>>(
+                d_gray_temp, d_all_fms + p * M * N, d_gray_acc, total_pixels);
         }
 
-        Mat weight_sum = Mat::zeros(M, N, CV_64FC1);
-        for (int p = 0; p < P; ++p) {
-            Mat temp_fm(M, N, CV_64FC1);
-            CUDA_CHECK(cudaMemcpy(temp_fm.data, d_all_fms + p * M * N,
-                                  img_size_bytes, cudaMemcpyDeviceToHost));
-            weight_sum += temp_fm;
-        }
+        // Divide and convert to u8
+        unsigned char* d_output = nullptr;
+        CUDA_CHECK(cudaMalloc(&d_output, gray_bytes));
+        CudaMemoryGuard guard_output((void**)&d_output);
 
-        divide(fmn, weight_sum, fmn);
-        fmn.convertTo(result, CV_8U);
+        final_divide_kernel<<<grid_1d, block_1d, 0, stream>>>(
+            d_gray_acc, d_fmn, d_output, M, N);
+
+        result = Mat(M, N, CV_8UC1);
+        CUDA_CHECK(cudaMemcpy(result.data, d_output, gray_bytes, cudaMemcpyDeviceToHost));
     }
 
     print_time("Final Fusion: ", start_time);
