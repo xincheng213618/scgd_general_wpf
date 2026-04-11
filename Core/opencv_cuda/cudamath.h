@@ -54,15 +54,16 @@ inline HOD double dev_abs(double x)
 }
 
 // ============================================================================
-// Kernel 1: Focus Measure (gfocus) - Box Filter Based
+// Kernel 1a: Focus Measure - Box Filter Average (first pass of gfocus)
+// Computes U = box_filter(src), storing result in buffer.
+// Must complete before gfocus_fm_kernel reads buffer.
 // ============================================================================
-__global__ void gfocus_kernel(const double* src, double* dst, double* buffer, int M, int N, int KERNEL_SIZE)
+__global__ void gfocus_average_kernel(const double* src, double* buffer, int M, int N, int KERNEL_SIZE)
 {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
     int row = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (row < M && col < N) {
-        // First pass: box filter for averaging (U)
         double sum = 0.0;
         int half_k = KERNEL_SIZE / 2;
         int count = 0;
@@ -77,12 +78,24 @@ __global__ void gfocus_kernel(const double* src, double* dst, double* buffer, in
                 }
             }
         }
-        double u = sum / count;
-        buffer[row * N + col] = u;
+        buffer[row * N + col] = sum / count;
+    }
+}
 
-        // Second pass: compute focus measure
-        sum = 0.0;
-        count = 0;
+// ============================================================================
+// Kernel 1b: Focus Measure - Variance (second pass of gfocus)
+// Reads fully-populated buffer (average), computes FM = box_filter((src - U)^2)
+// ============================================================================
+__global__ void gfocus_fm_kernel(const double* src, const double* buffer, double* dst, int M, int N, int KERNEL_SIZE)
+{
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (row < M && col < N) {
+        double sum = 0.0;
+        int half_k = KERNEL_SIZE / 2;
+        int count = 0;
+
         for (int r = -half_k; r <= half_k; ++r) {
             for (int c = -half_k; c <= half_k; ++c) {
                 int cur_r = row + r;
@@ -203,7 +216,7 @@ __global__ void calculate_err_kernel(
     double* Ymax, int M, int N, int p)
 {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockIdx.x + threadIdx.x;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
     int idx = row * N + col;
 
     if (row < M && col < N) {

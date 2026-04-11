@@ -175,9 +175,11 @@ Mat Fusion(std::vector<Mat> imgs, int STEP) {
 
         dim3 block(16, 16);
         dim3 grid((N + block.x - 1) / block.x, (M + block.y - 1) / block.y);
-        gfocus_kernel<<<grid, block, 0, stream>>>(
-            d_all_gray + i * M * N, d_all_fms + i * M * N,
-            d_gfocus_buffer, M, N, 5);
+        // Two-pass gfocus: first compute average into buffer, then compute FM
+        gfocus_average_kernel<<<grid, block, 0, stream>>>(
+            d_all_gray + i * M * N, d_gfocus_buffer, M, N, 5);
+        gfocus_fm_kernel<<<grid, block, 0, stream>>>(
+            d_all_gray + i * M * N, d_gfocus_buffer, d_all_fms + i * M * N, M, N, 5);
     }
     CUDA_CHECK(cudaStreamSynchronize(stream));
     print_time("GPU Pre-processing & Focus Measure: ", start_time);
@@ -423,8 +425,10 @@ Mat FusionMultiStream(std::vector<Mat> imgs, int STEP, int num_streams = 2) {
 
     // Allocate GPU memory
     double *d_all_gray = nullptr, *d_all_fms = nullptr;
+    double *d_gfocus_buffer = nullptr;
     cudaMalloc(&d_all_gray, P * img_size_bytes);
     cudaMalloc(&d_all_fms, P * img_size_bytes);
+    cudaMalloc(&d_gfocus_buffer, img_size_bytes);
 
     // Process images in parallel using multiple streams
     for (int i = 0; i < P; ++i) {
@@ -448,9 +452,11 @@ Mat FusionMultiStream(std::vector<Mat> imgs, int STEP, int num_streams = 2) {
 
         dim3 block(16, 16);
         dim3 grid((N + block.x - 1) / block.x, (M + block.y - 1) / block.y);
-        gfocus_kernel<<<grid, block, 0, stream>>>(
-            d_all_gray + i * M * N, d_all_fms + i * M * N,
-            d_all_gray, M, N, 5);
+        // Two-pass gfocus: first compute average into buffer, then compute FM
+        gfocus_average_kernel<<<grid, block, 0, stream>>>(
+            d_all_gray + i * M * N, d_gfocus_buffer, M, N, 5);
+        gfocus_fm_kernel<<<grid, block, 0, stream>>>(
+            d_all_gray + i * M * N, d_gfocus_buffer, d_all_fms + i * M * N, M, N, 5);
     }
 
     // Synchronize all streams
@@ -468,6 +474,7 @@ Mat FusionMultiStream(std::vector<Mat> imgs, int STEP, int num_streams = 2) {
     }
     cudaFree(d_all_gray);
     cudaFree(d_all_fms);
+    cudaFree(d_gfocus_buffer);
 
     // For now, fall back to single-stream version for remaining steps
     return Fusion(imgs, STEP);
