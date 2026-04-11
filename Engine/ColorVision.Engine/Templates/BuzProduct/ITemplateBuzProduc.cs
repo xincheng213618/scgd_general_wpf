@@ -261,7 +261,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
                 {
                     if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(T)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                     {
-                        MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
+                        MySqlControl.BatchExecuteNonQuery(mysqlCommand.GetRecover());
                     }
                 }
             }

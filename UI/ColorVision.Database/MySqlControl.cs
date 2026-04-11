@@ -26,12 +26,6 @@ namespace ColorVision.Database
 
         public MySqlControl()
         {
-            Task.Run(async () => 
-            {
-                await Task.Delay(10000); // 等待配置加载完成
-                MySqlLocalServicesManager.GetInstance();
-            });
-            //修复管理员权限下bulk创建文件权限错误的问题
             StaticConfig.BulkCopy_MySqlCsvPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ColorVision", "bulkcopyfiles");
         }
 
@@ -212,43 +206,7 @@ namespace ColorVision.Database
             }
         }
 
-
-        public List<string> GetTableNames()
-        {
-            var dbName = MySqlSetting.Instance.MySqlConfig.Database;
-            var sql = @"SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @dbName AND TABLE_TYPE = 'BASE TABLE'";
-            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-            var result = DB.Ado.SqlQuery<string>(sql, new { dbName });
-            return result;
-        }
-
-        public List<string> GetFilteredResourceTableNames()
-        {
-            var tableNames = GetTableNames();
-            var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_sys_mqtt_cfg", "t_scgd_rc", "t_scgd_sys_version"  };
-            return tableNames
-                .Where(name => !prefixes.Any(prefix => name.StartsWith(prefix, StringComparison.CurrentCulture)))
-                .ToList();
-        }
-
-
-        public int ExecuteNonQuery(string sql, Dictionary<string, object>? param = null)
-        {
-            try
-            {
-                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
-
-                return param == null
-                    ? DB.Ado.ExecuteCommand(sql)
-                    : DB.Ado.ExecuteCommand(sql, param);
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-                return -1;
-            }
-        }
-        public int BatchExecuteNonQuery(string sqlBatch)
+        public static  int BatchExecuteNonQuery(string sqlBatch)
         {
             var statements = sqlBatch.Split(';', StringSplitOptions.RemoveEmptyEntries);
             int totalCount = 0;
