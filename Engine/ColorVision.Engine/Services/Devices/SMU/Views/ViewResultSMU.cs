@@ -151,7 +151,6 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             }
             else
             {
-                endVal = endVal / 1000;
                 xMin = IMin - IMin / step;
                 xMax = endVal + IMax / step;
                 yMin = VMin - VMin / step;
