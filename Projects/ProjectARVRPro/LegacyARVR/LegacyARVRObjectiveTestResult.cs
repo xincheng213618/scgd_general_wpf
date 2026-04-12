@@ -206,9 +206,9 @@ namespace ProjectARVRPro.LegacyARVR
             legacy.MTF_V_LeftDown_0_8F = Convert(FindDynamic(src, "MTFV", "MTF_V_LeftDown_0_8F"));
 
             // OpticCenter → XTilt, YTilt, Rotation
-            legacy.XTilt = Convert(src.OpticCenterTestResult?.ImageCenterXTilt ?? src.OpticCenterTestResult?.OptCenterXTilt);
-            legacy.YTilt = Convert(src.OpticCenterTestResult?.ImageCenterYTilt ?? src.OpticCenterTestResult?.OptCenterYTilt);
-            legacy.Rotation = Convert(src.OpticCenterTestResult?.ImageCenterRotation ?? src.OpticCenterTestResult?.OptCenterRotation);
+            legacy.XTilt = Convert(src.OpticCenterTestResult?.OptCenterXTilt ?? src.OpticCenterTestResult?.OptCenterXTilt);
+            legacy.YTilt = Convert(src.OpticCenterTestResult?.OptCenterYTilt ?? src.OpticCenterTestResult?.OptCenterYTilt);
+            legacy.Rotation = Convert(src.OpticCenterTestResult?.OptCenterRotation ?? src.OpticCenterTestResult?.OptCenterRotation);
 
             // Ghost: 新版无此数据
             legacy.Ghost = null;

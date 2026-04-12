@@ -142,7 +142,7 @@
       <EnableUAC>false</EnableUAC>
     </Link>
     <CudaCompile>
-      <CodeGeneration>compute_60,sm_60</CodeGeneration>
+      <CodeGeneration>compute_60,sm_60;compute_70,sm_70;compute_75,sm_75;compute_80,sm_80;compute_86,sm_86;compute_89,sm_89;compute_89,compute_89</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -168,7 +168,7 @@
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
     <CudaCompile>
-      <CodeGeneration>compute_60,sm_60</CodeGeneration>
+      <CodeGeneration>compute_60,sm_60;compute_70,sm_70;compute_75,sm_75;compute_80,sm_80;compute_86,sm_86;compute_89,sm_89;compute_89,compute_89</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
