@@ -618,6 +618,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msgRecord.MsgReturn.Data));
                                 string mapName = Device.Code;
                                 if (pm_live.IsLocal) mapName = pm_live.MapName;
+                                if (string.IsNullOrEmpty(mapName))
+                                {
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), "CameraID is empty, cannot start video", "ColorVision");
+                                    DService.IsVideoOpen = false;
+                                    return;
+                                }
                                 Device.CameraVideoControl.Startup(mapName, View.ImageView);
 
                                 DService.IsVideoOpen = true;
@@ -1097,6 +1103,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             }
                         }
                     }
+                }
+                if (string.IsNullOrEmpty(Device.Config.CameraID))
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "CameraID is empty, please check CameraCode configuration", "ColorVision");
+                    return;
                 }
                 cvCameraCSLib.CM_SetCameraID(m_hCamHandle, Device.Config.CameraID);
                 cvCameraCSLib.CM_SetTakeImageMode(m_hCamHandle, TakeImageMode.Live);

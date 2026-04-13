@@ -608,6 +608,7 @@ public double[] GetCachedFrequency(string key)
 
 ## 相关资源
 
+- [ProjectARVRPro 项目文档](../../../05-resources/project-structure/project-arvrpro.md)
 - [Templates架构设计](./Templates架构设计.md)
 - [Templates API参考](./Templates-API参考.md)
 - [POI模板详解](./POI模板详解.md)

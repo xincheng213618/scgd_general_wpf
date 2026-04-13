@@ -30,7 +30,7 @@
 | └─ EventVWR/ | 事件查看 | [使用标准插件](../plugins/using-standard-plugins/使用标准插件.md) | 事件查看器 |
 | └─ ScreenRecorder/ | 屏幕录制 | - | 录屏功能 |
 | └─ WindowsServicePlugin/ | 服务插件 | - | Windows服务 |
-| **Projects/** | 客户项目 | 各项目README.md | 定制化项目 |
+| **Projects/** | 客户项目 | [ProjectARVRPro](./project-arvrpro.md) | 定制化项目与客户专案实现 |
 | **Core/** | 底层库 | - | C++底层库 |
 | **Test/** | 测试 | - | 单元测试 |
 | **Tools/** | 工具 | - | 辅助工具 |
