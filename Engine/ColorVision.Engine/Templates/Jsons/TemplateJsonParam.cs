@@ -24,15 +24,12 @@ namespace ColorVision.Engine.Templates.Jsons
         [JsonIgnore]
         public RelayCommand CheckCommand { get; set; }
 
-        public RelayCommand OpenEditToolCommand { get; set; }
-
         public string Description { get;  }
 
         public TemplateJsonParam()
         {
             TemplateJsonModel = new ModMasterModel();
             ResetCommand = new RelayCommand((a) => ResetValue());
-            OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
             CheckCommand = new RelayCommand(a => Check());
             Description = "Json配置";
         }
@@ -41,32 +38,12 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             TemplateJsonModel = templateJsonModel;
             ResetCommand = new RelayCommand((a) => ResetValue());
-            OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
             CheckCommand = new RelayCommand(a => Check());
         }
 
         public void Check()
         {
             JsonValueChanged?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void OpenEditTool()
-        {
-            Common.NativeMethods.Clipboard.SetText(JsonValue);
-            // 获取程序运行路径
-            string basePath = AppDomain.CurrentDomain.BaseDirectory;
-
-            // 相对文件路径
-            string relativePath = @"Assets/Tool/EditJson/Editjson.html";
-
-            // 合并路径并获取绝对路径
-            string absolutePath = Path.Combine(basePath, relativePath);
-
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = absolutePath,
-                UseShellExecute = true // 使用默认应用程序打开
-            });
         }
 
         public void ResetValue()

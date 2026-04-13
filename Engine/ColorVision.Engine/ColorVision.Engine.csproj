@@ -184,41 +184,11 @@
 		<None Update="Assets\Tool\CommMonitor.exe">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="Assets\Tool\EditJson\Editjson.html">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\1.1e5f7c84.chunk.css">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\1.3f513c69.chunk.js.下载">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\hm.js.下载">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\jEditor.4237ac39.js.下载">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\jEditor.dcca8ce4.css">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\translateSandbox%281%29.html">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\translateSandbox.html">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\UrlChangeTracker.js.下载">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 		<None Update="Assets\Tool\SpectrAdj.exe">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="Assets\Tool\sscom5.13.1.exe">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\static\media\jsoneditor-icons.15f2789d.svg">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="Assets\Tool\UsbTreeView.exe">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
