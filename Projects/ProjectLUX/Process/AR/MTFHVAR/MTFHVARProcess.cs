@@ -128,6 +128,9 @@ namespace ProjectLUX.Process.MTFHVAR
                             double horizontalAvg = ((mtf.childRects[idxH1].mtfValue ?? 0) + (mtf.childRects[idxH2].mtfValue ?? 0)) / 2.0;
                             double verticalAvg = ((mtf.childRects[idxV1].mtfValue ?? 0) + (mtf.childRects[idxV2].mtfValue ?? 0)) / 2.0;
 
+                            mtf.horizontalAverage = horizontalAvg;
+                            mtf.verticalAverage = verticalAvg;
+
                             if (mtf.name == Config.Key_Center_0F)
                             {
                                 testResult.MTF0F_Center_V1.Value = mtf.childRects[idxV1].mtfValue ?? 0;
@@ -543,6 +546,8 @@ namespace ProjectLUX.Process.MTFHVAR
                     outtext += $"{item.name},{item.horizontalAverage},{item.verticalAverage},{item.Average}" + Environment.NewLine;
                 }
             }
+
+
             return outtext;
         }
 
