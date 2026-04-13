@@ -85,7 +85,7 @@ namespace ColorVision.Engine.Media
                 var meta = imageView.Config.GetProperties<CVCIEFile>("meta");
                 int index = imageView.Config.GetProperties<int>("index");
                 CVFileUtil.ReadCIEFileData(filePath, ref meta, index);
-                int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(Config.ConvertXYZhandle, (uint)meta.Rows, (uint)meta.Cols, (uint)meta.Bpp, (uint)meta.Channels, meta.Data);
+                int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(Config.ConvertXYZhandle, (uint)meta.Cols, (uint)meta.Rows, (uint)meta.Bpp, (uint)meta.Channels, meta.Data);
                 log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
                 imageView.Config.AddProperties("IsBufferSet", true);
 
