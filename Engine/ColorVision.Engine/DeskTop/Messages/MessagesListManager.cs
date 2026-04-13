@@ -79,10 +79,7 @@ namespace ColorVision.Engine.DeskTop.Messages
             });
             ReloadCommand = new RelayCommand(_ => ReloadData());
 
-            using (var db = CreateDb())
-            {
-                db.CodeFirst.InitTables<MsgRecord>();
-            }
+            MsgRecordDataBaseHelper.EnsureDatabaseInitialized(Config);
         }
 
         private bool _isListening;
