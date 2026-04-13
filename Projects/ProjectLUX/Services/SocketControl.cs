@@ -120,70 +120,63 @@ namespace ProjectLUX.Services
                         return null;
                     }
 
-                    if (SummaryManager.GetInstance().Summary.MachineNO == "H02")
+                    if (lastTwo == "01")
                     {
-                        if (lastTwo == "00")
-                        {
-                            log.Info("VID虚像距握手");
-                            return string.Join(",", strings) + ";";
-                        }
-                        else if (lastTwo == "01")
-                        {
-                            log.Info("VID虚像距执行");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"B_{sn}.csv");
-                            var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
-                            VIDTestResult vIDTestResult = new VIDTestResult();
-                            DeviceCamera deviceCamera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault();
-                            DisplayCameraConfig displayCameraConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(deviceCamera.Config.Code);
+                        log.Info("VID虚像距执行");
+                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"B_{sn}.csv");
+                        var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
+                        VIDTestResult vIDTestResult = new VIDTestResult();
+                        DeviceCamera deviceCamera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault();
+                        DisplayCameraConfig displayCameraConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(deviceCamera.Config.Code);
 
-                            //这俩值还不一样，看看后面怎么优化一下
-                            MsgRecord msgRecord = deviceCamera.DService.AutoFocus(TemplateAutoFocus.Params[displayCameraConfig.AutoFocusTemplateIndex].Value);
-   
-                            //MsgRecord msgRecord = deviceSprectrm.DService.GetPosition();
-                            msgRecord.MsgRecordStateChanged += (s,e) =>
+                        //这俩值还不一样，看看后面怎么优化一下
+                        MsgRecord msgRecord = deviceCamera.DService.AutoFocus(TemplateAutoFocus.Params[displayCameraConfig.AutoFocusTemplateIndex].Value);
+
+                        //MsgRecord msgRecord = deviceSprectrm.DService.GetPosition();
+                        msgRecord.MsgRecordStateChanged += (s, e) =>
+                        {
+                            log.Info("msgRecord");
+
+                            if (e == MsgRecordState.Success)
                             {
-                                log.Info("msgRecord");
-
-                                if (e == MsgRecordState.Success)
+                                if (msgRecord.MsgReturn.EventName == "GetPosition")
                                 {
-                                    if (msgRecord.MsgReturn.EventName == "GetPosition")
-                                    {
-                                        vIDTestResult.VID.Value = msgRecord.MsgReturn.Data.VidPos;
-                                    }
-                                    if (msgRecord.MsgReturn.EventName == "AutoFocus")
-                                    {
-                                        vIDTestResult.VID.Value = msgRecord.MsgReturn.Data.VidPosition;
-                                    }
-                                    VIDFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<VIDFixConfig>();
-                                    VIDRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<VIDRecipeConfig>();
-
-                                    vIDTestResult.VID.Value = vIDTestResult.VID.Value * fixConfig.VID;
-                                    vIDTestResult.VID.TestValue = vIDTestResult.VID.Value.ToString();
-                                    vIDTestResult.VID.LowLimit = recipeConfig.VID.Min;
-                                    vIDTestResult.VID.UpLimit = recipeConfig.VID.Max;
-                                    ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "2pixel_linePair", rows);
-                                    File.WriteAllLines(path, rows);
-                                    stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + $";{vIDTestResult.VID.Value}"));
+                                    vIDTestResult.VID.Value = msgRecord.MsgReturn.Data.VidPos;
                                 }
-                                else
+                                if (msgRecord.MsgReturn.EventName == "AutoFocus")
                                 {
-                                    VIDFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<VIDFixConfig>();
-                                    VIDRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<VIDRecipeConfig>();
-
-                                    vIDTestResult.VID.Value = vIDTestResult.VID.Value * fixConfig.VID;
-                                    vIDTestResult.VID.TestValue = vIDTestResult.VID.Value.ToString();
-                                    vIDTestResult.VID.LowLimit = recipeConfig.VID.Min;
-                                    vIDTestResult.VID.UpLimit = recipeConfig.VID.Max;
-                                    ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "2pixel_linePair", rows);
-                                    File.WriteAllLines(path, rows);
-                                    stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + ";0"));
+                                    vIDTestResult.VID.Value = msgRecord.MsgReturn.Data.VidPosition;
                                 }
-                            };
-                            return null;
+                                VIDFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<VIDFixConfig>();
+                                VIDRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<VIDRecipeConfig>();
 
-                        }
+                                vIDTestResult.VID.Value = vIDTestResult.VID.Value * fixConfig.VID;
+                                vIDTestResult.VID.TestValue = vIDTestResult.VID.Value.ToString();
+                                vIDTestResult.VID.LowLimit = recipeConfig.VID.Min;
+                                vIDTestResult.VID.UpLimit = recipeConfig.VID.Max;
+                                ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "2pixel_linePair", rows);
+                                File.WriteAllLines(path, rows);
+                                stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + $";{vIDTestResult.VID.Value}"));
+                            }
+                            else
+                            {
+                                VIDFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<VIDFixConfig>();
+                                VIDRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<VIDRecipeConfig>();
+
+                                vIDTestResult.VID.Value = vIDTestResult.VID.Value * fixConfig.VID;
+                                vIDTestResult.VID.TestValue = vIDTestResult.VID.Value.ToString();
+                                vIDTestResult.VID.LowLimit = recipeConfig.VID.Min;
+                                vIDTestResult.VID.UpLimit = recipeConfig.VID.Max;
+                                ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "2pixel_linePair", rows);
+                                File.WriteAllLines(path, rows);
+                                stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + ";0"));
+                            }
+                        };
+                        return null;
                     }
-                    else if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR")
+                    
+                    
+                    if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR")
                     {
                         if (ProjectWindowInstance.WindowInstance == null) return string.Join(",", strings) + ";";
 
