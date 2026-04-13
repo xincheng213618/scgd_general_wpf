@@ -310,7 +310,7 @@ cv::Mat FusionAdvancedPipeline(const std::vector<std::string>& files, int STEP) 
 // Original and Optimized Export Functions
 // ============================================================================
 
-COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage)
+extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage)
 {
     std::chrono::steady_clock::time_point start, end;
     std::chrono::microseconds duration;
@@ -399,7 +399,7 @@ COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage)
 /**
  * @brief Optimized fusion with async pipeline
  */
-COLORVISIONCORE_API int CM_Fusion_Async(const char* fusionjson, HImage* outImage)
+extern "C" COLORVISIONCORE_API int CM_Fusion_Async(const char* fusionjson, HImage* outImage)
 {
     std::chrono::steady_clock::time_point start;
     start = std::chrono::high_resolution_clock::now();
@@ -444,7 +444,7 @@ COLORVISIONCORE_API int CM_Fusion_Async(const char* fusionjson, HImage* outImage
 /**
  * @brief Batch processing fusion for multiple image sets
  */
-COLORVISIONCORE_API int CM_Fusion_Batch(const char* batchjson, HImage* outImages, int* outCount)
+extern "C" COLORVISIONCORE_API int CM_Fusion_Batch(const char* batchjson, HImage* outImages, int* outCount)
 {
     // TODO: Implement batch processing for multiple fusion tasks
     // This would allow processing multiple image sets in parallel

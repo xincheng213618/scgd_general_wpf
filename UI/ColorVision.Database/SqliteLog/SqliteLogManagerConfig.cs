@@ -22,7 +22,13 @@ namespace ColorVision.Database.SqliteLog
 
         [ConfigSetting(Order = 3)]
         [DisplayName("单文件大小限制 (MB)")]
-        public int MaxFileSizeInMB { get => _MaxFileSizeInMB; set { _MaxFileSizeInMB = value; OnPropertyChanged(); } }
-        private int _MaxFileSizeInMB = 1024; // 默认 10MB
+        public int MaxFileSizeInMB { get => _MaxFileSizeInMB; set { _MaxFileSizeInMB = Math.Max(10, value); OnPropertyChanged(); } }
+        private int _MaxFileSizeInMB = 1024; // 默认 1024MB
+
+        [ConfigSetting(Order = 4)]
+        [DisplayName("归档保留数量")]
+        [Description("超过该数量后将自动删除最旧的归档（含 .db/.zip），防止磁盘被持续占满。")]
+        public int MaxArchiveFiles { get => _MaxArchiveFiles; set { _MaxArchiveFiles = Math.Max(1, value); OnPropertyChanged(); } }
+        private int _MaxArchiveFiles = 30;
     }
 }

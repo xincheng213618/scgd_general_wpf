@@ -197,6 +197,7 @@
     <ClInclude Include="algorithm\sfr\sfr_slanted.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="include\cvcore\sfr.h" />
+    <ClInclude Include="native_log.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
@@ -208,6 +209,7 @@
     <ClCompile Include="common.cpp" />
     <ClCompile Include="custom_file.cpp" />
     <ClCompile Include="exports\sfr_export.cpp" />
+    <ClCompile Include="native_log.cpp" />
     <ClCompile Include="opencv_export.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="fusion.cpp" />

@@ -78,6 +78,11 @@ namespace ProjectLUX.Process
 
         }
 
+        private void GroupComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            RefreshConfigPanels();
+        }
+
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             RefreshConfigPanels();

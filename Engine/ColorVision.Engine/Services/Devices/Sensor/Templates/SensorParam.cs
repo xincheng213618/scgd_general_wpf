@@ -109,7 +109,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 {
                     if (MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.ResetDatabasePrompt+$" {typeof(SensorParam)} "+ ColorVision.Engine.Properties.Resources.RelatedItems, "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                     {
-                        MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
+                        MySqlControl.BatchExecuteNonQuery(mysqlCommand.GetRecover());
                     }
                 }
             }

@@ -198,43 +198,12 @@ namespace ProjectLUX.Services
                             log.Info("oc测试 ");
                             strings.RemoveAt(2);
                             ProjectWindowInstance.WindowInstance.ReturnCode = string.Join(",", strings);
-                            ProjectWindowInstance.WindowInstance.RunTemplate(0, "Optical_Center_Calibrate");
+                            ProjectWindowInstance.WindowInstance.RunTemplateBySocketCode(lastTwo);
                             return null;
                         }
-                        else if (lastTwo == "03")
+                        else
                         {
-                            log.Info("测试图例1 White 51 ");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(1, "White51_Test");
-                            return null;
-                        }
-                        else if (lastTwo == "04")
-                        {
-                            log.Info("测试图例1 White Fov ");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(2, "White255_Test");
-                            return null;
-                        }
-                        else if (lastTwo == "05")
-                        {
-                            log.Info("测试图例3 Chessboard");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(3, "Chessboard_ANSI_Test");
-                            return null;
-                        }
-                        else if (lastTwo == "06")
-                        {
-                            log.Info("测试图例7 MTF-4pixel-o.6f");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(4, "MTF_HV_Test");
-                            return null;
-                        }
-                        else if (lastTwo == "07")
-                        {
-                            log.Info("测试图例8 Distortion");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(5, "Distortion_Test");
-                            return null;
-                        }
-                        else if (lastTwo == "08")
-                        {
-                            log.Info("测试图例8 Optic");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(6, "OpticCenter_Test");
+                            ProjectWindowInstance.WindowInstance.RunTemplateBySocketCode(lastTwo);
                             return null;
                         }
                     }
@@ -248,34 +217,9 @@ namespace ProjectLUX.Services
                             log.Info("拍图窗口握手");
                             ProjectWindowInstance.WindowInstance.InitTest(sn);
                         }
-                        else if (lastTwo == "11")
+                        else
                         {
-                            log.Info("白图切图指令");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(0);
-                            return null;
-                        }
-                        else if (lastTwo == "12")
-                        {
-                            log.Info("棋盘切图指令");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(1);
-                            return null;
-                        }
-                        else if (lastTwo == "13")
-                        {
-                            log.Info("MTFH切图指令");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(2);
-                            return null;
-                        }
-                        else if (lastTwo == "14")
-                        {
-                            log.Info("畸变切图");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(3);
-                            return null;
-                        }
-                        else if (lastTwo == "15")
-                        {
-                            log.Info("切图15");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(4);
+                            ProjectWindowInstance.WindowInstance.RunTemplateBySocketCode(lastTwo);
                             return null;
                         }
                     }

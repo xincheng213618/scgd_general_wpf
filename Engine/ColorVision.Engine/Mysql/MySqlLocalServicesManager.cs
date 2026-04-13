@@ -4,7 +4,9 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
+using SqlSugar;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -81,9 +83,6 @@ namespace ColorVision.Database
 
         public string CreationTimeDisplay => CreationTime.ToString("yyyy-MM-dd HH:mm:ss");
 
-
-
-
     }
 
     public class MySqlLocalServicesManager
@@ -155,7 +154,7 @@ namespace ColorVision.Database
             Task.Run(() =>
             {
                 IsRun = true;
-                MySqlLocalServicesManager.GetInstance().BackupMysqlResource();
+                BackupMysqlResource();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "备份成功");
@@ -259,7 +258,7 @@ namespace ColorVision.Database
         public void BackupAllMysql()
         {
             //备份的信息里应该只包含基础的信息不应该包含许多逻辑
-            string BackTable = string.Join(" ", MySqlControl.GetInstance().GetTableNames());
+            string BackTable = string.Join(" ", GetTableNames());
 
             string BackUpSql = Path.Combine(BackupPath, $"All_{DateTime.Now:yyyyMMddHHmmss}.sql");
             string backCommnad = $"{Config.MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >\"{BackUpSql}\"";
@@ -273,7 +272,7 @@ namespace ColorVision.Database
         public void BackupMysqlResource()
         {
             //备份的信息里应该只包含基础的信息不应该包含许多逻辑
-            string BackTable = string.Join(" ", MySqlControl.GetInstance().GetFilteredResourceTableNames());
+            string BackTable = string.Join(" ",GetFilteredResourceTableNames());
             string BackUpSql = Path.Combine(BackupPath, $"Res_{DateTime.Now:yyyyMMddHHmmss}.sql");
             string backCommnad = $"{Config.MysqldumpPath} --replace -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} > \"{BackUpSql}\"";
             Common.Utilities.Tool.ExecuteCommandUI(backCommnad);
@@ -281,6 +280,20 @@ namespace ColorVision.Database
             {
                 Backups.Add(new MysqlBack(BackUpSql));
             });
+        }
+        public List<string> GetTableNames()
+        {
+            var dbName = MySqlSetting.Instance.MySqlConfig.Database;
+            var sql = @"SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @dbName AND TABLE_TYPE = 'BASE TABLE'";
+            using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+            var result = DB.Ado.SqlQuery<string>(sql, new { dbName });
+            return result;
+        }
+
+        public List<string> GetFilteredResourceTableNames()
+        {
+            var tableNames = new List<string>() { "t_scgd_algorithm_poi_template_detail", "t_scgd_algorithm_poi_template_master", "t_scgd_camera_license", "t_scgd_mod_param_detail", "t_scgd_mod_param_master", "t_scgd_sys_resource", "t_scgd_sys_resource_group" };
+            return tableNames;
         }
 
 

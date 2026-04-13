@@ -1,6 +1,7 @@
 using ColorVision.Database;
 using ColorVision.Engine; // DAOs
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
+using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.FindCross; // FindCrossDetailViewReslut
 using Newtonsoft.Json;
 using ProjectARVRPro.Fix;
@@ -28,6 +29,25 @@ namespace ProjectARVRPro.Process.OpticCenter
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 foreach (var master in masters)
                 {
+
+                    //允许旧版的计算方案
+                    if (master.ImgFileType == ColorVision.Engine.ViewResultAlgType.ARVR_BinocularFusion)
+                    {
+                        log.Info("use ARVR_BinocularFusion");
+                        List<BinocularFusionModel> AlgResultModels = BinocularFusionDao.Instance.GetAllByPid(master.Id);
+                        if (AlgResultModels.Count >= 1)
+                        {
+                            BinocularFusionModel binocularFusionModel = AlgResultModels[0];
+                            testResult.OptCenterXTilt = Build("OptCenterXTilt", binocularFusionModel.XDegree * fixConfig.OptCenterXTilt, recipeConfig.OptCenterXTilt.Min, recipeConfig.OptCenterXTilt.Max, "F4");
+                            testResult.OptCenterYTilt = Build("OptCenterYTilt", binocularFusionModel.YDegree * fixConfig.OptCenterYTilt, recipeConfig.OptCenterYTilt.Min, recipeConfig.OptCenterYTilt.Max, "F4");
+                            testResult.OptCenterRotation = Build("OptCenterRotation", binocularFusionModel.ZDegree * fixConfig.OptCenterRotation, recipeConfig.OptCenterRotation.Min, recipeConfig.OptCenterRotation.Max, "F4");
+                            ctx.Result.Result &= testResult.OptCenterXTilt.TestResult;
+                            ctx.Result.Result &= testResult.OptCenterYTilt.TestResult;
+                            ctx.Result.Result &= testResult.OptCenterRotation.TestResult;
+                        }
+
+                    }
+
                     if (master.ImgFileType == ViewResultAlgType.FindCross)
                     {
                         var details = DeatilCommonDao.Instance.GetAllByPid(master.Id);

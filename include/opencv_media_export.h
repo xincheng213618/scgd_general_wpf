@@ -120,4 +120,11 @@ extern "C" COLORVISIONCORE_API int M_CalSFRMultiChannel(
     double* mtf10_norm_b, double* mtf50_norm_b, double* mtf10_cypix_b, double* mtf50_cypix_b,
     double* mtf10_norm_l, double* mtf50_norm_l, double* mtf10_cypix_l, double* mtf50_cypix_l);
 
+typedef void(__stdcall* CVNativeLogCallback)(int source, int level, const char* message);
+
+extern "C" COLORVISIONCORE_API void M_SetLogCallback(CVNativeLogCallback callback);
+extern "C" COLORVISIONCORE_API void M_SetLogEnabled(int enabled);
+extern "C" COLORVISIONCORE_API void M_SetLogLevel(int level);
+extern "C" COLORVISIONCORE_API void M_EnableNativeSink(int enabled);
+
 

@@ -40,6 +40,12 @@ namespace ProjectLUX.Process
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; OnPropertyChanged(); } }
         private bool _IsEnabled = true;
 
+        /// <summary>
+        /// Socket协议对应的指令码，如 "02"、"11" 等，用于外部协议按此码查找对应流程。
+        /// </summary>
+        public string SocketCode { get => _SocketCode; set { _SocketCode = value; OnPropertyChanged(); } }
+        private string _SocketCode = "21";
+
         public string ProcessTypeName => Process?.GetType().Name ?? string.Empty;
         public string ProcessTypeFullName => Process?.GetType().FullName ?? string.Empty;
 

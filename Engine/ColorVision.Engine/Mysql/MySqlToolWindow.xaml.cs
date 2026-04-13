@@ -53,10 +53,5 @@ namespace ColorVision.Database
             }, (s, e) => { e.CanExecute = listView1.SelectedIndex > -1; }));
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            string Sql = MySqlText.Text;
-            MySqlControl.BatchExecuteNonQuery(Sql);
-        }
     }
 }

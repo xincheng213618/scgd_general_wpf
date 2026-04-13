@@ -1,3 +1,4 @@
+using ColorVision.UI;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
@@ -33,19 +34,40 @@ namespace WindowsServicePlugin.ServiceManager
                     return;
 
                 string targetPath = Path.Combine(downloadDir, latest.FileName);
-                UpdateStatusText = $"发现新版本: {latest.Version}";
-                AddLog($"发现新版本: {latest.Version}");
-
-                bool ok = await DownloadFileToAsync(latest.DownloadUrl, targetPath);
-                if (!ok)
+                if (File.Exists(targetPath))
                 {
-                    UpdateStatusText = "下载失败";
+                    ServicePackagePath = targetPath;
+                    UpdateStatusText = $"文件已存在: {targetPath}";
+                    AddLog($"文件已存在，跳过下载: {targetPath}");
                     return;
                 }
 
-                ServicePackagePath = targetPath;
-                UpdateStatusText = $"下载完成: {targetPath}";
-                AddLog($"下载完成: {targetPath}");
+                UpdateStatusText = $"发现新版本: {latest.Version}";
+                AddLog($"发现新版本: {latest.Version}");
+
+                var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
+                if (service == null)
+                {
+                    UpdateStatusText = "下载失败：下载服务不可用";
+                    AddLog("下载服务不可用");
+                    return;
+                }
+
+                service.ShowDownloadWindow();
+                var tcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                service.Download(latest.DownloadUrl, downloadDir, DownloadFileConfig.Instance.Authorization, path => tcs.TrySetResult(path));
+                string? downloadedPath = await tcs.Task;
+
+                if (downloadedPath == null)
+                {
+                    UpdateStatusText = "下载失败";
+                    AddLog("下载失败");
+                    return;
+                }
+
+                ServicePackagePath = downloadedPath;
+                UpdateStatusText = $"下载完成: {downloadedPath}";
+                AddLog($"下载完成: {downloadedPath}");
             }
             catch (Exception ex)
             {
@@ -66,18 +88,36 @@ namespace WindowsServicePlugin.ServiceManager
             if (string.IsNullOrWhiteSpace(downloadDir))
                 return;
 
+            const string fileName = "mysql-5.7.37-winx64.zip";
+            string targetPath = Path.Combine(downloadDir, fileName);
+            if (File.Exists(targetPath))
+            {
+                MySqlPackagePath = targetPath;
+                AddLog($"文件已存在，跳过下载: {targetPath}");
+                return;
+            }
+
+            var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
+            if (service == null)
+            {
+                AddLog("下载服务不可用");
+                return;
+            }
+
             SetBusy(true, "正在下载 MySQL...");
             try
             {
+                service.ShowDownloadWindow();
                 foreach (string baseUrl in GetApiBaseCandidates(Config.UpdateServerUrl))
                 {
-                    string fileName = "mysql-5.7.37-winx64.zip";
                     string url = baseUrl.TrimEnd('/') + "/download/Tool/Mysql/" + fileName;
-                    string targetPath = Path.Combine(downloadDir, fileName);
-                    if (await DownloadFileToAsync(url, targetPath, swallowError: true))
+                    var tcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    service.Download(url, downloadDir, DownloadFileConfig.Instance.Authorization, path => tcs.TrySetResult(path));
+                    string? downloadedPath = await tcs.Task;
+                    if (downloadedPath != null)
                     {
-                        MySqlPackagePath = targetPath;
-                        AddLog($"MySQL 下载完成: {targetPath}");
+                        MySqlPackagePath = downloadedPath;
+                        AddLog($"MySQL 下载完成: {downloadedPath}");
                         return;
                     }
                 }
@@ -96,18 +136,36 @@ namespace WindowsServicePlugin.ServiceManager
             if (string.IsNullOrWhiteSpace(downloadDir))
                 return;
 
+            const string fileName = "mosquitto-2.0.18-install-windows-x64.exe";
+            string targetPath = Path.Combine(downloadDir, fileName);
+            if (File.Exists(targetPath))
+            {
+                MqttInstallerPath = targetPath;
+                AddLog($"文件已存在，跳过下载: {targetPath}");
+                return;
+            }
+
+            var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
+            if (service == null)
+            {
+                AddLog("下载服务不可用");
+                return;
+            }
+
             SetBusy(true, "正在下载 MQTT...");
             try
             {
+                service.ShowDownloadWindow();
                 foreach (string baseUrl in GetApiBaseCandidates(Config.UpdateServerUrl))
                 {
-                    string fileName = "mosquitto-2.0.18-install-windows-x64.exe";
                     string url = baseUrl.TrimEnd('/') + "/download/Tool/MQTT/" + fileName;
-                    string targetPath = Path.Combine(downloadDir, fileName);
-                    if (await DownloadFileToAsync(url, targetPath, swallowError: true))
+                    var tcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    service.Download(url, downloadDir, DownloadFileConfig.Instance.Authorization, path => tcs.TrySetResult(path));
+                    string? downloadedPath = await tcs.Task;
+                    if (downloadedPath != null)
                     {
-                        MqttInstallerPath = targetPath;
-                        AddLog($"MQTT 下载完成: {targetPath}");
+                        MqttInstallerPath = downloadedPath;
+                        AddLog($"MQTT 下载完成: {downloadedPath}");
                         return;
                     }
                 }
@@ -157,6 +215,7 @@ namespace WindowsServicePlugin.ServiceManager
                         continue;
 
                     string fileName = $"FullPackage[{latestVersion}].zip";
+                    string downloadRelativePath = string.Empty;
                     if (root.TryGetProperty("packages", out var packagesArray))
                     {
                         foreach (var pkg in packagesArray.EnumerateArray())
@@ -165,12 +224,18 @@ namespace WindowsServicePlugin.ServiceManager
                             if (pkgVersion == latestVersion)
                             {
                                 fileName = pkg.TryGetProperty("fileName", out var fn) ? fn.GetString() ?? fileName : fileName;
+                                downloadRelativePath = pkg.TryGetProperty("downloadUrl", out var du) ? du.GetString() ?? string.Empty : string.Empty;
                                 break;
                             }
                         }
                     }
 
-                    string downloadUrl = apiBaseUrl.TrimEnd('/') + "/api/tool/cvwindowsservice/download/" + latestVersion;
+                    // Use the server-provided downloadUrl (contains the actual filename in path,
+                    // matching the AutoUpdater pattern so Aria2c derives the correct filename).
+                    // Fall back to the version-based API endpoint if not present.
+                    string downloadUrl = !string.IsNullOrWhiteSpace(downloadRelativePath)
+                        ? apiBaseUrl.TrimEnd('/') + downloadRelativePath
+                        : apiBaseUrl.TrimEnd('/') + "/api/tool/cvwindowsservice/download/" + latestVersion;
                     return new ServicePackageInfo(version, fileName, downloadUrl);
                 }
                 catch
@@ -179,42 +244,6 @@ namespace WindowsServicePlugin.ServiceManager
             }
 
             return null;
-        }
-
-        private async Task<bool> DownloadFileToAsync(string requestUrl, string targetFilePath, bool swallowError = false)
-        {
-            try
-            {
-                if (File.Exists(targetFilePath))
-                {
-                    AddLog($"文件已存在，跳过下载: {targetFilePath}");
-                    return true;
-                }
-
-                using HttpClient client = new();
-                using var response = await client.GetAsync(requestUrl, HttpCompletionOption.ResponseHeadersRead);
-                if (!response.IsSuccessStatusCode)
-                {
-                    if (!swallowError)
-                        AddLog($"下载失败: {response.StatusCode} {requestUrl}");
-                    return false;
-                }
-
-                string? parent = Path.GetDirectoryName(targetFilePath);
-                if (!string.IsNullOrWhiteSpace(parent))
-                    Directory.CreateDirectory(parent);
-
-                await using var source = await response.Content.ReadAsStreamAsync();
-                await using var target = new FileStream(targetFilePath, FileMode.Create, FileAccess.Write, FileShare.None);
-                await source.CopyToAsync(target);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                if (!swallowError)
-                    AddLog($"下载异常: {ex.Message}");
-                return false;
-            }
         }
 
         private static IEnumerable<string> GetApiBaseCandidates(string configuredUrl)

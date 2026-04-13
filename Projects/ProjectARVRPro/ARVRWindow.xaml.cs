@@ -16,6 +16,7 @@ using log4net;
 using Newtonsoft.Json;
 using ProjectARVRPro.DeviceChannel;
 using ProjectARVRPro.Fix;
+using ProjectARVRPro.LegacyARVR;
 using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Services;
@@ -745,6 +746,13 @@ namespace ProjectARVRPro
                 }
             }
 
+            //如果开启了UseLegacyARVROutput，则说明第一个ProcessMeta是LegacyARVROutput，不参与测试流程，所以需要+1
+            if (ViewResultManager.GetInstance().Config.UseLegacyARVROutput)
+            {
+                log.Info("UseLegacyARVROutput + nextTestType 1");
+                nextTestType = nextTestType + 1;
+            }
+
             var response = new SocketResponse
             {
                 Version = "1.0",
@@ -799,7 +807,23 @@ namespace ProjectARVRPro
 
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string filePath = Path.Combine(linkPath, $"TestResults_{SNtextBox.Text}_{timeStr}_.csv");
-                ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
+
+                if (ViewResultManager.Config.UseLegacyARVROutput)
+                {
+                    var legacyResult = LegacyARVRConverter.ToLegacy(ObjectiveTestResult);
+                    LegacyARVRCsvExporter.ExportToCsv(new List<LegacyARVRObjectiveTestResult> { legacyResult }, filePath);
+                }
+                else
+                {
+                    ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
+                }
+            }
+
+            // 根据配置决定输出格式：旧版扁平格式或新版嵌套格式
+            object responseData = ObjectiveTestResult;
+            if (ViewResultManager.Config.UseLegacyARVROutput)
+            {
+                responseData = LegacyARVRConverter.ToLegacy(ObjectiveTestResult);
             }
 
             var response = new SocketResponse
@@ -810,7 +834,7 @@ namespace ProjectARVRPro
                 Code = 0,
                 SerialNumber = SNtextBox.Text,
                 Msg = "ARVR Test Completed",
-                Data = ObjectiveTestResult
+                Data = responseData
             };
             string respString = JsonConvert.SerializeObject(response);
             log.Info(respString);

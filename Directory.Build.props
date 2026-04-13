@@ -13,8 +13,9 @@
 		<PlatformTarget>$(Platform)</PlatformTarget>
 		<TargetFrameworks>net10.0-windows;net8.0-windows</TargetFrameworks>   
 		<NoWarn>CS8002</NoWarn>
-	    <VersionPrefix>1.4.4.14</VersionPrefix> 
+	    <VersionPrefix>1.4.4.21</VersionPrefix> 
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
+		<CETCompat>false</CETCompat>
 	</PropertyGroup>
 	<PropertyGroup>
 		<Copyright>Copyright (C) 2026 ColorVision Corporation</Copyright>
