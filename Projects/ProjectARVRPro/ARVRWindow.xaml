@@ -10,7 +10,7 @@
         xmlns:LogImp="clr-namespace:ColorVision.UI.LogImp;assembly=ColorVision.UI"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectARVRProConfig}"
-        Title="ARVR检测模组" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
+        Title="模组检测" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
         <local:OKNGConverter x:Key="OKNGConverter"/>
@@ -237,25 +237,10 @@
                 <Button Content="设置" Command="{Binding OpenConfigCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="日志" Command="{Binding OpenLogCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
                 <Button Content="InitTest" Command="{Binding InitTestCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="Recipe" Command="{Binding RecipeManager.EditCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
                 <Button Content="Summary" Command="{Binding SummaryManager.EditCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="EditFix" Command="{Binding FixManager.EditCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="变更日志" Command="{Binding OpenChangeLogCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="ProcessManager" Command="{Binding ProcessManager.EditCommand}"/>
@@ -270,7 +255,7 @@
                 </StackPanel>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="雷鸟切图调试" Click="OpenThunderbirdSerialDebug_Click" Padding="10,2"/>
+                <Button x:Name="ThunderbirdConnectionStatusText" Foreground="Gray" Content="雷鸟: 未连接" Click="OpenThunderbirdSerialDebug_Click" Padding="10,2"/>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="▶ 一键执行" Click="RunAllClick" Background="#FF4CAF50" Foreground="White" FontWeight="Bold" Padding="10,5"/>

@@ -7,9 +7,12 @@ namespace ProjectARVRPro
     /// 雷鸟设备串口通信控制器 - 独立的业务逻辑层
     /// 职责：管理串口连接、收发命令、状态管理
     /// </summary>
-    public class ThunderbirdSerialController
+    public class ThunderbirdSerialController : IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ThunderbirdSerialController));
+        private static readonly char[] ResponseSplitChars = new[] { '\r', '\n' };
+
+        public event EventHandler? ConnectionStateChanged;
 
         private static ThunderbirdSerialController _instance;
         private static readonly object _locker = new();
@@ -17,6 +20,9 @@ namespace ProjectARVRPro
 
         private SerialPortHelper? _serialHelper;
         private int _currentBrightnessLevel = -1;
+        private string? _currentPortName;
+        private int _currentBaudRate = 9600;
+        private int _currentTimeoutMs = 1000;
 
         /// <summary>
         /// 当前亮度档位 (0~16, 对应 0x20~0x30)，-1 表示未知
@@ -27,6 +33,21 @@ namespace ProjectARVRPro
         /// 串口是否已连接
         /// </summary>
         public bool IsConnected => _serialHelper?.IsOpen ?? false;
+
+        /// <summary>
+        /// 当前连接串口名
+        /// </summary>
+        public string? CurrentPortName => _currentPortName;
+
+        /// <summary>
+        /// 当前连接波特率
+        /// </summary>
+        public int CurrentBaudRate => _currentBaudRate;
+
+        /// <summary>
+        /// 当前连接超时(ms)
+        /// </summary>
+        public int CurrentTimeoutMs => _currentTimeoutMs;
 
         /// <summary>
         /// 打开串口连接
@@ -43,7 +64,11 @@ namespace ProjectARVRPro
             {
                 _serialHelper = new SerialPortHelper { TimeoutMs = timeoutMs };
                 _serialHelper.Open(portName, baudRate);
+                _currentPortName = portName;
+                _currentBaudRate = baudRate;
+                _currentTimeoutMs = timeoutMs;
                 log.Info($"雷鸟串口已打开: {portName}, BaudRate={baudRate}, Timeout={timeoutMs}ms");
+                ConnectionStateChanged?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
@@ -58,12 +83,16 @@ namespace ProjectARVRPro
         /// </summary>
         public void Close()
         {
+            bool wasConnected = IsConnected;
             try
             {
                 _serialHelper?.Dispose();
                 _serialHelper = null;
+                _currentPortName = null;
                 _currentBrightnessLevel = -1;
                 log.Info("雷鸟串口已关闭");
+                if (wasConnected)
+                    ConnectionStateChanged?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
@@ -91,7 +120,7 @@ namespace ProjectARVRPro
                 log.Debug($"[RX] {response}");
                 return response;
             }
-            catch (TimeoutException ex)
+            catch (TimeoutException)
             {
                 log.Warn($"串口超时: 发送 \"{command}\" 后 {timeout}ms 内未收到响应");
                 return null;
@@ -175,7 +204,7 @@ namespace ProjectARVRPro
             if (string.IsNullOrWhiteSpace(response))
                 return;
 
-            string[] lines = response.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] lines = response.Split(ResponseSplitChars, StringSplitOptions.RemoveEmptyEntries);
             foreach (string line in lines)
             {
                 string l = line.Trim();
@@ -247,6 +276,12 @@ namespace ProjectARVRPro
                 log.Error($"快速切图失败: ", ex);
                 return false;
             }
+        }
+
+        public void Dispose()
+        {
+            Close();
+            GC.SuppressFinalize(this);
         }
     }
 }

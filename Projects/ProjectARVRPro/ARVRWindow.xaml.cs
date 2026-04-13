@@ -215,7 +215,69 @@ namespace ProjectARVRPro
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+
+            _thunderbirdController.ConnectionStateChanged += ThunderbirdController_ConnectionStateChanged;
+            UpdateThunderbirdStatusIndicator();
+            _ = TryAutoConnectThunderbirdAsync();
     
+        }
+
+        private void ThunderbirdController_ConnectionStateChanged(object? sender, EventArgs e)
+        {
+            UpdateThunderbirdStatusIndicator();
+        }
+
+        private async Task TryAutoConnectThunderbirdAsync()
+        {
+            if (_thunderbirdController.IsConnected)
+            {
+                UpdateThunderbirdStatusIndicator();
+                return;
+            }
+
+            if (!ProjectConfig.ThunderbirdAutoConnect)
+                return;
+
+            if (string.IsNullOrWhiteSpace(ProjectConfig.ThunderbirdPortName))
+            {
+                log.Warn("雷鸟自动连接已启用，但未配置串口号");
+                return;
+            }
+
+            try
+            {
+                int timeoutMs = ProjectConfig.ThunderbirdTimeoutMs > 0 ? ProjectConfig.ThunderbirdTimeoutMs : 1000;
+                _thunderbirdController.Open(ProjectConfig.ThunderbirdPortName, ProjectConfig.ThunderbirdBaudRate, timeoutMs);
+                log.Info($"雷鸟自动连接成功: {ProjectConfig.ThunderbirdPortName}");
+                UpdateThunderbirdStatusIndicator();
+                await _thunderbirdController.QueryBrightnessAsync(timeoutMs);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("雷鸟自动连接失败", ex);
+                UpdateThunderbirdStatusIndicator();
+            }
+        }
+
+        private void UpdateThunderbirdStatusIndicator()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(() => UpdateThunderbirdStatusIndicator());
+                return;
+            }
+
+            if (_thunderbirdController.IsConnected)
+            {
+                string port = string.IsNullOrWhiteSpace(_thunderbirdController.CurrentPortName) ? "未知串口" : _thunderbirdController.CurrentPortName;
+                ThunderbirdConnectionStatusText.Content = $"雷鸟: 已连接 {port}";
+                ThunderbirdConnectionStatusText.Foreground = Brushes.LimeGreen;
+            }
+            else
+            {
+                ThunderbirdConnectionStatusText.Content = "雷鸟: 未连接";
+                ThunderbirdConnectionStatusText.Foreground = Brushes.Gray;
+            }
         }
 
         public void Delete()
@@ -1248,14 +1310,9 @@ namespace ProjectARVRPro
             timer.Change(Timeout.Infinite, 500); // 停止定时器
             timer?.Dispose();
             logOutput?.Dispose();
+            _thunderbirdController.ConnectionStateChanged -= ThunderbirdController_ConnectionStateChanged;
             _thunderbirdController?.Close();
             GC.SuppressFinalize(this);
-        }
-
-        private void Button_Click_Search(object sender, RoutedEventArgs e)
-        {
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(ObjectiveTestResult, false) { Owner = Application.Current.GetActiveWindow() };
-            propertyEditorWindow.ShowDialog();
         }
 
         private ThunderbirdSerialDebugWindow? _thunderbirdDebugWindow;

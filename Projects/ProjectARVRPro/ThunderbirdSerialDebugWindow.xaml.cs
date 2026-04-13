@@ -1,4 +1,5 @@
 ﻿using log4net;
+using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -14,6 +15,7 @@ namespace ProjectARVRPro
         private static readonly ILog log = LogManager.GetLogger(typeof(ThunderbirdSerialDebugWindow));
 
         private ThunderbirdSerialController _controller = ThunderbirdSerialController.GetInstance();
+        private ProjectARVRProConfig _projectConfig = ProjectARVRProConfig.Instance;
 
         /// <summary>
         /// 滑块变更是否由程序内部触发（避免循环触发）
@@ -25,6 +27,70 @@ namespace ProjectARVRPro
             InitializeComponent();
             InitializeBrightnessLevels();
             RefreshPortList();
+            SyncUiFromController();
+        }
+
+        private void SaveThunderbirdConfig()
+        {
+            if (ComPortComboBox.SelectedItem != null)
+                _projectConfig.ThunderbirdPortName = ComPortComboBox.SelectedItem.ToString() ?? string.Empty;
+
+            if (BaudRateComboBox.SelectedItem is ComboBoxItem baudItem && int.TryParse(baudItem.Content?.ToString(), out int baudRate))
+                _projectConfig.ThunderbirdBaudRate = baudRate;
+
+            if (int.TryParse(TimeoutTextBox.Text, out int timeoutMs) && timeoutMs > 0)
+                _projectConfig.ThunderbirdTimeoutMs = timeoutMs;
+
+            _projectConfig.ThunderbirdAutoConnect = AutoConnectCheckBox.IsChecked == true;
+            ConfigService.Instance.SaveConfigs();
+        }
+
+        private void SyncUiFromController()
+        {
+            if (!_controller.IsConnected)
+            {
+                TogglePortButton.Content = "连接";
+                TogglePortButton.Background = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
+                ConnectionStatusText.Text = "● 未连接";
+                ConnectionStatusText.Foreground = new SolidColorBrush(Colors.Gray);
+                SetControlButtonsEnabled(false);
+                return;
+            }
+
+            string portName = _controller.CurrentPortName ?? "未知串口";
+            int baudRate = _controller.CurrentBaudRate;
+            int timeout = _controller.CurrentTimeoutMs;
+
+            if (!string.IsNullOrWhiteSpace(_controller.CurrentPortName) && ComPortComboBox.Items.Contains(_controller.CurrentPortName))
+                ComPortComboBox.SelectedItem = _controller.CurrentPortName;
+
+            foreach (var item in BaudRateComboBox.Items)
+            {
+                if (item is ComboBoxItem comboItem &&
+                    int.TryParse(comboItem.Content?.ToString(), out int itemBaudRate) &&
+                    itemBaudRate == baudRate)
+                {
+                    BaudRateComboBox.SelectedItem = comboItem;
+                    break;
+                }
+            }
+
+            TimeoutTextBox.Text = timeout.ToString();
+
+            TogglePortButton.Content = "断开";
+            TogglePortButton.Background = new SolidColorBrush(Color.FromRgb(0xF4, 0x43, 0x36));
+            ConnectionStatusText.Text = $"● 已连接 {portName}";
+            ConnectionStatusText.Foreground = new SolidColorBrush(Color.FromRgb(0x4C, 0xAF, 0x50));
+            ComPortComboBox.IsEnabled = false;
+            BaudRateComboBox.IsEnabled = false;
+            SetControlButtonsEnabled(true);
+            UpdateStatus($"已连接 {portName} (波特率:{baudRate}, 超时:{timeout}ms)");
+
+            _ = QueryBrightnessAsync().ContinueWith(t =>
+            {
+                if (t.IsFaulted && t.Exception != null)
+                    log.Error("窗口初始化查询亮度失败", t.Exception);
+            }, TaskScheduler.Default);
         }
 
         /// <summary>
@@ -57,6 +123,8 @@ namespace ProjectARVRPro
 
             if (previousSelection != null && ComPortComboBox.Items.Contains(previousSelection))
                 ComPortComboBox.SelectedItem = previousSelection;
+            else if (!string.IsNullOrWhiteSpace(_projectConfig.ThunderbirdPortName) && ComPortComboBox.Items.Contains(_projectConfig.ThunderbirdPortName))
+                ComPortComboBox.SelectedItem = _projectConfig.ThunderbirdPortName;
             else if (ComPortComboBox.Items.Count > 0)
                 ComPortComboBox.SelectedIndex = 0;
         }
@@ -95,6 +163,12 @@ namespace ProjectARVRPro
                 int baudRate = int.Parse(((ComboBoxItem)BaudRateComboBox.SelectedItem).Content.ToString()!);
                 int timeout = GetConfiguredTimeout();
 
+                _projectConfig.ThunderbirdPortName = portName;
+                _projectConfig.ThunderbirdBaudRate = baudRate;
+                _projectConfig.ThunderbirdTimeoutMs = timeout;
+                _projectConfig.ThunderbirdAutoConnect = AutoConnectCheckBox.IsChecked == true;
+                ConfigService.Instance.SaveConfigs();
+
                 _controller.Open(portName, baudRate, timeout);
 
                 TogglePortButton.Content = "断开";
@@ -113,6 +187,8 @@ namespace ProjectARVRPro
                     if (t.IsFaulted && t.Exception != null)
                         log.Error("自动查询亮度失败", t.Exception);
                 }, TaskScheduler.Default);
+
+                SyncUiFromController();
             }
             catch (Exception ex)
             {
@@ -138,12 +214,18 @@ namespace ProjectARVRPro
                 CurrentBrightnessText.Text = "未知";
 
                 UpdateStatus("已断开");
+                SaveThunderbirdConfig();
             }
             catch (Exception ex)
             {
                 UpdateStatus($"断开失败: {ex.Message}");
                 log.Error("关闭串口失败", ex);
             }
+        }
+
+        private void AutoConnectCheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            SaveThunderbirdConfig();
         }
 
         /// <summary>
@@ -334,11 +416,6 @@ namespace ProjectARVRPro
                 StatusText.Text = message;
             else
                 Dispatcher.Invoke(() => StatusText.Text = message);
-        }
-
-        protected override void OnClosed(EventArgs e)
-        {
-            base.OnClosed(e);
         }
     }
 }
