@@ -131,6 +131,7 @@ namespace ProjectARVRPro
         }
 
         [JsonIgnore]
+        [Browsable(false)]
         public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; OnPropertyChanged(); } }
         private ObservableCollection<TemplateModel<FlowParam>> _TemplateItemSource;
 
