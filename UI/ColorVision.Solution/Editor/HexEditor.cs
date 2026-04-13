@@ -53,7 +53,6 @@ namespace ColorVision.Solution
                     layoutDocument.Closing += (s, e) =>
                     {
                         hexEditorView.HexEditorControl.CloseProvider(true);
-                        hexEditorView.HexEditorControl.Dispose();
                     };
                 }
             }

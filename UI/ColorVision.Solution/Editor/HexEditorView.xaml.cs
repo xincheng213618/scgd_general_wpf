@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using WpfHexaEditor.Core;
+using WpfHexEditor.Core;
 
 namespace ColorVision.Solution.Editor
 {
@@ -16,7 +16,6 @@ namespace ColorVision.Solution.Editor
 
         public void Dispose()
         {
-            HexEditorControl.Dispose();
             GC.SuppressFinalize(this);
         }
 

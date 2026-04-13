@@ -16,11 +16,11 @@
 
 	
 	<ItemGroup>
-		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.72.1" />
-		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
-		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260222" />
-		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260222" />
-		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260222" />
+		<PackageReference Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.73.0" />
+		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.142" />
+		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260330" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260302" />
+		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260330" />
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
 		<PackageReference Include="System.IO.Ports" Version="10.0.3" />
 	</ItemGroup>
