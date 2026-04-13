@@ -157,19 +157,6 @@
                             </DockPanel>
                         </StackPanel>
                     </Border>
-                    <Border Grid.Column="1" Margin="0,5" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,5,0,5">
-                                <TextBlock Width="100" Text="CVICE范围" />
-                                <TextBox Text="{Binding MouseMagnifier.Radius}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5">
-                                <TextBlock Width="100" Text="CVICE Type:" />
-                                <hc:ComboBox x:Name="ComboxeType" DisplayMemberPath="Value" SelectedValue="{Binding MouseMagnifier.MagnigifierType}" SelectedValuePath="Key" Style="{StaticResource ComboBox.Small}" />
-                            </DockPanel>
-                            <TextBlock HorizontalAlignment="Right" Text="设置为圆的时候，输入的值是半径" />
-                        </StackPanel>
-                    </Border>
                 </StackPanel>
             </ScrollViewer>
             <StackPanel Grid.Row="1" Margin="5" VerticalAlignment="Bottom" Orientation="Horizontal">

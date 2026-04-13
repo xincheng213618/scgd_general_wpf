@@ -108,9 +108,19 @@ namespace ColorVision.Engine.Media
 
             void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
             {
+                var mouseMagnifier = imageView.EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>();
+                if (mouseMagnifier == null)
+                {
+                    return;
+                }
+
                 if (windowCIE == null)
                 {
                     windowCIE = new WindowCIE() { Owner = Application.Current.GetActiveWindow() };
+                    var cvcieProbeSettings = imageView.Config.Properties.TryGetValue("CvcieProbeSettings", out object settingsObj) && settingsObj is CvcieProbeSettings settings
+                        ? settings
+                        : new CvcieProbeSettings();
+
                     void mouseMoveColorHandler(object s, ImageInfo e)
                     {
                         if (imageView.Config.Properties.TryGetValue("IsCVCIE", out object obj)&& obj is  bool iscvice &&iscvice)
@@ -121,7 +131,7 @@ namespace ColorVision.Engine.Media
                             float dYVal = 0;
                             float dZVal = 0;
                             float dx = 0, dy = 0, du = 0, dv = 0;
-                            int result = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.GetRequiredService<CVFilemageEditorConfig>().ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, (int)imageView.ImageViewModel.MouseMagnifier.RectWidth, (int)imageView.ImageViewModel.MouseMagnifier.RectHeight);
+                            int result = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.GetRequiredService<CVFilemageEditorConfig>().ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, cvcieProbeSettings.RectWidth, cvcieProbeSettings.RectHeight);
                             
                             windowCIE.ChangeSelect(dx, dy);
                         }
@@ -131,12 +141,12 @@ namespace ColorVision.Engine.Media
                         }
                     }
 
-                    imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
+                    mouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
 
                     windowCIE.Closed += (s, e) =>
                     {
-                        imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
-                        imageView.ImageViewModel.MouseMagnifier.IsChecked = false;
+                        mouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
+                        mouseMagnifier.IsChecked = false;
                         windowCIE = null;
                     };
                 }

@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Utils;
+using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -28,6 +30,7 @@ namespace ColorVision.ImageEditor.Draw.Special
     }
 
     public delegate void MouseMoveColorHandler(object sender, ImageInfo imageInfo);
+    public delegate bool MouseMoveProbeHandler(object sender, ImageInfo imageInfo);
 
     /// <summary>
     /// 后续优化调整，成为不同的图像格式显示不同的参数
@@ -48,11 +51,17 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public DrawingVisual DrawVisualImage { get; set; } = new DrawingVisual();
 
-        public event MouseMoveColorHandler MouseMoveColorHandler;
+        public event MouseMoveColorHandler? MouseMoveColorHandler;
+        public event MouseMoveProbeHandler? MouseMoveProbeHandler;
 
         public void ClearMouseMoveColorHandler()
         {
             MouseMoveColorHandler = null;
+        }
+
+        public void ClearMouseMoveProbeHandler()
+        {
+            MouseMoveProbeHandler = null;
         }
 
         public override bool IsChecked
@@ -78,30 +87,26 @@ namespace ColorVision.ImageEditor.Draw.Special
         }
         private bool _IsChecked;
 
-        public double Radius { get; set; } = 100;
-        public double RectWidth { get; set; } = 120;
-        public double RectHeight { get; set; } = 120;
-
-        public MagnigifierType MagnigifierType { get; set; } = MagnigifierType.Circle;
-
-        public void DrawImage(ImageInfo imageInfo,string text1,string text2 )
+        public void DrawImage(ImageInfo imageInfo, string text1, string text2, MagnigifierType magnigifierType, double radius, double rectWidth, double rectHeight)
         {
             Point actPoint = imageInfo.ActPoint;
-            Point disPoint = imageInfo.BitmapPoint;
 
             if (Image.Source is BitmapSource bitmapImage)
             {
                 using DrawingContext dc = DrawVisualImage.RenderOpen();
 
-                if (MagnigifierType ==MagnigifierType.Circle)
+                if (magnigifierType == MagnigifierType.Circle)
                 {
-                    dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), Radius, Radius);
-                    dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), Radius, Radius);
+                    dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), radius, radius);
+                    dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Point(actPoint.X, actPoint.Y), radius, radius);
 
-                }else if (MagnigifierType == MagnigifierType.Rect)
+                }
+                else if (magnigifierType == MagnigifierType.Rect)
                 {
-                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Rect(actPoint.X - Radius / 2, actPoint.Y - Radius / 2, Radius, Radius));
-                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11),new Rect(actPoint.X - Radius/2, actPoint.Y -Radius/2, Radius,Radius));
+                    double rectWidthValue = Math.Max(1, rectWidth);
+                    double rectHeightValue = Math.Max(1, rectHeight);
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.Black, 2 / ZoomboxSub.ContentMatrix.M11), new Rect(actPoint.X - rectWidthValue / 2, actPoint.Y - rectHeightValue / 2, rectWidthValue, rectHeightValue));
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, 1 / ZoomboxSub.ContentMatrix.M11), new Rect(actPoint.X - rectWidthValue / 2, actPoint.Y - rectHeightValue / 2, rectWidthValue, rectHeightValue));
                 }
 
                 var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * actPoint.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * actPoint.Y);
@@ -208,7 +213,24 @@ namespace ColorVision.ImageEditor.Draw.Special
                         G = G,
                         B = B,
                     };
-                    DrawImage(imageInfo);
+
+                    bool handled = false;
+                    if (MouseMoveProbeHandler != null)
+                    {
+                        foreach (var handler in MouseMoveProbeHandler.GetInvocationList().Cast<MouseMoveProbeHandler>())
+                        {
+                            if (handler.Invoke(this, imageInfo))
+                            {
+                                handled = true;
+                            }
+                        }
+                    }
+
+                    if (!handled)
+                    {
+                        DrawImage(imageInfo);
+                    }
+
                     MouseMoveColorHandler?.Invoke(this, imageInfo);
                 }
             }  

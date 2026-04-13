@@ -19,10 +19,12 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
@@ -40,6 +42,8 @@ namespace ColorVision.Engine.Media
     [FileExtension(".cvraw|.cvcie")]
     public record class CVRawOpen(EditorContext EditorContext) : IImageOpen, IIEditorToolContextMenu
     {
+        private const string CvcieSettingSectionKey = "CVCIE.ProbeSettings";
+
         public CVFilemageEditorConfig Config => EditorContext.Config.GetRequiredService<CVFilemageEditorConfig>();
 
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
@@ -73,10 +77,75 @@ namespace ColorVision.Engine.Media
 
 
         bool ShowDateFilePath;
+
+        private static bool TryGetMouseMagnifier(ImageView imageView, out MouseMagnifierManager magnifier)
+        {
+            magnifier = imageView.EditorContext.IEditorToolFactory.GetIEditorTool<MouseMagnifierManager>();
+            return magnifier != null;
+        }
+
+        private static FrameworkElement BuildCvcieProbeSettingsSection(CvcieProbeSettings settings)
+        {
+            var border = new Border
+            {
+                Margin = new Thickness(0, 5, 0, 5),
+                CornerRadius = new CornerRadius(5),
+                BorderThickness = new Thickness(1),
+            };
+            border.SetResourceReference(Border.BackgroundProperty, "GlobalBorderBrush");
+            border.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+
+            var panel = new StackPanel { Margin = new Thickness(5) };
+
+            var radiusDock = new DockPanel { Margin = new Thickness(0, 5, 0, 5) };
+            radiusDock.Children.Add(new TextBlock { Width = 100, Text = "CVCIE范围" });
+            var radiusTextBox = new TextBox();
+            radiusTextBox.SetBinding(TextBox.TextProperty, new Binding(nameof(CvcieProbeSettings.Radius))
+            {
+                Source = settings,
+                Mode = BindingMode.TwoWay,
+                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
+            });
+            radiusDock.Children.Add(radiusTextBox);
+            panel.Children.Add(radiusDock);
+
+            var typeDock = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
+            typeDock.Children.Add(new TextBlock { Width = 100, Text = "CVCIE Type:" });
+            var combo = new ComboBox
+            {
+                DisplayMemberPath = "Value",
+                SelectedValuePath = "Key",
+            };
+            combo.SetResourceReference(FrameworkElement.StyleProperty, "ComboBox.Small");
+            combo.ItemsSource = Enum.GetValues(typeof(MagnigifierType))
+                .Cast<MagnigifierType>()
+                .Select(type => new KeyValuePair<MagnigifierType, string>(type, type.ToString()));
+            combo.SetBinding(ComboBox.SelectedValueProperty, new Binding(nameof(CvcieProbeSettings.MagnigifierType))
+            {
+                Source = settings,
+                Mode = BindingMode.TwoWay,
+                UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
+            });
+            typeDock.Children.Add(combo);
+            panel.Children.Add(typeDock);
+
+            panel.Children.Add(new TextBlock
+            {
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Text = "设置为圆的时候，输入的值是半径"
+            });
+
+            border.Child = panel;
+            return border;
+        }
+
         public void CVCIESetBuffer(ImageView imageView,string filePath)
         {
             CVCIEFile meta;
             int index;
+            CvcieMouseProbeController? probeController = null;
+            MouseMagnifierManager? mouseMagnifier = null;
+            var probeSettings = new CvcieProbeSettings();
 
 
             Action LoadBuffer = new Action(() =>
@@ -87,12 +156,15 @@ namespace ColorVision.Engine.Media
                 CVFileUtil.ReadCIEFileData(filePath, ref meta, index);
                 int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(Config.ConvertXYZhandle, (uint)meta.Cols, (uint)meta.Rows, (uint)meta.Bpp, (uint)meta.Channels, meta.Data);
                 log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
+                // ConvertXYZ will hold its own buffer copy; release managed raw data to reduce peak memory.
+                meta.Data = null;
                 imageView.Config.AddProperties("IsBufferSet", true);
 
             });
 
             imageView.Config.AddProperties("LoadBuffer", LoadBuffer);
 
+            ShowDateFilePath = false;
             if (File.Exists(ViewAlgorithmConfig.Instance.ShowDateFilePath))
             {
                 Points.Clear();
@@ -116,81 +188,20 @@ namespace ColorVision.Engine.Media
                 }
                 ShowDateFilePath = true;
             }
-            void ShowCVCIE(object sender, ImageInfo imageInfo)
-            {
-                if (!imageView.Config.GetProperties<bool>("IsBufferSet"))
-                {
-                    Action action = imageView.Config.GetProperties<Action>("LoadBuffer");
-                    action?.Invoke();
-                }
-
-                float dXVal = 0;
-                float dYVal = 0;
-                float dZVal = 0;
-                float dx = 0, dy = 0, du = 0, dv = 0;
-                var (x2, y2) = FindNearbyPoints(imageInfo.X, imageInfo.Y);
-                //要从1,1开始
-                x2 += 1;
-                y2 += 1;
-                switch (imageView.ImageViewModel.MouseMagnifier.MagnigifierType)
-                {
-                    case MagnigifierType.Circle:
-                        if (exp.Length == 1)
-                        {
-                            int ret = ConvertXYZ.CM_GetYCircle(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal, imageView.ImageViewModel.MouseMagnifier.Radius);
-                            string text1 = $"Y:{dYVal:F1}";
-                            string text2 = $"";
-                            imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
-                        }
-                        else
-                        {
-
-                            int ret = ConvertXYZ.CM_GetXYZxyuvCircle(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.ImageViewModel.MouseMagnifier.Radius);
-                            string text1;
-                            if (ShowDateFilePath)
-                                text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1},({x2},{y2})";
-                            else
-                                text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
-
-                            string text2 = $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}";
-                            imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
-                        }
-
-                        break;
-                    case MagnigifierType.Rect:
-                        if (exp.Length == 1)
-                        {
-                            int ret = ConvertXYZ.CM_GetYRect(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal, (int)imageView.ImageViewModel.MouseMagnifier.RectWidth, (int)imageView.ImageViewModel.MouseMagnifier.RectHeight);
-                            string text1 = $"Y:{dYVal:F1}";
-                            string text2 = $"";
-                            imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
-                        }
-                        else
-                        {
-                            int ret = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, (int)imageView.ImageViewModel.MouseMagnifier.RectWidth, (int)imageView.ImageViewModel.MouseMagnifier.RectHeight);
-                            string text1;
-                            if (ShowDateFilePath)
-                                text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1},({x2},{y2})";
-                            else
-                                text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
-
-                            string text2 = $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}";
-                            imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
-                        }
-
-                        break;
-                    default:
-                        break;
-                }
-            }
 
             void Config_Cleared(object? sender, EventArgs e)
             {
                 imageView.Config.Cleared -= Config_Cleared;
+                if (probeController != null)
+                {
+                    mouseMagnifier?.MouseMoveProbeHandler -= probeController.TryHandleProbe;
+                    probeController.Dispose();
+                    probeController = null;
+                }
+                imageView.RemoveAdvancedSettingSection(CvcieSettingSectionKey);
                 int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
                 result = ConvertXYZ.CM_UnInitXYZ(Config.ConvertXYZhandle);
                 result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
-                imageView.ImageViewModel.MouseMagnifier.ClearMouseMoveColorHandler();
             }
             imageView.Config.Cleared += Config_Cleared;
 
@@ -250,14 +261,31 @@ namespace ColorVision.Engine.Media
                     log.Debug(JsonConvert.SerializeObject(meta));
                     imageView.Config.AddProperties("IsCVCIE", true);
 
+                    if (!TryGetMouseMagnifier(imageView, out mouseMagnifier))
+                    {
+                        log.Warn("CVCIE open: MouseMagnifierManager not found, skip probe overlay integration.");
+                    }
+                    else
+                    {
+                        imageView.AddOrReplaceAdvancedSettingSection(CvcieSettingSectionKey, BuildCvcieProbeSettingsSection(probeSettings));
+                    }
+
                     imageView.Config.AddProperties("meta", meta);
                     imageView.Config.AddProperties("index", index);
                     imageView.Config.AddProperties("Exp", meta.Exp);
+                    imageView.Config.AddProperties("CvcieProbeSettings", probeSettings);
 
                     imageView.Config.AddProperties("IsBufferSet",false);
                     exp = meta.Exp;
-
-                    imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
+                    probeController = new CvcieMouseProbeController(
+                        imageView,
+                        Config.ConvertXYZhandle,
+                        LoadBuffer,
+                        () => exp,
+                        () => ShowDateFilePath,
+                        FindNearbyPoints,
+                        () => probeSettings);
+                    mouseMagnifier?.MouseMoveProbeHandler += probeController.TryHandleProbe;
 
                     if (meta.SrcFileName !=null && !File.Exists(meta.SrcFileName))
                         meta.SrcFileName = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, meta.SrcFileName);
