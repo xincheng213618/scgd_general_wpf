@@ -3,7 +3,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
-using ProjectARVRPro.DeviceChannel;
 using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
 using System.Collections.ObjectModel;
@@ -23,7 +22,6 @@ namespace ProjectARVRPro
         public static FixManager FixManager => FixManager.GetInstance();
         public static SummaryManager SummaryManager => SummaryManager.GetInstance();
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
-        public static DeviceChannelManager DeviceChannelManager => DeviceChannelManager.GetInstance();
 
         [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }

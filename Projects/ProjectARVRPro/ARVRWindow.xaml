@@ -273,10 +273,7 @@
                 <Button Content="雷鸟切图调试" Click="OpenThunderbirdSerialDebug_Click" Padding="10,2"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="设备通道" Command="{Binding DeviceChannelManager.EditCommand}" Padding="10,2"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="▶ 一键执行" Click="RunAllClick" Background="#FF4CAF50" Foreground="White" FontWeight="Bold" Padding="10,2"/>
+                <Button Content="▶ 一键执行" Click="RunAllClick" Background="#FF4CAF50" Foreground="White" FontWeight="Bold" Padding="10,5"/>
             </StatusBarItem>
         </StatusBar>
 
