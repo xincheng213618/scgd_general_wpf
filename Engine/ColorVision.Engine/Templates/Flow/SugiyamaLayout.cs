@@ -36,6 +36,18 @@ namespace ColorVision.Engine.Templates.Flow
         // All reachable nodes
         private HashSet<STNode> _reachable;
 
+        // Port-level edge information for port-aware crossing reduction
+        private struct PortEdge
+        {
+            public STNode From;
+            public STNode To;
+            public int OutputPortIndex;
+            public int InputPortIndex;
+            public int OutputPortCount;
+            public int InputPortCount;
+        }
+        private List<PortEdge> _portEdges;
+
         /// <summary>
         /// Number of forward+backward sweeps for crossing reduction.
         /// More iterations give better results at the cost of time.
@@ -134,6 +146,43 @@ namespace ColorVision.Engine.Templates.Flow
                         _parents[to].Add(from);
                 }
             }
+
+            // Build port-level edge information for port-aware crossing reduction
+            _portEdges = new List<PortEdge>();
+            foreach (var conn in _connections)
+            {
+                var from = conn.Output.Owner;
+                var to = conn.Input.Owner;
+                if (!_reachable.Contains(from) || !_reachable.Contains(to)) continue;
+
+                int outIdx = 0, outCount = 1;
+                var outputOptions = from.GetOutputOptions();
+                if (outputOptions != null)
+                {
+                    outIdx = Array.IndexOf(outputOptions, conn.Output);
+                    if (outIdx < 0) outIdx = 0;
+                    outCount = outputOptions.Length;
+                }
+
+                int inIdx = 0, inCount = 1;
+                var inputOptions = to.GetInputOptions();
+                if (inputOptions != null)
+                {
+                    inIdx = Array.IndexOf(inputOptions, conn.Input);
+                    if (inIdx < 0) inIdx = 0;
+                    inCount = inputOptions.Length;
+                }
+
+                _portEdges.Add(new PortEdge
+                {
+                    From = from,
+                    To = to,
+                    OutputPortIndex = outIdx,
+                    InputPortIndex = inIdx,
+                    OutputPortCount = Math.Max(1, outCount),
+                    InputPortCount = Math.Max(1, inCount)
+                });
+            }
         }
 
         /// <summary>
@@ -190,6 +239,7 @@ namespace ColorVision.Engine.Templates.Flow
         /// <summary>
         /// Phase 2: Reduce edge crossings using the barycenter heuristic.
         /// Alternates forward (layer 0→N) and backward (layer N→0) sweeps.
+        /// Then applies swap-based optimization to escape local minima.
         /// </summary>
         private void ReduceCrossings()
         {
@@ -209,11 +259,16 @@ namespace ColorVision.Engine.Templates.Flow
                     OrderLayerByBarycenter(_layers[i], _layers[i + 1], useParents: false);
                 }
             }
+
+            // Post-processing: swap adjacent nodes to further reduce crossings
+            SwapOptimize();
         }
 
         /// <summary>
-        /// Order nodes in <paramref name="layer"/> by the barycenter of their
+        /// Order nodes in <paramref name="layer"/> by the port-aware barycenter of their
         /// neighbors in the <paramref name="fixedLayer"/>.
+        /// Port indices are used as fractional offsets so that nodes connecting to upper
+        /// ports tend to be placed above nodes connecting to lower ports.
         /// </summary>
         private void OrderLayerByBarycenter(List<STNode> layer, List<STNode> fixedLayer, bool useParents)
         {
@@ -226,17 +281,47 @@ namespace ColorVision.Engine.Templates.Flow
                 fixedPositions[fixedLayer[i]] = i;
             }
 
-            // Compute barycenter for each node in the layer
+            // Compute port-aware barycenter for each node in the layer
             var barycenters = new Dictionary<STNode, double>();
             for (int i = 0; i < layer.Count; i++)
             {
                 var node = layer[i];
-                var neighbors = useParents ? _parents[node] : _children[node];
-                var relevantNeighbors = neighbors.Where(n => fixedPositions.ContainsKey(n)).ToList();
 
-                if (relevantNeighbors.Count > 0)
+                // Gather relevant port edges
+                var relevantEdges = new List<PortEdge>();
+                foreach (var edge in _portEdges)
                 {
-                    barycenters[node] = relevantNeighbors.Average(n => fixedPositions[n]);
+                    if (useParents)
+                    {
+                        if (edge.To == node && fixedPositions.ContainsKey(edge.From))
+                            relevantEdges.Add(edge);
+                    }
+                    else
+                    {
+                        if (edge.From == node && fixedPositions.ContainsKey(edge.To))
+                            relevantEdges.Add(edge);
+                    }
+                }
+
+                if (relevantEdges.Count > 0)
+                {
+                    double sum = 0;
+                    foreach (var edge in relevantEdges)
+                    {
+                        if (useParents)
+                        {
+                            // Parent position + fractional offset for its output port
+                            double portOffset = PortFraction(edge.OutputPortIndex, edge.OutputPortCount);
+                            sum += fixedPositions[edge.From] + portOffset;
+                        }
+                        else
+                        {
+                            // Child position + fractional offset for its input port
+                            double portOffset = PortFraction(edge.InputPortIndex, edge.InputPortCount);
+                            sum += fixedPositions[edge.To] + portOffset;
+                        }
+                    }
+                    barycenters[node] = sum / relevantEdges.Count;
                 }
                 else
                 {
@@ -470,6 +555,110 @@ namespace ColorVision.Engine.Templates.Flow
                 }
 
                 accumulatedY += (rowMaxY[r] - rowMinY[r]) + rowGap;
+            }
+        }
+
+        /// <summary>
+        /// Maps a port index to a fractional offset for barycenter calculation.
+        /// Port 0 → −0.3, last port → +0.3, middle → 0.
+        /// This encourages nodes connected via upper ports to be placed above
+        /// those connected via lower ports, reducing crossings at multi-port nodes.
+        /// </summary>
+        private static double PortFraction(int portIndex, int portCount)
+        {
+            if (portCount <= 1) return 0;
+            return ((double)portIndex / (portCount - 1) - 0.5) * 0.6;
+        }
+
+        /// <summary>
+        /// Count edge crossings between layer at <paramref name="layerIdx"/> and the next layer,
+        /// considering port positions for accurate crossing detection on multi-port nodes.
+        /// </summary>
+        private int CountLayerCrossings(int layerIdx)
+        {
+            if (layerIdx < 0 || layerIdx >= _layers.Count - 1) return 0;
+
+            var layer1 = _layers[layerIdx];
+            var layer2 = _layers[layerIdx + 1];
+
+            // Build position maps
+            var pos1 = new Dictionary<STNode, int>();
+            for (int i = 0; i < layer1.Count; i++) pos1[layer1[i]] = i;
+            var pos2 = new Dictionary<STNode, int>();
+            for (int i = 0; i < layer2.Count; i++) pos2[layer2[i]] = i;
+
+            // Collect edges between these two layers with port-aware positions
+            var edges = new List<(double src, double tgt)>();
+            foreach (var e in _portEdges)
+            {
+                if (pos1.ContainsKey(e.From) && pos2.ContainsKey(e.To))
+                {
+                    double src = pos1[e.From] + PortFraction(e.OutputPortIndex, e.OutputPortCount);
+                    double tgt = pos2[e.To] + PortFraction(e.InputPortIndex, e.InputPortCount);
+                    edges.Add((src, tgt));
+                }
+            }
+
+            // Count crossings — O(E²), acceptable for typical flow graph sizes
+            int crossings = 0;
+            for (int i = 0; i < edges.Count; i++)
+            {
+                for (int j = i + 1; j < edges.Count; j++)
+                {
+                    if ((edges[i].src < edges[j].src && edges[i].tgt > edges[j].tgt) ||
+                        (edges[i].src > edges[j].src && edges[i].tgt < edges[j].tgt))
+                    {
+                        crossings++;
+                    }
+                }
+            }
+            return crossings;
+        }
+
+        /// <summary>
+        /// Post-processing: try swapping adjacent nodes within each layer to further
+        /// reduce edge crossings. This catches cases the barycenter heuristic misses,
+        /// especially around multi-input nodes like logical AND (逻辑与).
+        /// </summary>
+        private void SwapOptimize()
+        {
+            bool improved = true;
+            int maxPasses = 10;
+            int pass = 0;
+
+            while (improved && pass < maxPasses)
+            {
+                improved = false;
+                pass++;
+
+                for (int li = 0; li < _layers.Count; li++)
+                {
+                    var layer = _layers[li];
+                    for (int i = 0; i < layer.Count - 1; i++)
+                    {
+                        // Count current crossings involving this layer
+                        int currentCrossings = 0;
+                        if (li > 0) currentCrossings += CountLayerCrossings(li - 1);
+                        if (li < _layers.Count - 1) currentCrossings += CountLayerCrossings(li);
+
+                        // Try swapping adjacent nodes
+                        (layer[i], layer[i + 1]) = (layer[i + 1], layer[i]);
+
+                        int newCrossings = 0;
+                        if (li > 0) newCrossings += CountLayerCrossings(li - 1);
+                        if (li < _layers.Count - 1) newCrossings += CountLayerCrossings(li);
+
+                        if (newCrossings < currentCrossings)
+                        {
+                            improved = true; // Keep the swap
+                        }
+                        else
+                        {
+                            // Revert the swap
+                            (layer[i], layer[i + 1]) = (layer[i + 1], layer[i]);
+                        }
+                    }
+                }
             }
         }
 

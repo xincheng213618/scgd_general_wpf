@@ -2,6 +2,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Database;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Templates.Flow;
@@ -19,7 +20,7 @@ namespace ColorVision.Engine.Batch.Eqe
 {
     public static class EqeViewResultExt
     {
-        public static void SaveToCsv(this ObservableCollection<ViewResultEqe> ViewResultEqes, string csv)
+        public static void SaveToCsv(this ObservableCollection<ViewResultSpectrum> viewResults, string csv)
         {
             var csvBuilder = new StringBuilder();
 
@@ -59,7 +60,7 @@ namespace ColorVision.Engine.Batch.Eqe
 
             int index = 1;
 
-            foreach (var result in ViewResultEqes)
+            foreach (var result in viewResults)
             {
                 csvBuilder.Append(result.CreateTime + ",");
                 csvBuilder.Append(index + ",");
@@ -104,7 +105,7 @@ namespace ColorVision.Engine.Batch.Eqe
         private bool _SaveToCsv = true;
 
         [DisplayName("显示窗口")]
-        [Description("是否显示EQE结果窗口")]
+        [Description("是否将EQE结果注入光谱视图")]
         public bool ShowWindow { get => _ShowWindow; set { _ShowWindow = value; OnPropertyChanged(); } }
         private bool _ShowWindow = true;
     }
@@ -134,7 +135,7 @@ namespace ColorVision.Engine.Batch.Eqe
 
                 DB.Dispose();
 
-                ObservableCollection<ViewResultEqe> ViewResults = new ObservableCollection<ViewResultEqe>();
+                ObservableCollection<ViewResultSpectrum> viewResults = new ObservableCollection<ViewResultSpectrum>();
 
                 if (eqeResults.Count == 0)
                 {
@@ -146,17 +147,14 @@ namespace ColorVision.Engine.Batch.Eqe
                             Directory.CreateDirectory(batchConfig.SavePath);
                         }
                         string eqeFilePath = Path.Combine(batchConfig.SavePath, $"EQE_{timeStr}.csv");
-                        ViewResults.SaveToCsv(eqeFilePath);
+                        viewResults.SaveToCsv(eqeFilePath);
                     }
                 }
                 else
                 {
-                    int i = 0;
                     foreach (var item in eqeResults)
                     {
-                        ViewResultEqe viewResultEqe = new ViewResultEqe(item);
-                        i++;
-                        ViewResults.Add(viewResultEqe);
+                        viewResults.Add(new ViewResultSpectrum(item));
                     }
 
                     if (Config.SaveToCsv)
@@ -166,23 +164,33 @@ namespace ColorVision.Engine.Batch.Eqe
                             Directory.CreateDirectory(batchConfig.SavePath);
                         }
                         string eqeFilePath = Path.Combine(batchConfig.SavePath, $"EQE_{timeStr}.csv");
-                        ViewResults.SaveToCsv(eqeFilePath);
+                        viewResults.SaveToCsv(eqeFilePath);
                     }
                 }
 
-                // Show EQE window as popup
-                if (Config.ShowWindow && ViewResults.Count > 0)
+                // Inject EQE results into existing spectrum view instead of opening a dedicated EQE window.
+                if (Config.ShowWindow && viewResults.Count > 0)
                 {
                     System.Windows.Application.Current?.Dispatcher.Invoke(() =>
                     {
                         try
                         {
-                            EqeWindow eqeWindow = EqeWindow.GetEqeWindow(ViewResults);
-                            eqeWindow.Show();
+                            var deviceSpectrum = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();
+                            if (deviceSpectrum == null)
+                            {
+                                log.Info("找不到光谱设备实例，跳过EQE视图注入");
+                                return;
+                            }
+
+                            deviceSpectrum.DisplayConfig.IsLuminousFluxMode = true;
+                            foreach (var result in viewResults)
+                            {
+                                deviceSpectrum.View.AddViewResultSpectrum(result);
+                            }
                         }
                         catch (Exception ex)
                         {
-                            log.Error("Failed to open EQE window", ex);
+                            log.Error("Failed to inject EQE results into spectrum view", ex);
                         }
                     });
                 }

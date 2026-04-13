@@ -23,5 +23,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         [DisplayName("ShowSidebar"), Category("Control")]
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; OnPropertyChanged(); } }
         private bool _IsShowSideListView;
+
+        [DisplayName("防负亮度"), Category("Spectrum")]
+        public bool EnableNegativeLuminanceGuard { get => _EnableNegativeLuminanceGuard; set { _EnableNegativeLuminanceGuard = value; OnPropertyChanged(); } }
+        private bool _EnableNegativeLuminanceGuard = true;
+
+        [DisplayName("亮度最小值"), Category("Spectrum")]
+        public double MinLuminanceValue { get => _MinLuminanceValue; set { _MinLuminanceValue = value; OnPropertyChanged(); } }
+        private double _MinLuminanceValue = 0.0001;
     }
 }

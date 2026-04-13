@@ -133,7 +133,6 @@ namespace ColorVision.Engine.Services.RC
                             if (!Tool.ExecuteCommandAsAdmin("net start RegistrationCenterService"))
                             {
                                 log.Info("以管理员权限启动 RegistrationCenterService 服务失败。");
-                                ShowManualConnectDialog();
                                 return;
                             }
                         }
@@ -187,7 +186,6 @@ namespace ColorVision.Engine.Services.RC
                         if (!Tool.ExecuteCommandAsAdmin("net start RegistrationCenterService"))
                         {
                             log.Info("以管理员权限启动 RegistrationCenterService 服务失败。");
-                            ShowManualConnectDialog();
                             return;
                         }
                         isConnect = await MqttRCService.GetInstance().Connect();
@@ -196,26 +194,13 @@ namespace ColorVision.Engine.Services.RC
 
 
                     log.Info("未检测到 RegistrationCenterService 服务，请确认已正确安装。");
-                    ShowManualConnectDialog();
                     return;
                 }
             }
             catch (Exception ex)
             {
                 log.Error(ex);
-                ShowManualConnectDialog();
                 return;
-            }
-
-            ShowManualConnectDialog();
-
-            void ShowManualConnectDialog()
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    RCServiceConnect connect = new() { Owner = Application.Current.GetActiveWindow() };
-                    connect.ShowDialog();
-                });
             }
         }
     }

@@ -83,7 +83,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             try
             {
                 IP = Math.Round(fIp / 65535 * 100, 2).ToString() + "%";
-                Lv = (fPh / 1).ToString();
+                float safeLuminance = GetSafeLuminanceValue(fPh);
+                Lv = safeLuminance.ToString();
+                LuminousFlux = safeLuminance;
 
                 double sum1 = 0, sum2 = 0;
                 for (int i = 35; i <= 75; i++)
@@ -154,6 +156,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 
             }
 
+        }
+
+        private static float GetSafeLuminanceValue(float rawLuminance)
+        {
+            ViewSpectrumConfig config = ViewSpectrumConfig.Instance;
+            if (config.EnableNegativeLuminanceGuard && rawLuminance < config.MinLuminanceValue)
+            {
+                return (float)config.MinLuminanceValue;
+            }
+            return rawLuminance;
         }
 
 

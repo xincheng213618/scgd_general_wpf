@@ -3,16 +3,19 @@ using ColorVision.UI.Menus;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 
 namespace Spectrum
 {
-    public class MainWindowConfig : WindowConfig,IConfig,IConfigSettingProvider,IFullScreenState
+    public class MainWindowConfig : WindowConfig,IConfig,IFullScreenState
     {
         public static MainWindowConfig Instance => ConfigService.Instance.GetRequiredService<MainWindowConfig>();
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
+        [ConfigSetting(Order = 1)]
+        [DisplayName("界面显示日志")]
         public bool LogControlVisibility { get => _LogControlVisibility; set { _LogControlVisibility  =value;OnPropertyChanged(); } }
         private bool _LogControlVisibility = true;
 
@@ -31,22 +34,6 @@ namespace Spectrum
         [JsonIgnore]
         public bool IsFull { get => _IsFull; set { _IsFull = value; OnPropertyChanged(); } }
         private bool _IsFull;
-
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            var list = new List<ConfigSettingMetadata>
-            {
-                new ConfigSettingMetadata
-                {
-                    Name ="界面显示日志",
-                    Description =  "界面显示日志",
-                    Order = 1,
-                    BindingName =nameof(LogControlVisibility),
-                    Source = this,
-                }
-            };
-            return list;
-        }
     }
     public class ExportMenuViewMax : MenuItemBase
     {

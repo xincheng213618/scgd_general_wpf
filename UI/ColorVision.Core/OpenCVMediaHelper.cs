@@ -241,6 +241,17 @@ namespace ColorVision.Core
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_FindLightBeads(HImage img, RoiRect roi, string config, out IntPtr str);
 
+        /// <summary>
+        /// 自动检测键盘按键区域
+        /// </summary>
+        /// <param name="img">输入图像</param>
+        /// <param name="roi">ROI区域，宽高为0时使用整个图像</param>
+        /// <param name="config">JSON配置: {"Threshold":-1,"MinArea":500,"MaxArea":0,"MarginRatio":0.05}</param>
+        /// <param name="str">输出JSON结果</param>
+        /// <returns>正数表示结果长度，负数表示错误</returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_DetectKeyRegions(HImage img, RoiRect roi, string config, out IntPtr str);
+
         // Video functions
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]

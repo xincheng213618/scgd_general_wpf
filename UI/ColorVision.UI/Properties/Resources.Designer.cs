@@ -475,11 +475,29 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 启用浏览器搜索 的本地化字符串。
+        /// </summary>
+        public static string EnableBrowserSearch {
+            get {
+                return ResourceManager.GetString("EnableBrowserSearch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 是否启用CUDA 的本地化字符串。
         /// </summary>
         public static string EnableCUDA {
             get {
                 return ResourceManager.GetString("EnableCUDA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启用Everything搜索 的本地化字符串。
+        /// </summary>
+        public static string EnableEverythingSearch {
+            get {
+                return ResourceManager.GetString("EnableEverythingSearch", resourceCulture);
             }
         }
         
@@ -498,6 +516,15 @@ namespace ColorVision.UI.Properties {
         public static string ErrorOccurred {
             get {
                 return ResourceManager.GetString("ErrorOccurred", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Everything路径 的本地化字符串。
+        /// </summary>
+        public static string EverythingPath {
+            get {
+                return ResourceManager.GetString("EverythingPath", resourceCulture);
             }
         }
         
@@ -1128,6 +1155,15 @@ namespace ColorVision.UI.Properties {
         public static string Search {
             get {
                 return ResourceManager.GetString("Search", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 搜索引擎 的本地化字符串。
+        /// </summary>
+        public static string SearchEngine {
+            get {
+                return ResourceManager.GetString("SearchEngine", resourceCulture);
             }
         }
         

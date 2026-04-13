@@ -39,7 +39,9 @@ namespace ColorVision.Engine.Templates.POI.POIOutput
                 "ON DUPLICATE KEY UPDATE " +
                 "`symbol`=VALUES(`symbol`), `address_code`=VALUES(`address_code`), `name`=VALUES(`name`), `val_type`=VALUES(`val_type`), `value_range`=VALUES(`value_range`), `default_val`=VALUES(`default_val`), `pid`=VALUES(`pid`), `create_date`=VALUES(`create_date`), `is_enable`=VALUES(`is_enable`), `is_delete`=VALUES(`is_delete`), `remark`=VALUES(`remark`);\r\n";
 
-            return t_scgd_sys_dictionary_mod_master + t_scgd_sys_dictionary_mod_item;
+            string t_scgd_sys_dictionary_ = "INSERT INTO `t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) VALUES (5521, 'XYZIsEnable', 5521, 'XYZIsEnable', 2, NULL, 'false', 27, '2024-08-06 12:46:31', 1, 0, NULL);\n\r";
+            string t_scgd_sys_dictionary_1 = "INSERT INTO `t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) VALUES (5522, 'XYZFileName', 5522, 'XYZFileName', 3, NULL, 'XYZ.cvcie', 27, '2024-08-06 12:46:31', 1, 0, NULL);\n\r";
+            return t_scgd_sys_dictionary_mod_master + t_scgd_sys_dictionary_mod_item + t_scgd_sys_dictionary_ + t_scgd_sys_dictionary_1;
         }
     }
 }

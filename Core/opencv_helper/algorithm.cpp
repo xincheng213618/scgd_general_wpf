@@ -212,22 +212,33 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
         cvtColor(src, gray, COLOR_BGR2GRAY);
     else
         gray = src;
+
+    // 处理各种位深度
     if (gray.depth() == CV_16U)
+        normalize(gray, gray, 0, 255, NORM_MINMAX, CV_8U);
+    else if (gray.depth() == CV_32F || gray.depth() == CV_64F)
         normalize(gray, gray, 0, 255, NORM_MINMAX, CV_8U);
 
     GaussianBlur(gray, gray, Size(5, 5), 0);
+
+    // CLAHE增强对比度
+    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(2.0, cv::Size(8, 8));
+    clahe->apply(gray, gray);
+
     Mat thresh;
     if (threshold < 0) {
-        // Use Otsu's method for automatic threshold detection (triggered by any negative threshold value)
         cv::threshold(gray, thresh, 0, 255, THRESH_BINARY | THRESH_OTSU);
     }
     else {
-        // Use fixed threshold (threshold >= 0)
         cv::threshold(gray, thresh, threshold, 255, THRESH_BINARY);
     }
 
-    Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
-    dilate(thresh, thresh, kernel);
+    // 改进形态学操作
+    Mat kernelOpen = getStructuringElement(MORPH_RECT, Size(3, 3));
+    morphologyEx(thresh, thresh, MORPH_OPEN, kernelOpen);
+
+    Mat kernelDilate = getStructuringElement(MORPH_RECT, Size(5, 5));
+    dilate(thresh, thresh, kernelDilate, Point(-1, -1), 2);
 
     std::vector<std::vector<Point>> contours;
     findContours(thresh, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
@@ -280,43 +291,53 @@ int findLuminousAreaCorners(cv::Mat& src, std::vector<cv::Point2f>& points, int 
 
 int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold)
 {
-    // �������ͼ���Ƿ�Ϊ��
     if (src.empty()) {
         return -1;
     }
     Mat gray;
     if (src.channels() != 1) {
-        // ת��Ϊ�Ҷ�ͼ
         cvtColor(src, gray, COLOR_BGR2GRAY);
     }
     else {
         gray = src;
     }
+
+    // 处理各种位深度
     if (gray.depth() == CV_16U) {
         cv::normalize(gray, gray, 0, 255, cv::NORM_MINMAX, CV_8U);
     }
-    // ��˹ģ��
+    else if (gray.depth() == CV_32F || gray.depth() == CV_64F) {
+        cv::normalize(gray, gray, 0, 255, cv::NORM_MINMAX, CV_8U);
+    }
+
+    // 高斯模糊降噪
     GaussianBlur(gray, gray, Size(5, 5), 0);
 
-    // ��ֵ�ָ�
+    // 使用CLAHE增强对比度，改善低对比度图像的检测效果
+    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(2.0, cv::Size(8, 8));
+    clahe->apply(gray, gray);
+
+    // 阈值分割
     Mat thresh;
     if (threshold < 0) {
-        // Use Otsu's method for automatic threshold detection (triggered by any negative threshold value)
         cv::threshold(gray, thresh, 0, 255, THRESH_BINARY | THRESH_OTSU);
     }
     else {
-        // Use fixed threshold (threshold >= 0)
         cv::threshold(gray, thresh, threshold, 255, THRESH_BINARY);
     }
 
-    // ��̬ѧ����������
-    Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
-    dilate(thresh, thresh, kernel);
+    // 形态学操作：先开运算去噪，再膨胀合并相邻区域
+    Mat kernelOpen = getStructuringElement(MORPH_RECT, Size(3, 3));
+    morphologyEx(thresh, thresh, MORPH_OPEN, kernelOpen);
 
-    // ��������
-    std::vector< std::vector<Point>> contours;
+    Mat kernelDilate = getStructuringElement(MORPH_RECT, Size(5, 5));
+    dilate(thresh, thresh, kernelDilate, Point(-1, -1), 2);
+
+    // 轮廓检测
+    std::vector<std::vector<Point>> contours;
     findContours(thresh, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
+    // 过滤边界轮廓
     contours.erase(std::remove_if(contours.begin(), contours.end(),
         [&](const std::vector<cv::Point>& contour) {
             cv::Rect rect = cv::boundingRect(contour);
@@ -325,19 +346,44 @@ int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold)
                 rect.y + rect.height == src.rows;
         }), contours.end());
 
-
-    if (contours.size()==0)
+    if (contours.empty())
     {
         return -2;
     }
 
-    double maxArea = 0;
-    for (size_t i = 0; i < contours.size(); i++) {
-        double area = contourArea(contours[i]);
-        if (area > maxArea) {
-            maxArea = area;
-            largestRect = boundingRect(contours[i]);
+    // 如果有多个轮廓，尝试合并所有有效轮廓的外接矩形
+    if (contours.size() > 1) {
+        // 先找最大面积的轮廓
+        double maxArea = 0;
+        size_t maxIdx = 0;
+        double totalArea = 0;
+        for (size_t i = 0; i < contours.size(); i++) {
+            double area = contourArea(contours[i]);
+            totalArea += area;
+            if (area > maxArea) {
+                maxArea = area;
+                maxIdx = i;
+            }
         }
+
+        // 如果最大轮廓面积占总面积的80%以上，直接用它
+        if (maxArea > totalArea * 0.8) {
+            largestRect = boundingRect(contours[maxIdx]);
+        }
+        else {
+            // 否则合并所有轮廓求外接矩形
+            std::vector<cv::Point> allPoints;
+            for (const auto& contour : contours) {
+                // 只合并面积大于最大面积1%的轮廓
+                if (contourArea(contour) > maxArea * 0.01) {
+                    allPoints.insert(allPoints.end(), contour.begin(), contour.end());
+                }
+            }
+            largestRect = boundingRect(allPoints);
+        }
+    }
+    else {
+        largestRect = boundingRect(contours[0]);
     }
 
     return 0;
@@ -1062,5 +1108,158 @@ int findLightBeads(
 
         return 0;
     }
+}
+
+int detectKeyRegions(
+    cv::Mat& src,
+    std::vector<cv::Rect>& keyRects,
+    int threshold,
+    int minArea,
+    int maxArea,
+    double marginRatio)
+{
+    keyRects.clear();
+    if (src.empty()) return -1;
+
+    // 转为8位灰度图
+    cv::Mat gray;
+    cv::Mat work;
+    if (src.depth() == CV_16U) {
+        cv::Mat temp;
+        src.convertTo(temp, (src.channels() == 1) ? CV_8UC1 : CV_8UC3, 255.0 / 65535.0);
+        work = temp;
+    }
+    else if (src.depth() != CV_8U) {
+        cv::Mat temp;
+        src.convertTo(temp, (src.channels() == 1) ? CV_8UC1 : CV_8UC3);
+        work = temp;
+    }
+    else {
+        work = src;
+    }
+
+    if (work.channels() >= 3) {
+        cv::cvtColor(work, gray, cv::COLOR_BGR2GRAY);
+    }
+    else {
+        gray = work;
+    }
+
+    // 高斯模糊降噪
+    cv::GaussianBlur(gray, gray, cv::Size(5, 5), 0);
+
+    // 阈值化
+    cv::Mat binary;
+    if (threshold < 0) {
+        cv::threshold(gray, binary, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+    }
+    else {
+        cv::threshold(gray, binary, threshold, 255, cv::THRESH_BINARY);
+    }
+
+    // 形态学操作：先开运算去除噪点，再闭运算填充按键内部间隙
+    cv::Mat kernelOpen = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+    cv::morphologyEx(binary, binary, cv::MORPH_OPEN, kernelOpen);
+
+    cv::Mat kernelClose = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
+    cv::morphologyEx(binary, binary, cv::MORPH_CLOSE, kernelClose);
+
+    // 轮廓检测
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    if (contours.empty()) return -2;
+
+    // 计算图像总面积作为参考
+    double imageArea = (double)src.rows * src.cols;
+    if (maxArea <= 0) {
+        maxArea = (int)(imageArea * 0.25); // 默认最大面积不超过图像面积的25%
+    }
+
+    // 收集有效轮廓的矩形
+    std::vector<cv::Rect> candidateRects;
+    for (const auto& contour : contours) {
+        double area = cv::contourArea(contour);
+        if (area < minArea || area > maxArea) continue;
+
+        cv::Rect rect = cv::boundingRect(contour);
+
+        // 过滤掉贴着图像边界的轮廓（通常是背景噪声）
+        if (rect.x == 0 || rect.y == 0 ||
+            rect.x + rect.width == src.cols ||
+            rect.y + rect.height == src.rows) {
+            continue;
+        }
+
+        // 过滤掉宽高比过于极端的区域（非按键形状）
+        double aspect = (double)rect.width / rect.height;
+        if (aspect < 0.15 || aspect > 8.0) continue;
+
+        candidateRects.push_back(rect);
+    }
+
+    if (candidateRects.empty()) return -2;
+
+    // 对矩形应用边距缩进（如果指定）
+    double mr = std::max(0.0, std::min(0.45, marginRatio));
+    for (auto& r : candidateRects) {
+        int dx = (int)(r.width * mr);
+        int dy = (int)(r.height * mr);
+        r.x += dx;
+        r.y += dy;
+        r.width -= 2 * dx;
+        r.height -= 2 * dy;
+        if (r.width < 1) r.width = 1;
+        if (r.height < 1) r.height = 1;
+    }
+
+    // 按位置排序：先按y分行，再按x排列
+    // 先找到行的y坐标范围
+    if (!candidateRects.empty()) {
+        // 按y坐标排序
+        std::sort(candidateRects.begin(), candidateRects.end(),
+            [](const cv::Rect& a, const cv::Rect& b) {
+                return a.y < b.y;
+            });
+
+        // 对同一行内的按x排序
+        // 简单方法：按中心y分组,容差为平均高度的一半
+        double avgHeight = 0;
+        for (const auto& r : candidateRects) avgHeight += r.height;
+        avgHeight /= candidateRects.size();
+        double rowTolerance = avgHeight * 0.5;
+
+        std::vector<std::vector<cv::Rect>> rows;
+        std::vector<cv::Rect> currentRow;
+        int lastY = candidateRects[0].y + candidateRects[0].height / 2;
+
+        for (const auto& r : candidateRects) {
+            int centerY = r.y + r.height / 2;
+            if (std::abs(centerY - lastY) > rowTolerance && !currentRow.empty()) {
+                // 新行
+                std::sort(currentRow.begin(), currentRow.end(),
+                    [](const cv::Rect& a, const cv::Rect& b) { return a.x < b.x; });
+                rows.push_back(currentRow);
+                currentRow.clear();
+            }
+            currentRow.push_back(r);
+            lastY = centerY;
+        }
+        if (!currentRow.empty()) {
+            std::sort(currentRow.begin(), currentRow.end(),
+                [](const cv::Rect& a, const cv::Rect& b) { return a.x < b.x; });
+            rows.push_back(currentRow);
+        }
+
+        // 展开为排序后的列表
+        keyRects.clear();
+        for (const auto& row : rows) {
+            for (const auto& r : row) {
+                keyRects.push_back(r);
+            }
+        }
+    }
+
+    return 0;
 }
 

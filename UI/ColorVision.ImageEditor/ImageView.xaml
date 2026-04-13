@@ -1,138 +1,118 @@
 ﻿<UserControl x:Class="ColorVision.ImageEditor.ImageView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.ImageEditor"
              xmlns:converter="clr-namespace:ColorVision.ImageEditor.Draw.Converter"
              xmlns:converters="clr-namespace:ColorVision.ImageEditor.Converters"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:local="clr-namespace:ColorVision.ImageEditor"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:properties="clr-namespace:ColorVision.ImageEditor.Properties"
-             mc:Ignorable="d" 
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             mc:Ignorable="d"
              d:DataContext="{d:DesignInstance local:ImageViewModel}"
-             d:DesignHeight="600" d:DesignWidth="800" Initialized="UserControl_Initialized" AllowDrop="True" FocusVisualStyle="{x:Null}">
+             d:DesignHeight="600" d:DesignWidth="800" AllowDrop="True"
+             FocusVisualStyle="{x:Null}"
+             Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
         </Style>
-        <Style TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}">
-            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
+        <Style BasedOn="{StaticResource TextBox.Small}" TargetType="TextBox">
+            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown" />
         </Style>
-        <GeometryDrawing x:Key="GridSquare"
-                 Brush="{DynamicResource GlobalTextBrush}"
-                 Geometry="M0,0 L0,1 1,1 1,0 Z" />
-        <DrawingBrush x:Key="TransparentGridBrush"
-              TileMode="Tile"
-              ViewportUnits="Absolute"
-              Viewport="0 0 20 20"
-              Opacity="0.1">
+        <GeometryDrawing x:Key="GridSquare" Brush="{DynamicResource GlobalTextBrush}" Geometry="M0,0 L0,1 1,1 1,0 Z" />
+        <DrawingBrush x:Key="TransparentGridBrush" Opacity="0.1" TileMode="Tile" Viewport="0 0 20 20" ViewportUnits="Absolute">
             <DrawingBrush.Drawing>
                 <DrawingGroup>
-                    <!-- Gray square -->
+                    <!--  Gray square  -->
                     <GeometryDrawing Brush="Gray" Geometry="M0,0 L0,10 10,10 10,0 Z" />
-                    <!-- Transparent square -->
+                    <!--  Transparent square  -->
                     <GeometryDrawing Brush="Transparent" Geometry="M10,0 L10,10 20,10 20,0 Z" />
-                    <!-- Another row -->
+                    <!--  Another row  -->
                     <GeometryDrawing Brush="Transparent" Geometry="M0,10 L0,20 10,20 10,10 Z" />
                     <GeometryDrawing Brush="Gray" Geometry="M10,10 L10,20 20,20 20,10 Z" />
                 </DrawingGroup>
             </DrawingBrush.Drawing>
         </DrawingBrush>
-        <GeometryDrawing x:Key="SmallGridGeometry"
-                         Geometry="M0,0 L0,1 0.03,1 0.03,0.03 1,0.03 1,0 Z"
-                         Brush="{DynamicResource GlobalTextBrush}" />
+        <GeometryDrawing x:Key="SmallGridGeometry" Brush="{DynamicResource GlobalTextBrush}" Geometry="M0,0 L0,1 0.03,1 0.03,0.03 1,0.03 1,0 Z" />
 
-        <GeometryDrawing x:Key="LargeGridGeometry"
-                         Geometry="M0,0 L0,1 0.015,1 0.015,0.015 1,0.015 1,0 Z"
-                         Brush="{DynamicResource GlobalTextBrush}" />
+        <GeometryDrawing x:Key="LargeGridGeometry" Brush="{DynamicResource GlobalTextBrush}" Geometry="M0,0 L0,1 0.015,1 0.015,0.015 1,0.015 1,0 Z" />
 
-        <DrawingBrush x:Key="SmallGridLinesDrawingBrush"
-                      TileMode="Tile"
-                      ViewportUnits="Absolute"
-                      Viewport="0 0 20 20"
-                      Drawing="{StaticResource SmallGridGeometry}" Opacity="0.1" />
+        <DrawingBrush x:Key="SmallGridLinesDrawingBrush" Drawing="{StaticResource SmallGridGeometry}" Opacity="0.1" TileMode="Tile" Viewport="0 0 20 20" ViewportUnits="Absolute" />
 
-        <DrawingBrush x:Key="LargeGridLinesDrawingBrush"
-                      TileMode="Tile"
-                      ViewportUnits="Absolute"
-                      Opacity="0.5"
-                      Viewport="0 0 200 200"
-                      Drawing="{StaticResource LargeGridGeometry}" />
+        <DrawingBrush x:Key="LargeGridLinesDrawingBrush" Drawing="{StaticResource LargeGridGeometry}" Opacity="0.5" TileMode="Tile" Viewport="0 0 200 200" ViewportUnits="Absolute" />
     </UserControl.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <Grid x:Name="ImageContentGrid" Grid.Row="1" >
-            <Grid Background="{StaticResource LargeGridLinesDrawingBrush}" Visibility="Collapsed"/>
-            <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
+        <Grid x:Name="ImageContentGrid" Grid.Row="1">
+            <Grid Background="{StaticResource LargeGridLinesDrawingBrush}" Visibility="Collapsed" />
+            <Grid Background="{StaticResource SmallGridLinesDrawingBrush}" Visibility="Collapsed" />
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
-                <local:Zoombox x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding MaxZoom}"  MinZoom="{Binding MinZoom}" Grid.ColumnSpan="2">
-                    <local:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" FocusVisualStyle="{x:Null}"   RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto">
-                    </local:DrawCanvas>
+                <local:Zoombox x:Name="Zoombox1" Grid.ColumnSpan="2" x:FieldModifier="public" MaxZoom="{Binding MaxZoom}" MinZoom="{Binding MinZoom}">
+                    <local:DrawCanvas x:Name="ImageShow" x:FieldModifier="public" FocusVisualStyle="{x:Null}" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto" />
 
                 </local:Zoombox>
 
-                <ComboBox x:Name="ComboBoxLayers" HorizontalAlignment="Left" BorderThickness="0" VerticalAlignment="Top" Margin="5,5,0,0" Opacity="0.6" Style="{StaticResource ComboBox.Small}" x:FieldModifier="public"  SelectedIndex="0"  Grid.Column="1" Visibility="Collapsed"/>
-                <ToolBar x:Name="ToolBarAl"  x:FieldModifier="public" Style="{StaticResource ToolBarBaseStyle}"  Opacity="0.8" Background="Transparent" ToolBarTray.IsLocked="True"  VerticalAlignment="Bottom" Grid.Row="0"  HorizontalAlignment="Left" Visibility="{Binding Config.IsToolBarAlVisible,Converter={StaticResource bool2VisibilityConverter}}">
-                    <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Style="{StaticResource ComboBox.Small}" Width="100" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
+                <ComboBox x:Name="ComboBoxLayers" Grid.Column="1" Margin="5,5,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" x:FieldModifier="public" BorderThickness="0" Opacity="0.6" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Visibility="Collapsed" />
+                <ToolBar x:Name="ToolBarAl" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Bottom" x:FieldModifier="public" Background="Transparent" Opacity="0.8" Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" Visibility="{Binding Config.IsToolBarAlVisible, Converter={StaticResource bool2VisibilityConverter}}">
+                    <ComboBox x:Name="ComboxPOITemplate" Width="100" HorizontalAlignment="Left" x:FieldModifier="public" DisplayMemberPath="Key" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" />
                 </ToolBar>
 
-                <ToolBarTray x:Name="ToolBarDraw" HorizontalAlignment="Center" VerticalAlignment="Bottom" Grid.Column="1" Opacity="0.9" Visibility="{Binding Config.IsToolBarDrawVisible,Converter={StaticResource bool2VisibilityConverter}}">
-                    <ToolBar ToolBarTray.IsLocked="True"  >
-                    </ToolBar>
+                <ToolBarTray x:Name="ToolBarDraw" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Opacity="0.9" Visibility="{Binding Config.IsToolBarDrawVisible, Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToolBar ToolBarTray.IsLocked="True" />
                 </ToolBarTray>
 
-                <ToolBarTray x:Name="ToolBarTop" Visibility="{Binding Config.IsToolBarTopVisible,Converter={StaticResource bool2VisibilityConverter}}" Opacity="0.9" VerticalAlignment="Top" Grid.Row="0"  HorizontalAlignment="Center" Grid.Column="1">
-                    <ToolBar  ToolBarTray.IsLocked="True" Margin="0,2,4,0" >
-                        <ToggleButton IsChecked="{Binding ImageEditMode}"  Margin="1,0">
-                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
+                <ToolBarTray x:Name="ToolBarTop" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Opacity="0.9" Visibility="{Binding Config.IsToolBarTopVisible, Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToolBar Margin="0,2,4,0" ToolBarTray.IsLocked="True">
+                        <ToggleButton Margin="1,0" IsChecked="{Binding ImageEditMode}">
+                            <Image Margin="-5" Source="{DynamicResource DrawingImagedrag}" Style="{StaticResource ToolBarImage}" />
                         </ToggleButton>
                     </ToolBar>
                 </ToolBarTray>
 
-                <ToolBarTray x:Name="ToolBarLeft" Visibility="{Binding Config.IsToolBarLeftVisible,Converter={StaticResource bool2VisibilityConverter}}" Opacity="0.9" HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
-                    <ToolBar ToolBarTray.IsLocked="True" Padding="2,3"  >
-                    </ToolBar>
+                <ToolBarTray x:Name="ToolBarLeft" Margin="2,50,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="0.9" Orientation="Vertical" Visibility="{Binding Config.IsToolBarLeftVisible, Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToolBar Padding="2,3" ToolBarTray.IsLocked="True" />
                 </ToolBarTray>
-                <ToolBarTray x:Name="ToolBarRight" Visibility="{Binding Config.IsToolBarRightVisible,Converter={StaticResource bool2VisibilityConverter}}" Opacity="0.9" Orientation="Vertical" Margin="0,50,2,0" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Grid.Column="1">
-                    <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
-                        <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2"  Padding="5">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIExpand}" />
+                <ToolBarTray x:Name="ToolBarRight" Grid.Row="0" Grid.Column="1" Margin="0,50,2,0" HorizontalAlignment="Right" VerticalAlignment="Top" Opacity="0.9" Orientation="Vertical" Visibility="{Binding Config.IsToolBarRightVisible, Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToolBar Padding="2,3" ToolBarTray.IsLocked="True">
+                        <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2" Padding="5">
+                            <Image Source="{DynamicResource DIExpand}" Style="{StaticResource ToolBarImage}" />
                         </ToggleButton>
-                        <Button x:Name="Button1931" x:FieldModifier="public" Margin="0,0,0,2" Padding="5" >
-                            <Image Style="{StaticResource ToolBarImage}"  Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png"/>
+                        <Button x:Name="Button1931" Margin="0,0,0,2" Padding="5" x:FieldModifier="public">
+                            <Image Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Style="{StaticResource ToolBarImage}" />
                         </Button>
                         <StackPanel>
-                            <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  IsChecked="{Binding Config.IsPseudo}" Margin="0,0,0,2" >
-                                <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Margin="-5"/>
+                            <ToggleButton x:Name="Pseudo" Margin="0,0,0,2" Click="ToggleButton_Click" IsChecked="{Binding Config.IsPseudo}">
+                                <Image Margin="-5" Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Style="{StaticResource ToolBarImage}" />
                             </ToggleButton>
-                            <ToggleButton x:Name="AutoSetRange" Click="AutoSetRange_Click" IsChecked="{Binding Config.IsAutoSetRange}" Margin="0,0,0,2" Visibility="{Binding Config.IsPseudo,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="Auto Range" FontSize="9" Padding="3" Content="A" HorizontalAlignment="Stretch" />
-                            <Grid  Height="200"  Visibility="{Binding Config.IsPseudo,Converter={StaticResource bool2VisibilityConverter}}">
+                            <ToggleButton x:Name="AutoSetRange" Margin="0,0,0,2" Padding="3" HorizontalAlignment="Stretch" Click="AutoSetRange_Click" Content="A" FontSize="9" IsChecked="{Binding Config.IsAutoSetRange}" ToolTip="Auto Range" Visibility="{Binding Config.IsPseudo, Converter={StaticResource bool2VisibilityConverter}}" />
+                            <Grid Height="200" Visibility="{Binding Config.IsPseudo, Converter={StaticResource bool2VisibilityConverter}}">
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
-                                <TextBox Grid.Row="0" Width="28" FontSize="8" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
-                                <TextBox Grid.Row="2" Width="28" FontSize="8" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
-                                <Grid Grid.Row="1"   Width="18">
+                                <TextBox Grid.Row="0" Width="28" HorizontalContentAlignment="Center" Background="Transparent" BorderThickness="0" FontSize="8" Style="{StaticResource BaseStyle}" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox Grid.Row="2" Width="28" HorizontalContentAlignment="Center" Background="Transparent" BorderThickness="0" FontSize="8" Style="{StaticResource BaseStyle}" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <Grid Grid.Row="1" Width="18">
                                     <Grid.RowDefinitions>
-                                        <RowDefinition Height="0"  x:Name="RowDefinitionStart"/>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="0"  x:Name="RowDefinitionEnd"/>
+                                        <RowDefinition x:Name="RowDefinitionStart" Height="0" />
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition x:Name="RowDefinitionEnd" Height="0" />
                                     </Grid.RowDefinitions>
-                                    <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0"/>
-                                    <Border Grid.Row="1"  Background="Transparent">
-                                        <Image x:Name="ColormapTypesImage" Source="/ColorVision.ImageEditor;component/Assets/Image/pictureBox1.Image.png" Stretch="Fill" VerticalAlignment="Top"/>
+                                    <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0" />
+                                    <Border Grid.Row="1" Background="Transparent">
+                                        <Image x:Name="ColormapTypesImage" VerticalAlignment="Top" Source="/ColorVision.ImageEditor;component/Assets/Image/pictureBox1.Image.png" Stretch="Fill" />
                                     </Border>
-                                    <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
+                                    <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 " />
                                 </Grid>
-                                <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" x:FieldModifier="public" FocusVisualStyle="{x:Null}" ValueChanged="PseudoSlider_ValueChanged"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
+                                <hc:RangeSlider x:Name="PseudoSlider" Grid.Row="1" HorizontalAlignment="Center" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" hc:TipElement.Visibility="Visible" x:FieldModifier="public" Background="Transparent" FocusVisualStyle="{x:Null}" Maximum="255" Minimum="0" Orientation="Vertical" Style="{StaticResource RangeSliderBaseStyle}" ValueChanged="PseudoSlider_ValueChanged" ValueEnd="255" ValueStart="0" />
                             </Grid>
                         </StackPanel>
                     </ToolBar>
@@ -140,61 +120,61 @@
             </Grid>
         </Grid>
 
-        <Grid Grid.Column="1" Width="300" Visibility="{Binding ElementName=AdvancedButton, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+        <Grid Grid.Column="1" Width="300" Visibility="{Binding ElementName=AdvancedButton, Path=IsChecked, Converter={StaticResource bool2VisibilityConverter}}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <ScrollViewer Margin="5,0">
                 <StackPanel x:Name="AdvancedStackPanel">
 
-                    <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">
+                    <Border Grid.Column="1" Margin="0,5" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5">
                         <StackPanel Margin="5">
-                            <Button Content="Clear" Command="{Binding Config.ClearCommand}" />
+                            <Button Command="{Binding Config.ClearCommand}" Content="Clear" />
                             <DockPanel Margin="0,0,0,5">
-                                <ui:ToggleSwitch IsChecked="{Binding Config.IsLayoutUpdated}" Background="DodgerBlue"  DockPanel.Dock="Right" />
-                                <TextBlock Text="{x:Static properties:Resources.IsLayoutUpdated}" Width="100" HorizontalAlignment="Left"/>
+                                <ui:ToggleSwitch Background="DodgerBlue" DockPanel.Dock="Right" IsChecked="{Binding Config.IsLayoutUpdated}" />
+                                <TextBlock Width="100" HorizontalAlignment="Left" Text="{x:Static properties:Resources.IsLayoutUpdated}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
-                                <ui:ToggleSwitch IsChecked="{Binding Config.IsShowText}" Background="DodgerBlue" DockPanel.Dock="Right" />
-                                <TextBlock Text="{x:Static properties:Resources.IsShowText}" Width="100" HorizontalAlignment="Left"/>
+                                <ui:ToggleSwitch Background="DodgerBlue" DockPanel.Dock="Right" IsChecked="{Binding Config.IsShowText}" />
+                                <TextBlock Width="100" HorizontalAlignment="Left" Text="{x:Static properties:Resources.IsShowText}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
-                                <ui:ToggleSwitch IsChecked="{Binding Config.IsShowMsg}" Background="DodgerBlue" DockPanel.Dock="Right" />
-                                <TextBlock Text="{x:Static properties:Resources.IsShowMsg}" Width="100" HorizontalAlignment="Left"/>
+                                <ui:ToggleSwitch Background="DodgerBlue" DockPanel.Dock="Right" IsChecked="{Binding Config.IsShowMsg}" />
+                                <TextBlock Width="100" HorizontalAlignment="Left" Text="{x:Static properties:Resources.IsShowMsg}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="MaxZoom" Width="100"/>
-                                <TextBox  Text="{Binding MaxZoom}"/>
+                                <TextBlock Width="100" Text="MaxZoom" />
+                                <TextBox Text="{Binding MaxZoom}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="MinZoom" Width="100"/>
-                                <TextBox  Text="{Binding MinZoom}" />
+                                <TextBlock Width="100" Text="MinZoom" />
+                                <TextBox Text="{Binding MinZoom}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="{x:Static properties:Resources.ColormapTypes}" Width="100"/>
-                                <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" Text="{Binding  Config.ColormapTypes}" DisplayMemberPath="Key"/>
+                                <TextBlock Width="100" Text="{x:Static properties:Resources.ColormapTypes}" />
+                                <ComboBox x:Name="ComColormapTypes" DisplayMemberPath="Key" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" Text="{Binding Config.ColormapTypes}" />
                             </DockPanel>
                         </StackPanel>
                     </Border>
-                    <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">
+                    <Border Grid.Column="1" Margin="0,5" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,5,0,5">
-                                <TextBlock Text="CVICE范围" Width="100"/>
-                                <TextBox  Text="{Binding MouseMagnifier.Radius}"/>
+                                <TextBlock Width="100" Text="CVICE范围" />
+                                <TextBox Text="{Binding MouseMagnifier.Radius}" />
                             </DockPanel>
                             <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="CVICE Type:" Width="100"/>
-                                <hc:ComboBox x:Name="ComboxeType"  SelectedValue="{Binding MouseMagnifier.MagnigifierType}"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  />
+                                <TextBlock Width="100" Text="CVICE Type:" />
+                                <hc:ComboBox x:Name="ComboxeType" DisplayMemberPath="Value" SelectedValue="{Binding MouseMagnifier.MagnigifierType}" SelectedValuePath="Key" Style="{StaticResource ComboBox.Small}" />
                             </DockPanel>
-                            <TextBlock Text="设置为圆的时候，输入的值是半径" HorizontalAlignment="Right"/>
+                            <TextBlock HorizontalAlignment="Right" Text="设置为圆的时候，输入的值是半径" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
             </ScrollViewer>
-            <StackPanel VerticalAlignment="Bottom" Grid.Row="1" Margin="5"  Orientation="Horizontal">
-                <Button Content="{x:Static properties:Resources.Apply}" Click="Apply_Click"  Margin="0,0,10,0"/>
-                <Button Content="{x:Static properties:Resources.Reload}" Click="Reload_Click" />
+            <StackPanel Grid.Row="1" Margin="5" VerticalAlignment="Bottom" Orientation="Horizontal">
+                <Button Margin="0,0,10,0" Click="Apply_Click" Content="{x:Static properties:Resources.Apply}" />
+                <Button Click="Reload_Click" Content="{x:Static properties:Resources.Reload}" />
             </StackPanel>
 
         </Grid>

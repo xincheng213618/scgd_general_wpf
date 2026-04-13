@@ -1,15 +1,22 @@
-﻿using ColorVision.Engine.Messages;
+﻿using ColorVision.Database;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.SocketProtocol;
 using Dm.util;
 using log4net;
 using ProjectLUX.PluginConfig;
 using ProjectLUX.Process.VID;
+using SqlSugar;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Windows;
+using System.Windows.Interop;
 
 namespace ProjectLUX.Services
 {
@@ -50,70 +57,126 @@ namespace ProjectLUX.Services
 
                     ProjectLUXConfig.Instance.SN = sn;
 
-                    if (SummaryManager.GetInstance().Summary.MachineNO == "H02")
+                    if (lastTwo == "31")
                     {
-                        if (lastTwo == "00")
-                        {
-                            log.Info("VID虚像距握手");
-                            return string.Join(",", strings) + ";";
-                        }
-                        else if (lastTwo == "01")
-                        {
-                            log.Info("VID虚像距执行");
-                            string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"B_{sn}.csv");
-                            var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
-                            VIDTestResult vIDTestResult = new VIDTestResult();
-                            DeviceCamera deviceCamera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault();
-                            DisplayCameraConfig displayCameraConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(deviceCamera.Config.Code);
+                        log.Info("光谱测量执行");
 
-                            //这俩值还不一样，看看后面怎么优化一下
-                            MsgRecord msgRecord = deviceCamera.DService.AutoFocus(TemplateAutoFocus.Params[displayCameraConfig.AutoFocusTemplateIndex].Value);
-   
-                            //MsgRecord msgRecord = deviceCamera.DService.GetPosition();
-                            msgRecord.MsgRecordStateChanged += (s,e) =>
+                        if (!Directory.Exists(ProjectLUXConfig.Instance.ResultSavePath))
+                            Directory.CreateDirectory(ProjectLUXConfig.Instance.ResultSavePath);
+
+                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"D_{sn}.csv");
+                        DeviceSpectrum deviceSprectrm = ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().FirstOrDefault();
+                        MsgRecord msgRecord = deviceSprectrm.DService.GetData();
+
+                        //MsgRecord msgRecord = deviceSprectrm.DService.GetPosition();
+                        msgRecord.MsgRecordStateChanged += (s, e) =>
+                        {
+                            log.Info("msgRecord");
+
+                            if (e == MsgRecordState.Success)
+                            { 
+                                var msg =  msgRecord.MsgReturn;
+                                ViewResultSpectrum viewResultSpectrum = null;
+                                if (msg != null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
+                                {
+                                    int masterId = msg.Data?.MasterId;
+
+                                    var DB = new SqlSugarClient(new ConnectionConfig
+                                    {
+                                        ConnectionString = MySqlControl.GetConnectionString(),
+                                        DbType = SqlSugar.DbType.MySql,
+                                        IsAutoCloseConnection = true
+                                    });
+                                    SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().Where(x => x.Id == masterId).First();
+                                    DB.Dispose();
+                                    log.Info($"GetData MasterId:{masterId} ");
+                                    if (model != null)
+                                    {
+                                        Application.Current.Dispatcher.Invoke(() =>
+                                        {
+                                            try
+                                            {
+                                                viewResultSpectrum = new ViewResultSpectrum(model);
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                log.Error(ex);
+                                            }
+                                        });
+                                    }
+                                }
+
+                                if (viewResultSpectrum != null)
+                                {
+                                    SpectrumCsvExportHelper.ExportLuminousFluxMode(path, new[] { viewResultSpectrum });
+                                }
+                                stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + $";{viewResultSpectrum?.LuminousFlux}"));
+                            }
+                            else
                             {
-                                log.Info("msgRecord");
-
-                                if (e == MsgRecordState.Success)
-                                {
-                                    if (msgRecord.MsgReturn.EventName == "GetPosition")
-                                    {
-                                        vIDTestResult.VID.Value = msgRecord.MsgReturn.Data.VidPos;
-                                    }
-                                    if (msgRecord.MsgReturn.EventName == "AutoFocus")
-                                    {
-                                        vIDTestResult.VID.Value = msgRecord.MsgReturn.Data.VidPosition;
-                                    }
-                                    VIDFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<VIDFixConfig>();
-                                    VIDRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<VIDRecipeConfig>();
-
-                                    vIDTestResult.VID.Value = vIDTestResult.VID.Value * fixConfig.VID;
-                                    vIDTestResult.VID.TestValue = vIDTestResult.VID.Value.ToString();
-                                    vIDTestResult.VID.LowLimit = recipeConfig.VID.Min;
-                                    vIDTestResult.VID.UpLimit = recipeConfig.VID.Max;
-                                    ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "2pixel_linePair", rows);
-                                    File.WriteAllLines(path, rows);
-                                    stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + $";{vIDTestResult.VID.Value}"));
-                                }
-                                else
-                                {
-                                    VIDFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<VIDFixConfig>();
-                                    VIDRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<VIDRecipeConfig>();
-
-                                    vIDTestResult.VID.Value = vIDTestResult.VID.Value * fixConfig.VID;
-                                    vIDTestResult.VID.TestValue = vIDTestResult.VID.Value.ToString();
-                                    vIDTestResult.VID.LowLimit = recipeConfig.VID.Min;
-                                    vIDTestResult.VID.UpLimit = recipeConfig.VID.Max;
-                                    ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "2pixel_linePair", rows);
-                                    File.WriteAllLines(path, rows);
-                                    stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + ";0"));
-                                }
-                            };
-                            return null;
-
-                        }
+                                stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + ";0"));
+                            }
+                        };
+                        return null;
                     }
-                    else if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR")
+
+                    if (lastTwo == "01")
+                    {
+                        log.Info("VID虚像距执行");
+                        string path = Path.Combine(ProjectLUXConfig.Instance.ResultSavePath, $"B_{sn}.csv");
+                        var rows = new List<string> { "Test_Screen,Test_item,Test_Value,unit,lower_limit,upper_limit,Test_Result" };
+                        VIDTestResult vIDTestResult = new VIDTestResult();
+                        DeviceCamera deviceCamera = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault();
+                        DisplayCameraConfig displayCameraConfig = DisplayConfigManager.Instance.GetDisplayConfig<DisplayCameraConfig>(deviceCamera.Config.Code);
+
+                        //这俩值还不一样，看看后面怎么优化一下
+                        MsgRecord msgRecord = deviceCamera.DService.AutoFocus(TemplateAutoFocus.Params[displayCameraConfig.AutoFocusTemplateIndex].Value);
+
+                        //MsgRecord msgRecord = deviceSprectrm.DService.GetPosition();
+                        msgRecord.MsgRecordStateChanged += (s, e) =>
+                        {
+                            log.Info("msgRecord");
+
+                            if (e == MsgRecordState.Success)
+                            {
+                                if (msgRecord.MsgReturn.EventName == "GetPosition")
+                                {
+                                    vIDTestResult.VID.Value = msgRecord.MsgReturn.Data.VidPos;
+                                }
+                                if (msgRecord.MsgReturn.EventName == "AutoFocus")
+                                {
+                                    vIDTestResult.VID.Value = msgRecord.MsgReturn.Data.VidPosition;
+                                }
+                                VIDFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<VIDFixConfig>();
+                                VIDRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<VIDRecipeConfig>();
+
+                                vIDTestResult.VID.Value = vIDTestResult.VID.Value * fixConfig.VID;
+                                vIDTestResult.VID.TestValue = vIDTestResult.VID.Value.ToString();
+                                vIDTestResult.VID.LowLimit = recipeConfig.VID.Min;
+                                vIDTestResult.VID.UpLimit = recipeConfig.VID.Max;
+                                ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "2pixel_linePair", rows);
+                                File.WriteAllLines(path, rows);
+                                stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + $";{vIDTestResult.VID.Value}"));
+                            }
+                            else
+                            {
+                                VIDFixConfig fixConfig = FixManager.GetInstance().FixConfig.GetRequiredService<VIDFixConfig>();
+                                VIDRecipeConfig recipeConfig = RecipeManager.GetInstance().RecipeConfig.GetRequiredService<VIDRecipeConfig>();
+
+                                vIDTestResult.VID.Value = vIDTestResult.VID.Value * fixConfig.VID;
+                                vIDTestResult.VID.TestValue = vIDTestResult.VID.Value.ToString();
+                                vIDTestResult.VID.LowLimit = recipeConfig.VID.Min;
+                                vIDTestResult.VID.UpLimit = recipeConfig.VID.Max;
+                                ObjectiveTestResultCsvExporter.CollectRows(vIDTestResult, "2pixel_linePair", rows);
+                                File.WriteAllLines(path, rows);
+                                stream.Write(Encoding.UTF8.GetBytes(string.Join(",", strings) + ";0"));
+                            }
+                        };
+                        return null;
+                    }
+                    
+                    
+                    if (SummaryManager.GetInstance().Summary.MachineNO == "H03AR")
                     {
                         if (ProjectWindowInstance.WindowInstance == null) return string.Join(",", strings) + ";";
 
@@ -128,43 +191,12 @@ namespace ProjectLUX.Services
                             log.Info("oc测试 ");
                             strings.RemoveAt(2);
                             ProjectWindowInstance.WindowInstance.ReturnCode = string.Join(",", strings);
-                            ProjectWindowInstance.WindowInstance.RunTemplate(0, "Optical_Center_Calibrate");
+                            ProjectWindowInstance.WindowInstance.RunTemplateBySocketCode(lastTwo);
                             return null;
                         }
-                        else if (lastTwo == "03")
+                        else
                         {
-                            log.Info("测试图例1 White 51 ");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(1, "White51_Test");
-                            return null;
-                        }
-                        else if (lastTwo == "04")
-                        {
-                            log.Info("测试图例1 White Fov ");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(2, "White255_Test");
-                            return null;
-                        }
-                        else if (lastTwo == "05")
-                        {
-                            log.Info("测试图例3 Chessboard");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(3, "Chessboard_ANSI_Test");
-                            return null;
-                        }
-                        else if (lastTwo == "06")
-                        {
-                            log.Info("测试图例7 MTF-4pixel-o.6f");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(4, "MTF_HV_Test");
-                            return null;
-                        }
-                        else if (lastTwo == "07")
-                        {
-                            log.Info("测试图例8 Distortion");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(5, "Distortion_Test");
-                            return null;
-                        }
-                        else if (lastTwo == "08")
-                        {
-                            log.Info("测试图例8 Optic");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(6, "OpticCenter_Test");
+                            ProjectWindowInstance.WindowInstance.RunTemplateBySocketCode(lastTwo);
                             return null;
                         }
                     }
@@ -178,34 +210,9 @@ namespace ProjectLUX.Services
                             log.Info("拍图窗口握手");
                             ProjectWindowInstance.WindowInstance.InitTest(sn);
                         }
-                        else if (lastTwo == "11")
+                        else
                         {
-                            log.Info("白图切图指令");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(0);
-                            return null;
-                        }
-                        else if (lastTwo == "12")
-                        {
-                            log.Info("棋盘切图指令");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(1);
-                            return null;
-                        }
-                        else if (lastTwo == "13")
-                        {
-                            log.Info("MTFH切图指令");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(2);
-                            return null;
-                        }
-                        else if (lastTwo == "14")
-                        {
-                            log.Info("畸变切图");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(3);
-                            return null;
-                        }
-                        else if (lastTwo == "15")
-                        {
-                            log.Info("切图15");
-                            ProjectWindowInstance.WindowInstance.RunTemplate(4);
+                            ProjectWindowInstance.WindowInstance.RunTemplateBySocketCode(lastTwo);
                             return null;
                         }
                     }

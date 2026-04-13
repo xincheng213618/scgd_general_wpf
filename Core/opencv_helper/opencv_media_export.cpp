@@ -594,6 +594,55 @@ COLORVISIONCORE_API int M_FindLightBeads(HImage img, RoiRect roi, const char* co
 	return static_cast<int>(length);
 }
 
+COLORVISIONCORE_API int M_DetectKeyRegions(HImage img, RoiRect roi, const char* config, char** result)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty() || !config || !result) {
+		return -1;
+	}
+
+	// 应用ROI
+	cv::Rect mroi(roi.x, roi.y, roi.width, roi.height);
+	bool use_roi = (mroi.width > 0 && mroi.height > 0 && (mroi & cv::Rect(0, 0, mat.cols, mat.rows)) == mroi);
+	cv::Mat workMat = use_roi ? mat(mroi) : mat;
+
+	// 解析JSON配置
+	json j = json::parse(config);
+	int threshold = j.value("Threshold", -1);
+	int minArea = j.value("MinArea", 500);
+	int maxArea = j.value("MaxArea", 0);
+	double marginRatio = j.value("MarginRatio", 0.05);
+
+	std::vector<cv::Rect> keyRects;
+	int ret = detectKeyRegions(workMat, keyRects, threshold, minArea, maxArea, marginRatio);
+	if (ret != 0 || keyRects.empty()) {
+		return -2;
+	}
+
+	// 构建JSON输出
+	json outputJson;
+	json rectsArray = json::array();
+	for (const auto& r : keyRects) {
+		json rectObj;
+		rectObj["X"] = r.x + (use_roi ? roi.x : 0);
+		rectObj["Y"] = r.y + (use_roi ? roi.y : 0);
+		rectObj["Width"] = r.width;
+		rectObj["Height"] = r.height;
+		rectsArray.push_back(rectObj);
+	}
+	outputJson["KeyRegions"] = rectsArray;
+	outputJson["Count"] = keyRects.size();
+
+	std::string output = outputJson.dump();
+	size_t length = output.length() + 1;
+	*result = new char[length];
+	if (!*result) {
+		return -3;
+	}
+	std::strcpy(*result, output.c_str());
+	return static_cast<int>(length);
+}
+
 
 StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv::Mat& result) {
 	if (image_files.empty()) {

@@ -1,10 +1,11 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.FindLightArea;
 
 namespace ProjectARVRPro.Process.W51
 {
     public class W51ViewTestResult : W51TestResult
     {
-
+        public List<AlgResultLightAreaModel> AlgResultLightAreaModels { get; set; } = new List<AlgResultLightAreaModel>();
     }
 
     public class W51TestResult : ViewModelBase

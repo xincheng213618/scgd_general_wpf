@@ -3,7 +3,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
-using ProjectARVRPro.DeviceChannel;
 using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
 using System.Collections.ObjectModel;
@@ -23,14 +22,11 @@ namespace ProjectARVRPro
         public static FixManager FixManager => FixManager.GetInstance();
         public static SummaryManager SummaryManager => SummaryManager.GetInstance();
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
-        public static DeviceChannelManager DeviceChannelManager => DeviceChannelManager.GetInstance();
 
         [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
         [JsonIgnore]
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
-        [JsonIgnore]
-        public RelayCommand OpenLogCommand { get; set; }
         [JsonIgnore]
         public RelayCommand OpenConfigCommand { get; set; }
         [JsonIgnore]
@@ -46,8 +42,6 @@ namespace ProjectARVRPro
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
             TemplateItemSource = TemplateFlow.Params;
-
-            OpenLogCommand = new RelayCommand(a => OpenLog());
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
@@ -59,7 +53,6 @@ namespace ProjectARVRPro
         {
             ProjectWindowInstance.WindowInstance.InitTest(string.Empty);
         }
-
 
 
         public int StepIndex { get => _StepIndex; set { _StepIndex = value; OnPropertyChanged(); } }
@@ -76,6 +69,22 @@ namespace ProjectARVRPro
         [DisplayName("允许测试失败")]
         public bool AllowTestFailures { get => _AllowTestFailures; set { _AllowTestFailures = value; OnPropertyChanged(); } }
         private bool _AllowTestFailures = true;
+
+        [DisplayName("雷鸟串口")]
+        public string ThunderbirdPortName { get => _ThunderbirdPortName; set { _ThunderbirdPortName = value; OnPropertyChanged(); } }
+        private string _ThunderbirdPortName = string.Empty;
+
+        [DisplayName("雷鸟波特率")]
+        public int ThunderbirdBaudRate { get => _ThunderbirdBaudRate; set { _ThunderbirdBaudRate = value; OnPropertyChanged(); } }
+        private int _ThunderbirdBaudRate = 115200;
+
+        [DisplayName("雷鸟超时(ms)")]
+        public int ThunderbirdTimeoutMs { get => _ThunderbirdTimeoutMs; set { _ThunderbirdTimeoutMs = value; OnPropertyChanged(); } }
+        private int _ThunderbirdTimeoutMs = 1000;
+
+        [DisplayName("雷鸟自动连接")]
+        public bool ThunderbirdAutoConnect { get => _ThunderbirdAutoConnect; set { _ThunderbirdAutoConnect = value; OnPropertyChanged(); } }
+        private bool _ThunderbirdAutoConnect;
 
         public void OpenConfig()
         {
@@ -131,6 +140,7 @@ namespace ProjectARVRPro
         }
 
         [JsonIgnore]
+        [Browsable(false)]
         public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; OnPropertyChanged(); } }
         private ObservableCollection<TemplateModel<FlowParam>> _TemplateItemSource;
 

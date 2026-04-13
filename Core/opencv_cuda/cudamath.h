@@ -54,15 +54,16 @@ inline HOD double dev_abs(double x)
 }
 
 // ============================================================================
-// Kernel 1: Focus Measure (gfocus) - Box Filter Based
+// Kernel 1a: Focus Measure - Box Filter Average (first pass of gfocus)
+// Computes U = box_filter(src), storing result in buffer.
+// Must complete before gfocus_fm_kernel reads buffer.
 // ============================================================================
-__global__ void gfocus_kernel(const double* src, double* dst, double* buffer, int M, int N, int KERNEL_SIZE)
+__global__ void gfocus_average_kernel(const double* src, double* buffer, int M, int N, int KERNEL_SIZE)
 {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
     int row = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (row < M && col < N) {
-        // First pass: box filter for averaging (U)
         double sum = 0.0;
         int half_k = KERNEL_SIZE / 2;
         int count = 0;
@@ -77,12 +78,24 @@ __global__ void gfocus_kernel(const double* src, double* dst, double* buffer, in
                 }
             }
         }
-        double u = sum / count;
-        buffer[row * N + col] = u;
+        buffer[row * N + col] = sum / count;
+    }
+}
 
-        // Second pass: compute focus measure
-        sum = 0.0;
-        count = 0;
+// ============================================================================
+// Kernel 1b: Focus Measure - Variance (second pass of gfocus)
+// Reads fully-populated buffer (average), computes FM = box_filter((src - U)^2)
+// ============================================================================
+__global__ void gfocus_fm_kernel(const double* src, const double* buffer, double* dst, int M, int N, int KERNEL_SIZE)
+{
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (row < M && col < N) {
+        double sum = 0.0;
+        int half_k = KERNEL_SIZE / 2;
+        int count = 0;
+
         for (int r = -half_k; r <= half_k; ++r) {
             for (int c = -half_k; c <= half_k; ++c) {
                 int cur_r = row + r;
@@ -203,7 +216,7 @@ __global__ void calculate_err_kernel(
     double* Ymax, int M, int N, int p)
 {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockIdx.x + threadIdx.x;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
     int idx = row * N + col;
 
     if (row < M && col < N) {
@@ -419,6 +432,69 @@ __global__ void median_filter_3x3_kernel(
         }
 
         dst[idx] = window[4];  // Median is at index 4
+    }
+}
+
+// ============================================================================
+// Kernel 15: Accumulate (dst += src)
+// ============================================================================
+__global__ void accumulate_kernel(const double* src, double* dst, int total)
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < total) {
+        dst[idx] += src[idx];
+    }
+}
+
+// ============================================================================
+// Kernel 16: BGR u8 Weighted Accumulate
+// Reads interleaved BGR u8 input, multiplies each channel by weight,
+// accumulates into separate double accumulators.
+// ============================================================================
+__global__ void bgr_weighted_accumulate_kernel(
+    const unsigned char* bgr_input, const double* weight,
+    double* acc_b, double* acc_g, double* acc_r, int total)
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < total) {
+        double w = weight[idx];
+        acc_b[idx] += (double)bgr_input[idx * 3 + 0] * w;
+        acc_g[idx] += (double)bgr_input[idx * 3 + 1] * w;
+        acc_r[idx] += (double)bgr_input[idx * 3 + 2] * w;
+    }
+}
+
+// ============================================================================
+// Kernel 17: Divide and Merge to BGR u8
+// Divides accumulated channels by fmn, clamps to [0,255], writes BGR u8.
+// ============================================================================
+__global__ void divide_merge_bgr_kernel(
+    const double* acc_b, const double* acc_g, const double* acc_r,
+    const double* fmn, unsigned char* output, int total)
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < total) {
+        double f = fmn[idx];
+        double b = (f > 0.0) ? acc_b[idx] / f : 0.0;
+        double g = (f > 0.0) ? acc_g[idx] / f : 0.0;
+        double r = (f > 0.0) ? acc_r[idx] / f : 0.0;
+        output[idx * 3 + 0] = (unsigned char)fmax(0.0, fmin(255.0, b));
+        output[idx * 3 + 1] = (unsigned char)fmax(0.0, fmin(255.0, g));
+        output[idx * 3 + 2] = (unsigned char)fmax(0.0, fmin(255.0, r));
+    }
+}
+
+// ============================================================================
+// Kernel 18: Grayscale Weighted Accumulate
+// Reads single-channel u8 input, multiplies by weight, accumulates.
+// ============================================================================
+__global__ void gray_weighted_accumulate_kernel(
+    const unsigned char* gray_input, const double* weight,
+    double* acc, int total)
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < total) {
+        acc[idx] += (double)gray_input[idx] * weight[idx];
     }
 }
 

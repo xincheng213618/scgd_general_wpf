@@ -406,12 +406,6 @@ namespace ProjectARVRPro.Process
                 {
                     LoadFromGroupsFile();
                 }
-                // Fall back to old format (auto-migrate)
-                else if (File.Exists(PersistFilePath))
-                {
-                    MigrateFromOldFormat();
-                }
-
                 // Ensure we have at least one group
                 if (ProcessGroups.Count == 0)
                 {

@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS1998
+﻿
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System.ComponentModel;

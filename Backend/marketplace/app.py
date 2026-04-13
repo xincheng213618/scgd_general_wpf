@@ -24,6 +24,7 @@ Run:
 import argparse
 import hmac
 import json
+import re
 import sqlite3
 from datetime import datetime, timezone
 from functools import wraps
@@ -885,6 +886,145 @@ def api_app_latest_version():
     """Return the current LATEST_RELEASE version string for build scripts."""
     version = SERVICES._read_text_file(STORAGE / "LATEST_RELEASE") or ""
     return jsonify({"version": version.strip()})
+
+
+# ===================================================================
+# CVWindowsService Tool API
+# ===================================================================
+
+_CVWS_DIR = "Tool/CVWindowsService"
+_CVWS_PACKAGE_RE = re.compile(
+    r"^CVWindowsService\[(?P<version>\d+\.\d+\.\d+\.\d+)\](?:-(?P<suffix>\d+))?\.zip$",
+    re.IGNORECASE,
+)
+CVWS_RELEASES_CACHE_KEY = "cvws_releases:v1"
+CVWS_RELEASES_CACHE_TTL_SECONDS = 180
+
+
+def _scan_cvwindowsservice_packages() -> list[dict[str, Any]]:
+    """Scan Tool/CVWindowsService for release zip packages."""
+    tool_dir = STORAGE / "Tool" / "CVWindowsService"
+    if not tool_dir.is_dir():
+        return []
+
+    packages: list[dict[str, Any]] = []
+    for entry in tool_dir.iterdir():
+        if not entry.is_file():
+            continue
+        m = _CVWS_PACKAGE_RE.match(entry.name)
+        if not m:
+            continue
+        version = m.group("version")
+        suffix = m.group("suffix") or ""
+        try:
+            stat = entry.stat()
+            size = stat.st_size
+            modified_ts = stat.st_mtime
+            dt = datetime.fromtimestamp(modified_ts, tz=timezone.utc)
+            modified_iso = dt.isoformat()
+            modified_display = dt.strftime("%Y-%m-%d %H:%M")
+        except OSError:
+            size = 0
+            modified_iso = ""
+            modified_display = ""
+
+        packages.append({
+            "fileName": entry.name,
+            "version": version,
+            "suffix": suffix,
+            "size": size,
+            "sizeText": human_size(size),
+            "modified": modified_iso,
+            "modifiedDisplay": modified_display,
+            "downloadUrl": f"/download/{_CVWS_DIR}/{entry.name}",
+        })
+
+    # Sort by version descending
+    packages.sort(key=lambda p: tuple(int(x) for x in p["version"].split(".")), reverse=True)
+    return packages
+
+
+def _cvws_cache_signature(tool_dir: Path, latest_version: str) -> str:
+    """Build a light signature for CVWindowsService cache invalidation."""
+    try:
+        dir_mtime = int(tool_dir.stat().st_mtime)
+    except OSError:
+        dir_mtime = 0
+    return f"{latest_version.strip()}|{dir_mtime}"
+
+
+def _get_cvwindowsservice_releases_payload() -> dict[str, Any]:
+    tool_dir = STORAGE / "Tool" / "CVWindowsService"
+    latest = read_text_file(tool_dir / "LATEST_RELEASE") or ""
+    signature = _cvws_cache_signature(tool_dir, latest)
+
+    cached = _get_cache_entry(CVWS_RELEASES_CACHE_KEY, signature=signature)
+    if cached:
+        value = cached.get("value")
+        if isinstance(value, dict):
+            return value
+
+    packages = _scan_cvwindowsservice_packages()
+    payload = {
+        "latestVersion": latest.strip(),
+        "packages": packages,
+        "count": len(packages),
+    }
+    _set_cache_entry(
+        CVWS_RELEASES_CACHE_KEY,
+        payload,
+        ttl_seconds=CVWS_RELEASES_CACHE_TTL_SECONDS,
+        signature=signature,
+    )
+    return payload
+
+
+@app.route("/api/tool/cvwindowsservice/latest-version", methods=["GET"])
+def api_cvwindowsservice_latest_version():
+    """Return the latest CVWindowsService version from Tool/CVWindowsService/LATEST_RELEASE."""
+    payload = _get_cvwindowsservice_releases_payload()
+    version = str(payload.get("latestVersion", "")).strip()
+    if not version:
+        return jsonify({"error": "LATEST_RELEASE not found"}), 404
+    return jsonify({"version": version})
+
+
+@app.route("/api/tool/cvwindowsservice/releases", methods=["GET"])
+def api_cvwindowsservice_releases():
+    """List all CVWindowsService release packages with version and download info."""
+    return jsonify(_get_cvwindowsservice_releases_payload())
+
+
+@app.route("/api/tool/cvwindowsservice/download/<version>", methods=["GET"])
+def api_cvwindowsservice_download(version):
+    """Download a specific CVWindowsService version zip by version string."""
+    if not _is_safe_version(version):
+        return jsonify({"error": "Invalid version format"}), 400
+
+    tool_dir = STORAGE / "Tool" / "CVWindowsService"
+    if not tool_dir.is_dir():
+        return jsonify({"error": "CVWindowsService directory not found"}), 404
+
+    # Find deterministic best match: same version with largest numeric suffix.
+    matches: list[tuple[int, Path]] = []
+    for entry in tool_dir.iterdir():
+        if not entry.is_file():
+            continue
+        m = _CVWS_PACKAGE_RE.match(entry.name)
+        if m and m.group("version") == version:
+            suffix_raw = m.group("suffix") or "0"
+            try:
+                suffix = int(suffix_raw)
+            except ValueError:
+                suffix = 0
+            matches.append((suffix, entry))
+
+    best_match = max(matches, key=lambda item: item[0])[1] if matches else None
+
+    if best_match is None:
+        return jsonify({"error": f"Package for version {version} not found"}), 404
+
+    return send_from_directory(str(best_match.parent), best_match.name, as_attachment=True)
 
 
 @app.route("/api/health", methods=["GET"])

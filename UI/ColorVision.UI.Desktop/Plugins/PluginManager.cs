@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Desktop.Marketplace;
 using ColorVision.UI.Plugins;
@@ -14,22 +15,6 @@ using System.Windows;
 
 namespace ColorVision.UI.Desktop.Plugins
 {
-    public class PluginWindowConfigProvider : IConfigSettingProvider
-    {
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata>
-            {
-                 new ConfigSettingMetadata
-                {
-                    Order = 999,
-                    BindingName =nameof(PluginWindowConfig.IsAutoUpdate),
-                    Source = PluginWindowConfig.Instance,
-                }
-            };
-        }
-    }
-
   
     public class PluginWindowConfig : WindowConfig
     {
@@ -39,6 +24,7 @@ namespace ColorVision.UI.Desktop.Plugins
         /// 是否自动更新插件
         /// </summary>
         /// 
+        [ConfigSetting(Order = 999)]
         [DisplayName("CheckPluginUpdates")]
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; OnPropertyChanged(); } }
         private bool _IsAutoUpdate = true;

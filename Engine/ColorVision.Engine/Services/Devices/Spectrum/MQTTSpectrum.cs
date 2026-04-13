@@ -102,20 +102,32 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                     });
                                 }
 
-      
                             }
                         }
                         else if (msg.EventName == "GetDataAuto" || msg.EventName == "EQE.GetDataAuto")
                         {
+                            if (FlowEngineManager.GetInstance().ServiceVersion > new Version(4, 0, 3, 0))
+                            {
+                                using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                                SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().OrderByDescending(x => x.Id).First();
 
-                            //未来全面启用4.0之后移除
-                            log.Info(FlowEngineManager.GetInstance().ServiceVersion);
-                            if (FlowEngineManager.GetInstance().ServiceVersion> new Version(4, 0, 1, 104))
+                                log.Info($"{model.Id}");
+                                if (model != null)
+                                {
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(model);
+                                        Device.View.AddViewResultSpectrum(viewResultSpectrum);
+                                        Device.DisplayConfig.IntTime = model.IntTime ?? 0;
+                                    });
+                                }
+                            }
+                            else if (FlowEngineManager.GetInstance().ServiceVersion > new Version(4, 0, 1, 104))
                             {
                                 if (msg != null && msg.Data != null && msg?.Data?.MasterId != null && msg?.Data?.MasterId > 0)
                                 {
                                     int masterId = msg.Data?.MasterId;
-                                    using var DB = new SqlSugarClient(new ConnectionConfig  { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
+                                    using var DB = new SqlSugarClient(new ConnectionConfig { ConnectionString = MySqlControl.GetConnectionString(), DbType = SqlSugar.DbType.MySql, IsAutoCloseConnection = true });
                                     SpectumResultEntity model = DB.Queryable<SpectumResultEntity>().Where(x => x.Id == masterId).First();
 
                                     log.Info($"GetData MasterId:{masterId} ");
@@ -128,8 +140,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                             Device.DisplayConfig.IntTime = model.IntTime ?? 0;
                                         });
                                     }
-
-          
                                 }
                             }
                             else

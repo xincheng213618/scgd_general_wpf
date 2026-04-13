@@ -35,77 +35,96 @@ namespace SystemMonitor
             var items = new List<StatusBarMeta>();
 
             // 时间
-            items.Add(new StatusBarMeta
+            if (config.IsShowTime)
             {
-                Id = "SystemMonitor_Time",
-                Name = Resources.ShowTime,
-                Description = Resources.PerformanceTest,
-                Order = 9999,
-                Type = StatusBarType.Text,
-                BindingName = nameof(SystemMonitors.Time),
-                Source = monitor,
-                IsVisible = config.IsShowTime,
-            });
-
-            // 运行时长
-            items.Add(new StatusBarMeta
+                items.Add(new StatusBarMeta
+                {
+                    Id = "SystemMonitor_Time",
+                    Name = Resources.ShowTime,
+                    Description = Resources.PerformanceTest,
+                    Order = 9999,
+                    Type = StatusBarType.Text,
+                    BindingName = nameof(SystemMonitors.Time),
+                    Source = monitor,
+                    IsVisible = config.IsShowTime,
+                });
+            }
+            if (config.IsShowUptime)
             {
-                Id = "SystemMonitor_Uptime",
-                Name = Resources.Uptime,
-                Description = Resources.Uptime,
-                Type = StatusBarType.Text,
-                Alignment = StatusBarAlignment.Right,
-                Order = 2,
-                BindingName = nameof(SystemMonitors.GetUptime),
-                Source = monitor,
-                IsVisible = config.IsShowUptime,
-            });
-
-            // CPU 使用率 (更醒目的显示)
-            items.Add(new StatusBarMeta
+                items.Add(new StatusBarMeta
+                {
+                    Id = "SystemMonitor_Uptime",
+                    Name = Resources.Uptime,
+                    Description = Resources.Uptime,
+                    Type = StatusBarType.Text,
+                    Alignment = StatusBarAlignment.Right,
+                    Order = 2,
+                    BindingName = nameof(SystemMonitors.GetUptime),
+                    Source = monitor,
+                    IsVisible = config.IsShowUptime,
+                });
+            }
+            if (config.IsShowCPU)
             {
-                Id = "SystemMonitor_CPU",
-                Name = "CPU",
-                Description = "CPU Usage",
-                Order = 9998,
-                Type = StatusBarType.Text,
-                BindingName = nameof(SystemMonitors.CPUStatusText),
-                Source = monitor,
-                IsVisible = config.IsShowCPU,
-            });
+                // CPU 使用率 (更醒目的显示)
+                items.Add(new StatusBarMeta
+                {
+                    Id = "SystemMonitor_CPU",
+                    Name = "CPU",
+                    Description = "CPU Usage",
+                    Order = 9998,
+                    Type = StatusBarType.Text,
+                    BindingName = nameof(SystemMonitors.CPUStatusText),
+                    Source = monitor,
+                    IsVisible = config.IsShowCPU,
+                });
+            }
 
-            // RAM 内存 (更醒目的显示)
-            items.Add(new StatusBarMeta
+
+            if (config.IsShowRAM)
             {
-                Id = "SystemMonitor_RAM",
-                Name = "RAM",
-                Description = Resources.ShowRAM,
-                Order = 9997,
-                Type = StatusBarType.Text,
-                BindingName = nameof(SystemMonitors.RAMStatusText),
-                Source = monitor,
-                IsVisible = config.IsShowRAM,
-            });
+                // RAM 内存 (更醒目的显示)
+                items.Add(new StatusBarMeta
+                {
+                    Id = "SystemMonitor_RAM",
+                    Name = "RAM",
+                    Description = Resources.ShowRAM,
+                    Order = 9997,
+                    Type = StatusBarType.Text,
+                    BindingName = nameof(SystemMonitors.RAMStatusText),
+                    Source = monitor,
+                    IsVisible = config.IsShowRAM,
+                });
+            }
 
-            // 磁盘健康图标 - 根据最大使用率选择图标颜色
-            double maxDiskUsage = monitor.Drives.Any() ? monitor.Drives.Max(d => d.UsagePercent) : 0;
-            string diskIcon = maxDiskUsage > 90 ? "DrawingImageHardDiskFull"
-                            : maxDiskUsage > 70 ? "DrawingImageHardDiskRed"
-                            : "DrawingImageHardDisk";
 
-            items.Add(new StatusBarMeta
+
+
+
+
+
+            if (config.IsShowDisk)
             {
-                Id = "SystemMonitor_Disk",
-                Name = Resources.StorageManagement,
-                Description = Resources.StorageManagement,
-                Order = 9996,
-                Type = StatusBarType.Icon,
-                IconResourceKey = diskIcon,
-                BindingName = nameof(SystemMonitors.TotalDiskFree),
-                Source = monitor,
-                IsVisible = config.IsShowDisk,
-            });
+                // 磁盘健康图标 - 根据最大使用率选择图标颜色
+                double maxDiskUsage = monitor.Drives.Any() ? monitor.Drives.Max(d => d.UsagePercent) : 0;
+                string diskIcon = maxDiskUsage > 90 ? "DrawingImageHardDiskFull"
+                                : maxDiskUsage > 70 ? "DrawingImageHardDiskRed"
+                                : "DrawingImageHardDisk";
 
+                items.Add(new StatusBarMeta
+                {
+                    Id = "SystemMonitor_Disk",
+                    Name = Resources.StorageManagement,
+                    Description = Resources.StorageManagement,
+                    Order = 9996,
+                    Type = StatusBarType.Icon,
+                    IconResourceKey = diskIcon,
+                    BindingName = nameof(SystemMonitors.TotalDiskFree),
+                    Source = monitor,
+                    IsVisible = config.IsShowDisk,
+                });
+
+            }
             return items;
         }
     }

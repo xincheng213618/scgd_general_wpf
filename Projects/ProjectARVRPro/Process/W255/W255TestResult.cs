@@ -1,10 +1,13 @@
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 
 namespace ProjectARVRPro.Process.W255
 {
     public class W255ViewTestResult : W255TestResult
     {
+        public List<AlgResultLightAreaModel> AlgResultLightAreaModels { get; set; } = new List<AlgResultLightAreaModel>();
+
         public List<PoiResultCIExyuvData> ViewPoixyuvDatas { get; set; } = new List<PoiResultCIExyuvData>();
     }
 

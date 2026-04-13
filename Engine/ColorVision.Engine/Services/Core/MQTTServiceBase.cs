@@ -57,6 +57,7 @@ namespace ColorVision.Engine.Services
                         IsAlive = true;
                         return Task.CompletedTask;
                     }
+
                     lock (_locker)
                     {
                         if (_msgTimers.TryGetValue(json.MsgID, out var value))

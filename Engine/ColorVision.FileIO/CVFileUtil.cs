@@ -48,13 +48,14 @@ namespace ColorVision.FileIO
         private const string MagicHeader = "CVCIE";
         private const int HeaderSize = 5;
         private const int MinimumFileSize = HeaderSize + 4; // Minimum file size to contain the header and Version
-        private static readonly Encoding Encoding1 = Encoding.GetEncoding("GBK");
+        private static readonly Encoding Encoding1;
 
         static CVFileUtil()
         {
 #if NETCOREAPP
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 #endif
+            Encoding1 = Encoding.GetEncoding("GBK");
         }
         /// <summary>
         /// 判断文件是否为CVCIE格式。
@@ -146,8 +147,8 @@ namespace ColorVision.FileIO
                         cvcie.Exp = new float[cvcie.Channels];
                         for (int i = 0; i < cvcie.Channels; i++)
                             cvcie.Exp[i] = br.ReadSingle();
-                        cvcie.Rows = (int)br.ReadUInt32();
                         cvcie.Cols = (int)br.ReadUInt32();
+                        cvcie.Rows = (int)br.ReadUInt32();
                         cvcie.Bpp = (int)br.ReadUInt32();
                         cvcie.FilePath = filePath;
                         return (int)fs.Position;
@@ -164,8 +165,8 @@ namespace ColorVision.FileIO
                         cvcie.Exp = new float[cvcie.Channels];
                         for (int i = 0; i < cvcie.Channels; i++)
                             cvcie.Exp[i] = br.ReadSingle();
-                        cvcie.Rows = br.ReadInt32();
                         cvcie.Cols = br.ReadInt32();
+                        cvcie.Rows = br.ReadInt32();
                         cvcie.Bpp = br.ReadInt32();
                         cvcie.FilePath = filePath;
                         return (int)fs.Position;
@@ -193,34 +194,69 @@ namespace ColorVision.FileIO
                 if (fileHeader != MagicHeader) return -1;
                 int startIndex = HeaderSize;
                 uint version = (cvcie.Version = BitConverter.ToUInt32(fileData, startIndex));
-                if (version != 1 && version != 2) return -1;
                 startIndex += 4;
-                int fileNameLength = BitConverter.ToInt32(fileData, startIndex);
-                startIndex += 4;
-                if (fileNameLength < 0 || startIndex + fileNameLength > fileData.Length) return -1;
-                cvcie.SrcFileName = Encoding1.GetString(fileData, startIndex, fileNameLength);
-                startIndex += fileNameLength;
-                float gainValue;
-                if (!TryReadSingle(fileData, ref startIndex, out gainValue)) return -1;
-                cvcie.Gain = gainValue;
-                int channelsValue;
-                if (!TryReadUInt32(fileData, ref startIndex, out channelsValue)) return -1;
-                cvcie.Channels = channelsValue;
-                if (startIndex + cvcie.Channels * 4 > fileData.Length) return -1;
-                cvcie.Exp = new float[cvcie.Channels];
-                for (int i = 0; i < cvcie.Channels; i++)
+                if (version == 1 || version == 2)
                 {
-                    cvcie.Exp[i] = BitConverter.ToSingle(fileData, startIndex);
+                    int fileNameLength = BitConverter.ToInt32(fileData, startIndex);
                     startIndex += 4;
+                    if (fileNameLength < 0 || startIndex + fileNameLength > fileData.Length) return -1;
+                    cvcie.SrcFileName = Encoding1.GetString(fileData, startIndex, fileNameLength);
+                    startIndex += fileNameLength;
+                    float gainValue;
+                    if (!TryReadSingle(fileData, ref startIndex, out gainValue)) return -1;
+                    cvcie.Gain = gainValue;
+                    int channelsValue;
+                    if (!TryReadUInt32(fileData, ref startIndex, out channelsValue)) return -1;
+                    cvcie.Channels = channelsValue;
+                    if (startIndex + cvcie.Channels * 4 > fileData.Length) return -1;
+                    cvcie.Exp = new float[cvcie.Channels];
+                    for (int i = 0; i < cvcie.Channels; i++)
+                    {
+                        cvcie.Exp[i] = BitConverter.ToSingle(fileData, startIndex);
+                        startIndex += 4;
+                    }
+                    int rowsValue, colsValue, bppValue;
+                    if (!TryReadUInt32(fileData, ref startIndex, out rowsValue)) return -1;
+                    cvcie.Cols = rowsValue;
+                    if (!TryReadUInt32(fileData, ref startIndex, out colsValue)) return -1;
+                    cvcie.Rows = colsValue;
+                    if (!TryReadUInt32(fileData, ref startIndex, out bppValue)) return -1;
+                    cvcie.Bpp = bppValue;
+                    return startIndex;
                 }
-                int rowsValue, colsValue, bppValue;
-                if (!TryReadUInt32(fileData, ref startIndex, out rowsValue)) return -1;
-                cvcie.Rows = rowsValue;
-                if (!TryReadUInt32(fileData, ref startIndex, out colsValue)) return -1;
-                cvcie.Cols = colsValue;
-                if (!TryReadUInt32(fileData, ref startIndex, out bppValue)) return -1;
-                cvcie.Bpp = bppValue;
-                return startIndex;
+                else if (version == 3)
+                {
+                    int fileNameLength = BitConverter.ToInt32(fileData, startIndex);
+                    startIndex += 4;
+                    if (fileNameLength < 0 || startIndex + fileNameLength > fileData.Length) return -1;
+                    cvcie.SrcFileName = Encoding1.GetString(fileData, startIndex, fileNameLength);
+                    startIndex += fileNameLength;
+                    int ndPortValue;
+                    if (!TryReadUInt32(fileData, ref startIndex, out ndPortValue)) return -1;
+                    cvcie.NDPort = ndPortValue;
+                    float gainValue;
+                    if (!TryReadSingle(fileData, ref startIndex, out gainValue)) return -1;
+                    cvcie.Gain = gainValue;
+                    int channelsValue;
+                    if (!TryReadUInt32(fileData, ref startIndex, out channelsValue)) return -1;
+                    cvcie.Channels = channelsValue;
+                    if (startIndex + cvcie.Channels * 4 > fileData.Length) return -1;
+                    cvcie.Exp = new float[cvcie.Channels];
+                    for (int i = 0; i < cvcie.Channels; i++)
+                    {
+                        cvcie.Exp[i] = BitConverter.ToSingle(fileData, startIndex);
+                        startIndex += 4;
+                    }
+                    int colsValue, rowsValue, bppValue;
+                    if (!TryReadUInt32(fileData, ref startIndex, out colsValue)) return -1;
+                    cvcie.Cols = colsValue;
+                    if (!TryReadUInt32(fileData, ref startIndex, out rowsValue)) return -1;
+                    cvcie.Rows = rowsValue;
+                    if (!TryReadUInt32(fileData, ref startIndex, out bppValue)) return -1;
+                    cvcie.Bpp = bppValue;
+                    return startIndex;
+                }
+                return -1;
             }
             catch (Exception ex)
             {

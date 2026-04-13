@@ -148,8 +148,26 @@ namespace ColorVision.Solution.Explorer
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddExistingItem", Order = 2, Header = "现有项(_E)...", Command = new RelayCommand(_ => AddExistingItem()) });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 10, Header = "新建文件夹", Command = AddDirCommand });
 
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Fusion", Order = 50, Header = "景深融合(_F)", Command = new RelayCommand(_ => OpenFusionWithFolderImages()) });
+
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenInCmdCommad", Order = 200, Header = "在终端中打开", Command = OpenInCmdCommand });
+        }
+
+        private void OpenFusionWithFolderImages()
+        {
+            var imageExts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                { ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff" };
+            var imageFiles = DirectoryInfo.GetFiles()
+                .Where(f => imageExts.Contains(f.Extension))
+                .OrderBy(f => f.Name, Comparer<string>.Create((a, b) => Common.NativeMethods.Shlwapi.CompareLogical(a, b)))
+                .Select(f => f.FullName);
+            var window = new Fusion.FusionWindow(imageFiles)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            window.Show();
         }
 
         private void ShowAddNewItemDialog()

@@ -1,15 +1,13 @@
-﻿using ColorVision.Database;
+﻿using ColorVision.Common.ThirdPartyApps;
+using ColorVision.Database;
 using ColorVision.Engine.Services.PhyCameras.Licenses;
 using ColorVision.UI;
-using ColorVision.UI.Authorizations;
-using ColorVision.UI.Menus;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.ToolPlugins
@@ -24,23 +22,27 @@ namespace ColorVision.Engine.ToolPlugins
     }
 
 
-        public class ExporCalibrationCorrection : MenuItemBase
+    public class ExporCalibrationCorrectionAppProvider : IThirdPartyAppProvider
     {
-        public override string OwnerGuid => "Tool";
+        private const string Url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CalibTool/generateCaliFileTool240906.zip";
+        private static readonly string DownloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
 
-        public override string GuidId => "CalibrationCorrection";
+        public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
+        {
+            return new List<ThirdPartyAppInfo>
+            {
+                new ThirdPartyAppInfo
+                {
+                    Name = Properties.Resources.CalibrationCorrection,
+                    Group = Properties.Resources.InternalTools,
+                    Order = 6,
+                    LaunchAction = ExecuteCalibrationCorrection,
+                    GetIconPath = () => CalibrationConfig.Instance.CalibToolsPath,
+                }
+            };
+        }
 
-        public override int Order => 6;
-
-        public override string Header => Properties.Resources.CalibrationCorrection;
-
-
-        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CalibTool/generateCaliFileTool240906.zip";
-        private string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
-
-
-        [RequiresPermission(PermissionMode.User)]
-        public override void Execute()
+        private static void ExecuteCalibrationCorrection()
         {
             if (!File.Exists(CalibrationConfig.Instance.CalibToolsPath))
             {
@@ -50,7 +52,7 @@ namespace ColorVision.Engine.ToolPlugins
                     if (service == null) return;
 
                     service.ShowDownloadWindow();
-                    service.Download(url, downloadDir, DownloadFileConfig.Instance.Authorization, filePath =>
+                    service.Download(Url, DownloadDir, DownloadFileConfig.Instance.Authorization, filePath =>
                     {
                         if (filePath == null) return;
                         Application.Current?.Dispatcher.Invoke(() =>

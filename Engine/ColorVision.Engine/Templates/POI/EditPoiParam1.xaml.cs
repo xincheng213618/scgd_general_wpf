@@ -1243,6 +1243,82 @@ namespace ColorVision.Engine.Templates.POI
             new EidtPoiDataGridForm((ObservableCollection<IDrawingVisual>)DrawingVisualLists).Show();           
         }
 
+        private void DetectKeyRegions_Click(object sender, RoutedEventArgs e)
+        {
+            if (HImageCache == null)
+            {
+                MessageBox.Show("请先加载图像", "ColorVision");
+                return;
+            }
+
+            string configJson = PoiConfig.DetectKeyRegionsConfig.ToJsonN();
+            Task.Run(() =>
+            {
+                int length = OpenCVMediaHelper.M_DetectKeyRegions((HImage)HImageCache, new RoiRect(), configJson, out IntPtr resultPtr);
+                if (length > 0)
+                {
+                    string result = Marshal.PtrToStringAnsi(resultPtr);
+                    OpenCVMediaHelper.FreeResult(resultPtr);
+                    log.Info("DetectKeyRegions result: " + result);
+
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        try
+                        {
+                            var jObj = Newtonsoft.Json.Linq.JObject.Parse(result);
+                            var keyRegions = jObj["KeyRegions"].ToObject<List<MRect>>();
+                            int count = jObj["Count"].ToObject<int>();
+
+                            if (keyRegions == null || keyRegions.Count == 0)
+                            {
+                                MessageBox.Show("未检测到按键区域，请调整参数后重试", "ColorVision");
+                                return;
+                            }
+
+                            int start = DrawingVisualLists.Count;
+                            int idx = 0;
+                            foreach (var region in keyRegions)
+                            {
+                                idx++;
+                                DVRectangleText rectangle = new DVRectangleText();
+                                rectangle.Attribute.Rect = new System.Windows.Rect(region.X, region.Y, region.Width, region.Height);
+                                rectangle.Attribute.Brush = Brushes.Transparent;
+                                rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)Math.Max(region.Width, region.Height) / 30);
+                                rectangle.Attribute.Id = start + idx;
+                                rectangle.Attribute.Name = (start + idx).ToString();
+                                rectangle.Attribute.Text = string.Format("{0}{1}", TagName, rectangle.Attribute.Name);
+
+                                KBPoiVMParam poiPointParam = new KBPoiVMParam();
+                                poiPointParam.PropertyChanged += (s1, e1) =>
+                                {
+                                    if (e1.PropertyName == "Area")
+                                        CalPoiPointParamB(rectangle.Attribute);
+                                };
+                                rectangle.Attribute.Param = poiPointParam;
+
+                                rectangle.Render();
+                                ImageShow.AddVisualCommand(rectangle);
+                            }
+
+                            MessageBox.Show($"成功检测到 {count} 个按键区域", "ColorVision");
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("DetectKeyRegions parse error", ex);
+                            MessageBox.Show($"解析检测结果失败: {ex.Message}", "ColorVision");
+                        }
+                    });
+                }
+                else
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show($"按键区域检测失败(错误码: {length})，请调整参数后重试", "ColorVision");
+                    });
+                }
+            });
+        }
+
 
         public ImageSource ViewBitmapSource => ImageView.ViewBitmapSource;
 

@@ -116,6 +116,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
+    <ProjectReference Include="..\Engine\ColorVision.ShellExtension\ColorVision.ShellExtension.csproj" />
     <ProjectReference Include="..\UI\ColorVision.UI.Desktop\ColorVision.UI.Desktop.csproj" />
     <ProjectReference Include="..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
@@ -135,5 +136,18 @@
     </Resource>
     <Resource Include="Assets\png\PowerToy.png" />
   </ItemGroup>
+
+  <Target Name="CopyShellExtensionRuntimeFiles" AfterTargets="Build">
+    <ItemGroup>
+      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.comhost.dll" Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.comhost.dll')" />
+      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.deps.json" Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.deps.json')" />
+      <ShellExtensionRuntimeFiles Include="..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.runtimeconfig.json" Condition="Exists('..\Engine\ColorVision.ShellExtension\bin\$(Platform)\$(Configuration)\$(TargetFramework)\ColorVision.ShellExtension.runtimeconfig.json')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(ShellExtensionRuntimeFiles)"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true"
+          Condition="'@(ShellExtensionRuntimeFiles)' != ''" />
+  </Target>
 
 </Project>

@@ -1,26 +1,39 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Common.ThirdPartyApps;
+using ColorVision.UI;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 
 namespace WindowsServicePlugin
 {
-    public class InstallNavicate : WizardStepBase
+    public class InstallNavicateAppProvider : IThirdPartyAppProvider
     {
-        public override int Order => 50;
-        public override string Header => ColorVision.UI.Properties.Resources.Download +"Navicate";
-        public override string Description => "Download Navicat as a third-party client for database management.";
+        private const string Url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/navicat/navicat161_premium_cs_x64.exe";
+        private static readonly string DownloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
 
-        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/navicat/navicat161_premium_cs_x64.exe";
-        private string downloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision");
+        public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
+        {
+            return new List<ThirdPartyAppInfo>
+            {
+                new ThirdPartyAppInfo
+                {
+                    Name = "Navicat",
+                    Group = "InstallTools",
+                    Order = 50,
+                    LaunchAction = ExecuteInstall,
+                }
+            };
+        }
 
-        public override void Execute()
+        private static void ExecuteInstall()
         {
             var service = AssemblyHandler.GetInstance().LoadImplementations<IDownloadService>().FirstOrDefault();
             if (service == null) return;
 
             service.ShowDownloadWindow();
-            service.Download(url, downloadDir, DownloadFileConfig.Instance.Authorization, filePath =>
+            service.Download(Url, DownloadDir, DownloadFileConfig.Instance.Authorization, filePath =>
             {
                 if (filePath == null) return;
                 Application.Current?.Dispatcher.Invoke(() =>

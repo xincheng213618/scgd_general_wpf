@@ -13,13 +13,30 @@
     </Window.Resources>
     <Grid Margin="8">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*" MinHeight="200"/>
             <RowDefinition Height="5"/>
             <RowDefinition Height="350" MinHeight="200"/>
         </Grid.RowDefinitions>
+
+        <!-- Group Management Bar -->
+        <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Margin="0 0 0 8" Padding="8">
+            <DockPanel>
+                <TextBlock Text="流程组管理" FontWeight="Bold" FontSize="14" VerticalAlignment="Center" Margin="0 0 12 0"/>
+                <TextBlock Text="当前组:" VerticalAlignment="Center" Margin="0 0 5 0"/>
+                <ComboBox ItemsSource="{Binding ProcessGroups}" DisplayMemberPath="Name" 
+                          SelectedIndex="{Binding ActiveGroupIndex}" Width="150" VerticalAlignment="Center" Margin="0 0 12 0"
+                          x:Name="GroupComboBox" SelectionChanged="GroupComboBox_SelectionChanged"/>
+                <TextBox Text="{Binding NewGroupName, UpdateSourceTrigger=PropertyChanged}" Width="120" VerticalAlignment="Center" Margin="0 0 5 0"/>
+                <Button Content="添加组" Padding="8 3" Margin="0 0 5 0" Command="{Binding AddGroupCommand}"/>
+                <Button Content="重命名" Padding="8 3" Margin="0 0 5 0" Command="{Binding RenameGroupCommand}"/>
+                <Button Content="复制组" Padding="8 3" Margin="0 0 5 0" Command="{Binding DuplicateGroupCommand}"/>
+                <Button Content="删除组" Padding="8 3" Margin="0 0 5 0" Command="{Binding RemoveGroupCommand}" Foreground="Red"/>
+            </DockPanel>
+        </Border>
         
         <!-- Top Panel: ListView with Create Controls -->
-        <Grid Grid.Row="0">
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -55,6 +72,13 @@
                             <GridViewColumn Header="名称" Width="150" DisplayMemberBinding="{Binding Name}"/>
                             <GridViewColumn Header="流程模板" Width="150" DisplayMemberBinding="{Binding FlowTemplate}"/>
                             <GridViewColumn Header="处理类" Width="180" DisplayMemberBinding="{Binding ProcessTypeName}"/>
+                            <GridViewColumn Header="SocketCode" Width="180">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding SocketCode}" HorizontalAlignment="Stretch" Width="100"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                             <GridViewColumn Header="是否启用" Width="80">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
@@ -137,10 +161,10 @@
         </Grid>
         
         <!-- GridSplitter (Horizontal) -->
-        <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent"/>
+        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Transparent"/>
         
         <!-- Bottom Panel: Configuration Editing (Recipe, Fix, Process side by side) -->
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>

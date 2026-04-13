@@ -1,0 +1,270 @@
+<Window x:Class="WindowsServicePlugin.ServiceManager.ServiceManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WindowsServicePlugin.ServiceManager"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:ServiceManagerViewModel}"
+        Title="服务管理器" Height="750" Width="1000"
+        Background="{DynamicResource GlobalBackground}"
+        WindowStartupLocation="CenterScreen"
+        Initialized="Window_Initialized">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="200"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 顶部：全局操作 -->
+        <Border Grid.Row="0" Padding="10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+            <StackPanel>
+                <!-- 安装路径 -->
+                <DockPanel Margin="0,0,0,8">
+                    <TextBlock Text="安装根目录：" VerticalAlignment="Center" Width="80"/>
+                    <Button DockPanel.Dock="Right" Content="目录设置" Command="{Binding SetBasePathCommand}" Margin="8,0,0,0" Padding="12,4"/>
+                    <TextBox Text="{Binding Config.BaseLocation, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" IsReadOnly="True"/>
+                </DockPanel>
+
+                <!-- 版本和操作 -->
+                <WrapPanel>
+                    <Button Content="一键启动" Command="{Binding OneKeyStartCommand}" Margin="0,0,8,0" Padding="16,6"
+                            Style="{StaticResource ButtonPrimary}"/>
+                    <Button Content="一键停止" Command="{Binding OneKeyStopCommand}" Margin="0,0,8,0" Padding="16,6"
+                            Style="{StaticResource ButtonPrimary}"/>
+
+                    <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="8,0,0,0">
+                        <TextBlock Text="版本" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding CurrentVersion, Mode=OneWay}" Width="100" Margin="4,0" IsReadOnly="True" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
+
+                    <Button Content="更新配置" Command="{Binding UpdateConfigCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="旧版App.config" Command="{Binding OpenLegacyConfigCommand}" Margin="0,0,8,0" Padding="12,6"
+                            Visibility="{Binding HasLegacyConfig, Converter={StaticResource BoolToVis}}"/>
+                    <Button Content="更新" Command="{Binding OpenInstallManagerCommand}" Margin="0,0,8,0" Padding="12,6"
+                            Style="{StaticResource ButtonPrimary}" ToolTip="打开服务安装管理器，检查更新并安装"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 中间：TabControl -->
+        <TabControl Grid.Row="1" Margin="8">
+            <!-- 服务列表 Tab -->
+            <TabItem Header="CVWindowsService">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Services}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8" Margin="0,0,0,4">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,4">
+                                            <TextBlock DockPanel.Dock="Left" FontWeight="Bold" FontSize="13">
+                                                <Run Text="{Binding DisplayName}"/>
+                                                <Run Text="[" Foreground="Gray"/>
+                                                <Run Text="{Binding VersionText}" Foreground="Gray"/>
+                                                <Run Text="]" Foreground="Gray"/>
+                                            </TextBlock>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,0,0,4">
+                                            <TextBlock Text="{Binding ExePath}" TextTrimming="CharacterEllipsis" Foreground="Gray"/>
+                                        </DockPanel>
+                                        <WrapPanel>
+                                            <TextBlock Text="{Binding ServiceName}" Width="200" VerticalAlignment="Center"/>
+                                            <TextBlock Width="80" VerticalAlignment="Center"
+                                                       Foreground="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="{Binding StatusText}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                                <Setter Property="Foreground" Value="Green"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsRunning}" Value="False">
+                                                                <Setter Property="Foreground" Value="Red"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </WrapPanel>
+                                        <WrapPanel Margin="0,6,0,0">
+                                            <Button Content="打开目录" Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="WinService" Command="{Binding DataContext.OpenWinServiceConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="MySql" Command="{Binding DataContext.OpenMySqlConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="MQTT" Command="{Binding DataContext.OpenMqttConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                            <Button Content="log4net" Command="{Binding DataContext.OpenLog4NetConfigCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="0,0,6,0" Padding="10,2"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- MySQL Tab -->
+            <TabItem Header="MySQL">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- MySQL 信息 -->
+                    <GroupBox Header="MySQL 服务信息" Grid.Row="0" Margin="0,0,0,8" Padding="8">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock Text="服务名" Width="80" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding MySqlServiceName}" Width="120" Margin="4,0" IsReadOnly="True"/>
+                                <TextBlock Text="状态" Width="40" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                                <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="{Binding MySqlStatus}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsMySqlRunning}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsMySqlRunning}" Value="False">
+                                                    <Setter Property="Foreground" Value="Red"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock Text="路径" Width="80" VerticalAlignment="Center"/>
+                                <Button DockPanel.Dock="Right" Content="浏览" Command="{Binding MySqlBrowseCommand}" Padding="8,2" Margin="4,0,0,0"/>
+                                <TextBox Text="{Binding MySqlExePath}" IsReadOnly="True"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock Text="root旧密码" Width="80" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding MySqlRootPassword, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="4,0,0,0"/>
+                                <TextBlock Text="root新密码" Width="80" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                <Button DockPanel.Dock="Right" Content="随机生成" Command="{Binding MySqlGenerateRandomRootPasswordCommand}" Padding="8,2" Margin="4,0,0,0"/>
+                                <TextBox Text="{Binding MySqlRootNewPassword, UpdateSourceTrigger=PropertyChanged}" Width="180" Margin="4,0,0,0"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock Text="业务用户" Width="80" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding MySqlAppUser, UpdateSourceTrigger=PropertyChanged}" Width="140" Margin="4,0,0,0"/>
+                                <TextBlock Text="业务密码" Width="70" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                <TextBox Text="{Binding MySqlAppPassword, UpdateSourceTrigger=PropertyChanged}" Width="180" Margin="4,0,0,0"/>
+                                <TextBlock Text="数据库" Width="52" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                <TextBox Text="{Binding MySqlDatabaseName, UpdateSourceTrigger=PropertyChanged}" Width="140" Margin="4,0,0,0"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- MySQL 操作按钮 -->
+                    <WrapPanel Grid.Row="1" Margin="0,0,0,8">
+                        <Button Content="Zip全安装" Command="{Binding MySqlInstallZipCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="启动" Command="{Binding MySqlStartCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="停止" Command="{Binding MySqlStopCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="卸载" Command="{Binding MySqlUninstallCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"/>
+
+                        <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="8,0"/>
+
+                        <Button Content="数据库备份" Command="{Binding MySqlBackupCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="数据库还原" Command="{Binding MySqlRestoreCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="脚本执行" Command="{Binding MySqlRunScriptCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="设置root密码" Command="{Binding MySqlSetRootPasswordCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="重置root密码" Command="{Binding MySqlForceResetRootPasswordCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"/>
+                        <Button Content="创建/更新用户" Command="{Binding MySqlCreateOrUpdateUserCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="删除用户" Command="{Binding MySqlDeleteUserCommand}" Margin="0,0,8,0" Padding="12,6" Foreground="Red"/>
+                    </WrapPanel>
+                </Grid>
+            </TabItem>
+
+            <!-- MQTT Tab -->
+            <TabItem Header="MQTT">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <GroupBox Header="MQTT 服务信息" Grid.Row="0" Margin="0,0,0,8" Padding="8">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <TextBlock Text="服务名" Width="80" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding MqttServiceName}" Width="180" Margin="4,0" IsReadOnly="True"/>
+                                <TextBlock Text="状态" Width="40" VerticalAlignment="Center" Margin="16,0,0,0"/>
+                                <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="{Binding MqttStatus}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsMqttRunning}" Value="True">
+                                                    <Setter Property="Foreground" Value="Green"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsMqttRunning}" Value="False">
+                                                    <Setter Property="Foreground" Value="Red"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="路径" Width="80" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding MqttExePath}" IsReadOnly="True"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <WrapPanel Grid.Row="1" Margin="0,0,0,8">
+                        <Button Content="启动" Command="{Binding MqttStartCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                        <Button Content="停止" Command="{Binding MqttStopCommand}" Margin="0,0,8,0" Padding="12,6"/>
+                    </WrapPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <!-- 进度条 -->
+        <Grid Grid.Row="2" Margin="8,0,8,4" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <TextBlock Text="{Binding ProgressText}" Margin="0,0,0,2"/>
+                <ProgressBar Value="{Binding Progress}" Height="16" Maximum="100"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- 日志输出 -->
+        <Grid Grid.Row="3" Margin="8,0,8,4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <DockPanel Grid.Row="0" Margin="0,0,0,2">
+                <TextBlock Text="日志输出" VerticalAlignment="Center" FontWeight="Bold"/>
+                <Button DockPanel.Dock="Right" Content="清除" Command="{Binding ClearLogCommand}" Padding="8,2"/>
+                <Button DockPanel.Dock="Right" Content="刷新状态" Command="{Binding RefreshCommand}" Padding="8,2" Margin="0,0,8,0"/>
+            </DockPanel>
+            <TextBox Grid.Row="1" Text="{Binding LogText, Mode=OneWay}" IsReadOnly="True"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     TextWrapping="Wrap" FontFamily="Consolas" FontSize="12"
+                     x:Name="LogTextBox"/>
+        </Grid>
+
+        <!-- 状态栏 -->
+        <StatusBar Grid.Row="4">
+            <StatusBarItem>
+                <TextBlock Text="{Binding ProgressText}"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>

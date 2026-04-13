@@ -36,7 +36,8 @@ namespace Spectrum.Models
 
             IP = Math.Round(fIp / 65535 * 100, 2).ToString() + "%";
 
-            Lv = (fPh / 1).ToString();
+            float safeLuminance = GetSafeLuminanceValue(fPh);
+            Lv = safeLuminance.ToString();
 
             double sum1 = 0, sum2 = 0;
             for (int i = 35; i <= 75; i++)
@@ -291,7 +292,8 @@ namespace Spectrum.Models
                 Eqe = 0;
             }
 
-            LuminousFlux = fPh;
+            float safeLuminance = GetSafeLuminanceValue(fPh);
+            LuminousFlux = safeLuminance;
 
             if (fPL != null && fPL.Length > 0)
             {
@@ -310,7 +312,7 @@ namespace Spectrum.Models
                 double power_W = V * I / 1000.0;
                 if (power_W != 0)
                 {
-                    LuminousEfficacy = fPh / power_W;
+                    LuminousEfficacy = safeLuminance / power_W;
                 }
             }
 
@@ -321,6 +323,23 @@ namespace Spectrum.Models
             OnPropertyChanged(nameof(LuminousEfficacy));
             OnPropertyChanged(nameof(V));
             OnPropertyChanged(nameof(I));
+        }
+
+        private static float GetSafeLuminanceValue(float rawLuminance)
+        {
+            try
+            {
+                ViewResultManagerConfig config = ViewResultManagerConfig.Instance;
+                if (config.EnableNegativeLuminanceGuard && rawLuminance < config.MinLuminanceValue)
+                {
+                    return (float)config.MinLuminanceValue;
+                }
+            }
+            catch
+            {
+            }
+
+            return rawLuminance;
         }
 
         public float V { get; set; }

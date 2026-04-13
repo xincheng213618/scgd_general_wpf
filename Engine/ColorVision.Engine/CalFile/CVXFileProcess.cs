@@ -46,7 +46,7 @@ namespace ColorVision.Engine.CalFile
                     // 1. 解压读取 JSON 字符串
                     using (ZipArchive archive = ZipFile.OpenRead(targetFile))
                     {
-                        
+
                         var entry = archive.GetEntry("CameraConfig.cfg");
                         if (entry != null)
                         {
@@ -74,54 +74,8 @@ namespace ColorVision.Engine.CalFile
                                 return;
                             }
                         }
-                        else
-                        {
-                            entry = archive.GetEntry("cvCameraInfo.json");
-                            if (entry != null)
-                            {
-                                using (var stream = entry.Open())
-                                using (var reader = new StreamReader(stream, Encoding.UTF8))
-                                {
-                                    jsonContent = reader.ReadToEnd();
-                                }
-                            }
-                        }
                     }
 
-                    if (string.IsNullOrEmpty(jsonContent))
-                    {
-                        MessageBox.Show("配置信息读取为空。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-
-                    // 2. 反序列化为对象 (关键步骤)
-                    CvCameraInfoModel cameraInfo = null;
-                    try
-                    {
-                        cameraInfo = JsonConvert.DeserializeObject<CvCameraInfoModel>(jsonContent);
-                    }
-                    catch (Exception jsonEx)
-                    {
-                        MessageBox.Show($"配置文件格式错误: {jsonEx.Message}", "解析错误");
-                        return;
-                    }
-
-                    // 3. 打开确认窗口，传入对象
-                    CVFileImportWindow importWindow = new CVFileImportWindow(cameraInfo);
-                    bool? result = importWindow.ShowDialog();
-
-                    // 4. 用户确认导入
-                    if (result == true)
-                    {
-                        // ---------------------------------------------------------
-                        // 在这里使用 cameraInfo 对象进行后续处理
-                        // ---------------------------------------------------------
-                        ImportCameraConfig(cameraInfo);
-
-                        // 打开 PhyCameraManagerWindow
-                        PhyCameraManagerWindow phyCameraManagerWindow = new PhyCameraManagerWindow();
-                        phyCameraManagerWindow.Show();
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -137,17 +91,6 @@ namespace ColorVision.Engine.CalFile
             return Task.CompletedTask;
         }
 
-        /// <summary>
-        /// 实际的导入逻辑方法
-        /// </summary>
-        private void ImportCameraConfig(CvCameraInfoModel info)
-        {
-            // 示例：打印日志或存入数据库
-            log.Info($"正在导入相机: {info.CameraModel} (SN: {info.CameraSn})");
-
-            // TODO: 这里写你具体的业务逻辑，比如：
-            // CameraService.Add(info); 
-        }
     }
 
     [FileExtension(".cvcal")]

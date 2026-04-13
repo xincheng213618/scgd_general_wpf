@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
+using log4net;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Media;
 
 namespace ColorVision.UI.Desktop.Settings
@@ -13,82 +13,32 @@ namespace ColorVision.UI.Desktop.Settings
     /// </summary>
     public partial class SettingWindow 
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(SettingWindow));
+
         public SettingWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
         }
 
-
-
         private void Window_Initialized(object sender, EventArgs e)
         {
            LoadIConfigSetting();
         }
 
-
         public void LoadIConfigSetting()
         {
-            Dictionary<string,StackPanel> SettingStackPanels = new Dictionary<string, StackPanel>();
-            SettingStackPanels.Add(ConfigSettingConstants.Universal, UniversalStackPanel);
-
-
-            void Add(ConfigSettingMetadata configSetting)
+            var settingStackPanels = new Dictionary<string, StackPanel>
             {
+                { ConfigSettingConstants.Universal, UniversalStackPanel }
+            };
 
-                if (configSetting.Type == ConfigSettingType.TabItem)
-                {
-                    TabItem tabItem = new TabItem() { Header = configSetting.Name, Background = Brushes.Transparent };
-                    Grid grid = new Grid();
-                    grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
-                    grid.Children.Add(configSetting.UserControl);
-                    tabItem.Content = grid;
-                    TabControlSetting.Items.Add(tabItem);
-                }
-                else if (configSetting.Type == ConfigSettingType.Class)
-                {
-                    TabItem tabItem = new TabItem() { Header = configSetting.Name, Background = Brushes.Transparent };
-                    Grid grid = new Grid();
-                    grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
-                    if (configSetting.Source is ViewModelBase obj)
-                    {
-                        grid.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(obj));
-                    }
-                    tabItem.Content = grid;
-                    TabControlSetting.Items.Add(tabItem);
-                }
-                else
-                {
-                    if (configSetting.Source == null || configSetting.BindingName == null) return;
+            var sortedSettings = ConfigSettingManager.GetInstance().GetAllSettings();
 
-                    PropertyInfo propertyInfo = configSetting.Source.GetType().GetProperty(configSetting.BindingName);
-                    DockPanel dockPanel = PropertyEditorHelper.GenProperties(propertyInfo, configSetting.Source);
-                    dockPanel.Margin = new Thickness(0, 0, 0, 5);
-                    SettingStackPanels[configSetting.Group].Children.Add(dockPanel);
-                }
-            }
-
-
-            var allSettings = new List<ConfigSettingMetadata>();
-
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            // 为新的分组创建选项卡
+            foreach (var group in sortedSettings)
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IConfigSettingProvider).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IConfigSettingProvider configSetting)
-                    {
-                        allSettings.AddRange(configSetting.GetConfigSettings());
-                    }
-                }
-            }
-            // 先按 ConfigSettingType 分组，再在每个组内按 Order 排序
-            var sortedSettings = allSettings
-                .GroupBy(setting => setting.Type)
-                .SelectMany(group => group.OrderBy(setting => setting.Order));
-
-            foreach (var group in sortedSettings) 
-            {
-                if (!SettingStackPanels.ContainsKey(group.Group))
+                if (!settingStackPanels.ContainsKey(group.Group))
                 {
                     TabItem tabItem = new TabItem() { Header = group.Group, Background = Brushes.Transparent };
                     Grid grid = new Grid();
@@ -99,21 +49,94 @@ namespace ColorVision.UI.Desktop.Settings
                     tabItem.Content = grid;
                     TabControlSetting.Items.Add(tabItem);
 
-                    SettingStackPanels.Add(group.Group, stackPanel);
+                    settingStackPanels.Add(group.Group, stackPanel);
                 }
             }
 
-            // 将排序后的配置设置添加到集合中
+            // 将配置设置添加到对应面板
             foreach (var item in sortedSettings)
             {
                 try
                 {
-                    Add(item);
+                    AddSettingItem(item, settingStackPanels);
                 }
                 catch (Exception ex)
                 {
-
+                    log.Warn($"Failed to add setting: {item.Name ?? item.BindingName}: {ex.Message}");
                 }
+            }
+        }
+
+        private void AddSettingItem(ConfigSettingMetadata configSetting, Dictionary<string, StackPanel> settingStackPanels)
+        {
+            if (configSetting.Type == ConfigSettingType.TabItem)
+            {
+                TabItem tabItem = new TabItem() { Header = configSetting.Name, Background = Brushes.Transparent };
+                Grid grid = new Grid();
+                grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
+                if (configSetting.ViewType != null)
+                {
+                    // 懒加载：仅在 TabItem 被选中时才实例化 UserControl
+                    tabItem.Tag = configSetting.ViewType;
+                    TabControlSetting.SelectionChanged += LazyLoadTabContent;
+                }
+                tabItem.Content = grid;
+                TabControlSetting.Items.Add(tabItem);
+            }
+            else if (configSetting.Type == ConfigSettingType.Class)
+            {
+                TabItem tabItem = new TabItem() { Header = configSetting.Name, Background = Brushes.Transparent };
+                Grid grid = new Grid();
+                grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
+                if (configSetting.ViewType != null)
+                {
+                    tabItem.Tag = configSetting.ViewType;
+                    TabControlSetting.SelectionChanged += LazyLoadTabContent;
+                }
+                else if (configSetting.Source is ViewModelBase obj)
+                {
+                    grid.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(obj));
+                }
+                tabItem.Content = grid;
+                TabControlSetting.Items.Add(tabItem);
+            }
+            else
+            {
+                if (configSetting.Source == null || configSetting.BindingName == null) return;
+
+                PropertyInfo propertyInfo = configSetting.Source.GetType().GetProperty(configSetting.BindingName);
+                DockPanel dockPanel = PropertyEditorHelper.GenProperties(propertyInfo, configSetting.Source);
+                dockPanel.Margin = new Thickness(0, 0, 0, 5);
+                settingStackPanels[configSetting.Group].Children.Add(dockPanel);
+            }
+        }
+
+        private static void LazyLoadTabContent(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count == 0) return;
+            if (e.AddedItems[0] is not TabItem tabItem) return;
+            if (tabItem.Tag is not Type viewType) return;
+
+            // 已加载，不再重复
+            if (tabItem.Content is Grid grid && grid.Children.Count > 0) return;
+
+            try
+            {
+                if (Activator.CreateInstance(viewType) is UserControl control)
+                {
+                    if (tabItem.Content is not Grid existingGrid)
+                    {
+                        existingGrid = new Grid();
+                        existingGrid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
+                        tabItem.Content = existingGrid;
+                    }
+                    existingGrid.Children.Add(control);
+                    tabItem.Tag = null; // 标记为已加载
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetLogger(typeof(SettingWindow)).Warn($"Lazy load failed for {viewType.Name}: {ex.Message}");
             }
         }
     }

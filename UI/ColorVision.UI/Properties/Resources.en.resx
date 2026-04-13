@@ -490,4 +490,16 @@
   <data name="Theme" xml:space="preserve">
     <value>Theme</value>
   </data>
+  <data name="SearchEngine" xml:space="preserve">
+    <value>Search Engine</value>
+  </data>
+  <data name="EnableBrowserSearch" xml:space="preserve">
+    <value>Enable Browser Search</value>
+  </data>
+  <data name="EnableEverythingSearch" xml:space="preserve">
+    <value>Enable Everything Search</value>
+  </data>
+  <data name="EverythingPath" xml:space="preserve">
+    <value>Everything Path</value>
+  </data>
 </root>

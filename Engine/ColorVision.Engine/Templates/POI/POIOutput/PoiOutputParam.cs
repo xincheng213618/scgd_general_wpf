@@ -1,70 +1,19 @@
-﻿#pragma warning disable IDE1006,CA1708
-using ColorVision.Common.MVVM;
-using System;
+﻿
 using System.Collections.Generic;
-using System.Reflection;
-using System.Windows.Forms;
 
 namespace ColorVision.Engine.Templates.POI.POIOutput
 {
     public class PoiOutputParam : ParamModBase
     {
-
-        public static void SetFile(object target, string propertyName)
-        {
-            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
-            {
-                saveFileDialog.Filter = "Tif Files (*.tif)|*.txt|All Files (*.*)|*.*";
-                saveFileDialog.Title = "Save File";
-                saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                saveFileDialog.RestoreDirectory = true;
-                if (saveFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    PropertyInfo prop = target.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-                    if (prop != null && prop.CanWrite)
-                    {
-                        prop.SetValue(target, saveFileDialog.FileName, null);
-                    }
-                }
-            }
-        }
-
-        public RelayCommand XSetFileCommand { get; set; }
-        public RelayCommand YSetFileCommand { get; set; }
-        public RelayCommand ZSetFileCommand { get; set; }
-        public RelayCommand xSetFileCommand { get; set; }
-        public RelayCommand ySetFileCommand { get; set; }
-        public RelayCommand uSetFileCommand { get; set; }
-        public RelayCommand vSetFileCommand { get; set; }
-        public RelayCommand CCTSetFileCommand { get; set; }
-        public RelayCommand WaveSetFileCommand { get; set; }
-
-
         public PoiOutputParam()
         {
-            XSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(XFileName)));
-            YSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(YFileName)));
-            ZSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(ZFileName)));
-            xSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(xFileName)));
-            ySetFileCommand = new RelayCommand((a) => SetFile(this, nameof(yFileName)));
-            uSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(uFileName)));
-            vSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(vFileName)));
-            CCTSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(CCTFileName)));
-            WaveSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(WaveFileName)));
+
 
         }
 
         public PoiOutputParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
-            XSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(XFileName)));
-            YSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(YFileName)));
-            ZSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(ZFileName)));
-            xSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(xFileName)));
-            ySetFileCommand = new RelayCommand((a) => SetFile(this, nameof(yFileName)));
-            uSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(uFileName)));
-            vSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(vFileName)));
-            CCTSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(CCTFileName)));
-            WaveSetFileCommand = new RelayCommand((a) => SetFile(this, nameof(WaveFileName)));
+
         }
 
         public bool XIsEnable { get => GetValue(_XIsEnable); set { SetProperty(ref _XIsEnable, value); OnPropertyChanged(); } }
@@ -114,6 +63,13 @@ namespace ColorVision.Engine.Templates.POI.POIOutput
         public string? CCTFileName { get => GetValue(_CCTFileName); set { SetProperty(ref _CCTFileName, value); OnPropertyChanged(); } }
         private string? _CCTFileName;
 
+        public bool XYZIsEnable { get => GetValue(_XYZIsEnable); set { SetProperty(ref _XYZIsEnable, value); OnPropertyChanged(); } }
+        private bool _XYZIsEnable;
+
+        public string? XYZFileName { get => GetValue(_XYZFileName); set { SetProperty(ref _XYZFileName, value); OnPropertyChanged(); } }
+        private string? _XYZFileName;
+
+
         public bool WaveIsEnable { get => GetValue(_WaveIsEnable); set { SetProperty(ref _WaveIsEnable, value); OnPropertyChanged(); } }
         private bool _WaveIsEnable;
 
@@ -122,6 +78,9 @@ namespace ColorVision.Engine.Templates.POI.POIOutput
 
         public string? MaskFileName { get => GetValue(_MaskFileName); set { SetProperty(ref _MaskFileName, value); OnPropertyChanged(); } }
         private string? _MaskFileName;
+
+
+
 
         public int Width { get => GetValue(_Width); set { SetProperty(ref _Width, value); OnPropertyChanged(); } }
         private int _Width;

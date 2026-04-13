@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Services
             EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
 
-        public int ShowType { get; set; }
+        public int ShowType2 { get; set; } = 2;
 
     }
 
@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Services
         {
             WindowServiceConfig = WindowServiceConfig.Instance;
             this.DataContext = this;
-            int i = WindowServiceConfig.Instance.ShowType;
+            int i = WindowServiceConfig.Instance.ShowType2;
             switch (i % 3)
             {
                 case 0:
@@ -97,8 +97,8 @@ namespace ColorVision.Engine.Services
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            WindowServiceConfig.Instance.ShowType = (WindowServiceConfig.Instance.ShowType +1) % 3;
-            switch (WindowServiceConfig.Instance.ShowType)
+            WindowServiceConfig.Instance.ShowType2 = (WindowServiceConfig.Instance.ShowType2 +1) % 3;
+            switch (WindowServiceConfig.Instance.ShowType2)
             {
                 case 0:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().TypeServices;

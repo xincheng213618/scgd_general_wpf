@@ -1,6 +1,8 @@
+using ColorVision.Common.Algorithms;
 using ColorVision.Database;
 using ColorVision.Engine; // AlgResultMasterDao, MeasureImgResultDao, DeatilCommonDao
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Jsons; // DetailCommonModel
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis; // PoiAnalysisDetailViewReslut
@@ -33,6 +35,11 @@ namespace ProjectARVRPro.Process.W255
                 var masters = AlgResultMasterDao.Instance.GetAllByBatchId(ctx.Batch.Id);
                 foreach (var master in masters)
                 {
+                    if (master.ImgFileType == ColorVision.Engine.ViewResultAlgType.FindLightArea)
+                    {
+                        testResult.AlgResultLightAreaModels = AlgResultLightAreaDao.Instance.GetAllByPid(master.Id);
+                    }
+
                     if (master.ImgFileType == ViewResultAlgType.POI_XYZ)
                     {
                         ctx.Result.FileName = master.ImgFile;
@@ -240,6 +247,27 @@ namespace ProjectARVRPro.Process.W255
             if (string.IsNullOrWhiteSpace(ctx.Result.ViewResultJson)) return outtext;
             W255ViewTestResult testResult = JsonConvert.DeserializeObject<W255ViewTestResult>(ctx.Result.ViewResultJson);
             if (testResult == null) return outtext;
+
+            if (testResult.AlgResultLightAreaModels.Count > 0)
+            {
+                DVPolygon polygon = new DVPolygon();
+                List<System.Windows.Point> point1s = new List<System.Windows.Point>();
+
+                foreach (var item in testResult.AlgResultLightAreaModels)
+                {
+                    point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
+                }
+                foreach (var item in GrahamScan.ComputeConvexHull(point1s))
+                {
+                    polygon.Attribute.Points.Add(new Point(item.X, item.Y));
+                }
+                polygon.Attribute.Brush = Brushes.Transparent;
+                polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
+                polygon.Attribute.Id = -1;
+                polygon.IsComple = true;
+                polygon.Render();
+                ctx.ImageView.AddVisual(polygon);
+            }
 
             foreach (var item in testResult.ViewPoixyuvDatas)
             {

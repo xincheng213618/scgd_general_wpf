@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Globalization;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -31,12 +32,7 @@ namespace ProjectARVRPro.Process
     public partial class ProcessManagerWindow : Window
     {
         private ProcessMeta _currentSelectedMeta;
-        private INotifyPropertyChanged _currentRecipeConfig;
-        private INotifyPropertyChanged _currentFixConfig;
-        private INotifyPropertyChanged _currentProcessConfig;
-        private PropertyChangedEventHandler _recipeConfigPropertyChangedHandler;
-        private PropertyChangedEventHandler _fixConfigPropertyChangedHandler;
-        private PropertyChangedEventHandler _processConfigPropertyChangedHandler;
+        private readonly List<(INotifyPropertyChanged obj, PropertyChangedEventHandler handler)> _configSubscriptions = new();
 
         public ProcessManagerWindow()
         {
@@ -58,19 +54,16 @@ namespace ProjectARVRPro.Process
                 _currentSelectedMeta = null;
             }
 
-            CleanupConfigHandler(ref _currentRecipeConfig, ref _recipeConfigPropertyChangedHandler);
-            CleanupConfigHandler(ref _currentFixConfig, ref _fixConfigPropertyChangedHandler);
-            CleanupConfigHandler(ref _currentProcessConfig, ref _processConfigPropertyChangedHandler);
+            CleanupConfigSubscriptions();
         }
 
-        private void CleanupConfigHandler(ref INotifyPropertyChanged config, ref PropertyChangedEventHandler handler)
+        private void CleanupConfigSubscriptions()
         {
-            if (config != null && handler != null)
+            foreach (var (obj, handler) in _configSubscriptions)
             {
-                config.PropertyChanged -= handler;
-                config = null;
-                handler = null;
+                obj.PropertyChanged -= handler;
             }
+            _configSubscriptions.Clear();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -116,9 +109,7 @@ namespace ProjectARVRPro.Process
             ProcessPanel.Children.Clear();
 
             // Cleanup previous config handlers
-            CleanupConfigHandler(ref _currentRecipeConfig, ref _recipeConfigPropertyChangedHandler);
-            CleanupConfigHandler(ref _currentFixConfig, ref _fixConfigPropertyChangedHandler);
-            CleanupConfigHandler(ref _currentProcessConfig, ref _processConfigPropertyChangedHandler);
+            CleanupConfigSubscriptions();
 
             var manager = DataContext as ProcessManager;
             var selectedMeta = manager?.SelectedProcessMeta;
@@ -221,47 +212,44 @@ namespace ProjectARVRPro.Process
             // Generate property editor controls
             var configPanel = PropertyEditorHelper.GenPropertyEditorControl(config);
 
-            // Subscribe to config changes to persist (with proper cleanup)
-            if (config is INotifyPropertyChanged notifyConfig)
+            // Subscribe to config changes to persist (recursively for nested objects)
+            Action saveAction = configType switch
             {
-                PropertyChangedEventHandler handler = (s, e) =>
-                {
-                    // Save config changes based on type
-                    switch (configType)
-                    {
-                        case ConfigType.Recipe:
-                            RecipeManager.GetInstance().Save();
-                            break;
-                        case ConfigType.Fix:
-                            FixManager.GetInstance().Save();
-                            break;
-                        case ConfigType.Process:
-                            meta.ConfigJson = JsonConvert.SerializeObject(config);
-                            break;
-                    }
-                };
+                ConfigType.Recipe => () => RecipeManager.GetInstance().Save(),
+                ConfigType.Fix => () => FixManager.GetInstance().Save(),
+                ConfigType.Process => () => { meta.ConfigJson = JsonConvert.SerializeObject(config); },
+                _ => () => { }
+            };
 
-                notifyConfig.PropertyChanged += handler;
-
-                // Store reference for cleanup
-                switch (configType)
-                {
-                    case ConfigType.Recipe:
-                        _currentRecipeConfig = notifyConfig;
-                        _recipeConfigPropertyChangedHandler = handler;
-                        break;
-                    case ConfigType.Fix:
-                        _currentFixConfig = notifyConfig;
-                        _fixConfigPropertyChangedHandler = handler;
-                        break;
-                    case ConfigType.Process:
-                        _currentProcessConfig = notifyConfig;
-                        _processConfigPropertyChangedHandler = handler;
-                        break;
-                }
-            }
+            SubscribeRecursively(config, saveAction);
 
             panel.Children.Add(configPanel);
+        }
+
+        /// <summary>
+        /// Recursively subscribes to PropertyChanged on the object and all its nested INotifyPropertyChanged properties.
+        /// This ensures that changes to nested objects (e.g., RecipeBase.Min/Max) also trigger the save action.
+        /// </summary>
+        private void SubscribeRecursively(object config, Action onChanged)
+        {
+            if (config is INotifyPropertyChanged notifyObj)
+            {
+                PropertyChangedEventHandler handler = (s, e) => onChanged();
+                notifyObj.PropertyChanged += handler;
+                _configSubscriptions.Add((notifyObj, handler));
+
+                foreach (var prop in config.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (prop.CanRead && typeof(INotifyPropertyChanged).IsAssignableFrom(prop.PropertyType))
+                    {
+                        var nestedObj = prop.GetValue(config);
+                        if (nestedObj != null)
+                        {
+                            SubscribeRecursively(nestedObj, onChanged);
+                        }
+                    }
+                }
+            }
         }
     }
 }

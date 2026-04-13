@@ -54,13 +54,14 @@ namespace ColorVision.UI.Languages
     }
 
 
-    public class LanguageConfig:IConfig, IConfigSettingProvider
+    public class LanguageConfig:IConfig
     {
         public static LanguageConfig Instance => ConfigService.Instance.GetRequiredService<LanguageConfig>();
 
         /// <summary>
         /// 语言
         /// </summary>
+        [ConfigSetting]
         [DisplayName("Language"),PropertyEditorType(typeof(LanguagePropertiesEditor))]
         public string UICulture
         {
@@ -68,19 +69,5 @@ namespace ColorVision.UI.Languages
             set { _UICulture = value; }
         }
         private string _UICulture = CultureInfo.InstalledUICulture.Name;
-
-
-
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata>
-            {
-                new ConfigSettingMetadata
-                {
-                    BindingName = nameof(UICulture),
-                    Source = Instance,
-                }
-            };
-        }
     }
 }

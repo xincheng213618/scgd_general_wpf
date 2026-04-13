@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Templates
             {
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), $"Reset {mysqlCommand.GetMysqlCommandName()} in Database\r\n?", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
-                    MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
+                    MySqlControl.BatchExecuteNonQuery(mysqlCommand.GetRecover());
                 }
             }
             else

@@ -82,6 +82,8 @@ extern "C" COLORVISIONCORE_API int M_ApplyHistogramEqualization(HImage img, HIma
 
 extern "C" COLORVISIONCORE_API int M_FindLightBeads(HImage img, RoiRect roi, const char* config, char** result);
 
+extern "C" COLORVISIONCORE_API int M_DetectKeyRegions(HImage img, RoiRect roi, const char* config, char** result);
+
 extern "C" COLORVISIONCORE_API int FreeResult(char* result);
 
 extern "C" COLORVISIONCORE_API int M_CalSFR(
@@ -117,5 +119,12 @@ extern "C" COLORVISIONCORE_API int M_CalSFRMultiChannel(
     double* mtf10_norm_g, double* mtf50_norm_g, double* mtf10_cypix_g, double* mtf50_cypix_g,
     double* mtf10_norm_b, double* mtf50_norm_b, double* mtf10_cypix_b, double* mtf50_cypix_b,
     double* mtf10_norm_l, double* mtf50_norm_l, double* mtf10_cypix_l, double* mtf50_cypix_l);
+
+typedef void(__stdcall* CVNativeLogCallback)(int source, int level, const char* message);
+
+extern "C" COLORVISIONCORE_API void M_SetLogCallback(CVNativeLogCallback callback);
+extern "C" COLORVISIONCORE_API void M_SetLogEnabled(int enabled);
+extern "C" COLORVISIONCORE_API void M_SetLogLevel(int level);
+extern "C" COLORVISIONCORE_API void M_EnableNativeSink(int enabled);
 
 

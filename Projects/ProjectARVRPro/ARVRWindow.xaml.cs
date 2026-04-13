@@ -14,8 +14,8 @@ using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
-using ProjectARVRPro.DeviceChannel;
 using ProjectARVRPro.Fix;
+using ProjectARVRPro.LegacyARVR;
 using ProjectARVRPro.PluginConfig;
 using ProjectARVRPro.Process;
 using ProjectARVRPro.Services;
@@ -90,6 +90,9 @@ namespace ProjectARVRPro
 
         public static ProcessManager ProcessManager => ProcessManager.GetInstance();
         public ObservableCollection<ProcessMeta> ProcessMetas { get; } = ProcessManager.ProcessMetas;
+
+        // 雷鸟切图控制器
+        private ThunderbirdSerialController _thunderbirdController = ThunderbirdSerialController.GetInstance();
 
         public ARVRWindow()
         {
@@ -212,7 +215,69 @@ namespace ProjectARVRPro
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
+
+            _thunderbirdController.ConnectionStateChanged += ThunderbirdController_ConnectionStateChanged;
+            UpdateThunderbirdStatusIndicator();
+            _ = TryAutoConnectThunderbirdAsync();
     
+        }
+
+        private void ThunderbirdController_ConnectionStateChanged(object? sender, EventArgs e)
+        {
+            UpdateThunderbirdStatusIndicator();
+        }
+
+        private async Task TryAutoConnectThunderbirdAsync()
+        {
+            if (_thunderbirdController.IsConnected)
+            {
+                UpdateThunderbirdStatusIndicator();
+                return;
+            }
+
+            if (!ProjectConfig.ThunderbirdAutoConnect)
+                return;
+
+            if (string.IsNullOrWhiteSpace(ProjectConfig.ThunderbirdPortName))
+            {
+                log.Warn("雷鸟自动连接已启用，但未配置串口号");
+                return;
+            }
+
+            try
+            {
+                int timeoutMs = ProjectConfig.ThunderbirdTimeoutMs > 0 ? ProjectConfig.ThunderbirdTimeoutMs : 1000;
+                _thunderbirdController.Open(ProjectConfig.ThunderbirdPortName, ProjectConfig.ThunderbirdBaudRate, timeoutMs);
+                log.Info($"雷鸟自动连接成功: {ProjectConfig.ThunderbirdPortName}");
+                UpdateThunderbirdStatusIndicator();
+                await _thunderbirdController.QueryBrightnessAsync(timeoutMs);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("雷鸟自动连接失败", ex);
+                UpdateThunderbirdStatusIndicator();
+            }
+        }
+
+        private void UpdateThunderbirdStatusIndicator()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(() => UpdateThunderbirdStatusIndicator());
+                return;
+            }
+
+            if (_thunderbirdController.IsConnected)
+            {
+                string port = string.IsNullOrWhiteSpace(_thunderbirdController.CurrentPortName) ? "未知串口" : _thunderbirdController.CurrentPortName;
+                ThunderbirdConnectionStatusText.Content = $"雷鸟: 已连接 {port}";
+                ThunderbirdConnectionStatusText.Foreground = Brushes.LimeGreen;
+            }
+            else
+            {
+                ThunderbirdConnectionStatusText.Content = "雷鸟: 未连接";
+                ThunderbirdConnectionStatusText.Foreground = Brushes.Gray;
+            }
         }
 
         public void Delete()
@@ -745,6 +810,13 @@ namespace ProjectARVRPro
                 }
             }
 
+            //如果开启了UseLegacyARVROutput，则说明第一个ProcessMeta是LegacyARVROutput，不参与测试流程，所以需要+1
+            if (ViewResultManager.GetInstance().Config.UseLegacyARVROutput)
+            {
+                log.Info("UseLegacyARVROutput + nextTestType 1");
+                nextTestType = nextTestType + 1;
+            }
+
             var response = new SocketResponse
             {
                 Version = "1.0",
@@ -761,6 +833,16 @@ namespace ProjectARVRPro
 
             string respString = JsonConvert.SerializeObject(response);
             log.Info(respString);
+            var sentMsg = new SocketMessage
+            {
+                Direction = SocketMessageDirection.Sent,
+                Content = respString,
+                MessageTime = DateTime.Now,
+                EventName = response.EventName,
+                MsgID = response.MsgID,
+                ResponseCode = response.Code
+            };
+            SocketMessageManager.GetInstance().AddMessage(sentMsg);
             SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
 
         }
@@ -789,7 +871,23 @@ namespace ProjectARVRPro
 
                 string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 string filePath = Path.Combine(linkPath, $"TestResults_{SNtextBox.Text}_{timeStr}_.csv");
-                ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
+
+                if (ViewResultManager.Config.UseLegacyARVROutput)
+                {
+                    var legacyResult = LegacyARVRConverter.ToLegacy(ObjectiveTestResult);
+                    LegacyARVRCsvExporter.ExportToCsv(new List<LegacyARVRObjectiveTestResult> { legacyResult }, filePath);
+                }
+                else
+                {
+                    ObjectiveTestResultCsvExporter.ExportToCsv(ObjectiveTestResult, filePath);
+                }
+            }
+
+            // 根据配置决定输出格式：旧版扁平格式或新版嵌套格式
+            object responseData = ObjectiveTestResult;
+            if (ViewResultManager.Config.UseLegacyARVROutput)
+            {
+                responseData = LegacyARVRConverter.ToLegacy(ObjectiveTestResult);
             }
 
             var response = new SocketResponse
@@ -800,10 +898,20 @@ namespace ProjectARVRPro
                 Code = 0,
                 SerialNumber = SNtextBox.Text,
                 Msg = "ARVR Test Completed",
-                Data = ObjectiveTestResult
+                Data = responseData
             };
             string respString = JsonConvert.SerializeObject(response);
             log.Info(respString);
+            var sentMsg = new SocketMessage
+            {
+                Direction = SocketMessageDirection.Sent,
+                Content = respString,
+                MessageTime = DateTime.Now,
+                EventName = response.EventName,
+                MsgID = response.MsgID,
+                ResponseCode = response.Code
+            };
+            SocketMessageManager.GetInstance().AddMessage(sentMsg);
             SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
         }
 
@@ -1065,20 +1173,14 @@ namespace ProjectARVRPro
                     log.Info($"一键执行 [{i + 1}/{enabledMetas.Count}]: {meta.Name} ({meta.FlowTemplate})");
 
                     // 执行步间通信指令（如有配置）
-                    if (meta.InterStepAction != null && meta.InterStepAction.IsEnabled && meta.InterStepAction.ActionType != InterStepActionType.None)
+                    if (_thunderbirdController.IsConnected)
                     {
-                        log.Info($"执行步间通信指令: {meta.InterStepAction.ActionType}");
-                        bool actionResult = await ExecuteInterStepAction(meta.InterStepAction);
-                        if (!actionResult)
-                        {
-                            log.Error($"步间通信指令执行失败: {meta.Name}, ActionType={meta.InterStepAction.ActionType}");
-                            if (!ProjectARVRProConfig.Instance.AllowTestFailures)
-                                break;
-                            continue;
-                        }
+                        bool switchResult = await _thunderbirdController.QuickSwitchDownAsync(1000);
+                        log.Info("雷鸟向下切图结果: " + (switchResult ? "成功" : "失败"));
+                        await Task.Delay(1000);
+                        log.Info("执行流程");
                     }
 
-                    // 设置流程模板
                     var templateParam = TemplateFlow.Params.FirstOrDefault(a => a.Key.Contains(meta.FlowTemplate));
                     if (templateParam == null)
                     {
@@ -1197,189 +1299,9 @@ namespace ProjectARVRPro
             finally
             {
                 _isRunAllRunning = false;
-                // 断开所有设备通道（长连接资源回收）
-                try
-                {
-                    await DeviceChannelManager.GetInstance().DisconnectAllAsync();
-                }
-                catch (Exception ex)
-                {
-                    log.Warn("断开设备通道异常", ex);
-                }
             }
         }
 
-        /// <summary>
-        /// 执行步间通信指令
-        /// </summary>
-        private async Task<bool> ExecuteInterStepAction(InterStepAction action)
-        {
-            try
-            {
-                switch (action.ActionType)
-                {
-                    case InterStepActionType.Socket:
-                        return await ExecuteSocketInterStepAction(action);
-
-                    case InterStepActionType.SerialPort:
-                        return await ExecuteSerialPortInterStepAction(action);
-
-                    case InterStepActionType.SwitchPG:
-                        SwitchPG();
-                        // 使用延时等待外部PG切换完成（非事件驱动，基于超时近似）
-                        await Task.Delay(action.TimeoutMs > 0 ? action.TimeoutMs : 5000);
-                        return true;
-
-                    case InterStepActionType.Delay:
-                        log.Info($"步间延时 {action.TimeoutMs}ms");
-                        await Task.Delay(action.TimeoutMs > 0 ? action.TimeoutMs : 1000);
-                        return true;
-
-                    case InterStepActionType.DeviceChannel:
-                        return await ExecuteDeviceChannelInterStepAction(action);
-
-                    default:
-                        return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error($"步间通信指令异常: {action.ActionType}", ex);
-                return false;
-            }
-        }
-
-        private async Task<bool> ExecuteSocketInterStepAction(InterStepAction action)
-        {
-            if (string.IsNullOrWhiteSpace(action.Host) || action.Port <= 0)
-            {
-                log.Error("Socket步间指令配置错误: 地址或端口无效");
-                return false;
-            }
-
-            try
-            {
-                using var client = new TcpClient();
-                await client.ConnectAsync(action.Host, action.Port);
-                using var stream = client.GetStream();
-                stream.ReadTimeout = action.TimeoutMs > 0 ? action.TimeoutMs : 5000;
-                stream.WriteTimeout = action.TimeoutMs > 0 ? action.TimeoutMs : 5000;
-
-                if (!string.IsNullOrEmpty(action.Command))
-                {
-                    byte[] data = Encoding.UTF8.GetBytes(action.Command);
-                    await stream.WriteAsync(data);
-                    log.Info($"Socket步间指令已发送: {action.Command}");
-                }
-
-                if (!string.IsNullOrEmpty(action.ExpectedResponse))
-                {
-                    byte[] buffer = new byte[4096];
-                    int bytesRead = await stream.ReadAsync(buffer);
-                    string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    log.Info($"Socket步间指令应答: {response}");
-                    if (!response.Contains(action.ExpectedResponse))
-                    {
-                        log.Warn($"Socket应答不匹配，期望包含: {action.ExpectedResponse}");
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                log.Error($"Socket步间指令异常: {action.Host}:{action.Port}", ex);
-                return false;
-            }
-        }
-
-        private async Task<bool> ExecuteSerialPortInterStepAction(InterStepAction action)
-        {
-            if (string.IsNullOrWhiteSpace(action.SerialPortName))
-            {
-                log.Error("串口步间指令配置错误: 串口名称无效");
-                return false;
-            }
-
-            try
-            {
-                using var port = new SerialPort(action.SerialPortName, action.BaudRate > 0 ? action.BaudRate : 9600);
-                port.ReadTimeout = action.TimeoutMs > 0 ? action.TimeoutMs : 5000;
-                port.WriteTimeout = action.TimeoutMs > 0 ? action.TimeoutMs : 5000;
-                port.Open();
-
-                if (!string.IsNullOrEmpty(action.Command))
-                {
-                    port.Write(action.Command);
-                    log.Info($"串口步间指令已发送: {action.Command}");
-                }
-
-                if (!string.IsNullOrEmpty(action.ExpectedResponse))
-                {
-                    // 等待串口设备响应
-                    int responseDelayMs = Math.Max(200, action.TimeoutMs / 10);
-                    await Task.Delay(responseDelayMs);
-                    string response = port.ReadExisting();
-                    log.Info($"串口步间指令应答: {response}");
-                    if (!response.Contains(action.ExpectedResponse))
-                    {
-                        log.Warn($"串口应答不匹配，期望包含: {action.ExpectedResponse}");
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                log.Error($"串口步间指令异常: {action.SerialPortName}", ex);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// 通过 DeviceChannelManager 执行步间指令（支持雷鸟串口、通用串口、Socket 等长连接通道）
-        /// </summary>
-        private async Task<bool> ExecuteDeviceChannelInterStepAction(InterStepAction action)
-        {
-            if (string.IsNullOrWhiteSpace(action.DeviceChannelName))
-            {
-                log.Error("设备通道步间指令配置错误: 通道名称为空");
-                return false;
-            }
-
-            var channelManager = DeviceChannelManager.GetInstance();
-            var channelConfig = channelManager.FindConfig(action.DeviceChannelName);
-            if (channelConfig == null)
-            {
-                log.Error($"设备通道步间指令配置错误: 找不到通道 '{action.DeviceChannelName}'");
-                return false;
-            }
-
-            string command = action.Command ?? string.Empty;
-            int? timeout = action.TimeoutMs > 0 ? action.TimeoutMs : null;
-
-            var result = await channelManager.ExecuteAsync(channelConfig, command, timeout);
-
-            if (!result.Success)
-            {
-                log.Error($"设备通道步间指令失败: {action.DeviceChannelName}, 指令={command}, 错误={result.ErrorMessage}");
-                return false;
-            }
-
-            // 校验期望应答
-            if (!string.IsNullOrEmpty(action.ExpectedResponse) && result.Response != null)
-            {
-                if (!result.Response.Contains(action.ExpectedResponse))
-                {
-                    log.Warn($"设备通道应答不匹配，期望包含: {action.ExpectedResponse}, 实际: {result.Response}");
-                    return false;
-                }
-            }
-
-            return true;
-        }
 
         public void Dispose()
         {
@@ -1388,13 +1310,9 @@ namespace ProjectARVRPro
             timer.Change(Timeout.Infinite, 500); // 停止定时器
             timer?.Dispose();
             logOutput?.Dispose();
+            _thunderbirdController.ConnectionStateChanged -= ThunderbirdController_ConnectionStateChanged;
+            _thunderbirdController?.Close();
             GC.SuppressFinalize(this);
-        }
-
-        private void Button_Click_Search(object sender, RoutedEventArgs e)
-        {
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(ObjectiveTestResult, false) { Owner = Application.Current.GetActiveWindow() };
-            propertyEditorWindow.ShowDialog();
         }
 
         private ThunderbirdSerialDebugWindow? _thunderbirdDebugWindow;

@@ -35,6 +35,11 @@ namespace ColorVision.UI.Views
         public Action<Control>? ActiveViewHandler { get; set; }
 
         /// <summary>
+        /// 仅切换可见标签页但不激活（不抢焦点）的回调
+        /// </summary>
+        public Action<Control>? SelectViewHandler { get; set; }
+
+        /// <summary>
         /// 将所有已注册视图创建为文档标签页的回调
         /// </summary>
         public Action? ShowAllViewsHandler { get; set; }
@@ -101,6 +106,16 @@ namespace ColorVision.UI.Views
         public event Action<Control?>? ActiveViewChanged;
 
         public void RaiseActiveViewChanged(Control? control) => ActiveViewChanged?.Invoke(control);
+
+        /// <summary>
+        /// 仅切换到指定视图的标签页，不激活（不抢焦点）
+        /// </summary>
+        public void SelectView(Control control)
+        {
+            if (!Views.Contains(control))
+                AddView(control);
+            SelectViewHandler?.Invoke(control);
+        }
 
         /// <summary>
         /// 激活上一次显示的视图

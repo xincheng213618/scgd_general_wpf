@@ -197,6 +197,11 @@ namespace ColorVision.Database.SqliteLog
             }
         }
 
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            CleanupTempExtractedFile();
+        }
+
         private void LoadLogEntries()
         {
             LogEntries.Clear();

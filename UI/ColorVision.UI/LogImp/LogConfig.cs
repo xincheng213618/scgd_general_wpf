@@ -73,7 +73,7 @@ namespace ColorVision.UI
     /// <summary>
     /// 日志配置管理类，管理日志系统的各项配置
     /// </summary>
-    public class LogConfig: ViewModelBase, IConfig, IConfigSettingProvider
+    public class LogConfig: ViewModelBase, IConfig
     {
         /// <summary>
         /// 获取 LogConfig 单例实例
@@ -104,6 +104,7 @@ namespace ColorVision.UI
         /// <summary>
         /// 当前日志级别
         /// </summary>
+        [ConfigSetting(Order = 15)]
         [JsonIgnore]
         [PropertyEditorTypeAttribute(typeof(LevelPropertiesEditor))]
         public Level LogLevel
@@ -185,20 +186,6 @@ namespace ColorVision.UI
         /// </summary>
         public int MaxChars { get => _MaxChars; set { _MaxChars = value; OnPropertyChanged(); } }
         private int _MaxChars = -1;
-
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata>
-            {
-                new ConfigSettingMetadata
-                {
-                    Order = 15,
-                    Type = ConfigSettingType.Property,
-                    BindingName = nameof(LogLevel),
-                    Source = Instance
-                },
-            };
-        }
 
     }
 

@@ -236,9 +236,6 @@
 		<Page Update="Services\PhyCameras\CreateWindow.xaml">
 			<SubType>Designer</SubType>
 		</Page>
-		<Page Update="Services\PhyCameras\EditPhyCamera.xaml">
-			<SubType>Designer</SubType>
-		</Page>
 		<Page Update="Services\PhyCameras\InfoPhyCamera.xaml">
 			<SubType>Designer</SubType>
 		</Page>

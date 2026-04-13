@@ -8,6 +8,7 @@ using ColorVision.UI;
 using FlowEngineLib.Base;
 using FlowEngineLib.End;
 using FlowEngineLib.Start;
+using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,8 @@ namespace ColorVision.Engine.Templates.Flow
 
     public class STNodeEditorHelper:ViewModelBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(STNodeEditorHelper));
+
         public STNodeEditor STNodeEditor { get; set; }
 
         /// <summary>
@@ -505,6 +508,7 @@ namespace ColorVision.Engine.Templates.Flow
         public bool CheckFlow()
         {
             ConnectionInfo = STNodeEditor.GetConnectionInfo();
+            log.Debug($"CheckFlow: 节点数={STNodeEditor.Nodes.Count}, 连接数={ConnectionInfo?.Length ?? 0}");
 
             bool isContainsMQTTStartNode = false;
             bool isContainsCVEndNode = false;
@@ -527,12 +531,14 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (!isContainsMQTTStartNode)
             {
+                log.Warn("CheckFlow: 找不到流程起始结点 (MQTTStartNode)");
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到流程起始结点");
                 return false;
             }
 
             if (!isContainsCVEndNode)
             {
+                log.Warn("CheckFlow: 找不到流程结束结点 (CVEndNode)");
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到流程结束结点");
                 return false;
             }
@@ -540,9 +546,11 @@ namespace ColorVision.Engine.Templates.Flow
             // 检查从起点到终点的路径
             if (!IsPathExists(startNode, endNode))
             {
+                log.Warn("CheckFlow: 无法找到从起始结点到结束结点的有效路径");
                 MessageBox.Show(Application.Current.GetActiveWindow(), "无法找到从起始结点到结束结点的有效路径");
                 return false;
             }
+            log.Debug("CheckFlow: 流程验证通过");
             return true;
         }
 
