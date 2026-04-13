@@ -1,11 +1,11 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.Common.ThirdPartyApps;
+using ColorVision.UI.Menus;
 using Microsoft.Win32;
 using OpenCvSharp;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
-using static ColorVision.Engine.ToolPlugins.DatFileReader;
 
 namespace ColorVision.Engine.ToolPlugins
 {
@@ -16,36 +16,58 @@ namespace ColorVision.Engine.ToolPlugins
 
 
 
-    //public class Test : MenuItemBase
-    //{
-    //    public override string OwnerGuid => "Tool";
-    //    public override string GuidId => "Test";
-    //    public override int Order => 7;
-    //    public override string Header => "Test";
+    public class DatFileReaderAppProvider : IThirdPartyAppProvider
+    {
+        public IEnumerable<ThirdPartyAppInfo> GetThirdPartyApps()
+        {
+            return new List<ThirdPartyAppInfo>
+            {
+                new ThirdPartyAppInfo
+                {
+                    Name = "DAT File Reader",
+                    Group = Properties.Resources.InternalTools,
+                    Order = 7,
+                    LaunchAction = Execute,
+                }
+            };
+        }
 
-    //    public override void Execute()
-    //    {
-    //        string path = @"C:\Users\Xin\Desktop\20260131T140254.0361975_FindLED_po.dat";
+        private static void Execute()
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "DAT Files (*.dat)|*.dat|All Files (*.*)|*.*",
+                Title = "选择要读取的 DAT 文件"
+            };
 
-    //        PositionData data = ReadPositionFile(path);
+            if (openFileDialog.ShowDialog() != true)
+                return;
 
-    //        Console.WriteLine($"加载成功: {path}");
-    //        Console.WriteLine($"Mat 尺寸: {data.MatData.Rows}x{data.MatData.Cols}");
-    //        Console.WriteLine($"Mat 类型: {data.MatData.Type()} (期望 CV_64FC2)");
+            try
+            {
+                DatFileReader.PositionData data = DatFileReader.ReadPositionFile(openFileDialog.FileName);
 
-    //        // 验证 Attribute 数据
-    //        Console.WriteLine($"Attribute Angle: {data.Attribute.angle}");
-    //        Console.WriteLine($"Attribute Center: {data.Attribute.center}");
+                int cy = data.MatData.Rows / 2;
+                int cx = data.MatData.Cols / 2;
+                Vec2d pointVal = data.MatData.At<Vec2d>(cy, cx);
 
-    //        // 访问 Mat 中的某个点的数据 (示例：访问中心点)
-    //        int cy = data.MatData.Rows / 2;
-    //        int cx = data.MatData.Cols / 2;
-
-    //        // 获取 Vec2d (OpenCvSharp 中对应 CV_64FC2 的结构是 Vec2d)
-    //        Vec2d pointVal = data.MatData.At<Vec2d>(cy, cx);
-    //        Console.WriteLine($"中心点数据 (Row:{cy}, Col:{cx}): X={pointVal.Item0}, Y={pointVal.Item1}");
-    //    }
-    //}
+                System.Windows.MessageBox.Show(
+                    $"加载成功: {openFileDialog.FileName}\n" +
+                    $"Mat 尺寸: {data.MatData.Rows}x{data.MatData.Cols}\n" +
+                    $"Mat 类型: {data.MatData.Type()}\n" +
+                    $"Attribute Angle: {data.Attribute.angle}\n" +
+                    $"Attribute Center: {data.Attribute.center}\n" +
+                    $"中心点数据 (Row:{cy}, Col:{cx}): X={pointVal.Item0}, Y={pointVal.Item1}",
+                    "DAT Reader",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(ex.Message, "DAT Reader", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+    }
 
     public partial class DatFileReader
     {

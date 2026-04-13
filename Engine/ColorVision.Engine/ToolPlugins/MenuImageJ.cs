@@ -8,9 +8,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Collections.Generic;
 
 
-namespace WindowsServicePlugin.Tools
+namespace ColorVision.Engine.ToolPlugins
 {
     public static class PathHelper
     {

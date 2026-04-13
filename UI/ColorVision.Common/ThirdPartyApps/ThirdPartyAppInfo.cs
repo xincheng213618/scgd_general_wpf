@@ -48,6 +48,12 @@ namespace ColorVision.Common.ThirdPartyApps
         /// </summary>
         public Action? LaunchAction { get; set; }
 
+        /// <summary>
+        /// For LaunchAction apps, provides a way to get the executable path for icon extraction.
+        /// Returns the path to an executable that can be used to extract the application icon.
+        /// </summary>
+        public Func<string?>? GetIconPath { get; set; }
+
         public bool IsInstalled
         {
             get => _isInstalled;
@@ -120,6 +126,28 @@ namespace ColorVision.Common.ThirdPartyApps
         {
             IconSource = null;
 
+            // Try to get icon from GetIconPath (for LaunchAction apps)
+            if (GetIconPath != null)
+            {
+                try
+                {
+                    string? iconPath = GetIconPath();
+                    if (!string.IsNullOrEmpty(iconPath) && File.Exists(iconPath))
+                    {
+                        using var icon = System.Drawing.Icon.ExtractAssociatedIcon(iconPath);
+                        if (icon != null)
+                        {
+                            IconSource = Imaging.CreateBitmapSourceFromHIcon(
+                                icon.Handle,
+                                Int32Rect.Empty,
+                                BitmapSizeOptions.FromEmptyOptions());
+                            return;
+                        }
+                    }
+                }
+                catch { }
+            }
+
             if (!string.IsNullOrEmpty(LaunchPath))
             {
                 try
@@ -172,6 +200,7 @@ namespace ColorVision.Common.ThirdPartyApps
                 catch { }
             }
         }
+
 
         private static string? ResolveSystemPath(string path)
         {

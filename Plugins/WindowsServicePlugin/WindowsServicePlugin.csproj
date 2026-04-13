@@ -4,7 +4,7 @@
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>    
-		<VersionPrefix>1.4.3.6</VersionPrefix>    
+		<VersionPrefix>1.4.3.7</VersionPrefix>    
 		<OutputType>WinExe</OutputType>
 	</PropertyGroup>
 
@@ -41,6 +41,7 @@
 
 	<ItemGroup>
 	  <Folder Include="Assets\" />
+	  <Folder Include="Tools\" />
 	</ItemGroup>
 
 	<ItemGroup>
