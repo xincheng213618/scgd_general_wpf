@@ -769,6 +769,16 @@ namespace ProjectARVRPro
 
             string respString = JsonConvert.SerializeObject(response);
             log.Info(respString);
+            var sentMsg = new SocketMessage
+            {
+                Direction = SocketMessageDirection.Sent,
+                Content = respString,
+                MessageTime = DateTime.Now,
+                EventName = response.EventName,
+                MsgID = response.MsgID,
+                ResponseCode = response.Code
+            };
+            SocketMessageManager.GetInstance().AddMessage(sentMsg);
             SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
 
         }
@@ -828,6 +838,16 @@ namespace ProjectARVRPro
             };
             string respString = JsonConvert.SerializeObject(response);
             log.Info(respString);
+            var sentMsg = new SocketMessage
+            {
+                Direction = SocketMessageDirection.Sent,
+                Content = respString,
+                MessageTime = DateTime.Now,
+                EventName = response.EventName,
+                MsgID = response.MsgID,
+                ResponseCode = response.Code
+            };
+            SocketMessageManager.GetInstance().AddMessage(sentMsg);
             SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
         }
 
