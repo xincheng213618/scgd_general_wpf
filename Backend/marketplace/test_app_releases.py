@@ -2,6 +2,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import app_releases
 
@@ -192,6 +193,23 @@ class AppReleasesTests(unittest.TestCase):
         self.assertEqual(len(moved), 1)
         self.assertFalse(duplicate.exists())
         self.assertEqual(moved[0]["to"], "History/0.9/0.9.0/ColorVision-0.9.0.1.zip")
+
+    def test_reconcile_app_release_history_skips_locked_file_in_windows(self):
+        self._create_release("1.0.0.2")
+        old_release = self._create_release("1.0.0.1")
+
+        locked_error = PermissionError(13, "file in use")
+        setattr(locked_error, "winerror", 32)
+
+        with (
+            mock.patch("app_releases.shutil.move", side_effect=[locked_error, locked_error, locked_error]) as move_mock,
+            mock.patch("app_releases.time.sleep", return_value=None),
+        ):
+            moved = app_releases.reconcile_app_release_history(self.storage, keep_latest=1)
+
+        self.assertEqual(moved, [])
+        self.assertTrue(old_release.exists())
+        self.assertEqual(move_mock.call_count, 3)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import re
 import shutil
+import time
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -29,6 +31,8 @@ _ERA_LABELS = {
     "installer": "安装包时代",
     "other": "其他记录",
 }
+
+_logger = logging.getLogger(__name__)
 
 
 def _format_modified(timestamp: float) -> tuple[str, str, str]:
@@ -133,6 +137,24 @@ def _parse_iso_datetime(value: str) -> datetime:
 
 def _timeline_radius(fix_count: int) -> int:
     return max(7, min(22, 7 + max(fix_count - 1, 0) * 2))
+
+
+def _is_windows_file_lock_error(exc: BaseException) -> bool:
+    if not isinstance(exc, PermissionError):
+        return False
+    return getattr(exc, "winerror", None) == 32
+
+
+def _move_file_with_retry(source_path: Path, target_path: Path) -> None:
+    backoff_seconds = (0.2, 0.5, 1.0)
+    for index, delay in enumerate(backoff_seconds):
+        try:
+            shutil.move(str(source_path), str(target_path))
+            return
+        except PermissionError as exc:
+            if not _is_windows_file_lock_error(exc) or index == len(backoff_seconds) - 1:
+                raise
+            time.sleep(delay)
 
 
 def extract_release_version(name: str) -> str | None:
@@ -459,13 +481,23 @@ def reconcile_app_release_history(
             stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
             target_path = target_dir / f"{source_path.stem}-{stamp}{source_path.suffix}"
 
-        shutil.move(str(source_path), str(target_path))
-        moved.append(
-            {
-                "from": source_path.name,
-                "to": target_path.relative_to(storage).as_posix(),
-            }
-        )
+        try:
+            _move_file_with_retry(source_path, target_path)
+            moved.append(
+                {
+                    "from": source_path.name,
+                    "to": target_path.relative_to(storage).as_posix(),
+                }
+            )
+        except PermissionError as exc:
+            if not _is_windows_file_lock_error(exc):
+                raise
+            _logger.warning(
+                "Skip moving locked release file: %s -> %s",
+                source_path,
+                target_path,
+            )
+            continue
 
     if moved and on_changed:
         on_changed("History")
