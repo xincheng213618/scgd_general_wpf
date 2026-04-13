@@ -73,11 +73,8 @@ namespace ColorVision.Engine.Media
                 {
                     if (fileInfo.FileExtType == CVType.CIE)
                     {
-                        int len = (int)(fileInfo.Rows * fileInfo.Cols * (fileInfo.Bpp / 8));
                         if (fileInfo.Channels == 3)
                         {
-                            byte[] data = new byte[len];
-                            Buffer.BlockCopy(fileInfo.Data, len, data, 0, data.Length);
                             src = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, OpenCvSharp.MatType.MakeType(fileInfo.Depth, 1), fileInfo.Data);
                         }
                         else
@@ -183,11 +180,8 @@ namespace ColorVision.Engine.Media
                 {
                     if (fileInfo.FileExtType == CVType.CIE)
                     {
-                        int len = (int)(fileInfo.Rows * fileInfo.Cols * (fileInfo.Bpp / 8));
                         if (fileInfo.Channels == 3)
                         {
-                            byte[] data = new byte[len];
-                            Buffer.BlockCopy(fileInfo.Data, len, data, 0, data.Length);
                             src = OpenCvSharp.Mat.FromPixelData(fileInfo.Rows, fileInfo.Cols, OpenCvSharp.MatType.MakeType(fileInfo.Depth, 1), fileInfo.Data);
                         }
                         else

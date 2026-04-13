@@ -128,11 +128,6 @@ namespace ColorVision.Engine
                             log.Error(ex.Message);
                         }
                     }
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        MySqlConnect mySqlConnect = new MySqlConnect() { Owner = Application.Current.GetActiveWindow() };
-                        mySqlConnect.ShowDialog();
-                    });
                 }
                 
 

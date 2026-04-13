@@ -11,9 +11,9 @@
 		<EnableNETAnalyzers>true</EnableNETAnalyzers>  
 		<AnalysisMode>Recommended</AnalysisMode>
 		<PlatformTarget>$(Platform)</PlatformTarget>
-		<TargetFrameworks>net10.0-windows;net8.0-windows</TargetFrameworks>   
+		<TargetFrameworks>net10.0-windows</TargetFrameworks>   
 		<NoWarn>CS8002</NoWarn>
-	    <VersionPrefix>1.4.4.26</VersionPrefix> 
+	    <VersionPrefix>1.4.5.1</VersionPrefix> 
 		<EnableWindowsTargeting>true</EnableWindowsTargeting>
 		<CETCompat>false</CETCompat>
 	</PropertyGroup>

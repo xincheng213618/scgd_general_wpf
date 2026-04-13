@@ -136,9 +136,6 @@ namespace ColorVision.ImageEditor
 
             ComColormapTypes.ItemsSource = ColormapExtension.GetColormapHDictionary();
 
-            ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
-                                      select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
-
             // Setup commands for file operations
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenImage(), (s, e) => { e.CanExecute = true; }));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = true; }));
@@ -407,6 +404,24 @@ namespace ColorVision.ImageEditor
 
 
         private List<SelectionChangedEventHandler> _handlers = new List<SelectionChangedEventHandler>();
+        private readonly Dictionary<string, FrameworkElement> _advancedSettingSections = new();
+
+        public void AddOrReplaceAdvancedSettingSection(string key, FrameworkElement section)
+        {
+            RemoveAdvancedSettingSection(key);
+            AdvancedStackPanel.Children.Add(section);
+            _advancedSettingSections[key] = section;
+        }
+
+        public void RemoveAdvancedSettingSection(string key)
+        {
+            if (_advancedSettingSections.TryGetValue(key, out var section))
+            {
+                AdvancedStackPanel.Children.Remove(section);
+                _advancedSettingSections.Remove(key);
+            }
+        }
+
         public void AddSelectionChangedHandler(SelectionChangedEventHandler handler)
         {
             ComboBoxLayers.SelectionChanged += handler;

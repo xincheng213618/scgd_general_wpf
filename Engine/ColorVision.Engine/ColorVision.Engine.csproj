@@ -16,21 +16,21 @@
 
 	<ItemGroup>
 		<PackageReference Include="CsvHelper" Version="33.1.0" />
-		<PackageReference Include="itext" Version="9.5.0" />
-		<PackageReference Include="itext.bouncy-castle-adapter" Version="9.5.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
-		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+		<PackageReference Include="itext" Version="9.6.0" />
+		<PackageReference Include="itext.bouncy-castle-adapter" Version="9.6.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.142" />
 		<PackageReference Include="MQTTnet" Version="5.1.0.1559" />
-		<PackageReference Include="NPOI" Version="2.7.5" />
-		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260222" />
-		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260222" />
-		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260222" />
-		<PackageReference Include="QRCoder.Xaml" Version="1.7.0" />
+		<PackageReference Include="NPOI" Version="2.8.0" />
+		<PackageReference Include="OpenCvSharp4" Version="4.13.0.20260330" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260302" />
+		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.13.0.20260330" />
+		<PackageReference Include="QRCoder.Xaml" Version="1.8.0" />
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.56" />
-		<PackageReference Include="SqlSugarCore" Version="5.1.4.211" />
-		<PackageReference Include="System.IO.Ports" Version="10.0.3" />
-		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.3" />
-		<PackageReference Include="YamlDotNet" Version="16.3.0" />
+		<PackageReference Include="SqlSugarCore" Version="5.1.4.214" />
+		<PackageReference Include="System.IO.Ports" Version="10.0.5" />
+		<PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.5" />
+		<PackageReference Include="YamlDotNet" Version="17.0.1" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -184,41 +184,11 @@
 		<None Update="Assets\Tool\CommMonitor.exe">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="Assets\Tool\EditJson\Editjson.html">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\1.1e5f7c84.chunk.css">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\1.3f513c69.chunk.js.下载">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\hm.js.下载">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\jEditor.4237ac39.js.下载">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\jEditor.dcca8ce4.css">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\translateSandbox%281%29.html">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\translateSandbox.html">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\EditJson\Editjson_files\UrlChangeTracker.js.下载">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 		<None Update="Assets\Tool\SpectrAdj.exe">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="Assets\Tool\sscom5.13.1.exe">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Assets\Tool\static\media\jsoneditor-icons.15f2789d.svg">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="Assets\Tool\UsbTreeView.exe">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
