@@ -85,6 +85,12 @@
                         <Button Command="{Binding ImportFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="导入流程">
                             <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                         </Button>
+                        <Button Command="{Binding ImportModuleCommand}" Margin="0,0,5,0" Padding="2" Height="30" ToolTip="导入模板为模块">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8F1;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
+                                <TextBlock Text=" 模块" Foreground="{DynamicResource GlobalTextBrush}" FontSize="11" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                     <StackPanel Grid.Column="2">
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal">

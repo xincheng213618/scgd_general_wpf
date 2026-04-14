@@ -53,6 +53,7 @@ namespace ColorVision.Engine.Services.Flow
         public RelayCommand DeleteFlowCommand { get; set; }
         public RelayCommand ExportFlowCommand { get; set; }
         public RelayCommand ImportFlowCommand { get; set; }
+        public RelayCommand ImportModuleCommand { get; set; }
 
 
         public DisplayFlow DisplayFlow { get; set; }
@@ -75,6 +76,7 @@ namespace ColorVision.Engine.Services.Flow
             DeleteFlowCommand = new RelayCommand(a => DeleteFlow(), a => FlowEngineManager.GetInstance().SlectFlowParam != null);
             ExportFlowCommand = new RelayCommand(a => ExportFlow(), a => FlowEngineManager.GetInstance().SlectFlowParam != null);
             ImportFlowCommand = new RelayCommand(a => ImportFlow());
+            ImportModuleCommand = new RelayCommand(a => ImportModule(), a => TemplateFlow.Params.Count > 0);
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = STNodeEditorHelper != null; }));
 
@@ -219,6 +221,45 @@ namespace ColorVision.Engine.Services.Flow
                 templateFlow.Create(importName);
             }
             Refresh();
+        }
+
+        public void ImportModule()
+        {
+            var templateFlow = new TemplateFlow();
+            templateFlow.Load();
+            var items = templateFlow.TemplateParams;
+            if (items.Count == 0)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "没有可用的流程模板", "ColorVision");
+                return;
+            }
+
+            var dialog = new TemplateSelectionDialog(items)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+
+            if (dialog.ShowDialog() == true && dialog.SelectedTemplate != null)
+            {
+                string base64 = dialog.SelectedTemplate.Value.DataBase64;
+                if (string.IsNullOrEmpty(base64))
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "所选模板没有流程数据", "ColorVision");
+                    return;
+                }
+
+                try
+                {
+                    byte[] canvasData = Convert.FromBase64String(base64);
+                    STNodeEditorHelper.ImportCanvasAsModule(canvasData);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("ImportModule failed", ex);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"导入模块失败: {ex.Message}", "ColorVision");
+                }
+            }
         }
 
         public void AutoAlignment()

@@ -347,6 +347,155 @@ namespace ColorVision.Engine.Templates.Flow
             return node;
         }
 
+        /// <summary>
+        /// Import nodes from a canvas data byte array (STN format with header) 
+        /// into the current editor without clearing existing nodes.
+        /// This is used to import a saved template as a module/sub-block.
+        /// </summary>
+        public void ImportCanvasAsModule(byte[] canvasData)
+        {
+            if (canvasData == null || canvasData.Length < 5)
+            {
+                log.Warn("ImportCanvasAsModule: invalid canvas data");
+                return;
+            }
+
+            using var ms = new MemoryStream(canvasData);
+            byte[] header = new byte[5];
+            ms.Read(header, 0, 5);
+
+            // Validate STN header
+            if (BitConverter.ToInt32(header, 0) != STNodeConstant.NodeFlagInt || header[4] != 1)
+            {
+                log.Warn("ImportCanvasAsModule: invalid STN header");
+                return;
+            }
+
+            using var gz = new GZipStream(ms, CompressionMode.Decompress);
+            byte[] buf = new byte[32];
+
+            // Skip canvas offset and scale (3 floats = 12 bytes)
+            gz.Read(buf, 0, 12);
+
+            // Read node count
+            gz.Read(buf, 0, 4);
+            int nodeCount = BitConverter.ToInt32(buf, 0);
+            if (nodeCount == 0) return;
+
+            // Determine paste position
+            int offsetX, offsetY;
+            var cursorPos = System.Windows.Forms.Cursor.Position;
+            var editorScreenRect = STNodeEditor.RectangleToScreen(STNodeEditor.ClientRectangle);
+            if (editorScreenRect.Contains(cursorPos))
+            {
+                var clientPt = STNodeEditor.PointToClient(cursorPos);
+                var canvasPt = STNodeEditor.ControlToCanvas(clientPt);
+                offsetX = canvasPt.X;
+                offsetY = canvasPt.Y;
+            }
+            else
+            {
+                // Default: place near the center of the visible canvas area
+                var center = STNodeEditor.ControlToCanvas(new System.Drawing.Point(
+                    STNodeEditor.Width / 2, STNodeEditor.Height / 2));
+                offsetX = center.X;
+                offsetY = center.Y;
+            }
+
+            var optionMap = new Dictionary<long, STNodeOption>();
+            var newNodes = new List<STNode>();
+            int origMinLeft = int.MaxValue, origMinTop = int.MaxValue;
+
+            // First pass: create all nodes to find bounding box
+            var nodeDataList = new List<byte[]>();
+            for (int i = 0; i < nodeCount; i++)
+            {
+                gz.Read(buf, 0, 4);
+                int len = BitConverter.ToInt32(buf, 0);
+                byte[] nodeData = new byte[len];
+                gz.Read(nodeData, 0, len);
+                nodeDataList.Add(nodeData);
+            }
+
+            // Create nodes and compute bounding box origin
+            var createdNodes = new List<STNode>();
+            foreach (var nodeData in nodeDataList)
+            {
+                STNode node = CreateNodeFromSaveData(nodeData);
+                if (node == null) continue;
+                createdNodes.Add(node);
+                if (node.Left < origMinLeft) origMinLeft = node.Left;
+                if (node.Top < origMinTop) origMinTop = node.Top;
+            }
+
+            if (createdNodes.Count == 0) return;
+
+            // Deselect current selection
+            foreach (var n in STNodeEditor.GetSelectedNode())
+            {
+                n.SetSelected(false, false);
+                STNodeEditor.RemoveSelectedNode(n);
+            }
+
+            // Add nodes with offset so the module's top-left aligns with the target position
+            foreach (var node in createdNodes)
+            {
+                node.Left = node.Left - origMinLeft + offsetX;
+                node.Top = node.Top - origMinTop + offsetY;
+
+                STNodeEditor.Nodes.Add(node);
+                newNodes.Add(node);
+
+                var inputOpts = node.GetAllInputOptions();
+                if (inputOpts != null)
+                {
+                    foreach (var opt in inputOpts)
+                    {
+                        if (opt != null)
+                            optionMap[optionMap.Count] = opt;
+                    }
+                }
+                var outputOpts = node.GetAllOutputOptions();
+                if (outputOpts != null)
+                {
+                    foreach (var opt in outputOpts)
+                    {
+                        if (opt != null)
+                            optionMap[optionMap.Count] = opt;
+                    }
+                }
+            }
+
+            // Read and restore connections
+            gz.Read(buf, 0, 4);
+            int connCount = BitConverter.ToInt32(buf, 0);
+            byte[] connBuf = new byte[8];
+            for (int i = 0; i < connCount; i++)
+            {
+                gz.Read(connBuf, 0, 8);
+                long packed = BitConverter.ToInt64(connBuf, 0);
+                long outIdx = packed >> 32;
+                long inIdx = (int)packed;
+                if (optionMap.ContainsKey(outIdx) && optionMap.ContainsKey(inIdx))
+                {
+                    optionMap[outIdx].ConnectOption(optionMap[inIdx]);
+                }
+            }
+
+            // Select imported nodes
+            foreach (var node in newNodes)
+            {
+                node.SetSelected(true, false);
+                STNodeEditor.AddSelectedNode(node);
+            }
+            if (newNodes.Count > 0)
+            {
+                STNodeEditor.SetActiveNode(newNodes[0]);
+            }
+
+            STNodeEditor.Invalidate();
+        }
+
 
 
         #region Activate
@@ -574,6 +723,8 @@ namespace ColorVision.Engine.Templates.Flow
                 }
             }
 
+            // Add "Import Template as Module" submenu
+            AddImportModuleContextMenu();
 
             STNodeEditor.ContextMenuStrip.Opening += (s, e) =>
             {
@@ -634,6 +785,40 @@ namespace ColorVision.Engine.Templates.Flow
         }
 
         #endregion
+
+        private void AddImportModuleContextMenu()
+        {
+            STNodeEditor.ContextMenuStrip.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+            var importModuleItem = new System.Windows.Forms.ToolStripMenuItem("导入模板为模块");
+            importModuleItem.DropDownOpening += (s, e) =>
+            {
+                importModuleItem.DropDownItems.Clear();
+                foreach (var tp in TemplateFlow.Params)
+                {
+                    string name = tp.Key;
+                    var param = tp.Value;
+                    importModuleItem.DropDownItems.Add(name, null, (s2, e2) =>
+                    {
+                        if (string.IsNullOrEmpty(param.DataBase64)) return;
+                        try
+                        {
+                            byte[] canvasData = Convert.FromBase64String(param.DataBase64);
+                            ImportCanvasAsModule(canvasData);
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error($"Import module '{name}' failed", ex);
+                        }
+                    });
+                }
+                if (importModuleItem.DropDownItems.Count == 0)
+                {
+                    var emptyItem = new System.Windows.Forms.ToolStripMenuItem("(无可用模板)") { Enabled = false };
+                    importModuleItem.DropDownItems.Add(emptyItem);
+                }
+            };
+            STNodeEditor.ContextMenuStrip.Items.Add(importModuleItem);
+        }
 
         #region AutoLayout
         public ConnectionInfo[] ConnectionInfo { get; set; }
