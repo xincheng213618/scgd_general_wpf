@@ -12,8 +12,11 @@ using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms.Integration;
@@ -78,14 +81,15 @@ namespace ColorVision.Engine.Templates.Flow
 
             Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => sTNodeEditor.Nodes.Clear(), (s, e) => { e.CanExecute = true; }));
 
-            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => Copy(), (s, e) => { e.CanExecute = true; }));
-            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, (s, e) => Paste(), (s, e) => { e.CanExecute = CopyNodes.Count >0;}));
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => Copy(), (s, e) => { e.CanExecute = sTNodeEditor.GetSelectedNode().Length > 0; }));
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, (s, e) => Paste(), (s, e) => { e.CanExecute = Clipboard.ContainsData(ClipboardFormat); }));
             Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => SelectAll(), (s, e) => { e.CanExecute = true; }));
 
             Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => sTNodeEditor.Nodes.Clear(), (s, e) => { e.CanExecute = true; }));
         }
 
         private List<STNode> CopyNodes = new List<STNode>();
+        private const string ClipboardFormat = "STNodeEditor_Nodes_V1";
 
         public void SelectAll()
         {
@@ -97,61 +101,250 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void Copy()
         {
-            CopyNodes.Clear();
-            foreach (var item in STNodeEditor.GetSelectedNode())
+            var selectedNodes = STNodeEditor.GetSelectedNode();
+            if (selectedNodes.Length == 0) return;
+
+            try
             {
-                CopyNodes.Add(item);
+                byte[] data = SerializeNodes(selectedNodes);
+                string base64 = Convert.ToBase64String(data);
+                Clipboard.SetData(ClipboardFormat, base64);
             }
+            catch (Exception ex)
+            {
+                log.Error("Copy failed", ex);
+            }
+        }
+
+        private byte[] SerializeNodes(STNode[] nodes)
+        {
+            var nodeSet = new HashSet<STNode>(nodes);
+            var optionIndex = new Dictionary<STNodeOption, long>();
+
+            using var ms = new MemoryStream();
+            using (var gz = new GZipStream(ms, CompressionMode.Compress, leaveOpen: true))
+            {
+                // Write node count
+                gz.Write(BitConverter.GetBytes(nodes.Length), 0, 4);
+
+                // Compute bounding box for relative positioning
+                int minLeft = nodes.Min(n => n.Left);
+                int minTop = nodes.Min(n => n.Top);
+                gz.Write(BitConverter.GetBytes(minLeft), 0, 4);
+                gz.Write(BitConverter.GetBytes(minTop), 0, 4);
+
+                foreach (var node in nodes)
+                {
+                    byte[] saveData = node.GetSaveData();
+                    gz.Write(BitConverter.GetBytes(saveData.Length), 0, 4);
+                    gz.Write(saveData, 0, saveData.Length);
+
+                    var inputOpts = node.GetAllInputOptions();
+                    if (inputOpts != null)
+                    {
+                        foreach (var opt in inputOpts)
+                        {
+                            if (opt != null && !optionIndex.ContainsKey(opt))
+                                optionIndex.Add(opt, optionIndex.Count);
+                        }
+                    }
+                    var outputOpts = node.GetAllOutputOptions();
+                    if (outputOpts != null)
+                    {
+                        foreach (var opt in outputOpts)
+                        {
+                            if (opt != null && !optionIndex.ContainsKey(opt))
+                                optionIndex.Add(opt, optionIndex.Count);
+                        }
+                    }
+                }
+
+                // Collect connections that are between selected nodes only
+                // and where both options were successfully indexed
+                var connections = STNodeEditor.GetConnectionInfo()
+                    .Where(c => nodeSet.Contains(c.Output.Owner) && nodeSet.Contains(c.Input.Owner))
+                    .Where(c => optionIndex.ContainsKey(c.Output) && optionIndex.ContainsKey(c.Input))
+                    .ToList();
+
+                gz.Write(BitConverter.GetBytes(connections.Count), 0, 4);
+                foreach (var conn in connections)
+                {
+                    long packed = (optionIndex[conn.Output] << 32) | (optionIndex[conn.Input] & 0xFFFFFFFFL);
+                    gz.Write(BitConverter.GetBytes(packed), 0, 8);
+                }
+            }
+            return ms.ToArray();
         }
 
         public void Paste()
         {
-            int offset = 10;
+            if (!Clipboard.ContainsData(ClipboardFormat)) return;
 
-            foreach (var item in CopyNodes)
+            try
             {
-                Type type = item.GetType();
+                string base64 = Clipboard.GetData(ClipboardFormat) as string;
+                if (string.IsNullOrEmpty(base64)) return;
 
-                STNode sTNode1 = (STNode)Activator.CreateInstance(type);
-                if (sTNode1 != null)
+                byte[] data = Convert.FromBase64String(base64);
+                DeserializeAndAddNodes(data);
+            }
+            catch (Exception ex)
+            {
+                log.Error("Paste failed", ex);
+            }
+        }
+
+        private void DeserializeAndAddNodes(byte[] data)
+        {
+            using var ms = new MemoryStream(data);
+            using var gz = new GZipStream(ms, CompressionMode.Decompress);
+            byte[] buf = new byte[32];
+
+            gz.Read(buf, 0, 4);
+            int nodeCount = BitConverter.ToInt32(buf, 0);
+
+            gz.Read(buf, 0, 4);
+            int origMinLeft = BitConverter.ToInt32(buf, 0);
+            gz.Read(buf, 0, 4);
+            int origMinTop = BitConverter.ToInt32(buf, 0);
+
+            // Determine paste position: use mouse position in canvas if available, otherwise offset
+            int offsetX, offsetY;
+            var cursorPos = System.Windows.Forms.Cursor.Position;
+            var editorScreenRect = STNodeEditor.RectangleToScreen(STNodeEditor.ClientRectangle);
+            if (editorScreenRect.Contains(cursorPos))
+            {
+                var clientPt = STNodeEditor.PointToClient(cursorPos);
+                var canvasPt = STNodeEditor.ControlToCanvas(clientPt);
+                offsetX = canvasPt.X - origMinLeft;
+                offsetY = canvasPt.Y - origMinTop;
+            }
+            else
+            {
+                offsetX = 30;
+                offsetY = 30;
+            }
+
+            var optionMap = new Dictionary<long, STNodeOption>();
+            var newNodes = new List<STNode>();
+
+            // Deselect current selection
+            foreach (var n in STNodeEditor.GetSelectedNode())
+            {
+                n.SetSelected(false, false);
+                STNodeEditor.RemoveSelectedNode(n);
+            }
+
+            for (int i = 0; i < nodeCount; i++)
+            {
+                gz.Read(buf, 0, 4);
+                int len = BitConverter.ToInt32(buf, 0);
+                byte[] nodeData = new byte[len];
+                gz.Read(nodeData, 0, len);
+
+                STNode node = CreateNodeFromSaveData(nodeData);
+                if (node == null) continue;
+
+                node.Left += offsetX;
+                node.Top += offsetY;
+
+                STNodeEditor.Nodes.Add(node);
+                newNodes.Add(node);
+
+                var inputOpts = node.GetAllInputOptions();
+                if (inputOpts != null)
                 {
-                    sTNode1.Create();
-                    PropertyInfo[] properties = type.GetProperties();
-                    foreach (PropertyInfo property in properties)
+                    foreach (var opt in inputOpts)
                     {
-                        if (property.CanRead && property.CanWrite)
-                        {
-                            object value = property.GetValue(item);
-                            property.SetValue(sTNode1, value);
-                        }
+                        if (opt != null)
+                            optionMap[optionMap.Count] = opt;
                     }
-                    sTNode1.Left = item.Left + offset;
-                    sTNode1.Top = item.Top + offset;
-                    sTNode1.IsSelected = true;
-                    STNodeEditor.Nodes.Add(sTNode1);
-                    if (CopyNodes.Count == 1)
+                }
+                var outputOpts = node.GetAllOutputOptions();
+                if (outputOpts != null)
+                {
+                    foreach (var opt in outputOpts)
                     {
-                        item.IsSelected = false;
-                        STNodeEditor.RemoveSelectedNode(item);
-                        STNodeEditor.AddSelectedNode(sTNode1);
-                        STNodeEditor.SetActiveNode(sTNode1);
-                    }
-                    else
-                    {
-                        STNodeEditor.RemoveSelectedNode(item);
-                        STNodeEditor.AddSelectedNode(sTNode1);
+                        if (opt != null)
+                            optionMap[optionMap.Count] = opt;
                     }
                 }
             }
 
-            CopyNodes.Clear();
-            foreach (var item in STNodeEditor.GetSelectedNode())
+            // Restore connections
+            gz.Read(buf, 0, 4);
+            int connCount = BitConverter.ToInt32(buf, 0);
+            byte[] connBuf = new byte[8];
+            for (int i = 0; i < connCount; i++)
             {
-                CopyNodes.Add(item);
+                gz.Read(connBuf, 0, 8);
+                long packed = BitConverter.ToInt64(connBuf, 0);
+                long outIdx = packed >> 32;
+                long inIdx = (int)packed;
+                if (optionMap.ContainsKey(outIdx) && optionMap.ContainsKey(inIdx))
+                {
+                    optionMap[outIdx].ConnectOption(optionMap[inIdx]);
+                }
             }
 
+            // Select pasted nodes
+            foreach (var node in newNodes)
+            {
+                node.SetSelected(true, false);
+                STNodeEditor.AddSelectedNode(node);
+            }
+            if (newNodes.Count > 0)
+            {
+                STNodeEditor.SetActiveNode(newNodes[0]);
+            }
 
+            STNodeEditor.Invalidate();
+        }
 
+        private STNode CreateNodeFromSaveData(byte[] byData)
+        {
+            int pos = 0;
+            string modelKey = Encoding.UTF8.GetString(byData, pos + 1, byData[pos]);
+            pos += byData[pos] + 1;
+            string guidKey = Encoding.UTF8.GetString(byData, pos + 1, byData[pos]);
+            pos += byData[pos] + 1;
+
+            var dic = new Dictionary<string, byte[]>();
+            while (pos < byData.Length)
+            {
+                int keyLen = BitConverter.ToInt32(byData, pos); pos += 4;
+                string key = Encoding.UTF8.GetString(byData, pos, keyLen); pos += keyLen;
+                int valLen = BitConverter.ToInt32(byData, pos); pos += 4;
+                byte[] val = new byte[valLen];
+                Array.Copy(byData, pos, val, 0, valLen); pos += valLen;
+                dic[key] = val;
+            }
+
+            // Find type from the tree view's loaded assemblies
+            Type type = null;
+            var treeView = STNodeTreeView;
+            // Try to find from the editor's loaded types or use reflection
+            string typeName = modelKey.Contains('|') ? modelKey.Split('|')[1] : modelKey;
+            string assemblyName = modelKey.Contains('|') ? modelKey.Split('|')[0] : null;
+
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (assemblyName != null && !asm.ManifestModule.Name.Equals(assemblyName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                type = asm.GetType(typeName);
+                if (type != null) break;
+            }
+
+            if (type == null || !type.IsSubclassOf(typeof(STNode)))
+            {
+                log.Warn($"Cannot find node type: {modelKey}");
+                return null;
+            }
+
+            var node = (STNode)Activator.CreateInstance(type);
+            node.Create();
+            node.OnLoadNode(dic);
+            return node;
         }
 
 

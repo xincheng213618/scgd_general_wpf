@@ -168,7 +168,7 @@ public class STNodeHub : STNode
 		dic.Add("count", BitConverter.GetBytes(base.InputOptionsCount));
 	}
 
-	protected internal override void OnLoadNode(Dictionary<string, byte[]> dic)
+	public override void OnLoadNode(Dictionary<string, byte[]> dic)
 	{
 		base.OnLoadNode(dic);
 		int num = BitConverter.ToInt32(dic["count"], 0);

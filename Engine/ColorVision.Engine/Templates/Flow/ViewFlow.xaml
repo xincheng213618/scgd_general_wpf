@@ -35,9 +35,9 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Row="0"  Width="250" >
+                <StackPanel Grid.Row="0" >
 
-                    <UniformGrid  Columns="6" Margin="0,0,0,5">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                         <Button Command="{Binding SaveCommand}" Height="30" Width="30"  Margin="0,0,5,0" Padding="2">
                             <Image Source="{DynamicResource DrawingImageSave}" Height="20" />
                         </Button>
@@ -56,9 +56,6 @@
                                     <RotateTransform x:Name="rotateTransform1" CenterX="8" CenterY="8"/>
                                 </TextBlock.RenderTransform>
                             </TextBlock>
-                        </Button>
-                        <Button Command="{Binding AutoSizeCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
-                            <Image  Source="{DynamicResource DrawingImageexpend}"/>
                         </Button>
                         <Button Command="{Binding AutoAlignmentCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
                             <Button.Triggers>
@@ -79,10 +76,16 @@
                         <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
                             <Image  Source="{DynamicResource DrawingImageClear}"/>
                         </Button>
-                        <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="30" Width="30"  >
-                            <Image  Source="{DynamicResource DIExpand}"/>
+                        <Button Command="{Binding NewFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="新建流程">
+                            <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
                         </Button>
-                    </UniformGrid>
+                        <Button Command="{Binding ExportFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="导出流程">
+                            <TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
+                        </Button>
+                        <Button Command="{Binding ImportFlowCommand}" Margin="0,0,5,0" Padding="2" Height="30" Width="30" ToolTip="导入流程">
+                            <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontSize="16"/>
+                        </Button>
+                    </StackPanel>
                     <StackPanel Grid.Column="2">
                         <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
                             <Button Content="{x:Static properties:Resources.SearchResults}" Click="Button_Click" Margin="0,0,5,0"/>

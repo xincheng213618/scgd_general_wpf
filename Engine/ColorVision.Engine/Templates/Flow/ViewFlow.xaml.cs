@@ -49,6 +49,11 @@ namespace ColorVision.Engine.Services.Flow
 
         public RelayCommand OpenFlowTemplateCommand { get; set; }
 
+        public RelayCommand NewFlowCommand { get; set; }
+        public RelayCommand DeleteFlowCommand { get; set; }
+        public RelayCommand ExportFlowCommand { get; set; }
+        public RelayCommand ImportFlowCommand { get; set; }
+
 
         public DisplayFlow DisplayFlow { get; set; }
 
@@ -60,12 +65,16 @@ namespace ColorVision.Engine.Services.Flow
 
             InitializeComponent();
 
-            AutoSizeCommand = new RelayCommand(a => AutoSize());
+            AutoSizeCommand = new RelayCommand(a => STNodeEditorHelper.AutoSize());
             RefreshCommand = new RelayCommand(a => Refresh());
             ClearCommand = new RelayCommand(a => Clear());
             SaveCommand = new RelayCommand(a => Save());
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
             OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
+            NewFlowCommand = new RelayCommand(a => NewFlow());
+            DeleteFlowCommand = new RelayCommand(a => DeleteFlow(), a => FlowEngineManager.GetInstance().SlectFlowParam != null);
+            ExportFlowCommand = new RelayCommand(a => ExportFlow(), a => FlowEngineManager.GetInstance().SlectFlowParam != null);
+            ImportFlowCommand = new RelayCommand(a => ImportFlow());
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = STNodeEditorHelper != null; }));
 
@@ -154,6 +163,61 @@ namespace ColorVision.Engine.Services.Flow
         public void OpenFlowTemplate()
         {
             new TemplateEditorWindow(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            Refresh();
+        }
+
+        public void NewFlow()
+        {
+            var templateFlow = new TemplateFlow();
+            templateFlow.Load();
+            string name = $"Flow_{DateTime.Now:yyyyMMdd_HHmmss}";
+            templateFlow.Create(name);
+            Refresh();
+        }
+
+        public void DeleteFlow()
+        {
+            var flowParam = FlowEngineManager.GetInstance().SlectFlowParam;
+            if (flowParam == null) return;
+
+            if (MessageBox.Show(Application.Current.GetActiveWindow(),
+                $"确认删除流程 \"{flowParam.Name}\" ?", "ColorVision",
+                MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
+                return;
+
+            var templateFlow = new TemplateFlow();
+            templateFlow.Load();
+            int index = templateFlow.TemplateParams.ToList().FindIndex(p => p.Value.Id == flowParam.Id);
+            if (index >= 0)
+            {
+                templateFlow.Delete(index);
+            }
+            Refresh();
+        }
+
+        public void ExportFlow()
+        {
+            var flowParam = FlowEngineManager.GetInstance().SlectFlowParam;
+            if (flowParam == null) return;
+
+            var templateFlow = new TemplateFlow();
+            templateFlow.Load();
+            int index = templateFlow.TemplateParams.ToList().FindIndex(p => p.Value.Id == flowParam.Id);
+            if (index >= 0)
+            {
+                templateFlow.Export(index);
+            }
+        }
+
+        public void ImportFlow()
+        {
+            var templateFlow = new TemplateFlow();
+            templateFlow.Load();
+            if (templateFlow.Import())
+            {
+                string importName = templateFlow.ImportName ?? $"Imported_{DateTime.Now:yyyyMMdd_HHmmss}";
+                templateFlow.Create(importName);
+            }
             Refresh();
         }
 
@@ -283,10 +347,6 @@ namespace ColorVision.Engine.Services.Flow
             }
         }
 
-        public void AutoSize()
-        {
-            STNodeEditorHelper.AutoSize();
-        }
 
         private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
         {
