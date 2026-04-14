@@ -44,7 +44,7 @@ namespace ColorVision.UI.Desktop.Marketplace
                 string url = MarketplaceConfig.Instance.MarketplaceApiUrl?.TrimEnd('/') ?? string.Empty;
                 if (string.IsNullOrEmpty(url))
                 {
-                    // Derive from legacy PluginUpdatePath: http://host:port/D%3A/ColorVision/Plugins/ -> http://host:port
+                    // Derive from legacy PluginUpdatePath: http://host:port/D%3A/ColorVision/Marketplaces/ -> http://host:port
                     string legacy = PluginLoaderrConfig.Instance.PluginUpdatePath ?? string.Empty;
                     if (!string.IsNullOrEmpty(legacy))
                     {

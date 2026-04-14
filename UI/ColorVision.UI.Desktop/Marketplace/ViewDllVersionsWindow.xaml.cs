@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace ColorVision.UI.Desktop.Plugins
+namespace ColorVision.UI.Desktop.Marketplace
 {
     /// <summary>
     /// ViewDllVersionsWindow.xaml 的交互逻辑

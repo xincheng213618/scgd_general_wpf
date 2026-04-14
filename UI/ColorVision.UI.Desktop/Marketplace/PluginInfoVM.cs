@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.Desktop.Download;
-using ColorVision.UI.Desktop.Marketplace;
 using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Plugins;
 using log4net;
@@ -14,7 +13,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.UI.Desktop.Plugins
+namespace ColorVision.UI.Desktop.Marketplace
 {
     public class PluginInfoVM:ViewModelBase
     {
@@ -195,6 +194,11 @@ namespace ColorVision.UI.Desktop.Plugins
         }
 
         public async void CheckVersion()
+        {
+            await CheckVersionAsync();
+        }
+
+        public async Task CheckVersionAsync()
         {
             // Try marketplace API first
             try
