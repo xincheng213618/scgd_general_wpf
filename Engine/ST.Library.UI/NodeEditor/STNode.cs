@@ -45,7 +45,7 @@ public abstract class STNode
 
 	private Rectangle _MarkRectangle;
 
-	private int _TitleHeight = 20;
+	private int _TitleHeight = 22;
 
 	private STNodeOptionCollection _InputOptions;
 
