@@ -1,8 +1,10 @@
-﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using HelixToolkit.Wpf;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,12 +36,18 @@ namespace ColorVision.ImageEditor
         private readonly WriteableBitmap colorBitmap;
         private HelixViewport3D? viewport;
         private ModelVisual3D? modelVisual;
+        private MeshGeometry3D? currentMesh;
         private byte[]? grayPixels;
         private int newWidth;
         private int newHeight;
         private double heightScale = 100.0;
         private DiffuseMaterial? colormapMaterial;
         private ColormapInfo? currentColormap;
+
+        // Cached initial camera state for reset
+        private Point3D initialCameraPosition;
+        private Vector3D initialLookDirection;
+        private Vector3D initialUpDirection;
 
         private static readonly string[] ColormapNames =
         {
@@ -117,13 +125,18 @@ namespace ColorVision.ImageEditor
             TxtTargetX.Text = Config.TargetPixelsX.ToString();
             TxtTargetY.Text = Config.TargetPixelsY.ToString();
 
+            // Calculate initial camera position
+            initialCameraPosition = new Point3D(newWidth / 2.0, -newHeight * 0.8, newHeight * 0.6);
+            initialLookDirection = new Vector3D(0, newHeight * 0.8, -newHeight * 0.6);
+            initialUpDirection = new Vector3D(0, 0, 1);
+
             viewport = new HelixViewport3D
             {
                 Camera = new PerspectiveCamera
                 {
-                    Position = new Point3D(newWidth / 2, -newHeight, newHeight / 2),
-                    LookDirection = new Vector3D(0, newHeight * 2, -newHeight / 2),
-                    UpDirection = new Vector3D(0, 0, 1),
+                    Position = initialCameraPosition,
+                    LookDirection = initialLookDirection,
+                    UpDirection = initialUpDirection,
                     FieldOfView = 60,
                 },
                 ShowFrameRate = true,
@@ -143,9 +156,14 @@ namespace ColorVision.ImageEditor
             });
             ContentGrid.Children.Add(viewport);
 
-            await UpdateMeshAsync();
+            // Build mesh once with current height scale
+            await BuildMeshAsync();
             viewport.CameraController.AddRotateForce(0, 4.5);
+
+            // Setup input handling
             PreviewKeyDown += Window3D_PreviewKeyDown;
+            viewport.MouseMove += Viewport_MouseMove;
+            viewport.MouseLeave += Viewport_MouseLeave;
         }
 
         private void Window_Closed(object sender, EventArgs e)
@@ -154,6 +172,8 @@ namespace ColorVision.ImageEditor
 
             if (viewport != null)
             {
+                viewport.MouseMove -= Viewport_MouseMove;
+                viewport.MouseLeave -= Viewport_MouseLeave;
                 viewport.Children.Clear();
                 ContentGrid.Children.Remove(viewport);
                 viewport = null;
@@ -165,41 +185,138 @@ namespace ColorVision.ImageEditor
                 modelVisual = null;
             }
 
+            currentMesh = null;
             colormapMaterial = null;
             grayPixels = null;
             currentColormap = null;
         }
 
-        private async void Window3D_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void Window3D_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (viewport == null) return;
 
-            if (e.Key == Key.Add)
+            const double moveSpeed = 20.0;
+            const double lookSpeed = 10.0;
+
+            switch (e.Key)
             {
-                heightScale *= 1.1;
-                await UpdateMeshAsync();
+                // Height scale
+                case Key.Add:
+                case Key.OemPlus:
+                    heightScale *= 1.1;
+                    UpdateMeshPositions();
+                    e.Handled = true;
+                    break;
+                case Key.Subtract:
+                case Key.OemMinus:
+                    heightScale *= 0.9;
+                    UpdateMeshPositions();
+                    e.Handled = true;
+                    break;
+
+                // Camera position (WASD-like with T/B)
+                case Key.L: // Left
+                    viewport.Camera.Position = new Point3D(
+                        viewport.Camera.Position.X - moveSpeed,
+                        viewport.Camera.Position.Y,
+                        viewport.Camera.Position.Z);
+                    e.Handled = true;
+                    break;
+                case Key.T: // Forward (Top view direction in default orientation)
+                    viewport.Camera.Position = new Point3D(
+                        viewport.Camera.Position.X,
+                        viewport.Camera.Position.Y + moveSpeed,
+                        viewport.Camera.Position.Z);
+                    e.Handled = true;
+                    break;
+                case Key.R: // Right
+                    viewport.Camera.Position = new Point3D(
+                        viewport.Camera.Position.X + moveSpeed,
+                        viewport.Camera.Position.Y,
+                        viewport.Camera.Position.Z);
+                    e.Handled = true;
+                    break;
+                case Key.B: // Backward
+                    viewport.Camera.Position = new Point3D(
+                        viewport.Camera.Position.X,
+                        viewport.Camera.Position.Y - moveSpeed,
+                        viewport.Camera.Position.Z);
+                    e.Handled = true;
+                    break;
+
+                // Look direction (arrow-like with A/C)
+                case Key.A: // Look Up (increase Z component of look direction)
+                    viewport.Camera.LookDirection = new Vector3D(
+                        viewport.Camera.LookDirection.X,
+                        viewport.Camera.LookDirection.Y,
+                        viewport.Camera.LookDirection.Z + lookSpeed);
+                    e.Handled = true;
+                    break;
+                case Key.C: // Look Down
+                    viewport.Camera.LookDirection = new Vector3D(
+                        viewport.Camera.LookDirection.X,
+                        viewport.Camera.LookDirection.Y,
+                        viewport.Camera.LookDirection.Z - lookSpeed);
+                    e.Handled = true;
+                    break;
+                case Key.D: // Look Left (decrease X)
+                    viewport.Camera.LookDirection = new Vector3D(
+                        viewport.Camera.LookDirection.X - lookSpeed,
+                        viewport.Camera.LookDirection.Y,
+                        viewport.Camera.LookDirection.Z);
+                    e.Handled = true;
+                    break;
+                case Key.F: // Look Right (increase X)
+                    viewport.Camera.LookDirection = new Vector3D(
+                        viewport.Camera.LookDirection.X + lookSpeed,
+                        viewport.Camera.LookDirection.Y,
+                        viewport.Camera.LookDirection.Z);
+                    e.Handled = true;
+                    break;
+
+                // Reset view
+                case Key.Home:
+                    ResetCameraView();
+                    e.Handled = true;
+                    break;
             }
-            else if (e.Key == Key.Subtract)
-            {
-                heightScale *= 0.9;
-                await UpdateMeshAsync();
-            }
-            else if (e.Key == Key.L)
-            {
-                viewport.Camera.Position = new Point3D(Position.X - 10, Position.Y, Position.Z);
-            }
-            else if (e.Key == Key.A)
-            {
-                viewport.Camera.LookDirection = new Vector3D(Position.X, Position.Y, Position.Z + 10);
-            }
-            else if (e.Key == Key.R)
-            {
-                viewport.Camera.Position = new Point3D(Position.X + 10, Position.Y, Position.Z);
-            }
-            else if (e.Key == Key.B)
-            {
-                viewport.Camera.Position = new Point3D(Position.X, Position.Y - 10, Position.Z);
-            }
+        }
+
+        private void Viewport_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (viewport == null || grayPixels == null) return;
+
+            // Show coordinate in status/tooltip
+            UpdateHoverTooltip(e);
+        }
+
+        private void Viewport_MouseLeave(object sender, MouseEventArgs e)
+        {
+            HoverInfoPopup.IsOpen = false;
+        }
+
+        private void UpdateHoverTooltip(MouseEventArgs e)
+        {
+            if (viewport?.Camera == null || grayPixels == null) return;
+
+            // Project mouse position to approximate 3D coordinates
+            // This is a simplified approximation
+            var pos = e.GetPosition(viewport);
+            var tooltipText = $"Mouse: ({pos.X:F0}, {pos.Y:F0})\n";
+            tooltipText += $"Scale: {heightScale:F1}x\n";
+            tooltipText += $"Res: {newWidth}x{newHeight}";
+
+            HoverInfoText.Text = tooltipText;
+            HoverInfoPopup.IsOpen = true;
+        }
+
+        private void ResetCameraView()
+        {
+            if (viewport?.Camera == null) return;
+
+            viewport.Camera.Position = initialCameraPosition;
+            viewport.Camera.LookDirection = initialLookDirection;
+            viewport.Camera.UpDirection = initialUpDirection;
         }
 
         private static int FindClosestFactor(int value, int[] factors)
@@ -270,6 +387,10 @@ namespace ColorVision.ImageEditor
             colormapMaterial = new DiffuseMaterial(brush);
         }
 
+        /// <summary>
+        /// Build mesh arrays - positions, indices, and texture coordinates.
+        /// Separated from mesh creation to allow position-only updates.
+        /// </summary>
         private static (Point3D[] Positions, int[] Indices, Point[] TexCoords) BuildMeshArrays(
             byte[] pixels, int width, int height, double heightScale)
         {
@@ -322,10 +443,38 @@ namespace ColorVision.ImageEditor
             return (positions, indices, texCoords);
         }
 
+        /// <summary>
+        /// Update only vertex positions when height scale changes - much faster than rebuilding entire mesh.
+        /// </summary>
+        private void UpdateMeshPositions()
+        {
+            if (currentMesh == null || grayPixels == null) return;
+
+            int vertexCount = newWidth * newHeight;
+            var newPositions = new Point3DCollection(vertexCount);
+
+            for (int y = 0; y < newHeight; y++)
+            {
+                int flippedY = newHeight - 1 - y;
+                int rowOffset = y * newWidth;
+                for (int x = 0; x < newWidth; x++)
+                {
+                    int idx = rowOffset + x;
+                    double z = grayPixels[idx] / 255.0 * heightScale;
+                    newPositions.Add(new Point3D(x, flippedY, z));
+                }
+            }
+
+            currentMesh.Positions = newPositions;
+        }
+
         private DiffuseMaterial CurrentMaterial =>
             colormapMaterial ?? new DiffuseMaterial(Brushes.White);
 
-        private async Task UpdateMeshAsync()
+        /// <summary>
+        /// Build mesh initially - creates the mesh structure with positions, indices, and UVs.
+        /// </summary>
+        private async Task BuildMeshAsync()
         {
             if (grayPixels == null || viewport == null) return;
 
@@ -335,7 +484,7 @@ namespace ColorVision.ImageEditor
 
             var (positions, indices, texCoords) = await Task.Run(() => BuildMeshArrays(pixels, w, h, hs));
 
-            var mesh = new MeshGeometry3D
+            currentMesh = new MeshGeometry3D
             {
                 Positions = new Point3DCollection(positions),
                 TriangleIndices = new Int32Collection(indices),
@@ -343,7 +492,7 @@ namespace ColorVision.ImageEditor
             };
 
             var material = CurrentMaterial;
-            var model = new GeometryModel3D(mesh, material) { BackMaterial = material };
+            var model = new GeometryModel3D(currentMesh, material) { BackMaterial = material };
 
             if (modelVisual == null)
             {
@@ -389,7 +538,7 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void Settings_Click(object sender, RoutedEventArgs e)
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
             TxtTargetX.Text = Config.TargetPixelsX.ToString();
             TxtTargetY.Text = Config.TargetPixelsY.ToString();
@@ -406,66 +555,160 @@ namespace ColorVision.ImageEditor
                 (grayPixels, newWidth, newHeight) = ConvertBitmapToGray(colorBitmap, x, y);
                 if (grayPixels == null || grayPixels.Length == 0) return;
 
+                // Reset mesh on resolution change (need to rebuild)
+                currentMesh = null;
+
                 if (currentColormap?.Lut != null)
                     CreateColormapMaterial(currentColormap.Lut);
 
-                await UpdateMeshAsync();
+                await BuildMeshAsync();
             }
             SettingsPopup.IsOpen = false;
         }
 
-        public Vector3D Position => viewport!.Camera.LookDirection;
+        private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveScreenshot();
+        }
 
-        private async void Button_Click(object sender, RoutedEventArgs e)
+        private void ResetViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            ResetCameraView();
+        }
+
+        /// <summary>
+        /// Save a screenshot of the current 3D viewport.
+        /// </summary>
+        private void SaveScreenshot()
+        {
+            if (viewport == null) return;
+
+            var dialog = new SaveFileDialog
+            {
+                Filter = "PNG Image|*.png|JPEG Image|*.jpg|Bitmap Image|*.bmp",
+                DefaultExt = "png",
+                FileName = $"3DView_{DateTime.Now:yyyyMMdd_HHmmss}.png"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    // Render the viewport to a bitmap
+                    var renderBitmap = new RenderTargetBitmap(
+                        (int)viewport.ActualWidth,
+                        (int)viewport.ActualHeight,
+                        96, 96,
+                        PixelFormats.Pbgra32);
+
+                    renderBitmap.Render(viewport);
+
+                    // Encode and save
+                    BitmapEncoder encoder = dialog.FileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+                        ? new JpegBitmapEncoder()
+                        : dialog.FileName.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase)
+                            ? new BmpBitmapEncoder()
+                            : new PngBitmapEncoder();
+
+                    encoder.Frames.Add(BitmapFrame.Create(renderBitmap));
+
+                    using var stream = File.Create(dialog.FileName);
+                    encoder.Save(stream);
+
+                    MessageBox.Show($"Screenshot saved:\n{dialog.FileName}", "Screenshot Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to save screenshot:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        // Height scale adjustment buttons
+        private async void HeightScaleIncrease_Click(object sender, RoutedEventArgs e)
         {
             heightScale *= 1.1;
-            await UpdateMeshAsync();
+            UpdateMeshPositions();
         }
 
-        private async void Button_Click_1(object sender, RoutedEventArgs e)
+        private async void HeightScaleDecrease_Click(object sender, RoutedEventArgs e)
         {
             heightScale *= 0.9;
-            await UpdateMeshAsync();
+            UpdateMeshPositions();
         }
 
-        private void L_Click(object sender, RoutedEventArgs e)
+        // Camera movement buttons
+        private void CameraMoveLeft_Click(object sender, RoutedEventArgs e)
         {
-            viewport!.Camera.Position = new Point3D(Position.X - 10, Position.Y, Position.Z);
+            if (viewport?.Camera == null) return;
+            viewport.Camera.Position = new Point3D(
+                viewport.Camera.Position.X - 20,
+                viewport.Camera.Position.Y,
+                viewport.Camera.Position.Z);
         }
 
-        private void R_Click(object sender, RoutedEventArgs e)
+        private void CameraMoveForward_Click(object sender, RoutedEventArgs e)
         {
-            viewport!.Camera.Position = new Point3D(Position.X + 10, Position.Y, Position.Z);
+            if (viewport?.Camera == null) return;
+            viewport.Camera.Position = new Point3D(
+                viewport.Camera.Position.X,
+                viewport.Camera.Position.Y + 20,
+                viewport.Camera.Position.Z);
         }
 
-        private void T_Click(object sender, RoutedEventArgs e)
+        private void CameraMoveRight_Click(object sender, RoutedEventArgs e)
         {
-            viewport!.Camera.Position = new Point3D(Position.X, Position.Y + 10, Position.Z);
+            if (viewport?.Camera == null) return;
+            viewport.Camera.Position = new Point3D(
+                viewport.Camera.Position.X + 20,
+                viewport.Camera.Position.Y,
+                viewport.Camera.Position.Z);
         }
 
-        private void B_Click(object sender, RoutedEventArgs e)
+        private void CameraMoveBack_Click(object sender, RoutedEventArgs e)
         {
-            viewport!.Camera.Position = new Point3D(Position.X, Position.Y - 10, Position.Z);
+            if (viewport?.Camera == null) return;
+            viewport.Camera.Position = new Point3D(
+                viewport.Camera.Position.X,
+                viewport.Camera.Position.Y - 20,
+                viewport.Camera.Position.Z);
         }
 
-        private void D_Click(object sender, RoutedEventArgs e)
+        // Look direction buttons
+        private void LookLeft_Click(object sender, RoutedEventArgs e)
         {
-            viewport!.Camera.LookDirection = new Vector3D(Position.X, Position.Y - 10, Position.Z);
+            if (viewport?.Camera == null) return;
+            viewport.Camera.LookDirection = new Vector3D(
+                viewport.Camera.LookDirection.X - 10,
+                viewport.Camera.LookDirection.Y,
+                viewport.Camera.LookDirection.Z);
         }
 
-        private void F_Click(object sender, RoutedEventArgs e)
+        private void LookUp_Click(object sender, RoutedEventArgs e)
         {
-            viewport!.Camera.LookDirection = new Vector3D(Position.X, Position.Y + 10, Position.Z);
+            if (viewport?.Camera == null) return;
+            viewport.Camera.LookDirection = new Vector3D(
+                viewport.Camera.LookDirection.X,
+                viewport.Camera.LookDirection.Y,
+                viewport.Camera.LookDirection.Z + 10);
         }
 
-        private void A_Click(object sender, RoutedEventArgs e)
+        private void LookRight_Click(object sender, RoutedEventArgs e)
         {
-            viewport!.Camera.LookDirection = new Vector3D(Position.X, Position.Y, Position.Z + 10);
+            if (viewport?.Camera == null) return;
+            viewport.Camera.LookDirection = new Vector3D(
+                viewport.Camera.LookDirection.X + 10,
+                viewport.Camera.LookDirection.Y,
+                viewport.Camera.LookDirection.Z);
         }
 
-        private void C_Click(object sender, RoutedEventArgs e)
+        private void LookDown_Click(object sender, RoutedEventArgs e)
         {
-            viewport!.Camera.LookDirection = new Vector3D(Position.X, Position.Y, Position.Z - 10);
+            if (viewport?.Camera == null) return;
+            viewport.Camera.LookDirection = new Vector3D(
+                viewport.Camera.LookDirection.X,
+                viewport.Camera.LookDirection.Y,
+                viewport.Camera.LookDirection.Z - 10);
         }
     }
 }
