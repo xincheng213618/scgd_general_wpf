@@ -441,12 +441,14 @@ namespace ColorVision.ImageEditor
         {
             //如果文件已经打开，不会重复打开
 
-            if (filePath == null || filePath.Equals(Config.GetProperties<string>("FilePath"), StringComparison.Ordinal)) return;
+            if (filePath == null || filePath.Equals(Config.GetProperties<string>("FilePath"), StringComparison.Ordinal))
+            {
+                log.Info("文件路径未改变，跳过打开图像。");
+                return;
+            }
             Config.ClearProperties();
-
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
-            Config.FilePath = filePath;
             try
             {
                 if (filePath != null && File.Exists(filePath))
@@ -472,8 +474,8 @@ namespace ColorVision.ImageEditor
                 log.Error(ex);
                 MessageBox.Show(ex.Message);
             }
+        }
 
-      }
 
         public HImage? HImageCache
         {
