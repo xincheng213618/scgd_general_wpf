@@ -96,7 +96,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
                     {
                         result.FilePath = list[0].FileUrl;
                         result.AlgResultMasterModel.ImgFile = list[0].FileUrl;
-                        db.Updateable(result.AlgResultMasterModel).ExecuteCommand();
+                        //db.Updateable(result.AlgResultMasterModel).ExecuteCommand();
                     }
                 }
             }
