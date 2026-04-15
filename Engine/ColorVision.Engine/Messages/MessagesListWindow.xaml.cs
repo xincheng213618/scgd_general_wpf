@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Messages;
-using ColorVision.Engine.MQTT;
+﻿using ColorVision.Engine.MQTT;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -11,7 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.DeskTop.Messages
+namespace ColorVision.Engine.Messages
 {
     public class ExportMsgList : MenuItemBase
     {

@@ -3,28 +3,178 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.ImageEditor"
         mc:Ignorable="d"
-        Title="3D视图" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="3D视图" Height="600" Width="1000"
+        Initialized="Window_Initialized" Closed="Window_Closed">
+    <Window.Resources>
+        <Style x:Key="ToolBtn" TargetType="Button">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Margin" Value="1"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#DDFFFFFF"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="#50505050" BorderBrush="#40707070"
+                                BorderThickness="1" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#80707070"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#80AAAAAA"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#A0909090"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SectionLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#99FFFFFF"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="2,0,0,3"/>
+        </Style>
+    </Window.Resources>
+
     <Grid Background="Black">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="73*"/>
-            <ColumnDefinition Width="727*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-        <Grid x:Name="ContentGrid" Grid.ColumnSpan="2" />
-        <StackPanel  VerticalAlignment="Top" HorizontalAlignment="Left">
-            <Button Content="+"  Click="Button_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
-            <Button Content="-"  Click="Button_Click_1"  Panel.ZIndex="99" Grid.RowSpan="2"/>
-            <Button Content="L"  Click="L_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
-            <Button Content="R"  Click="R_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
-            <Button Content="T"  Click="T_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
-            <Button Content="B"  Click="B_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
-            <Button Content="D"  Click="D_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
-            <Button Content="F"  Click="F_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
-            <Button Content="A"  Click="A_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
-            <Button Content="C"  Click="C_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
 
-        </StackPanel>
+        <Grid>
+            <Grid x:Name="ContentGrid"/>
+
+            <!-- Toolbar overlay panel -->
+            <Border VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8" Panel.ZIndex="99"
+                    Background="#C8181818" CornerRadius="6" Padding="8"
+                    BorderBrush="#30FFFFFF" BorderThickness="1">
+                <StackPanel Width="130">
+                    <!-- Height Scale -->
+                    <DockPanel>
+                        <TextBlock Text="高度缩放" Style="{StaticResource SectionLabel}" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Style="{StaticResource ToolBtn}" Content="+" ToolTip="增加高度 (Num+)" Click="Button_Click"/>
+                            <Button Style="{StaticResource ToolBtn}" Content="-" ToolTip="减少高度 (Num-)" Click="Button_Click_1"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                    <!-- Camera Position -->
+                    <TextBlock Text="相机位置" Style="{StaticResource SectionLabel}"/>
+                    <Grid HorizontalAlignment="Center" Width="96">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/><RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="◀" ToolTip="左移 (L)" Click="L_Click"/>
+                        <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="▲" ToolTip="前进 (T)" Click="T_Click"/>
+                        <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="▶" ToolTip="右移 (R)" Click="R_Click"/>
+                        <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="▼" ToolTip="后退 (B)" Click="B_Click"/>
+                    </Grid>
+
+                    <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                    <!-- Look Direction -->
+                    <TextBlock Text="视角方向" Style="{StaticResource SectionLabel}"/>
+                    <Grid HorizontalAlignment="Center" Width="96">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/><RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Button Grid.Row="0" Grid.Column="0" Style="{StaticResource ToolBtn}" Content="◀" ToolTip="左看 (D)" Click="D_Click"/>
+                        <Button Grid.Row="0" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="▲" ToolTip="上看 (A)" Click="A_Click"/>
+                        <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource ToolBtn}" Content="▶" ToolTip="右看 (F)" Click="F_Click"/>
+                        <Button Grid.Row="1" Grid.Column="1" Style="{StaticResource ToolBtn}" Content="▼" ToolTip="下看 (C)" Click="C_Click"/>
+                    </Grid>
+
+                    <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                    <!-- Colormap Selection -->
+                    <TextBlock Text="伪彩色" Style="{StaticResource SectionLabel}"/>
+                    <ComboBox x:Name="ComboBoxColormap" Margin="2"
+                              SelectionChanged="ComboBoxColormap_SelectionChanged">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="2">
+                                    <Image Width="14" Height="50" Stretch="Fill" Source="{Binding ImageSource}">
+                                        <Image.LayoutTransform>
+                                            <RotateTransform Angle="90"/>
+                                        </Image.LayoutTransform>
+                                    </Image>
+                                    <TextBlock Text="{Binding Name}" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <Separator Background="#20FFFFFF" Margin="0,4"/>
+
+                    <!-- Settings Button -->
+                    <Button Style="{StaticResource ToolBtn}" Width="Auto" Height="26"
+                            Content="⚙ 设置" ToolTip="渲染分辨率设置" Click="Settings_Click"
+                            HorizontalContentAlignment="Center" Margin="2"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Settings Popup -->
+            <Popup x:Name="SettingsPopup" Placement="Center"
+                   PlacementTarget="{Binding ElementName=ContentGrid}"
+                   StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                <Border Background="#F0202020" CornerRadius="8" Padding="16"
+                        BorderBrush="#60808080" BorderThickness="1">
+                    <StackPanel Width="220">
+                        <TextBlock Text="渲染设置" Foreground="White" FontWeight="Bold" FontSize="14" Margin="0,0,0,12"/>
+                        <TextBlock Text="目标分辨率 X:" Foreground="#CCCCCC" FontSize="12" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TxtTargetX" Margin="0,0,0,8" Padding="4,2"/>
+                        <TextBlock Text="目标分辨率 Y:" Foreground="#CCCCCC" FontSize="12" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TxtTargetY" Margin="0,0,0,12" Padding="4,2"/>
+                        <TextBlock Text="修改后需点击应用重新渲染" Foreground="#999999" FontSize="10" Margin="0,0,0,8"/>
+                        <Button Content="应用并刷新" Click="ApplySettings_Click" Padding="8,4"
+                                HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                </Border>
+            </Popup>
+        </Grid>
+
+        <!-- Colorbar Legend -->
+        <Grid x:Name="ColorBarPanel" Grid.Column="1" Width="75" Margin="0,15,5,15" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="22"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.RowSpan="5" BorderBrush="#888" BorderThickness="1" Margin="2,0">
+                <Image x:Name="ColorBarImage" Stretch="Fill"/>
+            </Border>
+
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="255" Foreground="White" FontSize="10" VerticalAlignment="Top" Margin="4,0,0,0"/>
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="204" Foreground="White" FontSize="10" VerticalAlignment="Bottom" Margin="4,0,0,0"/>
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="153" Foreground="White" FontSize="10" VerticalAlignment="Bottom" Margin="4,0,0,0"/>
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="102" Foreground="White" FontSize="10" VerticalAlignment="Bottom" Margin="4,0,0,0"/>
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="  51" Foreground="White" FontSize="10" VerticalAlignment="Bottom" Margin="4,0,0,0"/>
+            <TextBlock Grid.Row="4" Grid.Column="1" Text="    0" Foreground="White" FontSize="10" VerticalAlignment="Bottom" Margin="4,0,0,0"/>
+        </Grid>
     </Grid>
 
 </Window>

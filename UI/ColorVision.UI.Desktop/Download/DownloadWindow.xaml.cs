@@ -1,8 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
-using ColorVision.UI;
-using ColorVision.UI.Desktop.Download;
 using ColorVision.UI.Menus;
 using System.Diagnostics;
 using System.Windows;
@@ -12,20 +10,6 @@ using System.Windows.Threading;
 
 namespace ColorVision.UI.Desktop.Download
 {
-    public class ExportDownloadWindow : GlobalMenuBase
-    {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string GuidId => "DownloadManager";
-        public override string Header => Properties.Resources.DownloadManager;
-        public override int Order => 30;
-
-        public override object? Icon => new TextBlock() { FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets"), Text = "\uE896" };
-
-        public override void Execute()
-        {
-            DownloadWindow.ShowInstance();
-        }
-    }
 
     public class DownloadRightMenuItemProvider : IRightMenuItemProvider
     {
