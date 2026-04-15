@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Database;
-using ColorVision.Engine.Messages;
 using ColorVision.UI;
 using SqlSugar;
 using System;
@@ -9,7 +8,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 
-namespace ColorVision.Engine.DeskTop.Messages
+namespace ColorVision.Engine.Messages
 {
 
     public class MessagesListManager : ViewModelBase,IDisposable

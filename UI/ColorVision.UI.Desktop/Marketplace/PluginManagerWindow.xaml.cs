@@ -10,8 +10,9 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using ColorVision.UI.Desktop.NativeMethods;
+using ColorVision.UI.Desktop.Marketplace;
 
-namespace ColorVision.UI.Desktop.Plugins
+namespace ColorVision.UI.Desktop.Marketplace
 {
 
     /// <summary>
@@ -24,6 +25,7 @@ namespace ColorVision.UI.Desktop.Plugins
         private List<MarketplacePluginSummary> _marketplacePlugins = new();
         private bool _marketplaceLoaded;
         private int _marketplaceDetailRequestId;
+        private bool _isRefreshingVersions;
 
         public PluginManagerWindow()
         {
@@ -58,12 +60,15 @@ namespace ColorVision.UI.Desktop.Plugins
             _marketplaceDetailRequestId++;
             if (MainTabControl.SelectedIndex == 1 && !_marketplaceLoaded)
             {
-                LoadMarketplacePlugins();
+                _ = LoadMarketplacePluginsAsync();
             }
         }
 
-        private async void LoadMarketplacePlugins()
+        private async Task LoadMarketplacePluginsAsync(bool forceReload = false)
         {
+            if (_marketplaceLoaded && !forceReload)
+                return;
+
             _marketplaceLoaded = true;
             MarketplaceStatus.Text = Properties.Resources.Loading + "...";
             try
@@ -84,6 +89,47 @@ namespace ColorVision.UI.Desktop.Plugins
             {
                 log.Debug($"LoadMarketplacePlugins failed: {ex.Message}");
                 MarketplaceStatus.Text = Properties.Resources.MarketplaceLoadFailed;
+                _marketplaceLoaded = false;
+            }
+        }
+
+        private async void RefreshVersionsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isRefreshingVersions)
+                return;
+
+            _isRefreshingVersions = true;
+            if (sender is Button button)
+                button.IsEnabled = false;
+
+            try
+            {
+                await PluginManager.GetInstance().RefreshVersionsAsync();
+
+                if (MainTabControl.SelectedIndex == 1)
+                {
+                    await LoadMarketplacePluginsAsync(forceReload: true);
+                    FilterMarketplacePlugins(DefalutSearchComboBox.Text);
+
+                    if (ListViewMarketplace.SelectedItem is MarketplacePluginSummary summary)
+                    {
+                        ShowMarketplaceDetail(summary);
+                    }
+                }
+                else
+                {
+                    await RefreshSelectedDetailAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Debug($"RefreshVersionsButton_Click failed: {ex.Message}");
+            }
+            finally
+            {
+                if (sender is Button button2)
+                    button2.IsEnabled = true;
+                _isRefreshingVersions = false;
             }
         }
 

@@ -1624,18 +1624,18 @@ namespace ColorVision.Engine.Templates.POI
                             CVFileUtil.ReadCIEFileData(Path.Combine(path, cvcie.SrcFileName), ref cvcie1, index1);
                             if (cvcie1.Bpp == 16)
                             {
-                                image = OpenCvSharp.Mat.FromPixelData(cvcie1.Cols, cvcie1.Rows, OpenCvSharp.MatType.MakeType(cvcie1.Depth, cvcie1.Channels), cvcie1.Data);
+                                image = OpenCvSharp.Mat.FromPixelData(cvcie1.Rows, cvcie1.Cols, OpenCvSharp.MatType.MakeType(cvcie1.Depth, cvcie1.Channels), cvcie1.Data);
                             }
                             else if (cvcie1.Bpp == 32)
                             {
-                                OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(cvcie1.Cols, cvcie1.Rows, OpenCvSharp.MatType.MakeType(cvcie1.Depth, cvcie1.Channels), cvcie1.Data);
+                                OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(cvcie1.Rows, cvcie1.Cols, OpenCvSharp.MatType.MakeType(cvcie1.Depth, cvcie1.Channels), cvcie1.Data);
                                 OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                                 image = new OpenCvSharp.Mat();
                                 src.ConvertTo(image, OpenCvSharp.MatType.CV_8U);
                             }
                             else
                             {
-                                image = OpenCvSharp.Mat.FromPixelData(cvcie1.Cols, cvcie1.Rows, OpenCvSharp.MatType.CV_8UC(cvcie1.Channels), cvcie1.Data);
+                                image = OpenCvSharp.Mat.FromPixelData(cvcie1.Rows, cvcie1.Cols, OpenCvSharp.MatType.CV_8UC(cvcie1.Channels), cvcie1.Data);
                             }
                         }
                         else
@@ -1656,18 +1656,18 @@ namespace ColorVision.Engine.Templates.POI
                         CVFileUtil.ReadCIEFileData(imgFileName, ref cvcie, index);
                         if (cvcie.Bpp == 16)
                         {
-                            image = OpenCvSharp.Mat.FromPixelData(cvcie.Cols, cvcie.Rows, OpenCvSharp.MatType.MakeType(cvcie.Depth, cvcie.Channels), cvcie.Data);
+                            image = OpenCvSharp.Mat.FromPixelData(cvcie.Rows, cvcie.Cols, OpenCvSharp.MatType.MakeType(cvcie.Depth, cvcie.Channels), cvcie.Data);
                         }
                         else if (cvcie.Bpp == 32)
                         {
-                            OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(cvcie.Cols, cvcie.Rows, OpenCvSharp.MatType.MakeType(cvcie.Depth, cvcie.Channels), cvcie.Data);
+                            OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(cvcie.Rows, cvcie.Cols, OpenCvSharp.MatType.MakeType(cvcie.Depth, cvcie.Channels), cvcie.Data);
                             OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                             image = new OpenCvSharp.Mat();
                             src.ConvertTo(image, OpenCvSharp.MatType.CV_8U);
                         }
                         else
                         {
-                            image = OpenCvSharp.Mat.FromPixelData(cvcie.Cols, cvcie.Rows, OpenCvSharp.MatType.CV_8UC(cvcie.Channels), cvcie.Data);
+                            image = OpenCvSharp.Mat.FromPixelData(cvcie.Rows, cvcie.Cols, OpenCvSharp.MatType.CV_8UC(cvcie.Channels), cvcie.Data);
                         }
                     }
                     else

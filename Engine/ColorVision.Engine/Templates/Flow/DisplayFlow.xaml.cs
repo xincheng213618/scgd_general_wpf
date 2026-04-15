@@ -206,17 +206,6 @@ namespace ColorVision.Engine.Templates.Flow
                     item.nodeEndEvent += nodeEndEvent;
                 }
                 View.STNodeEditorHelper.AddNodeContext();
-
-                if (Config.IsAutoSize)
-                    View.AutoSize();
-
-                for (int i = 0; i < 20; i++)
-                {
-                    Config.IsReady = View.FlowEngineControl.IsReady;
-                    if (View.FlowEngineControl.IsReady)
-                        break;
-                    await Task.Delay(10);
-                }
             }
             catch (Exception ex)
             {
@@ -310,15 +299,6 @@ namespace ColorVision.Engine.Templates.Flow
             FlowEngineManager.BatchProgress = 100;
             log.Info(msg);
 
-            if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
-            {
-                if(LastNode != null)
-                {
-                    MarkColorProperty.SetValue(LastNode, System.Drawing.Color.Red);
-                }
-            }
-
-            // 通知外部监听者流程执行结果
             FlowExecutionCompleted?.Invoke(this, FlowControlData);
 
             Application.Current.Dispatcher.BeginInvoke(() =>
@@ -486,7 +466,6 @@ namespace ColorVision.Engine.Templates.Flow
         private readonly ConcurrentDictionary<string, string> _runningNodeNames = new ConcurrentDictionary<string, string>();
         private readonly ConcurrentDictionary<string, FlowNodeMessage> _nodeMessages = new ConcurrentDictionary<string, FlowNodeMessage>();
 
-        PropertyInfo MarkColorProperty { get; set; }
         private void nodeEndEvent(object sender, FlowEngineNodeEndEventArgs e)
         {
             if (sender is CVCommonNode algorithmNode)
@@ -494,7 +473,15 @@ namespace ColorVision.Engine.Templates.Flow
                 if (e != null)
                 {
                     algorithmNode.IsSelected = false;
-                    MarkColorProperty.SetValue(algorithmNode, System.Drawing.Color.Green);
+
+                    if (e.RecvStatusCode == 0)
+                    {
+                        algorithmNode.TitleColor = System.Drawing.Color.Green;
+                    }
+                    else
+                    {
+                        algorithmNode.TitleColor = System.Drawing.Color.Red;
+                    }
                 }
 
                 _runningNodeNames.TryRemove(algorithmNode.NodeID, out _);
@@ -593,11 +580,6 @@ namespace ColorVision.Engine.Templates.Flow
         string FlowName;
         public async Task RunFlow()
         {
-            if (MarkColorProperty == null)
-            {
-                Type type = typeof(STNode);
-                MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-            }
 
             if (!MqttRCService.GetInstance().IsConnect)
             {
@@ -617,16 +599,6 @@ namespace ColorVision.Engine.Templates.Flow
                 MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.TokenEmpty_RefreshingToken_PleaseRetry);
                 return;
             }
-            View.logTextBox.Text = $"IsReady{View.FlowEngineControl.IsReady}";
-            log.Info($"IsReady{View.FlowEngineControl.IsReady}");
-            Config.IsReady = View.FlowEngineControl.IsReady;
-            if (!View.FlowEngineControl.IsReady)
-            {
-                View.FlowEngineControl.LoadFromBase64(string.Empty);
-                await Refresh();
-                log.Info($"IsReady{View.FlowEngineControl.IsReady}");
-                Config.IsReady = View.FlowEngineControl.IsReady;
-            }
             FlowName = ComboBoxFlow.Text;
             LastFlowTime = FlowEngineConfig.Instance.FlowRunTime.TryGetValue(ComboBoxFlow.Text, out long time) ? time : 0;
 
@@ -640,16 +612,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
             {
-                if (MarkColorProperty == null)
-                {
-                    Type type = typeof(STNode);
-                    MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-                }
-                // 设置值
-                if (MarkColorProperty != null)
-                {
-                    MarkColorProperty.SetValue(item, System.Drawing.Color.Blue);
-                }
+                item.MarkColor = System.Drawing.Color.Blue;
             }
 
             View.logTextBox.Text = "Run " + ComboBoxFlow.Text;

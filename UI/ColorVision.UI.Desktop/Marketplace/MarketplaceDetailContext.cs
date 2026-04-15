@@ -1,7 +1,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Desktop.Download;
-using ColorVision.UI.Desktop.Marketplace;
 using ColorVision.UI.Desktop.Properties;
 using ColorVision.UI.Marketplace;
 using ColorVision.UI.Plugins;
@@ -14,7 +13,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.UI.Desktop.Plugins
+namespace ColorVision.UI.Desktop.Marketplace
 {
     /// <summary>
     /// A lightweight view model for displaying marketplace plugin details in the right panel

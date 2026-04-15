@@ -45,7 +45,7 @@ public abstract class STNode
 
 	private Rectangle _MarkRectangle;
 
-	private int _TitleHeight = 20;
+	private int _TitleHeight = 22;
 
 	private STNodeOptionCollection _InputOptions;
 
@@ -155,7 +155,7 @@ public abstract class STNode
 		{
 			return _TitleColor;
 		}
-		protected set
+	    set
 		{
 			_TitleColor = value;
 			Invalidate(new Rectangle(0, 0, _Width, _TitleHeight));
@@ -168,7 +168,7 @@ public abstract class STNode
 		{
 			return _MarkColor;
 		}
-		protected set
+	  set
 		{
 			_MarkColor = value;
 			Invalidate(_MarkRectangle);
@@ -621,7 +621,7 @@ public abstract class STNode
 		return dictionary;
 	}
 
-	internal byte[] GetSaveData()
+	public byte[] GetSaveData()
 	{
 		List<byte> list = new List<byte>();
 		Type type = GetType();
@@ -907,7 +907,7 @@ public abstract class STNode
 	{
 	}
 
-	protected internal virtual void OnLoadNode(Dictionary<string, byte[]> dic)
+	public virtual void OnLoadNode(Dictionary<string, byte[]> dic)
 	{
 		if (dic.ContainsKey("AutoSize"))
 		{
@@ -1271,6 +1271,34 @@ public abstract class STNode
 		{
 			return null;
 		}
+		STNodeOption[] array = new STNodeOption[_OutputOptions.Count];
+		for (int i = 0; i < _OutputOptions.Count; i++)
+		{
+			array[i] = _OutputOptions[i];
+		}
+		return array;
+	}
+
+	/// <summary>
+	/// Returns all input options regardless of LetGetOptions setting.
+	/// Used for serialization/copy-paste operations.
+	/// </summary>
+	public STNodeOption[] GetAllInputOptions()
+	{
+		STNodeOption[] array = new STNodeOption[_InputOptions.Count];
+		for (int i = 0; i < _InputOptions.Count; i++)
+		{
+			array[i] = _InputOptions[i];
+		}
+		return array;
+	}
+
+	/// <summary>
+	/// Returns all output options regardless of LetGetOptions setting.
+	/// Used for serialization/copy-paste operations.
+	/// </summary>
+	public STNodeOption[] GetAllOutputOptions()
+	{
 		STNodeOption[] array = new STNodeOption[_OutputOptions.Count];
 		for (int i = 0; i < _OutputOptions.Count; i++)
 		{

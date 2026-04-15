@@ -49,15 +49,6 @@ namespace ColorVision.Engine.Templates.Flow
         public bool IsAutoEditSave { get => _IsAutoEditSave; set { _IsAutoEditSave = value; OnPropertyChanged(); } }
         private bool _IsAutoEditSave;
 
-        [DisplayName("自动适配")]
-        public bool IsAutoSize { get => _IsAutoSize; set { _IsAutoSize = value; OnPropertyChanged(); } }
-        private bool _IsAutoSize;
-
-        [DisplayName("显示nickName")]
-        public bool IsShowNickName { get => _IsShowNickName; set { _IsShowNickName = value; OnPropertyChanged(); } }
-        private bool _IsShowNickName;
-
-
         public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; OnPropertyChanged(); } }
         private int _LastSelectFlow;
 
@@ -70,11 +61,6 @@ namespace ColorVision.Engine.Templates.Flow
         [Browsable(false)]
         public int TemplateLargeFlowParamsIndex { get => _TemplateLargeFlowParamsIndex; set { _TemplateLargeFlowParamsIndex = value; OnPropertyChanged(); } }
         private int _TemplateLargeFlowParamsIndex;
-
-        [JsonIgnore,Browsable(false)]
-        public bool IsReady { get => _IsReady; set { if (value == _IsReady) return; _IsReady = value; OnPropertyChanged(); } }
-        private bool _IsReady;
-
 
         public int horizontalSpacing { get => _horizontalSpacing; set { _horizontalSpacing = value; OnPropertyChanged(); } }
         private int _horizontalSpacing = 200;

@@ -8,7 +8,7 @@ namespace ColorVision.Solution.Explorer
     /// <summary>
     /// Defines a template for creating new files/folders in the Solution Explorer.
     /// Implement this interface and decorate with [NewItemTemplateAttribute] to register.
-    /// Plugins can contribute templates by implementing this interface.
+    /// Marketplaces can contribute templates by implementing this interface.
     /// </summary>
     public interface INewItemTemplate
     {

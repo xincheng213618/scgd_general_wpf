@@ -162,7 +162,7 @@ public class STNodeEditor : Control
 
 	private Pen m_p_line = new Pen(Color.Cyan, 2f);
 
-	private Pen m_p_line_hover = new Pen(Color.Cyan, 4f);
+	private Pen m_p_line_hover = new Pen(Color.Cyan, 12f);
 
 	private GraphicsPath m_gp_hover;
 
@@ -803,12 +803,20 @@ public class STNodeEditor : Control
 		m_pt_canvas_old.Y = _CanvasOffsetY;
 		if (m_gp_hover != null && e.Button == MouseButtons.Right)
 		{
-			if (m_enableEdit)
+			NodeFindInfo preCheck = FindNodeFromPoint(m_pt_down_in_canvas);
+			if (preCheck.Node != null)
 			{
-				DisConnectionHover();
-				m_is_process_mouse_event = false;
+				m_gp_hover = null;
 			}
-			return;
+			else
+			{
+				if (m_enableEdit)
+				{
+					DisConnectionHover();
+					m_is_process_mouse_event = false;
+				}
+				return;
+			}
 		}
 		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_down_in_canvas);
 		if (!string.IsNullOrEmpty(nodeFindInfo.Mark))
@@ -988,7 +996,8 @@ public class STNodeEditor : Control
 	protected override void OnMouseUp(MouseEventArgs e)
 	{
 		base.OnMouseUp(e);
-		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_in_canvas);
+		int dotPadding = (m_ca == CanvasAction.ConnectOption) ? 14 : 6;
+		NodeFindInfo nodeFindInfo = FindNodeFromPoint(m_pt_in_canvas, dotPadding);
 		switch (m_ca)
 		{
 		case CanvasAction.MoveNode:
@@ -1201,7 +1210,7 @@ public class STNodeEditor : Control
 	{
 		Graphics graphics = dt.Graphics;
 		graphics.SmoothingMode = SmoothingMode.HighQuality;
-		m_p_line_hover.Color = Color.FromArgb(50, 0, 0, 0);
+		m_p_line_hover.Color = Color.FromArgb(10, 0, 0, 0);
 		Type typeFromHandle = typeof(object);
 		foreach (STNode node in _Nodes)
 		{
@@ -1964,6 +1973,11 @@ public class STNodeEditor : Control
 
 	public NodeFindInfo FindNodeFromPoint(PointF pt)
 	{
+		return FindNodeFromPoint(pt, 6);
+	}
+
+	public NodeFindInfo FindNodeFromPoint(PointF pt, int dotPadding)
+	{
 		m_find.Node = null;
 		m_find.NodeOption = null;
 		m_find.Mark = null;
@@ -1977,14 +1991,14 @@ public class STNodeEditor : Control
 			}
 			foreach (STNodeOption inputOption in _Nodes[num].InputOptions)
 			{
-				if (inputOption != STNodeOption.Empty && PointInRectangle(inputOption.DotRectangle, pt.X, pt.Y))
+				if (inputOption != STNodeOption.Empty && PointInRectangle(Rectangle.Inflate(inputOption.DotRectangle, dotPadding, dotPadding), pt.X, pt.Y))
 				{
 					m_find.NodeOption = inputOption;
 				}
 			}
 			foreach (STNodeOption outputOption in _Nodes[num].OutputOptions)
 			{
-				if (outputOption != STNodeOption.Empty && PointInRectangle(outputOption.DotRectangle, pt.X, pt.Y))
+				if (outputOption != STNodeOption.Empty && PointInRectangle(Rectangle.Inflate(outputOption.DotRectangle, dotPadding, dotPadding), pt.X, pt.Y))
 				{
 					m_find.NodeOption = outputOption;
 				}

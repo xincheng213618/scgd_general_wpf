@@ -14,6 +14,7 @@ using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using Newtonsoft.Json;
+using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -593,61 +594,51 @@ namespace ColorVision.Engine.Media
 
         public async void OpenImage(EditorContext context, string? filePath)  
         {
-            if (filePath == null) return;
-            CVCIESetBuffer(context.ImageView, filePath);
-
-            try
+            await Task.Run((Action)(() =>
             {
-                await Task.Run((Action)(() =>
+                CVCIEFile cVCIEFile = CVFileUtil.OpenLocalCVFile(filePath);
+                context.Config.AddProperties("Rows", (object)cVCIEFile.Rows);
+                context.Config.AddProperties("Cols", cVCIEFile.Cols);
+                context.Config.AddProperties("Rows", cVCIEFile.Rows);
+                context.Config.AddProperties("Channel", cVCIEFile.Channels);
+                context.Config.AddProperties("Gain", (object)cVCIEFile.Gain);
+                context.Config.AddProperties("exp", cVCIEFile.Exp);
+                context.Config.AddProperties("FileExtType", cVCIEFile.FileExtType);
+                context.Config.AddProperties("srcFileName", cVCIEFile.SrcFileName);
+                OpenCvSharp.Mat mat = cVCIEFile.ToMat();
+                cVCIEFile.Dispose();
+
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    CVCIEFile cVCIEFile = CVFileUtil.OpenLocalCVFile(filePath);  
-                    context.Config.AddProperties("Rows", (object)cVCIEFile.Rows);
-                    context.Config.AddProperties("Cols", cVCIEFile.Cols);
-                    context.Config.AddProperties("Rows", cVCIEFile.Rows);
-                    context.Config.AddProperties("Channel", cVCIEFile.Channels);
-                    context.Config.AddProperties("Gain", (object)cVCIEFile.Gain);
-                    context.Config.AddProperties("exp", cVCIEFile.Exp);
-                    context.Config.AddProperties("FileExtType", cVCIEFile.FileExtType);
-                    context.Config.AddProperties("srcFileName", cVCIEFile.SrcFileName);
-
-
-                    Application.Current.Dispatcher.Invoke(() =>
+                    if (context.ImageView.ViewBitmapSource is WriteableBitmap writeableBitmap)
                     {
-                        if (context.ImageView.ViewBitmapSource is WriteableBitmap writeableBitmap)
+                        if (!mat.MatUpdateWriteableBitmap(writeableBitmap))
                         {
-                            OpenCvSharp.Mat mat = cVCIEFile.ToMat();
-                            cVCIEFile.Dispose();
-                            if (!mat.MatUpdateWriteableBitmap(writeableBitmap))
-                            {
-                                WriteableBitmap writeableBitmap1 = OpenCvSharp.WpfExtensions.WriteableBitmapConverter.ToWriteableBitmap(mat);
-                                mat.Dispose();
-                                context.ImageView.OpenImage(writeableBitmap1);
-                                context.ImageView.UpdateZoomAndScale();
-                            }
-                            else
-                            {
-                                context.Config.AddProperties("Depth", cVCIEFile.Bpp);
-                                context.Config.AddProperties("DpiX", writeableBitmap.DpiX);
-                                context.Config.AddProperties("DpiY", writeableBitmap.DpiY);
-                                //这里需要强制切换过来
-                                context.ImageView.ImageShow.Source = writeableBitmap;
-                                mat.Dispose();
-                            }
-                        }
-                        else
-                        {
-                            WriteableBitmap writeableBitmap1 = cVCIEFile.ToWriteableBitmap();
-                            cVCIEFile.Dispose();
+                            WriteableBitmap writeableBitmap1 = OpenCvSharp.WpfExtensions.WriteableBitmapConverter.ToWriteableBitmap(mat);
+                            mat.Dispose();
                             context.ImageView.OpenImage(writeableBitmap1);
                             context.ImageView.UpdateZoomAndScale();
                         }
-                    });
-                }));
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
+                        else
+                        {
+                            context.Config.AddProperties("Depth", cVCIEFile.Bpp);
+                            context.Config.AddProperties("DpiX", writeableBitmap.DpiX);
+                            context.Config.AddProperties("DpiY", writeableBitmap.DpiY);
+                            //这里需要强制切换过来
+                            context.ImageView.ImageShow.Source = writeableBitmap;
+                            mat.Dispose();
+                        }
+                    }
+                    else
+                    {
+                        WriteableBitmap writeableBitmap1 = mat.ToWriteableBitmap();
+                        context.ImageView.OpenImage(writeableBitmap1);
+                        context.ImageView.UpdateZoomAndScale();
+                    }
+                    CVCIESetBuffer(context.ImageView, filePath);
+                });
+            }));
+
 
         }
     }

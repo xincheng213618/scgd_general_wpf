@@ -520,6 +520,13 @@ namespace ColorVision.Engine.Templates.Flow
         /// </summary>
         private static void CreateTemplateFromPackage(ITemplate iTemplate, string templateName, FlowPackageTemplate pkgTemplate)
         {
+            // 某些模板（如 POI）不使用 ModMaster/ModDetail 架构，需走模板自身的 Create 逻辑。
+            if (!CanCreateParamFromModData(iTemplate))
+            {
+                iTemplate.Create(templateName);
+                return;
+            }
+
             using var Db = new SqlSugar.SqlSugarClient(new SqlSugar.ConnectionConfig
             {
                 ConnectionString = Database.MySqlControl.GetConnectionString(),
@@ -571,6 +578,21 @@ namespace ColorVision.Engine.Templates.Flow
             AddTemplateToCollection(iTemplate, modMaster, modDetailModels);
         }
 
+        private static bool CanCreateParamFromModData(ITemplate iTemplate)
+        {
+            var templateType = iTemplate.GetType();
+            var baseType = templateType;
+            while (baseType != null && (!baseType.IsGenericType || baseType.GetGenericTypeDefinition() != typeof(ITemplate<>)))
+            {
+                baseType = baseType.BaseType;
+            }
+
+            if (baseType == null) return false;
+
+            var paramType = baseType.GetGenericArguments()[0];
+            return paramType.GetConstructor(new[] { typeof(ModMasterModel), typeof(List<ModDetailModel>) }) != null;
+        }
+
         /// <summary>
         /// 通过反射将新创建的模板添加到 ITemplate 的 TemplateParams 集合中
         /// </summary>
@@ -589,7 +611,14 @@ namespace ColorVision.Engine.Templates.Flow
             var paramType = baseType.GetGenericArguments()[0]; // typeof(T)
 
             // 创建 T 实例: new T(modMaster, details)
-            var param = Activator.CreateInstance(paramType, new object[] { modMaster, details });
+            var ctor = paramType.GetConstructor(new[] { typeof(ModMasterModel), typeof(List<ModDetailModel>) });
+            if (ctor == null)
+            {
+                iTemplate.Load();
+                return;
+            }
+
+            var param = ctor.Invoke(new object[] { modMaster, details });
             if (param == null) return;
 
             // 创建 TemplateModel<T> 实例

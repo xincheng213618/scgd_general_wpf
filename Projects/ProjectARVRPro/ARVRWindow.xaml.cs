@@ -219,7 +219,8 @@ namespace ProjectARVRPro
             _thunderbirdController.ConnectionStateChanged += ThunderbirdController_ConnectionStateChanged;
             UpdateThunderbirdStatusIndicator();
             _ = TryAutoConnectThunderbirdAsync();
-    
+
+            TryAutoStartRelayServer();
         }
 
         private void ThunderbirdController_ConnectionStateChanged(object? sender, EventArgs e)
@@ -1313,6 +1314,75 @@ namespace ProjectARVRPro
             _thunderbirdController.ConnectionStateChanged -= ThunderbirdController_ConnectionStateChanged;
             _thunderbirdController?.Close();
             GC.SuppressFinalize(this);
+        }
+
+        private void TryAutoStartRelayServer()
+        {
+            var relayManager = Services.SocketRelayManager.GetInstance();
+            var relayConfig = Services.SocketRelayConfig.Instance;
+            if (relayConfig.AutoStart && !relayManager.IsListening)
+            {
+                try
+                {
+                    relayManager.StartServer(relayConfig.ListenIP, relayConfig.ListenPort);
+                    log.Info($"中转服务器自动启动: {relayConfig.ListenIP}:{relayConfig.ListenPort}");
+                }
+                catch (Exception ex)
+                {
+                    log.Error("中转服务器自动启动失败", ex);
+                }
+            }
+            UpdateRelayServerStatusIndicator();
+            relayManager.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(relayManager.IsListening) || e.PropertyName == nameof(relayManager.IsFlowConnected))
+                    UpdateRelayServerStatusIndicator();
+            };
+        }
+
+        private void UpdateRelayServerStatusIndicator()
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                var relayManager = Services.SocketRelayManager.GetInstance();
+                if (relayManager.IsListening)
+                {
+                    if (relayManager.IsFlowConnected)
+                    {
+                        RelayServerStatusButton.Content = "中转: Flow已连接";
+                        RelayServerStatusButton.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x4C, 0xAF, 0x50));
+                    }
+                    else
+                    {
+                        RelayServerStatusButton.Content = "中转: 等待Flow";
+                        RelayServerStatusButton.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0x98, 0x00));
+                    }
+                }
+                else
+                {
+                    RelayServerStatusButton.Content = "中转: 未启动";
+                    RelayServerStatusButton.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Gray);
+                }
+            });
+        }
+
+        private SocketRelayWindow? _socketRelayWindow;
+
+        private void OpenSocketRelay_Click(object sender, RoutedEventArgs e)
+        {
+            if (_socketRelayWindow == null)
+            {
+                _socketRelayWindow = new SocketRelayWindow
+                {
+                    Owner = this
+                };
+                _socketRelayWindow.Closed += (s, args) => _socketRelayWindow = null;
+                _socketRelayWindow.Show();
+            }
+            else
+            {
+                _socketRelayWindow.Activate();
+            }
         }
 
         private ThunderbirdSerialDebugWindow? _thunderbirdDebugWindow;

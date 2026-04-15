@@ -1,7 +1,7 @@
 ﻿using log4net;
 using System.Windows;
 
-namespace ColorVision.UI.Desktop.Plugins
+namespace ColorVision.UI.Desktop.Marketplace
 {
     public class PluginsUpdate : MainWindowInitializedBase
     {

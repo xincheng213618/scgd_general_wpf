@@ -79,25 +79,19 @@
                     </Button>
                     <ComboBox  x:Name="ComboBoxFlow" SelectedIndex="{Binding TemplateFlowParamsIndex}"  Style="{StaticResource ComboBoxExtend.Small}" ItemsSource="{Binding FlowParams}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                 </DockPanel>
-                <Grid Margin="0,0,0,5" >
+                <Grid  >
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="{Binding ServiceConfig.RegistrationCenterServiceInfo.FileVersion}" Margin="0,0,5,0"/>
-                        <TextBlock Text="Ready" Visibility="{Binding Config.IsReady,Converter={StaticResource bool2VisibilityConverter}}"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Height="35">
                         <Button Content="{x:Static properties:Resources.ExecutionProcess}"   Visibility="{Binding FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter1}}" FontWeight="Bold" FontSize="16" Click="Button_FlowRun_Click" />
                         <Button Content="{x:Static properties:Resources.StopProcess}"  Visibility="{Binding FlowControl.IsFlowRun,Converter={StaticResource bool2VisibilityConverter}}"  FontWeight="Bold" FontSize="16" Click="Button_FlowStop_Click" />
                     </StackPanel>
                 </Grid>
-
-                <DockPanel Margin="0,0,0,5" Visibility="{Binding Config.IsShowNickName,Converter={StaticResource bool2VisibilityConverter}}" >
-                    <CheckBox x:Name="IsName" Content="{x:Static properties:Resources.Alias}" Margin="0,0,20,0"/>
-                    <TextBox x:Name="TextBoxName" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" HorizontalAlignment="Stretch" Margin="0,0,0,0"/>
-                </DockPanel>
             </StackPanel>
         </Border>
     </StackPanel>

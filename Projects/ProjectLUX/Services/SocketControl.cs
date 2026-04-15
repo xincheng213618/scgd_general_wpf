@@ -207,6 +207,7 @@ namespace ProjectLUX.Services
                         ProjectWindowInstance.WindowInstance.ReturnCode = string.Join(",", strings) + ";";
                         if (lastTwo == "00")
                         {
+
                             log.Info("拍图窗口握手");
                             ProjectWindowInstance.WindowInstance.InitTest(sn);
                         }

@@ -42,7 +42,6 @@ class ProjectConfig:
     setup_files_dir: Path
     changelog_src: Path
     wechat_target_directory: Path
-    baidu_target_directory: Path
 
 
 def rebuild_project(msbuild_path: Path, solution_path: Path, advanced_installer_path: Path, aip_path: Path) -> bool:
@@ -321,7 +320,6 @@ def build_projects(base_path: Path) -> dict[str, ProjectConfig]:
             setup_files_dir=ai_project_dir / "Setup Files",
             changelog_src=base_path / "CHANGELOG.md",
             wechat_target_directory=Path(r"C:\Users\Xin\Documents\WXWork\1688854819471931\WeDrive\视彩光电\视彩（上海）光电技术有限公司\视彩软件及工具简易教程\新版软件安装包\ColorVision"),
-            baidu_target_directory=Path(r"D:\BaiduSyncdisk\ColorVision"),
         )
     }
 
@@ -417,14 +415,6 @@ def main() -> int:
         project.wechat_target_directory,
         project.changelog_src,
         project.wechat_target_directory / "CHANGELOG.md",
-    )
-    compare_and_write_version_weixin(
-        latest_version,
-        project.baidu_target_directory / "LATEST_RELEASE",
-        latest_file,
-        project.baidu_target_directory,
-        project.changelog_src,
-        project.baidu_target_directory / "CHANGELOG.md",
     )
     compare_and_write_version(
         latest_version,

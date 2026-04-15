@@ -110,8 +110,8 @@ namespace ColorVision.Engine.Templates.Flow
                 Db.Deleteable<ModDetailModel>().Where(x => x.Pid == id).ExecuteCommand();
                 foreach (ModDetailModel model in de)
                 {
-                    string code = Cryptography.GetMd5Hash(model.ValueA + model.Id);
-                    ret = Db.Deleteable<SysResourceModel>().Where(x => x.Code == code).ExecuteCommand();
+                    if (int.TryParse(model.ValueA, out int resourceId))
+                        ret = Db.Deleteable<SysResourceModel>().Where(x => x.Id == resourceId).ExecuteCommand();
                 }
             }
 
@@ -165,6 +165,7 @@ namespace ColorVision.Engine.Templates.Flow
                     SysResourceModel res = null;
                     int id = 0;
                     bool hasId = int.TryParse(model.ValueA, out id);
+
                     log.Debug($"Save2DB: model.ValueA={model.ValueA}, hasId={hasId}, id={id}");
                     if (hasId)
                     {
@@ -174,7 +175,6 @@ namespace ColorVision.Engine.Templates.Flow
                     if (res != null)
                     {
                         // 资源已存在，更新
-                        res.Code = flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64);
                         res.Name = flowParam.Name;
                         res.Value = flowParam.DataBase64;
                         int updateResult = Db.Updateable(res).ExecuteCommand();
@@ -189,9 +189,7 @@ namespace ColorVision.Engine.Templates.Flow
                             Name = flowParam.Name,
                             Type = 101,
                             Value = flowParam.DataBase64,
-                            Code = hasId
-                                ? (flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64))
-                                : Cryptography.GetMd5Hash(flowParam.DataBase64)
+                                Code = Guid.NewGuid().ToString("N")
                         };
                         Db.Insertable(res).ExecuteCommand();
                         // 获取新资源id（SqlSugar自动回写Id）
@@ -305,17 +303,26 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (!File.Exists(filePath)) return false;
 
-            if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                return ImportFlowPackage(filePath);
+                if (filePath.EndsWith(".cvflow", StringComparison.OrdinalIgnoreCase))
+                {
+                    return ImportFlowPackage(filePath);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+
+                ImportName = Path.GetFileNameWithoutExtension(filePath);
+                byte[] fileBytes = File.ReadAllBytes(filePath);
+                string base64 = Convert.ToBase64String(fileBytes);
+                FlowParam param = new FlowParam();
+                param.DataBase64 = base64;
+                ImportTemp = param;
             }
 
-            ImportName = Path.GetFileNameWithoutExtension(filePath);
-            byte[] fileBytes = File.ReadAllBytes(filePath);
-            string base64 = Convert.ToBase64String(fileBytes);
-            FlowParam param = new FlowParam();
-            param.DataBase64 = base64;
-            ImportTemp = param;
             return true;
         }
 
@@ -427,7 +434,7 @@ namespace ColorVision.Engine.Templates.Flow
                         var sysResourceModel = new SysResourceModel
                         {
                             Name = flowMaster.Name,
-                            Code = pkId.ToString() + sysResourceModeldefault.Code,
+                                Code = Guid.NewGuid().ToString("N"),
                             Type = sysResourceModeldefault.Type,
                             Value = sysResourceModeldefault.Value
                         };

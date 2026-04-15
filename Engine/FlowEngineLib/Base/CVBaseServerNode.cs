@@ -143,7 +143,6 @@ public class CVBaseServerNode : CVCommonNode
 		base.AutoSize = false;
 		base.Width = 150;
 		base.Height = 85;
-		base.TitleHeight += 10;
 		m_custom_item = new Rectangle(5, 30, 140, 18);
 	}
 

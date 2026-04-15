@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+    <ProjectReference Include="..\..\Engine\ST.Library.UI\ST.Library.UI.csproj" />
   </ItemGroup>
 
 </Project>
